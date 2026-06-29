@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
@@ -44,30 +44,37 @@ function SlotCard({
   onToggle: (activo: boolean) => void;
   onDelete: () => void;
 }) {
-  const [offset,    setOffset]    = useState(0);
-  const [animating, setAnimating] = useState(false);
-
+  const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
+  const initOffset = useRef(0);
   const liveOffset = useRef(0);
   const dragged    = useRef(false);
 
+  const applyTransform = (offset: number, animate: boolean) => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transition = animate
+      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      : 'none';
+    cardRef.current.style.transform = `translateX(${offset}px)`;
+  };
+
   const snapTo = (target: number) => {
-    setAnimating(true);
-    setOffset(target);
     liveOffset.current = target;
+    applyTransform(target, true);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
+    initOffset.current = liveOffset.current;
     dragged.current = false;
-    setAnimating(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     const delta = e.touches[0].clientX - startX.current;
     if (Math.abs(delta) > 5) dragged.current = true;
-    liveOffset.current = Math.min(0, Math.max(-SWIPE_REVEAL, delta));
-    setOffset(liveOffset.current);
+    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
+    liveOffset.current = clamped;
+    applyTransform(clamped, false);
   };
 
   const handleTouchEnd = () => {
@@ -97,6 +104,7 @@ function SlotCard({
 
       {/* Card */}
       <div
+        ref={cardRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -106,10 +114,9 @@ function SlotCard({
           border: '1px solid #EEE',
           boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 14,
           padding: '14px 16px',
-          transform: `translateX(${offset}px)`,
-          transition: animating ? 'transform 0.25s ease' : 'none',
           opacity: slot.activo ? 1 : 0.65,
           userSelect: 'none',
+          transform: 'translateX(0)',
         }}
       >
         <div style={{

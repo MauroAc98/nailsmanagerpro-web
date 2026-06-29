@@ -24,45 +24,48 @@ function SwipeableClienteCard({
   onEdit:   () => void;
   onDelete: () => void;
 }) {
-  const [offset,    setOffset]    = useState(0);
-  const [animating, setAnimating] = useState(false);
-  const [hovered,   setHovered]   = useState(false);
-
+  const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
+  const initOffset = useRef(0);
   const liveOffset = useRef(0);
   const dragged    = useRef(false);
+  const touchUsed  = useRef(false);
+  const [showHover, setShowHover] = useState(false);
+
+  const applyTransform = (offset: number, animate: boolean) => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transition = animate
+      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      : 'none';
+    cardRef.current.style.transform = `translateX(${offset}px)`;
+  };
 
   const snapTo = (target: number) => {
-    setAnimating(true);
-    setOffset(target);
     liveOffset.current = target;
+    applyTransform(target, true);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    touchUsed.current = true;
     startX.current = e.touches[0].clientX;
+    initOffset.current = liveOffset.current;
     dragged.current = false;
-    setAnimating(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     const delta = e.touches[0].clientX - startX.current;
     if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, delta));
+    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
     liveOffset.current = clamped;
-    setOffset(clamped);
+    applyTransform(clamped, false);
   };
 
   const handleTouchEnd = () => {
-    if (liveOffset.current < -SWIPE_THRESHOLD) {
-      snapTo(-SWIPE_REVEAL);
-    } else {
-      snapTo(0);
-    }
+    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : 0);
   };
 
   const handleCardClick = () => {
     if (dragged.current) return;
-    // Si el card está abierto, cerrarlo con el tap
     if (liveOffset.current < -10) { snapTo(0); return; }
     onEdit();
   };
@@ -91,12 +94,13 @@ function SwipeableClienteCard({
 
       {/* Card deslizable */}
       <div
+        ref={cardRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onClick={handleCardClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => { if (!touchUsed.current) setShowHover(true); }}
+        onMouseLeave={() => setShowHover(false)}
         style={{
           backgroundColor: '#FFF',
           borderRadius: 14,
@@ -106,11 +110,9 @@ function SwipeableClienteCard({
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          transform: `translateX(${offset}px)`,
-          transition: animating ? 'transform 0.25s ease' : 'none',
           cursor: 'pointer',
           userSelect: 'none',
-          position: 'relative',
+          transform: 'translateX(0)',
         }}
       >
         <div style={{ flex: 1 }}>
@@ -122,8 +124,8 @@ function SwipeableClienteCard({
           </p>
         </div>
 
-        {/* Botón eliminar en hover (desktop) */}
-        {hovered && (
+        {/* Botón eliminar en hover (solo desktop) */}
+        {showHover && (
           <button
             onClick={e => { e.stopPropagation(); onDelete(); }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}
@@ -137,7 +139,6 @@ function SwipeableClienteCard({
           </button>
         )}
 
-        {/* Chevron → indica que es clickeable */}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
