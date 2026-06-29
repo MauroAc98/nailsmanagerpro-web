@@ -71,10 +71,11 @@ export default function ForgotPasswordPage() {
           justifyContent: 'center',
           margin: '0 auto 16px',
         }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-            <circle cx="12" cy="1" r="0"/>
-            <path d="M4 7a6 6 0 0 1 6-6v0a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6v0a6 6 0 0 1-6-6V7z"/>
-            <path d="M9 17v3a3 3 0 0 0 6 0v-3"/>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 17a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill={colors.primary}/>
+            <path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"/>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+            <path d="M19.5 4.5 17 7h3V4.5"/>
           </svg>
         </div>
 
@@ -107,7 +108,7 @@ export default function ForgotPasswordPage() {
       <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* Email */}
-        <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#f5f5f5', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
@@ -141,7 +142,7 @@ export default function ForgotPasswordPage() {
             disabled={loading || !email}
             style={{
               height: 52,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: loading || !email ? '#e0c4c7' : colors.primary,
               color: '#fff',
               fontSize: 16,
@@ -158,7 +159,7 @@ export default function ForgotPasswordPage() {
             onClick={() => router.push('/reset-password?email=' + encodeURIComponent(email))}
             style={{
               height: 52,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: colors.primary,
               color: '#fff',
               fontSize: 16,

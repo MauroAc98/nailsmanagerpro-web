@@ -89,8 +89,10 @@ function ResetPasswordForm() {
           justifyContent: 'center',
           margin: '0 auto 16px',
         }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 2.2"/>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+            <polyline points="7,13 10,16 16,10"/>
           </svg>
         </div>
 
@@ -129,8 +131,9 @@ function ResetPasswordForm() {
               width: '100%',
               height: 52,
               borderRadius: 12,
-              backgroundColor: '#f5f5f5',
-              border: 'none',
+              backgroundColor: '#FFF',
+              border: '1px solid #EEE',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               outline: 'none',
               fontSize: 20,
               fontWeight: 700,
@@ -147,7 +150,7 @@ function ResetPasswordForm() {
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
             Nueva contraseña
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#f5f5f5', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -202,8 +205,9 @@ function ResetPasswordForm() {
               width: '100%',
               height: 52,
               borderRadius: 12,
-              backgroundColor: '#f5f5f5',
-              border: 'none',
+              backgroundColor: '#FFF',
+              border: '1px solid #EEE',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               outline: 'none',
               fontSize: 15,
               color: colors.text,
@@ -231,7 +235,7 @@ function ResetPasswordForm() {
           disabled={loading || !valido}
           style={{
             height: 52,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: loading || !valido ? '#e0c4c7' : colors.primary,
             color: '#fff',
             fontSize: 16,

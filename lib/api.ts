@@ -17,15 +17,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor para manejar sesión expirada
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const code   = error.response?.data?.code;
+
+    if (status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      window.location.href = '/login';
+      window.dispatchEvent(new CustomEvent('session-expired'));
     }
+
+    if (status === 403 && code === 'SUBSCRIPTION_EXPIRED') {
+      window.dispatchEvent(new CustomEvent('subscription-expired'));
+    }
+
     return Promise.reject(error);
   }
 );

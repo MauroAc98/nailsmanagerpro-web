@@ -93,7 +93,7 @@ export default function CambiarPasswordPage() {
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
             Contraseña provisoria
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#f5f5f5', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -139,7 +139,7 @@ export default function CambiarPasswordPage() {
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
             Nueva contraseña
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#f5f5f5', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -194,8 +194,9 @@ export default function CambiarPasswordPage() {
               width: '100%',
               height: 52,
               borderRadius: 12,
-              backgroundColor: '#f5f5f5',
-              border: 'none',
+              backgroundColor: '#FFF',
+              border: '1px solid #EEE',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               outline: 'none',
               fontSize: 15,
               color: colors.text,
@@ -229,7 +230,7 @@ export default function CambiarPasswordPage() {
           disabled={loading || !valido}
           style={{
             height: 52,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: loading || !valido ? '#e0c4c7' : colors.primary,
             color: '#fff',
             fontSize: 16,
