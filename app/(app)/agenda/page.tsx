@@ -149,15 +149,20 @@ function SwipeableTurnoCard({
     backgroundColor: cardBg,
     display: 'flex',
     alignItems: 'center',
-    height: '100%',
     cursor: 'pointer',
     userSelect: 'none',
+    paddingRight: 16, // matches RN's outer card padding — the CANCELAR panel (a
+                      // sibling, not part of this element) still reaches the
+                      // true right edge when revealed, since only this
+                      // sliding foreground gets inset, not the region behind it.
   };
 
   const restBody = (
     <>
-      {/* Sección info central */}
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
+      {/* Sección info central — flex column propio, no depende únicamente
+          del alignItems del padre para centrarse (el padre puede crecer más
+          alto que este bloque, ej. en_curso con el badge+botón apilados). */}
+      <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <p style={{
           fontSize: 16, fontWeight: 600, color: '#333', margin: '0 0 2px',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -235,11 +240,19 @@ function SwipeableTurnoCard({
 
   const outerStyle: React.CSSProperties = {
     display: 'flex',
+    // default alignItems (stretch) on purpose: both timeSection and the
+    // sliding region need to stretch to the row's full height — the sliding
+    // region's CANCELAR panel is top:0/bottom:0 within it, so it must span
+    // the whole row, not just its own content's natural height.
     borderRadius: 14,
     border: '1px solid #EEE',
     boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
     overflow: 'hidden',
+    backgroundColor: cardBg, // el paddingLeft de abajo queda fuera de timeSection/
+                             // restStyle (los que pintan cardBg) — sin esto, ese
+                             // hueco se ve blanco en vez del color real de la card.
     minHeight: 75,
+    paddingLeft: 16, // matches RN's CardContainer/globalStyles.card outer padding
   };
 
   if (!onCancel) {
@@ -257,38 +270,46 @@ function SwipeableTurnoCard({
     <div style={outerStyle}>
       {timeSection}
 
-      {/* Región deslizable — solo info+acción, la hora nunca se mueve */}
+      {/* Región deslizable — un "viewport" (relative+overflow:hidden) con dos
+          capas que llenan su caja entera por posición absoluta (top/left/
+          right/bottom:0), igual técnica para las dos. Nada de flex-basis ni
+          anchos porcentuales acá: eso fue lo que rompía cosas distintas cada
+          vez que se tocaba algo — con fill absoluto no hay ambigüedad. */}
       <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        {/* CANCELAR panel behind */}
+        {/* CANCELAR panel behind — llena toda la región */}
         <div
           onClick={onCancel}
           style={{
-            position: 'absolute', right: 0, top: 0, bottom: 0,
-            width: SWIPE_REVEAL,
+            position: 'absolute', inset: 0,
+            display: 'flex', justifyContent: 'flex-end',
+          }}
+        >
+          <div style={{
+            width: SWIPE_REVEAL, height: '100%',
             backgroundColor: '#FFADAD',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             cursor: 'pointer',
-          }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-          </svg>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#8B0000', letterSpacing: 0.5 }}>
-            CANCELAR
-          </span>
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#8B0000', letterSpacing: 0.5 }}>
+              CANCELAR
+            </span>
+          </div>
         </div>
 
-        {/* Foreground deslizable */}
+        {/* Foreground deslizable — también llena toda la región */}
         <div
           ref={cardRef}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={handleCardClick}
-          style={{ ...restStyle, position: 'relative', transform: 'translateX(0)' }}
+          style={{ ...restStyle, position: 'absolute', inset: 0, transform: 'translateX(0)' }}
         >
           {restBody}
         </div>
@@ -306,7 +327,7 @@ function FinalizadoCard({ turno }: { turno: Turno }) {
       <div style={{
         backgroundColor: '#FDFDFD', borderRadius: 14,
         border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-        padding: '12px 10px', display: 'flex', alignItems: 'center', minHeight: 75,
+        padding: '12px 26px 12px 16px', display: 'flex', alignItems: 'center', minHeight: 75,
       }}>
         {/* Sección hora */}
         <div style={{

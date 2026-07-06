@@ -28,7 +28,7 @@ interface AuthState {
   }) => Promise<boolean>;
   logout: () => Promise<void>;
   inicializar: () => void;
-  updatePerfil: (data: Partial<User>) => Promise<void>;
+  updatePerfil: (data: Partial<User> & { password?: string; password_confirmation?: string }) => Promise<void>;
   clearError: () => void;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (data: {

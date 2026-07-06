@@ -26,26 +26,31 @@ function DrumColumnView({
   selected: string;
   onChange: (v: string) => void;
 }) {
-  const ref      = useRef<HTMLDivElement>(null);
-  const ignoring = useRef(false);
+  const ref         = useRef<HTMLDivElement>(null);
+  // Tracks the last value WE emitted via scroll, so the sync effect below
+  // can tell "the parent re-rendered because of our own scroll tick" apart
+  // from "the value changed from outside" (e.g. opening the sheet with an
+  // existing time). Forcing scrollTop on every own-scroll re-render fought
+  // the browser's native momentum mid-animation, killing the fluid feel.
+  const lastEmitted = useRef<string | null>(null);
 
-  // Sync scroll position when selected changes externally
+  // Sync scroll position only when `selected` changed from OUTSIDE this
+  // column's own scrolling — never mid-gesture.
   useEffect(() => {
     if (!ref.current) return;
+    if (selected === lastEmitted.current) return;
     const idx = col.items.indexOf(selected);
     if (idx < 0) return;
-    const target = idx * ITEM_H;
-    if (Math.round(ref.current.scrollTop) === target) return;
-    ignoring.current = true;
-    ref.current.scrollTop = target;
-    requestAnimationFrame(() => { ignoring.current = false; });
+    ref.current.scrollTop = idx * ITEM_H;
   }, [col.items, selected]);
 
   const handleScroll = useCallback(() => {
-    if (ignoring.current || !ref.current) return;
+    if (!ref.current) return;
     const idx     = Math.round(ref.current.scrollTop / ITEM_H);
     const clamped = Math.max(0, Math.min(idx, col.items.length - 1));
-    onChange(col.items[clamped]);
+    const value   = col.items[clamped];
+    lastEmitted.current = value;
+    onChange(value);
   }, [col.items, onChange]);
 
   return (
@@ -62,6 +67,7 @@ function DrumColumnView({
           paddingTop:      PAD,
           paddingBottom:   PAD,
           boxSizing:       'border-box',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {col.items.map(item => (
