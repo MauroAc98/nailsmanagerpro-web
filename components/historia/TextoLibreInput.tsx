@@ -11,14 +11,17 @@ interface Props {
   textosCanvas:      TextoLibre[];
   mostrarEmojis:     boolean;
   setMostrarEmojis:  (fn: (v: boolean) => boolean) => void;
+  editandoId:        string | null;
   onAgregarTexto:    () => void;
+  onIniciarEdicion:  (id: string) => void;
+  onCancelarEdicion: () => void;
   onEliminarTexto:   (id: string) => void;
   onCambiarFontSize: (id: string, delta: 1 | -1) => void;
 }
 
 export function TextoLibreInput({
-  textoInput, setTextoInput, textosCanvas, mostrarEmojis, setMostrarEmojis,
-  onAgregarTexto, onEliminarTexto, onCambiarFontSize,
+  textoInput, setTextoInput, textosCanvas, mostrarEmojis, setMostrarEmojis, editandoId,
+  onAgregarTexto, onIniciarEdicion, onCancelarEdicion, onEliminarTexto, onCambiarFontSize,
 }: Props) {
   return (
     <div style={{ width: '100%', marginTop: 16 }}>
@@ -33,7 +36,7 @@ export function TextoLibreInput({
             maxLength={60}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: '#fff', border: '1px solid #EEE', borderRadius: 12,
+              background: '#fff', border: `1px solid ${editandoId ? colors.primary : '#EEE'}`, borderRadius: 12,
               padding: '10px 44px 10px 14px', fontSize: 14, color: '#333',
             }}
           />
@@ -50,6 +53,20 @@ export function TextoLibreInput({
           </button>
         </div>
 
+        {editandoId && (
+          <button
+            type="button"
+            onClick={onCancelarEdicion}
+            style={{
+              background: '#F0F0F0', borderRadius: 12, border: 'none',
+              padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: '#888', fontSize: 18, lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onAgregarTexto}
@@ -60,9 +77,15 @@ export function TextoLibreInput({
             cursor: 'pointer', opacity: !textoInput.trim() ? 0.4 : 1,
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          {editandoId ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          )}
         </button>
       </div>
 
@@ -90,14 +113,27 @@ export function TextoLibreInput({
         </div>
       )}
 
-      {/* Added texts list */}
+      {/* Added texts list — tap the text to edit it in place */}
       {textosCanvas.map(t => (
-        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+        <div
+          key={t.id}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginTop: 8,
+            padding: '4px 6px', borderRadius: 8,
+            background: editandoId === t.id ? 'rgba(215,158,164,0.12)' : 'transparent',
+          }}
+        >
           <span style={{ color: '#CCC', fontSize: 14 }}>⠿</span>
-          <span style={{
-            flex: 1, fontSize: 13, color: '#666', fontStyle: 'italic',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={() => onIniciarEdicion(t.id)}
+            style={{
+              flex: 1, fontSize: 13, color: '#666', fontStyle: 'italic',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              cursor: 'pointer',
+            }}
+          >
             {t.texto}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

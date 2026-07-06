@@ -76,6 +76,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const [textosCanvas,   setTextosCanvas]   = useState<TextoLibre[]>([]);
   const [textoInput,     setTextoInput]     = useState('');
   const [mostrarEmojis,  setMostrarEmojis]  = useState(false);
+  const [editandoId,     setEditandoId]     = useState<string | null>(null);
 
   const canvasRef      = useRef<HTMLDivElement>(null);
   const fondoUrlRef     = useRef<string | null>(null); // tracks last created object URL for cleanup
@@ -236,20 +237,43 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, [diasQuincena]);
 
   // ─────────────────────────────────────────────
-  // Free-text CRUD
+  // Free-text CRUD — agregarTexto doubles as "guardar" when editandoId
+  // is set, so the same input/button drives add and edit.
   // ─────────────────────────────────────────────
   const agregarTexto = useCallback(() => {
     if (!textoInput.trim()) return;
-    setTextosCanvas(prev => [...prev, {
-      id:       Date.now().toString(),
-      texto:    textoInput.trim(),
-      x:        canvasWidth / 2 - 80,
-      y:        canvasHeight * 0.75,
-      fontSize: 12,
-    }]);
+
+    if (editandoId) {
+      setTextosCanvas(prev =>
+        prev.map(t => t.id === editandoId ? { ...t, texto: textoInput.trim() } : t)
+      );
+      setEditandoId(null);
+    } else {
+      setTextosCanvas(prev => [...prev, {
+        id:       Date.now().toString(),
+        texto:    textoInput.trim(),
+        x:        canvasWidth / 2 - 80,
+        y:        canvasHeight * 0.75,
+        fontSize: 12,
+      }]);
+    }
+
     setTextoInput('');
     setMostrarEmojis(false);
-  }, [textoInput, canvasWidth, canvasHeight]);
+  }, [textoInput, canvasWidth, canvasHeight, editandoId]);
+
+  const iniciarEdicion = useCallback((id: string) => {
+    const item = textosCanvas.find(t => t.id === id);
+    if (!item) return;
+    setEditandoId(id);
+    setTextoInput(item.texto);
+    setMostrarEmojis(false);
+  }, [textosCanvas]);
+
+  const cancelarEdicion = useCallback(() => {
+    setEditandoId(null);
+    setTextoInput('');
+  }, []);
 
   const actualizarPosicion = useCallback((id: string, x: number, y: number) => {
     setTextosCanvas(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
@@ -257,11 +281,24 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
   const eliminarTexto = useCallback((id: string) => {
     setTextosCanvas(prev => prev.filter(t => t.id !== id));
-  }, []);
+    if (editandoId === id) {
+      setEditandoId(null);
+      setTextoInput('');
+    }
+  }, [editandoId]);
 
   const cambiarFontSize = useCallback((id: string, delta: 1 | -1) => {
     setTextosCanvas(prev =>
       prev.map(t => t.id === id ? { ...t, fontSize: Math.min(28, Math.max(8, t.fontSize + delta)) } : t)
+    );
+  }, []);
+
+  // Absolute set — used by the drag-to-resize handle on the canvas pill,
+  // where the gesture computes a target size directly instead of a step delta.
+  const redimensionarTexto = useCallback((id: string, fontSize: number) => {
+    const clamped = Math.round(Math.min(28, Math.max(8, fontSize)));
+    setTextosCanvas(prev =>
+      prev.map(t => t.id === id ? { ...t, fontSize: clamped } : t)
     );
   }, []);
 
@@ -334,14 +371,15 @@ export function useGenerarHistoria(fechaInicial?: string) {
     fechaBase, modo, fondoUri, quincena, diasOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
-    canvasRef, canvasWidth, canvasHeight,
+    editandoId, canvasRef, canvasWidth, canvasHeight,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
 
     // editor
     toggleDiaOculto, toggleSlot,
-    agregarTexto, actualizarPosicion, eliminarTexto, cambiarFontSize,
+    agregarTexto, iniciarEdicion, cancelarEdicion,
+    actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
 
     // photo / export
     elegirFoto, descargarImagen, compartirImagen,

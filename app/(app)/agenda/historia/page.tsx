@@ -39,11 +39,12 @@ function HistoriaContent() {
   const {
     modo, quincena, diasOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
-    textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
+    textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight,
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
     toggleDiaOculto, toggleSlot,
-    agregarTexto, actualizarPosicion, eliminarTexto, cambiarFontSize,
+    agregarTexto, iniciarEdicion, cancelarEdicion,
+    actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
     elegirFoto, descargarImagen, compartirImagen, fondoUri,
   } = useGenerarHistoria(fechaInicial);
 
@@ -139,6 +140,8 @@ function HistoriaContent() {
               canvasHeight={canvasHeight}
               textosLibres={textosCanvas}
               onMoverTexto={actualizarPosicion}
+              onResizeTexto={redimensionarTexto}
+              onEditarTexto={iniciarEdicion}
             />
 
             <TextoLibreInput
@@ -147,7 +150,10 @@ function HistoriaContent() {
               textosCanvas={textosCanvas}
               mostrarEmojis={mostrarEmojis}
               setMostrarEmojis={setMostrarEmojis}
+              editandoId={editandoId}
               onAgregarTexto={agregarTexto}
+              onIniciarEdicion={iniciarEdicion}
+              onCancelarEdicion={cancelarEdicion}
               onEliminarTexto={eliminarTexto}
               onCambiarFontSize={cambiarFontSize}
             />
@@ -211,9 +217,18 @@ function HistoriaContent() {
           <div style={{
             width: canvasWidth, height: canvasHeight / 3,
             background: '#F9F9F9', borderRadius: 16, border: '1px solid #EEE',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 15,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 12, marginBottom: 15,
           }}>
-            <p style={{ color: '#AAA', fontSize: 14, textAlign: 'center', padding: '0 30px' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="9.5" y1="13.5" x2="14.5" y2="18.5" />
+              <line x1="14.5" y1="13.5" x2="9.5" y2="18.5" />
+            </svg>
+            <p style={{ color: '#AAA', fontSize: 14, textAlign: 'center', padding: '0 30px', margin: 0 }}>
               No hay disponibilidad para mostrar en este período
             </p>
           </div>

@@ -53,13 +53,15 @@ function FitText({
 }
 
 interface Props {
-  titulo:        string;
-  dias:          DisponibilidadDia[]; // diasAMostrar
-  fondoUri:      string | null;
-  canvasWidth:   number;
-  canvasHeight:  number;
-  textosLibres:  TextoLibre[];
-  onMoverTexto:  (id: string, x: number, y: number) => void;
+  titulo:         string;
+  dias:           DisponibilidadDia[]; // diasAMostrar
+  fondoUri:       string | null;
+  canvasWidth:    number;
+  canvasHeight:   number;
+  textosLibres:   TextoLibre[];
+  onMoverTexto:   (id: string, x: number, y: number) => void;
+  onResizeTexto:  (id: string, fontSize: number) => void;
+  onEditarTexto:  (id: string) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -67,7 +69,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto },
+  { titulo, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const esModoDia = dias.length === 1;
@@ -189,7 +191,13 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 
       {/* Free-floating draggable texts */}
       {textosLibres.map(item => (
-        <TextoDraggable key={item.id} item={item} onMover={onMoverTexto} />
+        <TextoDraggable
+          key={item.id}
+          item={item}
+          onMover={onMoverTexto}
+          onResize={onResizeTexto}
+          onEditar={onEditarTexto}
+        />
       ))}
     </div>
   );
