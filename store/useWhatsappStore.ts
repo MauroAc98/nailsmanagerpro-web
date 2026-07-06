@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { whatsappService, WhatsappEstado } from '@/services/whatsappService';
+import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
 interface WhatsappState {
   estado: WhatsappEstado;
@@ -27,15 +28,17 @@ export const useWhatsappStore = create<WhatsappState>((set, get) => ({
 
   conectar: async () => {
     set({ loading: true });
-    try {
-      const { qr_base64, estado } = await whatsappService.conectar();
-      set({ qrBase64: qr_base64, estado, loading: false });
-      get().iniciarPolling();
-      return true;
-    } catch {
-      set({ loading: false });
-      return false;
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const { qr_base64, estado } = await whatsappService.conectar();
+        set({ qrBase64: qr_base64, estado, loading: false });
+        get().iniciarPolling();
+        return true;
+      } catch {
+        set({ loading: false });
+        return false;
+      }
+    });
   },
 
   consultarEstado: async () => {
@@ -50,13 +53,15 @@ export const useWhatsappStore = create<WhatsappState>((set, get) => ({
 
   desconectar: async () => {
     set({ loading: true });
-    try {
-      await whatsappService.desconectar();
-      set({ estado: 'desconectado', qrBase64: null, loading: false });
-      get().detenerPolling();
-    } catch {
-      set({ loading: false });
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await whatsappService.desconectar();
+        set({ estado: 'desconectado', qrBase64: null, loading: false });
+        get().detenerPolling();
+      } catch {
+        set({ loading: false });
+      }
+    });
   },
 
   iniciarPolling: () => {

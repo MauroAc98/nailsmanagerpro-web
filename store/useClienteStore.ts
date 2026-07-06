@@ -6,6 +6,7 @@ import {
   UpdateClienteDto,
   extraerMensajeError,
 } from '@/services/clienteService';
+import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -46,55 +47,63 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   // ─────────────────────────────────────────────
   fetchClientes: async () => {
     set({ loading: true, error: null });
-    try {
-      const clientes = await clienteService.getAll();
-      set({ clientes });
-    } catch (e) {
-      set({ error: extraerMensajeError(e) });
-    } finally {
-      set({ loading: false });
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const clientes = await clienteService.getAll();
+        set({ clientes });
+      } catch (e) {
+        set({ error: extraerMensajeError(e) });
+      } finally {
+        set({ loading: false });
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
   // crearCliente
   // ─────────────────────────────────────────────
   crearCliente: async (dto) => {
-    try {
-      const nuevo = await clienteService.create(dto);
-      set(state => ({ clientes: [...state.clientes, nuevo] }));
-      return { success: true };
-    } catch (e) {
-      return { success: false, message: extraerMensajeError(e) };
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const nuevo = await clienteService.create(dto);
+        set(state => ({ clientes: [...state.clientes, nuevo] }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
   // actualizarCliente
   // ─────────────────────────────────────────────
   actualizarCliente: async (id, dto) => {
-    try {
-      const actualizado = await clienteService.update(id, dto);
-      set(state => ({
-        clientes: state.clientes.map(c => c.id === id ? actualizado : c),
-      }));
-      return { success: true };
-    } catch (e) {
-      return { success: false, message: extraerMensajeError(e) };
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await clienteService.update(id, dto);
+        set(state => ({
+          clientes: state.clientes.map(c => c.id === id ? actualizado : c),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
   // eliminarCliente
   // ─────────────────────────────────────────────
   eliminarCliente: async (id) => {
-    try {
-      await clienteService.destroy(id);
-      set(state => ({ clientes: state.clientes.filter(c => c.id !== id) }));
-      return { success: true };
-    } catch (e) {
-      return { success: false, message: extraerMensajeError(e) };
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await clienteService.destroy(id);
+        set(state => ({ clientes: state.clientes.filter(c => c.id !== id) }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
   },
 }));
 

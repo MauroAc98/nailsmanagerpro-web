@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authService, SupportInfo, User } from '@/services/authService';
 import api from '@/lib/api';
+import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -97,25 +98,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   login: async (email, password) => {
     set({ loading: true, error: null });
-    try {
-      const result = await authService.login(email, password);
+    return withGlobalLoader(async () => {
+      try {
+        const result = await authService.login(email, password);
 
-      if ('debe_cambiar_password' in result) {
-        set({ loading: false, debeCambiarPassword: true, emailPendiente: result.email });
+        if ('debe_cambiar_password' in result) {
+          set({ loading: false, debeCambiarPassword: true, emailPendiente: result.email });
+          return true;
+        }
+
+        set({ user: result.user, token: result.token, loading: false });
+        await get().checkSubscription();
         return true;
+      } catch (e: any) {
+        const message =
+          e.response?.data?.message ??
+          e.response?.data?.errors?.email?.[0] ??
+          'Error al iniciar sesión. Intentá de nuevo.';
+        set({ loading: false, error: message });
+        return false;
       }
-
-      set({ user: result.user, token: result.token, loading: false });
-      await get().checkSubscription();
-      return true;
-    } catch (e: any) {
-      const message =
-        e.response?.data?.message ??
-        e.response?.data?.errors?.email?.[0] ??
-        'Error al iniciar sesión. Intentá de nuevo.';
-      set({ loading: false, error: message });
-      return false;
-    }
+    });
   },
 
   // ─────────────────────────────────────────────
@@ -129,25 +132,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     set({ loading: true, error: null });
-    try {
-      const { user, token } = await authService.cambiarPasswordObligatorio({ email, ...data });
-      set({
-        user,
-        token,
-        loading: false,
-        debeCambiarPassword: false,
-        emailPendiente: null,
-      });
-      await get().checkSubscription();
-      return true;
-    } catch (e: any) {
-      const message =
-        e.response?.data?.message ??
-        e.response?.data?.errors?.password_actual?.[0] ??
-        'No pudimos actualizar la contraseña.';
-      set({ loading: false, error: message });
-      return false;
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const { user, token } = await authService.cambiarPasswordObligatorio({ email, ...data });
+        set({
+          user,
+          token,
+          loading: false,
+          debeCambiarPassword: false,
+          emailPendiente: null,
+        });
+        await get().checkSubscription();
+        return true;
+      } catch (e: any) {
+        const message =
+          e.response?.data?.message ??
+          e.response?.data?.errors?.password_actual?.[0] ??
+          'No pudimos actualizar la contraseña.';
+        set({ loading: false, error: message });
+        return false;
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
@@ -155,21 +160,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   logout: async () => {
     set({ loading: true });
-    try {
-      await authService.logout();
-    } finally {
-      set({
-        user: null,
-        token: null,
-        loading: false,
-        error: null,
-        debeCambiarPassword: false,
-        emailPendiente: null,
-        subscriptionExpired: false,
-        supportInfo: null,
-        daysLeft: null,
-      });
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await authService.logout();
+      } finally {
+        set({
+          user: null,
+          token: null,
+          loading: false,
+          error: null,
+          debeCambiarPassword: false,
+          emailPendiente: null,
+          subscriptionExpired: false,
+          supportInfo: null,
+          daysLeft: null,
+        });
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
@@ -177,14 +184,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   updatePerfil: async (data) => {
     set({ loading: true, error: null });
-    try {
-      const user = await authService.updatePerfil(data);
-      set({ user, loading: false });
-    } catch (e: any) {
-      const message = e.response?.data?.message ?? 'Error al actualizar el perfil.';
-      set({ loading: false, error: message });
-      throw e;
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const user = await authService.updatePerfil(data);
+        set({ user, loading: false });
+      } catch (e: any) {
+        const message = e.response?.data?.message ?? 'Error al actualizar el perfil.';
+        set({ loading: false, error: message });
+        throw e;
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
@@ -192,18 +201,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   forgotPassword: async (email) => {
     set({ loading: true, error: null });
-    try {
-      await authService.forgotPassword(email);
-      set({ loading: false });
-      return true;
-    } catch (e: any) {
-      const message =
-        e.response?.data?.message ??
-        e.response?.data?.errors?.email?.[0] ??
-        'No pudimos enviar el código. Verificá el email.';
-      set({ loading: false, error: message });
-      return false;
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await authService.forgotPassword(email);
+        set({ loading: false });
+        return true;
+      } catch (e: any) {
+        const message =
+          e.response?.data?.message ??
+          e.response?.data?.errors?.email?.[0] ??
+          'No pudimos enviar el código. Verificá el email.';
+        set({ loading: false, error: message });
+        return false;
+      }
+    });
   },
 
   // ─────────────────────────────────────────────
@@ -211,17 +222,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   resetPassword: async (data) => {
     set({ loading: true, error: null });
-    try {
-      await authService.resetPassword(data);
-      set({ loading: false });
-      return true;
-    } catch (e: any) {
-      const message =
-        e.response?.data?.message ??
-        e.response?.data?.errors?.code?.[0] ??
-        'No pudimos actualizar la contraseña.';
-      set({ loading: false, error: message });
-      return false;
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await authService.resetPassword(data);
+        set({ loading: false });
+        return true;
+      } catch (e: any) {
+        const message =
+          e.response?.data?.message ??
+          e.response?.data?.errors?.code?.[0] ??
+          'No pudimos actualizar la contraseña.';
+        set({ loading: false, error: message });
+        return false;
+      }
+    });
   },
 }));

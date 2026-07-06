@@ -6,6 +6,7 @@ import {
   UpdateServicioDto,
 } from '@/services/servicioService';
 import { extraerMensajeError } from '@/services/clienteService';
+import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
 interface OperacionResult {
   success: boolean;
@@ -34,60 +35,70 @@ export const useServiciosStore = create<ServiciosState>((set) => ({
 
   fetchServicios: async () => {
     set({ loading: true });
-    try {
-      const servicios = await servicioService.getAll();
-      set({ servicios });
-    } catch (e) {
-      console.error('fetchServicios:', e);
-    } finally {
-      set({ loading: false });
-    }
+    return withGlobalLoader(async () => {
+      try {
+        const servicios = await servicioService.getAll();
+        set({ servicios });
+      } catch (e) {
+        console.error('fetchServicios:', e);
+      } finally {
+        set({ loading: false });
+      }
+    });
   },
 
   agregarServicio: async (dto) => {
-    try {
-      await servicioService.create(dto);
-      const servicios = await servicioService.getAll();
-      set({ servicios });
-      return { success: true };
-    } catch (e) {
-      return { success: false, message: extraerMensajeError(e) };
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await servicioService.create(dto);
+        const servicios = await servicioService.getAll();
+        set({ servicios });
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
   },
 
   actualizarServicio: async (id, dto) => {
-    try {
-      await servicioService.update(id, dto);
-      const servicios = await servicioService.getAll();
-      set({ servicios });
-      return { success: true };
-    } catch (e) {
-      return { success: false, message: extraerMensajeError(e) };
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await servicioService.update(id, dto);
+        const servicios = await servicioService.getAll();
+        set({ servicios });
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
   },
 
   eliminarServicio: async (id) => {
-    try {
-      await servicioService.delete(id);
-      const servicios = await servicioService.getAll();
-      set({ servicios });
-      return { success: true };
-    } catch (e) {
-      return { success: false, message: extraerMensajeError(e) };
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await servicioService.delete(id);
+        const servicios = await servicioService.getAll();
+        set({ servicios });
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
   },
 
   toggleServicio: async (id, activo) => {
     set(state => ({
       servicios: state.servicios.map(s => s.id === id ? { ...s, activo } : s),
     }));
-    try {
-      await servicioService.update(id, { activo });
-    } catch {
-      set(state => ({
-        servicios: state.servicios.map(s => s.id === id ? { ...s, activo: !activo } : s),
-      }));
-    }
+    return withGlobalLoader(async () => {
+      try {
+        await servicioService.update(id, { activo });
+      } catch {
+        set(state => ({
+          servicios: state.servicios.map(s => s.id === id ? { ...s, activo: !activo } : s),
+        }));
+      }
+    });
   },
 }));
 

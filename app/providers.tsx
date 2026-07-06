@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useLoadingStore } from '@/store/useLoadingStore';
+import { Loader } from '@/components/Loader';
 
 const CLEARED_AUTH_STATE = {
   user: null,
@@ -21,6 +23,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { token, inicializado, debeCambiarPassword, subscriptionExpired } = useAuthStore();
+  const isLoading = useLoadingStore(state => state.isLoading);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -66,5 +69,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, router]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <Loader visible={isLoading} />
+    </>
+  );
 }
