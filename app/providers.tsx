@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { Loader } from '@/components/Loader';
+import { WelcomeScreen } from '@/components/WelcomeScreen';
 
 const CLEARED_AUTH_STATE = {
   user: null,
@@ -17,12 +18,14 @@ const CLEARED_AUTH_STATE = {
   supportInfo: null,
   daysLeft: null,
   inicializado: true,
+  mostrarBienvenida: false,
+  esPrimerLogin: false,
 };
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token, inicializado, debeCambiarPassword, subscriptionExpired } = useAuthStore();
+  const { token, inicializado, debeCambiarPassword, subscriptionExpired, mostrarBienvenida } = useAuthStore();
   const isLoading = useLoadingStore(state => state.isLoading);
   const [mounted, setMounted] = useState(false);
 
@@ -69,10 +72,33 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, router]);
 
+  // Calculado en el render, no en el efecto: si dejáramos que {children} se
+  // muestre siempre, la página protegida (ej. agenda) alcanza a pintarse un
+  // instante antes de que el efecto de arriba corra y redirija — el flash
+  // que se veía. Acá decidimos, con lo que YA sabemos, si esta ruta es
+  // válida para el estado de auth actual; si no, mostramos blanco mientras
+  // el efecto hace la redirección real.
+  const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
+  const esRutaPublica = PUBLIC_PATHS.includes(pathname);
+
+  let puedeMostrarContenido: boolean;
+  if (!mounted || !inicializado) {
+    puedeMostrarContenido = false;
+  } else if (!token) {
+    puedeMostrarContenido = debeCambiarPassword
+      ? pathname === '/cambiar-password'
+      : esRutaPublica;
+  } else if (subscriptionExpired) {
+    puedeMostrarContenido = pathname === '/subscription-expired';
+  } else {
+    puedeMostrarContenido = !esRutaPublica;
+  }
+
   return (
     <>
-      {children}
+      {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: '#fff' }} />}
       <Loader visible={isLoading} />
+      {mostrarBienvenida && <WelcomeScreen />}
     </>
   );
 }

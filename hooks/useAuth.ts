@@ -12,10 +12,10 @@ export const useAuth = () => {
     subscriptionExpired,
     supportInfo,
     daysLeft,
-    // mostrarBienvenida,
-    // esPrimerLogin,
+    mostrarBienvenida,
+    esPrimerLogin,
     setSubscriptionExpired,
-    // setMostrarBienvenida,
+    setMostrarBienvenida,
     checkSubscription,
     login,
     cambiarPasswordObligatorio,
@@ -40,8 +40,8 @@ export const useAuth = () => {
     subscriptionExpired,
     supportInfo,
     daysLeft,
-    // mostrarBienvenida,
-    // esPrimerLogin,
+    mostrarBienvenida,
+    esPrimerLogin,
 
     // Acciones
     login,
@@ -53,7 +53,7 @@ export const useAuth = () => {
     forgotPassword,
     resetPassword,
     setSubscriptionExpired,
-    // setMostrarBienvenida,
+    setMostrarBienvenida,
     checkSubscription,
 
     // Datos derivados

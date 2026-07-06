@@ -17,8 +17,11 @@ interface AuthState {
   subscriptionExpired: boolean;
   supportInfo: SupportInfo | null;
   daysLeft: number | null;
+  mostrarBienvenida: boolean;
+  esPrimerLogin: boolean;
 
   setSubscriptionExpired: (value: boolean) => void;
+  setMostrarBienvenida: (value: boolean) => void;
   checkSubscription: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   cambiarPasswordObligatorio: (data: {
@@ -53,8 +56,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   subscriptionExpired: false,
   supportInfo: null,
   daysLeft: null,
+  mostrarBienvenida: false,
+  esPrimerLogin: false,
 
   setSubscriptionExpired: (value) => set({ subscriptionExpired: value }),
+  setMostrarBienvenida: (value) => set({ mostrarBienvenida: value }),
   clearError: () => set({ error: null }),
 
   // ─────────────────────────────────────────────
@@ -84,9 +90,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = localStorage.getItem('auth_token');
       const raw   = localStorage.getItem('auth_user');
       const user  = raw ? JSON.parse(raw) : null;
-      set({ token, user, inicializado: true });
       if (token) {
+        // Sesión ya existente al abrir la app — bienvenida con mensaje de "regreso"
+        set({ token, user, inicializado: true, mostrarBienvenida: true, esPrimerLogin: false });
         get().checkSubscription();
+      } else {
+        set({ token, user, inicializado: true });
       }
     } catch {
       set({ inicializado: true });
@@ -107,7 +116,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return true;
         }
 
-        set({ user: result.user, token: result.token, loading: false });
+        set({
+          user: result.user, token: result.token, loading: false,
+          mostrarBienvenida: true, esPrimerLogin: true,
+        });
         await get().checkSubscription();
         return true;
       } catch (e: any) {
@@ -141,6 +153,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           loading: false,
           debeCambiarPassword: false,
           emailPendiente: null,
+          mostrarBienvenida: true,
+          esPrimerLogin: true,
         });
         await get().checkSubscription();
         return true;
@@ -174,6 +188,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           subscriptionExpired: false,
           supportInfo: null,
           daysLeft: null,
+          mostrarBienvenida: false,
+          esPrimerLogin: false,
         });
       }
     });
