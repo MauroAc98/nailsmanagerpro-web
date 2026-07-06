@@ -8,6 +8,8 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { Turno, TurnoMes } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
+import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
+import { whatsappHelper } from '@/lib/whatsappHelper';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -67,11 +69,13 @@ function SwipeableTurnoCard({
   onCancel,
   onFinalizar,
   onPress,
+  plantillaWhatsapp,
 }: {
-  turno:        Turno;
-  onCancel?:    () => void;
-  onFinalizar?: () => void;
-  onPress?:     () => void;
+  turno:              Turno;
+  onCancel?:          () => void;
+  onFinalizar?:       () => void;
+  onPress?:           () => void;
+  plantillaWhatsapp:  string;
 }) {
   const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
@@ -197,7 +201,15 @@ function SwipeableTurnoCard({
           <>
             {turno.cliente?.telefono && (
               <a
-                href={`https://wa.me/${turno.cliente.telefono.replace(/\D/g, '')}`}
+                href={whatsappHelper.buildUrl({
+                  clienteNombre:   turno.cliente.nombre,
+                  clienteApellido: turno.cliente.apellido,
+                  clienteTelefono: turno.cliente.telefono,
+                  servicio:        turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + '),
+                  fecha:           fechaDeHora(turno.fecha_hora),
+                  hora:            horaDeHora(turno.fecha_hora),
+                  plantilla:       plantillaWhatsapp,
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
@@ -776,6 +788,7 @@ export default function AgendaPage() {
   } = useTurnoStore();
 
   const { servicios, fetchServicios } = useServiciosStore();
+  const { obtenerContenido } = useWhatsappTemplates();
 
   const [textoBusqueda,   setTextoBusqueda]   = useState('');
   const [servicioFiltro,  setServicioFiltro]  = useState<number | null>(null);
@@ -960,6 +973,7 @@ export default function AgendaPage() {
                   onCancel={cursando ? undefined : () => handleCancelar(turno.id)}
                   onFinalizar={cursando ? () => handleFinalizar(turno.id) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
+                  plantillaWhatsapp={obtenerContenido('recordatorio')}
                 />
               );
             })}

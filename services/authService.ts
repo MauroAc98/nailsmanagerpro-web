@@ -39,6 +39,20 @@ export interface SupportInfo {
 }
 
 // ─────────────────────────────────────────────
+// Plantillas de WhatsApp
+// ─────────────────────────────────────────────
+export type TipoPlantilla = 'recordatorio' | 'confirmacion';
+
+export interface WhatsappTemplate {
+  id: number;
+  user_id: number;
+  tipo: TipoPlantilla;
+  contenido: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─────────────────────────────────────────────
 // Keys de localStorage
 // ─────────────────────────────────────────────
 const KEYS = {
@@ -109,6 +123,21 @@ export const authService = {
   getSupportInfo: async (): Promise<SupportInfo> => {
     const response = await api.get<SupportInfo>('/support-info');
     return response.data;
+  },
+
+  whatsappTemplates: {
+    obtener: async (): Promise<WhatsappTemplate[]> => {
+      const response = await api.get<WhatsappTemplate[]>('/whatsapp-templates');
+      return response.data;
+    },
+    actualizar: async (tipo: TipoPlantilla, contenido: string): Promise<WhatsappTemplate> => {
+      const response = await api.put<WhatsappTemplate>(`/whatsapp-templates/${tipo}`, { contenido });
+      return response.data;
+    },
+    resetear: async (tipo: TipoPlantilla): Promise<WhatsappTemplate> => {
+      const response = await api.post<WhatsappTemplate>(`/whatsapp-templates/${tipo}/resetear`);
+      return response.data;
+    },
   },
 
   // ─────────────────────────────────────────────
