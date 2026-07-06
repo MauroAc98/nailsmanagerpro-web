@@ -13,6 +13,11 @@ interface Props {
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 28;
 
+// Invisible touch margin around the visible pill. Two thumbs pinching close
+// together easily miss a hitbox that matches the visual bounds exactly —
+// this extends the actual pointer target without changing how the pill looks.
+const HIT_PADDING = 28;
+
 // ─────────────────────────────────────────────
 // TextoDraggable — free-text pill, plain pointer-event drag + pinch-to-resize.
 // Commit-on-release: live offset/size is local state during the gesture,
@@ -111,24 +116,30 @@ export function TextoDraggable({ item, onMover, onResize, onEditar }: Props) {
       onPointerUp={handlePointerUp}
       style={{
         position:      'absolute',
-        left:           pos.x,
-        top:            pos.y,
-        background:    'rgba(0,0,0,0.35)',
-        padding:       '6px 12px',
-        borderRadius:   8,
-        maxWidth:       220,
-        color:          '#fff',
-        fontWeight:     500,
-        textAlign:      'center',
-        letterSpacing:  0.3,
-        fontSize,
+        left:           pos.x - HIT_PADDING,
+        top:            pos.y - HIT_PADDING,
+        padding:        HIT_PADDING,
         cursor:         dragging ? 'grabbing' : 'grab',
         touchAction:    'none',
         userSelect:     'none',
-        whiteSpace:     'pre-wrap',
       }}
     >
-      {item.texto}
+      <div
+        style={{
+          background:    'rgba(0,0,0,0.35)',
+          padding:       '6px 12px',
+          borderRadius:   8,
+          maxWidth:       220,
+          color:          '#fff',
+          fontWeight:     500,
+          textAlign:      'center',
+          letterSpacing:  0.3,
+          fontSize,
+          whiteSpace:     'pre-wrap',
+        }}
+      >
+        {item.texto}
+      </div>
     </div>
   );
 }
