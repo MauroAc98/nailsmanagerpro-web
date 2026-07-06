@@ -81,49 +81,24 @@ function SlotCard({
     snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : 0);
   };
 
-  return (
-    <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden' }}>
-      {/* Delete panel */}
-      <div
-        onClick={onDelete}
-        style={{
-          position: 'absolute', right: 0, top: 0, bottom: 0,
-          width: SWIPE_REVEAL, backgroundColor: '#FFADAD',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-          cursor: 'pointer',
-        }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-        </svg>
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#8B0000' }}>ELIMINAR</span>
-      </div>
+  const cardBg = slot.activo ? '#FFF' : '#FAFAFA';
 
-      {/* Card */}
-      <div
-        ref={cardRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          backgroundColor: slot.activo ? '#FFF' : '#FAFAFA',
-          border: '1px solid #EEE',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 14,
-          padding: '14px 16px',
-          opacity: slot.activo ? 1 : 0.65,
-          userSelect: 'none',
-          transform: 'translateX(0)',
-        }}
-      >
+  return (
+    <div style={{
+      display: 'flex', borderRadius: 14, border: '1px solid #EEE',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden',
+      opacity: slot.activo ? 1 : 0.65,
+    }}>
+      {/* Ícono — ancho fijo, nunca se desliza (si se moviera junto con el
+          resto, el overflow:hidden de la región deslizable lo clipearía). */}
+      <div style={{
+        width: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, backgroundColor: cardBg,
+      }}>
         <div style={{
           width: 36, height: 36,
           backgroundColor: slot.activo ? '#FFF5F7' : '#F5F5F5',
           borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
         }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke={slot.activo ? colors.primary : '#BBB'} strokeWidth="2">
@@ -131,17 +106,53 @@ function SlotCard({
             <polyline points="12 6 12 12 16 14"/>
           </svg>
         </div>
+      </div>
 
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: slot.activo ? '#333' : '#AAA' }}>
-            {slot.hora} hs
-          </p>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
-            {slot.activo ? 'Disponible' : 'Desactivado'}
-          </p>
+      {/* Región deslizable — info + toggle, revela ELIMINAR detrás */}
+      <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+        <div
+          onClick={onDelete}
+          style={{
+            position: 'absolute', right: 0, top: 0, bottom: 0,
+            width: SWIPE_REVEAL, backgroundColor: '#FFADAD',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#8B0000' }}>ELIMINAR</span>
         </div>
 
-        <PillToggle value={slot.activo} onChange={onToggle} />
+        <div
+          ref={cardRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            position: 'relative',
+            display: 'flex', alignItems: 'center', gap: 12,
+            backgroundColor: cardBg,
+            padding: '14px 16px 14px 0',
+            userSelect: 'none',
+            transform: 'translateX(0)',
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: slot.activo ? '#333' : '#AAA' }}>
+              {slot.hora} hs
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
+              {slot.activo ? 'Disponible' : 'Desactivado'}
+            </p>
+          </div>
+
+          <PillToggle value={slot.activo} onChange={onToggle} />
+        </div>
       </div>
     </div>
   );

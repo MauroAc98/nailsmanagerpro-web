@@ -1,8 +1,8 @@
 'use client';
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { DisponibilidadDia } from '@/services/turnoService';
-import { TextoLibre, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/hooks/useGenerarHistoria';
+import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { colors } from '@/theme/colors';
 
@@ -13,10 +13,51 @@ function nombreDia(fecha: string): string {
   return `${DAYS[d.getDay()].toUpperCase()} ${d.getDate()}`;
 }
 
+// ─────────────────────────────────────────────
+// FitText — shrinks font-size until the text fits on one line, instead of
+// truncating with an ellipsis. Mirrors RN's `adjustsFontSizeToFit` (used on
+// the "horas" row) — with ellipsis, busy days with many free slots were
+// silently hiding real hours instead of just rendering them smaller.
+// ─────────────────────────────────────────────
+function FitText({
+  text, maxFontSize, minFontSize = 6, style,
+}: {
+  text: string;
+  maxFontSize: number;
+  minFontSize?: number;
+  style?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [fontSize, setFontSize] = useState(maxFontSize);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let size = maxFontSize;
+    el.style.fontSize = `${size}px`;
+    while (el.scrollWidth > el.clientWidth && size > minFontSize) {
+      size -= 0.5;
+      el.style.fontSize = `${size}px`;
+    }
+    setFontSize(size);
+  }, [text, maxFontSize, minFontSize]);
+
+  return (
+    <span
+      ref={ref}
+      style={{ ...style, fontSize, whiteSpace: 'nowrap', overflow: 'hidden', display: 'block', width: '100%' }}
+    >
+      {text}
+    </span>
+  );
+}
+
 interface Props {
   titulo:        string;
   dias:          DisponibilidadDia[]; // diasAMostrar
   fondoUri:      string | null;
+  canvasWidth:   number;
+  canvasHeight:  number;
   textosLibres:  TextoLibre[];
   onMoverTexto:  (id: string, x: number, y: number) => void;
 }
@@ -26,20 +67,20 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, dias, fondoUri, textosLibres, onMoverTexto },
+  { titulo, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto },
   ref
 ) {
   const esModoDia = dias.length === 1;
 
-  const alturaUtil = CANVAS_HEIGHT * 0.75;
+  const alturaUtil = canvasHeight * 0.75;
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
 
   return (
     <div
       ref={ref}
       style={{
-        width:        CANVAS_WIDTH,
-        height:       CANVAS_HEIGHT,
+        width:        canvasWidth,
+        height:       canvasHeight,
         margin:       '0 auto',
         position:     'relative',
         overflow:     'hidden',
@@ -124,12 +165,13 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                       COMPLETO 🤍
                     </span>
                   ) : (
-                    <span style={{
-                      flex: 1, color: '#fff', fontSize: 10, fontWeight: 400, letterSpacing: 0.3,
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
-                      {horasTexto}
-                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <FitText
+                        text={horasTexto}
+                        maxFontSize={10}
+                        style={{ color: '#fff', fontWeight: 400, letterSpacing: 0.3 }}
+                      />
+                    </div>
                   )}
                 </div>
               );

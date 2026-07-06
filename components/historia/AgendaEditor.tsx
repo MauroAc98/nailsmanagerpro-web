@@ -20,9 +20,12 @@ interface Props {
 
 export function AgendaEditor({ agenda, diasOcultos, onToggleSlot, onOcultarDia }: Props) {
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{
+      width: '100%', backgroundColor: '#fff', padding: 15, borderRadius: 15,
+      boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+    }}>
       <p style={{ fontSize: 12, fontWeight: 700, color: '#888', marginBottom: 8 }}>
-        Toca turnos para ocultar (Deslizá →):
+        Tocá un turno para ocultarlo, o el ojo para ocultar el día (Deslizá →):
       </p>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
         {agenda.map((dia, fechaIdx) => {
@@ -31,7 +34,7 @@ export function AgendaEditor({ agenda, diasOcultos, onToggleSlot, onOcultarDia }
             <div
               key={dia.fecha}
               style={{
-                minWidth: 150, flex: '0 0 auto',
+                width: 150, flexShrink: 0,
                 background: oculto ? '#f3f3f3' : '#f9f9f9',
                 borderRadius: 10, border: `1px solid ${oculto ? '#e5e5e5' : '#eee'}`,
                 opacity: oculto ? 0.7 : 1, padding: 10,

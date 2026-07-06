@@ -6,12 +6,15 @@ import { colors } from '@/theme/colors';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { Turno, TurnoMes } from '@/services/turnoService';
+import type { Servicio } from '@/services/servicioService';
+import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
 const SWIPE_REVEAL    = 80;
 const SWIPE_THRESHOLD = 55;
+const NAV_HEIGHT       = 70; // must match the bottom tab bar height in app/(app)/layout.tsx
 
 const DAYS   = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = [
@@ -56,6 +59,8 @@ const sectionLabelStyle: React.CSSProperties = {
 
 // ─────────────────────────────────────────────
 // SwipeableTurnoCard — PENDIENTE and EN_CURSO
+// onCancel is optional: when omitted (completado/en_curso per caller),
+// the swipe-reveal cancel panel and touch handlers are skipped entirely.
 // ─────────────────────────────────────────────
 function SwipeableTurnoCard({
   turno,
@@ -64,7 +69,7 @@ function SwipeableTurnoCard({
   onPress,
 }: {
   turno:        Turno;
-  onCancel:     () => void;
+  onCancel?:    () => void;
   onFinalizar?: () => void;
   onPress?:     () => void;
 }) {
@@ -112,105 +117,169 @@ function SwipeableTurnoCard({
   };
 
   const isEnCurso = turno.estado_visual === 'en_curso';
+  const cardBg = isEnCurso ? '#FFFBF5' : '#FFF';
 
-  return (
-    <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden' }}>
+  // Sección hora — ancho fijo, nunca se desliza. Si el swipe moviera esta
+  // columna (junto con el resto del card) el overflow:hidden del wrapper la
+  // clipearía apenas se revela el panel de cancelar (SWIPE_REVEAL ~ su ancho).
+  const timeSection = (
+    <div
+      onClick={() => onPress?.()}
+      style={{
+        width: 70, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', position: 'relative',
+        flexShrink: 0, backgroundColor: cardBg, cursor: 'pointer',
+      }}
+    >
+      <span style={{ fontSize: 17, fontWeight: 700, color: colors.primary, letterSpacing: -0.5 }}>
+        {horaDeHora(turno.fecha_hora)}
+      </span>
+      <span style={{ fontSize: 9, fontWeight: 700, color: '#999', marginTop: 2, textTransform: 'uppercase' }}>
+        {formatFechaMini(turno.fecha_hora)}
+      </span>
+      <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: '#F0F0F0' }} />
+    </div>
+  );
 
-      {/* CANCELAR panel behind */}
-      <div
-        onClick={onCancel}
-        style={{
-          position: 'absolute', right: 0, top: 0, bottom: 0,
-          width: SWIPE_REVEAL,
-          backgroundColor: '#FFADAD',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#8B0000', letterSpacing: 0.5 }}>
-          CANCELAR
-        </span>
+  const restStyle: React.CSSProperties = {
+    backgroundColor: cardBg,
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
+  const restBody = (
+    <>
+      {/* Sección info central */}
+      <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
+        <p style={{
+          fontSize: 16, fontWeight: 600, color: '#333', margin: '0 0 2px',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
+        </p>
+        <p style={{
+          fontSize: 13, color: '#888', fontStyle: 'italic', margin: 0,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+        </p>
       </div>
 
-      {/* Swipeable card */}
-      <div
-        ref={cardRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleCardClick}
-        style={{
-          backgroundColor: '#FFF',
-          borderRadius: 14,
-          border: '1px solid #EEE',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          padding: '14px 16px',
-          cursor: 'pointer',
-          userSelect: 'none',
-          transform: 'translateX(0)',
-        }}
-      >
-        {/* Row 1 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: colors.primary, minWidth: 48 }}>
-            {horaDeHora(turno.fecha_hora)}
-          </span>
-          <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: colors.text }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
-          </span>
-
-          {isEnCurso ? (
+      {/* Sección acción */}
+      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
+        {isEnCurso ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <span style={{
-              fontSize: 11, fontWeight: 700, color: '#E07000',
-              border: '1px solid #E07000', borderRadius: 12,
-              padding: '3px 8px', whiteSpace: 'nowrap',
+              fontSize: 9, fontWeight: 700, color: '#E6A020', letterSpacing: 0.8,
+              backgroundColor: 'rgba(255, 193, 100, 0.15)',
+              border: '1px solid rgba(255, 193, 100, 0.5)',
+              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
             }}>
               ● EN CURSO
             </span>
-          ) : (
-            <>
-              {turno.cliente?.telefono && (
-                <a
-                  href={`https://wa.me/${turno.cliente.telefono.replace(/\D/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  style={{ display: 'flex', alignItems: 'center', color: '#25D366' }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                  </svg>
-                </a>
-              )}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </>
-          )}
-        </div>
-
-        {/* Row 2 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          <span style={{ fontSize: 12, color: '#999' }}>{formatFechaMini(turno.fecha_hora)}</span>
-          <span style={{ fontSize: 12, color: '#999' }}>•</span>
-          <span style={{ fontSize: 12, color: '#999', fontStyle: 'italic' }}>{turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}</span>
-        </div>
-
-        {/* Row 3: Finalizar ahora (EN_CURSO only) */}
-        {isEnCurso && onFinalizar && (
-          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={e => { e.stopPropagation(); onFinalizar(); }}
-              style={{
-                fontSize: 13, fontWeight: 600, color: colors.primary,
-                border: `1px solid ${colors.primary}`, borderRadius: 20,
-                padding: '6px 14px', backgroundColor: 'transparent', cursor: 'pointer',
-              }}
-            >
-              Finalizar ahora
-            </button>
+            {onFinalizar && (
+              <button
+                onClick={e => { e.stopPropagation(); onFinalizar(); }}
+                style={{
+                  fontSize: 10, fontWeight: 600, color: colors.primary,
+                  border: `1px solid ${colors.primary}`, borderRadius: 12,
+                  padding: '4px 10px', marginTop: 4, backgroundColor: 'transparent', cursor: 'pointer',
+                }}
+              >
+                Finalizar ahora
+              </button>
+            )}
           </div>
+        ) : (
+          <>
+            {turno.cliente?.telefono && (
+              <a
+                href={`https://wa.me/${turno.cliente.telefono.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  width: 38, height: 38, borderRadius: 19,
+                  backgroundColor: '#F0FFF4', border: '1px solid #DCFCE7',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+              </a>
+            )}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EEE" strokeWidth="2" style={{ marginLeft: 4 }}>
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </>
         )}
+      </div>
+    </>
+  );
+
+  const outerStyle: React.CSSProperties = {
+    display: 'flex',
+    borderRadius: 14,
+    border: '1px solid #EEE',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+    overflow: 'hidden',
+    minHeight: 75,
+  };
+
+  if (!onCancel) {
+    return (
+      <div style={outerStyle}>
+        {timeSection}
+        <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
+          {restBody}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={outerStyle}>
+      {timeSection}
+
+      {/* Región deslizable — solo info+acción, la hora nunca se mueve */}
+      <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+        {/* CANCELAR panel behind */}
+        <div
+          onClick={onCancel}
+          style={{
+            position: 'absolute', right: 0, top: 0, bottom: 0,
+            width: SWIPE_REVEAL,
+            backgroundColor: '#FFADAD',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          </svg>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#8B0000', letterSpacing: 0.5 }}>
+            CANCELAR
+          </span>
+        </div>
+
+        {/* Foreground deslizable */}
+        <div
+          ref={cardRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onClick={handleCardClick}
+          style={{ ...restStyle, position: 'relative', transform: 'translateX(0)' }}
+        >
+          {restBody}
+        </div>
       </div>
     </div>
   );
@@ -223,33 +292,320 @@ function FinalizadoCard({ turno }: { turno: Turno }) {
   return (
     <div style={{ opacity: 0.6 }}>
       <div style={{
-        backgroundColor: '#FFF', borderRadius: 14,
+        backgroundColor: '#FDFDFD', borderRadius: 14,
         border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-        padding: '14px 16px',
+        padding: '12px 10px', display: 'flex', alignItems: 'center', minHeight: 75,
       }}>
-        {/* Row 1 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: colors.primary, minWidth: 48 }}>
+        {/* Sección hora */}
+        <div style={{
+          width: 70, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 17, fontWeight: 700, color: '#AAA', letterSpacing: -0.5 }}>
             {horaDeHora(turno.fecha_hora)}
           </span>
-          <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: colors.text }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
+          <span style={{ fontSize: 9, fontWeight: 700, color: '#999', marginTop: 2, textTransform: 'uppercase' }}>
+            {formatFechaMini(turno.fecha_hora)}
           </span>
+          <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: '#F0F0F0' }} />
+        </div>
+
+        {/* Sección info central */}
+        <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
+          <p style={{
+            fontSize: 16, fontWeight: 600, color: '#888', margin: '0 0 2px',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
+          </p>
+          <p style={{
+            fontSize: 13, color: '#888', fontStyle: 'italic', margin: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+          </p>
+        </div>
+
+        {/* Sección acción */}
+        <div style={{ paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
           <span style={{
-            fontSize: 11, fontWeight: 700, color: '#999',
-            border: '1px solid #CCC', borderRadius: 12,
-            padding: '3px 8px', whiteSpace: 'nowrap',
+            fontSize: 9, fontWeight: 700, color: '#d79ea4', letterSpacing: 0.8,
+            backgroundColor: 'rgba(215, 158, 164, 0.15)',
+            border: '1px solid rgba(215, 158, 164, 0.4)',
+            borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
           }}>
             ✓ FINALIZADO
           </span>
         </div>
-        {/* Row 2 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          <span style={{ fontSize: 12, color: '#999' }}>{formatFechaMini(turno.fecha_hora)}</span>
-          <span style={{ fontSize: 12, color: '#999' }}>•</span>
-          <span style={{ fontSize: 12, color: '#999', fontStyle: 'italic' }}>{turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}</span>
-        </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// AgendaListHeader — title + filter toggle button + inline loading spinner
+// ─────────────────────────────────────────────
+function AgendaListHeader({
+  hayFiltroActivo,
+  cargando,
+  onAbrirFiltros,
+}: {
+  hayFiltroActivo: boolean;
+  cargando: boolean;
+  onAbrirFiltros: () => void;
+}) {
+  return (
+    <div style={{ paddingBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>
+          {hayFiltroActivo ? 'Resultados' : 'Turnos del día'}
+        </span>
+
+        <button
+          onClick={onAbrirFiltros}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '6px 12px', borderRadius: 20,
+            border: `1px solid ${colors.primary}`,
+            backgroundColor: hayFiltroActivo ? colors.primary : 'transparent',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={hayFiltroActivo ? '#FFF' : colors.primary} strokeWidth="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          <span style={{ fontSize: 12, fontWeight: 600, color: hayFiltroActivo ? '#FFF' : colors.primary }}>
+            {hayFiltroActivo ? 'Filtros activos' : 'Filtrar'}
+          </span>
+        </button>
+      </div>
+
+      {cargando && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+          <div
+            className="loader-spinner"
+            style={{ width: 20, height: 20, borderRadius: 10, border: `2px solid ${colors.border}`, borderTopColor: colors.primary }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Date filter parsing — ported verbatim from RN's FiltroSheet.tsx
+// ─────────────────────────────────────────────
+function autoFormatearFecha(texto: string, anterior: string): string {
+  if (texto.length < anterior.length) return texto;
+
+  let soloNums = texto.replace(/[^\d]/g, '');
+  if (soloNums.length > 8) soloNums = soloNums.slice(0, 8);
+
+  if (soloNums.length > 4) {
+    return `${soloNums.slice(0, 2)}/${soloNums.slice(2, 4)}/${soloNums.slice(4)}`;
+  }
+  if (soloNums.length > 2) {
+    return `${soloNums.slice(0, 2)}/${soloNums.slice(2)}`;
+  }
+  return soloNums;
+}
+
+function parsearFecha(input: string): string | null {
+  const partes = input.split('/');
+  if (partes.length !== 3) return null;
+
+  const [diaStr, mesStr, anioStr] = partes;
+  const dia  = parseInt(diaStr, 10);
+  const mes  = parseInt(mesStr, 10);
+  const anio = parseInt(anioStr, 10);
+
+  if (isNaN(dia) || isNaN(mes) || isNaN(anio)) return null;
+  if (dia < 1 || dia > 31)        return null;
+  if (mes < 1 || mes > 12)        return null;
+  if (anio < 2000 || anio > 2100) return null;
+  if (anioStr.length !== 4)       return null;
+
+  const fecha = `${anioStr}-${mesStr.padStart(2, '0')}-${diaStr.padStart(2, '0')}`;
+  const d = new Date(fecha);
+  if (isNaN(d.getTime()))       return null;
+  if (d.getMonth() + 1 !== mes) return null;
+
+  return fecha;
+}
+
+// ─────────────────────────────────────────────
+// FiltroSheetContent — search by client name, arbitrary date, service
+// ─────────────────────────────────────────────
+function FiltroSheetContent({
+  textoBusqueda,
+  servicioFiltro,
+  fechaFiltro,
+  serviciosActivos,
+  hayFiltroActivo,
+  onChangeBusqueda,
+  onLimpiarBusqueda,
+  onToggleServicio,
+  onCambiarFecha,
+  onLimpiarTodo,
+  onAplicar,
+}: {
+  textoBusqueda: string;
+  servicioFiltro: number | null;
+  fechaFiltro: string | null;
+  serviciosActivos: Servicio[];
+  hayFiltroActivo: boolean;
+  onChangeBusqueda: (txt: string) => void;
+  onLimpiarBusqueda: () => void;
+  onToggleServicio: (id: number) => void;
+  onCambiarFecha: (fecha: string | null) => void;
+  onLimpiarTodo: () => void;
+  onAplicar: () => void;
+}) {
+  const [textoFecha, setTextoFecha] = useState(
+    fechaFiltro ? fechaFiltro.split('-').reverse().join('/') : '',
+  );
+  const [fechaError, setFechaError] = useState(false);
+
+  const btnDeshabilitado = !hayFiltroActivo || fechaError;
+
+  const handleCambiarTextoFecha = (texto: string) => {
+    const formateado = autoFormatearFecha(texto, textoFecha);
+    setTextoFecha(formateado);
+    setFechaError(false);
+
+    if (formateado.length === 0) {
+      onCambiarFecha(null);
+      return;
+    }
+
+    if (formateado.length === 10) {
+      const fechaApi = parsearFecha(formateado);
+      if (fechaApi) {
+        onCambiarFecha(fechaApi);
+      } else {
+        setFechaError(true);
+        onCambiarFecha(null);
+      }
+    }
+  };
+
+  const handleLimpiarFecha = () => {
+    setTextoFecha('');
+    setFechaError(false);
+    onCambiarFecha(null);
+  };
+
+  return (
+    <div style={{ padding: '0 20px 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', marginBottom: 8 }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: '#222' }}>Filtros</span>
+        {hayFiltroActivo && (
+          <button
+            onClick={() => {
+              onLimpiarTodo();
+              setTextoFecha('');
+              setFechaError(false);
+            }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: colors.primary }}
+          >
+            Limpiar todo
+          </button>
+        )}
+      </div>
+
+      {/* Buscar cliente */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#BBB', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+        Buscar cliente
+      </p>
+      <div style={{
+        display: 'flex', alignItems: 'center', backgroundColor: '#F3F3F3', borderRadius: 12,
+        padding: '0 12px', height: 45, marginBottom: 16,
+      }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          placeholder="Nombre del cliente..."
+          value={textoBusqueda}
+          onChange={e => onChangeBusqueda(e.target.value)}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#333', background: 'transparent' }}
+        />
+        {textoBusqueda !== '' && (
+          <button onClick={onLimpiarBusqueda} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Buscar por fecha */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#BBB', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+        Buscar por fecha
+      </p>
+      <div style={{
+        display: 'flex', alignItems: 'center', borderRadius: 12, padding: '0 14px', height: 45,
+        border: '1px solid transparent',
+        backgroundColor: fechaError ? '#FFF5F5' : fechaFiltro ? `${colors.primary}12` : '#F3F3F3',
+        borderColor: fechaError ? '#E74C3C44' : fechaFiltro ? `${colors.primary}44` : 'transparent',
+      }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? '#E74C3C' : fechaFiltro ? colors.primary : '#999'} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+          <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+        <input
+          value={textoFecha}
+          onChange={e => handleCambiarTextoFecha(e.target.value)}
+          placeholder="DD/MM/YYYY"
+          maxLength={10}
+          inputMode="numeric"
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#333', background: 'transparent', letterSpacing: 1 }}
+        />
+        {textoFecha !== '' && (
+          <button onClick={handleLimpiarFecha} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? '#E74C3C' : colors.primary} strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {fechaError && (
+        <p style={{ fontSize: 11, color: '#E74C3C', marginTop: 5, marginLeft: 2 }}>Fecha inválida</p>
+      )}
+
+      {/* Filtrar por servicio */}
+      <p style={{ ...sectionLabelStyle, marginTop: fechaError ? 12 : 16 }}>
+        Filtrar por servicio
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+        {serviciosActivos.map(s => (
+          <button
+            key={s.id}
+            onClick={() => onToggleServicio(s.id)}
+            style={{
+              padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
+              border: `1px solid ${servicioFiltro === s.id ? colors.primary : '#DDD'}`,
+              backgroundColor: servicioFiltro === s.id ? colors.primary : '#F8F8F8',
+              color: servicioFiltro === s.id ? '#FFF' : '#555',
+              cursor: 'pointer',
+            }}
+          >
+            {s.nombre}
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={onAplicar}
+        disabled={btnDeshabilitado}
+        style={{
+          width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+          backgroundColor: btnDeshabilitado ? '#DDD' : colors.primary,
+          color: '#FFF', fontSize: 15, fontWeight: 600,
+          cursor: btnDeshabilitado ? 'default' : 'pointer',
+        }}
+      >
+        Ver resultados
+      </button>
     </div>
   );
 }
@@ -262,14 +618,12 @@ function CalendarioMensual({
   onMonthChange,
   fechaSeleccionada,
   turnosMes,
-  selectedDayCount,
   onDayClick,
 }: {
   viewDate:         Date;
   onMonthChange:    (d: Date) => void;
   fechaSeleccionada: string;
   turnosMes:        TurnoMes[];
-  selectedDayCount: number;
   onDayClick:       (fecha: string) => void;
 }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -280,7 +634,9 @@ function CalendarioMensual({
   const daysInMonth     = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-  const turnosSet = new Set(turnosMes.map(t => t.fecha));
+  // count per day — same source RN's CalendarDay reads from (marcasMes),
+  // used uniformly for every cell including the selected one
+  const countByDate = new Map(turnosMes.map(t => [t.fecha, t.cantidad]));
 
   // Build 42-cell grid (6 rows × 7 cols)
   const cells: { date: Date; isCurrentMonth: boolean }[] = [];
@@ -305,18 +661,22 @@ function CalendarioMensual({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <button
           onClick={() => onMonthChange(new Date(year, month - 1, 1))}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, fontSize: 18, color: colors.text }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
         >
-          ◄
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
-        <span style={{ fontSize: 15, fontWeight: 700, color: colors.text }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: colors.text, textTransform: 'capitalize' }}>
           {MONTHS[month]} {year}
         </span>
         <button
           onClick={() => onMonthChange(new Date(year, month + 1, 1))}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, fontSize: 18, color: colors.text }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
         >
-          ►
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </div>
 
@@ -335,48 +695,64 @@ function CalendarioMensual({
           const cellStr    = formatCellDate(cell.date);
           const isSelected = cellStr === fechaSeleccionada;
           const isToday    = cellStr === todayStr;
-          const hasTurnos  = turnosSet.has(cellStr);
+          const count      = countByDate.get(cellStr) ?? 0;
+          const esPasado   = cellStr < todayStr;
 
           return (
             <div
               key={idx}
               onClick={() => onDayClick(cellStr)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 0', cursor: 'pointer' }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '4px 0', cursor: 'pointer',
+                opacity: cell.isCurrentMonth ? 1 : 0.1,
+              }}
             >
               {/* Circle */}
               <div style={{
-                width: 32, height: 32, borderRadius: 16,
+                width: 40, height: 40, borderRadius: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundColor: isSelected ? colors.primary : 'transparent',
-                border: isToday && !isSelected ? `1px solid ${colors.primary}` : 'none',
+                boxShadow: isSelected ? `0 2px 4px ${colors.primary}4D` : 'none',
                 position: 'relative',
               }}>
                 <span style={{
-                  fontSize: 14,
-                  fontWeight: isSelected ? 700 : 400,
-                  color: isSelected ? '#FFF' : cell.isCurrentMonth ? colors.text : '#CCC',
+                  fontSize: 15,
+                  fontWeight: isSelected || (isToday && !isSelected) ? 700 : 400,
+                  color: isSelected
+                    ? '#FFF'
+                    : esPasado
+                      ? '#BBB'
+                      : isToday
+                        ? colors.primary
+                        : colors.text,
                 }}>
                   {cell.date.getDate()}
                 </span>
-                {/* Badge for selected day */}
-                {isSelected && selectedDayCount > 0 && (
+
+                {/* Badge — any future day with turnos, count from turnosMes */}
+                {count > 0 && !esPasado && (
                   <div style={{
-                    position: 'absolute', top: -4, right: -4,
-                    width: 16, height: 16, borderRadius: 8,
-                    backgroundColor: '#E07000',
+                    position: 'absolute', top: -2, right: -2,
+                    minWidth: 18, height: 18, borderRadius: 9, padding: '0 2px',
+                    backgroundColor: isSelected ? '#FFF' : colors.primary,
+                    border: `2px solid ${isSelected ? colors.primary : '#FFF'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#FFF' }}>
-                      {selectedDayCount}
+                    <span style={{ fontSize: 9, fontWeight: 900, color: isSelected ? colors.primary : '#FFF' }}>
+                      {count}
                     </span>
                   </div>
                 )}
+
+                {/* Past-day dot — plain, no count */}
+                {count > 0 && esPasado && !isSelected && (
+                  <div style={{
+                    position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
+                    width: 4, height: 4, borderRadius: 2, backgroundColor: '#DDD',
+                  }} />
+                )}
               </div>
-              {/* Appointment dot */}
-              {hasTurnos
-                ? <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 2 }} />
-                : <div style={{ height: 10 }} />
-              }
             </div>
           );
         })}
@@ -395,17 +771,27 @@ export default function AgendaPage() {
     turnos, turnosMes, loading,
     fechaSeleccionada, fetchTurnos, fetchTurnosMes,
     completarTurno, cancelarTurno, setFechaSeleccionada,
+    turnosBusqueda, cargandoBusqueda,
+    buscarPorNombre, buscarPorServicio, buscarPorFecha, limpiarBusqueda,
   } = useTurnoStore();
 
   const { servicios, fetchServicios } = useServiciosStore();
 
-  const [showFiltro,       setShowFiltro]       = useState(false);
-  const [filtroCliente,    setFiltroCliente]    = useState('');
-  const [filtroServicioId, setFiltroServicioId] = useState<number | null>(null);
-  const [viewDate,         setViewDate]         = useState<Date>(() => {
+  const [textoBusqueda,   setTextoBusqueda]   = useState('');
+  const [servicioFiltro,  setServicioFiltro]  = useState<number | null>(null);
+  const [fechaFiltro,     setFechaFiltro]     = useState<string | null>(null);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const [viewDate,        setViewDate]        = useState<Date>(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
+
+  const bottomSheetRef = useRef<BottomSheetHandle>(null);
+  const filtroSheetRef = useRef<BottomSheetHandle>(null);
+
+  const hayFiltroActivo = !!textoBusqueda || servicioFiltro !== null || fechaFiltro !== null;
+  const hoy = new Date().toISOString().split('T')[0];
+  const esFechaPasada = fechaSeleccionada < hoy;
 
   // Mount: load today's data
   useEffect(() => {
@@ -459,20 +845,50 @@ export default function AgendaPage() {
     if (!result.success) alert(result.message ?? 'No se pudo cancelar el turno.');
   };
 
-  // Client-side filtering
-  const turnosFiltrados = turnos
-    .filter(t => t.estado !== 'cancelado')
-    .filter(t => {
-      if (!filtroCliente.trim()) return true;
-      const q = filtroCliente.toLowerCase();
-      return `${t.cliente.nombre} ${t.cliente.apellido}`.toLowerCase().includes(q);
-    })
-    .filter(t => {
-      if (filtroServicioId === null) return true;
-      return t.servicios.some(s => s.id === filtroServicioId);
-    });
+  const handleBuscarCliente = useCallback((txt: string) => {
+    setTextoBusqueda(txt);
+    buscarPorNombre(txt);
+  }, [buscarPorNombre]);
 
-  const visibleCount = turnos.filter(t => t.estado !== 'cancelado').length;
+  const handleToggleServicio = useCallback((id: number) => {
+    const nuevo = servicioFiltro === id ? null : id;
+    setServicioFiltro(nuevo);
+    buscarPorServicio(nuevo);
+  }, [servicioFiltro, buscarPorServicio]);
+
+  const handleCambiarFecha = useCallback((fecha: string | null) => {
+    setFechaFiltro(fecha);
+    buscarPorFecha(fecha);
+  }, [buscarPorFecha]);
+
+  const handleLimpiarTodo = useCallback(() => {
+    setTextoBusqueda('');
+    setServicioFiltro(null);
+    setFechaFiltro(null);
+    limpiarBusqueda();
+    filtroSheetRef.current?.close();
+  }, [limpiarBusqueda]);
+
+  const handleAbrirFiltros = useCallback(() => {
+    setFiltrosAbiertos(true);
+    filtroSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const handleFiltroSheetChange = useCallback((index: number) => {
+    setFiltrosAbiertos(index !== -1);
+  }, []);
+
+  const serviciosActivos = servicios.filter(s => s.activo);
+
+  // Cancelled turnos never render in either view — safety filter kept from
+  // the pre-search implementation (backend already excludes them in practice).
+  const vigentes = (list: Turno[]) => list.filter(t => t.estado !== 'cancelado');
+
+  const datosAMostrar = hayFiltroActivo
+    ? vigentes(turnosBusqueda)
+    : [...vigentes(turnos)].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+
+  const cargandoHeader = loading || cargandoBusqueda;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
@@ -483,160 +899,115 @@ export default function AgendaPage() {
         <button
           onClick={() => router.push(`/agenda/historia?fecha=${fechaSeleccionada}`)}
           style={{
-            fontSize: 13, fontWeight: 600, color: colors.primary,
-            border: `1px solid ${colors.primary}`, borderRadius: 20,
-            padding: '6px 14px', backgroundColor: 'transparent', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+            fontSize: 11, fontWeight: 600, color: colors.primary, letterSpacing: 1,
+            border: 'none', padding: '4px 0', backgroundColor: 'transparent', cursor: 'pointer',
           }}>
-          Compartir
+          COMPARTIR
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8">
+            <rect x="3" y="3" width="18" height="18" rx="5" />
+            <circle cx="12" cy="12" r="4" />
+            <circle cx="17.5" cy="6.5" r="1" fill={colors.primary} stroke="none" />
+          </svg>
         </button>
       </div>
 
-      {/* Calendar */}
-      <CalendarioMensual
-        viewDate={viewDate}
-        onMonthChange={handleMonthChange}
-        fechaSeleccionada={fechaSeleccionada}
-        turnosMes={turnosMes}
-        selectedDayCount={visibleCount}
-        onDayClick={handleDayClick}
-      />
-
-      {/* Turnos section header */}
-      <div style={{ padding: '12px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: colors.text, margin: 0 }}>Turnos del día</p>
-        <button
-          onClick={() => setShowFiltro(true)}
-          style={{
-            fontSize: 13, fontWeight: 600, color: colors.text,
-            border: '1px solid #DDD', borderRadius: 20,
-            padding: '6px 14px', backgroundColor: 'transparent', cursor: 'pointer',
-          }}
-        >
-          ≡ Filtrar
-        </button>
+      {/* Calendar — dimmed and disabled while a filter is active */}
+      <div style={{ opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
+        <CalendarioMensual
+          viewDate={viewDate}
+          onMonthChange={handleMonthChange}
+          fechaSeleccionada={fechaSeleccionada}
+          turnosMes={turnosMes}
+          onDayClick={handleDayClick}
+        />
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: 15 }}>Cargando turnos...</p>
-        </div>
-      )}
+      {/* Main list sheet — draggable across 30/50/80% of viewport height */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        snapPoints={[0.3, 0.5, 0.8]}
+        initialIndex={0}
+        enablePanDownToClose={false}
+        handleColor={colors.primary}
+        bottomOffset={NAV_HEIGHT}
+      >
+        <div style={{ padding: '0 20px' }}>
+          <AgendaListHeader
+            hayFiltroActivo={hayFiltroActivo}
+            cargando={cargandoHeader}
+            onAbrirFiltros={handleAbrirFiltros}
+          />
 
-      {/* Empty state */}
-      {!loading && turnosFiltrados.length === 0 && (
-        <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 15 }}>
-          No hay turnos para este día.
-        </p>
-      )}
+          {!loading && datosAMostrar.length === 0 && (
+            <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 15 }}>
+              {hayFiltroActivo ? 'No se encontraron turnos' : 'No hay turnos para este día'}
+            </p>
+          )}
 
-      {/* Turnos list */}
-      {!loading && (
-        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {turnosFiltrados.map(turno => {
-            if (turno.estado === 'completado') {
-              return <FinalizadoCard key={turno.id} turno={turno} />;
-            }
-            return (
-              <SwipeableTurnoCard
-                key={turno.id}
-                turno={turno}
-                onCancel={() => handleCancelar(turno.id)}
-                onFinalizar={turno.estado_visual === 'en_curso' ? () => handleFinalizar(turno.id) : undefined}
-                onPress={() => router.push(`/agenda/${turno.id}`)}
-              />
-            );
-          })}
-        </div>
-      )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 40 }}>
+            {datosAMostrar.map(turno => {
+              const pasado   = turno.estado_visual === 'completado';
+              const cursando = turno.estado_visual === 'en_curso';
 
-      {/* Filter modal */}
-      {showFiltro && (
-        <div
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50 }}
-          onClick={() => setShowFiltro(false)}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              backgroundColor: '#fff', borderRadius: '20px 20px 0 0',
-              padding: 24, paddingBottom: 48,
-            }}
-          >
-            {/* Drag handle */}
-            <div style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', margin: '0 auto 20px' }} />
-
-            <p style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: '0 0 20px' }}>Filtros</p>
-
-            {/* BUSCAR CLIENTE */}
-            <p style={sectionLabelStyle}>BUSCAR CLIENTE</p>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              backgroundColor: '#FFF', border: '1px solid #EEE',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12,
-              paddingLeft: 14, paddingRight: 14, height: 48, marginBottom: 20,
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                placeholder="Nombre del cliente..."
-                value={filtroCliente}
-                onChange={e => setFiltroCliente(e.target.value)}
-                style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: colors.text, background: 'transparent' }}
-              />
-            </div>
-
-            {/* FILTRAR POR SERVICIO */}
-            <p style={sectionLabelStyle}>FILTRAR POR SERVICIO</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-              {servicios.filter(s => s.activo).map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setFiltroServicioId(filtroServicioId === s.id ? null : s.id)}
-                  style={{
-                    borderRadius: 20, padding: '8px 14px', fontSize: 13,
-                    border: `1px solid ${filtroServicioId === s.id ? colors.primary : '#DDD'}`,
-                    backgroundColor: filtroServicioId === s.id ? colors.primary : '#FFF',
-                    color: filtroServicioId === s.id ? '#FFF' : colors.text,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {s.nombre}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowFiltro(false)}
-              style={{
-                width: '100%', height: 52, borderRadius: 14,
-                backgroundColor: colors.primary, color: '#fff',
-                fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
-              }}
-            >
-              Ver resultados
-            </button>
+              if (pasado) {
+                return <FinalizadoCard key={turno.id} turno={turno} />;
+              }
+              return (
+                <SwipeableTurnoCard
+                  key={turno.id}
+                  turno={turno}
+                  onCancel={cursando ? undefined : () => handleCancelar(turno.id)}
+                  onFinalizar={cursando ? () => handleFinalizar(turno.id) : undefined}
+                  onPress={() => router.push(`/agenda/${turno.id}`)}
+                />
+              );
+            })}
           </div>
         </div>
-      )}
+      </BottomSheet>
 
-      {/* FAB */}
-      <button
-        onClick={() => router.push(`/agenda/nuevo?fecha=${fechaSeleccionada}`)}
-        style={{
-          position: 'fixed', bottom: 86, right: 24,
-          width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, border: 'none',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(215, 158, 164, 0.5)', zIndex: 10,
-        }}
+      {/* Filter sheet — closed by default, opens to 70%, swipe-down to dismiss */}
+      <BottomSheet
+        ref={filtroSheetRef}
+        snapPoints={[0.7]}
+        initialIndex={-1}
+        enablePanDownToClose
+        onChange={handleFiltroSheetChange}
+        bottomOffset={NAV_HEIGHT}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
+        <FiltroSheetContent
+          textoBusqueda={textoBusqueda}
+          servicioFiltro={servicioFiltro}
+          fechaFiltro={fechaFiltro}
+          serviciosActivos={serviciosActivos}
+          hayFiltroActivo={hayFiltroActivo}
+          onChangeBusqueda={handleBuscarCliente}
+          onLimpiarBusqueda={() => { setTextoBusqueda(''); buscarPorNombre(''); }}
+          onToggleServicio={handleToggleServicio}
+          onCambiarFecha={handleCambiarFecha}
+          onLimpiarTodo={handleLimpiarTodo}
+          onAplicar={() => filtroSheetRef.current?.close()}
+        />
+      </BottomSheet>
+
+      {/* FAB — hidden for past dates, active filters, or while filters are open */}
+      {!esFechaPasada && !hayFiltroActivo && !filtrosAbiertos && (
+        <button
+          onClick={() => router.push(`/agenda/nuevo?fecha=${fechaSeleccionada}`)}
+          style={{
+            position: 'fixed', bottom: 86, right: 24,
+            width: 56, height: 56, borderRadius: 28,
+            backgroundColor: colors.primary, border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(215, 158, 164, 0.5)', zIndex: 45,
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

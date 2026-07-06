@@ -1,148 +1,44 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 
 // ─────────────────────────────────────────────
-// Constantes de swipe
+// ClienteCard — sin swipe ni eliminar, RN no tiene esa capacidad
+// (ni en la lista ni en el formulario de edición).
 // ─────────────────────────────────────────────
-const SWIPE_REVEAL    = 80;  // px máximos que se desliza el card
-const SWIPE_THRESHOLD = 55;  // px mínimos para hacer snap al estado abierto
-
-// ─────────────────────────────────────────────
-// SwipeableClienteCard
-// ─────────────────────────────────────────────
-function SwipeableClienteCard({
-  cliente,
-  onEdit,
-  onDelete,
-}: {
-  cliente: Cliente;
-  onEdit:   () => void;
-  onDelete: () => void;
-}) {
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const startX     = useRef(0);
-  const initOffset = useRef(0);
-  const liveOffset = useRef(0);
-  const dragged    = useRef(false);
-  const touchUsed  = useRef(false);
-  const [showHover, setShowHover] = useState(false);
-
-  const applyTransform = (offset: number, animate: boolean) => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transition = animate
-      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
-    cardRef.current.style.transform = `translateX(${offset}px)`;
-  };
-
-  const snapTo = (target: number) => {
-    liveOffset.current = target;
-    applyTransform(target, true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchUsed.current = true;
-    startX.current = e.touches[0].clientX;
-    initOffset.current = liveOffset.current;
-    dragged.current = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const delta = e.touches[0].clientX - startX.current;
-    if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
-    liveOffset.current = clamped;
-    applyTransform(clamped, false);
-  };
-
-  const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : 0);
-  };
-
-  const handleCardClick = () => {
-    if (dragged.current) return;
-    if (liveOffset.current < -10) { snapTo(0); return; }
-    onEdit();
-  };
-
+function ClienteCard({ cliente, onPress }: { cliente: Cliente; onPress: () => void }) {
   return (
-    <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden' }}>
-
-      {/* Panel de eliminar (detrás del card) */}
-      <div
-        onClick={onDelete}
-        style={{
-          position: 'absolute', right: 0, top: 0, bottom: 0,
-          width: SWIPE_REVEAL,
-          backgroundColor: '#FFADAD',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer',
-        }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-        </svg>
+    <div
+      onClick={onPress}
+      style={{
+        backgroundColor: '#FFF',
+        borderRadius: 14,
+        border: '1px solid #EEE',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        padding: '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        cursor: 'pointer',
+        userSelect: 'none',
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>
+          {cliente.nombre} {cliente.apellido}
+        </p>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#888' }}>
+          {cliente.telefono || 'Sin datos de contacto'}
+        </p>
       </div>
 
-      {/* Card deslizable */}
-      <div
-        ref={cardRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleCardClick}
-        onMouseEnter={() => { if (!touchUsed.current) setShowHover(true); }}
-        onMouseLeave={() => setShowHover(false)}
-        style={{
-          backgroundColor: '#FFF',
-          borderRadius: 14,
-          border: '1px solid #EEE',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          padding: '14px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          cursor: 'pointer',
-          userSelect: 'none',
-          transform: 'translateX(0)',
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>
-            {cliente.nombre} {cliente.apellido}
-          </p>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#888' }}>
-            {cliente.telefono || 'Sin datos de contacto'}
-          </p>
-        </div>
-
-        {/* Botón eliminar en hover (solo desktop) */}
-        {showHover && (
-          <button
-            onClick={e => { e.stopPropagation(); onDelete(); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFADAD" strokeWidth="1.8">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-          </button>
-        )}
-
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
     </div>
   );
 }
@@ -152,16 +48,10 @@ function SwipeableClienteCard({
 // ─────────────────────────────────────────────
 export default function ClientesPage() {
   const router = useRouter();
-  const { loading, error, buscar, fetchClientes, eliminarCliente, setBuscar } = useClientesStore();
+  const { loading, error, buscar, fetchClientes, setBuscar } = useClientesStore();
   const clientesFiltrados = useClientesFiltrados();
 
   useEffect(() => { fetchClientes(); }, []);
-
-  const handleEliminar = async (id: number, nombre: string) => {
-    if (!confirm(`¿Eliminás a ${nombre}? Esta acción no se puede deshacer.`)) return;
-    const result = await eliminarCliente(id);
-    if (!result.success) alert(result.message ?? 'No se pudo eliminar el cliente.');
-  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
@@ -238,11 +128,10 @@ export default function ClientesPage() {
             </p>
           ) : (
             clientesFiltrados.map(cliente => (
-              <SwipeableClienteCard
+              <ClienteCard
                 key={cliente.id}
                 cliente={cliente}
-                onEdit={() => router.push(`/clientes/${cliente.id}`)}
-                onDelete={() => handleEliminar(cliente.id, `${cliente.nombre} ${cliente.apellido}`)}
+                onPress={() => router.push(`/clientes/${cliente.id}`)}
               />
             ))
           )}

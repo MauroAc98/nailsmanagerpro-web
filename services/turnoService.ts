@@ -40,13 +40,28 @@ export interface DisponibilidadDia {
 }
 
 // ─────────────────────────────────────────────
+// Search filters — mirrors RN's typed union: the index endpoint accepts
+// exactly ONE of these params at a time (fecha | buscar | servicio_id).
+// ─────────────────────────────────────────────
+export type FiltrosTurnos =
+  | { fecha: string }
+  | { buscar: string }
+  | { servicio_id: number };
+
+// ─────────────────────────────────────────────
 // Service
 // ─────────────────────────────────────────────
 export const turnoService = {
-  getAll: async (fecha: string): Promise<Turno[]> => {
-    const { data } = await api.get<Turno[]>('/turnos', { params: { fecha } });
+  getTurnos: async (filtros: FiltrosTurnos): Promise<Turno[]> => {
+    const { data } = await api.get<Turno[]>('/turnos', { params: filtros });
     return data;
   },
+
+  getAll: (fecha: string): Promise<Turno[]> => turnoService.getTurnos({ fecha }),
+
+  buscarPorNombre:   (nombre: string): Promise<Turno[]> => turnoService.getTurnos({ buscar: nombre }),
+  buscarPorServicio: (id: number):     Promise<Turno[]> => turnoService.getTurnos({ servicio_id: id }),
+  buscarPorFecha:    (fecha: string):  Promise<Turno[]> => turnoService.getTurnos({ fecha }),
 
   getByMes: async (mes: string): Promise<TurnoMes[]> => {
     const { data } = await api.get<Record<string, { cantidad: number }>>('/turnos/marcas', { params: { mes } });

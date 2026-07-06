@@ -3,12 +3,6 @@ import { toBlob } from 'html-to-image';
 import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services/turnoService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
-// ─────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────
-export const CANVAS_WIDTH  = 380;
-export const CANVAS_HEIGHT = (CANVAS_WIDTH * 16) / 9;
-
 export type Modo = 'dia' | 'semana' | 'mes';
 
 export interface TextoLibre {
@@ -87,8 +81,39 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const fondoUrlRef     = useRef<string | null>(null); // tracks last created object URL for cleanup
 
   // ─────────────────────────────────────────────
-  // Titulo (derived)
+  // Canvas size — igual que RN (SCREEN_WIDTH * 0.85), no un ancho fijo.
+  // Un fixed width no se adapta a celulares reales de distinto ancho;
+  // acá se recalcula con el viewport real, con un tope para desktop.
   // ─────────────────────────────────────────────
+  const [canvasWidth, setCanvasWidth] = useState(0);
+
+  useEffect(() => {
+    const update = () => setCanvasWidth(Math.min(420, window.innerWidth * 0.85));
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const canvasHeight = (canvasWidth * 16) / 9;
+
+  // ─────────────────────────────────────────────
+  // Titulos — dos textos distintos, igual que RN (labelNavegador/labelTitulo):
+  // el nav header y el título dentro del canvas NO dicen lo mismo.
+  // ─────────────────────────────────────────────
+  const tituloNav = useMemo(() => {
+    if (modo === 'dia') return formatFechaLarga(fmt(fechaBase)).toUpperCase();
+
+    if (modo === 'semana') {
+      const { desde, hasta } = getRango(fechaBase, 'semana');
+      const d = new Date(desde + 'T00:00:00');
+      const h = new Date(hasta + 'T00:00:00');
+      return `${d.getDate()} - ${h.getDate()} ${MESES_LARGO[h.getMonth()].toUpperCase()}`;
+    }
+
+    return `${MESES_LARGO[fechaBase.getMonth()].toUpperCase()} DE ${fechaBase.getFullYear()}`;
+  }, [fechaBase, modo]);
+
+  // Título del canvas — StoryCanvas lo uppercasea igual, así que acá no hace falta.
   const titulo = useMemo(() => {
     if (modo === 'dia') return formatFechaLarga(fmt(fechaBase));
 
@@ -96,10 +121,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
       const { desde, hasta } = getRango(fechaBase, 'semana');
       const d = new Date(desde + 'T00:00:00');
       const h = new Date(hasta + 'T00:00:00');
-      return `${d.getDate()} - ${h.getDate()} de ${MESES_LARGO[h.getMonth()]}`;
+      return `Semana ${d.getDate()} al ${h.getDate()} de ${MESES_LARGO[h.getMonth()]}`;
     }
 
-    return `${MESES_LARGO[fechaBase.getMonth()]} ${fechaBase.getFullYear()}`;
+    return `Agenda ${MESES_LARGO[fechaBase.getMonth()]}`;
   }, [fechaBase, modo]);
 
   // ─────────────────────────────────────────────
@@ -218,13 +243,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
     setTextosCanvas(prev => [...prev, {
       id:       Date.now().toString(),
       texto:    textoInput.trim(),
-      x:        CANVAS_WIDTH / 2 - 80,
-      y:        CANVAS_HEIGHT * 0.75,
+      x:        canvasWidth / 2 - 80,
+      y:        canvasHeight * 0.75,
       fontSize: 12,
     }]);
     setTextoInput('');
     setMostrarEmojis(false);
-  }, [textoInput]);
+  }, [textoInput, canvasWidth, canvasHeight]);
 
   const actualizarPosicion = useCallback((id: string, x: number, y: number) => {
     setTextosCanvas(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
@@ -307,9 +332,9 @@ export function useGenerarHistoria(fechaInicial?: string) {
   return {
     // state
     fechaBase, modo, fondoUri, quincena, diasOcultos,
-    agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo,
+    agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
-    canvasRef,
+    canvasRef, canvasWidth, canvasHeight,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos,

@@ -3,7 +3,7 @@
 import React, { Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '@/theme/colors';
-import { useGenerarHistoria, Modo, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/hooks/useGenerarHistoria';
+import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
@@ -38,9 +38,9 @@ function HistoriaContent() {
 
   const {
     modo, quincena, diasOcultos,
-    agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo,
+    agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
-    canvasRef,
+    canvasRef, canvasWidth, canvasHeight,
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
     toggleDiaOculto, toggleSlot,
     agregarTexto, actualizarPosicion, eliminarTexto, cambiarFontSize,
@@ -97,7 +97,7 @@ function HistoriaContent() {
             flex: 1, textTransform: 'uppercase', fontWeight: 700, fontSize: 13,
             letterSpacing: 1, textAlign: 'center', color: colors.text,
           }}>
-            {titulo}
+            {tituloNav}
           </span>
           <button
             onClick={() => handleNavegar(1)}
@@ -135,6 +135,8 @@ function HistoriaContent() {
               titulo={titulo}
               dias={diasAMostrar}
               fondoUri={fondoUri}
+              canvasWidth={canvasWidth}
+              canvasHeight={canvasHeight}
               textosLibres={textosCanvas}
               onMoverTexto={actualizarPosicion}
             />
@@ -207,7 +209,7 @@ function HistoriaContent() {
           </>
         ) : (
           <div style={{
-            width: CANVAS_WIDTH, height: CANVAS_HEIGHT / 3,
+            width: canvasWidth, height: canvasHeight / 3,
             background: '#F9F9F9', borderRadius: 16, border: '1px solid #EEE',
             display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 15,
           }}>
