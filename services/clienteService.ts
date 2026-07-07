@@ -8,6 +8,7 @@ export interface Cliente {
   nombre: string;
   apellido: string;
   telefono: string;
+  activo: boolean;
 }
 
 export interface CreateClienteDto {
@@ -16,7 +17,7 @@ export interface CreateClienteDto {
   telefono: string;
 }
 
-export type UpdateClienteDto = Partial<CreateClienteDto>;
+export type UpdateClienteDto = Partial<CreateClienteDto> & { activo?: boolean };
 
 // ─────────────────────────────────────────────
 // Service

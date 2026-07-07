@@ -26,6 +26,7 @@ interface ClientesState {
   crearCliente: (dto: CreateClienteDto) => Promise<OperacionResult>;
   actualizarCliente: (id: number, dto: UpdateClienteDto) => Promise<OperacionResult>;
   eliminarCliente: (id: number) => Promise<OperacionResult>;
+  toggleCliente: (id: number, activo: boolean) => Promise<OperacionResult>;
   setBuscar: (texto: string) => void;
   clearError: () => void;
 }
@@ -98,9 +99,30 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
     return withGlobalLoader(async () => {
       try {
         await clienteService.destroy(id);
-        set(state => ({ clientes: state.clientes.filter(c => c.id !== id) }));
+        const clientes = await clienteService.getAll();
+        set({ clientes });
         return { success: true };
       } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  // ─────────────────────────────────────────────
+  // toggleCliente
+  // ─────────────────────────────────────────────
+  toggleCliente: async (id, activo) => {
+    set(state => ({
+      clientes: state.clientes.map(c => c.id === id ? { ...c, activo } : c),
+    }));
+    return withGlobalLoader(async () => {
+      try {
+        await clienteService.update(id, { activo });
+        return { success: true };
+      } catch (e) {
+        set(state => ({
+          clientes: state.clientes.map(c => c.id === id ? { ...c, activo: !activo } : c),
+        }));
         return { success: false, message: extraerMensajeError(e) };
       }
     });

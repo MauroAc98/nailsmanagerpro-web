@@ -140,7 +140,7 @@ export default function EditarTurnoPage() {
   };
 
   const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido}`.toLowerCase().includes(clienteBuscar.toLowerCase())
+    c.activo && `${c.nombre} ${c.apellido}`.toLowerCase().includes(clienteBuscar.toLowerCase())
   );
 
   if (loadingTurno) {

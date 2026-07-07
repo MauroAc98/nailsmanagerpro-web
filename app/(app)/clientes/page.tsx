@@ -7,10 +7,39 @@ import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore'
 import { Cliente } from '@/services/clienteService';
 
 // ─────────────────────────────────────────────
-// ClienteCard — sin swipe ni eliminar, RN no tiene esa capacidad
-// (ni en la lista ni en el formulario de edición).
+// ClienteCard — switch de activo/inactivo — sin swipe, sin borrado físico.
 // ─────────────────────────────────────────────
-function ClienteCard({ cliente, onPress }: { cliente: Cliente; onPress: () => void }) {
+function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div
+      onClick={e => { e.stopPropagation(); onChange(!value); }}
+      style={{
+        width: 44, height: 26, borderRadius: 13,
+        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        position: 'relative', cursor: 'pointer',
+        transition: 'background 0.2s', flexShrink: 0,
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 3,
+        left: value ? 21 : 3,
+        width: 20, height: 20, borderRadius: 10,
+        backgroundColor: value ? colors.primary : '#CCC',
+        transition: 'left 0.2s',
+      }} />
+    </div>
+  );
+}
+
+function ClienteCard({
+  cliente,
+  onPress,
+  onToggle,
+}: {
+  cliente: Cliente;
+  onPress:  () => void;
+  onToggle: (activo: boolean) => void;
+}) {
   return (
     <div
       onClick={onPress}
@@ -24,17 +53,20 @@ function ClienteCard({ cliente, onPress }: { cliente: Cliente; onPress: () => vo
         alignItems: 'center',
         gap: 12,
         cursor: 'pointer',
+        opacity: cliente.activo ? 1 : 0.65,
         userSelect: 'none',
       }}
     >
       <div style={{ flex: 1 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? '#333' : '#AAA' }}>
           {cliente.nombre} {cliente.apellido}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#888' }}>
           {cliente.telefono || 'Sin datos de contacto'}
         </p>
       </div>
+
+      <PillToggle value={cliente.activo} onChange={onToggle} />
 
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
         <polyline points="9 18 15 12 9 6"/>
@@ -48,7 +80,7 @@ function ClienteCard({ cliente, onPress }: { cliente: Cliente; onPress: () => vo
 // ─────────────────────────────────────────────
 export default function ClientesPage() {
   const router = useRouter();
-  const { loading, error, buscar, fetchClientes, setBuscar } = useClientesStore();
+  const { loading, error, buscar, fetchClientes, setBuscar, toggleCliente } = useClientesStore();
   const clientesFiltrados = useClientesFiltrados();
 
   useEffect(() => { fetchClientes(); }, []);
@@ -132,6 +164,10 @@ export default function ClientesPage() {
                 key={cliente.id}
                 cliente={cliente}
                 onPress={() => router.push(`/clientes/${cliente.id}`)}
+                onToggle={async activo => {
+                  const result = await toggleCliente(cliente.id, activo);
+                  if (!result.success) alert(result.message ?? 'No se pudo actualizar la clienta.');
+                }}
               />
             ))
           )}
