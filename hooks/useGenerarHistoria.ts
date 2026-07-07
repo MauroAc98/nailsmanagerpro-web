@@ -314,10 +314,22 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, []);
 
   // ─────────────────────────────────────────────
-  // Capture helper — rasterize StoryCanvas DOM node
+  // Capture helper — rasterize StoryCanvas DOM node.
+  //
+  // Warm-up capture: html-to-image renders by serializing the node into an
+  // SVG foreignObject and rasterizing that through an off-DOM Image element.
+  // On iOS WebKit (all browsers there, not just Safari) that first raster
+  // pass frequently drops embedded raster images — the background photo
+  // renders blank/transparent — because the SVG->Image decode is async and
+  // WebKit doesn't reliably await it before painting to canvas. A discarded
+  // warm-up call primes that decode so the following real capture includes
+  // the background. Never reproduces on Android/Chromium. See
+  // https://github.com/bubkoo/html-to-image/issues/420 and
+  // https://github.com/tsayen/dom-to-image/issues/343.
   // ─────────────────────────────────────────────
   const capturar = useCallback(async (): Promise<Blob | null> => {
     if (!canvasRef.current) return null;
+    await toBlob(canvasRef.current, { pixelRatio: 2 });
     return toBlob(canvasRef.current, { pixelRatio: 2 });
   }, []);
 
