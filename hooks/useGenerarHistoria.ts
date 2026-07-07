@@ -79,7 +79,6 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const [editandoId,     setEditandoId]     = useState<string | null>(null);
 
   const canvasRef      = useRef<HTMLDivElement>(null);
-  const fondoUrlRef     = useRef<string | null>(null); // tracks last created object URL for cleanup
 
   // ─────────────────────────────────────────────
   // Canvas size — igual que RN (SCREEN_WIDTH * 0.85), no un ancho fijo.
@@ -303,17 +302,15 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, []);
 
   // ─────────────────────────────────────────────
-  // Photo picker — web equivalent via object URL
+  // Photo picker — base64 data URL, not an object URL. blob: URLs can't be
+  // resolved by html-to-image's SVG foreignObject serialization on Safari
+  // iOS, which left the exported story with a black background even though
+  // the live preview looked fine.
   // ─────────────────────────────────────────────
   const elegirFoto = useCallback((file: File) => {
-    if (fondoUrlRef.current) URL.revokeObjectURL(fondoUrlRef.current);
-    const url = URL.createObjectURL(file);
-    fondoUrlRef.current = url;
-    setFondoUri(url);
-  }, []);
-
-  useEffect(() => () => {
-    if (fondoUrlRef.current) URL.revokeObjectURL(fondoUrlRef.current);
+    const reader = new FileReader();
+    reader.onload = () => setFondoUri(reader.result as string);
+    reader.readAsDataURL(file);
   }, []);
 
   // ─────────────────────────────────────────────
