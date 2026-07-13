@@ -151,6 +151,14 @@ export default function LoginPage() {
           {loading ? 'Ingresando...' : 'Ingresar'}
         </button>
       </div>
+
+      {/* Footer legal */}
+      <button
+        onClick={() => router.push('/legal')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#BBB', fontSize: 12, marginTop: 28, padding: 8 }}
+      >
+        Términos y condiciones
+      </button>
     </div>
   );
 }
