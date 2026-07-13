@@ -7,6 +7,11 @@ import { useLoadingStore } from '@/store/useLoadingStore';
 import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 
+// Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
+// Rutas accesibles sin sesión que nunca fuerzan redirect (independientes del estado de auth)
+const NEUTRAL_PATHS = ['/legal'];
+
 const CLEARED_AUTH_STATE = {
   user: null,
   token: null,
@@ -56,7 +61,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         if (pathname !== '/cambiar-password') router.push('/cambiar-password');
         return;
       }
-      if (pathname !== '/login' && pathname !== '/forgot-password' && pathname !== '/reset-password') {
+      if (!PUBLIC_PATHS.includes(pathname) && !NEUTRAL_PATHS.includes(pathname)) {
         router.push('/login');
       }
       return;
@@ -67,7 +72,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password') {
+    if (PUBLIC_PATHS.includes(pathname)) {
       router.push('/agenda');
     }
   }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, router]);
@@ -78,11 +83,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   // que se veía. Acá decidimos, con lo que YA sabemos, si esta ruta es
   // válida para el estado de auth actual; si no, mostramos blanco mientras
   // el efecto hace la redirección real.
-  const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
   const esRutaPublica = PUBLIC_PATHS.includes(pathname);
+  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname);
 
   let puedeMostrarContenido: boolean;
-  if (!mounted || !inicializado) {
+  if (esRutaNeutral) {
+    puedeMostrarContenido = true;
+  } else if (!mounted || !inicializado) {
     puedeMostrarContenido = false;
   } else if (!token) {
     puedeMostrarContenido = debeCambiarPassword
