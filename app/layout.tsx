@@ -3,13 +3,13 @@ import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NailsManagerPro",
+  title: "Nailsmanagerpro",
   description: "Gestión de turnos para profesionales de uñas",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "NailsManagerPro",
+    title: "Nailsmanagerpro",
   },
 };
 

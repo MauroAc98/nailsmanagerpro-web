@@ -24,7 +24,7 @@ export default function LegalPage() {
             Titularidad
           </h2>
           <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7 }}>
-            NailsManagerPro es el nombre comercial bajo el cual Mauro Hernan Acosta,
+            Nailsmanagerpro es el nombre comercial bajo el cual Mauro Hernan Acosta,
             monotributista registrado ante ARCA (ex AFIP), ofrece un sistema de gestión
             de turnos y clientes para profesionales de la industria de la belleza.
           </p>
@@ -36,7 +36,7 @@ export default function LegalPage() {
           </h2>
           <div style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.9 }}>
             <p style={{ margin: 0 }}><strong style={{ color: colors.text }}>Nombre legal:</strong> Mauro Hernan Acosta</p>
-            <p style={{ margin: 0 }}><strong style={{ color: colors.text }}>Marca comercial:</strong> NailsManagerPro</p>
+            <p style={{ margin: 0 }}><strong style={{ color: colors.text }}>Marca comercial:</strong> Nailsmanagerpro</p>
             <p style={{ margin: 0 }}><strong style={{ color: colors.text }}>Condición fiscal:</strong> Monotributista (ARCA)</p>
           </div>
         </section>
@@ -46,7 +46,7 @@ export default function LegalPage() {
             Uso del servicio
           </h2>
           <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7 }}>
-            El acceso a NailsManagerPro está sujeto a una suscripción activa. Los datos
+            El acceso a Nailsmanagerpro está sujeto a una suscripción activa. Los datos
             cargados por cada usuario (clientes, turnos, historial) son de su exclusiva
             responsabilidad y se utilizan únicamente para el funcionamiento del servicio.
           </p>

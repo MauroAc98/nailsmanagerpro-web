@@ -36,13 +36,13 @@ export default function LoginPage() {
       <div style={{ marginBottom: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Image
           src="/icon-192.png"
-          alt="NailsManagerPro"
+          alt="Nailsmanagerpro"
           width={120}
           height={120}
           style={{ marginBottom: 12 }}
         />
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 24, fontWeight: 700, color: colors.text, margin: 0, marginBottom: 4 }}>
-          NailsManagerPro
+          Nailsmanagerpro
         </h1>
         <p style={{ fontSize: 13, color: '#BBB', margin: 0, letterSpacing: 0.2 }}>
           Día a día, sin perder el control

@@ -1,6 +1,6 @@
 {
-  "name": "NailsManagerPro",
-  "short_name": "NailsManagerPro",
+  "name": "Nailsmanagerpro",
+  "short_name": "Nailsmanagerpro",
   "description": "Gestión de turnos para profesionales de uñas",
   "start_url": "/",
   "display": "standalone",

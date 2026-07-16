@@ -11,13 +11,13 @@ export default function SubscriptionExpiredPage() {
   const handleWhatsApp = () => {
     if (!supportInfo?.whatsapp) return;
     const number = supportInfo.whatsapp.replace(/\D/g, '');
-    const message = encodeURIComponent('Hola! Quiero renovar mi suscripción de NailsManagerPro.');
+    const message = encodeURIComponent('Hola! Quiero renovar mi suscripción de Nailsmanagerpro.');
     window.open(`https://wa.me/${number}?text=${message}`, '_blank');
   };
 
   const handleEmail = () => {
     if (!supportInfo?.email) return;
-    window.location.href = `mailto:${supportInfo.email}?subject=Renovar suscripción NailsManagerPro`;
+    window.location.href = `mailto:${supportInfo.email}?subject=Renovar suscripción Nailsmanagerpro`;
   };
 
   const handleLogout = async () => {
@@ -44,7 +44,7 @@ export default function SubscriptionExpiredPage() {
 
         {/* Subtítulo */}
         <p style={{ fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.6, marginBottom: 8, margin: 0, marginTop: 12, maxWidth: 320 }}>
-          Para continuar usando NailsManagerPro necesitás renovar tu suscripción. Contactanos y te ayudamos.
+          Para continuar usando Nailsmanagerpro necesitás renovar tu suscripción. Contactanos y te ayudamos.
         </p>
 
         {/* Botones */}
