@@ -12,6 +12,8 @@ export const useAuth = () => {
     subscriptionExpired,
     supportInfo,
     daysLeft,
+    subscriptionEndsAt,
+    isExempt,
     mostrarBienvenida,
     esPrimerLogin,
     setSubscriptionExpired,
@@ -40,6 +42,8 @@ export const useAuth = () => {
     subscriptionExpired,
     supportInfo,
     daysLeft,
+    subscriptionEndsAt,
+    isExempt,
     mostrarBienvenida,
     esPrimerLogin,
 

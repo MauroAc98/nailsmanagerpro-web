@@ -12,6 +12,7 @@ import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
+import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -1119,6 +1120,8 @@ export default function AgendaPage() {
           </svg>
         </button>
       </div>
+
+      <SubscriptionWarningBanner />
 
       {/* Selector de profesional — invisible con ≤1 profesional activa, o si
           nadie tiene turno vigente ese día */}

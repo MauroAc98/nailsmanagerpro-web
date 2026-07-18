@@ -6,7 +6,9 @@ import { colors } from '@/theme/colors';
 interface Props {
   titulo: string;
   icono: React.ReactNode;
-  onEditar: () => void;
+  // Opcional — algunas secciones (ej. Suscripción) son solo informativas,
+  // sin acción de edición del lado del usuario.
+  onEditar?: () => void;
   children: React.ReactNode;
 }
 
@@ -21,15 +23,17 @@ export function CardSeccion({ titulo, icono, onEditar, children }: Props) {
           {icono}
           <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{titulo}</span>
         </div>
-        <button
-          onClick={onEditar}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 500, color: colors.primary,
-          }}
-        >
-          Editar
-        </button>
+        {onEditar && (
+          <button
+            onClick={onEditar}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 500, color: colors.primary,
+            }}
+          >
+            Editar
+          </button>
+        )}
       </div>
       <div style={{ padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {children}

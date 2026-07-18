@@ -16,6 +16,11 @@ import { SheetMensajeWhatsapp } from '@/components/perfil/SheetMensajeWhatsapp';
 
 const NAV_HEIGHT = 70; // must match the bottom tab bar height in app/(app)/layout.tsx
 
+function formatFechaCorta(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 type Sheet = 'personal' | 'negocio' | 'password' | 'mensaje' | null;
 
 const SNAP_POINTS: Record<Exclude<Sheet, null>, number[]> = {
@@ -54,6 +59,15 @@ function IconWhatsapp() {
   );
 }
 
+function IconSuscripcion() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
 function IconLock() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -73,7 +87,7 @@ function IconChevronRight() {
 
 export default function PerfilPage() {
   const router = useRouter();
-  const { user, updatePerfil, logout } = useAuth();
+  const { user, updatePerfil, logout, subscriptionExpired, daysLeft, subscriptionEndsAt, isExempt } = useAuth();
 
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [sheetActivo, setSheetActivo] = useState<Sheet>(null);
@@ -236,6 +250,23 @@ export default function PerfilPage() {
           <FilaDato label="Recordatorio automático" valor={user.recordatorio_automatico ? 'Sí' : 'No'} />
           {user.recordatorio_automatico && (
             <FilaDato label="Hora de recordatorio" valor={user.hora_recordatorio} />
+          )}
+        </CardSeccion>
+
+        <CardSeccion titulo="Suscripción" icono={<IconSuscripcion />}>
+          {isExempt ? (
+            <FilaDato label="Estado" valor="Cuenta exenta" />
+          ) : (
+            <>
+              <FilaDato label="Estado" valor={subscriptionExpired ? 'Vencida' : 'Activa'} />
+              <FilaDato
+                label="Vence el"
+                valor={subscriptionEndsAt ? formatFechaCorta(subscriptionEndsAt) : null}
+              />
+              {!subscriptionExpired && daysLeft != null && (
+                <FilaDato label="Días restantes" valor={String(daysLeft)} />
+              )}
+            </>
           )}
         </CardSeccion>
 

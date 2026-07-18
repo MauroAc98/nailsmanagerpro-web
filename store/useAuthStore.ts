@@ -17,6 +17,8 @@ interface AuthState {
   subscriptionExpired: boolean;
   supportInfo: SupportInfo | null;
   daysLeft: number | null;
+  subscriptionEndsAt: string | null;
+  isExempt: boolean;
   mostrarBienvenida: boolean;
   esPrimerLogin: boolean;
 
@@ -56,6 +58,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   subscriptionExpired: false,
   supportInfo: null,
   daysLeft: null,
+  subscriptionEndsAt: null,
+  isExempt: false,
   mostrarBienvenida: false,
   esPrimerLogin: false,
 
@@ -75,6 +79,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         subscriptionExpired: statusResponse.data.status === 'VENCIDO',
         daysLeft: statusResponse.data.days_left,
+        subscriptionEndsAt: statusResponse.data.ends_at,
+        isExempt: statusResponse.data.is_exempt,
         supportInfo: supportResponse,
       });
     } catch {
@@ -188,6 +194,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           subscriptionExpired: false,
           supportInfo: null,
           daysLeft: null,
+          subscriptionEndsAt: null,
+          isExempt: false,
           mostrarBienvenida: false,
           esPrimerLogin: false,
         });
