@@ -54,6 +54,11 @@ function FitText({
 
 interface Props {
   titulo:         string;
+  // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
+  // undefined = cuenta con ≤1 profesional activa o vista "default": no se
+  // agrega la segunda línea, el canvas queda pixel-idéntico a como estaba
+  // antes de esta feature.
+  profesionalNombre?: string;
   dias:           DisponibilidadDia[]; // diasAMostrar
   fondoUri:       string | null;
   canvasWidth:    number;
@@ -69,7 +74,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const esModoDia = dias.length === 1;
@@ -118,6 +123,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           }}>
             {titulo.toUpperCase()}
           </span>
+          {profesionalNombre && (
+            <span style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: 2, color: 'rgba(255,255,255,0.85)',
+              textAlign: 'center', marginTop: 4,
+            }}>
+              {profesionalNombre.toUpperCase()}
+            </span>
+          )}
           <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.4)', marginTop: 8 }} />
         </div>
 

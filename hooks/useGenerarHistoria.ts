@@ -77,6 +77,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const [textoInput,     setTextoInput]     = useState('');
   const [mostrarEmojis,  setMostrarEmojis]  = useState(false);
   const [editandoId,     setEditandoId]     = useState<string | null>(null);
+  // Multi-agenda — null = profesional default de la cuenta (comportamiento
+  // de siempre). El nombre para mostrar en el canvas se resuelve en la
+  // pantalla, que tiene acceso a useProfesionalStore; el hook solo maneja el id.
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
 
   const canvasRef      = useRef<HTMLDivElement>(null);
 
@@ -137,7 +141,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       const { desde, hasta } = getRango(fechaBase, modo);
       await withGlobalLoader(async () => {
         try {
-          const data = await turnoService.getDisponibilidad(desde, hasta);
+          const data = await turnoService.getDisponibilidad(desde, hasta, selectedProfesionalId ?? undefined);
           if (cancelled) return;
           setAgendaGenerada(data);
 
@@ -154,7 +158,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
     cargar();
     return () => { cancelled = true; };
-  }, [fechaBase, modo]);
+  }, [fechaBase, modo, selectedProfesionalId]);
 
   // ─────────────────────────────────────────────
   // Reset (mode switch / date nav) — fondoUri untouched
@@ -381,6 +385,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
+    selectedProfesionalId, setSelectedProfesionalId,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos,

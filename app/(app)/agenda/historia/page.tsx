@@ -1,12 +1,13 @@
 'use client';
 
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 
 // ─────────────────────────────────────────────
 // Style helpers
@@ -41,12 +42,23 @@ function HistoriaContent() {
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight,
+    selectedProfesionalId, setSelectedProfesionalId,
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
     toggleDiaOculto, toggleSlot,
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
     elegirFoto, descargarImagen, compartirImagen, fondoUri,
   } = useGenerarHistoria(fechaInicial);
+
+  // Multi-agenda — invisible con ≤1 profesional activa, mismo criterio que
+  // el resto de la app.
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
+  useEffect(() => {
+    if (profesionales.length === 0) fetchProfesionales();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
 
   const handleFondoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,12 +140,42 @@ function HistoriaContent() {
           </div>
         )}
 
+        {/* Selector de profesional — invisible con ≤1 profesional activa */}
+        {mostrarSelectorProfesional && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%', marginBottom: 14 }}>
+            {activeProfesionales.map(p => {
+              const selected = selectedProfesionalId === p.id;
+              const color    = p.color || colors.primary;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
+                    border: `1px solid ${selected ? color : '#DDD'}`,
+                    backgroundColor: selected ? color : '#FFF',
+                    color: selected ? '#FFF' : colors.text,
+                  }}
+                >
+                  <span style={{
+                    width: 8, height: 8, borderRadius: 4, flexShrink: 0,
+                    backgroundColor: selected ? '#FFF' : color,
+                  }} />
+                  {p.nombre}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Canvas + controls, or empty state */}
         {hayContenido ? (
           <>
             <StoryCanvas
               ref={canvasRef}
               titulo={titulo}
+              profesionalNombre={profesionalSeleccionada?.nombre}
               dias={diasAMostrar}
               fondoUri={fondoUri}
               canvasWidth={canvasWidth}

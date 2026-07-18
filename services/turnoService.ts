@@ -110,9 +110,11 @@ export const turnoService = {
     await api.delete(`/turnos/${id}`);
   },
 
-  getDisponibilidad: async (desde: string, hasta: string): Promise<DisponibilidadDia[]> => {
+  // profesionalId opcional — mismo patrón que getByMes/slotService.getAll:
+  // el backend filtra server-side, cae al default de la cuenta si se omite.
+  getDisponibilidad: async (desde: string, hasta: string, profesionalId?: number): Promise<DisponibilidadDia[]> => {
     const { data } = await api.get<DisponibilidadDia[]>('/turnos/disponibilidad', {
-      params: { desde, hasta },
+      params: { desde, hasta, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
     });
     return data;
   },
