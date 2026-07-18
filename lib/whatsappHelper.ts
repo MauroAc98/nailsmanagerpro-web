@@ -8,6 +8,7 @@ interface MessageData {
   fecha:           string; // "YYYY-MM-DD"
   hora:            string; // "HH:MM"
   plantilla:       string;
+  profesional?:    string;
 }
 
 export const whatsappHelper = {
@@ -20,7 +21,8 @@ export const whatsappHelper = {
       .replace(/{apellido}/g,  data.clienteApellido)
       .replace(/{servicios}/g, data.servicio)
       .replace(/{fecha}/g,     fechaFormateada)
-      .replace(/{hora}/g,      data.hora);
+      .replace(/{hora}/g,      data.hora)
+      .replace(/{profesional}/g, data.profesional ?? '');
 
     const numeroDestino = phoneUtils.formatForWhatsApp(data.clienteTelefono);
     return `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensajeFinal)}`;

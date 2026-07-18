@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { colors } from '@/theme/colors';
 import { ALL_EMOJIS } from '@/constants/editor';
 import { TipoPlantilla } from '@/services/authService';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 
-const VARIABLES = ['{nombre}', '{apellido}', '{servicios}', '{fecha}', '{hora}'];
+const VARIABLES_BASE = ['{nombre}', '{apellido}', '{servicios}', '{fecha}', '{hora}'];
 
 const PREVIEW_DATA = {
   clienteNombre: 'Carla',
@@ -14,6 +15,7 @@ const PREVIEW_DATA = {
   servicio: 'Esculpidas + Nail Art',
   fecha: 'Lunes 11',
   hora: '16:00',
+  profesional: 'Fio',
 };
 
 function sustituirVariables(mensaje: string): string {
@@ -22,7 +24,8 @@ function sustituirVariables(mensaje: string): string {
     .replace(/{apellido}/g, PREVIEW_DATA.clienteApellido)
     .replace(/{servicios}/g, PREVIEW_DATA.servicio)
     .replace(/{fecha}/g, PREVIEW_DATA.fecha)
-    .replace(/{hora}/g, PREVIEW_DATA.hora);
+    .replace(/{hora}/g, PREVIEW_DATA.hora)
+    .replace(/{profesional}/g, PREVIEW_DATA.profesional);
 }
 
 function IconClose() {
@@ -42,6 +45,19 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
   const [tipoActual, setTipoActual] = useState<TipoPlantilla>('recordatorio');
   const [mensaje, setMensaje] = useState(() => obtenerContenido('recordatorio'));
   const [mostrarEmojis, setMostrarEmojis] = useState(false);
+
+  // Multi-agenda — {profesional} solo se ofrece como variable cuando la
+  // cuenta tiene más de una profesional activa (misma regla que el resto
+  // de la app, ver app/(app)/agenda/nuevo/page.tsx).
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
+  useEffect(() => {
+    if (profesionales.length === 0) fetchProfesionales();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const VARIABLES = mostrarSelectorProfesional
+    ? [...VARIABLES_BASE, '{profesional}']
+    : VARIABLES_BASE;
 
   // Reseed `mensaje` when `tipoActual` changes, or once the async template
   // fetch resolves (the initial seed above runs before it — while it still

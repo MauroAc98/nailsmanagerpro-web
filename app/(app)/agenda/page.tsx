@@ -81,6 +81,7 @@ function SwipeableTurnoCard({
   onPress,
   plantillaWhatsapp,
   profesionalLabel,
+  profesionalNombreWhatsapp,
 }: {
   turno:                       Turno;
   onCancel?:                   () => void;
@@ -88,6 +89,12 @@ function SwipeableTurnoCard({
   onPress?:                    () => void;
   plantillaWhatsapp:           string;
   profesionalLabel?:           ProfesionalLabel | null;
+  // Nombre de la profesional a cargo del turno, para el placeholder
+  // {profesional} del mensaje de WhatsApp. A diferencia de profesionalLabel
+  // (que se oculta con ≤1 profesional activa), este SIEMPRE se resuelve
+  // cuando el turno tiene profesional asignada — la sustitución del mensaje
+  // debe ser correcta sin importar el tamaño de la cuenta.
+  profesionalNombreWhatsapp?:  string;
 }) {
   const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
@@ -244,6 +251,7 @@ function SwipeableTurnoCard({
                   fecha:           fechaDeHora(turno.fecha_hora),
                   hora:            horaDeHora(turno.fecha_hora),
                   plantilla:       plantillaWhatsapp,
+                  profesional:     profesionalNombreWhatsapp,
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1167,6 +1175,14 @@ export default function AgendaPage() {
                 ? { nombre: profesionalDelTurno.nombre, color: profesionalDelTurno.color || colors.primary }
                 : null;
 
+              // Para el placeholder {profesional} del mensaje de WhatsApp: a
+              // diferencia de profesionalLabel, no se oculta con ≤1
+              // profesional activa — el mensaje debe ser correcto siempre
+              // que el turno tenga profesional resuelta.
+              const profesionalNombreWhatsapp = turno.profesional_id != null
+                ? profesionalesById.get(turno.profesional_id)?.nombre
+                : undefined;
+
               if (pasado) {
                 return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} />;
               }
@@ -1179,6 +1195,7 @@ export default function AgendaPage() {
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   plantillaWhatsapp={obtenerContenido('recordatorio')}
                   profesionalLabel={profesionalLabel}
+                  profesionalNombreWhatsapp={profesionalNombreWhatsapp}
                 />
               );
             })}
