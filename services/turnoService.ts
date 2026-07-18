@@ -13,6 +13,12 @@ export interface Turno {
   estado: 'confirmado' | 'completado' | 'cancelado';
   estado_visual: 'confirmado' | 'completado' | 'cancelado' | 'en_curso';
   notas?: string | null;
+  // Siempre presente en la respuesta (columna propia del turno — el backend
+  // la resuelve server-side al default de la cuenta cuando no se manda), pero
+  // NUNCA viene con el objeto `profesional` anidado: TurnoController no hace
+  // eager-load de esa relación (a diferencia de `cliente`/`servicios`). Para
+  // mostrar nombre/color hay que resolverlo contra useProfesionalStore.
+  profesional_id?: number | null;
 }
 
 export interface TurnoMes {
@@ -25,6 +31,9 @@ export interface CreateTurnoDto {
   servicio_ids: number[];
   fecha_hora: string;   // "YYYY-MM-DD HH:MM"
   notas?: string;
+  // Opcional — si se omite, el backend resuelve al profesional default de
+  // la cuenta. Nunca marcar como requerido (multi-agenda es aditivo).
+  profesional_id?: number;
 }
 
 export type UpdateTurnoDto = Partial<CreateTurnoDto>;
@@ -41,12 +50,15 @@ export interface DisponibilidadDia {
 
 // ─────────────────────────────────────────────
 // Search filters — mirrors RN's typed union: the index endpoint accepts
-// exactly ONE of these params at a time (fecha | buscar | servicio_id).
+// exactly ONE of these params at a time (fecha | buscar | servicio_id),
+// plus the desde/hasta range branch that TurnoController::index also
+// supports.
 // ─────────────────────────────────────────────
 export type FiltrosTurnos =
   | { fecha: string }
   | { buscar: string }
-  | { servicio_id: number };
+  | { servicio_id: number }
+  | { desde: string; hasta: string };
 
 // ─────────────────────────────────────────────
 // Service
@@ -62,9 +74,15 @@ export const turnoService = {
   buscarPorNombre:   (nombre: string): Promise<Turno[]> => turnoService.getTurnos({ buscar: nombre }),
   buscarPorServicio: (id: number):     Promise<Turno[]> => turnoService.getTurnos({ servicio_id: id }),
   buscarPorFecha:    (fecha: string):  Promise<Turno[]> => turnoService.getTurnos({ fecha }),
+  buscarPorRango:    (desde: string, hasta: string): Promise<Turno[]> => turnoService.getTurnos({ desde, hasta }),
 
-  getByMes: async (mes: string): Promise<TurnoMes[]> => {
-    const { data } = await api.get<Record<string, { cantidad: number }>>('/turnos/marcas', { params: { mes } });
+  // profesionalId opcional — el backend filtra server-side cuando se manda,
+  // devuelve el conteo total de la cuenta cuando se omite (comportamiento
+  // previo, intacto para RN).
+  getByMes: async (mes: string, profesionalId?: number): Promise<TurnoMes[]> => {
+    const { data } = await api.get<Record<string, { cantidad: number }>>('/turnos/marcas', {
+      params: { mes, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
+    });
     return Object.entries(data).map(([fecha, v]) => ({ fecha, cantidad: v.cantidad }));
   },
 
@@ -93,7 +111,9 @@ export const turnoService = {
   },
 
   getDisponibilidad: async (desde: string, hasta: string): Promise<DisponibilidadDia[]> => {
-    const { data } = await api.get<DisponibilidadDia[]>('/turnos/disponibilidad', { params: { desde, hasta } });
+    const { data } = await api.get<DisponibilidadDia[]>('/turnos/disponibilidad', {
+      params: { desde, hasta },
+    });
     return data;
   },
 };

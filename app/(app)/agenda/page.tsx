@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { Turno, TurnoMes } from '@/services/turnoService';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { turnoService, Turno, TurnoMes } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
+import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
@@ -64,18 +66,28 @@ const sectionLabelStyle: React.CSSProperties = {
 // onCancel is optional: when omitted (completado/en_curso per caller),
 // the swipe-reveal cancel panel and touch handlers are skipped entirely.
 // ─────────────────────────────────────────────
+// Multi-agenda — nombre + color de la profesional a cargo, para la tercera
+// línea de timeSection. undefined/null = no se muestra (cuenta con ≤1
+// profesional activa, o la vista ya está filtrada a una sola).
+interface ProfesionalLabel {
+  nombre: string;
+  color:  string;
+}
+
 function SwipeableTurnoCard({
   turno,
   onCancel,
   onFinalizar,
   onPress,
   plantillaWhatsapp,
+  profesionalLabel,
 }: {
-  turno:              Turno;
-  onCancel?:          () => void;
-  onFinalizar?:       () => void;
-  onPress?:           () => void;
-  plantillaWhatsapp:  string;
+  turno:                       Turno;
+  onCancel?:                   () => void;
+  onFinalizar?:                () => void;
+  onPress?:                    () => void;
+  plantillaWhatsapp:           string;
+  profesionalLabel?:           ProfesionalLabel | null;
 }) {
   const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
@@ -141,6 +153,24 @@ function SwipeableTurnoCard({
       <span style={{ fontSize: 9, fontWeight: 700, color: '#999', marginTop: 2, textTransform: 'uppercase' }}>
         {formatFechaMini(turno.fecha_hora)}
       </span>
+      {profesionalLabel && (
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: 3, marginTop: 2,
+          maxWidth: 64, overflow: 'hidden',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+            backgroundColor: profesionalLabel.color,
+          }} />
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: '#999',
+            textTransform: 'uppercase', letterSpacing: 0.3,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {profesionalLabel.nombre}
+          </span>
+        </span>
+      )}
       <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: '#F0F0F0' }} />
     </div>
   );
@@ -321,7 +351,7 @@ function SwipeableTurnoCard({
 // ─────────────────────────────────────────────
 // FinalizadoCard — opacity 0.6, no swipe
 // ─────────────────────────────────────────────
-function FinalizadoCard({ turno }: { turno: Turno }) {
+function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesionalLabel?: ProfesionalLabel | null }) {
   return (
     <div style={{ opacity: 0.6 }}>
       <div style={{
@@ -340,6 +370,24 @@ function FinalizadoCard({ turno }: { turno: Turno }) {
           <span style={{ fontSize: 9, fontWeight: 700, color: '#999', marginTop: 2, textTransform: 'uppercase' }}>
             {formatFechaMini(turno.fecha_hora)}
           </span>
+          {profesionalLabel && (
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 3, marginTop: 2,
+              maxWidth: 64, overflow: 'hidden',
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+                backgroundColor: profesionalLabel.color,
+              }} />
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: '#999',
+                textTransform: 'uppercase', letterSpacing: 0.3,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {profesionalLabel.nombre}
+              </span>
+            </span>
+          )}
           <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: '#F0F0F0' }} />
         </div>
 
@@ -795,6 +843,63 @@ function CalendarioMensual({
 }
 
 // ─────────────────────────────────────────────
+// SelectorProfesionalDia — pill dinámico de profesional, invisible para
+// cuentas con ≤1 profesional activa. Solo muestra profesionales que tienen
+// al menos un turno vigente ese día, más un "Todas" implícito que fusiona
+// la vista (comportamiento por defecto).
+// ─────────────────────────────────────────────
+function SelectorProfesionalDia({
+  profesionales,
+  filtroActivo,
+  onSeleccionar,
+}: {
+  profesionales: Profesional[];
+  filtroActivo:  number | null;
+  onSeleccionar: (id: number | null) => void;
+}) {
+  return (
+    <div style={{
+      display: 'flex', gap: 8, padding: '0 20px 12px',
+      overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+    }}>
+      <button
+        onClick={() => onSeleccionar(null)}
+        style={{
+          flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+          border: `1px solid ${filtroActivo === null ? colors.primary : '#DDD'}`,
+          backgroundColor: filtroActivo === null ? colors.primary : '#FFF',
+          color: filtroActivo === null ? '#FFF' : colors.text,
+          cursor: 'pointer', whiteSpace: 'nowrap',
+        }}
+      >
+        Todas
+      </button>
+      {profesionales.map(p => {
+        const selected = filtroActivo === p.id;
+        const color = p.color || colors.primary;
+        return (
+          <button
+            key={p.id}
+            onClick={() => onSeleccionar(selected ? null : p.id)}
+            style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+              borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+              border: `1px solid ${selected ? color : '#DDD'}`,
+              backgroundColor: selected ? color : '#FFF',
+              color: selected ? '#FFF' : colors.text,
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: 4, flexShrink: 0, backgroundColor: selected ? '#FFF' : color }} />
+            {p.nombre}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // AgendaPage
 // ─────────────────────────────────────────────
 export default function AgendaPage() {
@@ -809,12 +914,15 @@ export default function AgendaPage() {
   } = useTurnoStore();
 
   const { servicios, fetchServicios } = useServiciosStore();
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { obtenerContenido } = useWhatsappTemplates();
 
   const [textoBusqueda,   setTextoBusqueda]   = useState('');
   const [servicioFiltro,  setServicioFiltro]  = useState<number | null>(null);
   const [fechaFiltro,     setFechaFiltro]     = useState<string | null>(null);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const [profesionalFiltro, setProfesionalFiltro] = useState<number | null>(null);
+  const [turnosMesFiltrado, setTurnosMesFiltrado] = useState<TurnoMes[]>([]);
   const [viewDate,        setViewDate]        = useState<Date>(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
@@ -827,6 +935,52 @@ export default function AgendaPage() {
   const hoy = new Date().toISOString().split('T')[0];
   const esFechaPasada = fechaSeleccionada < hoy;
 
+  // ─────────────────────────────────────────────
+  // Multi-agenda — invisible para cuentas con ≤1 profesional activa (el caso
+  // común hoy). Todo lo que sigue en esta sección queda en no-op si
+  // mostrarSelectorProfesional es false.
+  // ─────────────────────────────────────────────
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+
+  const profesionalesById = useMemo(
+    () => new Map(profesionales.map(p => [p.id, p])),
+    [profesionales]
+  );
+
+  // Solo profesionales con al menos un turno vigente ese día — el "Todas"
+  // implícito lo agrega SelectorProfesionalDia.
+  const profesionalesConTurnoHoy = useMemo(() => {
+    if (!mostrarSelectorProfesional) return [];
+    const ids = new Set(
+      turnos
+        .filter(t => t.estado !== 'cancelado' && t.profesional_id != null)
+        .map(t => t.profesional_id as number)
+    );
+    return profesionales.filter(p => ids.has(p.id));
+  }, [turnos, profesionales, mostrarSelectorProfesional]);
+
+  // Badges del calendario mensual filtrados por profesional — solo se pide
+  // cuando hay una profesional puntual seleccionada; con "Todas" alcanza
+  // turnosMes de siempre (misma fuente, sin filtrar). El backend filtra
+  // server-side (/turnos/marcas?profesional_id=...) y devuelve el mismo
+  // agregado liviano {fecha, cantidad} ya filtrado — no trae turnos completos.
+  useEffect(() => {
+    if (!mostrarSelectorProfesional || profesionalFiltro === null) return;
+    let cancelled = false;
+
+    const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
+    turnoService.getByMes(mes, profesionalFiltro)
+      .then(data => { if (!cancelled) setTurnosMesFiltrado(data); })
+      .catch(e => console.error('fetchTurnosMesFiltrado:', e));
+
+    return () => { cancelled = true; };
+  }, [mostrarSelectorProfesional, profesionalFiltro, viewDate]);
+
+  const turnosMesParaBadges = (mostrarSelectorProfesional && profesionalFiltro !== null)
+    ? turnosMesFiltrado
+    : turnosMes;
+
   // Mount: load today's data
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -834,6 +988,7 @@ export default function AgendaPage() {
     fetchTurnos(today);
     fetchTurnosMes(today.slice(0, 7));
     if (servicios.length === 0) fetchServicios();
+    if (profesionales.length === 0) fetchProfesionales();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMonthChange = useCallback((newDate: Date) => {
@@ -851,6 +1006,7 @@ export default function AgendaPage() {
 
     setFechaSeleccionada(newFecha);
     fetchTurnos(newFecha);
+    setProfesionalFiltro(null);
   }, [fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
 
   const handleDayClick = useCallback((fecha: string) => {
@@ -866,6 +1022,7 @@ export default function AgendaPage() {
 
     setFechaSeleccionada(fecha);
     fetchTurnos(fecha);
+    setProfesionalFiltro(null);
   }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
 
   const handleFinalizar = async (id: number) => {
@@ -918,9 +1075,18 @@ export default function AgendaPage() {
   // the pre-search implementation (backend already excludes them in practice).
   const vigentes = (list: Turno[]) => list.filter(t => t.estado !== 'cancelado');
 
-  const datosAMostrar = hayFiltroActivo
+  const datosBase = hayFiltroActivo
     ? vigentes(turnosBusqueda)
     : [...vigentes(turnos)].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+
+  const datosAMostrar = (mostrarSelectorProfesional && profesionalFiltro !== null)
+    ? datosBase.filter(t => t.profesional_id === profesionalFiltro)
+    : datosBase;
+
+  // La etiqueta de nombre/color en la card solo se muestra en la vista
+  // "Todas" (redundante si ya está filtrada a una sola profesional) y solo
+  // si hay más de una profesional activa en la cuenta.
+  const mostrarEtiquetaProfesionalEnCard = mostrarSelectorProfesional && profesionalFiltro === null;
 
   const cargandoHeader = loading || cargandoBusqueda;
 
@@ -946,13 +1112,23 @@ export default function AgendaPage() {
         </button>
       </div>
 
+      {/* Selector de profesional — invisible con ≤1 profesional activa, o si
+          nadie tiene turno vigente ese día */}
+      {mostrarSelectorProfesional && profesionalesConTurnoHoy.length > 0 && (
+        <SelectorProfesionalDia
+          profesionales={profesionalesConTurnoHoy}
+          filtroActivo={profesionalFiltro}
+          onSeleccionar={setProfesionalFiltro}
+        />
+      )}
+
       {/* Calendar — dimmed and disabled while a filter is active */}
       <div style={{ opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
         <CalendarioMensual
           viewDate={viewDate}
           onMonthChange={handleMonthChange}
           fechaSeleccionada={fechaSeleccionada}
-          turnosMes={turnosMes}
+          turnosMes={turnosMesParaBadges}
           onDayClick={handleDayClick}
         />
       </div>
@@ -984,8 +1160,15 @@ export default function AgendaPage() {
               const pasado   = turno.estado_visual === 'completado';
               const cursando = turno.estado_visual === 'en_curso';
 
+              const profesionalDelTurno = mostrarEtiquetaProfesionalEnCard && turno.profesional_id != null
+                ? profesionalesById.get(turno.profesional_id)
+                : undefined;
+              const profesionalLabel = profesionalDelTurno
+                ? { nombre: profesionalDelTurno.nombre, color: profesionalDelTurno.color || colors.primary }
+                : null;
+
               if (pasado) {
-                return <FinalizadoCard key={turno.id} turno={turno} />;
+                return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} />;
               }
               return (
                 <SwipeableTurnoCard
@@ -995,6 +1178,7 @@ export default function AgendaPage() {
                   onFinalizar={cursando ? () => handleFinalizar(turno.id) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   plantillaWhatsapp={obtenerContenido('recordatorio')}
+                  profesionalLabel={profesionalLabel}
                 />
               );
             })}

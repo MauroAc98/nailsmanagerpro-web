@@ -1,0 +1,245 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { colors } from '@/theme/colors';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useServiciosStore } from '@/store/useServicioStore';
+import ColorSwatchPicker from '@/components/ColorSwatchPicker';
+import { profesionalPalette } from '@/theme/colors';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box',
+  backgroundColor: '#FFF', border: '1px solid #EEE',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12,
+  padding: '14px 16px', fontSize: 15, color: '#333', outline: 'none',
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 13, fontWeight: 600, color: '#555',
+  marginBottom: 7, display: 'block', marginLeft: 2,
+};
+
+function Checkbox({ checked }: { checked: boolean }) {
+  return (
+    <div style={{
+      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+      border: `2px solid ${checked ? colors.primary : '#DDD'}`,
+      backgroundColor: checked ? colors.primary : '#FFF',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {checked && (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth="3">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div
+      onClick={() => onChange(!value)}
+      style={{
+        width: 44, height: 26, borderRadius: 13,
+        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        position: 'relative', cursor: 'pointer',
+        transition: 'background 0.2s', flexShrink: 0,
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 3,
+        left: value ? 21 : 3,
+        width: 20, height: 20, borderRadius: 10,
+        backgroundColor: value ? colors.primary : '#CCC',
+        transition: 'left 0.2s',
+      }} />
+    </div>
+  );
+}
+
+export default function EditarProfesionalPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = Number(params.id);
+  const { profesionales, fetchProfesionales, actualizarProfesional } = useProfesionalStore();
+  const { servicios, fetchServicios } = useServiciosStore();
+
+  const [nombre,      setNombre]      = useState('');
+  const [color,       setColor]       = useState<string>(profesionalPalette[0]);
+  const [activo,      setActivo]      = useState(true);
+  const [servicioIds, setServicioIds] = useState<number[]>([]);
+  const [errorNombre, setErrorNombre] = useState('');
+  const [loadingProfesional, setLoadingProfesional] = useState(true);
+  const [saving,      setSaving]      = useState(false);
+
+  useEffect(() => {
+    const cargar = async () => {
+      if (servicios.length === 0) fetchServicios();
+
+      let p = profesionales.find(x => x.id === id);
+      if (!p) {
+        await fetchProfesionales();
+      }
+      p = useProfesionalStore.getState().profesionales.find(x => x.id === id);
+
+      if (!p) {
+        alert('No se pudo cargar la profesional.');
+        router.push('/configuracion/profesionales');
+        return;
+      }
+
+      setNombre(p.nombre);
+      setColor(p.color || profesionalPalette[0]);
+      setActivo(p.activo);
+      setServicioIds(p.servicios.map(s => s.id));
+      setLoadingProfesional(false);
+    };
+    if (id) cargar();
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleServicio = (sid: number) => {
+    setServicioIds(prev => prev.includes(sid) ? prev.filter(s => s !== sid) : [...prev, sid]);
+  };
+
+  const handleGuardar = async () => {
+    if (!nombre.trim()) {
+      setErrorNombre('El nombre es obligatorio');
+      return;
+    }
+
+    const nombreNormalizado = nombre.trim().toLowerCase();
+    const duplicado = profesionales.find(p => p.nombre.toLowerCase() === nombreNormalizado && p.id !== id);
+    if (duplicado) {
+      const msg = duplicado.activo
+        ? 'Ya existe una profesional con ese nombre.'
+        : 'Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.';
+      alert(msg);
+      return;
+    }
+
+    setSaving(true);
+    const result = await actualizarProfesional(id, {
+      nombre: nombre.trim(),
+      color,
+      activo,
+      servicio_ids: servicioIds,
+    });
+    setSaving(false);
+
+    if (result.success) {
+      router.push('/configuracion/profesionales');
+    } else {
+      alert(result.message ?? 'No se pudo guardar la profesional.');
+    }
+  };
+
+  const serviciosActivos = servicios.filter(s => s.activo);
+
+  if (loadingProfesional) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#999' }}>Cargando...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 40 }}>
+      {/* Header */}
+      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={() => router.back()}
+          style={{
+            width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F5',
+            border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Editar profesional</h1>
+      </div>
+
+      {/* Form */}
+      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Nombre */}
+        <div>
+          <label style={labelStyle}>Nombre *</label>
+          <input
+            type="text"
+            placeholder="Ej: Sofía"
+            value={nombre}
+            onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
+            style={{ ...inputStyle, borderColor: errorNombre ? '#e57373' : '#EEE' }}
+          />
+          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errorNombre}</p>}
+        </div>
+
+        {/* Color */}
+        <div>
+          <label style={labelStyle}>Color</label>
+          <ColorSwatchPicker value={color} onChange={setColor} />
+        </div>
+
+        {/* Activo */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          backgroundColor: '#FFF', border: '1px solid #EEE', borderRadius: 12, padding: '12px 16px',
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#333' }}>Activa</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
+              {activo ? 'Disponible para agendar turnos' : 'No aparece para agendar nuevos turnos'}
+            </p>
+          </div>
+          <PillToggle value={activo} onChange={setActivo} />
+        </div>
+
+        {/* Servicios */}
+        <div>
+          <label style={labelStyle}>Servicios que puede realizar</label>
+          {serviciosActivos.length === 0 ? (
+            <p style={{ fontSize: 13, color: '#999', margin: '4px 0 0 2px' }}>
+              No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {serviciosActivos.map(s => (
+                <div
+                  key={s.id}
+                  onClick={() => toggleServicio(s.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    backgroundColor: '#FFF', border: '1px solid #EEE',
+                    borderRadius: 12, padding: '12px 14px', cursor: 'pointer',
+                  }}
+                >
+                  <Checkbox checked={servicioIds.includes(s.id)} />
+                  <span style={{ flex: 1, fontSize: 14, color: '#333' }}>{s.nombre}</span>
+                  <span style={{ fontSize: 12, color: '#999' }}>{s.duracion_minutos} min</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Button */}
+        <button
+          onClick={handleGuardar}
+          disabled={saving}
+          style={{
+            marginTop: 20, height: 52, borderRadius: 14,
+            backgroundColor: saving ? '#e0c4c7' : colors.primary,
+            color: '#fff', fontSize: 16, fontWeight: 600,
+            border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+      </div>
+    </div>
+  );
+}

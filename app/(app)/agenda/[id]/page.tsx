@@ -7,6 +7,7 @@ import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
 import { useSlotsStore } from '@/store/useSlotsStore';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
@@ -58,11 +59,13 @@ export default function EditarTurnoPage() {
   const { servicios, fetchServicios }   = useServiciosStore();
   const { clientes, fetchClientes }     = useClientesStore();
   const { slots, fetchSlots }           = useSlotsStore();
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   const [fecha,               setFecha]               = useState('');
   const [turnoClienteId,      setTurnoClienteId]      = useState<number | null>(null);
   const [selectedCliente,     setSelectedCliente]     = useState<Cliente | null>(null);
   const [selectedServicioIds, setSelectedServicioIds] = useState<number[]>([]);
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [clienteBuscar,       setClienteBuscar]       = useState('');
   const [showHoraPicker,      setShowHoraPicker]      = useState(false);
@@ -78,6 +81,7 @@ export default function EditarTurnoPage() {
     if (clientes.length === 0) fetchClientes();
     if (servicios.length === 0) fetchServicios();
     if (slots.length === 0) fetchSlots();
+    if (profesionales.length === 0) fetchProfesionales();
     fetchTurno(turnoId);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -92,6 +96,9 @@ export default function EditarTurnoPage() {
     setHoraSeleccionada({ hora: h, minuto: m });
     setTempHora({ hora: h, minuto: m });
     setTurnoClienteId(turnoActual.cliente_id);
+    // Preserva la profesional ya asignada al turno — si se omite acá el
+    // backend re-resolvería al default de la cuenta en cada edición.
+    setSelectedProfesionalId(turnoActual.profesional_id ?? null);
     fetchTurnos(dateStr);
   }, [turnoActual]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,14 +110,41 @@ export default function EditarTurnoPage() {
     }
   }, [turnoClienteId, clientes, selectedCliente]);
 
+  // ─────────────────────────────────────────────
+  // Multi-agenda — invisible para cuentas con ≤1 profesional activa.
+  // ─────────────────────────────────────────────
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const profesionalSeleccionado    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
+
   const toggleServicio = (id: number) => {
     setSelectedServicioIds(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
   };
 
+  const handleSeleccionarProfesional = (id: number) => {
+    setSelectedProfesionalId(prev => prev === id ? null : id);
+  };
+
+  // Con selector visible: solo se ofrecen los servicios de la profesional
+  // elegida, pero sin descartar automáticamente los ya tildados del turno
+  // original (para no perder datos existentes al solo abrir la pantalla).
+  const serviciosDisponibles = mostrarSelectorProfesional
+    ? (profesionalSeleccionado
+        ? servicios.filter(s => s.activo &&
+            (profesionalSeleccionado.servicios.some(ps => ps.id === s.id) || selectedServicioIds.includes(s.id)))
+        : servicios.filter(s => s.activo && selectedServicioIds.includes(s.id)))
+    : servicios.filter(s => s.activo);
+
+  // Mismo escope por profesional que en agenda/nuevo — ver comentario ahí.
+  const turnosDelDiaParaValidar = mostrarSelectorProfesional && selectedProfesionalId
+    ? turnos.filter(t => t.profesional_id === selectedProfesionalId)
+    : turnos;
+
   const handleGuardar = async () => {
     if (!selectedCliente || selectedServicioIds.length === 0) return;
+    if (mostrarSelectorProfesional && !selectedProfesionalId) return;
 
     const hora = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
     const errorValidacion = validarTurno({
@@ -119,7 +153,7 @@ export default function EditarTurnoPage() {
       clienteId: selectedCliente.id,
       servicioIds: selectedServicioIds,
       servicios,
-      turnosDelDia: turnos,
+      turnosDelDia: turnosDelDiaParaValidar,
       slots,
       excluirTurnoId: turnoId,
     });
@@ -133,6 +167,13 @@ export default function EditarTurnoPage() {
       cliente_id:   selectedCliente.id,
       servicio_ids: selectedServicioIds,
       fecha_hora:   `${fecha} ${hora}`,
+      // Se envía siempre que haya una profesional cargada (precargada desde
+      // turnoActual.profesional_id, ver efecto más arriba), sin depender de
+      // mostrarSelectorProfesional — si esa condición gatillara el envío,
+      // una profesional asignada que quedó fuera del set "activo" (o una
+      // cuenta que bajó a ≤1 activa) haría que el PUT omita profesional_id
+      // y el backend reasigne el turno a la profesional default de la cuenta.
+      ...(selectedProfesionalId ? { profesional_id: selectedProfesionalId } : {}),
     });
     setSaving(false);
     if (result.success) router.back();
@@ -250,24 +291,62 @@ export default function EditarTurnoPage() {
           )}
         </div>
 
+        {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa) */}
+        {mostrarSelectorProfesional && (
+          <>
+            <p style={sectionLabelStyle}>PROFESIONAL</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+              {activeProfesionales.map(p => {
+                const selected = selectedProfesionalId === p.id;
+                const color = p.color || colors.primary;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSeleccionarProfesional(p.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
+                      border: `1px solid ${selected ? color : '#DDD'}`,
+                      backgroundColor: selected ? color : '#FFF',
+                      color: selected ? '#FFF' : colors.text,
+                    }}
+                  >
+                    <span style={{
+                      width: 8, height: 8, borderRadius: 4, flexShrink: 0,
+                      backgroundColor: selected ? '#FFF' : color,
+                    }} />
+                    {p.nombre}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {/* ─── SERVICIOS ─── */}
         <p style={sectionLabelStyle}>SERVICIOS</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          {servicios.filter(s => s.activo).map(s => (
-            <button
-              key={s.id}
-              onClick={() => toggleServicio(s.id)}
-              style={{
-                borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-                border: `1px solid ${selectedServicioIds.includes(s.id) ? colors.primary : '#DDD'}`,
-                backgroundColor: selectedServicioIds.includes(s.id) ? colors.primary : '#FFF',
-                color: selectedServicioIds.includes(s.id) ? '#FFF' : colors.text,
-              }}
-            >
-              {s.nombre}
-            </button>
-          ))}
-        </div>
+        {mostrarSelectorProfesional && !profesionalSeleccionado ? (
+          <p style={{ fontSize: 13, color: '#999', margin: '0 0 20px 2px' }}>
+            Elegí una profesional para ver sus servicios.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+            {serviciosDisponibles.map(s => (
+              <button
+                key={s.id}
+                onClick={() => toggleServicio(s.id)}
+                style={{
+                  borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
+                  border: `1px solid ${selectedServicioIds.includes(s.id) ? colors.primary : '#DDD'}`,
+                  backgroundColor: selectedServicioIds.includes(s.id) ? colors.primary : '#FFF',
+                  color: selectedServicioIds.includes(s.id) ? '#FFF' : colors.text,
+                }}
+              >
+                {s.nombre}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ─── HORA DEL TURNO ─── */}
         <p style={sectionLabelStyle}>HORA DEL TURNO</p>
@@ -281,12 +360,18 @@ export default function EditarTurnoPage() {
         {/* ─── Submit ─── */}
         <button
           onClick={handleGuardar}
-          disabled={saving || !selectedCliente || selectedServicioIds.length === 0}
+          disabled={
+            saving || !selectedCliente || selectedServicioIds.length === 0 ||
+            (mostrarSelectorProfesional && !selectedProfesionalId)
+          }
           style={{
             width: '100%', height: 52, borderRadius: 14,
             backgroundColor: colors.primary, color: '#fff',
             fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
-            opacity: !selectedCliente || selectedServicioIds.length === 0 ? 0.5 : 1,
+            opacity: (
+              !selectedCliente || selectedServicioIds.length === 0 ||
+              (mostrarSelectorProfesional && !selectedProfesionalId)
+            ) ? 0.5 : 1,
           }}
         >
           {saving ? 'Guardando...' : 'Guardar Cambios'}
