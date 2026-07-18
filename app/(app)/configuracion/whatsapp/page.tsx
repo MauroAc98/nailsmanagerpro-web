@@ -13,6 +13,34 @@ function downloadQR(qrBase64: string) {
   a.click();
 }
 
+// Mismo patrón que compartirImagen en agenda/historia: intenta el share
+// nativo con el archivo adjunto, y si no está disponible cae al mismo
+// comportamiento que "Descargar".
+async function shareQR(qrBase64: string) {
+  const base64 = qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`;
+
+  const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
+  if (nav.share && nav.canShare) {
+    try {
+      const res  = await fetch(base64);
+      const blob = await res.blob();
+      const file = new File([blob], `whatsapp_qr_${Date.now()}.png`, { type: 'image/png' });
+      if (nav.canShare({ files: [file] })) {
+        try {
+          await nav.share({ files: [file], title: 'Código QR de WhatsApp' });
+        } catch {
+          // usuario canceló o compartir falló — no-op silencioso
+        }
+        return;
+      }
+    } catch {
+      // fetch/blob falló — cae al fallback de abajo
+    }
+  }
+
+  downloadQR(qrBase64);
+}
+
 export default function WhatsappPage() {
   const router = useRouter();
   const {
@@ -195,17 +223,51 @@ export default function WhatsappPage() {
               ¿Usás el mismo teléfono para esta app? Descargá el QR y abrilo desde otro dispositivo para escanearlo.
             </p>
 
-            <button
-              onClick={() => downloadQR(qrBase64)}
-              style={{
-                width: '100%', height: 48, borderRadius: 14,
-                backgroundColor: colors.primary, color: '#fff',
-                fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer',
-                marginBottom: 12,
-              }}
-            >
-              Descargar QR
-            </button>
+            <div style={{ width: '100%', display: 'flex', gap: 10, marginBottom: 12 }}>
+              <button
+                onClick={() => downloadQR(qrBase64)}
+                style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Descargar</span>
+              </button>
+
+              <button
+                onClick={() => shareQR(qrBase64)}
+                style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+                </svg>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Compartir</span>
+              </button>
+
+              <button
+                onClick={() => { reset(); conectar(); }}
+                disabled={loading}
+                style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE',
+                  cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+                  <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Generar otro</span>
+              </button>
+            </div>
 
             {polling && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
@@ -220,18 +282,6 @@ export default function WhatsappPage() {
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
             )}
-
-            <button
-              onClick={() => { reset(); conectar(); }}
-              disabled={loading}
-              style={{
-                marginTop: 16, background: 'none', border: 'none',
-                cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1,
-                fontSize: 13, color: '#999', textDecoration: 'underline',
-              }}
-            >
-              Generar otro código
-            </button>
           </div>
         )}
 
