@@ -12,10 +12,14 @@ import React, {
 // ─────────────────────────────────────────────
 // BottomSheet — plain pointer-event drag sheet, mirrors the subset of
 // @gorhom/bottom-sheet's API the RN screens rely on (snapToIndex/close via
-// ref, onChange). Height is driven by snapPoints (fractions of viewport
-// height) and dragged via direct DOM style writes (same imperative-ref +
-// transition-toggle pattern as SwipeableTurnoCard in agenda/page.tsx), only
-// committing the snapped index to React state on release.
+// ref, onChange). The sheet's own DOM height is always fixed at the tallest
+// snap point; a smaller snap is achieved by translateY-ing it down inside an
+// overflow:hidden wrapper of that same fixed height, so dragging only ever
+// touches `transform` (compositor-only) instead of `height` (a layout
+// property that would force a reflow/repaint of the whole children subtree
+// on every pointermove) — same imperative-ref + transition-toggle pattern
+// as SwipeableTurnoCard's applyTransform in agenda/page.tsx, only committing
+// the snapped index to React state on release.
 // ─────────────────────────────────────────────
 
 export interface BottomSheetHandle {
@@ -57,12 +61,17 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     const draggingRef = useRef(false);
     const dragStartY = useRef(0);
     const dragStartHeight = useRef(0);
+    // Logical "visible height" in px, kept in sync with every applied
+    // transform — the sheet's DOM height never changes (always maxHeight),
+    // so this ref (not getBoundingClientRect) is the source of truth for
+    // "how much of it is showing right now" between renders.
+    const visibleHeightRef = useRef(0);
 
     const [viewportHeight, setViewportHeight] = useState(0);
     const availableHeight = Math.max(0, viewportHeight - bottomOffset);
     // Resting (non-dragging) snap index — real React state so the rendered
-    // height is always correct-by-construction on any re-render, instead of
-    // relying on initialIndex (stale after the first snap) plus an effect
+    // transform is always correct-by-construction on any re-render, instead
+    // of relying on initialIndex (stale after the first snap) plus an effect
     // that only self-corrected because snapPoints happened to be a fresh
     // array reference every render.
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -79,20 +88,38 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       [snapPoints, availableHeight],
     );
 
-    const applyHeight = useCallback((px: number, animate: boolean) => {
-      const el = sheetRef.current;
-      if (!el) return;
-      el.style.transition = animate ? 'height 0.25s ease' : 'none';
-      el.style.height = `${px}px`;
-    }, []);
+    const maxHeight = snapPoints[snapPoints.length - 1] * availableHeight;
+
+    const applyVisibleHeight = useCallback(
+      (px: number, animate: boolean) => {
+        const el = sheetRef.current;
+        if (!el) return;
+        const clamped = Math.min(maxHeight, Math.max(0, px));
+        visibleHeightRef.current = clamped;
+        el.style.transition = animate ? 'transform 0.25s ease' : 'none';
+        el.style.transform = `translateY(${maxHeight - clamped}px)`;
+      },
+      [maxHeight],
+    );
+
+    // Keeps visibleHeightRef (and the DOM transform, via the effect below
+    // re-triggering only through currentIndex/maxHeight — the JSX transform
+    // is declarative already) aligned with the resting snap index whenever
+    // it changes outside of a drag, e.g. after a viewport resize changes
+    // maxHeight while the sheet is at rest.
+    useEffect(() => {
+      if (!draggingRef.current) {
+        visibleHeightRef.current = heightForIndex(currentIndex);
+      }
+    }, [currentIndex, heightForIndex]);
 
     const goToIndex = useCallback(
       (index: number, animate = true) => {
-        applyHeight(heightForIndex(index), animate);
+        applyVisibleHeight(heightForIndex(index), animate);
         setCurrentIndex(index);
         onChange?.(index);
       },
-      [applyHeight, heightForIndex, onChange],
+      [applyVisibleHeight, heightForIndex, onChange],
     );
 
     useImperativeHandle(
@@ -107,19 +134,17 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     const handlePointerDown = (e: React.PointerEvent) => {
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartY.current = e.clientY;
-      dragStartHeight.current =
-        sheetRef.current?.getBoundingClientRect().height ?? heightForIndex(currentIndex);
+      dragStartHeight.current = visibleHeightRef.current;
       draggingRef.current = true;
-      applyHeight(dragStartHeight.current, false); // cancel any in-flight transition
+      applyVisibleHeight(dragStartHeight.current, false); // cancel any in-flight transition
     };
 
     const handlePointerMove = (e: React.PointerEvent) => {
       if (!draggingRef.current) return;
       const delta = dragStartY.current - e.clientY; // dragging up = positive
-      const maxHeight = snapPoints[snapPoints.length - 1] * availableHeight;
       const minHeight = enablePanDownToClose ? 0 : snapPoints[0] * availableHeight;
       const next = Math.min(maxHeight, Math.max(minHeight, dragStartHeight.current + delta));
-      applyHeight(next, false);
+      applyVisibleHeight(next, false);
     };
 
     const handlePointerUp = (e: React.PointerEvent) => {
@@ -127,7 +152,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       draggingRef.current = false;
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
 
-      const currentHeight = sheetRef.current?.getBoundingClientRect().height ?? 0;
+      const currentHeight = visibleHeightRef.current;
       const candidates = enablePanDownToClose
         ? [{ index: -1, px: 0 }, ...snapPoints.map((p, i) => ({ index: i, px: p * availableHeight }))]
         : snapPoints.map((p, i) => ({ index: i, px: p * availableHeight }));
@@ -147,39 +172,56 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
 
     return (
       <div
-        ref={sheetRef}
         style={{
           position: 'fixed',
           left: 0,
           right: 0,
           bottom: bottomOffset,
           zIndex: Z_INDEX,
-          height: heightForIndex(currentIndex),
-          backgroundColor,
-          borderRadius: '20px 20px 0 0',
-          boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
+          height: maxHeight,
           overflow: 'hidden',
+          // Only the actual sheet (below) should capture clicks — the empty
+          // space above it within this fixed-height clipping box must let
+          // clicks fall through to whatever is underneath, same as when the
+          // old height-driven div simply had zero size there.
+          pointerEvents: 'none',
         }}
       >
         <div
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          style={{ touchAction: 'none', cursor: 'grab', flexShrink: 0 }}
+          ref={sheetRef}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: maxHeight,
+            backgroundColor,
+            borderRadius: '20px 20px 0 0',
+            boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            transform: `translateY(${maxHeight - heightForIndex(currentIndex)}px)`,
+            pointerEvents: 'auto',
+          }}
         >
           <div
-            style={{
-              width: 40,
-              height: 4,
-              borderRadius: 2,
-              background: handleColor,
-              margin: '10px auto',
-            }}
-          />
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            style={{ touchAction: 'none', cursor: 'grab', flexShrink: 0 }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                background: handleColor,
+                margin: '10px auto',
+              }}
+            />
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>{children}</div>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>{children}</div>
       </div>
     );
   },
