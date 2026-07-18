@@ -52,7 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
-      <div style={{ flex: 1, overflow: 'auto', paddingBottom: 70 }}>
+      <div style={{ flex: 1, overflow: 'auto', paddingBottom: 'calc(70px + env(safe-area-inset-bottom))' }}>
         {children}
       </div>
 
@@ -62,6 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         left: 0,
         right: 0,
         height: 70,
+        paddingBottom: 'env(safe-area-inset-bottom)',
         backgroundColor: '#fff',
         borderTop: '1px solid #e0e0e0',
         display: 'flex',
