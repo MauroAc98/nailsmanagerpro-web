@@ -19,7 +19,7 @@ import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanne
 // ─────────────────────────────────────────────
 const SWIPE_REVEAL    = 80;
 const SWIPE_THRESHOLD = 55;
-const NAV_HEIGHT       = 70; // must match the bottom tab bar height in app/(app)/layout.tsx
+const NAV_HEIGHT       = 78; // must match the bottom tab bar height in app/(app)/layout.tsx
 
 const DAYS   = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = [

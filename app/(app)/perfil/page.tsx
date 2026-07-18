@@ -14,7 +14,7 @@ import { SheetNegocio } from '@/components/perfil/SheetNegocio';
 import { SheetPassword } from '@/components/perfil/SheetPassword';
 import { SheetMensajeWhatsapp } from '@/components/perfil/SheetMensajeWhatsapp';
 
-const NAV_HEIGHT = 70; // must match the bottom tab bar height in app/(app)/layout.tsx
+const NAV_HEIGHT = 78; // must match the bottom tab bar height in app/(app)/layout.tsx
 
 function formatFechaCorta(iso: string): string {
   const d = new Date(iso);
