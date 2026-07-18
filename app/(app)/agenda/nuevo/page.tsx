@@ -90,6 +90,17 @@ function NuevoTurnoContent() {
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionado  = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
 
+  // Cada profesional tiene sus propias horas de atención. Cuando cambia la
+  // profesional elegida en el paso PROFESIONAL, refetch de slots escopeado a
+  // ella para que validarTurno (bloqueo de horarios) refleje sus horas
+  // reales. Sin selector (≤1 profesional activa) esto nunca se dispara — el
+  // fetch inicial sin scope del mount (arriba) queda intacto.
+  useEffect(() => {
+    if (mostrarSelectorProfesional && selectedProfesionalId) {
+      fetchSlots(selectedProfesionalId);
+    }
+  }, [mostrarSelectorProfesional, selectedProfesionalId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const toggleServicio = (id: number) => {
     setSelectedServicioIds(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]

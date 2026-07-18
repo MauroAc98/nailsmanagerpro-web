@@ -8,13 +8,22 @@ export interface Slot {
 }
 
 export const slotService = {
-  getAll: async (): Promise<Slot[]> => {
-    const { data } = await api.get<Slot[]>('/slots');
+  // profesionalId opcional — el backend filtra server-side cuando se manda,
+  // devuelve los slots de la profesional default de la cuenta cuando se
+  // omite (comportamiento previo, intacto para RN). Mismo patrón opcional
+  // que turnoService.getByMes.
+  getAll: async (profesionalId?: number): Promise<Slot[]> => {
+    const { data } = await api.get<Slot[]>('/slots', {
+      params: profesionalId ? { profesional_id: profesionalId } : undefined,
+    });
     return data;
   },
 
-  create: async (hora: string): Promise<Slot> => {
-    const { data } = await api.post<Slot>('/slots', { hora });
+  create: async (hora: string, profesionalId?: number): Promise<Slot> => {
+    const { data } = await api.post<Slot>('/slots', {
+      hora,
+      ...(profesionalId ? { profesional_id: profesionalId } : {}),
+    });
     return data;
   },
 

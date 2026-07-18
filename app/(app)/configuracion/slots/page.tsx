@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Slot } from '@/services/slotService';
 import { DrumPicker } from '@/components/DrumPicker';
 
@@ -161,10 +162,37 @@ function SlotCard({
 export default function SlotsPage() {
   const router = useRouter();
   const { slots, loading, fetchSlots, agregarSlot, toggleSlot, eliminarSlot } = useSlotsStore();
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [horaSeleccionada, setHoraSeleccionada] = useState<Record<string, string>>({ hora: '09', minuto: '00' });
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
 
-  useEffect(() => { fetchSlots(); }, []);
+  // Multi-agenda — invisible para cuentas con ≤1 profesional activa (el caso
+  // común hoy). Mismo criterio y patrón visual que la selección de
+  // PROFESIONAL en app/(app)/agenda/nuevo/page.tsx.
+  const activeProfesionales      = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+
+  useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Con selector visible, defaultear a la primera profesional activa apenas
+  // esté disponible, para no dejar la pantalla vacía sin selección.
+  useEffect(() => {
+    if (mostrarSelectorProfesional && selectedProfesionalId === null) {
+      setSelectedProfesionalId(activeProfesionales[0].id);
+    }
+  }, [mostrarSelectorProfesional, activeProfesionales, selectedProfesionalId]);
+
+  // Sin selector (≤1 profesional activa): comportamiento intacto, fetch
+  // único sin scope, igual que antes de multi-agenda. Con selector: refetch
+  // cada vez que cambia la profesional elegida.
+  useEffect(() => {
+    if (mostrarSelectorProfesional) {
+      if (selectedProfesionalId !== null) fetchSlots(selectedProfesionalId);
+    } else {
+      fetchSlots();
+    }
+  }, [mostrarSelectorProfesional, selectedProfesionalId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAgregarSlot = async () => {
     const timeStr   = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
@@ -178,7 +206,10 @@ export default function SlotsPage() {
       return;
     }
     setPickerVisible(false);
-    const result = await agregarSlot(timeStr);
+    const result = await agregarSlot(
+      timeStr,
+      mostrarSelectorProfesional && selectedProfesionalId ? selectedProfesionalId : undefined,
+    );
     if (!result.success) alert(result.message ?? 'No se pudo agregar el horario.');
   };
 
@@ -226,6 +257,35 @@ export default function SlotsPage() {
       <p style={{ margin: '0 20px 16px', fontSize: 14, color: '#888', lineHeight: 1.5 }}>
         Estos son los horarios en los que tus clientes pueden reservar turnos.
       </p>
+
+      {/* Selector de profesional — invisible con ≤1 profesional activa */}
+      {mostrarSelectorProfesional && (
+        <div style={{ padding: '0 20px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {activeProfesionales.map(p => {
+            const selected = selectedProfesionalId === p.id;
+            const color    = p.color || colors.primary;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setSelectedProfesionalId(p.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
+                  border: `1px solid ${selected ? color : '#DDD'}`,
+                  backgroundColor: selected ? color : '#FFF',
+                  color: selected ? '#FFF' : colors.text,
+                }}
+              >
+                <span style={{
+                  width: 8, height: 8, borderRadius: 4, flexShrink: 0,
+                  backgroundColor: selected ? '#FFF' : color,
+                }} />
+                {p.nombre}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
