@@ -68,7 +68,7 @@ function ServicioCard({
         <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: servicio.activo ? '#333' : '#AAA' }}>
           {servicio.nombre}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
+        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
           {servicio.duracion_minutos} min{precioLabel}
         </p>
       </div>
@@ -155,7 +155,7 @@ export default function ServiciosPage() {
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: 15 }}>Cargando servicios...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando servicios...</p>
         </div>
       )}
 
@@ -163,7 +163,7 @@ export default function ServiciosPage() {
       {!loading && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {serviciosFiltrados.length === 0 ? (
-            <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 16 }}>
+            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               {buscar ? 'No se encontraron coincidencias' : '¡Cargá tu primer servicio!'}
             </p>
           ) : (

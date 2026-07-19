@@ -44,7 +44,7 @@ export default function LoginPage() {
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 24, fontWeight: 700, color: colors.text, margin: 0, marginBottom: 4 }}>
           Nailsmanagerpro
         </h1>
-        <p style={{ fontSize: 13, color: '#BBB', margin: 0, letterSpacing: 0.2 }}>
+        <p style={{ fontSize: 13, color: colors.subtext, margin: 0, letterSpacing: 0.2 }}>
           Día a día, sin perder el control
         </p>
       </div>
@@ -54,8 +54,8 @@ export default function LoginPage() {
 
       {/* Error */}
       {error && (
-        <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: '#fdecea', borderLeft: '4px solid #e57373' }}>
-          <p style={{ fontSize: 14, color: '#c62828', margin: 0 }}>{error}</p>
+        <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
         </div>
       )}
 
@@ -155,7 +155,7 @@ export default function LoginPage() {
       {/* Footer legal */}
       <button
         onClick={() => router.push('/legal')}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#BBB', fontSize: 12, marginTop: 28, padding: 8 }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.subtext, fontSize: 12, marginTop: 28, padding: 8 }}
       >
         Términos y condiciones
       </button>

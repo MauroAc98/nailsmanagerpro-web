@@ -63,7 +63,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
       }}>
         {/* Horas */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#BBB', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.8 }}>
             Horas
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -73,14 +73,14 @@ export default function DuracionPicker({ value, onChange }: Props) {
             </span>
             <button style={btnStyle} onClick={() => changeH(1)}>+</button>
           </div>
-          <span style={{ fontSize: 12, color: '#BBB', fontWeight: 500 }}>hs</span>
+          <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>hs</span>
         </div>
 
         <div style={{ width: 1, height: 44, backgroundColor: '#EEE', margin: '0 6px' }} />
 
         {/* Minutos */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#BBB', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.8 }}>
             Minutos
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -90,7 +90,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
             </span>
             <button style={btnStyle} onClick={() => changeM(1)}>+</button>
           </div>
-          <span style={{ fontSize: 12, color: '#BBB', fontWeight: 500 }}>min</span>
+          <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>min</span>
         </div>
       </div>
 

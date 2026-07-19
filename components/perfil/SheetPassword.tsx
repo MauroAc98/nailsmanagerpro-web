@@ -90,7 +90,7 @@ export function SheetPassword({
       />
 
       {error && (
-        <p style={{ fontSize: 12, color: '#E74C3C', marginTop: -8, marginBottom: 16 }}>{error}</p>
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
       )}
 
       <button

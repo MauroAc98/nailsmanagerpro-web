@@ -43,7 +43,7 @@ export default function SubscriptionExpiredPage() {
         </h1>
 
         {/* Subtítulo */}
-        <p style={{ fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.6, marginBottom: 8, margin: 0, marginTop: 12, maxWidth: 320 }}>
+        <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', lineHeight: 1.6, marginBottom: 8, margin: 0, marginTop: 12, maxWidth: 320 }}>
           Para continuar usando Nailsmanagerpro necesitás renovar tu suscripción. Contactanos y te ayudamos.
         </p>
 

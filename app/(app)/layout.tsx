@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { colors } from '@/theme/colors';
 
 const TABS = [
   {
@@ -90,7 +91,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               }}
             >
               {tab.icon(active)}
-              <span style={{ fontSize: 12, color: active ? '#d79ea4' : '#999', fontWeight: active ? 600 : 400 }}>
+              <span style={{ fontSize: 12, color: active ? '#d79ea4' : colors.subtext, fontWeight: active ? 600 : 400 }}>
                 {tab.label}
               </span>
             </button>

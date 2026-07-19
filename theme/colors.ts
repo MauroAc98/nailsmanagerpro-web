@@ -5,6 +5,9 @@ export const colors = {
   subtext: '#666666',
   border: '#EEEEEE',
   success: '#4CAF50',
+  danger: '#c62828',
+  dangerBg: '#fdecea',
+  dangerBorder: '#e57373',
 };
 
 // Paleta curada para distinguir profesionales en la agenda multi-agenda

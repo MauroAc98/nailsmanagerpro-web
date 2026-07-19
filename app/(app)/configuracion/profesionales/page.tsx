@@ -70,7 +70,7 @@ function ProfesionalCard({
         }}>
           {profesional.nombre}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
+        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
           {cantidadServicios === 0
             ? 'Sin servicios asignados'
             : `${cantidadServicios} servicio${cantidadServicios === 1 ? '' : 's'}`}
@@ -127,7 +127,7 @@ export default function ProfesionalesPage() {
       </button>
 
       <div style={{ padding: '0 20px 8px' }}>
-        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+        <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
           Desactivar una profesional no borra su historial de turnos — solo deja de aparecer para agendar nuevos.
         </p>
       </div>
@@ -135,7 +135,7 @@ export default function ProfesionalesPage() {
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: 15 }}>Cargando profesionales...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando profesionales...</p>
         </div>
       )}
 
@@ -143,7 +143,7 @@ export default function ProfesionalesPage() {
       {!loading && (
         <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {profesionales.length === 0 ? (
-            <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 16 }}>
+            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               ¡Cargá tu primera profesional!
             </p>
           ) : (

@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/theme/colors';
+
 interface Props {
   label: string;
   valor: string | null | undefined;
@@ -8,7 +10,7 @@ interface Props {
 export function FilaDato({ label, valor }: Props) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-      <span style={{ fontSize: 13, color: '#888' }}>{label}</span>
+      <span style={{ fontSize: 13, color: colors.subtext }}>{label}</span>
       {valor ? (
         <span style={{
           fontSize: 13, fontWeight: 600, color: '#333', textAlign: 'right',

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Providers from "./providers";
+import { colors } from "@/theme/colors";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#E8A4B8",
+  themeColor: colors.primary,
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

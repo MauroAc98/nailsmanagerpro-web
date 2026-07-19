@@ -15,7 +15,7 @@ export default function LegalPage() {
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, fontWeight: 700, color: colors.text, marginTop: 24, marginBottom: 8 }}>
           Términos y Condiciones
         </h1>
-        <p style={{ fontSize: 13, color: '#999', marginBottom: 32 }}>
+        <p style={{ fontSize: 13, color: colors.subtext, marginBottom: 32 }}>
           Última actualización: julio de 2026
         </p>
 

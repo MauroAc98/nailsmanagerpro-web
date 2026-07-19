@@ -147,7 +147,7 @@ export function TextoLibreInput({
             >
               A-
             </button>
-            <span style={{ fontSize: 11, color: '#999', minWidth: 20, textAlign: 'center' }}>{t.fontSize}</span>
+            <span style={{ fontSize: 11, color: colors.subtext, minWidth: 20, textAlign: 'center' }}>{t.fontSize}</span>
             <button
               type="button"
               onClick={() => onCambiarFontSize(t.id, 1)}

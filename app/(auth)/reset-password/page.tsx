@@ -108,8 +108,8 @@ function ResetPasswordForm() {
 
       {/* Error */}
       {error && (
-        <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: '#fdecea', borderLeft: '4px solid #e57373' }}>
-          <p style={{ fontSize: 13, color: '#c62828', margin: 0 }}>{error}</p>
+        <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+          <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{error}</p>
         </div>
       )}
 
@@ -218,13 +218,13 @@ function ResetPasswordForm() {
 
         {/* Validaciones */}
         {password && passwordConfirmation && password !== passwordConfirmation && (
-          <p style={{ color: '#e57373', fontSize: 13, margin: 0, marginTop: -8 }}>
+          <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
             Las contraseñas no coinciden
           </p>
         )}
 
         {password && password.length < 8 && (
-          <p style={{ color: '#e57373', fontSize: 13, margin: 0, marginTop: -8 }}>
+          <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
             La contraseña debe tener al menos 8 caracteres
           </p>
         )}

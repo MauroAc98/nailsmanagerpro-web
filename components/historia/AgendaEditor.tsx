@@ -24,7 +24,7 @@ export function AgendaEditor({ agenda, diasOcultos, onToggleSlot, onOcultarDia }
       width: '100%', backgroundColor: '#fff', padding: 15, borderRadius: 15,
       boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
     }}>
-      <p style={{ fontSize: 12, fontWeight: 700, color: '#888', marginBottom: 8 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, color: colors.subtext, marginBottom: 8 }}>
         Tocá un turno para ocultarlo, o el ojo para ocultar el día (Deslizá →):
       </p>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>

@@ -150,7 +150,7 @@ export default function AyudaPage() {
       </div>
 
       <div style={{ padding: '0 20px 8px' }}>
-        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+        <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
           Una explicación corta de cada sección de la app. Tocá un módulo para ver el detalle.
         </p>
       </div>

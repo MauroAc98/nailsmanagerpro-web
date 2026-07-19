@@ -21,7 +21,7 @@ function tabStyle(active: boolean): React.CSSProperties {
     flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
     cursor: 'pointer',
     background:  active ? colors.primary : 'transparent',
-    color:       active ? '#fff' : '#999',
+    color:       active ? '#fff' : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
     boxShadow:   active ? `0 2px 6px ${colors.primary}4D` : 'none',
   };
@@ -294,7 +294,7 @@ function HistoriaContent() {
 // ─────────────────────────────────────────────
 export default function HistoriaPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#999' }}>Cargando...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>Cargando...</div>}>
       <HistoriaContent />
     </Suspense>
   );

@@ -24,7 +24,7 @@ export function HeroPerfil({ user }: Props) {
       </div>
       <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 16, fontWeight: 700, color: '#222', margin: 0 }}>{user.name}</p>
-        <p style={{ fontSize: 12, color: '#999', margin: '2px 0 0' }}>{user.email}</p>
+        <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>{user.email}</p>
       </div>
     </div>
   );

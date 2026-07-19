@@ -77,7 +77,7 @@ export function WelcomeScreen() {
           borderRadius: 2, opacity: 0.5, margin: '20px auto',
         }} />
         <p style={{
-          fontSize: 15, color: '#BBB', lineHeight: '24px', letterSpacing: 0.3, margin: 0,
+          fontSize: 15, color: colors.subtext, lineHeight: '24px', letterSpacing: 0.3, margin: 0,
           whiteSpace: 'pre-line',
         }}>
           {esPrimerLogin ? '¡Todo listo para empezar! ✨' : 'Hola de nuevo, qué bueno\nverte otra vez 🌸'}
