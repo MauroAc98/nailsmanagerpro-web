@@ -167,7 +167,7 @@ export default function ClientesPage() {
                 onPress={() => router.push(`/clientes/${cliente.id}`)}
                 onToggle={async activo => {
                   const result = await toggleCliente(cliente.id, activo);
-                  if (!result.success) await alertDialog(result.message ?? 'No se pudo actualizar la clienta.');
+                  if (!result.success) await alertDialog(result.message ?? 'No se pudo actualizar el cliente.');
                 }}
               />
             ))

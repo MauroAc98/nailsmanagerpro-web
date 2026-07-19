@@ -217,7 +217,7 @@ function SwipeableTurnoCard({
           fontSize: 16, fontWeight: 600, color: '#333', margin: '0 0 2px',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
+          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Cliente eliminado'}
         </p>
         <p style={{
           fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0,
@@ -418,7 +418,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
             fontSize: 16, fontWeight: 600, color: '#888', margin: '0 0 2px',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
+            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Cliente eliminado'}
           </p>
           <p style={{
             fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0,

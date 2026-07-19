@@ -14,7 +14,7 @@ interface ValidarTurnoParams {
   clienteId: number;
   servicioIds: number[];
   servicios: Servicio[];            // catálogo completo (duración + nombre)
-  turnosDelDia: Turno[];            // turnos ya existentes ese día (todas las clientas)
+  turnosDelDia: Turno[];            // turnos ya existentes ese día (todos los clientes)
   slots: Slot[];
   excluirTurnoId?: number;          // al editar: ignorar el propio turno
   aplicarMaxPorCliente?: boolean;   // la API solo aplica este límite al crear, no al editar
@@ -62,20 +62,20 @@ export function validarTurno({
     return `El horario de atención es de ${fmt(horaMin)} a ${fmt(horaMax)}hs.`;
   }
 
-  const turnosDeLaClienta = turnosDelDia.filter(t =>
+  const turnosDelCliente = turnosDelDia.filter(t =>
     t.cliente_id === clienteId &&
     t.estado === 'confirmado' &&
     t.id !== excluirTurnoId
   );
 
-  // ── Máximo de turnos por clienta por día (solo al crear) ──
-  if (aplicarMaxPorCliente && turnosDeLaClienta.length >= MAX_TURNOS_POR_CLIENTE) {
-    return `La clienta ya tiene el máximo de ${MAX_TURNOS_POR_CLIENTE} turnos para este día.`;
+  // ── Máximo de turnos por cliente por día (solo al crear) ──
+  if (aplicarMaxPorCliente && turnosDelCliente.length >= MAX_TURNOS_POR_CLIENTE) {
+    return `El cliente ya tiene el máximo de ${MAX_TURNOS_POR_CLIENTE} turnos para este día.`;
   }
 
   // ── Servicio repetido el mismo día ─────────────────────────
   const serviciosYaAgendados = new Set(
-    turnosDeLaClienta.flatMap(t => t.servicios.filter(s => s != null).map(s => s.id))
+    turnosDelCliente.flatMap(t => t.servicios.filter(s => s != null).map(s => s.id))
   );
   const repetidos = servicioIds.filter(id => serviciosYaAgendados.has(id));
   if (repetidos.length > 0) {
@@ -83,7 +83,7 @@ export function validarTurno({
       .filter(s => repetidos.includes(s.id))
       .map(s => s.nombre)
       .join(', ');
-    return `La clienta ya tiene agendado: ${nombresRepetidos} para este día.`;
+    return `El cliente ya tiene agendado: ${nombresRepetidos} para este día.`;
   }
 
   // ── Choque de horario ──────────────────────────────────────
@@ -102,7 +102,7 @@ export function validarTurno({
     const finExistente     = inicioExistente + t.duracion_total_minutos;
     const hayChoque = inicioExistente < finNuevo && finExistente > inicioNuevo;
     if (hayChoque) {
-      const nombreCliente   = t.cliente ? `${t.cliente.nombre} ${t.cliente.apellido}` : 'otra clienta';
+      const nombreCliente   = t.cliente ? `${t.cliente.nombre} ${t.cliente.apellido}` : 'otro cliente';
       const serviciosChoque = t.servicios.filter(s => s != null).map(s => s.nombre).join(' + ');
       const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
       return `Las ${fmt(horaTurno)} cae dentro del turno de ${nombreCliente} (${serviciosChoque}, ${fmt(inicioExistente)} - ${fmt(finExistente)}). Elegí otro horario.`;

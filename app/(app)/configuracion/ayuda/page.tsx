@@ -16,7 +16,7 @@ const SECCIONES = [
 Una vez adentro, la app se maneja con 4 secciones fijas abajo de la pantalla:
 
 - Agenda: tus turnos, día por día. Es la pantalla principal.
-- Clientes: la lista de tus clientas.
+- Clientes: la lista de tus clientes.
 - Config: servicios, horarios, profesionales, WhatsApp y esta Ayuda.
 - Perfil: tus datos, la seña, y tu suscripción.`,
   },
@@ -24,24 +24,24 @@ Una vez adentro, la app se maneja con 4 secciones fijas abajo de la pantalla:
     titulo: 'Antes de empezar: qué configurar primero',
     texto: `Para poder cargar tu primer turno necesitás, en este orden:
 
-1. Al menos un servicio activo (Configuración → Servicios) — sin esto no podés elegir qué se va a hacer la clienta.
+1. Al menos un servicio activo (Configuración → Servicios) — sin esto no podés elegir qué se le va a hacer al cliente.
 2. Al menos un horario de atención activo (Configuración → Horarios Disponibles) — sin esto la app no te deja guardar ningún turno, te avisa "No tenés horarios de atención configurados".
-3. Al menos una clienta cargada (pestaña Clientes) — los turnos siempre se asignan a una clienta ya guardada, no se puede escribir el nombre al vuelo desde la agenda.
+3. Al menos un cliente cargado (pestaña Clientes) — los turnos siempre se asignan a un cliente ya guardado, no se puede escribir el nombre al vuelo desde la agenda.
 
 Con esos tres pasos ya podés cargar turnos.`,
   },
   {
     titulo: 'Cómo agendar un turno',
     texto: `1. Entrá a Agenda y tocá el botón + (abajo a la derecha, en un día que no sea pasado).
-2. Elegí la clienta buscándola por nombre.
-3. Si trabajás con más de una profesional, elegí quién la va a atender — los servicios que se muestran después se filtran a lo que esa persona sabe hacer.
+2. Elegí el cliente buscándolo por nombre.
+3. Si trabajás con más de una profesional, elegí quién lo va a atender — los servicios que se muestran después se filtran a lo que esa persona sabe hacer.
 4. Elegí uno o más servicios.
 5. Elegí la hora. La app valida sola: no te deja elegir un horario fuera de tu horario de atención, ni uno que se superponga con otro turno del día.
 6. Tocá "Confirmar Turno".
 
 Para cancelar un turno: deslizalo hacia la izquierda en la lista de la agenda y tocá "Cancelar". Para editarlo: tocalo directamente.
 
-Mientras se está atendiendo, la tarjeta muestra "EN CURSO" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por clienta, servicio o fecha), usá el botón "Filtrar" arriba de la lista.`,
+Mientras se está atendiendo, la tarjeta muestra "EN CURSO" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por cliente, servicio o fecha), usá el botón "Filtrar" arriba de la lista.`,
   },
   {
     titulo: 'Servicios',
