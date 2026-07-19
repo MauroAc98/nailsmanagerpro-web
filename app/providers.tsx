@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
+import { ToastHost } from '@/components/ToastHost';
 
 // Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
@@ -106,6 +108,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: '#fff' }} />}
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
+      <ConfirmSheetHost />
+      <ToastHost />
     </>
   );
 }

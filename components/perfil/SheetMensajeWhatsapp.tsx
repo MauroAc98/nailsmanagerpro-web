@@ -6,6 +6,8 @@ import { ALL_EMOJIS } from '@/constants/editor';
 import { TipoPlantilla } from '@/services/authService';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 
 const VARIABLES_BASE = ['{nombre}', '{apellido}', '{servicios}', '{fecha}', '{hora}'];
 
@@ -79,17 +81,19 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
 
   const handleResetear = async () => {
     const label = tipoActual === 'recordatorio' ? 'recordatorio' : 'confirmación';
-    if (!confirm(`¿Restablecer el mensaje de ${label} al predeterminado?`)) return;
+    if (!(await confirmDialog(`¿Restablecer el mensaje de ${label} al predeterminado?`, { confirmText: 'Restablecer' }))) return;
     const reseteada = await resetear(tipoActual);
     if (reseteada) setMensaje(reseteada.contenido);
   };
 
   const handleGuardar = async () => {
     if (!mensaje.trim()) {
-      alert('El mensaje no puede estar vacío.');
+      await alertDialog('El mensaje no puede estar vacío.');
       return;
     }
-    await actualizar(tipoActual, mensaje);
+    const ok = await actualizar(tipoActual, mensaje);
+    if (ok) showToast('Mensaje guardado');
+    else await alertDialog('No se pudo guardar el mensaje.');
   };
 
   return (

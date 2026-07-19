@@ -13,6 +13,8 @@ import { SheetDatosPersonales } from '@/components/perfil/SheetDatosPersonales';
 import { SheetNegocio } from '@/components/perfil/SheetNegocio';
 import { SheetPassword } from '@/components/perfil/SheetPassword';
 import { SheetMensajeWhatsapp } from '@/components/perfil/SheetMensajeWhatsapp';
+import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 
 const NAV_HEIGHT = 78; // must match the bottom tab bar height in app/(app)/layout.tsx
 
@@ -160,13 +162,18 @@ export default function PerfilPage() {
         setPassword('');
         setPasswordConfirmation('');
       }
+      showToast(
+        sheetActivo === 'password' ? 'Contraseña actualizada' :
+        sheetActivo === 'negocio'  ? 'Cambios guardados' :
+        'Datos guardados'
+      );
       cerrarSheet();
     } catch (e) {
       const mensaje = extraerMensajeError(e);
       if (sheetActivo === 'password') {
         setPasswordError(mensaje);
       } else {
-        alert(mensaje);
+        await alertDialog(mensaje);
       }
     } finally {
       setGuardando(false);
@@ -174,7 +181,7 @@ export default function PerfilPage() {
   };
 
   const handleLogout = async () => {
-    if (confirm('¿Seguro que querés salir?')) {
+    if (await confirmDialog('¿Seguro que querés salir?', { confirmText: 'Salir' })) {
       await logout();
       router.push('/login');
     }
@@ -314,7 +321,7 @@ export default function PerfilPage() {
             width: '100%', boxSizing: 'border-box',
             backgroundColor: '#FFF5F5', border: '1px solid #FDDCDC', borderRadius: 14,
             padding: '14px', textAlign: 'center', cursor: 'pointer',
-            color: '#C0392B', fontSize: 15, fontWeight: 600,
+            color: colors.danger, fontSize: 15, fontWeight: 600,
           }}
         >
           Cerrar sesión

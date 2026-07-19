@@ -7,6 +7,8 @@ import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Slot } from '@/services/slotService';
 import { DrumPicker } from '@/components/DrumPicker';
+import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 
 const HORAS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
@@ -120,13 +122,13 @@ function SlotCard({
             cursor: 'pointer',
           }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
             <path d="M10 11v6M14 11v6"/>
             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#8B0000' }}>ELIMINAR</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: colors.danger }}>ELIMINAR</span>
         </div>
 
         <div
@@ -147,7 +149,7 @@ function SlotCard({
             <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: slot.activo ? '#333' : '#AAA' }}>
               {slot.hora} hs
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
               {slot.activo ? 'Disponible' : 'Desactivado'}
             </p>
           </div>
@@ -201,7 +203,7 @@ export default function SlotsPage() {
       const msg = existente.activo
         ? 'Ya existe un slot para ese horario.'
         : 'Ya tenés un slot para ese horario (inactivo). Activalo desde el listado.';
-      alert(msg);
+      await alertDialog(msg);
       setPickerVisible(false);
       return;
     }
@@ -210,13 +212,15 @@ export default function SlotsPage() {
       timeStr,
       mostrarSelectorProfesional && selectedProfesionalId ? selectedProfesionalId : undefined,
     );
-    if (!result.success) alert(result.message ?? 'No se pudo agregar el horario.');
+    if (result.success) showToast('Horario agregado');
+    else await alertDialog(result.message ?? 'No se pudo agregar el horario.');
   };
 
   const handleEliminar = async (id: number, hora: string) => {
-    if (!confirm(`¿Eliminás el slot de las ${hora}?`)) return;
+    if (!(await confirmDialog(`¿Eliminás el slot de las ${hora}?`, { confirmText: 'Eliminar', danger: true }))) return;
     const result = await eliminarSlot(id);
-    if (!result.success) alert(result.message ?? 'No se pudo eliminar el horario.');
+    if (result.success) showToast('Horario eliminado');
+    else await alertDialog(result.message ?? 'No se pudo eliminar el horario.');
   };
 
   return (
@@ -254,7 +258,7 @@ export default function SlotsPage() {
       </button>
 
       {/* Description */}
-      <p style={{ margin: '0 20px 16px', fontSize: 14, color: '#888', lineHeight: 1.5 }}>
+      <p style={{ margin: '0 20px 16px', fontSize: 14, color: colors.subtext, lineHeight: 1.5 }}>
         Estos son los horarios en los que tus clientes pueden reservar turnos.
       </p>
 
@@ -290,7 +294,7 @@ export default function SlotsPage() {
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: 15 }}>Cargando horarios...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando horarios...</p>
         </div>
       )}
 
@@ -298,7 +302,7 @@ export default function SlotsPage() {
       {!loading && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {slots.length === 0 ? (
-            <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 15 }}>
+            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 15 }}>
               No hay horarios cargados. Tocá + para agregar uno.
             </p>
           ) : (

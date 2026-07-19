@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useServiciosStore } from '@/store/useServicioStore';
 import DuracionPicker from '@/components/DuracionPicker';
+import { alertDialog } from '@/store/useConfirmStore';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -34,7 +35,7 @@ export default function NuevoServicioPage() {
       return;
     }
     if (duracion <= 0) {
-      alert('Ingresá una duración válida.');
+      await alertDialog('Ingresá una duración válida.');
       return;
     }
 
@@ -44,7 +45,7 @@ export default function NuevoServicioPage() {
       const msg = existente.activo
         ? 'Ya existe un servicio con ese nombre.'
         : 'Ya tenés un servicio con ese nombre (inactivo). Reactivalo desde el listado en vez de crear uno nuevo.';
-      alert(msg);
+      await alertDialog(msg);
       return;
     }
 
@@ -59,7 +60,7 @@ export default function NuevoServicioPage() {
     if (result.success) {
       router.push('/configuracion/servicios');
     } else {
-      alert(result.message ?? 'No se pudo guardar el servicio.');
+      await alertDialog(result.message ?? 'No se pudo guardar el servicio.');
     }
   };
 
@@ -91,9 +92,9 @@ export default function NuevoServicioPage() {
             placeholder="Ej: Kapping"
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-            style={{ ...inputStyle, borderColor: errorNombre ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : '#EEE' }}
           />
-          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errorNombre}</p>}
+          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
         {/* Duración */}

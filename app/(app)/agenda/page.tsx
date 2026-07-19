@@ -13,6 +13,8 @@ import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
+import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -52,6 +54,16 @@ function formatCellDate(d: Date): string {
   const m   = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+// Parses manually (not `new Date(fechaStr)`) to avoid the UTC-midnight shift
+// that flips the displayed day for negative-offset timezones like ART.
+function formatFechaCorta(fechaStr: string): string {
+  const [y, m, d] = fechaStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const dia  = DAYS[date.getDay()];
+  const mes  = MONTHS[m - 1].slice(0, 3).toLowerCase();
+  return `${dia} ${d} de ${mes}`;
 }
 
 // ─────────────────────────────────────────────
@@ -158,7 +170,7 @@ function SwipeableTurnoCard({
       <span style={{ fontSize: 17, fontWeight: 700, color: colors.primary, letterSpacing: -0.5 }}>
         {horaDeHora(turno.fecha_hora)}
       </span>
-      <span style={{ fontSize: 9, fontWeight: 700, color: '#999', marginTop: 2, textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 2, textTransform: 'uppercase' }}>
         {formatFechaMini(turno.fecha_hora)}
       </span>
       {profesionalLabel && (
@@ -171,7 +183,7 @@ function SwipeableTurnoCard({
             backgroundColor: profesionalLabel.color,
           }} />
           <span style={{
-            fontSize: 9, fontWeight: 700, color: '#999',
+            fontSize: 9, fontWeight: 700, color: colors.subtext,
             textTransform: 'uppercase', letterSpacing: 0.3,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
@@ -208,7 +220,7 @@ function SwipeableTurnoCard({
           {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
         </p>
         <p style={{
-          fontSize: 13, color: '#888', fontStyle: 'italic', margin: 0,
+          fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
@@ -329,13 +341,13 @@ function SwipeableTurnoCard({
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             cursor: 'pointer',
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B0000" strokeWidth="2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               <path d="M10 11v6M14 11v6" />
               <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#8B0000', letterSpacing: 0.5 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: colors.danger, letterSpacing: 0.5 }}>
               CANCELAR
             </span>
           </div>
@@ -376,7 +388,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
           <span style={{ fontSize: 17, fontWeight: 700, color: '#AAA', letterSpacing: -0.5 }}>
             {horaDeHora(turno.fecha_hora)}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: '#999', marginTop: 2, textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 2, textTransform: 'uppercase' }}>
             {formatFechaMini(turno.fecha_hora)}
           </span>
           {profesionalLabel && (
@@ -389,7 +401,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
                 backgroundColor: profesionalLabel.color,
               }} />
               <span style={{
-                fontSize: 9, fontWeight: 700, color: '#999',
+                fontSize: 9, fontWeight: 700, color: colors.subtext,
                 textTransform: 'uppercase', letterSpacing: 0.3,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
@@ -409,7 +421,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
             {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Clienta eliminada'}
           </p>
           <p style={{
-            fontSize: 13, color: '#888', fontStyle: 'italic', margin: 0,
+            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
@@ -439,16 +451,24 @@ function AgendaListHeader({
   hayFiltroActivo,
   cargando,
   onAbrirFiltros,
+  fechaSeleccionada,
+  esHoy,
 }: {
   hayFiltroActivo: boolean;
   cargando: boolean;
   onAbrirFiltros: () => void;
+  fechaSeleccionada: string;
+  esHoy: boolean;
 }) {
+  const titulo = hayFiltroActivo
+    ? 'Resultados'
+    : esHoy ? 'Turnos de hoy' : `Turnos del ${formatFechaCorta(fechaSeleccionada)}`;
+
   return (
     <div style={{ paddingBottom: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>
-          {hayFiltroActivo ? 'Resultados' : 'Turnos del día'}
+          {titulo}
         </span>
 
         <button
@@ -604,7 +624,7 @@ function FiltroSheetContent({
       </div>
 
       {/* Buscar cliente */}
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#BBB', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
         Buscar cliente
       </p>
       <div style={{
@@ -630,16 +650,16 @@ function FiltroSheetContent({
       </div>
 
       {/* Buscar por fecha */}
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#BBB', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
         Buscar por fecha
       </p>
       <div style={{
         display: 'flex', alignItems: 'center', borderRadius: 12, padding: '0 14px', height: 45,
         border: '1px solid transparent',
         backgroundColor: fechaError ? '#FFF5F5' : fechaFiltro ? `${colors.primary}12` : '#F3F3F3',
-        borderColor: fechaError ? '#E74C3C44' : fechaFiltro ? `${colors.primary}44` : 'transparent',
+        borderColor: fechaError ? `${colors.dangerBorder}44` : fechaFiltro ? `${colors.primary}44` : 'transparent',
       }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? '#E74C3C' : fechaFiltro ? colors.primary : '#999'} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : fechaFiltro ? colors.primary : '#999'} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
           <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
         <input
@@ -652,14 +672,14 @@ function FiltroSheetContent({
         />
         {textoFecha !== '' && (
           <button onClick={handleLimpiarFecha} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? '#E74C3C' : colors.primary} strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : colors.primary} strokeWidth="2">
               <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </button>
         )}
       </div>
       {fechaError && (
-        <p style={{ fontSize: 11, color: '#E74C3C', marginTop: 5, marginLeft: 2 }}>Fecha inválida</p>
+        <p style={{ fontSize: 11, color: colors.danger, marginTop: 5, marginLeft: 2 }}>Fecha inválida</p>
       )}
 
       {/* Filtrar por servicio */}
@@ -1036,13 +1056,15 @@ export default function AgendaPage() {
 
   const handleFinalizar = async (id: number) => {
     const result = await completarTurno(id);
-    if (!result.success) alert(result.message ?? 'No se pudo finalizar el turno.');
+    if (result.success) showToast('Turno finalizado');
+    else await alertDialog(result.message ?? 'No se pudo finalizar el turno.');
   };
 
   const handleCancelar = async (id: number) => {
-    if (!confirm('¿Cancelar este turno?')) return;
+    if (!(await confirmDialog('¿Cancelar este turno?', { confirmText: 'Cancelar turno', cancelText: 'Volver', danger: true }))) return;
     const result = await cancelarTurno(id);
-    if (!result.success) alert(result.message ?? 'No se pudo cancelar el turno.');
+    if (result.success) showToast('Turno cancelado');
+    else await alertDialog(result.message ?? 'No se pudo cancelar el turno.');
   };
 
   const handleBuscarCliente = useCallback((txt: string) => {
@@ -1158,11 +1180,17 @@ export default function AgendaPage() {
             hayFiltroActivo={hayFiltroActivo}
             cargando={cargandoHeader}
             onAbrirFiltros={handleAbrirFiltros}
+            fechaSeleccionada={fechaSeleccionada}
+            esHoy={fechaSeleccionada === hoy}
           />
 
           {!loading && datosAMostrar.length === 0 && (
-            <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 15 }}>
-              {hayFiltroActivo ? 'No se encontraron turnos' : 'No hay turnos para este día'}
+            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 15 }}>
+              {hayFiltroActivo
+                ? 'No se encontraron turnos'
+                : fechaSeleccionada === hoy
+                  ? 'No hay turnos para hoy'
+                  : `No hay turnos el ${formatFechaCorta(fechaSeleccionada)}`}
             </p>
           )}
 

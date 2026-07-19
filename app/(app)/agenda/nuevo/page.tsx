@@ -11,6 +11,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
+import { alertDialog } from '@/store/useConfirmStore';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -146,7 +147,7 @@ function NuevoTurnoContent() {
       aplicarMaxPorCliente: true,
     });
     if (errorValidacion) {
-      alert(errorValidacion);
+      await alertDialog(errorValidacion);
       return;
     }
 
@@ -161,7 +162,7 @@ function NuevoTurnoContent() {
     });
     setSaving(false);
     if (result.success) router.back();
-    else alert(result.message ?? 'No se pudo crear el turno.');
+    else await alertDialog(result.message ?? 'No se pudo crear el turno.');
   };
 
   const clientesFiltrados = clientes.filter(c =>
@@ -284,13 +285,13 @@ function NuevoTurnoContent() {
         {/* ─── SERVICIOS ─── */}
         <p style={sectionLabelStyle}>SERVICIOS</p>
         {mostrarSelectorProfesional && !profesionalSeleccionado ? (
-          <p style={{ fontSize: 13, color: '#999', margin: '0 0 20px 2px' }}>
+          <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
             Elegí una profesional para ver sus servicios.
           </p>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
             {serviciosDisponibles.length === 0 ? (
-              <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+              <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
                 Esta profesional no tiene servicios asignados.
               </p>
             ) : serviciosDisponibles.map(s => (
@@ -382,7 +383,7 @@ function NuevoTurnoContent() {
 // ─────────────────────────────────────────────
 export default function NuevoTurnoPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#999' }}>Cargando...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>Cargando...</div>}>
       <NuevoTurnoContent />
     </Suspense>
   );

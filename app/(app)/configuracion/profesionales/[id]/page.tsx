@@ -7,6 +7,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
+import { alertDialog } from '@/store/useConfirmStore';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -85,7 +86,7 @@ export default function EditarProfesionalPage() {
       p = useProfesionalStore.getState().profesionales.find(x => x.id === id);
 
       if (!p) {
-        alert('No se pudo cargar la profesional.');
+        await alertDialog('No se pudo cargar la profesional.');
         router.push('/configuracion/profesionales');
         return;
       }
@@ -115,7 +116,7 @@ export default function EditarProfesionalPage() {
       const msg = duplicado.activo
         ? 'Ya existe una profesional con ese nombre.'
         : 'Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.';
-      alert(msg);
+      await alertDialog(msg);
       return;
     }
 
@@ -131,7 +132,7 @@ export default function EditarProfesionalPage() {
     if (result.success) {
       router.push('/configuracion/profesionales');
     } else {
-      alert(result.message ?? 'No se pudo guardar la profesional.');
+      await alertDialog(result.message ?? 'No se pudo guardar la profesional.');
     }
   };
 
@@ -140,7 +141,7 @@ export default function EditarProfesionalPage() {
   if (loadingProfesional) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#999' }}>Cargando...</p>
+        <p style={{ color: colors.subtext }}>Cargando...</p>
       </div>
     );
   }
@@ -173,9 +174,9 @@ export default function EditarProfesionalPage() {
             placeholder="Ej: Sofía"
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-            style={{ ...inputStyle, borderColor: errorNombre ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : '#EEE' }}
           />
-          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errorNombre}</p>}
+          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
         {/* Color */}
@@ -191,7 +192,7 @@ export default function EditarProfesionalPage() {
         }}>
           <div>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#333' }}>Activa</p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
               {activo ? 'Disponible para agendar turnos' : 'No aparece para agendar nuevos turnos'}
             </p>
           </div>
@@ -202,7 +203,7 @@ export default function EditarProfesionalPage() {
         <div>
           <label style={labelStyle}>Servicios que puede realizar</label>
           {serviciosActivos.length === 0 ? (
-            <p style={{ fontSize: 13, color: '#999', margin: '4px 0 0 2px' }}>
+            <p style={{ fontSize: 13, color: colors.subtext, margin: '4px 0 0 2px' }}>
               No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.
             </p>
           ) : (
@@ -219,7 +220,7 @@ export default function EditarProfesionalPage() {
                 >
                   <Checkbox checked={servicioIds.includes(s.id)} />
                   <span style={{ flex: 1, fontSize: 14, color: '#333' }}>{s.nombre}</span>
-                  <span style={{ fontSize: 12, color: '#999' }}>{s.duracion_minutos} min</span>
+                  <span style={{ fontSize: 12, color: colors.subtext }}>{s.duracion_minutos} min</span>
                 </div>
               ))}
             </div>

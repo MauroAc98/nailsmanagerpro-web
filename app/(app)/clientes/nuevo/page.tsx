@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useClientesStore } from '@/store/useClienteStore';
+import { alertDialog } from '@/store/useConfirmStore';
 
 const PAISES = [
   { codigo: '54',  label: '🇦🇷 +54'  },
@@ -57,7 +58,7 @@ export default function NuevoClientePage() {
     if (result.success) {
       router.push('/clientes');
     } else {
-      alert(result.message ?? 'No se pudo guardar el cliente.');
+      await alertDialog(result.message ?? 'No se pudo guardar el cliente.');
     }
   };
 
@@ -92,9 +93,9 @@ export default function NuevoClientePage() {
             placeholder="Ej: Carla"
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrors(prev => ({ ...prev, nombre: undefined })); }}
-            style={{ ...inputStyle, borderColor: errors.nombre ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errors.nombre ? colors.dangerBorder : '#EEE' }}
           />
-          {errors.nombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errors.nombre}</p>}
+          {errors.nombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errors.nombre}</p>}
         </div>
 
         {/* Apellido */}
@@ -105,9 +106,9 @@ export default function NuevoClientePage() {
             placeholder="Ej: Gomez"
             value={apellido}
             onChange={e => { setApellido(e.target.value); setErrors(prev => ({ ...prev, apellido: undefined })); }}
-            style={{ ...inputStyle, borderColor: errors.apellido ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errors.apellido ? colors.dangerBorder : '#EEE' }}
           />
-          {errors.apellido && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errors.apellido}</p>}
+          {errors.apellido && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errors.apellido}</p>}
         </div>
 
         {/* Teléfono */}

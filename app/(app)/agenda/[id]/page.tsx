@@ -11,6 +11,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
+import { alertDialog } from '@/store/useConfirmStore';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -170,7 +171,7 @@ export default function EditarTurnoPage() {
       excluirTurnoId: turnoId,
     });
     if (errorValidacion) {
-      alert(errorValidacion);
+      await alertDialog(errorValidacion);
       return;
     }
 
@@ -189,7 +190,7 @@ export default function EditarTurnoPage() {
     });
     setSaving(false);
     if (result.success) router.back();
-    else alert(result.message ?? 'No se pudo actualizar el turno.');
+    else await alertDialog(result.message ?? 'No se pudo actualizar el turno.');
   };
 
   const clientesFiltrados = clientes.filter(c =>
@@ -198,7 +199,7 @@ export default function EditarTurnoPage() {
 
   if (loadingTurno) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>
         Cargando turno...
       </div>
     );
@@ -206,7 +207,7 @@ export default function EditarTurnoPage() {
 
   if (errorTurno) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>
         <p>{errorTurno}</p>
         <button
           onClick={() => router.back()}
@@ -338,7 +339,7 @@ export default function EditarTurnoPage() {
         {/* ─── SERVICIOS ─── */}
         <p style={sectionLabelStyle}>SERVICIOS</p>
         {mostrarSelectorProfesional && !profesionalSeleccionado ? (
-          <p style={{ fontSize: 13, color: '#999', margin: '0 0 20px 2px' }}>
+          <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
             Elegí una profesional para ver sus servicios.
           </p>
         ) : (

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toBlob } from 'html-to-image';
 import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services/turnoService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
+import { alertDialog } from '@/store/useConfirmStore';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -339,7 +340,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
   const descargarImagen = useCallback(async () => {
     if (!hayContenido) {
-      alert('Sin contenido: No hay slots libres para mostrar en la imagen.');
+      await alertDialog('Sin contenido: No hay slots libres para mostrar en la imagen.');
       return;
     }
     const blob = await capturar();

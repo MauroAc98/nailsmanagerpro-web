@@ -7,6 +7,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
+import { alertDialog } from '@/store/useConfirmStore';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -68,7 +69,7 @@ export default function NuevoProfesionalPage() {
       const msg = existente.activo
         ? 'Ya existe una profesional con ese nombre.'
         : 'Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.';
-      alert(msg);
+      await alertDialog(msg);
       return;
     }
 
@@ -83,7 +84,7 @@ export default function NuevoProfesionalPage() {
     if (result.success) {
       router.push('/configuracion/profesionales');
     } else {
-      alert(result.message ?? 'No se pudo guardar la profesional.');
+      await alertDialog(result.message ?? 'No se pudo guardar la profesional.');
     }
   };
 
@@ -117,9 +118,9 @@ export default function NuevoProfesionalPage() {
             placeholder="Ej: Sofía"
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-            style={{ ...inputStyle, borderColor: errorNombre ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : '#EEE' }}
           />
-          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errorNombre}</p>}
+          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
         {/* Color */}
@@ -132,7 +133,7 @@ export default function NuevoProfesionalPage() {
         <div>
           <label style={labelStyle}>Servicios que puede realizar</label>
           {serviciosActivos.length === 0 ? (
-            <p style={{ fontSize: 13, color: '#999', margin: '4px 0 0 2px' }}>
+            <p style={{ fontSize: 13, color: colors.subtext, margin: '4px 0 0 2px' }}>
               No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.
             </p>
           ) : (
@@ -149,7 +150,7 @@ export default function NuevoProfesionalPage() {
                 >
                   <Checkbox checked={servicioIds.includes(s.id)} />
                   <span style={{ flex: 1, fontSize: 14, color: '#333' }}>{s.nombre}</span>
-                  <span style={{ fontSize: 12, color: '#999' }}>{s.duracion_minutos} min</span>
+                  <span style={{ fontSize: 12, color: colors.subtext }}>{s.duracion_minutos} min</span>
                 </div>
               ))}
             </div>

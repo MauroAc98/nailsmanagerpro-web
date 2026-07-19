@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useClientesStore } from '@/store/useClienteStore';
 import { clienteService } from '@/services/clienteService';
+import { alertDialog } from '@/store/useConfirmStore';
 
 const PAISES = [
   { codigo: '54',  label: '🇦🇷 +54'  },
@@ -61,7 +62,7 @@ export default function EditarClientePage() {
         setCodigoPais(codigo);
         setTelefono(numero);
       } catch {
-        alert('No se pudo cargar el cliente.');
+        await alertDialog('No se pudo cargar el cliente.');
         router.push('/clientes');
       } finally {
         setLoadingCliente(false);
@@ -90,14 +91,14 @@ export default function EditarClientePage() {
     if (result.success) {
       router.push('/clientes');
     } else {
-      alert(result.message ?? 'No se pudo guardar el cliente.');
+      await alertDialog(result.message ?? 'No se pudo guardar el cliente.');
     }
   };
 
   if (loadingCliente) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#999' }}>Cargando...</p>
+        <p style={{ color: colors.subtext }}>Cargando...</p>
       </div>
     );
   }
@@ -133,9 +134,9 @@ export default function EditarClientePage() {
             placeholder="Ej: Carla"
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrors(prev => ({ ...prev, nombre: undefined })); }}
-            style={{ ...inputStyle, borderColor: errors.nombre ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errors.nombre ? colors.dangerBorder : '#EEE' }}
           />
-          {errors.nombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errors.nombre}</p>}
+          {errors.nombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errors.nombre}</p>}
         </div>
 
         {/* Apellido */}
@@ -146,9 +147,9 @@ export default function EditarClientePage() {
             placeholder="Ej: Gomez"
             value={apellido}
             onChange={e => { setApellido(e.target.value); setErrors(prev => ({ ...prev, apellido: undefined })); }}
-            style={{ ...inputStyle, borderColor: errors.apellido ? '#e57373' : '#EEE' }}
+            style={{ ...inputStyle, borderColor: errors.apellido ? colors.dangerBorder : '#EEE' }}
           />
-          {errors.apellido && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: '#e57373' }}>{errors.apellido}</p>}
+          {errors.apellido && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errors.apellido}</p>}
         </div>
 
         {/* Teléfono */}

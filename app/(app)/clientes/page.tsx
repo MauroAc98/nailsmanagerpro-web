@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { colors } from '@/theme/colors';
 import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
+import { alertDialog } from '@/store/useConfirmStore';
 
 // ─────────────────────────────────────────────
 // ClienteCard — switch de activo/inactivo — sin swipe, sin borrado físico.
@@ -61,7 +62,7 @@ function ClienteCard({
         <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? '#333' : '#AAA' }}>
           {cliente.nombre} {cliente.apellido}
         </p>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#888' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
           {cliente.telefono || 'Sin datos de contacto'}
         </p>
       </div>
@@ -139,15 +140,15 @@ export default function ClientesPage() {
 
       {/* Error */}
       {error && (
-        <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: '#fdecea', borderLeft: '4px solid #e57373' }}>
-          <p style={{ fontSize: 14, color: '#c62828', margin: 0 }}>{error}</p>
+        <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
         </div>
       )}
 
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: 15 }}>Cargando clientes...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando clientes...</p>
         </div>
       )}
 
@@ -155,7 +156,7 @@ export default function ClientesPage() {
       {!loading && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {clientesFiltrados.length === 0 ? (
-            <p style={{ textAlign: 'center', marginTop: 50, color: '#999', fontSize: 16 }}>
+            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               {buscar ? 'No se encontraron clientes' : '¡Cargá a tu primer cliente!'}
             </p>
           ) : (
@@ -166,7 +167,7 @@ export default function ClientesPage() {
                 onPress={() => router.push(`/clientes/${cliente.id}`)}
                 onToggle={async activo => {
                   const result = await toggleCliente(cliente.id, activo);
-                  if (!result.success) alert(result.message ?? 'No se pudo actualizar la clienta.');
+                  if (!result.success) await alertDialog(result.message ?? 'No se pudo actualizar la clienta.');
                 }}
               />
             ))
