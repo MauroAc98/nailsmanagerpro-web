@@ -4,7 +4,7 @@ import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
-import { colors } from '@/theme/colors';
+import { primaryRaw } from '@/theme/colors';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -174,7 +174,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
                   {estaCompleto ? (
                     <span style={{
-                      color: colors.primary, fontSize: 9, fontWeight: 600,
+                      color: primaryRaw, fontSize: 9, fontWeight: 600,
                       fontStyle: 'italic', letterSpacing: 0.5,
                     }}>
                       COMPLETO 🤍

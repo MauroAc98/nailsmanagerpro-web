@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Profesional } from '@/services/profesionalService';
 
@@ -12,7 +12,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       onClick={e => { e.stopPropagation(); onChange(!value); }}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.border,
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
       }}
@@ -21,7 +21,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
         position: 'absolute', top: 3,
         left: value ? 21 : 3,
         width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : '#CCC',
+        backgroundColor: value ? colors.primary : colors.placeholder,
         transition: 'left 0.2s',
       }} />
     </div>
@@ -45,9 +45,9 @@ function ProfesionalCard({
       onClick={onEdit}
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        backgroundColor: profesional.activo ? '#FFF' : '#FAFAFA',
-        border: '1px solid #EEE',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 14,
+        backgroundColor: profesional.activo ? colors.surface : colors.surfaceSubtle,
+        border: `1px solid ${colors.border}`,
+        boxShadow: shadows.card, borderRadius: 14,
         padding: '14px 16px', cursor: 'pointer',
         opacity: profesional.activo ? 1 : 0.65,
         userSelect: 'none',
@@ -65,7 +65,7 @@ function ProfesionalCard({
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
           margin: 0, fontSize: 16, fontWeight: 700,
-          color: profesional.activo ? '#333' : '#AAA',
+          color: profesional.activo ? colors.text : colors.placeholder,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {profesional.nombre}
@@ -79,7 +79,7 @@ function ProfesionalCard({
 
       <PillToggle value={profesional.activo} onChange={onToggle} />
 
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
         <polyline points="9 18 15 12 9 6"/>
       </svg>
     </div>
@@ -93,17 +93,17 @@ export default function ProfesionalesPage() {
   useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => router.back()}
           style={{
-            width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F5',
+            width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
             border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>

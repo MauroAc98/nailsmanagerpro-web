@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha } from '@/theme/colors';
 import { ALL_EMOJIS } from '@/constants/editor';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 
@@ -36,8 +36,8 @@ export function TextoLibreInput({
             maxLength={60}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: '#fff', border: `1px solid ${editandoId ? colors.primary : '#EEE'}`, borderRadius: 12,
-              padding: '10px 44px 10px 14px', fontSize: 14, color: '#333',
+              background: colors.surface, border: `1px solid ${editandoId ? colors.primary : colors.border}`, borderRadius: 12,
+              padding: '10px 44px 10px 14px', fontSize: 14, color: colors.text,
             }}
           />
           <button
@@ -58,9 +58,9 @@ export function TextoLibreInput({
             type="button"
             onClick={onCancelarEdicion}
             style={{
-              background: '#F0F0F0', borderRadius: 12, border: 'none',
+              background: colors.surfaceSubtle, borderRadius: 12, border: 'none',
               padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#888', fontSize: 18, lineHeight: 1,
+              cursor: 'pointer', color: colors.muted, fontSize: 18, lineHeight: 1,
             }}
           >
             ×
@@ -92,8 +92,8 @@ export function TextoLibreInput({
       {/* Emoji picker */}
       {mostrarEmojis && (
         <div style={{
-          marginTop: 8, background: '#FAFAFA', borderRadius: 12,
-          border: '1px solid #EFEFEF', padding: '8px 0',
+          marginTop: 8, background: colors.surfaceSubtle, borderRadius: 12,
+          border: `1px solid ${colors.border}`, padding: '8px 0',
           display: 'flex', gap: 4, overflowX: 'auto',
         }}>
           {ALL_EMOJIS.map((emoji, idx) => (
@@ -103,7 +103,7 @@ export function TextoLibreInput({
               onClick={() => setTextoInput(textoInput + emoji)}
               style={{
                 flex: '0 0 auto', width: 40, height: 40, borderRadius: 10,
-                background: '#fff', border: 'none', cursor: 'pointer', fontSize: 18,
+                background: colors.surface, border: 'none', cursor: 'pointer', fontSize: 18,
                 marginLeft: idx === 0 ? 8 : 0, marginRight: idx === ALL_EMOJIS.length - 1 ? 8 : 0,
               }}
             >
@@ -120,16 +120,16 @@ export function TextoLibreInput({
           style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 8,
             padding: '4px 6px', borderRadius: 8,
-            background: editandoId === t.id ? 'rgba(215,158,164,0.12)' : 'transparent',
+            background: editandoId === t.id ? withAlpha(colors.primary, '1F') : 'transparent',
           }}
         >
-          <span style={{ color: '#CCC', fontSize: 14 }}>⠿</span>
+          <span style={{ color: colors.placeholder, fontSize: 14 }}>⠿</span>
           <span
             role="button"
             tabIndex={0}
             onClick={() => onIniciarEdicion(t.id)}
             style={{
-              flex: 1, fontSize: 13, color: '#666', fontStyle: 'italic',
+              flex: 1, fontSize: 13, color: colors.subtext, fontStyle: 'italic',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               cursor: 'pointer',
             }}
@@ -141,8 +141,8 @@ export function TextoLibreInput({
               type="button"
               onClick={() => onCambiarFontSize(t.id, -1)}
               style={{
-                background: '#F0F0F0', borderRadius: 6, border: 'none',
-                padding: '4px 8px', fontSize: 11, fontWeight: 700, color: '#555', cursor: 'pointer',
+                background: colors.surfaceSubtle, borderRadius: 6, border: 'none',
+                padding: '4px 8px', fontSize: 11, fontWeight: 700, color: colors.textStrong, cursor: 'pointer',
               }}
             >
               A-
@@ -152,8 +152,8 @@ export function TextoLibreInput({
               type="button"
               onClick={() => onCambiarFontSize(t.id, 1)}
               style={{
-                background: '#F0F0F0', borderRadius: 6, border: 'none',
-                padding: '4px 8px', fontSize: 11, fontWeight: 700, color: '#555', cursor: 'pointer',
+                background: colors.surfaceSubtle, borderRadius: 6, border: 'none',
+                padding: '4px 8px', fontSize: 11, fontWeight: 700, color: colors.textStrong, cursor: 'pointer',
               }}
             >
               A+
@@ -162,7 +162,7 @@ export function TextoLibreInput({
           <button
             type="button"
             onClick={() => onEliminarTexto(t.id)}
-            style={{ background: 'none', border: 'none', color: '#CCC', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}
+            style={{ background: 'none', border: 'none', color: colors.placeholder, fontSize: 16, cursor: 'pointer', lineHeight: 1 }}
           >
             ×
           </button>

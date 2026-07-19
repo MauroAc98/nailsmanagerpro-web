@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha } from '@/theme/colors';
 import { useAuth } from '@/hooks/useAuth';
 
 function getSaludo(): string {
@@ -37,7 +37,7 @@ export function WelcomeScreen() {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 200,
-      backgroundColor: '#fff',
+      backgroundColor: colors.surface,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       overflow: 'hidden',
     }}>
@@ -45,12 +45,12 @@ export function WelcomeScreen() {
       <div style={{
         position: 'absolute', top: '-18vh', left: '-35vw',
         width: '100vw', height: '100vw', borderRadius: '50%',
-        backgroundColor: colors.primary + '15',
+        backgroundColor: withAlpha(colors.primary, '15'),
       }} />
       <div style={{
         position: 'absolute', bottom: '-10vh', right: '-25vw',
         width: '65vw', height: '65vw', borderRadius: '50%',
-        backgroundColor: colors.primary + '0D',
+        backgroundColor: withAlpha(colors.primary, '0D'),
       }} />
 
       {/* Contenido */}
@@ -67,7 +67,7 @@ export function WelcomeScreen() {
           {getSaludo()}
         </p>
         <p style={{
-          fontSize: 42, fontWeight: 700, color: '#2C2C2C', margin: 0,
+          fontSize: 42, fontWeight: 700, color: colors.textStrong, margin: 0,
           fontFamily: '"Times New Roman", Georgia, serif', letterSpacing: 0.5,
         }}>
           {nombre}
@@ -87,7 +87,7 @@ export function WelcomeScreen() {
       {/* Barra de progreso */}
       <div style={{
         position: 'absolute', bottom: 40, left: 40, right: 40,
-        height: 3, backgroundColor: '#F0F0F0', borderRadius: 4, overflow: 'hidden',
+        height: 3, backgroundColor: colors.surfaceSubtle, borderRadius: 4, overflow: 'hidden',
       }}>
         <div style={{
           height: 3, backgroundColor: colors.primary, borderRadius: 4,

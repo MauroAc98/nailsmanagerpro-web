@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { colors } from '@/theme/colors';
+import { colors, shadows, withAlpha } from '@/theme/colors';
 
 export default function CambiarPasswordPage() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function CambiarPasswordPage() {
           width: 64,
           height: 64,
           borderRadius: 32,
-          backgroundColor: colors.primary + '22',
+          backgroundColor: withAlpha(colors.primary, '22'),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -93,8 +93,8 @@ export default function CambiarPasswordPage() {
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
             Contraseña provisoria
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
+          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
@@ -117,7 +117,7 @@ export default function CambiarPasswordPage() {
               onClick={() => setShowActual(!showActual)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
                 {showActual
                   ? <>
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -139,8 +139,8 @@ export default function CambiarPasswordPage() {
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
             Nueva contraseña
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
+          <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
@@ -163,7 +163,7 @@ export default function CambiarPasswordPage() {
               onClick={() => setShowNueva(!showNueva)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
                 {showNueva
                   ? <>
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -194,9 +194,9 @@ export default function CambiarPasswordPage() {
               width: '100%',
               height: 52,
               borderRadius: 12,
-              backgroundColor: '#FFF',
-              border: '1px solid #EEE',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              backgroundColor: colors.surface,
+              border: `1px solid ${colors.border}`,
+              boxShadow: shadows.card,
               outline: 'none',
               fontSize: 15,
               color: colors.text,
@@ -231,7 +231,7 @@ export default function CambiarPasswordPage() {
           style={{
             height: 52,
             borderRadius: 14,
-            backgroundColor: loading || !valido ? '#e0c4c7' : colors.primary,
+            backgroundColor: loading || !valido ? colors.primaryDisabled : colors.primary,
             color: '#fff',
             fontSize: 16,
             fontWeight: 600,

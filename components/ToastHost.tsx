@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 import { useToastStore } from '@/store/useToastStore';
 
 const Z_INDEX = 90; // below ConfirmSheetHost's 100 (a confirm outranks a passing toast), above BottomSheet's 40
@@ -39,10 +39,10 @@ export function ToastHost() {
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          backgroundColor: '#FFF',
-          border: '1px solid #EEE',
+          backgroundColor: colors.surface,
+          border: `1px solid ${colors.border}`,
           borderRadius: 14,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+          boxShadow: shadows.sheet,
           padding: '12px 18px',
           maxWidth: '100%',
           opacity: visible ? 1 : 0,

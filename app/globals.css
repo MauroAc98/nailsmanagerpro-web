@@ -1,18 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --color-primary: #d79ea4;
+  --color-background: #ffffff;
+  --color-text: #333333;
+  --color-subtext: #666666;
+  --color-border: #eeeeee;
+  --color-success: #4caf50;
+  --color-danger: #c62828;
+  --color-danger-bg: #fdecea;
+  --color-danger-border: #e57373;
+
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f7f7f8;
+  --color-text-strong: #1a1a1a;
+  --color-muted: #999999;
+  --color-placeholder: #bbbbbb;
+  --color-divider: #dddddd;
+  --color-primary-disabled: #e0c4c7;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.08);
+
+  --color-warning-bg: #fff3cd;
+  --color-warning-fg: #856404;
+  --color-amber: #e6a020;
+  --color-amber-bg: #fffbf5;
+  --color-success-bg: #f0fff4;
+  --color-success-border: #dcfce7;
+  --color-danger-accent: #ffadad;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-primary: #d79ea4;
+  --color-background: #16161a;
+  --color-text: #ededed;
+  --color-subtext: #a0a0a5;
+  --color-border: #55555c;
+  --color-success: #66bb6a;
+  --color-danger: #ef5350;
+  --color-danger-bg: #3a1f1f;
+  --color-danger-border: #a84343;
+
+  --color-surface: #1e1e22;
+  --color-surface-subtle: #242428;
+  --color-text-strong: #fafafa;
+  --color-muted: #8a8a90;
+  --color-placeholder: #5c5c62;
+  --color-divider: #45454c;
+  --color-primary-disabled: #4a3639;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.45);
+
+  --color-warning-bg: #3d3319;
+  --color-warning-fg: #e0b64d;
+  --color-amber: #e6a020;
+  --color-amber-bg: #2e2418;
+  --color-success-bg: #16281c;
+  --color-success-border: #1f3d2a;
+  --color-danger-accent: #ffadad;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 

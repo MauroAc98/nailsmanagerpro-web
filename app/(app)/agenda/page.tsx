@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -70,7 +70,7 @@ function formatFechaCorta(fechaStr: string): string {
 // Style constants
 // ─────────────────────────────────────────────
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#AAA', letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 
@@ -153,7 +153,7 @@ function SwipeableTurnoCard({
   };
 
   const isEnCurso = turno.estado_visual === 'en_curso';
-  const cardBg = isEnCurso ? '#FFFBF5' : '#FFF';
+  const cardBg = isEnCurso ? colors.amberBg : colors.surface;
 
   // Sección hora — ancho fijo, nunca se desliza. Si el swipe moviera esta
   // columna (junto con el resto del card) el overflow:hidden del wrapper la
@@ -191,7 +191,7 @@ function SwipeableTurnoCard({
           </span>
         </span>
       )}
-      <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: '#F0F0F0' }} />
+      <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: colors.divider }} />
     </div>
   );
 
@@ -214,7 +214,7 @@ function SwipeableTurnoCard({
           alto que este bloque, ej. en_curso con el badge+botón apilados). */}
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <p style={{
-          fontSize: 16, fontWeight: 600, color: '#333', margin: '0 0 2px',
+          fontSize: 16, fontWeight: 600, color: colors.text, margin: '0 0 2px',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Cliente eliminado'}
@@ -232,9 +232,9 @@ function SwipeableTurnoCard({
         {isEnCurso ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <span style={{
-              fontSize: 9, fontWeight: 700, color: '#E6A020', letterSpacing: 0.8,
-              backgroundColor: 'rgba(255, 193, 100, 0.15)',
-              border: '1px solid rgba(255, 193, 100, 0.5)',
+              fontSize: 9, fontWeight: 700, color: colors.amber, letterSpacing: 0.8,
+              backgroundColor: withAlpha(colors.amber, '26'),
+              border: `1px solid ${withAlpha(colors.amber, '80')}`,
               borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
             }}>
               ● EN CURSO
@@ -271,7 +271,7 @@ function SwipeableTurnoCard({
                 onClick={e => e.stopPropagation()}
                 style={{
                   width: 38, height: 38, borderRadius: 19,
-                  backgroundColor: '#F0FFF4', border: '1px solid #DCFCE7',
+                  backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
@@ -280,7 +280,7 @@ function SwipeableTurnoCard({
                 </svg>
               </a>
             )}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EEE" strokeWidth="2" style={{ marginLeft: 4 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.border} strokeWidth="2" style={{ marginLeft: 4 }}>
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </>
@@ -296,8 +296,8 @@ function SwipeableTurnoCard({
     // region's CANCELAR panel is top:0/bottom:0 within it, so it must span
     // the whole row, not just its own content's natural height.
     borderRadius: 14,
-    border: '1px solid #EEE',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+    border: `1px solid ${colors.border}`,
+    boxShadow: shadows.card,
     overflow: 'hidden',
     backgroundColor: cardBg, // el paddingLeft de abajo queda fuera de timeSection/
                              // restStyle (los que pintan cardBg) — sin esto, ese
@@ -337,7 +337,7 @@ function SwipeableTurnoCard({
         >
           <div style={{
             width: SWIPE_REVEAL, height: '100%',
-            backgroundColor: '#FFADAD',
+            backgroundColor: colors.dangerAccent,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             cursor: 'pointer',
           }}>
@@ -360,7 +360,7 @@ function SwipeableTurnoCard({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={handleCardClick}
-          style={{ ...restStyle, position: 'absolute', inset: 0, transform: 'translateX(0)' }}
+          style={{ ...restStyle, position: 'absolute', inset: 0, right: -1, transform: 'translateX(0)' }}
         >
           {restBody}
         </div>
@@ -376,8 +376,8 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
   return (
     <div style={{ opacity: 0.6 }}>
       <div style={{
-        backgroundColor: '#FDFDFD', borderRadius: 14,
-        border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        backgroundColor: colors.surfaceSubtle, borderRadius: 14,
+        border: `1px solid ${colors.border}`, boxShadow: shadows.card,
         padding: '12px 26px 12px 16px', display: 'flex', alignItems: 'center', minHeight: 75,
       }}>
         {/* Sección hora */}
@@ -385,7 +385,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
           width: 70, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: '#AAA', letterSpacing: -0.5 }}>
+          <span style={{ fontSize: 17, fontWeight: 700, color: colors.muted, letterSpacing: -0.5 }}>
             {horaDeHora(turno.fecha_hora)}
           </span>
           <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 2, textTransform: 'uppercase' }}>
@@ -409,13 +409,13 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
               </span>
             </span>
           )}
-          <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: '#F0F0F0' }} />
+          <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: colors.divider }} />
         </div>
 
         {/* Sección info central */}
         <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
           <p style={{
-            fontSize: 16, fontWeight: 600, color: '#888', margin: '0 0 2px',
+            fontSize: 16, fontWeight: 600, color: colors.muted, margin: '0 0 2px',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : 'Cliente eliminado'}
@@ -431,9 +431,9 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
         {/* Sección acción */}
         <div style={{ paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
           <span style={{
-            fontSize: 9, fontWeight: 700, color: '#d79ea4', letterSpacing: 0.8,
-            backgroundColor: 'rgba(215, 158, 164, 0.15)',
-            border: '1px solid rgba(215, 158, 164, 0.4)',
+            fontSize: 9, fontWeight: 700, color: colors.primary, letterSpacing: 0.8,
+            backgroundColor: withAlpha(colors.primary, '26'),
+            border: `1px solid ${withAlpha(colors.primary, '66')}`,
             borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
           }}>
             ✓ FINALIZADO
@@ -467,7 +467,7 @@ function AgendaListHeader({
   return (
     <div style={{ paddingBottom: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>
           {titulo}
         </span>
 
@@ -608,7 +608,7 @@ function FiltroSheetContent({
   return (
     <div style={{ padding: '0 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', marginBottom: 8 }}>
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#222' }}>Filtros</span>
+        <span style={{ fontSize: 16, fontWeight: 600, color: colors.textStrong }}>Filtros</span>
         {hayFiltroActivo && (
           <button
             onClick={() => {
@@ -628,7 +628,7 @@ function FiltroSheetContent({
         Buscar cliente
       </p>
       <div style={{
-        display: 'flex', alignItems: 'center', backgroundColor: '#F3F3F3', borderRadius: 12,
+        display: 'flex', alignItems: 'center', backgroundColor: colors.surfaceSubtle, borderRadius: 12,
         padding: '0 12px', height: 45, marginBottom: 16,
       }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
@@ -638,11 +638,11 @@ function FiltroSheetContent({
           placeholder="Nombre del cliente..."
           value={textoBusqueda}
           onChange={e => onChangeBusqueda(e.target.value)}
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#333', background: 'transparent' }}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: colors.text, background: 'transparent' }}
         />
         {textoBusqueda !== '' && (
           <button onClick={onLimpiarBusqueda} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
               <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </button>
@@ -656,10 +656,10 @@ function FiltroSheetContent({
       <div style={{
         display: 'flex', alignItems: 'center', borderRadius: 12, padding: '0 14px', height: 45,
         border: '1px solid transparent',
-        backgroundColor: fechaError ? '#FFF5F5' : fechaFiltro ? `${colors.primary}12` : '#F3F3F3',
-        borderColor: fechaError ? `${colors.dangerBorder}44` : fechaFiltro ? `${colors.primary}44` : 'transparent',
+        backgroundColor: fechaError ? colors.dangerBg : fechaFiltro ? withAlpha(colors.primary, '12') : colors.surfaceSubtle,
+        borderColor: fechaError ? withAlpha(colors.dangerBorder, '44') : fechaFiltro ? withAlpha(colors.primary, '44') : 'transparent',
       }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : fechaFiltro ? colors.primary : '#999'} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : fechaFiltro ? colors.primary : colors.muted} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
           <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
         <input
@@ -668,7 +668,7 @@ function FiltroSheetContent({
           placeholder="DD/MM/YYYY"
           maxLength={10}
           inputMode="numeric"
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#333', background: 'transparent', letterSpacing: 1 }}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: colors.text, background: 'transparent', letterSpacing: 1 }}
         />
         {textoFecha !== '' && (
           <button onClick={handleLimpiarFecha} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
@@ -693,9 +693,9 @@ function FiltroSheetContent({
             onClick={() => onToggleServicio(s.id)}
             style={{
               padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-              border: `1px solid ${servicioFiltro === s.id ? colors.primary : '#DDD'}`,
-              backgroundColor: servicioFiltro === s.id ? colors.primary : '#F8F8F8',
-              color: servicioFiltro === s.id ? '#FFF' : '#555',
+              border: `1px solid ${servicioFiltro === s.id ? colors.primary : colors.divider}`,
+              backgroundColor: servicioFiltro === s.id ? colors.primary : colors.surfaceSubtle,
+              color: servicioFiltro === s.id ? '#FFF' : colors.textStrong,
               cursor: 'pointer',
             }}
           >
@@ -709,7 +709,7 @@ function FiltroSheetContent({
         disabled={btnDeshabilitado}
         style={{
           width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-          backgroundColor: btnDeshabilitado ? '#DDD' : colors.primary,
+          backgroundColor: btnDeshabilitado ? colors.divider : colors.primary,
           color: '#FFF', fontSize: 15, fontWeight: 600,
           cursor: btnDeshabilitado ? 'default' : 'pointer',
         }}
@@ -793,7 +793,7 @@ function CalendarioMensual({
       {/* Day headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
         {DAYS.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#AAA', paddingBottom: 4 }}>
+          <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: colors.muted, paddingBottom: 4 }}>
             {d}
           </div>
         ))}
@@ -823,7 +823,7 @@ function CalendarioMensual({
                 width: 40, height: 40, borderRadius: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundColor: isSelected ? colors.primary : 'transparent',
-                boxShadow: isSelected ? `0 2px 4px ${colors.primary}4D` : 'none',
+                boxShadow: isSelected ? `0 2px 4px ${withAlpha(colors.primary, '4D')}` : 'none',
                 position: 'relative',
               }}>
                 <span style={{
@@ -832,7 +832,7 @@ function CalendarioMensual({
                   color: isSelected
                     ? '#FFF'
                     : esPasado
-                      ? '#BBB'
+                      ? colors.placeholder
                       : isToday
                         ? colors.primary
                         : colors.text,
@@ -859,7 +859,7 @@ function CalendarioMensual({
                 {count > 0 && esPasado && !isSelected && (
                   <div style={{
                     position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
-                    width: 4, height: 4, borderRadius: 2, backgroundColor: '#DDD',
+                    width: 4, height: 4, borderRadius: 2, backgroundColor: colors.divider,
                   }} />
                 )}
               </div>
@@ -895,8 +895,8 @@ function SelectorProfesionalDia({
         onClick={() => onSeleccionar(null)}
         style={{
           flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-          border: `1px solid ${filtroActivo === null ? colors.primary : '#DDD'}`,
-          backgroundColor: filtroActivo === null ? colors.primary : '#FFF',
+          border: `1px solid ${filtroActivo === null ? colors.primary : colors.divider}`,
+          backgroundColor: filtroActivo === null ? colors.primary : colors.surface,
           color: filtroActivo === null ? '#FFF' : colors.text,
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}
@@ -913,8 +913,8 @@ function SelectorProfesionalDia({
             style={{
               flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
               borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-              border: `1px solid ${selected ? color : '#DDD'}`,
-              backgroundColor: selected ? color : '#FFF',
+              border: `1px solid ${selected ? color : colors.divider}`,
+              backgroundColor: selected ? color : colors.surface,
               color: selected ? '#FFF' : colors.text,
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}
@@ -1122,7 +1122,7 @@ export default function AgendaPage() {
   const cargandoHeader = loading || cargandoBusqueda;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

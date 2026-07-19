@@ -32,7 +32,7 @@ function sustituirVariables(mensaje: string): string {
 
 function IconClose() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
@@ -99,13 +99,13 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: '#333', margin: 0 }}>Mensajes de WhatsApp</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>Mensajes de WhatsApp</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
           <IconClose />
         </button>
       </div>
 
-      <div style={{ display: 'flex', background: '#EBEBEB', borderRadius: 20, padding: 3, marginBottom: 16 }}>
+      <div style={{ display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 16 }}>
         {(['recordatorio', 'confirmacion'] as TipoPlantilla[]).map(tipo => (
           <button
             key={tipo}
@@ -114,7 +114,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
               flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
               cursor: 'pointer', fontSize: 13, fontWeight: 600,
               background: tipoActual === tipo ? colors.primary : 'transparent',
-              color: tipoActual === tipo ? '#fff' : '#666',
+              color: tipoActual === tipo ? '#fff' : colors.subtext,
             }}
           >
             {tipo === 'recordatorio' ? 'Recordatorio' : 'Confirmación'}
@@ -122,7 +122,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
         ))}
       </div>
 
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#AAA', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
         Variables disponibles
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
@@ -132,7 +132,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
             onClick={() => handleAgregarVariable(v)}
             style={{
               borderRadius: 20, padding: '6px 12px', fontSize: 13, cursor: 'pointer',
-              border: `1px solid ${colors.primary}`, background: '#fff', color: colors.primary,
+              border: `1px solid ${colors.primary}`, background: colors.surface, color: colors.primary,
             }}
           >
             {v}
@@ -146,8 +146,8 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
           onChange={e => setMensaje(e.target.value)}
           style={{
             width: '100%', boxSizing: 'border-box', minHeight: 110, resize: 'vertical',
-            background: '#F8F8F8', border: '1px solid #EFEFEF', borderRadius: 12,
-            padding: '12px 44px 12px 14px', fontSize: 14, color: '#333', fontFamily: 'inherit',
+            background: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
+            padding: '12px 44px 12px 14px', fontSize: 14, color: colors.text, fontFamily: 'inherit',
           }}
         />
         <button
@@ -156,7 +156,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
           style={{
             position: 'absolute', right: 8, bottom: 8, width: 32, height: 32,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#fff', border: '1px solid #EEE', borderRadius: 8, cursor: 'pointer', fontSize: 16,
+            background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, cursor: 'pointer', fontSize: 16,
           }}
         >
           😊
@@ -165,8 +165,8 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
 
       {mostrarEmojis && (
         <div style={{
-          marginBottom: 16, background: '#FAFAFA', borderRadius: 12,
-          border: '1px solid #EFEFEF', padding: '8px 0',
+          marginBottom: 16, background: colors.surfaceSubtle, borderRadius: 12,
+          border: `1px solid ${colors.border}`, padding: '8px 0',
           display: 'flex', gap: 4, overflowX: 'auto',
         }}>
           {ALL_EMOJIS.map((emoji, idx) => (
@@ -176,7 +176,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
               onClick={() => setMensaje(mensaje + emoji)}
               style={{
                 flex: '0 0 auto', width: 40, height: 40, borderRadius: 10,
-                background: '#fff', border: 'none', cursor: 'pointer', fontSize: 18,
+                background: colors.surface, border: 'none', cursor: 'pointer', fontSize: 18,
                 marginLeft: idx === 0 ? 8 : 0, marginRight: idx === ALL_EMOJIS.length - 1 ? 8 : 0,
               }}
             >
@@ -186,15 +186,30 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
         </div>
       )}
 
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#AAA', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
         Vista previa
       </p>
+      {/* Burbuja de chat de WhatsApp — imita el fondo doodle + el bubble
+          verde claro reales de WhatsApp a propósito, así que quedan fijos
+          (no siguen el tema de la app), igual que el ícono verde de
+          WhatsApp en otras pantallas. El texto también queda fijo en
+          oscuro: si siguiera colors.text se volvería claro en modo oscuro
+          y quedaría ilegible sobre este verde. */}
       <div style={{
-        backgroundColor: '#DCF8C6', borderRadius: 12, padding: '12px 14px', marginBottom: 20,
+        backgroundColor: '#DDD5CC', backgroundImage: 'url(/whatsapp/bg_wpp.png)',
+        backgroundSize: '220px', borderRadius: 16, padding: 14, marginBottom: 20,
       }}>
-        <p style={{ margin: 0, fontSize: 14, color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {sustituirVariables(mensaje)}
-        </p>
+        <div style={{
+          backgroundColor: '#DCF8C6', borderRadius: 12, padding: '12px 14px',
+          maxWidth: '82%', boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        }}>
+          <p style={{ margin: 0, fontSize: 14, color: '#111b21', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {sustituirVariables(mensaje)}
+          </p>
+          <p style={{ margin: '5px 0 0', fontSize: 9, fontWeight: 700, color: '#4FC3F7', textAlign: 'right' }}>
+            18:30 ✓✓
+          </p>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>

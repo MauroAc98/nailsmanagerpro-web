@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useCallback, useRef, useEffect } from 'react';
+import { colors, withAlpha } from '@/theme/colors';
 
 const ITEM_H  = 44;
 const VISIBLE = 5;
@@ -80,7 +81,7 @@ function DrumColumnView({
               alignItems:      'center',
               justifyContent:  'center',
               fontSize:        20,
-              color:           item === selected ? '#222' : '#CCC',
+              color:           item === selected ? colors.textStrong : colors.placeholder,
               userSelect:      'none',
               transition:      'color 0.15s',
             }}
@@ -95,7 +96,7 @@ function DrumColumnView({
         position:      'absolute',
         top: 0, left: 0, right: 0,
         height:        PAD,
-        background:    'linear-gradient(to bottom, white, transparent)',
+        background:    `linear-gradient(to bottom, ${colors.surface}, transparent)`,
         pointerEvents: 'none',
       }} />
       {/* Gradient fades — bottom */}
@@ -103,7 +104,7 @@ function DrumColumnView({
         position:      'absolute',
         bottom: 0, left: 0, right: 0,
         height:        PAD,
-        background:    'linear-gradient(to top, white, transparent)',
+        background:    `linear-gradient(to top, ${colors.surface}, transparent)`,
         pointerEvents: 'none',
       }} />
     </div>
@@ -122,9 +123,9 @@ export function DrumPicker({ columns, value, onChange }: DrumPickerProps) {
           left: 0, right:  0,
           height:          ITEM_H,
           transform:       'translateY(-50%)',
-          borderTop:       '1px solid rgba(215,158,164,0.35)',
-          borderBottom:    '1px solid rgba(215,158,164,0.35)',
-          backgroundColor: 'rgba(215,158,164,0.07)',
+          borderTop:       `1px solid ${withAlpha(colors.primary, '59')}`,
+          borderBottom:    `1px solid ${withAlpha(colors.primary, '59')}`,
+          backgroundColor: withAlpha(colors.primary, '12'),
           borderRadius:    10,
           pointerEvents:   'none',
           zIndex:          1,
@@ -141,7 +142,7 @@ export function DrumPicker({ columns, value, onChange }: DrumPickerProps) {
               <span style={{
                 fontSize:   22,
                 fontWeight: 700,
-                color:      '#999',
+                color:      colors.muted,
                 flexShrink: 0,
                 zIndex:     2,
               }}>

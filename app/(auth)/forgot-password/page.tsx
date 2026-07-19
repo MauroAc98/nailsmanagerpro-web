@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { colors } from '@/theme/colors';
+import { colors, shadows, withAlpha } from '@/theme/colors';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: '#555',
+            color: colors.textStrong,
             fontSize: 14,
             fontWeight: 600,
             display: 'flex',
@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
           width: 64,
           height: 64,
           borderRadius: 32,
-          backgroundColor: colors.primary + '22',
+          backgroundColor: withAlpha(colors.primary, '22'),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -97,8 +97,8 @@ export default function ForgotPasswordPage() {
 
       {/* Mensaje enviado */}
       {enviado && (
-        <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: '#f0fdf4', borderLeft: '4px solid #4caf50' }}>
-          <p style={{ fontSize: 13, color: '#2e7d32', margin: 0 }}>
+        <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: colors.successBg, borderLeft: `4px solid ${colors.successBorder}` }}>
+          <p style={{ fontSize: 13, color: colors.success, margin: 0 }}>
             Te enviamos un código a <strong>{email}</strong>. Revisá tu bandeja.
           </p>
         </div>
@@ -108,8 +108,8 @@ export default function ForgotPasswordPage() {
       <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* Email */}
-        <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: '#FFF', border: '1px solid #EEE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
+        <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
@@ -143,7 +143,7 @@ export default function ForgotPasswordPage() {
             style={{
               height: 52,
               borderRadius: 14,
-              backgroundColor: loading || !email ? '#e0c4c7' : colors.primary,
+              backgroundColor: loading || !email ? colors.primaryDisabled : colors.primary,
               color: '#fff',
               fontSize: 16,
               fontWeight: 600,

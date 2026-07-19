@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { colors, shadows } from '@/theme/colors';
 
 // ─────────────────────────────────────────────
 // BottomSheet — plain pointer-event drag sheet, mirrors the subset of
@@ -51,8 +52,8 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       enablePanDownToClose,
       onChange,
       children,
-      handleColor = '#DDD',
-      backgroundColor = '#FFF',
+      handleColor = colors.divider,
+      backgroundColor = colors.surface,
       bottomOffset = 0,
     },
     ref,
@@ -197,7 +198,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             height: maxHeight,
             backgroundColor,
             borderRadius: '20px 20px 0 0',
-            boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
+            boxShadow: shadows.sheet,
             display: 'flex',
             flexDirection: 'column',
             transform: `translateY(${maxHeight - heightForIndex(currentIndex)}px)`,

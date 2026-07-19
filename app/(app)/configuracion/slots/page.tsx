@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Slot } from '@/services/slotService';
@@ -22,7 +22,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       onClick={e => { e.stopPropagation(); onChange(!value); }}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.border,
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
       }}
@@ -31,7 +31,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
         position: 'absolute', top: 3,
         left: value ? 21 : 3,
         width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : '#CCC',
+        backgroundColor: value ? colors.primary : colors.placeholder,
         transition: 'left 0.2s',
       }} />
     </div>
@@ -84,12 +84,12 @@ function SlotCard({
     snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : 0);
   };
 
-  const cardBg = slot.activo ? '#FFF' : '#FAFAFA';
+  const cardBg = slot.activo ? colors.surface : colors.surfaceSubtle;
 
   return (
     <div style={{
-      display: 'flex', borderRadius: 14, border: '1px solid #EEE',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden',
+      display: 'flex', borderRadius: 14, border: `1px solid ${colors.border}`,
+      boxShadow: shadows.card, overflow: 'hidden',
       opacity: slot.activo ? 1 : 0.65,
     }}>
       {/* Ícono — ancho fijo, nunca se desliza (si se moviera junto con el
@@ -100,11 +100,11 @@ function SlotCard({
       }}>
         <div style={{
           width: 36, height: 36,
-          backgroundColor: slot.activo ? '#FFF5F7' : '#F5F5F5',
+          backgroundColor: slot.activo ? withAlpha(colors.primary, '15') : colors.surfaceSubtle,
           borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={slot.activo ? colors.primary : '#BBB'} strokeWidth="2">
+            stroke={slot.activo ? colors.primary : colors.placeholder} strokeWidth="2">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
           </svg>
@@ -117,7 +117,7 @@ function SlotCard({
           onClick={onDelete}
           style={{
             position: 'absolute', right: 0, top: 0, bottom: 0,
-            width: SWIPE_REVEAL, backgroundColor: '#FFADAD',
+            width: SWIPE_REVEAL, backgroundColor: colors.dangerAccent,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
             cursor: 'pointer',
           }}
@@ -146,7 +146,7 @@ function SlotCard({
           }}
         >
           <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: slot.activo ? '#333' : '#AAA' }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: slot.activo ? colors.text : colors.placeholder }}>
               {slot.hora} hs
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
@@ -224,17 +224,17 @@ export default function SlotsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => router.back()}
           style={{
-            width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F5',
+            width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
             border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
@@ -275,8 +275,8 @@ export default function SlotsPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-                  border: `1px solid ${selected ? color : '#DDD'}`,
-                  backgroundColor: selected ? color : '#FFF',
+                  border: `1px solid ${selected ? color : colors.divider}`,
+                  backgroundColor: selected ? color : colors.surface,
                   color: selected ? '#FFF' : colors.text,
                 }}
               >
@@ -332,11 +332,11 @@ export default function SlotsPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              backgroundColor: '#FFF', borderRadius: '20px 20px 0 0',
+              backgroundColor: colors.surface, borderRadius: '20px 20px 0 0',
               padding: '24px 24px 40px', width: '100%', maxWidth: 480,
             }}
           >
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#333', margin: '0 0 20px' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: '0 0 20px' }}>
               Agregar horario
             </h2>
             <DrumPicker

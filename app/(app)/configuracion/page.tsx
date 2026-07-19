@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 
 const OPCIONES = [
   {
@@ -45,6 +45,23 @@ const OPCIONES = [
     ),
   },
   {
+    path: '/configuracion/apariencia',
+    title: 'Apariencia',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    ),
+  },
+  {
     path: '/configuracion/ayuda',
     title: 'Ayuda',
     icon: (
@@ -61,7 +78,7 @@ export default function ConfiguracionPage() {
   const router = useRouter();
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       <div style={{ padding: '24px 20px 12px' }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>Configuración</h1>
       </div>
@@ -73,13 +90,13 @@ export default function ConfiguracionPage() {
             onClick={() => router.push(op.path)}
             style={{
               display: 'flex', alignItems: 'center', gap: 15,
-              backgroundColor: '#FFF', border: '1px solid #EEE',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)', borderRadius: 14,
+              backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+              boxShadow: shadows.card, borderRadius: 14,
               padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
             }}
           >
             <div style={{
-              width: 40, height: 40, backgroundColor: '#F9F9F9',
+              width: 40, height: 40, backgroundColor: colors.surfaceSubtle,
               borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
@@ -88,7 +105,7 @@ export default function ConfiguracionPage() {
             <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: colors.text }}>
               {op.title}
             </span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </button>

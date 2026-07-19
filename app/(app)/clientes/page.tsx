@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
@@ -16,7 +16,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       onClick={e => { e.stopPropagation(); onChange(!value); }}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.border,
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
       }}
@@ -25,7 +25,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
         position: 'absolute', top: 3,
         left: value ? 21 : 3,
         width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : '#CCC',
+        backgroundColor: value ? colors.primary : colors.placeholder,
         transition: 'left 0.2s',
       }} />
     </div>
@@ -45,10 +45,10 @@ function ClienteCard({
     <div
       onClick={onPress}
       style={{
-        backgroundColor: '#FFF',
+        backgroundColor: colors.surface,
         borderRadius: 14,
-        border: '1px solid #EEE',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        border: `1px solid ${colors.border}`,
+        boxShadow: shadows.card,
         padding: '14px 16px',
         display: 'flex',
         alignItems: 'center',
@@ -59,7 +59,7 @@ function ClienteCard({
       }}
     >
       <div style={{ flex: 1 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? '#333' : '#AAA' }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? colors.text : colors.placeholder }}>
           {cliente.nombre} {cliente.apellido}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
@@ -69,7 +69,7 @@ function ClienteCard({
 
       <PillToggle value={cliente.activo} onChange={onToggle} />
 
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
         <polyline points="9 18 15 12 9 6"/>
       </svg>
     </div>
@@ -87,7 +87,7 @@ export default function ClientesPage() {
   useEffect(() => { fetchClientes(); }, []);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{ padding: '24px 20px 12px' }}>
@@ -114,11 +114,11 @@ export default function ClientesPage() {
       <div style={{ padding: '0 20px 16px' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          backgroundColor: '#FFF', border: '1px solid #EEE',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12,
+          backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+          boxShadow: shadows.card, borderRadius: 12,
           paddingLeft: 14, paddingRight: 14, height: 48,
         }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input
@@ -130,7 +130,7 @@ export default function ClientesPage() {
           />
           {buscar && (
             <button onClick={() => setBuscar('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>

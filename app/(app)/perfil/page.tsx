@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
@@ -81,7 +81,7 @@ function IconLock() {
 
 function IconChevronRight() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );
@@ -238,7 +238,7 @@ export default function PerfilPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F7F7F9', paddingBottom: 24 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.surfaceSubtle, paddingBottom: 24 }}>
       <div style={{ padding: '24px 20px 12px' }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>Perfil</h1>
       </div>
@@ -281,13 +281,13 @@ export default function PerfilPage() {
           onClick={() => abrirSheet('mensaje')}
           style={{
             display: 'flex', alignItems: 'center', gap: 15,
-            backgroundColor: '#FFF', border: '1px solid #EEE',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)', borderRadius: 14,
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14,
             padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
           }}
         >
           <div style={{
-            width: 40, height: 40, backgroundColor: '#F9F9F9',
+            width: 40, height: 40, backgroundColor: colors.surfaceSubtle,
             borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <IconWhatsapp />
@@ -300,13 +300,13 @@ export default function PerfilPage() {
           onClick={() => abrirSheet('password')}
           style={{
             display: 'flex', alignItems: 'center', gap: 15,
-            backgroundColor: '#FFF', border: '1px solid #EEE',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)', borderRadius: 14,
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14,
             padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
           }}
         >
           <div style={{
-            width: 40, height: 40, backgroundColor: '#F9F9F9',
+            width: 40, height: 40, backgroundColor: colors.surfaceSubtle,
             borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <IconLock />
@@ -319,7 +319,7 @@ export default function PerfilPage() {
           onClick={handleLogout}
           style={{
             width: '100%', boxSizing: 'border-box',
-            backgroundColor: '#FFF5F5', border: '1px solid #FDDCDC', borderRadius: 14,
+            backgroundColor: colors.dangerBg, border: `1px solid ${colors.dangerBorder}`, borderRadius: 14,
             padding: '14px', textAlign: 'center', cursor: 'pointer',
             color: colors.danger, fontSize: 15, fontWeight: 600,
           }}

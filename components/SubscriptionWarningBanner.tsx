@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { colors } from '@/theme/colors';
 
 // ─────────────────────────────────────────────
 // SubscriptionWarningBanner — mismo criterio que el equivalente de RN
@@ -29,17 +30,17 @@ export function SubscriptionWarningBanner() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
       padding: '10px 16px',
-      backgroundColor: isUrgent ? '#f8d7da' : '#fff3cd',
+      backgroundColor: isUrgent ? colors.dangerBg : colors.warningBg,
     }}>
       <svg
         width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke={isUrgent ? '#721c24' : '#856404'} strokeWidth="2"
+        stroke={isUrgent ? colors.danger : colors.warningFg} strokeWidth="2"
       >
         <circle cx="12" cy="12" r="10" />
         <line x1="12" y1="8" x2="12" y2="12" />
         <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
-      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: isUrgent ? '#721c24' : '#856404' }}>
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: isUrgent ? colors.danger : colors.warningFg }}>
         {daysLeft === 0
           ? 'Tu suscripción vence hoy'
           : `Tu suscripción vence en ${daysLeft} día${daysLeft === 1 ? '' : 's'}`}
@@ -49,7 +50,7 @@ export function SubscriptionWarningBanner() {
         style={{
           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           fontSize: 13, fontWeight: 700, textDecoration: 'underline',
-          color: isUrgent ? '#721c24' : '#856404',
+          color: isUrgent ? colors.danger : colors.warningFg,
         }}
       >
         Renovar

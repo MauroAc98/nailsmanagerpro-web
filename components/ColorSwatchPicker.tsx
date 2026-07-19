@@ -1,6 +1,6 @@
 'use client';
 
-import { profesionalPalette } from '@/theme/colors';
+import { colors, profesionalPalette } from '@/theme/colors';
 
 interface Props {
   value:    string;
@@ -27,8 +27,8 @@ export default function ColorSwatchPicker({ value, onChange }: Props) {
             style={{
               width: 36, height: 36, borderRadius: 18,
               backgroundColor: color, cursor: 'pointer',
-              border: selected ? '3px solid #333' : '3px solid transparent',
-              boxShadow: selected ? '0 0 0 2px #FFF, 0 1px 4px rgba(0,0,0,0.25)' : '0 1px 3px rgba(0,0,0,0.15)',
+              border: selected ? `3px solid ${colors.textStrong}` : '3px solid transparent',
+              boxShadow: selected ? `0 0 0 2px ${colors.surface}, 0 1px 4px rgba(0,0,0,0.25)` : '0 1px 3px rgba(0,0,0,0.15)',
               padding: 0,
             }}
           />

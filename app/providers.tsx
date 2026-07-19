@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
+import { initTheme } from '@/store/useThemeStore';
 import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
 import { ToastHost } from '@/components/ToastHost';
+import { colors } from '@/theme/colors';
 
 // Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
@@ -38,6 +40,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     useAuthStore.getState().inicializar();
+    initTheme();
     setMounted(true);
   }, []);
 
@@ -105,7 +108,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: '#fff' }} />}
+      {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
       <ConfirmSheetHost />

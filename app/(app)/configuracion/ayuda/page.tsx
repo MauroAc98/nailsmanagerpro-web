@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 
 // ─────────────────────────────────────────────
 // Contenido — texto plano por módulo, mantenerlo acá adentro (no hace
@@ -119,7 +119,7 @@ Tus datos del estudio (nombre, teléfono, dirección), el monto de seña que ped
 function IconChevron({ abierto }: { abierto: boolean }) {
   return (
     <svg
-      width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"
+      width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2"
       style={{ transform: abierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
     >
       <polyline points="6 9 12 15 18 9" />
@@ -132,17 +132,17 @@ export default function AyudaPage() {
   const [abierta, setAbierta] = useState<string | null>(null);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 40 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => router.back()}
           style={{
-            width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F5',
+            width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
             border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
@@ -162,8 +162,8 @@ export default function AyudaPage() {
             <div
               key={s.titulo}
               style={{
-                backgroundColor: '#FFF', border: '1px solid #EEE',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 14, overflow: 'hidden',
+                backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                boxShadow: shadows.card, borderRadius: 14, overflow: 'hidden',
               }}
             >
               <button
@@ -179,7 +179,7 @@ export default function AyudaPage() {
               </button>
               {abierto && (
                 <p style={{
-                  margin: 0, padding: '0 16px 16px', fontSize: 13.5, color: '#666', lineHeight: 1.6,
+                  margin: 0, padding: '0 16px 16px', fontSize: 13.5, color: colors.subtext, lineHeight: 1.6,
                   whiteSpace: 'pre-line',
                 }}>
                   {s.texto}

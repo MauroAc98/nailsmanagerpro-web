@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
+import { colors } from '@/theme/colors';
 
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#AAA', letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 
@@ -24,7 +25,7 @@ export function SheetInput({ label, icon, value, onChange, placeholder, type = '
       <p style={sectionLabelStyle}>{label}</p>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        backgroundColor: '#F8F8F8', border: '1px solid #EFEFEF', borderRadius: 12,
+        backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
         padding: '12px 14px', position: 'relative',
       }}>
         {icon}
@@ -36,7 +37,7 @@ export function SheetInput({ label, icon, value, onChange, placeholder, type = '
           inputMode={inputMode}
           style={{
             flex: 1, border: 'none', background: 'none', outline: 'none',
-            fontSize: 15, color: '#333', minWidth: 0,
+            fontSize: 15, color: colors.text, minWidth: 0,
           }}
         />
         {rightAdornment}

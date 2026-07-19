@@ -1,6 +1,6 @@
 'use client';
 
-import { colors } from '@/theme/colors';
+import { colors, withAlpha } from '@/theme/colors';
 
 const MINUTE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
@@ -29,7 +29,7 @@ function formatLabel(total: number, h: number, mins: number) {
 
 const btnStyle: React.CSSProperties = {
   width: 32, height: 32, borderRadius: 8,
-  backgroundColor: '#FFF5F8', border: 'none',
+  backgroundColor: withAlpha(colors.primary, '12'), border: 'none',
   cursor: 'pointer', fontSize: 20, color: colors.primary,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   fontWeight: 300, lineHeight: 1,
@@ -58,7 +58,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
     <div>
       <div style={{
         display: 'flex', alignItems: 'center',
-        backgroundColor: '#FFF', border: '1px solid #EEE',
+        backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
         borderRadius: 12, padding: '8px 6px',
       }}>
         {/* Horas */}
@@ -68,7 +68,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button style={btnStyle} onClick={() => changeH(-1)}>−</button>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#333', minWidth: 44, textAlign: 'center' }}>
+            <span style={{ fontSize: 28, fontWeight: 700, color: colors.text, minWidth: 44, textAlign: 'center' }}>
               {h}
             </span>
             <button style={btnStyle} onClick={() => changeH(1)}>+</button>
@@ -76,7 +76,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
           <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>hs</span>
         </div>
 
-        <div style={{ width: 1, height: 44, backgroundColor: '#EEE', margin: '0 6px' }} />
+        <div style={{ width: 1, height: 44, backgroundColor: colors.border, margin: '0 6px' }} />
 
         {/* Minutos */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -85,7 +85,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button style={btnStyle} onClick={() => changeM(-1)}>−</button>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#333', minWidth: 44, textAlign: 'center' }}>
+            <span style={{ fontSize: 28, fontWeight: 700, color: colors.text, minWidth: 44, textAlign: 'center' }}>
               {String(mins).padStart(2, '0')}
             </span>
             <button style={btnStyle} onClick={() => changeM(1)}>+</button>
@@ -97,11 +97,11 @@ export default function DuracionPicker({ value, onChange }: Props) {
       {/* Summary pill */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
-        backgroundColor: '#FFF5F8', border: `1px solid ${colors.primary}`,
+        backgroundColor: withAlpha(colors.primary, '12'), border: `1px solid ${colors.primary}`,
         borderRadius: 20, padding: '6px 14px', marginTop: 10,
       }}>
         <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
-        <span style={{ fontSize: 13, color: '#c48fa8', fontWeight: 600 }}>
+        <span style={{ fontSize: 13, color: colors.primary, fontWeight: 600 }}>
           {formatLabel(total, h, mins)}
         </span>
       </div>

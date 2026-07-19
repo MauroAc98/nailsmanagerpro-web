@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
@@ -37,14 +37,14 @@ function formatHora12(hora24: string): string {
 // Style constants
 // ─────────────────────────────────────────────
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#AAA', letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 
 const inputStyle: React.CSSProperties = {
-  backgroundColor: '#FFF', border: '1px solid #EEE',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12,
-  padding: '14px 16px', fontSize: 15, color: '#333',
+  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  boxShadow: shadows.card, borderRadius: 12,
+  padding: '14px 16px', fontSize: 15, color: colors.text,
 };
 
 // ─────────────────────────────────────────────
@@ -224,7 +224,7 @@ export default function EditarTurnoPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -257,18 +257,18 @@ export default function EditarTurnoPage() {
               ...inputStyle,
               display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
               borderRadius: showClienteDropdown ? '12px 12px 0 0' : 12,
-              borderColor: showClienteDropdown ? colors.primary : '#EEE',
+              borderColor: showClienteDropdown ? colors.primary : colors.border,
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            <span style={{ flex: 1, color: selectedCliente ? colors.text : '#AAA', fontSize: 15 }}>
+            <span style={{ flex: 1, color: selectedCliente ? colors.text : colors.placeholder, fontSize: 15 }}>
               {selectedCliente ? `${selectedCliente.nombre} ${selectedCliente.apellido}` : 'Seleccionar...'}
             </span>
             <svg
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2"
               style={{ transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
             >
               <polyline points="6 9 12 15 18 9" />
@@ -277,8 +277,8 @@ export default function EditarTurnoPage() {
 
           {showClienteDropdown && (
             <div style={{
-              border: '1px solid #EEE', borderTop: 'none',
-              borderRadius: '0 0 12px 12px', backgroundColor: '#fff',
+              border: `1px solid ${colors.border}`, borderTop: 'none',
+              borderRadius: '0 0 12px 12px', backgroundColor: colors.surface,
               maxHeight: 220, overflowY: 'auto',
             }}>
               <input
@@ -287,7 +287,7 @@ export default function EditarTurnoPage() {
                 value={clienteBuscar}
                 onChange={e => setClienteBuscar(e.target.value)}
                 style={{
-                  padding: '10px 14px', border: 'none', borderBottom: '1px solid #EEE',
+                  padding: '10px 14px', border: 'none', borderBottom: `1px solid ${colors.border}`,
                   width: '100%', boxSizing: 'border-box', outline: 'none', fontSize: 14,
                 }}
               />
@@ -295,7 +295,7 @@ export default function EditarTurnoPage() {
                 <div
                   key={c.id}
                   onClick={() => { setSelectedCliente(c); setShowClienteDropdown(false); setClienteBuscar(''); }}
-                  style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: '1px solid #F5F5F5' }}
+                  style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: `1px solid ${colors.border}` }}
                 >
                   {c.nombre} {c.apellido}
                 </div>
@@ -319,8 +319,8 @@ export default function EditarTurnoPage() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
                       borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-                      border: `1px solid ${selected ? color : '#DDD'}`,
-                      backgroundColor: selected ? color : '#FFF',
+                      border: `1px solid ${selected ? color : colors.divider}`,
+                      backgroundColor: selected ? color : colors.surface,
                       color: selected ? '#FFF' : colors.text,
                     }}
                   >
@@ -350,8 +350,8 @@ export default function EditarTurnoPage() {
                 onClick={() => toggleServicio(s.id)}
                 style={{
                   borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-                  border: `1px solid ${selectedServicioIds.includes(s.id) ? colors.primary : '#DDD'}`,
-                  backgroundColor: selectedServicioIds.includes(s.id) ? colors.primary : '#FFF',
+                  border: `1px solid ${selectedServicioIds.includes(s.id) ? colors.primary : colors.divider}`,
+                  backgroundColor: selectedServicioIds.includes(s.id) ? colors.primary : colors.surface,
                   color: selectedServicioIds.includes(s.id) ? '#FFF' : colors.text,
                 }}
               >
@@ -396,10 +396,10 @@ export default function EditarTurnoPage() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60 }}>
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            backgroundColor: '#fff', borderRadius: '20px 20px 0 0',
+            backgroundColor: colors.surface, borderRadius: '20px 20px 0 0',
             padding: 24, paddingBottom: 48,
           }}>
-            <div style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', margin: '0 auto 16px' }} />
+            <div style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.divider, margin: '0 auto 16px' }} />
             <p style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, marginBottom: 16, color: colors.text }}>
               Hora del turno
             </p>

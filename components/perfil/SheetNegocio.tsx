@@ -1,6 +1,6 @@
 'use client';
 
-import { colors } from '@/theme/colors';
+import { colors, withAlpha } from '@/theme/colors';
 import { SheetInput } from './SheetInput';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
@@ -19,7 +19,7 @@ interface Props {
 
 function IconClose() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
@@ -27,7 +27,7 @@ function IconClose() {
 
 function IconMoney() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v10M15 9.5c0-1.5-1.5-2.5-3-2.5s-3 1-3 2.5 1.5 2 3 2.5 3 1 3 2.5-1.5 2.5-3 2.5-3-1-3-2.5" />
     </svg>
@@ -40,7 +40,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       onClick={() => onChange(!value)}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.border,
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
       }}
@@ -49,7 +49,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
         position: 'absolute', top: 3,
         left: value ? 21 : 3,
         width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : '#CCC',
+        backgroundColor: value ? colors.primary : colors.placeholder,
         transition: 'left 0.2s',
       }} />
     </div>
@@ -63,7 +63,7 @@ export function SheetNegocio({
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: '#333', margin: 0 }}>Mi negocio</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>Mi negocio</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
           <IconClose />
         </button>
@@ -81,10 +81,10 @@ export function SheetNegocio({
 
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        backgroundColor: '#F8F8F8', borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
       }}>
         <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#333' }}>Recordatorio automático</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>Recordatorio automático</p>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
             Enviá un WhatsApp la noche anterior a tus clientes
           </p>
@@ -100,8 +100,8 @@ export function SheetNegocio({
               onClick={() => setHoraRecordatorio(h)}
               style={{
                 borderRadius: 20, padding: '8px 16px', fontSize: 14, border: 'none', cursor: 'pointer',
-                backgroundColor: horaRecordatorio === h ? colors.primary : '#EEE',
-                color: horaRecordatorio === h ? '#fff' : '#666',
+                backgroundColor: horaRecordatorio === h ? colors.primary : colors.border,
+                color: horaRecordatorio === h ? '#fff' : colors.subtext,
               }}
             >
               {h}

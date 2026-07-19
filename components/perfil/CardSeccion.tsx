@@ -14,14 +14,14 @@ interface Props {
 
 export function CardSeccion({ titulo, icono, onEditar, children }: Props) {
   return (
-    <div style={{ backgroundColor: '#FFF', borderRadius: 16, border: '1px solid #F0F0F0' }}>
+    <div style={{ backgroundColor: colors.surface, borderRadius: 16, border: `1px solid ${colors.border}` }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderBottom: '1px solid #F5F5F5',
+        padding: '12px 14px', borderBottom: `1px solid ${colors.border}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {icono}
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{titulo}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{titulo}</span>
         </div>
         {onEditar && (
           <button

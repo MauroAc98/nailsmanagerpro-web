@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 import { useConfirmStore, resolveDialog } from '@/store/useConfirmStore';
 
 const Z_INDEX = 100; // above BottomSheet's Z_INDEX (40) — dialogs sit on top of everything
@@ -41,9 +41,9 @@ export function ConfirmSheetHost() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: '#FFF',
+          backgroundColor: colors.surface,
           borderRadius: '20px 20px 0 0',
-          boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
+          boxShadow: shadows.sheet,
           padding: '28px 20px calc(20px + env(safe-area-inset-bottom))',
           transform: visible ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
@@ -61,7 +61,7 @@ export function ConfirmSheetHost() {
                   onClick={() => resolveDialog(false)}
                   style={{
                     flex: 1, padding: '14px 0', borderRadius: 14,
-                    border: `1px solid ${colors.border}`, backgroundColor: '#FFF',
+                    border: `1px solid ${colors.border}`, backgroundColor: colors.surface,
                     fontSize: 15, fontWeight: 600, color: colors.text, cursor: 'pointer',
                   }}
                 >

@@ -85,17 +85,17 @@ export default function WhatsappPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 40 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 40 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => router.back()}
           style={{
-            width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F5',
+            width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
             border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
@@ -108,7 +108,7 @@ export default function WhatsappPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
           <div style={{
             width: 36, height: 36, borderRadius: 18,
-            backgroundColor: '#F0FFF4',
+            backgroundColor: colors.successBg,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
@@ -123,7 +123,7 @@ export default function WhatsappPage() {
         {/* Error banner — falla de red/API al conectar o desconectar */}
         {error && (
           <div style={{
-            width: '100%', backgroundColor: '#FFF5F5', border: '1px solid #FDDCDC',
+            width: '100%', backgroundColor: colors.dangerBg, border: `1px solid ${colors.dangerBorder}`,
             borderRadius: 12, padding: '12px 14px',
           }}>
             <p style={{ margin: 0, fontSize: 13, color: colors.danger }}>{error}</p>
@@ -150,14 +150,14 @@ export default function WhatsappPage() {
         {!verificando && !loading && estaConectado && (
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            backgroundColor: '#F9F9F9', borderRadius: 16, padding: 28,
-            border: '1px solid #EEE',
+            backgroundColor: colors.surfaceSubtle, borderRadius: 16, padding: 28,
+            border: `1px solid ${colors.border}`,
           }}>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#222', marginTop: 12, marginBottom: 6 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: colors.textStrong, marginTop: 12, marginBottom: 6 }}>
               Tu WhatsApp ya está vinculado
             </p>
             <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', marginBottom: 20 }}>
@@ -167,7 +167,7 @@ export default function WhatsappPage() {
               onClick={handleDesconectar}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                backgroundColor: '#FFF5F5', border: '1px solid #FDDCDC',
+                backgroundColor: colors.dangerBg, border: `1px solid ${colors.dangerBorder}`,
                 borderRadius: 16, padding: '14px', cursor: 'pointer',
               }}
             >
@@ -185,10 +185,10 @@ export default function WhatsappPage() {
         {!verificando && !loading && !estaConectado && expirado && (
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            backgroundColor: '#F9F9F9', borderRadius: 16, padding: 28,
-            border: '1px solid #EEE',
+            backgroundColor: colors.surfaceSubtle, borderRadius: 16, padding: 28,
+            border: `1px solid ${colors.border}`,
           }}>
-            <p style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 18 }}>
+            <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', marginBottom: 18 }}>
               El código expiró sin confirmarse. Generá uno nuevo cuando estés listo para escanearlo.
             </p>
             <button
@@ -208,8 +208,8 @@ export default function WhatsappPage() {
         {!verificando && !loading && !estaConectado && !expirado && qrBase64 && (
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            backgroundColor: '#F8F8F8', borderRadius: 16, padding: 20,
-            border: '1px solid #EFEFEF',
+            backgroundColor: colors.surfaceSubtle, borderRadius: 16, padding: 20,
+            border: `1px solid ${colors.border}`,
           }}>
             <img
               src={qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`}
@@ -224,7 +224,7 @@ export default function WhatsappPage() {
                 '3. Vincular un dispositivo',
                 '4. Escaneá este código con la cámara',
               ].map(paso => (
-                <p key={paso} style={{ margin: 0, fontSize: 13, color: '#555' }}>{paso}</p>
+                <p key={paso} style={{ margin: 0, fontSize: 13, color: colors.textStrong }}>{paso}</p>
               ))}
             </div>
 
@@ -237,7 +237,7 @@ export default function WhatsappPage() {
                 onClick={() => downloadQR(qrBase64)}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -251,7 +251,7 @@ export default function WhatsappPage() {
                 onClick={() => shareQR(qrBase64)}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -266,7 +266,7 @@ export default function WhatsappPage() {
                 disabled={loading}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE',
+                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`,
                   cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1,
                 }}
               >

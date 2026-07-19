@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
@@ -13,7 +13,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 // Style helpers
 // ─────────────────────────────────────────────
 const tabContainerStyle: React.CSSProperties = {
-  display: 'flex', background: '#EBEBEB', borderRadius: 20, padding: 3, marginBottom: 14,
+  display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 14,
 };
 
 function tabStyle(active: boolean): React.CSSProperties {
@@ -23,7 +23,7 @@ function tabStyle(active: boolean): React.CSSProperties {
     background:  active ? colors.primary : 'transparent',
     color:       active ? '#fff' : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
-    boxShadow:   active ? `0 2px 6px ${colors.primary}4D` : 'none',
+    boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '4D')}` : 'none',
   };
 }
 
@@ -67,7 +67,7 @@ function HistoriaContent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 60 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
 
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -99,7 +99,7 @@ function HistoriaContent() {
             onClick={() => handleNavegar(-1)}
             style={{
               width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: 'rgba(215,158,164,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: withAlpha(colors.primary, '1F'), display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -116,7 +116,7 @@ function HistoriaContent() {
             onClick={() => handleNavegar(1)}
             style={{
               width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: 'rgba(215,158,164,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: withAlpha(colors.primary, '1F'), display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -153,8 +153,8 @@ function HistoriaContent() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
-                    border: `1px solid ${selected ? color : '#DDD'}`,
-                    backgroundColor: selected ? color : '#FFF',
+                    border: `1px solid ${selected ? color : colors.divider}`,
+                    backgroundColor: selected ? color : colors.surface,
                     color: selected ? '#FFF' : colors.text,
                   }}
                 >
@@ -217,7 +217,7 @@ function HistoriaContent() {
                 onClick={() => fileInputRef.current?.click()}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -231,7 +231,7 @@ function HistoriaContent() {
                 onClick={descargarImagen}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -244,7 +244,7 @@ function HistoriaContent() {
                 onClick={compartirImagen}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: '#fff', border: '1.5px solid #EEE', cursor: 'pointer',
+                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
@@ -258,11 +258,11 @@ function HistoriaContent() {
         ) : (
           <div style={{
             width: canvasWidth, height: canvasHeight / 3,
-            background: '#F9F9F9', borderRadius: 16, border: '1px solid #EEE',
+            background: colors.surfaceSubtle, borderRadius: 16, border: `1px solid ${colors.border}`,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 12, marginBottom: 15,
           }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="1.5">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="1.5">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <line x1="3" y1="9" x2="21" y2="9" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -270,7 +270,7 @@ function HistoriaContent() {
               <line x1="9.5" y1="13.5" x2="14.5" y2="18.5" />
               <line x1="14.5" y1="13.5" x2="9.5" y2="18.5" />
             </svg>
-            <p style={{ color: '#AAA', fontSize: 14, textAlign: 'center', padding: '0 30px', margin: 0 }}>
+            <p style={{ color: colors.muted, fontSize: 14, textAlign: 'center', padding: '0 30px', margin: 0 }}>
               No hay disponibilidad para mostrar en este período
             </p>
           </div>

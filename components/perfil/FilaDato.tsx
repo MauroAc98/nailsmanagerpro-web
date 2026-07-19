@@ -13,13 +13,13 @@ export function FilaDato({ label, valor }: Props) {
       <span style={{ fontSize: 13, color: colors.subtext }}>{label}</span>
       {valor ? (
         <span style={{
-          fontSize: 13, fontWeight: 600, color: '#333', textAlign: 'right',
+          fontSize: 13, fontWeight: 600, color: colors.text, textAlign: 'right',
           maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {valor}
         </span>
       ) : (
-        <span style={{ fontSize: 13, fontStyle: 'italic', color: '#CCC', textAlign: 'right', maxWidth: '60%' }}>
+        <span style={{ fontSize: 13, fontStyle: 'italic', color: colors.placeholder, textAlign: 'right', maxWidth: '60%' }}>
           Sin completar
         </span>
       )}

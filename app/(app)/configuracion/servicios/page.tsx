@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
 
@@ -12,7 +12,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       onClick={e => { e.stopPropagation(); onChange(!value); }}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? colors.primary + '66' : '#EEE',
+        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.border,
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
       }}
@@ -21,7 +21,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
         position: 'absolute', top: 3,
         left: value ? 21 : 3,
         width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : '#CCC',
+        backgroundColor: value ? colors.primary : colors.placeholder,
         transition: 'left 0.2s',
       }} />
     </div>
@@ -44,9 +44,9 @@ function ServicioCard({
       onClick={onEdit}
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        backgroundColor: servicio.activo ? '#FFF' : '#FAFAFA',
-        border: '1px solid #EEE',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 14,
+        backgroundColor: servicio.activo ? colors.surface : colors.surfaceSubtle,
+        border: `1px solid ${colors.border}`,
+        boxShadow: shadows.card, borderRadius: 14,
         padding: '14px 16px', cursor: 'pointer',
         opacity: servicio.activo ? 1 : 0.65,
         userSelect: 'none',
@@ -54,18 +54,18 @@ function ServicioCard({
     >
       <div style={{
         width: 36, height: 36,
-        backgroundColor: servicio.activo ? '#FFF5F7' : '#F5F5F5',
+        backgroundColor: servicio.activo ? withAlpha(colors.primary, '15') : colors.surfaceSubtle,
         borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke={servicio.activo ? colors.primary : '#BBB'} strokeWidth="2">
+          stroke={servicio.activo ? colors.primary : colors.placeholder} strokeWidth="2">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
       </div>
 
       <div style={{ flex: 1 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: servicio.activo ? '#333' : '#AAA' }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: servicio.activo ? colors.text : colors.placeholder }}>
           {servicio.nombre}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
@@ -75,7 +75,7 @@ function ServicioCard({
 
       <PillToggle value={servicio.activo} onChange={onToggle} />
 
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
         <polyline points="9 18 15 12 9 6"/>
       </svg>
     </div>
@@ -91,17 +91,17 @@ export default function ServiciosPage() {
 
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => router.back()}
           style={{
-            width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F5',
+            width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
             border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
@@ -128,11 +128,11 @@ export default function ServiciosPage() {
       <div style={{ padding: '0 20px 16px' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          backgroundColor: '#FFF', border: '1px solid #EEE',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', borderRadius: 12,
+          backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+          boxShadow: shadows.card, borderRadius: 12,
           paddingLeft: 14, paddingRight: 14, height: 48,
         }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input
@@ -144,7 +144,7 @@ export default function ServiciosPage() {
           />
           {buscar && (
             <button onClick={() => setBuscar('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
