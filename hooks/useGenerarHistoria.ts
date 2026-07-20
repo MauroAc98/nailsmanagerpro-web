@@ -72,7 +72,6 @@ export function useGenerarHistoria(fechaInicial?: string) {
     fechaInicial ? new Date(fechaInicial + 'T00:00:00') : new Date()
   );
   const [modo,           setModo]           = useState<Modo>('mes');
-  const [fondoUri,       setFondoUri]       = useState<string | null>(null);
   const [agendaGenerada, setAgendaGenerada] = useState<DisponibilidadDia[]>([]);
   const [quincena,       setQuincena]       = useState<0 | 1>(0);
   const [diasOcultos,    setDiasOcultos]    = useState<string[]>([]);
@@ -102,6 +101,15 @@ export function useGenerarHistoria(fechaInicial?: string) {
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]
   );
+
+  // Estado inicial de fondoUri sembrado con fondoFijoGuardado, no con null:
+  // al navegar a esta pantalla DESDE otra parte de la app (SPA, no carga en
+  // frío), el store de profesionales ya suele venir cargado, así que
+  // effectiveProfesionalId resuelve de una en el primer render y nunca hay
+  // una "transición" que el sync de más abajo pueda detectar — con null
+  // como semilla, el fondo guardado nunca se aplicaba solo (quedaba en
+  // /default_bg.jpg hasta que el usuario tocaba manualmente el selector).
+  const [fondoUri, setFondoUri] = useState<string | null>(fondoFijoGuardado);
 
   const canvasRef      = useRef<HTMLDivElement>(null);
 
