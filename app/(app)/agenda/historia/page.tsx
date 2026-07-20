@@ -44,7 +44,7 @@ function HistoriaContent() {
     canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId,
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
-    toggleDiaOculto, toggleSlot,
+    toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
     elegirFoto, descargarImagen, compartirImagen, fondoUri,
@@ -207,6 +207,7 @@ function HistoriaContent() {
                   diasOcultos={diasOcultos}
                   onToggleSlot={toggleSlot}
                   onOcultarDia={toggleDiaOculto}
+                  onToggleHoraEnTodos={toggleHoraEnTodos}
                 />
               </div>
             )}

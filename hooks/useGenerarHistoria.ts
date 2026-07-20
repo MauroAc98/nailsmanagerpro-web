@@ -240,6 +240,31 @@ export function useGenerarHistoria(fechaInicial?: string) {
     );
   }, [diasQuincena]);
 
+  // Ocultar/restaurar una hora puntual en todos los días actualmente
+  // visibles (respeta el filtro día/semana/mes y la quincena activa, porque
+  // opera sobre diasQuincena — lo mismo que ya se le pasa a AgendaEditor).
+  // Si la hora todavía está libre en algún día visible, oculta esa hora en
+  // todos; si ya está oculta en todos, la restaura en todos — mismo criterio
+  // de toggle que un "seleccionar todo".
+  const toggleHoraEnTodos = useCallback((hora: string) => {
+    const fechasVisibles = new Set(diasQuincena.map(d => d.fecha));
+    const hayAlgunaLibre = diasQuincena.some(dia =>
+      dia.slots.some(s => s.hora === hora && s.libre)
+    );
+    const nuevoLibre = !hayAlgunaLibre;
+
+    setAgendaGenerada(prev =>
+      prev.map(dia =>
+        !fechasVisibles.has(dia.fecha) ? dia : {
+          ...dia,
+          slots: dia.slots.map(slot =>
+            slot.hora !== hora ? slot : { ...slot, libre: nuevoLibre }
+          ),
+        }
+      )
+    );
+  }, [diasQuincena]);
+
   // ─────────────────────────────────────────────
   // Free-text CRUD — agregarTexto doubles as "guardar" when editandoId
   // is set, so the same input/button drives add and edit.
@@ -392,7 +417,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
 
     // editor
-    toggleDiaOculto, toggleSlot,
+    toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
 

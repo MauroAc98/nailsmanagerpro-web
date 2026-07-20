@@ -12,13 +12,21 @@ function nombreDia(fecha: string): string {
 }
 
 interface Props {
-  agenda:        DisponibilidadDia[]; // diasQuincena — positional index matters for toggleSlot
-  diasOcultos:   string[];
-  onToggleSlot:  (fechaIdx: number, slotIdx: number) => void;
-  onOcultarDia:  (fecha: string) => void;
+  agenda:              DisponibilidadDia[]; // diasQuincena — positional index matters for toggleSlot
+  diasOcultos:         string[];
+  onToggleSlot:        (fechaIdx: number, slotIdx: number) => void;
+  onOcultarDia:        (fecha: string) => void;
+  onToggleHoraEnTodos: (hora: string) => void;
 }
 
-export function AgendaEditor({ agenda, diasOcultos, onToggleSlot, onOcultarDia }: Props) {
+export function AgendaEditor({ agenda, diasOcultos, onToggleSlot, onOcultarDia, onToggleHoraEnTodos }: Props) {
+  // Horas distintas entre los días visibles, para ofrecer un toggle único
+  // que oculte/restaure esa hora en todos de una — evita tener que ir
+  // día por día tildando el mismo horario.
+  const horasDistintas = Array.from(
+    new Set(agenda.flatMap(dia => dia.slots.map(s => s.hora)))
+  ).sort();
+
   return (
     <div style={{
       width: '100%', backgroundColor: colors.surface, padding: 15, borderRadius: 15,
@@ -27,6 +35,37 @@ export function AgendaEditor({ agenda, diasOcultos, onToggleSlot, onOcultarDia }
       <p style={{ fontSize: 12, fontWeight: 700, color: colors.subtext, marginBottom: 8 }}>
         Tocá un turno para ocultarlo, o el ojo para ocultar el día (Deslizá →):
       </p>
+
+      {horasDistintas.length > 1 && (
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: colors.subtext, marginBottom: 6 }}>
+            Ocultar un horario en todos los días de esta vista:
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {horasDistintas.map(hora => {
+              const algunaLibre = agenda.some(dia =>
+                dia.slots.some(s => s.hora === hora && s.libre)
+              );
+              return (
+                <button
+                  key={hora}
+                  type="button"
+                  onClick={() => onToggleHoraEnTodos(hora)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 8, border: `1px solid ${algunaLibre ? colors.primary : colors.border}`,
+                    background: algunaLibre ? 'transparent' : colors.surfaceSubtle,
+                    color: algunaLibre ? colors.primary : colors.placeholder,
+                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  {hora}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
         {agenda.map((dia, fechaIdx) => {
           const oculto = diasOcultos.includes(dia.fecha);
