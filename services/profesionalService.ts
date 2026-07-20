@@ -60,12 +60,17 @@ export const profesionalService = {
   },
 
   // Guarda (reemplaza) el fondo fijo de "generar historia" para esta
-  // profesional. multipart/form-data — axios arma el boundary solo cuando
-  // el body es un FormData, no hace falta setear el header a mano.
+  // profesional. La instancia `api` fija 'Content-Type': 'application/json'
+  // como default en TODOS los requests — sin pisarlo acá, axios manda el
+  // FormData serializado como JSON (`{"imagen":{}}`) en vez de multipart,
+  // y el backend responde 422 "The imagen field is required". Content-Type
+  // undefined deja que axios/el browser arme el multipart con el boundary.
   subirFondoHistoria: async (id: number, archivo: File): Promise<Profesional> => {
     const form = new FormData();
     form.append('imagen', archivo);
-    const { data } = await api.post<Profesional>(`/profesionales/${id}/fondo-historia`, form);
+    const { data } = await api.post<Profesional>(`/profesionales/${id}/fondo-historia`, form, {
+      headers: { 'Content-Type': undefined },
+    });
     return data;
   },
 
