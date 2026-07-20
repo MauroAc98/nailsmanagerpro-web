@@ -8,6 +8,7 @@ import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 // ─────────────────────────────────────────────
 // Style helpers
@@ -47,7 +48,7 @@ function HistoriaContent() {
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
-    elegirFoto, descargarImagen, compartirImagen, fondoUri,
+    elegirFoto, quitarFondoFijo, descargarImagen, compartirImagen, fondoUri, fondoFijoGuardado,
   } = useGenerarHistoria(fechaInicial);
 
   // Multi-agenda — invisible con ≤1 profesional activa, mismo criterio que
@@ -60,10 +61,16 @@ function HistoriaContent() {
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
 
-  const handleFondoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFondoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) elegirFoto(file);
     e.target.value = '';
+    if (!file) return;
+
+    const guardarFijo = await confirmDialog(
+      '¿Guardás esta imagen como fondo fijo para la próxima vez, o la usás solo por esta historia?',
+      { confirmText: 'Guardar como fijo', cancelText: 'Usar solo esta vez' }
+    );
+    elegirFoto(file, guardarFijo);
   };
 
   return (
@@ -255,6 +262,25 @@ function HistoriaContent() {
                 <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Compartir</span>
               </button>
             </div>
+
+            {fondoFijoGuardado && (
+              <button
+                onClick={async () => {
+                  const confirmado = await confirmDialog(
+                    'Se va a quitar el fondo fijo guardado. La próxima vez que generes una historia no va a tener fondo por default.',
+                    { confirmText: 'Quitar fondo fijo', cancelText: 'Cancelar', danger: true }
+                  );
+                  if (confirmado) await quitarFondoFijo();
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 8,
+                  marginTop: 4, fontSize: 12, fontWeight: 600, color: colors.subtext,
+                  textDecoration: 'underline', textUnderlineOffset: 2,
+                }}
+              >
+                Quitar fondo fijo guardado
+              </button>
+            )}
           </>
         ) : (
           <div style={{

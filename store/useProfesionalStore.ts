@@ -21,6 +21,8 @@ interface ProfesionalesState {
   agregarProfesional: (dto: CreateProfesionalDto) => Promise<OperacionResult>;
   actualizarProfesional: (id: number, dto: UpdateProfesionalDto) => Promise<OperacionResult>;
   toggleActivo: (id: number, activo: boolean) => Promise<void>;
+  guardarFondoHistoria: (id: number, archivo: File) => Promise<OperacionResult>;
+  borrarFondoHistoria: (id: number) => Promise<OperacionResult>;
 }
 
 export const useProfesionalStore = create<ProfesionalesState>((set) => ({
@@ -78,6 +80,34 @@ export const useProfesionalStore = create<ProfesionalesState>((set) => ({
         set(state => ({
           profesionales: state.profesionales.map(p => p.id === id ? { ...p, activo: !activo } : p),
         }));
+      }
+    });
+  },
+
+  guardarFondoHistoria: async (id, archivo) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await profesionalService.subirFondoHistoria(id, archivo);
+        set(state => ({
+          profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  borrarFondoHistoria: async (id) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await profesionalService.borrarFondoHistoria(id);
+        set(state => ({
+          profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
       }
     });
   },

@@ -3,6 +3,7 @@ import { toBlob } from 'html-to-image';
 import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services/turnoService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -83,6 +84,25 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // pantalla, que tiene acceso a useProfesionalStore; el hook solo maneja el id.
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
 
+  // ─────────────────────────────────────────────
+  // Fondo fijo por profesional — el hook sí lee useProfesionalStore acá
+  // (además de por id, como arriba) porque necesita el fondo_historia_url
+  // guardado, no solo el nombre. Con una sola profesional activa (el caso
+  // más común) selectedProfesionalId nunca se setea porque el selector ni
+  // se muestra — así que "efectivo" cae a esa única profesional en vez de
+  // quedar sin fondo por default.
+  // ─────────────────────────────────────────────
+  const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
+  const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
+  const effectiveProfesionalId = useMemo(() => {
+    if (selectedProfesionalId) return selectedProfesionalId;
+    return activeProfesionales.length === 1 ? activeProfesionales[0].id : null;
+  }, [selectedProfesionalId, activeProfesionales]);
+  const fondoFijoGuardado = useMemo(
+    () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
+    [activeProfesionales, effectiveProfesionalId]
+  );
+
   const canvasRef      = useRef<HTMLDivElement>(null);
 
   // ─────────────────────────────────────────────
@@ -100,6 +120,19 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, []);
 
   const canvasHeight = (canvasWidth * 16) / 9;
+
+  // Cargar el fondo fijo guardado como default cada vez que cambia la
+  // profesional "efectiva" (selección explícita, o la única activa).
+  // Ajustado durante el render, no en un efecto — patrón oficial de React
+  // para resetear estado derivado cuando cambia una "key" (evita el
+  // render en cascada que un setState dentro de un effect generaría). Solo
+  // corre cuando effectiveProfesionalId realmente cambia, así que un fondo
+  // elegido "por esta vez" en la misma profesional no se pisa solo.
+  const [profesionalSincronizada, setProfesionalSincronizada] = useState(effectiveProfesionalId);
+  if (profesionalSincronizada !== effectiveProfesionalId) {
+    setProfesionalSincronizada(effectiveProfesionalId);
+    setFondoUri(fondoFijoGuardado);
+  }
 
   // ─────────────────────────────────────────────
   // Titulos — dos textos distintos, igual que RN (labelNavegador/labelTitulo):
@@ -337,11 +370,40 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // iOS, which left the exported story with a black background even though
   // the live preview looked fine.
   // ─────────────────────────────────────────────
-  const elegirFoto = useCallback((file: File) => {
+  // guardarFijo: además de mostrarla ya mismo (siempre, vía data URL — no
+  // hace falta esperar la subida para previsualizar), la sube al backend
+  // como fondo fijo de la profesional efectiva. Si esa subida falla, la
+  // imagen elegida se sigue usando igual "por esta vez" — solo se avisa
+  // que no quedó guardada para la próxima.
+  const elegirFoto = useCallback((file: File, guardarFijo: boolean) => {
     const reader = new FileReader();
-    reader.onload = () => setFondoUri(reader.result as string);
+    reader.onload = async () => {
+      setFondoUri(reader.result as string);
+
+      if (!guardarFijo) return;
+
+      if (!effectiveProfesionalId) {
+        await alertDialog('No se pudo identificar la profesional para guardar el fondo fijo. Se usa solo por esta vez.');
+        return;
+      }
+
+      const resultado = await guardarFondoHistoria(effectiveProfesionalId, file);
+      if (!resultado.success) {
+        await alertDialog(resultado.message ?? 'No se pudo guardar el fondo fijo. Se usa solo por esta vez.');
+      }
+    };
     reader.readAsDataURL(file);
-  }, []);
+  }, [effectiveProfesionalId, guardarFondoHistoria]);
+
+  const quitarFondoFijo = useCallback(async () => {
+    if (!effectiveProfesionalId) return;
+    const resultado = await borrarFondoHistoria(effectiveProfesionalId);
+    if (resultado.success) {
+      setFondoUri(null);
+    } else {
+      await alertDialog(resultado.message ?? 'No se pudo quitar el fondo fijo.');
+    }
+  }, [effectiveProfesionalId, borrarFondoHistoria]);
 
   // ─────────────────────────────────────────────
   // Capture helper — rasterize StoryCanvas DOM node.
@@ -412,6 +474,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId,
+    fondoFijoGuardado,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
@@ -422,6 +485,6 @@ export function useGenerarHistoria(fechaInicial?: string) {
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
 
     // photo / export
-    elegirFoto, descargarImagen, compartirImagen,
+    elegirFoto, quitarFondoFijo, descargarImagen, compartirImagen,
   };
 }

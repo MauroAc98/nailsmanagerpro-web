@@ -14,6 +14,10 @@ export interface Profesional {
   // (index/store/update). Cada elemento trae además la pivot de
   // profesional_servicio, que acá no se tipa por no ser necesaria en el front.
   servicios: Servicio[];
+  // Fondo fijo guardado para "generar historia" — null si esta profesional
+  // no tiene uno guardado. Siempre viene como URL pública lista para usar
+  // (appended por el backend), nunca como ruta interna del disco.
+  fondo_historia_url: string | null;
 }
 
 export interface CreateProfesionalDto {
@@ -53,6 +57,21 @@ export const profesionalService = {
   // endpoint REST DELETE.
   delete: async (id: number): Promise<void> => {
     await api.delete(`/profesionales/${id}`);
+  },
+
+  // Guarda (reemplaza) el fondo fijo de "generar historia" para esta
+  // profesional. multipart/form-data — axios arma el boundary solo cuando
+  // el body es un FormData, no hace falta setear el header a mano.
+  subirFondoHistoria: async (id: number, archivo: File): Promise<Profesional> => {
+    const form = new FormData();
+    form.append('imagen', archivo);
+    const { data } = await api.post<Profesional>(`/profesionales/${id}/fondo-historia`, form);
+    return data;
+  },
+
+  borrarFondoHistoria: async (id: number): Promise<Profesional> => {
+    const { data } = await api.delete<Profesional>(`/profesionales/${id}/fondo-historia`);
+    return data;
   },
 };
 
