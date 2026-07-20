@@ -4,6 +4,7 @@ import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { profesionalJefa } from '@/services/profesionalService';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -87,17 +88,16 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // ─────────────────────────────────────────────
   // Fondo fijo por profesional — el hook sí lee useProfesionalStore acá
   // (además de por id, como arriba) porque necesita el fondo_historia_url
-  // guardado, no solo el nombre. Con una sola profesional activa (el caso
-  // más común) selectedProfesionalId nunca se setea porque el selector ni
-  // se muestra — así que "efectivo" cae a esa única profesional en vez de
-  // quedar sin fondo por default.
+  // guardado, no solo el nombre. Sin selección explícita, "efectiva" cae en
+  // la profesional "jefa" (primera en crearse) — mismo default que el resto
+  // de la app, no la primera del array (que viene ordenado por nombre).
   // ─────────────────────────────────────────────
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
-    return activeProfesionales.length === 1 ? activeProfesionales[0].id : null;
-  }, [selectedProfesionalId, activeProfesionales]);
+    return profesionalJefa(profesionales)?.id ?? null;
+  }, [selectedProfesionalId, profesionales]);
   const fondoFijoGuardado = useMemo(
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]
@@ -382,18 +382,32 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
       if (!guardarFijo) return;
 
-      if (!effectiveProfesionalId) {
+      let profesionalId = effectiveProfesionalId;
+
+      // Si todavía no hay ninguna profesional resuelta puede ser que el
+      // fetch de /profesionales (disparado al entrar a la pantalla) no
+      // haya terminado todavía — pasa si se elige "guardar fijo" muy rápido
+      // después de entrar. Un solo reintento del fetch alcanza para el caso
+      // real (red normal); si sigue sin resolver una profesional puntual
+      // (ninguna activa, o multi-agenda sin selección), ahí sí es un caso
+      // genuino sin identificar.
+      if (!profesionalId) {
+        await useProfesionalStore.getState().fetchProfesionales();
+        profesionalId = selectedProfesionalId ?? profesionalJefa(useProfesionalStore.getState().profesionales)?.id ?? null;
+      }
+
+      if (!profesionalId) {
         await alertDialog('No se pudo identificar la profesional para guardar el fondo fijo. Se usa solo por esta vez.');
         return;
       }
 
-      const resultado = await guardarFondoHistoria(effectiveProfesionalId, file);
+      const resultado = await guardarFondoHistoria(profesionalId, file);
       if (!resultado.success) {
         await alertDialog(resultado.message ?? 'No se pudo guardar el fondo fijo. Se usa solo por esta vez.');
       }
     };
     reader.readAsDataURL(file);
-  }, [effectiveProfesionalId, guardarFondoHistoria]);
+  }, [effectiveProfesionalId, selectedProfesionalId, guardarFondoHistoria]);
 
   const quitarFondoFijo = useCallback(async () => {
     if (!effectiveProfesionalId) return;

@@ -6,6 +6,7 @@ import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Slot } from '@/services/slotService';
+import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
@@ -177,13 +178,16 @@ export default function SlotsPage() {
 
   useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Con selector visible, defaultear a la primera profesional activa apenas
-  // esté disponible, para no dejar la pantalla vacía sin selección.
-  useEffect(() => {
-    if (mostrarSelectorProfesional && selectedProfesionalId === null) {
-      setSelectedProfesionalId(activeProfesionales[0].id);
-    }
-  }, [mostrarSelectorProfesional, activeProfesionales, selectedProfesionalId]);
+  // Con selector visible, defaultear a la profesional "jefa" (primera en
+  // crearse) apenas esté disponible, para no dejar la pantalla vacía sin
+  // selección. activeProfesionales[0] NO sirve acá — la lista viene
+  // ordenada por nombre, no por antigüedad. Ajustado durante el render (no
+  // en un efecto): la propia condición `selectedProfesionalId === null` se
+  // vuelve falsa apenas se setea, así que converge en un solo render extra.
+  if (mostrarSelectorProfesional && selectedProfesionalId === null) {
+    const jefa = profesionalJefa(profesionales);
+    if (jefa) setSelectedProfesionalId(jefa.id);
+  }
 
   // Sin selector (≤1 profesional activa): comportamiento intacto, fetch
   // único sin scope, igual que antes de multi-agenda. Con selector: refetch

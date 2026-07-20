@@ -20,6 +20,18 @@ export interface Profesional {
   fondo_historia_url: string | null;
 }
 
+// La profesional "jefa": la primera en crearse (id más chico) entre las
+// activas. Es el default en toda la app cuando no hay una selección
+// explícita — mismo criterio que ya usa el backend en
+// Profesional::resolverParaUsuario (oldest('id')). El endpoint /profesionales
+// devuelve la lista ordenada por nombre (para mostrar en selectores), así
+// que activeProfesionales[0] NO es la jefa — hay que resolverla por id.
+export function profesionalJefa(profesionales: Profesional[]): Profesional | null {
+  const activas = profesionales.filter(p => p.activo);
+  if (activas.length === 0) return null;
+  return activas.reduce((min, p) => (p.id < min.id ? p : min), activas[0]);
+}
+
 export interface CreateProfesionalDto {
   nombre: string;
   color?: string;
