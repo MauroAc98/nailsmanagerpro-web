@@ -25,7 +25,9 @@ export function HistorialClienteSheetHost() {
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
-  useEffect(() => { if (profesionales.length === 0) fetchProfesionales(); }, [profesionales.length, fetchProfesionales]);
+  useEffect(() => {
+    if (clienteId !== null && profesionales.length === 0) fetchProfesionales();
+  }, [clienteId, profesionales.length, fetchProfesionales]);
   const profesionalesById = useMemo(
     () => new Map(profesionales.map(p => [p.id, p])),
     [profesionales]
