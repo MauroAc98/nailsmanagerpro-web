@@ -1,12 +1,29 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/useAuthStore';
 import { colors } from '@/theme/colors';
 
 export default function SubscriptionExpiredPage() {
   const router = useRouter();
-  const { supportInfo, logout } = useAuth();
+  const { supportInfo, logout, checkSubscription } = useAuth();
+  const [checking, setChecking] = useState(false);
+  const [stillExpired, setStillExpired] = useState(false);
+
+  const handleRecheck = async () => {
+    setChecking(true);
+    setStillExpired(false);
+    await checkSubscription();
+    const expired = useAuthStore.getState().subscriptionExpired;
+    setChecking(false);
+    if (expired) {
+      setStillExpired(true);
+    } else {
+      router.replace('/agenda');
+    }
+  };
 
   const handleWhatsApp = () => {
     if (!supportInfo?.whatsapp) return;
@@ -46,6 +63,31 @@ export default function SubscriptionExpiredPage() {
         <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', lineHeight: 1.6, marginBottom: 8, margin: 0, marginTop: 12, maxWidth: 320 }}>
           Para continuar usando Nailsmanagerpro necesitás renovar tu suscripción. Contactanos y te ayudamos.
         </p>
+
+        {/* Volver a verificar */}
+        <button
+          onClick={handleRecheck}
+          disabled={checking}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: checking ? 'not-allowed' : 'pointer',
+            color: colors.primary,
+            fontSize: 14,
+            fontWeight: '600',
+            padding: 8,
+            marginTop: 16,
+            opacity: checking ? 0.6 : 1,
+          }}
+        >
+          {checking ? 'Verificando…' : 'Volver a verificar'}
+        </button>
+
+        {stillExpired && (
+          <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', lineHeight: 1.5, margin: 0, marginTop: 8, maxWidth: 320 }}>
+            Tu suscripción sigue inactiva. Si ya la renovaste, escribinos y lo resolvemos.
+          </p>
+        )}
 
         {/* Botones */}
         <div style={{ width: '100%', marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
