@@ -37,16 +37,19 @@ function HistorialButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={e => { e.stopPropagation(); onClick(); }}
+      aria-label="Ver historial de turnos"
       style={{
-        width: 32, height: 32, borderRadius: 16, flexShrink: 0,
+        height: 32, borderRadius: 16, flexShrink: 0,
         backgroundColor: colors.surfaceSubtle, border: 'none',
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '0 10px', display: 'flex', alignItems: 'center', gap: 5,
+        cursor: 'pointer', whiteSpace: 'nowrap',
       }}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.subtext} strokeWidth="2">
         <circle cx="12" cy="12" r="10" />
         <polyline points="12 6 12 12 16 14" />
       </svg>
+      <span style={{ fontSize: 12, fontWeight: 600, color: colors.subtext }}>Historial</span>
     </button>
   );
 }
@@ -79,7 +82,7 @@ function ClienteCard({
         userSelect: 'none',
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? colors.text : colors.placeholder }}>
           {cliente.nombre} {cliente.apellido}
         </p>

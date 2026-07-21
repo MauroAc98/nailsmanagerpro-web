@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { colors, shadows } from '@/theme/colors';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useHistorialClienteStore, cerrarHistorial } from '@/store/useHistorialClienteStore';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import type { Profesional } from '@/services/profesionalService';
 import { clienteService, Cliente } from '@/services/clienteService';
 import type { Turno } from '@/services/turnoService';
+
+type FiltroEstado = 'todos' | 'completado' | 'cancelado';
 
 // Sheet global de "ver historial de turnos" de una clienta, disparado desde
 // ClienteCard en la lista — mismo patrón que el filtro de agenda (BottomSheet
@@ -18,6 +22,14 @@ export function HistorialClienteSheetHost() {
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
+
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
+  useEffect(() => { if (profesionales.length === 0) fetchProfesionales(); }, [profesionales.length, fetchProfesionales]);
+  const profesionalesById = useMemo(
+    () => new Map(profesionales.map(p => [p.id, p])),
+    [profesionales]
+  );
 
   useEffect(() => {
     if (clienteId === null) {
@@ -26,6 +38,7 @@ export function HistorialClienteSheetHost() {
     }
     setLoading(true);
     setCliente(null);
+    setFiltroEstado('todos');
     clienteService.getOne(clienteId)
       .then(setCliente)
       .finally(() => setLoading(false));
@@ -35,6 +48,9 @@ export function HistorialClienteSheetHost() {
   const turnos = [...(cliente?.turnos ?? [])].sort(
     (a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime()
   );
+  const turnosFiltrados = filtroEstado === 'todos'
+    ? turnos
+    : turnos.filter(t => t.estado === filtroEstado);
 
   return (
     <BottomSheet
@@ -49,17 +65,64 @@ export function HistorialClienteSheetHost() {
           Historial{cliente ? ` — ${cliente.nombre} ${cliente.apellido}` : ''}
         </p>
 
+        {!loading && turnos.length > 0 && (
+          <FiltroEstadoChips value={filtroEstado} onChange={setFiltroEstado} />
+        )}
+
         {loading ? (
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Cargando...</p>
         ) : turnos.length === 0 ? (
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Esta clienta todavía no tiene turnos.</p>
+        ) : turnosFiltrados.length === 0 ? (
+          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Ningún turno con ese filtro.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {turnos.map(turno => <TurnoHistorialCard key={turno.id} turno={turno} />)}
+            {turnosFiltrados.map(turno => (
+              <TurnoHistorialCard
+                key={turno.id}
+                turno={turno}
+                profesional={turno.profesional_id != null ? profesionalesById.get(turno.profesional_id) : undefined}
+              />
+            ))}
           </div>
         )}
       </div>
     </BottomSheet>
+  );
+}
+
+// ─────────────────────────────────────────────
+// FiltroEstadoChips — mismo estilo de pill que el selector de profesional
+// de la agenda (borde/fondo del color activo cuando está seleccionado).
+// ─────────────────────────────────────────────
+const FILTRO_OPCIONES: { value: FiltroEstado; label: string }[] = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'completado', label: 'Completado' },
+  { value: 'cancelado', label: 'Cancelado' },
+];
+
+function FiltroEstadoChips({ value, onChange }: { value: FiltroEstado; onChange: (v: FiltroEstado) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      {FILTRO_OPCIONES.map(opcion => {
+        const selected = value === opcion.value;
+        return (
+          <button
+            key={opcion.value}
+            onClick={() => onChange(opcion.value)}
+            style={{
+              borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+              border: `1px solid ${selected ? colors.primary : colors.divider}`,
+              backgroundColor: selected ? colors.primary : colors.surface,
+              color: selected ? '#FFF' : colors.text,
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            {opcion.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -85,7 +148,7 @@ function formatFechaHora(fechaHora: string): string {
   return `${dia}/${mes}/${anio}${hora ? ` ${hora.slice(0, 5)}` : ''}`;
 }
 
-function TurnoHistorialCard({ turno }: { turno: Turno }) {
+function TurnoHistorialCard({ turno, profesional }: { turno: Turno; profesional?: Profesional }) {
   const estilo = estiloEstado(turno.estado);
 
   return (
@@ -109,6 +172,13 @@ function TurnoHistorialCard({ turno }: { turno: Turno }) {
           {ESTADO_LABELS[turno.estado] ?? turno.estado}
         </span>
       </div>
+
+      {profesional && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 7, height: 7, borderRadius: 4, flexShrink: 0, backgroundColor: profesional.color || colors.primary }} />
+          <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{profesional.nombre}</p>
+        </div>
+      )}
 
       {turno.servicios.length > 0 && (
         <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>
