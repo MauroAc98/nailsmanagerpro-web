@@ -64,7 +64,7 @@ export function HistorialClienteSheetHost() {
     >
       <div style={{ padding: '4px 20px 24px' }}>
         <p style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: '0 0 14px' }}>
-          Historial{cliente ? ` — ${cliente.nombre} ${cliente.apellido}` : ''}
+          Historial de turnos{cliente ? ` — ${cliente.nombre} ${cliente.apellido}` : ''}
         </p>
 
         {!loading && turnos.length > 0 && (
