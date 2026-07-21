@@ -59,9 +59,21 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     ref,
   ) {
     const sheetRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
     const draggingRef = useRef(false);
     const dragStartY = useRef(0);
     const dragStartHeight = useRef(0);
+    // Only pointerdowns that originate on the content wrapper go through this
+    // gate (the handle always drags) — set at pointerdown based on whether
+    // the sheet is collapsed/half (always drags) or fully expanded with the
+    // list already scrolled to top (drag only then, otherwise let the list
+    // scroll natively).
+    const contentDragCandidate = useRef(false);
+    // Smoothed drag velocity in px/ms (dragging up = positive), used at
+    // release to distinguish a fast flick (go to the next snap point in that
+    // direction) from a slow drag (snap to nearest by distance).
+    const lastMove = useRef({ y: 0, t: 0 });
+    const velocityRef = useRef(0);
     // Logical "visible height" in px, kept in sync with every applied
     // transform — the sheet's DOM height never changes (always maxHeight),
     // so this ref (not getBoundingClientRect) is the source of truth for
@@ -97,7 +109,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
         if (!el) return;
         const clamped = Math.min(maxHeight, Math.max(0, px));
         visibleHeightRef.current = clamped;
-        el.style.transition = animate ? 'transform 0.25s ease' : 'none';
+        el.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none';
         el.style.transform = `translateY(${maxHeight - clamped}px)`;
       },
       [maxHeight],
@@ -132,11 +144,17 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       [goToIndex],
     );
 
+    // Below this velocity (px/ms — ~0.5 ≈ 500px/s) a release is treated as a
+    // slow drag and snaps to the nearest point by distance, same as before.
+    const FLICK_VELOCITY_THRESHOLD = 0.5;
+
     const handlePointerDown = (e: React.PointerEvent) => {
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartY.current = e.clientY;
       dragStartHeight.current = visibleHeightRef.current;
       draggingRef.current = true;
+      lastMove.current = { y: e.clientY, t: e.timeStamp };
+      velocityRef.current = 0;
       applyVisibleHeight(dragStartHeight.current, false); // cancel any in-flight transition
     };
 
@@ -146,6 +164,16 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       const minHeight = enablePanDownToClose ? 0 : snapPoints[0] * availableHeight;
       const next = Math.min(maxHeight, Math.max(minHeight, dragStartHeight.current + delta));
       applyVisibleHeight(next, false);
+
+      const dt = e.timeStamp - lastMove.current.t;
+      if (dt > 0) {
+        const instVelocity = (lastMove.current.y - e.clientY) / dt; // up = positive
+        // Exponential smoothing so one jittery sample can't dominate the
+        // flick decision, while still weighting the most recent movement
+        // (what a native fling gesture actually measures) over the start.
+        velocityRef.current = velocityRef.current * 0.7 + instVelocity * 0.3;
+      }
+      lastMove.current = { y: e.clientY, t: e.timeStamp };
     };
 
     const handlePointerUp = (e: React.PointerEvent) => {
@@ -153,10 +181,24 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       draggingRef.current = false;
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
 
+      const allIndices = enablePanDownToClose ? [-1, ...snapPoints.map((_, i) => i)] : snapPoints.map((_, i) => i);
+      const velocity = velocityRef.current;
+
+      if (Math.abs(velocity) > FLICK_VELOCITY_THRESHOLD) {
+        // Fast flick: go to the next snap point in that direction from
+        // wherever the sheet was resting before this drag, regardless of
+        // how far it actually got dragged — this is what makes a quick
+        // upward swipe "fly" to the next point instead of falling back to
+        // its start, the same way a native sheet responds to a fling.
+        const direction = velocity > 0 ? 1 : -1; // up = positive = toward a taller index
+        const fromPos = allIndices.indexOf(currentIndex);
+        const target = allIndices[Math.min(allIndices.length - 1, Math.max(0, fromPos + direction))];
+        goToIndex(target, true);
+        return;
+      }
+
       const currentHeight = visibleHeightRef.current;
-      const candidates = enablePanDownToClose
-        ? [{ index: -1, px: 0 }, ...snapPoints.map((p, i) => ({ index: i, px: p * availableHeight }))]
-        : snapPoints.map((p, i) => ({ index: i, px: p * availableHeight }));
+      const candidates = allIndices.map((index) => ({ index, px: index < 0 ? 0 : snapPoints[index] * availableHeight }));
 
       let closest = candidates[0];
       let closestDistance = Math.abs(closest.px - currentHeight);
@@ -169,6 +211,34 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       }
 
       goToIndex(closest.index, true);
+    };
+
+    const isExpanded = currentIndex === snapPoints.length - 1;
+
+    // The content wrapper only ever originates a sheet-drag in two cases:
+    // the sheet isn't fully expanded yet (its "peek" content isn't meant to
+    // scroll independently), or it IS expanded but the list is already
+    // scrolled to the top (the standard pull-at-top-to-collapse handoff).
+    // Any other touch on the content area is left alone for native scrolling.
+    const handleContentPointerDown = (e: React.PointerEvent) => {
+      const atTop = (contentRef.current?.scrollTop ?? 0) <= 0;
+      if (!isExpanded || atTop) {
+        contentDragCandidate.current = true;
+        handlePointerDown(e);
+      } else {
+        contentDragCandidate.current = false;
+      }
+    };
+
+    const handleContentPointerMove = (e: React.PointerEvent) => {
+      if (!contentDragCandidate.current) return;
+      handlePointerMove(e);
+    };
+
+    const handleContentPointerUp = (e: React.PointerEvent) => {
+      if (!contentDragCandidate.current) return;
+      contentDragCandidate.current = false;
+      handlePointerUp(e);
     };
 
     return (
@@ -203,6 +273,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             flexDirection: 'column',
             transform: `translateY(${maxHeight - heightForIndex(currentIndex)}px)`,
             pointerEvents: 'auto',
+            willChange: 'transform',
           }}
         >
           <div
@@ -221,7 +292,20 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
               }}
             />
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>{children}</div>
+          <div
+            ref={contentRef}
+            onPointerDown={handleContentPointerDown}
+            onPointerMove={handleContentPointerMove}
+            onPointerUp={handleContentPointerUp}
+            style={{
+              flex: 1,
+              overflowY: isExpanded ? 'auto' : 'hidden',
+              minHeight: 0,
+              touchAction: isExpanded ? 'auto' : 'none',
+            }}
+          >
+            {children}
+          </div>
         </div>
       </div>
     );
