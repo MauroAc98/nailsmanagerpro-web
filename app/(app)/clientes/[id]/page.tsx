@@ -6,14 +6,7 @@ import { colors, shadows } from '@/theme/colors';
 import { useClientesStore } from '@/store/useClienteStore';
 import { clienteService } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
-
-const PAISES = [
-  { codigo: '54',  label: '🇦🇷 +54'  },
-  { codigo: '598', label: '🇺🇾 +598' },
-  { codigo: '595', label: '🇵🇾 +595' },
-  { codigo: '56',  label: '🇨🇱 +56'  },
-  { codigo: '591', label: '🇧🇴 +591' },
-];
+import { PAISES, phoneUtils } from '@/lib/phoneUtils';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -26,16 +19,6 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 13, fontWeight: 600, color: colors.textStrong,
   marginBottom: 7, display: 'block', marginLeft: 2,
-};
-
-const splitTelefono = (tel: string): { codigo: string; numero: string } => {
-  if (!tel) return { codigo: '54', numero: '' };
-  const raw = tel.startsWith('+') ? tel.slice(1) : tel;
-  const prefijos = ['598', '595', '591', '54', '56'];
-  for (const p of prefijos) {
-    if (raw.startsWith(p)) return { codigo: p, numero: raw.slice(p.length) };
-  }
-  return { codigo: '54', numero: raw };
 };
 
 export default function EditarClientePage() {
@@ -58,7 +41,7 @@ export default function EditarClientePage() {
         const cliente = await clienteService.getOne(id);
         setNombre(cliente.nombre);
         setApellido(cliente.apellido);
-        const { codigo, numero } = splitTelefono(cliente.telefono);
+        const { codigo, numero } = phoneUtils.splitCodigoPais(cliente.telefono);
         setCodigoPais(codigo);
         setTelefono(numero);
       } catch {
@@ -77,6 +60,22 @@ export default function EditarClientePage() {
     if (!apellido.trim()) e.apellido = 'El apellido es obligatorio';
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const handlePasteTelefono = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pegado = e.clipboardData.getData('text');
+    const soloDigitos = phoneUtils.clean(pegado);
+    if (!soloDigitos) return;
+    e.preventDefault();
+
+    const traeCodigoPais = pegado.trim().startsWith('+') || soloDigitos.length > 11;
+    if (traeCodigoPais) {
+      const { codigo, numero } = phoneUtils.splitCodigoPais(soloDigitos);
+      setCodigoPais(codigo);
+      setTelefono(numero);
+    } else {
+      setTelefono(soloDigitos);
+    }
   };
 
   const handleGuardar = async () => {
@@ -175,6 +174,7 @@ export default function EditarClientePage() {
               placeholder="Número sin código de país"
               value={telefono}
               onChange={e => setTelefono(e.target.value)}
+              onPaste={handlePasteTelefono}
               style={{ ...inputStyle, flex: 1 }}
             />
           </div>

@@ -5,14 +5,7 @@ import { useRouter } from 'next/navigation';
 import { colors, shadows } from '@/theme/colors';
 import { useClientesStore } from '@/store/useClienteStore';
 import { alertDialog } from '@/store/useConfirmStore';
-
-const PAISES = [
-  { codigo: '54',  label: '🇦🇷 +54'  },
-  { codigo: '598', label: '🇺🇾 +598' },
-  { codigo: '595', label: '🇵🇾 +595' },
-  { codigo: '56',  label: '🇨🇱 +56'  },
-  { codigo: '591', label: '🇧🇴 +591' },
-];
+import { PAISES, phoneUtils } from '@/lib/phoneUtils';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -44,6 +37,27 @@ export default function NuevoClientePage() {
     if (!apellido.trim()) e.apellido = 'El apellido es obligatorio';
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const handlePasteTelefono = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pegado = e.clipboardData.getData('text');
+    const soloDigitos = phoneUtils.clean(pegado);
+    if (!soloDigitos) return;
+    e.preventDefault();
+
+    // Si parece traer código de país (empieza con "+" o es más largo que un
+    // número local), lo separamos automáticamente en vez de concatenarlo
+    // crudo — evita que pegar el número completo desde el perfil de
+    // WhatsApp de la clienta rompa el formato que esperan los mensajes
+    // automáticos y semi-automáticos.
+    const traeCodigoPais = pegado.trim().startsWith('+') || soloDigitos.length > 11;
+    if (traeCodigoPais) {
+      const { codigo, numero } = phoneUtils.splitCodigoPais(soloDigitos);
+      setCodigoPais(codigo);
+      setTelefono(numero);
+    } else {
+      setTelefono(soloDigitos);
+    }
   };
 
   const handleGuardar = async () => {
@@ -134,6 +148,7 @@ export default function NuevoClientePage() {
               placeholder="Número sin código de país"
               value={telefono}
               onChange={e => setTelefono(e.target.value)}
+              onPaste={handlePasteTelefono}
               style={{ ...inputStyle, flex: 1 }}
             />
           </div>
