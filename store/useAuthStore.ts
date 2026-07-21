@@ -3,6 +3,12 @@ import { authService, SupportInfo, User } from '@/services/authService';
 import api from '@/lib/api';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
+// sessionStorage (no localStorage): sobrevive a un refresh accidental dentro
+// de la misma pestaña, pero se limpia al cerrarla — evita repetir la
+// bienvenida en cada pull-to-refresh táctil sin dejar de mostrarla al abrir
+// la app de nuevo.
+const BIENVENIDA_KEY = 'bienvenida_mostrada';
+
 // ─────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────
@@ -97,8 +103,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const raw   = localStorage.getItem('auth_user');
       const user  = raw ? JSON.parse(raw) : null;
       if (token) {
-        // Sesión ya existente al abrir la app — bienvenida con mensaje de "regreso"
-        set({ token, user, inicializado: true, mostrarBienvenida: true, esPrimerLogin: false });
+        // Sesión ya existente al abrir la app — bienvenida con mensaje de
+        // "regreso", pero solo una vez por pestaña (ver BIENVENIDA_KEY).
+        const yaSeMostro = sessionStorage.getItem(BIENVENIDA_KEY) === '1';
+        if (!yaSeMostro) sessionStorage.setItem(BIENVENIDA_KEY, '1');
+        set({ token, user, inicializado: true, mostrarBienvenida: !yaSeMostro, esPrimerLogin: false });
         get().checkSubscription();
       } else {
         set({ token, user, inicializado: true });
@@ -122,6 +131,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return true;
         }
 
+        sessionStorage.setItem(BIENVENIDA_KEY, '1');
         set({
           user: result.user, token: result.token, loading: false,
           mostrarBienvenida: true, esPrimerLogin: true,
@@ -153,6 +163,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return withGlobalLoader(async () => {
       try {
         const { user, token } = await authService.cambiarPasswordObligatorio({ email, ...data });
+        sessionStorage.setItem(BIENVENIDA_KEY, '1');
         set({
           user,
           token,
