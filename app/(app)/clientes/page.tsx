@@ -6,6 +6,7 @@ import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
+import { abrirHistorial } from '@/store/useHistorialClienteStore';
 
 // ─────────────────────────────────────────────
 // ClienteCard — switch de activo/inactivo — sin swipe, sin borrado físico.
@@ -32,14 +33,34 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
   );
 }
 
+function HistorialButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onClick(); }}
+      style={{
+        width: 32, height: 32, borderRadius: 16, flexShrink: 0,
+        backgroundColor: colors.surfaceSubtle, border: 'none',
+        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.subtext} strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </button>
+  );
+}
+
 function ClienteCard({
   cliente,
   onPress,
   onToggle,
+  onVerHistorial,
 }: {
   cliente: Cliente;
   onPress:  () => void;
   onToggle: (activo: boolean) => void;
+  onVerHistorial: () => void;
 }) {
   return (
     <div
@@ -67,6 +88,7 @@ function ClienteCard({
         </p>
       </div>
 
+      <HistorialButton onClick={onVerHistorial} />
       <PillToggle value={cliente.activo} onChange={onToggle} />
 
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
@@ -169,6 +191,7 @@ export default function ClientesPage() {
                   const result = await toggleCliente(cliente.id, activo);
                   if (!result.success) await alertDialog(result.message ?? 'No se pudo actualizar el cliente.');
                 }}
+                onVerHistorial={() => abrirHistorial(cliente.id)}
               />
             ))
           )}

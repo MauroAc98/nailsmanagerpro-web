@@ -9,6 +9,7 @@ import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
 import { MotivoCancelacionSheetHost } from '@/components/MotivoCancelacionSheetHost';
+import { HistorialClienteSheetHost } from '@/components/HistorialClienteSheetHost';
 import { ToastHost } from '@/components/ToastHost';
 import { colors } from '@/theme/colors';
 
@@ -114,6 +115,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       {mostrarBienvenida && <WelcomeScreen />}
       <ConfirmSheetHost />
       <MotivoCancelacionSheetHost />
+      <HistorialClienteSheetHost />
       <ToastHost />
     </>
   );

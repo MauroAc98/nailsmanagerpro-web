@@ -7,7 +7,6 @@ import { useClientesStore } from '@/store/useClienteStore';
 import { clienteService } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { PAISES, phoneUtils } from '@/lib/phoneUtils';
-import type { Turno } from '@/services/turnoService';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -35,8 +34,6 @@ export default function EditarClientePage() {
   const [errors, setErrors] = useState<{ nombre?: string; apellido?: string }>({});
   const [loadingCliente, setLoadingCliente] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [turnos, setTurnos] = useState<Turno[]>([]);
-  const [mostrarHistorial, setMostrarHistorial] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
@@ -47,10 +44,6 @@ export default function EditarClientePage() {
         const { codigo, numero } = phoneUtils.splitCodigoPais(cliente.telefono);
         setCodigoPais(codigo);
         setTelefono(numero);
-        const turnosOrdenados = [...(cliente.turnos ?? [])].sort(
-          (a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime()
-        );
-        setTurnos(turnosOrdenados);
       } catch {
         await alertDialog('No se pudo cargar el cliente.');
         router.push('/clientes');
@@ -200,103 +193,7 @@ export default function EditarClientePage() {
         >
           {saving ? 'Guardando...' : 'Actualizar Datos'}
         </button>
-
-        {/* Historial de turnos */}
-        <div>
-          <button
-            onClick={() => setMostrarHistorial(v => !v)}
-            style={{
-              width: '100%', textAlign: 'left', background: 'none', border: 'none',
-              padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', fontSize: 15, fontWeight: 600, color: colors.text,
-            }}
-          >
-            Ver historial ({turnos.length})
-            <svg
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2"
-              style={{ transform: mostrarHistorial ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-
-          {mostrarHistorial && (
-            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {turnos.length === 0 ? (
-                <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Esta clienta todavía no tiene turnos.</p>
-              ) : (
-                turnos.map(turno => <TurnoHistorialCard key={turno.id} turno={turno} />)
-              )}
-            </div>
-          )}
-        </div>
       </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// TurnoHistorialCard — solo lectura, sin acciones de swipe/cancelar/completar
-// ─────────────────────────────────────────────
-const ESTADO_LABELS: Record<string, string> = {
-  confirmado: 'Confirmado',
-  completado: 'Completado',
-  cancelado: 'Cancelado',
-};
-
-function estiloEstado(estado: string): { bg: string; border: string; text: string } {
-  if (estado === 'completado') return { bg: colors.successBg, border: colors.successBorder, text: colors.success };
-  if (estado === 'cancelado') return { bg: colors.dangerBg, border: colors.dangerBorder, text: colors.danger };
-  return { bg: colors.surfaceSubtle, border: colors.border, text: colors.text };
-}
-
-function formatFechaHora(fechaHora: string): string {
-  const [fecha, hora] = fechaHora.split(/[T ]/);
-  const [anio, mes, dia] = fecha.split('-');
-  return `${dia}/${mes}/${anio}${hora ? ` ${hora.slice(0, 5)}` : ''}`;
-}
-
-function TurnoHistorialCard({ turno }: { turno: Turno }) {
-  const estilo = estiloEstado(turno.estado);
-
-  return (
-    <div
-      style={{
-        backgroundColor: colors.surface, borderRadius: 14,
-        border: `1px solid ${colors.border}`, boxShadow: shadows.card,
-        padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>
-          {formatFechaHora(turno.fecha_hora)}
-        </p>
-        <span
-          style={{
-            fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
-            backgroundColor: estilo.bg, border: `1px solid ${estilo.border}`, color: estilo.text,
-          }}
-        >
-          {ESTADO_LABELS[turno.estado] ?? turno.estado}
-        </span>
-      </div>
-
-      {turno.servicios.length > 0 && (
-        <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>
-          {turno.servicios.map(s => s.nombre).join(' + ')}
-        </p>
-      )}
-
-      {turno.notas && (
-        <p style={{ margin: 0, fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}>{turno.notas}</p>
-      )}
-
-      {turno.estado === 'cancelado' && turno.motivo_cancelacion && (
-        <p style={{ margin: 0, fontSize: 13, color: colors.danger }}>
-          Motivo: {turno.motivo_cancelacion}
-          {turno.cancelado_en ? ` · ${formatFechaHora(turno.cancelado_en)}` : ''}
-        </p>
-      )}
     </div>
   );
 }
