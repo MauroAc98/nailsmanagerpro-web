@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { Turno } from '@/services/turnoService';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -9,6 +10,9 @@ export interface Cliente {
   apellido: string;
   telefono: string;
   activo: boolean;
+  // Solo viene en getOne() (ClienteController::show eager-carga turnos.servicios,
+  // sin filtrar por estado — incluye cancelados). getAll() no lo trae.
+  turnos?: Turno[];
 }
 
 export interface CreateClienteDto {

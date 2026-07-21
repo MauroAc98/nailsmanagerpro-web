@@ -13,7 +13,8 @@ import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
-import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { alertDialog } from '@/store/useConfirmStore';
+import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { showToast } from '@/store/useToastStore';
 
 // ─────────────────────────────────────────────
@@ -1061,8 +1062,9 @@ export default function AgendaPage() {
   };
 
   const handleCancelar = async (id: number) => {
-    if (!(await confirmDialog('¿Cancelar este turno?', { confirmText: 'Cancelar turno', cancelText: 'Volver', danger: true }))) return;
-    const result = await cancelarTurno(id);
+    const motivo = await pedirMotivoCancelacion();
+    if (!motivo) return;
+    const result = await cancelarTurno(id, motivo);
     if (result.success) showToast('Turno cancelado');
     else await alertDialog(result.message ?? 'No se pudo cancelar el turno.');
   };

@@ -45,7 +45,7 @@ interface TurnosState {
   crearTurno: (dto: CreateTurnoDto) => Promise<OperacionResult>;
   actualizarTurno: (id: number, dto: UpdateTurnoDto) => Promise<OperacionResult>;
   completarTurno: (id: number) => Promise<OperacionResult>;
-  cancelarTurno: (id: number) => Promise<OperacionResult>;
+  cancelarTurno: (id: number, motivoCancelacion: string) => Promise<OperacionResult>;
   setFechaSeleccionada: (fecha: string) => void;
 
   buscarPorNombre: (nombre: string) => Promise<void>;
@@ -210,10 +210,10 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // ─────────────────────────────────────────────
   // cancelarTurno — maps to DELETE endpoint
   // ─────────────────────────────────────────────
-  cancelarTurno: async (id) => {
+  cancelarTurno: async (id, motivoCancelacion) => {
     return withGlobalLoader(async () => {
       try {
-        await turnoService.delete(id);
+        await turnoService.delete(id, motivoCancelacion);
         await refrescarAgenda(get, set, get().fechaSeleccionada);
         return { success: true };
       } catch (e) {

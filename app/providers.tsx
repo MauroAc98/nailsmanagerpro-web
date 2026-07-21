@@ -8,6 +8,7 @@ import { initTheme } from '@/store/useThemeStore';
 import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
+import { MotivoCancelacionSheetHost } from '@/components/MotivoCancelacionSheetHost';
 import { ToastHost } from '@/components/ToastHost';
 import { colors } from '@/theme/colors';
 
@@ -112,6 +113,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
       <ConfirmSheetHost />
+      <MotivoCancelacionSheetHost />
       <ToastHost />
     </>
   );

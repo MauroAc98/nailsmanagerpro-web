@@ -13,6 +13,8 @@ export interface Turno {
   estado: 'confirmado' | 'completado' | 'cancelado';
   estado_visual: 'confirmado' | 'completado' | 'cancelado' | 'en_curso';
   notas?: string | null;
+  motivo_cancelacion?: string | null;
+  cancelado_en?: string | null;
   // Siempre presente en la respuesta (columna propia del turno — el backend
   // la resuelve server-side al default de la cuenta cuando no se manda), pero
   // NUNCA viene con el objeto `profesional` anidado: TurnoController no hace
@@ -106,8 +108,8 @@ export const turnoService = {
     return data;
   },
 
-  delete: async (id: number): Promise<void> => {
-    await api.delete(`/turnos/${id}`);
+  delete: async (id: number, motivoCancelacion: string): Promise<void> => {
+    await api.delete(`/turnos/${id}`, { data: { motivo_cancelacion: motivoCancelacion } });
   },
 
   // profesionalId opcional — mismo patrón que getByMes/slotService.getAll:
