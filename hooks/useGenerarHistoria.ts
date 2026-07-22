@@ -81,6 +81,78 @@ async function fetchAsDataUrl(url: string): Promise<string> {
 }
 
 // ─────────────────────────────────────────────
+// Redimensionado client-side de la foto de fondo — ver capturar() más abajo
+// para el detalle completo del pipeline de exportación, pero el resumen es:
+// html-to-image serializa el nodo a un <foreignObject> SVG y lo rasteriza a
+// través de un <img> off-DOM propio (nodeToDataURL + createImage en
+// node_modules/html-to-image/lib/util.js). Ese <img> interno decodifica la
+// foto de fondo A SU RESOLUCIÓN ORIGINAL sin importar cuánto la achique el
+// object-fit del CSS en pantalla — el object-fit es puramente de pintado,
+// no reduce lo que WebKit tiene que decodificar. Con una foto de cámara sin
+// redimensionar (fácil varios MB, miles de píxeles por lado) eso pasa DOS
+// veces por captura (el warm-up + la real), y iOS Safari devuelve
+// documentadamente buffers en blanco/negro bajo presión de memoria del
+// decoder de imágenes en vez de tirar un error (mismo patrón silencioso que
+// los bugs de fondo negro anteriores en esta pantalla). Achicar acá, ANTES
+// de que la foto se vuelva fondoUri o se suba, baja el payload para TODOS
+// los pasos siguientes: el estado, el <img> del DOM, ambas pasadas de
+// toBlob() por captura, y (en "fijo") la subida + el refetch por el proxy.
+// Nunca hizo falta una foto de varios miles de píxeles para un canvas del
+// tamaño de una story.
+//
+// Se carga el archivo original vía object URL (no FileReader) para no
+// materializar un base64 gigante del original solo para tirarlo enseguida —
+// el base64 recién se genera sobre el blob YA achicado.
+// ─────────────────────────────────────────────
+const FONDO_MAX_EDGE      = 1440;
+const FONDO_JPEG_QUALITY  = 0.82;
+
+function resizeFondoFile(file: File): Promise<{ dataUrl: string; file: File }> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const longEdge = Math.max(img.naturalWidth, img.naturalHeight);
+      const scale    = longEdge > FONDO_MAX_EDGE ? FONDO_MAX_EDGE / longEdge : 1;
+      const targetW  = Math.max(1, Math.round(img.naturalWidth * scale));
+      const targetH  = Math.max(1, Math.round(img.naturalHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('resizeFondoFile: sin contexto 2d'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      URL.revokeObjectURL(objectUrl);
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          reject(new Error('resizeFondoFile: toBlob devolvió null'));
+          return;
+        }
+        const resized = new File([blob], 'fondo-historia.jpg', { type: 'image/jpeg' });
+        const reader  = new FileReader();
+        reader.onload  = () => resolve({ dataUrl: reader.result as string, file: resized });
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', FONDO_JPEG_QUALITY);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('resizeFondoFile: no se pudo cargar la imagen elegida'));
+    };
+
+    img.src = objectUrl;
+  });
+}
+
+// ─────────────────────────────────────────────
 // Hook
 // ─────────────────────────────────────────────
 export function useGenerarHistoria(fechaInicial?: string) {
@@ -446,10 +518,42 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // como fondo fijo de la profesional efectiva. Si esa subida falla, la
   // imagen elegida se sigue usando igual "por esta vez" — solo se avisa
   // que no quedó guardada para la próxima.
+  //
+  // La foto elegida se redimensiona ANTES de convertirse en fondoUri o de
+  // subirse (ver resizeFondoFile arriba) — sin este paso, elegir una segunda
+  // foto en la misma sesión (por esta vez o fijo, cualquier combinación)
+  // exportaba la historia con fondo negro: cada foto sin achicar son varios
+  // MB a resolución de cámara, y capturar() rasteriza esa imagen dos veces
+  // por captura a través del pipeline SVG-foreignObject de html-to-image, que
+  // decodifica el <img> a su resolución original sin importar el tamaño en
+  // pantalla. La presión de memoria de decodificación se acumula entre
+  // capturas — WebKit en iOS devuelve buffers en blanco/negro bajo esa
+  // presión en vez de tirar un error, por eso la primera captura salía bien
+  // y recién la segunda (memoria acumulada de la primera + la foto nueva)
+  // fallaba.
   const elegirFoto = useCallback((file: File, guardarFijo: boolean) => {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      setFondoUri(reader.result as string);
+    void (async () => {
+      let dataUrl: string;
+      let archivoParaSubir: File = file;
+
+      try {
+        const resized = await resizeFondoFile(file);
+        dataUrl = resized.dataUrl;
+        archivoParaSubir = resized.file;
+      } catch {
+        // Redimensionar falló (formato no soportado, canvas bloqueado, etc.)
+        // — mismo comportamiento que antes de este fix: se sigue usando la
+        // foto original tal cual. Peor para memoria en iOS, pero no rompe
+        // la función.
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      setFondoUri(dataUrl);
 
       if (!guardarFijo) return;
 
@@ -472,12 +576,11 @@ export function useGenerarHistoria(fechaInicial?: string) {
         return;
       }
 
-      const resultado = await guardarFondoHistoria(profesionalId, file);
+      const resultado = await guardarFondoHistoria(profesionalId, archivoParaSubir);
       if (!resultado.success) {
         await alertDialog(resultado.message ?? 'No se pudo guardar el fondo fijo. Se usa solo por esta vez.');
       }
-    };
-    reader.readAsDataURL(file);
+    })();
   }, [effectiveProfesionalId, selectedProfesionalId, guardarFondoHistoria]);
 
   const quitarFondoFijo = useCallback(async () => {
