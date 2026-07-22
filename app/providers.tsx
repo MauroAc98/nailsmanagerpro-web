@@ -59,6 +59,40 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // PWA — un standalone de iOS que vuelve de estar en background suele
+  // resumir el WKWebView suspendido sin recargar nada, así que puede seguir
+  // corriendo JS de un deploy viejo indefinidamente (next-pwa activa el SW
+  // nuevo con skipWaiting, pero eso no toca una pestaña ya abierta). Al
+  // volver a foreground forzamos que el navegador chequee si hay un SW más
+  // nuevo; si lo encuentra y toma control, recargamos para quedar al día.
+  // hadController evita el reload espurio de la primera visita (donde
+  // esta misma carga puede pasar a estar controlada por primera vez, algo
+  // que también dispara "controllerchange" pero no es una actualización).
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    const hadController = !!navigator.serviceWorker.controller;
+    const onControllerChange = () => {
+      if (hadController) window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+    const checkForUpdate = () => {
+      if (document.visibilityState === 'visible') {
+        navigator.serviceWorker.getRegistration().then(reg => reg?.update());
+      }
+    };
+    document.addEventListener('visibilitychange', checkForUpdate);
+    window.addEventListener('focus', checkForUpdate);
+    checkForUpdate();
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      document.removeEventListener('visibilitychange', checkForUpdate);
+      window.removeEventListener('focus', checkForUpdate);
+    };
+  }, []);
+
   useEffect(() => {
     if (!mounted || !inicializado) return;
 
