@@ -461,7 +461,19 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // right after picking it, so the warm-up races it and loses, exporting a
   // black background. Waiting on the real <img>'s decode() first removes
   // that race instead of just guessing at extra timing.
+  //
+  // img.decode() only confirms the DOM <img> itself decoded — html-to-image
+  // doesn't capture that node directly, it serializes the tree into an SVG
+  // foreignObject and rasterizes THAT through its own off-DOM Image, a
+  // separate pipeline decode() can't see into. On "fijo" saves there's a
+  // real network upload before the user can tap compartir again, which
+  // incidentally gives that second pipeline time to settle; "por esta vez"
+  // has no such delay, so the race can still surface there. Two rAF frames
+  // after decode() give WebKit's paint pipeline the same settle time in
+  // both flows, independent of how fast the user taps compartir.
   // ─────────────────────────────────────────────
+  const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
   const capturar = useCallback(async (): Promise<Blob | null> => {
     if (!canvasRef.current) return null;
 
@@ -474,6 +486,9 @@ export function useGenerarHistoria(fechaInicial?: string) {
         // igual, el warm-up de abajo es el mejor esfuerzo que queda
       }
     }
+
+    await nextFrame();
+    await nextFrame();
 
     await toBlob(canvasRef.current, { pixelRatio: 2 });
     return toBlob(canvasRef.current, { pixelRatio: 2 });
