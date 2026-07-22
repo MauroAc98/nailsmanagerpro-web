@@ -65,6 +65,21 @@ export function formatFechaLarga(fecha: string): string {
   return `${DIAS_LARGO[d.getDay()]}, ${d.getDate()} de ${MESES_LARGO[d.getMonth()]}`;
 }
 
+// Convierte una URL (misma origin — p.ej. nuestro proxy /api/historia-fondo)
+// a data: URL vía fetch()+FileReader. Reusado tanto por el efecto que
+// resuelve el fondo fijo apenas se conoce como por el fallback defensivo
+// dentro de capturar() — ver los comentarios en ambos usos.
+async function fetchAsDataUrl(url: string): Promise<string> {
+  const res  = await fetch(url);
+  const blob = await res.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ─────────────────────────────────────────────
 // Hook
 // ─────────────────────────────────────────────
@@ -154,6 +169,41 @@ export function useGenerarHistoria(fechaInicial?: string) {
     setProfesionalSincronizada(effectiveProfesionalId);
     setFondoUri(proxiedFondoFijoGuardado);
   }
+
+  // ─────────────────────────────────────────────
+  // Resolver el fondo fijo a data: URL apenas se conoce (mount / cambio de
+  // profesional), no recién al capturar. Antes ese fetch+conversión vivía
+  // DENTRO de capturar(), así que corría en la ventana más angosta posible
+  // — justo cuando el usuario tocaba "compartir" — compitiendo por esos
+  // mismos milisegundos contra la rasterización SVG interna de
+  // html-to-image. Esa competencia por la misma ventana angosta era la
+  // causa real de que arreglar "fijo" pareciera romper "por esta vez": los
+  // dos flujos terminaban apostando al mismo margen de tiempo en vez de que
+  // uno de los dos (el de red) llegara resuelto con segundos de sobra. Acá
+  // el fetch arranca apenas se conoce el fondo fijo, así que para cuando el
+  // usuario realmente comparte, fondoUri casi siempre YA es data: — el
+  // mismo camino sin ramas que "por esta vez" usa desde que se elige la
+  // foto.
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!proxiedFondoFijoGuardado) return;
+    let cancelled = false;
+
+    fetchAsDataUrl(proxiedFondoFijoGuardado)
+      .then(dataUrl => {
+        if (cancelled) return;
+        // Solo pisa fondoUri si seguimos mostrando ESTE fondo fijo — si
+        // mientras tanto el usuario ya eligió "por esta vez" u otra
+        // profesional, no lo pisamos.
+        setFondoUri(prev => (prev === proxiedFondoFijoGuardado ? dataUrl : prev));
+      })
+      .catch(() => {
+        // fetch falló (offline, proxy caído) — fondoUri queda en la url de
+        // red; capturar() la resuelve como último recurso al compartir.
+      });
+
+    return () => { cancelled = true; };
+  }, [proxiedFondoFijoGuardado]);
 
   // ─────────────────────────────────────────────
   // Titulos — dos textos distintos, igual que RN (labelNavegador/labelTitulo):
@@ -469,14 +519,28 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // decode() give WebKit's paint pipeline extra settle time, independent of
   // how fast the user taps compartir.
   //
-  // That still isn't enough for the fondo fijo (served from our same-origin
-  // proxy, a real network URL): html-to-image embeds non-data <img> sources
-  // via its OWN internal fetch() rather than reusing the already-loaded DOM
-  // image, and on iOS that fetch can lose the race against rasterization —
-  // silently, no rejection, just a black background. Prefetching the
-  // network image ourselves and swapping the <img> src to the resulting
-  // data URL before capture removes that fetch from html-to-image's path
-  // entirely, same as the data URL used by "por esta vez".
+  // The shared root cause behind "fixing fijo re-breaks por esta vez" (and
+  // vice versa): both flows were racing the SAME narrow window — the couple
+  // hundred ms between tapping compartir and toBlob() finishing its (now
+  // doubled) SVG rasterization pass. "por esta vez" races an un-resized
+  // camera photo's decode; "fijo" used to ALSO cram a network round-trip
+  // (proxy fetch -> blob -> FileReader) into that exact window. That
+  // mutate-then-capture approach was structurally sound — html-to-image's
+  // cloneNode() (node_modules/html-to-image/lib/clone-node.js) reads the
+  // live <img>.src at the moment EACH toBlob() call clones the tree, so a
+  // src mutated right before capture is picked up on both the warm-up and
+  // the real call. The actual bug was stacking a network round-trip on top
+  // of an already-marginal timing budget instead of getting it out of that
+  // budget entirely. The fondo fijo is now resolved to a data: URL
+  // proactively (see the effect above, keyed on proxiedFondoFijoGuardado)
+  // the moment it's known — mount or profesional switch — with seconds of
+  // slack instead of milliseconds, so by the time compartir actually runs
+  // fondoUri is normally ALREADY a data: URL, the same zero-branch path
+  // "por esta vez" always used. The fetch/mutate below is now only a
+  // last-resort fallback for the rare case that effect hasn't resolved yet
+  // (share tapped immediately) or failed — it also writes back through
+  // setFondoUri so React's state doesn't drift from a DOM node mutated
+  // outside its render cycle.
   // ─────────────────────────────────────────────
   const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
@@ -485,16 +549,17 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
     const img = canvasRef.current.querySelector('img');
     if (img && img.src && !img.src.startsWith('data:')) {
+      // Último recurso: el efecto de arriba normalmente ya resolvió el
+      // fondo fijo a data: URL con segundos de margen. Esto solo entra en
+      // juego si el usuario comparte antes de que ese fetch termine, o si
+      // falló. img.src = dataUrl se toma igual en el toBlob() que sigue
+      // (cada llamada vuelve a clonar el nodo desde el DOM), pero además
+      // escribimos a fondoUri para que el estado de React no quede
+      // desincronizado del DOM en una captura futura.
       try {
-        const res  = await fetch(img.src);
-        const blob = await res.blob();
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload  = () => resolve(reader.result as string);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(blob);
-        });
+        const dataUrl = await fetchAsDataUrl(img.src);
         img.src = dataUrl;
+        setFondoUri(dataUrl);
       } catch {
         // prefetch falló (offline, proxy caído) — seguimos con la url de
         // red original, el decode()+warm-up de abajo es el mejor esfuerzo
