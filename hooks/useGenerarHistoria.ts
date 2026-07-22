@@ -440,9 +440,28 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // the background. Never reproduces on Android/Chromium. See
   // https://github.com/bubkoo/html-to-image/issues/420 and
   // https://github.com/tsayen/dom-to-image/issues/343.
+  //
+  // That warm-up alone assumed the <img> itself was already decoded, which
+  // holds for the saved fondo fijo (loaded on mount, long before the user
+  // taps compartir) but not for a background just picked "por esta vez" —
+  // an un-resized camera photo can still be mid-decode when the user shares
+  // right after picking it, so the warm-up races it and loses, exporting a
+  // black background. Waiting on the real <img>'s decode() first removes
+  // that race instead of just guessing at extra timing.
   // ─────────────────────────────────────────────
   const capturar = useCallback(async (): Promise<Blob | null> => {
     if (!canvasRef.current) return null;
+
+    const img = canvasRef.current.querySelector('img');
+    if (img) {
+      try {
+        await img.decode();
+      } catch {
+        // imagen todavía sin src resuelto o decode no soportado — seguimos
+        // igual, el warm-up de abajo es el mejor esfuerzo que queda
+      }
+    }
+
     await toBlob(canvasRef.current, { pixelRatio: 2 });
     return toBlob(canvasRef.current, { pixelRatio: 2 });
   }, []);

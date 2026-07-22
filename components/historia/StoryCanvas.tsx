@@ -83,135 +83,142 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
 
   return (
-    <div
-      ref={ref}
-      style={{
-        width:        canvasWidth,
-        height:       canvasHeight,
-        margin:       '0 auto',
-        position:     'relative',
-        overflow:     'hidden',
-        borderRadius: 16,
-      }}
-    >
-      {/* Background image */}
-      <img
-        src={fondoUri ?? '/default_bg.jpg'}
-        alt=""
-        style={{
-          position: 'absolute', inset: 0,
-          width: '100%', height: '100%',
-          objectFit: 'cover',
-        }}
-      />
-
-      {/* Dark overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.72)' }} />
-
-      {/* Content layer */}
+    // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
+    // capturado por html-to-image es el de más adentro (el que tiene `ref`)
+    // y NO tiene borderRadius propio — si lo tuviera, quedaría horneado en
+    // el PNG exportado como esquinas transparentes/negras. Instagram y
+    // WhatsApp Status muestran la imagen full-bleed, así que un PNG con
+    // esquinas redondeadas se ve como si no llenara el recuadro (era un
+    // solo bug con dos síntomas, no dos bugs distintos).
+    <div style={{ width: canvasWidth, height: canvasHeight, margin: '0 auto', borderRadius: 16, overflow: 'hidden' }}>
       <div
+        ref={ref}
         style={{
-          position: 'absolute', inset: 0,
-          padding: '20px 18px 12px',
-          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          width:    '100%',
+          height:   '100%',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{
-            fontSize: 15, fontWeight: 300, letterSpacing: 6, color: '#fff', textAlign: 'center',
-          }}>
-            {titulo.toUpperCase()}
-          </span>
-          {profesionalNombre && (
-            <span style={{
-              fontSize: 11, fontWeight: 600, letterSpacing: 2, color: 'rgba(255,255,255,0.85)',
-              textAlign: 'center', marginTop: 4,
-            }}>
-              {profesionalNombre.toUpperCase()}
-            </span>
-          )}
-          <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.4)', marginTop: 8 }} />
-        </div>
-
-        {/* Body */}
-        {esModoDia ? (
-          <div style={{
-            flex: 1, display: 'flex', flexWrap: 'wrap', alignContent: 'center',
-            justifyContent: 'center', gap: 10,
-          }}>
-            {dias[0]?.slots.filter(s => s.libre).map((slot, idx) => (
-              <div
-                key={idx}
-                style={{
-                  width: '45%', height: 44, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{slot.hora}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
-            justifyContent: 'center', gap,
-          }}>
-            {dias.map((dia, idx) => {
-              const slotsLibres = dia.slots.filter(s => s.libre);
-              const estaCompleto = slotsLibres.length === 0;
-              const horasTexto = slotsLibres.map(s => s.hora).join(' · ');
-
-              return (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                  <span style={{
-                    width: 52, color: '#fff', fontSize: 10, fontWeight: 700,
-                    letterSpacing: 0.5, textTransform: 'uppercase',
-                  }}>
-                    {nombreDia(dia.fecha)}
-                  </span>
-                  <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
-                  {estaCompleto ? (
-                    <span style={{
-                      color: primaryRaw, fontSize: 9, fontWeight: 600,
-                      fontStyle: 'italic', letterSpacing: 0.5,
-                    }}>
-                      COMPLETO 🤍
-                    </span>
-                  ) : (
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <FitText
-                        text={horasTexto}
-                        maxFontSize={10}
-                        style={{ color: '#fff', fontWeight: 400, letterSpacing: 0.3 }}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <span style={{ fontSize: 8, fontWeight: 300, letterSpacing: 4, color: '#fff', opacity: 0.7 }}>
-            RESERVÁ TU LUGAR
-          </span>
-        </div>
-      </div>
-
-      {/* Free-floating draggable texts */}
-      {textosLibres.map(item => (
-        <TextoDraggable
-          key={item.id}
-          item={item}
-          onMover={onMoverTexto}
-          onResize={onResizeTexto}
-          onEditar={onEditarTexto}
+        {/* Background image */}
+        <img
+          src={fondoUri ?? '/default_bg.jpg'}
+          alt=""
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+          }}
         />
-      ))}
+
+        {/* Dark overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.72)' }} />
+
+        {/* Content layer */}
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            padding: '20px 18px 12px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{
+              fontSize: 15, fontWeight: 300, letterSpacing: 6, color: '#fff', textAlign: 'center',
+            }}>
+              {titulo.toUpperCase()}
+            </span>
+            {profesionalNombre && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, letterSpacing: 2, color: 'rgba(255,255,255,0.85)',
+                textAlign: 'center', marginTop: 4,
+              }}>
+                {profesionalNombre.toUpperCase()}
+              </span>
+            )}
+            <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.4)', marginTop: 8 }} />
+          </div>
+
+          {/* Body */}
+          {esModoDia ? (
+            <div style={{
+              flex: 1, display: 'flex', flexWrap: 'wrap', alignContent: 'center',
+              justifyContent: 'center', gap: 10,
+            }}>
+              {dias[0]?.slots.filter(s => s.libre).map((slot, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: '45%', height: 44, borderRadius: 10,
+                    background: 'rgba(255,255,255,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{slot.hora}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              justifyContent: 'center', gap,
+            }}>
+              {dias.map((dia, idx) => {
+                const slotsLibres = dia.slots.filter(s => s.libre);
+                const estaCompleto = slotsLibres.length === 0;
+                const horasTexto = slotsLibres.map(s => s.hora).join(' · ');
+
+                return (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                    <span style={{
+                      width: 52, color: '#fff', fontSize: 10, fontWeight: 700,
+                      letterSpacing: 0.5, textTransform: 'uppercase',
+                    }}>
+                      {nombreDia(dia.fecha)}
+                    </span>
+                    <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
+                    {estaCompleto ? (
+                      <span style={{
+                        color: primaryRaw, fontSize: 9, fontWeight: 600,
+                        fontStyle: 'italic', letterSpacing: 0.5,
+                      }}>
+                        COMPLETO 🤍
+                      </span>
+                    ) : (
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <FitText
+                          text={horasTexto}
+                          maxFontSize={10}
+                          style={{ color: '#fff', fontWeight: 400, letterSpacing: 0.3 }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <span style={{ fontSize: 8, fontWeight: 300, letterSpacing: 4, color: '#fff', opacity: 0.7 }}>
+              RESERVÁ TU LUGAR
+            </span>
+          </div>
+        </div>
+
+        {/* Free-floating draggable texts */}
+        {textosLibres.map(item => (
+          <TextoDraggable
+            key={item.id}
+            item={item}
+            onMover={onMoverTexto}
+            onResize={onResizeTexto}
+            onEditar={onEditarTexto}
+          />
+        ))}
+      </div>
     </div>
   );
 });
