@@ -62,7 +62,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         bottom: 0,
         left: 0,
         right: 0,
-        height: 78,
+        // Sin height fija acá: con box-sizing: border-box (Tailwind preflight)
+        // un height:78 + paddingBottom:env(...) hace que el safe area le robe
+        // alto al contenido en vez de sumarse — en el home indicator de
+        // iPhone (~34px) los botones quedaban apretados contra el borde. Los
+        // 78px van en cada botón (abajo); acá el padding solo agrega el
+        // safe area por encima de esa altura de contenido.
         paddingBottom: 'env(safe-area-inset-bottom)',
         backgroundColor: colors.surface,
         borderTop: `1px solid ${colors.border}`,
@@ -77,7 +82,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => router.push(tab.path)}
               style={{
                 flex: 1,
-                height: '100%',
+                height: 78,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
