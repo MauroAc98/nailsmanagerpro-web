@@ -465,12 +465,18 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // img.decode() only confirms the DOM <img> itself decoded — html-to-image
   // doesn't capture that node directly, it serializes the tree into an SVG
   // foreignObject and rasterizes THAT through its own off-DOM Image, a
-  // separate pipeline decode() can't see into. On "fijo" saves there's a
-  // real network upload before the user can tap compartir again, which
-  // incidentally gives that second pipeline time to settle; "por esta vez"
-  // has no such delay, so the race can still surface there. Two rAF frames
-  // after decode() give WebKit's paint pipeline the same settle time in
-  // both flows, independent of how fast the user taps compartir.
+  // separate pipeline decode() can't see into. Two rAF frames after
+  // decode() give WebKit's paint pipeline extra settle time, independent of
+  // how fast the user taps compartir.
+  //
+  // That still isn't enough for the fondo fijo (served from our same-origin
+  // proxy, a real network URL): html-to-image embeds non-data <img> sources
+  // via its OWN internal fetch() rather than reusing the already-loaded DOM
+  // image, and on iOS that fetch can lose the race against rasterization —
+  // silently, no rejection, just a black background. Prefetching the
+  // network image ourselves and swapping the <img> src to the resulting
+  // data URL before capture removes that fetch from html-to-image's path
+  // entirely, same as the data URL used by "por esta vez".
   // ─────────────────────────────────────────────
   const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
@@ -478,6 +484,23 @@ export function useGenerarHistoria(fechaInicial?: string) {
     if (!canvasRef.current) return null;
 
     const img = canvasRef.current.querySelector('img');
+    if (img && img.src && !img.src.startsWith('data:')) {
+      try {
+        const res  = await fetch(img.src);
+        const blob = await res.blob();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+        img.src = dataUrl;
+      } catch {
+        // prefetch falló (offline, proxy caído) — seguimos con la url de
+        // red original, el decode()+warm-up de abajo es el mejor esfuerzo
+      }
+    }
+
     if (img) {
       try {
         await img.decode();
