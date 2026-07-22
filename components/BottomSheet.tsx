@@ -44,6 +44,33 @@ interface BottomSheetProps {
 
 const Z_INDEX = 40;
 
+// bottomOffset llega como número fijo (altura del nav, sin safe area) — en
+// standalone PWA sobre iPhone el nav real ocupa bottomOffset + safe area
+// (mismo cálculo que paddingBottom del contenido en app/(app)/layout.tsx),
+// pero ese extra es 0 en Safari normal, así que nunca se notaba ahí. Sin
+// sumarlo acá, el sheet (z-index 40, sin relación con el nav) pinta encima
+// de la franja superior de los botones del nav exactamente en esa medida.
+function useSafeAreaBottom(): number {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;height:0;padding-bottom:env(safe-area-inset-bottom)';
+    document.body.appendChild(probe);
+
+    const measure = () => setValue(parseFloat(getComputedStyle(probe).paddingBottom) || 0);
+    measure();
+
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      document.body.removeChild(probe);
+    };
+  }, []);
+
+  return value;
+}
+
 export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
   function BottomSheet(
     {
@@ -81,7 +108,9 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     const visibleHeightRef = useRef(0);
 
     const [viewportHeight, setViewportHeight] = useState(0);
-    const availableHeight = Math.max(0, viewportHeight - bottomOffset);
+    const safeAreaBottom = useSafeAreaBottom();
+    const effectiveBottomOffset = bottomOffset + safeAreaBottom;
+    const availableHeight = Math.max(0, viewportHeight - effectiveBottomOffset);
     // Resting (non-dragging) snap index — real React state so the rendered
     // transform is always correct-by-construction on any re-render, instead
     // of relying on initialIndex (stale after the first snap) plus an effect
@@ -247,7 +276,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           position: 'fixed',
           left: 0,
           right: 0,
-          bottom: bottomOffset,
+          bottom: effectiveBottomOffset,
           zIndex: Z_INDEX,
           height: maxHeight,
           overflow: 'hidden',
