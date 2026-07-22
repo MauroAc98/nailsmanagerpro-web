@@ -54,9 +54,12 @@ function FitText({
 
 interface Props {
   titulo:         string;
+  // Nombre del estudio (User.name / "Nombre del estudio" en perfil) — línea
+  // de marca, siempre visible cuando existe.
+  nombreEstudio?: string | null;
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
   // undefined = cuenta con ≤1 profesional activa o vista "default": no se
-  // agrega la segunda línea, el canvas queda pixel-idéntico a como estaba
+  // agrega la línea extra, el canvas queda pixel-idéntico a como estaba
   // antes de esta feature.
   profesionalNombre?: string;
   dias:           DisponibilidadDia[]; // diasAMostrar
@@ -74,7 +77,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const esModoDia = dias.length === 1;
@@ -124,8 +127,16 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
         >
           {/* Header */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {nombreEstudio && (
+              <span style={{
+                fontSize: 17, fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center',
+              }}>
+                {nombreEstudio.toUpperCase()}
+              </span>
+            )}
             <span style={{
               fontSize: 15, fontWeight: 300, letterSpacing: 6, color: '#fff', textAlign: 'center',
+              marginTop: nombreEstudio ? 4 : 0,
             }}>
               {titulo.toUpperCase()}
             </span>

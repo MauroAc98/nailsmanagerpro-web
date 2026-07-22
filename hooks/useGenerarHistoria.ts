@@ -4,6 +4,7 @@ import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 
 export type Modo = 'dia' | 'semana' | 'mes';
@@ -92,6 +93,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // de la app, no la primera del array (que viene ordenado por nombre).
   // ─────────────────────────────────────────────
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
+  const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
@@ -102,6 +104,17 @@ export function useGenerarHistoria(fechaInicial?: string) {
     [activeProfesionales, effectiveProfesionalId]
   );
 
+  // fondoFijoGuardado es una URL pública del backend, servida sin
+  // Access-Control-Allow-Origin — html-to-image no puede embeberla al
+  // capturar. La reescribimos a nuestro propio proxy same-origin
+  // (app/api/historia-fondo) solo para el src que efectivamente se
+  // renderiza/captura; fondoFijoGuardado en sí queda intacto porque también
+  // se usa como identidad (¿hay fondo guardado?), no solo como URL de imagen.
+  const proxiedFondoFijoGuardado = useMemo(
+    () => (fondoFijoGuardado ? `/api/historia-fondo?url=${encodeURIComponent(fondoFijoGuardado)}` : null),
+    [fondoFijoGuardado]
+  );
+
   // Estado inicial de fondoUri sembrado con fondoFijoGuardado, no con null:
   // al navegar a esta pantalla DESDE otra parte de la app (SPA, no carga en
   // frío), el store de profesionales ya suele venir cargado, así que
@@ -109,7 +122,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // una "transición" que el sync de más abajo pueda detectar — con null
   // como semilla, el fondo guardado nunca se aplicaba solo (quedaba en
   // /default_bg.jpg hasta que el usuario tocaba manualmente el selector).
-  const [fondoUri, setFondoUri] = useState<string | null>(fondoFijoGuardado);
+  const [fondoUri, setFondoUri] = useState<string | null>(proxiedFondoFijoGuardado);
 
   const canvasRef      = useRef<HTMLDivElement>(null);
 
@@ -139,7 +152,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const [profesionalSincronizada, setProfesionalSincronizada] = useState(effectiveProfesionalId);
   if (profesionalSincronizada !== effectiveProfesionalId) {
     setProfesionalSincronizada(effectiveProfesionalId);
-    setFondoUri(fondoFijoGuardado);
+    setFondoUri(proxiedFondoFijoGuardado);
   }
 
   // ─────────────────────────────────────────────
@@ -471,7 +484,14 @@ export function useGenerarHistoria(fechaInicial?: string) {
       await alertDialog('Sin contenido: No hay slots libres para mostrar en la imagen.');
       return;
     }
-    const blob = await capturar();
+    let blob: Blob | null;
+    try {
+      blob = await capturar();
+    } catch (err) {
+      console.error('descargarImagen: fallo al generar la imagen', err);
+      await alertDialog('No se pudo generar la imagen. Intentá de nuevo.');
+      return;
+    }
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
@@ -483,7 +503,14 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
   const compartirImagen = useCallback(async () => {
     if (!hayContenido) return;
-    const blob = await capturar();
+    let blob: Blob | null;
+    try {
+      blob = await capturar();
+    } catch (err) {
+      console.error('compartirImagen: fallo al generar la imagen', err);
+      await alertDialog('No se pudo generar la imagen. Intentá de nuevo.');
+      return;
+    }
     if (!blob) return;
 
     const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
@@ -492,8 +519,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
       if (nav.canShare({ files: [file] })) {
         try {
           await nav.share({ files: [file], title: 'Mi agenda' });
-        } catch {
-          // usuario canceló o compartir falló — no-op silencioso
+        } catch (err) {
+          if (err instanceof Error && err.name !== 'AbortError') {
+            console.error('compartirImagen: share falló', err);
+          }
         }
         return;
       }
@@ -515,7 +544,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId,
-    fondoFijoGuardado,
+    fondoFijoGuardado, nombreEstudio,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos,
