@@ -82,6 +82,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 ) {
   const esModoDia = dias.length === 1;
 
+  // Cuando la profesional seleccionada es la dueña, su Profesional.nombre
+  // suele ser el mismo texto que nombreEstudio (se siembra igual al
+  // registrarse — ver AuthController::register) y nunca se vuelven a
+  // sincronizar. Sin este chequeo, la historia mostraba el mismo nombre
+  // dos veces apiladas.
+  const mostrarProfesional = !!profesionalNombre
+    && profesionalNombre.trim().toLowerCase() !== (nombreEstudio ?? '').trim().toLowerCase();
+
   const alturaUtil = canvasHeight * 0.75;
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
 
@@ -126,13 +134,17 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
             {nombreEstudio && (
-              <span style={{
-                fontSize: 17, fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center',
-              }}>
-                {nombreEstudio.toUpperCase()}
-              </span>
+              // minFontSize 12: siempre por encima del tope de FitText de los
+              // turnos (maxFontSize 10) — el título nunca queda mas chico que
+              // la info de los turnos.
+              <FitText
+                text={nombreEstudio.toUpperCase()}
+                maxFontSize={17}
+                minFontSize={12}
+                style={{ fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center' }}
+              />
             )}
             <span style={{
               fontSize: 15, fontWeight: 300, letterSpacing: 6, color: '#fff', textAlign: 'center',
@@ -140,12 +152,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             }}>
               {titulo.toUpperCase()}
             </span>
-            {profesionalNombre && (
+            {mostrarProfesional && (
               <span style={{
                 fontSize: 11, fontWeight: 600, letterSpacing: 2, color: 'rgba(255,255,255,0.85)',
                 textAlign: 'center', marginTop: 4,
               }}>
-                {profesionalNombre.toUpperCase()}
+                {profesionalNombre!.toUpperCase()}
               </span>
             )}
             <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.4)', marginTop: 8 }} />
