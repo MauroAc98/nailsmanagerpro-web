@@ -32,6 +32,8 @@ export const colors = {
   successBg: 'var(--color-success-bg)',
   successBorder: 'var(--color-success-border)',
   dangerAccent: 'var(--color-danger-accent)',
+  chart1: 'var(--color-chart-1)',
+  chart2: 'var(--color-chart-2)',
 };
 
 export const shadows = {

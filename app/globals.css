@@ -30,6 +30,12 @@
   --color-success-bg: #f0fff4;
   --color-success-border: #dcfce7;
   --color-danger-accent: #ffadad;
+
+  /* Par categórico para el dashboard de métricas — el rosa de marca no pasa
+     el validador de paleta (croma/lightness), así que estos dos son un par
+     independiente elegido y validado para uso en gráficos. */
+  --color-chart-1: #2a78d6;
+  --color-chart-2: #eb6834;
 }
 
 [data-theme="dark"] {
@@ -62,6 +68,9 @@
   --color-success-bg: #16281c;
   --color-success-border: #1f3d2a;
   --color-danger-accent: #ffadad;
+
+  --color-chart-1: #3987e5;
+  --color-chart-2: #d95926;
 }
 
 body {

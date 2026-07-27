@@ -13,6 +13,7 @@ import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
+import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { showToast } from '@/store/useToastStore';
@@ -889,7 +890,9 @@ function SelectorProfesionalDia({
 }) {
   return (
     <div style={{
-      display: 'flex', gap: 8, padding: '0 20px 12px',
+      display: 'flex', gap: 8,
+      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+      boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
       overflowX: 'auto', WebkitOverflowScrolling: 'touch',
     }}>
       <button
@@ -1152,14 +1155,28 @@ export default function AgendaPage() {
 
       <SubscriptionWarningBanner />
 
+      {/* Resumen del mes — vistazo rápido, detalle completo en
+          Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}
+      <div style={{ padding: '12px 20px 0' }}>
+        <ResumenMesCard profesionalId={profesionalFiltro} />
+      </div>
+
       {/* Selector de profesional — invisible con ≤1 profesional activa, o si
-          nadie tiene turno vigente ese día */}
+          nadie tiene turno vigente ese día. Solo entran acá las profesionales
+          con turno en fechaSeleccionada — la etiqueta aclara de qué día,
+          porque si no parece una lista fija de profesionales y no un filtro
+          atado al día que estás mirando en el calendario. */}
       {mostrarSelectorProfesional && profesionalesConTurnoHoy.length > 0 && (
-        <SelectorProfesionalDia
-          profesionales={profesionalesConTurnoHoy}
-          filtroActivo={profesionalFiltro}
-          onSeleccionar={setProfesionalFiltro}
-        />
+        <div style={{ padding: '0 20px 12px' }}>
+          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
+            Con turno {fechaSeleccionada === hoy ? 'hoy' : `el ${formatFechaCorta(fechaSeleccionada)}`}
+          </p>
+          <SelectorProfesionalDia
+            profesionales={profesionalesConTurnoHoy}
+            filtroActivo={profesionalFiltro}
+            onSeleccionar={setProfesionalFiltro}
+          />
+        </div>
       )}
 
       {/* Calendar — dimmed and disabled while a filter is active */}
