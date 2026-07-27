@@ -1158,7 +1158,7 @@ export default function AgendaPage() {
       {/* Resumen del mes — vistazo rápido, detalle completo en
           Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}
       <div style={{ padding: '12px 20px 0' }}>
-        <ResumenMesCard profesionalId={profesionalFiltro} />
+        <ResumenMesCard profesionalId={profesionalFiltro} viewDate={viewDate} />
       </div>
 
       {/* Selector de profesional — invisible con ≤1 profesional activa, o si
