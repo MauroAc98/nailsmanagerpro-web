@@ -17,7 +17,7 @@ Una vez adentro, la app se maneja con 4 secciones fijas abajo de la pantalla:
 
 - Agenda: tus turnos, día por día. Es la pantalla principal.
 - Clientes: la lista de tus clientes.
-- Config: servicios, horarios, profesionales, WhatsApp y esta Ayuda.
+- Config: servicios, horarios, profesionales, WhatsApp, apariencia y esta Ayuda.
 - Perfil: tus datos, la seña, y tu suscripción.`,
   },
   {
@@ -67,7 +67,7 @@ Si trabajás con más de una profesional, cada una tiene su propio horario — e
 
 Ahí cargás nombre, apellido y teléfono de cada una. El teléfono es el que se usa para el botón de WhatsApp que aparece en cada turno y para los mensajes automáticos.
 
-Podés buscarlas por nombre y ver su historial de turnos.`,
+Podés buscarlas por nombre y ver su historial de turnos. El interruptor en cada tarjeta la desactiva sin borrarla (por ejemplo si dejó de venir) — sus turnos anteriores quedan intactos, y podés reactivarla en cualquier momento con el mismo interruptor.`,
   },
   {
     titulo: 'Profesionales: cómo agregar una nueva',
@@ -86,8 +86,8 @@ Para dar de baja a una profesional sin perder su historial de turnos, desactival
     texto: `Se abre desde el botón COMPARTIR, arriba a la derecha en Agenda.
 
 - Período: elegí Día, Semana o Mes. En Mes además elegís primera quincena (1 al 15) o segunda (16 al fin).
-- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — el nombre queda visible en la imagen generada.
-- Fondo: botón "Fondo" para subir una foto de fondo para la imagen.
+- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — su nombre queda visible en la imagen generada (salvo que sea la dueña y coincida con el nombre del estudio, ya visible arriba: ahí no se repite).
+- Fondo: botón "Fondo" para subir una foto de fondo para la imagen. Al elegirla, te pregunta si la querés guardar como fondo fijo (se reusa sola la próxima vez que generes una historia) o usarla solo por esta vez. Si guardaste una, aparece un link "Quitar fondo fijo guardado" para sacarla cuando quieras.
 - Texto libre: escribí un texto y tocá + para agregarlo a la imagen. Podés ponerle emojis, arrastrarlo a la posición que quieras dentro de la imagen, y agrandarlo o achicarlo con los botones A- / A+ (o el tirador en la esquina, tocando y arrastrando).
 - Editar qué se muestra: tocá un horario suelto en la lista de abajo para sacarlo de la imagen, o el ícono del ojo en un día para ocultarlo completo.
 - Al final: "Guardar" descarga la imagen a tu dispositivo, "Compartir" abre el menú para mandarla directo (por ejemplo a Instagram o WhatsApp).`,
@@ -98,13 +98,18 @@ Para dar de baja a una profesional sin perder su historial de turnos, desactival
 
 Escaneá el código QR con el WhatsApp del teléfono que uses para el negocio: en ese teléfono, Configuración de WhatsApp → Dispositivos vinculados → Vincular un dispositivo, y apuntá la cámara al código.
 
-Una vez conectado, los mensajes de confirmación se mandan solos cada vez que cargás un turno nuevo, sin que tengas que escribir nada. Podés desvincularlo en cualquier momento desde la misma pantalla.`,
+Una vez conectado, los mensajes de confirmación se mandan solos cada vez que cargás un turno nuevo, sin que tengas que escribir nada. Podés desvincularlo en cualquier momento desde la misma pantalla.
+
+Si se desconecta solo (por ejemplo, cerraste sesión de WhatsApp Web en el teléfono, o pasó mucho tiempo sin uso), esta pantalla te vuelve a mostrar el código QR — repetí el mismo paso para reconectarlo.`,
   },
   {
     titulo: 'Mensajes de WhatsApp',
     texto: `Perfil → Mensajes de WhatsApp.
 
-Hay dos plantillas editables: "Recordatorio" (el que mandás vos a mano, tocando el ícono de WhatsApp en una tarjeta de turno) y "Confirmación" (el automático que se manda solo al crear un turno, si tenés WhatsApp vinculado).
+Hay dos plantillas editables: "Recordatorio" y "Confirmación". Cada una se manda de una forma distinta:
+
+- "Confirmación" es automática: se manda sola apenas cargás un turno nuevo, si tenés WhatsApp vinculado.
+- "Recordatorio" tiene dos caminos: lo podés mandar vos a mano en cualquier momento, tocando el ícono de WhatsApp en una tarjeta de turno; y además, si activaste "Recordatorio automático" en Perfil, la app lo manda sola todos los días a la hora que elegiste, a cada clienta con turno confirmado para el día siguiente — sin que tengas que hacer nada.
 
 Escribí el texto que quieras y usá las variables que te ofrece el editor (como {nombre}, {servicios}, {fecha}, {hora}) — se completan solas con los datos de cada turno al mandarse el mensaje.`,
   },
@@ -112,7 +117,16 @@ Escribí el texto que quieras y usá las variables que te ofrece el editor (como
     titulo: 'Mi Perfil',
     texto: `Pestaña Perfil.
 
-Tus datos del estudio (nombre, teléfono, dirección), el monto de seña que pedís para confirmar turnos, si mandás recordatorio automático y a qué hora, y el estado de tu suscripción (activa o vencida, fecha de vencimiento y días restantes).`,
+Tus datos del estudio (nombre, teléfono, dirección), el estado de tu suscripción (activa o vencida, fecha de vencimiento y días restantes), y dos ajustes:
+
+- Seña: un monto de referencia que guardás para tus turnos. Por ahora es solo informativo — todavía no se descuenta ni se cobra automáticamente en ningún lugar de la app.
+- Recordatorio automático: activalo y elegí la hora — ver el detalle de qué manda exactamente en "Mensajes de WhatsApp".`,
+  },
+  {
+    titulo: 'Apariencia',
+    texto: `Configuración → Apariencia.
+
+Elegí cómo se ve la app: Claro, Oscuro, o Sistema (sigue el modo que tengas configurado en tu celular o computadora). Se aplica al instante.`,
   },
 ];
 
