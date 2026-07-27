@@ -1169,7 +1169,7 @@ export default function AgendaPage() {
       {mostrarSelectorProfesional && profesionalesConTurnoHoy.length > 0 && (
         <div style={{ padding: '0 20px 12px' }}>
           <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
-            Con turno {fechaSeleccionada === hoy ? 'hoy' : `el ${formatFechaCorta(fechaSeleccionada)}`}
+            Profesional con turno {fechaSeleccionada === hoy ? 'hoy' : `el ${formatFechaCorta(fechaSeleccionada)}`}
           </p>
           <SelectorProfesionalDia
             profesionales={profesionalesConTurnoHoy}

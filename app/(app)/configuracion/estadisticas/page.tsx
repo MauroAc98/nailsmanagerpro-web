@@ -153,9 +153,27 @@ export default function EstadisticasPage() {
           </button>
         </div>
 
-        {/* Selector de profesional — invisible con ≤1 profesional activa */}
+        {/* Selector de profesional — invisible con ≤1 profesional activa. Con
+            superficie propia (igual que el de Agenda) y un chip "Todas"
+            explícito, para que quede claro qué se está mirando apenas
+            entrás — sin esto, sin selección no había ningún chip resaltado. */}
         {mostrarSelectorProfesional && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: 8,
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
+          }}>
+            <button
+              onClick={() => setProfesionalFiltro(null)}
+              style={{
+                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                border: `1px solid ${profesionalFiltro === null ? colors.primary : colors.divider}`,
+                backgroundColor: profesionalFiltro === null ? colors.primary : colors.surface,
+                color: profesionalFiltro === null ? '#FFF' : colors.text,
+              }}
+            >
+              Todas
+            </button>
             {activeProfesionales.map(p => {
               const selected = profesionalFiltro === p.id;
               const color = p.color || colors.primary;

@@ -41,7 +41,9 @@ Con esos tres pasos ya podés cargar turnos.`,
 
 Para cancelar un turno: deslizalo hacia la izquierda en la lista de la agenda y tocá "Cancelar". Para editarlo: tocalo directamente.
 
-Mientras se está atendiendo, la tarjeta muestra "EN CURSO" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por cliente, servicio o fecha), usá el botón "Filtrar" arriba de la lista.`,
+Mientras se está atendiendo, la tarjeta muestra "EN CURSO" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por cliente, servicio o fecha), usá el botón "Filtrar" arriba de la lista.
+
+Si trabajás con más de una profesional, arriba de la lista del día vas a ver chips con los nombres de las que tienen turno ese día puntual — tocá uno para ver solo sus turnos, o "Todas" para verlos juntos. Cambia según el día que estés mirando en el calendario: si una profesional no tiene nada agendado ese día, no aparece como opción.`,
   },
   {
     titulo: 'Servicios',
@@ -121,6 +123,18 @@ Tus datos del estudio (nombre, teléfono, dirección), el estado de tu suscripci
 
 - Seña: un monto de referencia que guardás para tus turnos. Por ahora es solo informativo — todavía no se descuenta ni se cobra automáticamente en ningún lugar de la app.
 - Recordatorio automático: activalo y elegí la hora — ver el detalle de qué manda exactamente en "Mensajes de WhatsApp".`,
+  },
+  {
+    titulo: 'Estadísticas',
+    texto: `Configuración → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda — tocala para ir directo a la pantalla completa.
+
+Elegí el mes con las flechas y, si trabajás con más de una profesional, filtrá por quién querés ver. Mostrás:
+
+- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.
+- Clientas nuevas vs. recurrentes: "nueva" es la que tuvo su primer turno alguna vez dentro de ese mes; "recurrente" ya venía de antes.
+- Servicios más pedidos: ranking de qué se agendó más ese mes.
+
+Los turnos cancelados no cuentan para clientas ni para servicios más pedidos — solo aparecen en "Turnos por estado", que es la única de las tres que sí los muestra.`,
   },
   {
     titulo: 'Apariencia',
