@@ -16,7 +16,12 @@ export function WelcomeScreen() {
   const [entrada, setEntrada] = useState(false); // fade + slide-up del contenido
   const [progreso, setProgreso] = useState(false); // barra de progreso 0% -> 100%
 
-  const nombre = user?.name?.split(' ')[0] ?? '';
+  // Nombre completo del estudio, no solo la primera palabra — nombres de
+  // fantasía como "Beauty studio nails" quedaban cortados a "Beauty". El
+  // tamaño baja en escalones para nombres largos, ya no hay límite de una
+  // sola línea (es una animación de entrada, no una imagen exportada).
+  const nombre = user?.name ?? '';
+  const fontSizeNombre = nombre.length > 20 ? 28 : nombre.length > 14 ? 34 : 42;
 
   useEffect(() => {
     // Un tick después del mount para que el navegador registre el estado
@@ -67,7 +72,7 @@ export function WelcomeScreen() {
           {getSaludo()}
         </p>
         <p style={{
-          fontSize: 42, fontWeight: 700, color: colors.textStrong, margin: 0,
+          fontSize: fontSizeNombre, fontWeight: 700, color: colors.textStrong, margin: 0,
           fontFamily: '"Times New Roman", Georgia, serif', letterSpacing: 0.5,
         }}>
           {nombre}
