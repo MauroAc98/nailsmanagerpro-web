@@ -999,6 +999,11 @@ export default function AgendaPage() {
     if (!mostrarSelectorProfesional || profesionalFiltro === null) return;
     let cancelled = false;
 
+    // Limpia antes de pedir: sin esto, al saltar de una profesional a otra
+    // (sin pasar por "Todas") los badges quedaban un instante mostrando el
+    // conteo de la profesional anterior mientras resuelve el fetch nuevo.
+    setTurnosMesFiltrado([]);
+
     const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
     turnoService.getByMes(mes, profesionalFiltro)
       .then(data => { if (!cancelled) setTurnosMesFiltrado(data); })

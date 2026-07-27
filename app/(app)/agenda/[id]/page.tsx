@@ -137,7 +137,17 @@ export default function EditarTurnoPage() {
   };
 
   const handleSeleccionarProfesional = (id: number) => {
-    setSelectedProfesionalId(prev => prev === id ? null : id);
+    const nuevoId = selectedProfesionalId === id ? null : id;
+    setSelectedProfesionalId(nuevoId);
+
+    // Cambio activo del usuario (a diferencia de la hidratación inicial del
+    // turno, que preserva todo vía serviciosDisponibles) — acá sí podamos
+    // los servicios tildados que la nueva profesional no ofrezca, para no
+    // dejar guardable una combinación profesional/servicio inválida.
+    const nuevaProfesional = nuevoId ? activeProfesionales.find(p => p.id === nuevoId) : null;
+    if (nuevaProfesional) {
+      setSelectedServicioIds(prev => prev.filter(sid => nuevaProfesional.servicios.some(ps => ps.id === sid)));
+    }
   };
 
   // Con selector visible: solo se ofrecen los servicios de la profesional
