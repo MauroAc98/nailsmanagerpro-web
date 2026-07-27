@@ -58,9 +58,10 @@ interface Props {
   // de marca, siempre visible cuando existe.
   nombreEstudio?: string | null;
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
-  // undefined = cuenta con ≤1 profesional activa o vista "default": no se
-  // agrega la línea extra, el canvas queda pixel-idéntico a como estaba
-  // antes de esta feature.
+  // Si viene, reemplaza a nombreEstudio como título (ver tituloPrincipal).
+  // undefined = cuenta con ≤1 profesional activa o sin selección puntual:
+  // el título vuelve a ser nombreEstudio, canvas pixel-idéntico a como
+  // estaba antes de esta feature.
   profesionalNombre?: string;
   dias:           DisponibilidadDia[]; // diasAMostrar
   fondoUri:       string | null;
@@ -82,13 +83,11 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 ) {
   const esModoDia = dias.length === 1;
 
-  // Cuando la profesional seleccionada es la dueña, su Profesional.nombre
-  // suele ser el mismo texto que nombreEstudio (se siembra igual al
-  // registrarse — ver AuthController::register) y nunca se vuelven a
-  // sincronizar. Sin este chequeo, la historia mostraba el mismo nombre
-  // dos veces apiladas.
-  const mostrarProfesional = !!profesionalNombre
-    && profesionalNombre.trim().toLowerCase() !== (nombreEstudio ?? '').trim().toLowerCase();
+  // Con una profesional puntual elegida, su nombre reemplaza al del estudio
+  // en el título — mostrar ambos es redundante (la propia profesional YA
+  // identifica de qué estudio es) y en cuentas donde el nombre del estudio
+  // es el nombre personal de la dueña, quedaba dos veces literal.
+  const tituloPrincipal = profesionalNombre || nombreEstudio;
 
   const alturaUtil = canvasHeight * 0.75;
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
@@ -135,12 +134,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
         >
           {/* Header */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-            {nombreEstudio && (
+            {tituloPrincipal && (
               // minFontSize 12: siempre por encima del tope de FitText de los
               // turnos (maxFontSize 10) — el título nunca queda mas chico que
               // la info de los turnos.
               <FitText
-                text={nombreEstudio.toUpperCase()}
+                text={tituloPrincipal.toUpperCase()}
                 maxFontSize={17}
                 minFontSize={12}
                 style={{ fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center' }}
@@ -148,18 +147,10 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             )}
             <span style={{
               fontSize: 15, fontWeight: 300, letterSpacing: 6, color: '#fff', textAlign: 'center',
-              marginTop: nombreEstudio ? 4 : 0,
+              marginTop: tituloPrincipal ? 4 : 0,
             }}>
               {titulo.toUpperCase()}
             </span>
-            {mostrarProfesional && (
-              <span style={{
-                fontSize: 11, fontWeight: 600, letterSpacing: 2, color: 'rgba(255,255,255,0.85)',
-                textAlign: 'center', marginTop: 4,
-              }}>
-                {profesionalNombre!.toUpperCase()}
-              </span>
-            )}
             <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.4)', marginTop: 8 }} />
           </div>
 
