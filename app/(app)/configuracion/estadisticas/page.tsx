@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats } from '@/services/statsService';
@@ -63,15 +63,28 @@ function StatTile({ label, value, color }: { label: string; value: number; color
   );
 }
 
-export default function EstadisticasPage() {
+// Parsea el query param "mes" (YYYY-MM) que llega desde el card de Agenda.
+// Si falta o es inválido, cae en el mes actual — mismo default que entrar
+// directo desde Configuración.
+function parseMesParam(mes: string | null): Date {
+  const t = new Date();
+  if (mes) {
+    const match = /^(\d{4})-(\d{2})$/.exec(mes);
+    if (match) return new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  }
+  return new Date(t.getFullYear(), t.getMonth(), 1);
+}
+
+function EstadisticasContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
-  const [viewDate, setViewDate] = useState<Date>(() => {
-    const t = new Date();
-    return new Date(t.getFullYear(), t.getMonth(), 1);
+  const [viewDate, setViewDate] = useState<Date>(() => parseMesParam(searchParams.get('mes')));
+  const [profesionalFiltro, setProfesionalFiltro] = useState<number | null>(() => {
+    const p = searchParams.get('profesional');
+    return p ? Number(p) : null;
   });
-  const [profesionalFiltro, setProfesionalFiltro] = useState<number | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -285,5 +298,13 @@ export default function EstadisticasPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function EstadisticasPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>Cargando...</div>}>
+      <EstadisticasContent />
+    </Suspense>
   );
 }

@@ -55,7 +55,12 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
 
   return (
     <button
-      onClick={() => router.push('/configuracion/estadisticas')}
+      onClick={() => {
+        const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
+        const params = new URLSearchParams({ mes });
+        if (profesionalId != null) params.set('profesional', String(profesionalId));
+        router.push(`/configuracion/estadisticas?${params.toString()}`);
+      }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         width: '100%', margin: '0 0 12px', padding: '14px 16px',
