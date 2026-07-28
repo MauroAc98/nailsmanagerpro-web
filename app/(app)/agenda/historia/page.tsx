@@ -39,12 +39,12 @@ function HistoriaContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
-    modo, quincena, diasOcultos,
+    modo, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight,
-    selectedProfesionalId, setSelectedProfesionalId,
-    handleModo, handleNavegar, setQuincena, setDiasOcultos,
+    selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
+    handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
@@ -90,7 +90,17 @@ function HistoriaContent() {
         <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Generar historia</h1>
       </div>
 
-      <div style={{ padding: '8px 20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* width = canvasWidth (sin padding horizontal, project usa
+          box-sizing: border-box vía Tailwind preflight) para que todo lo que
+          use width:'100%' abajo (tabs, selector, input, agenda, botones)
+          quede exactamente tan ancho como la imagen y no sobresalga por los
+          costados. El propio ancho del canvas (min(420, viewport*0.85)) ya
+          deja margen de sobra a los costados de la pantalla, no hace falta
+          padding horizontal extra acá. */}
+      <div style={{
+        paddingTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        width: canvasWidth || '100%', margin: '0 auto',
+      }}>
 
         {/* Mode tabs */}
         <div style={{ ...tabContainerStyle, width: '100%' }}>
@@ -139,7 +149,7 @@ function HistoriaContent() {
             {[0, 1].map(i => (
               <button
                 key={i}
-                onClick={() => { setQuincena(i as 0 | 1); setDiasOcultos([]); }}
+                onClick={() => { setQuincena(i as 0 | 1); setDiasOcultos([]); setSlotsOcultos([]); }}
                 style={tabStyle(quincena === i)}
               >
                 {i === 0 ? '1 — 15' : '16 — Fin'}
@@ -148,32 +158,41 @@ function HistoriaContent() {
           </div>
         )}
 
-        {/* Selector de profesional — invisible con ≤1 profesional activa */}
+        {/* Selector de profesional — invisible con ≤1 profesional activa. El
+            caption aclara que esto es un filtro (mismo criterio que el
+            selector de Agenda), y sin selección explícita se resalta la
+            jefa porque es la que ya se usa de fondo (ver effectiveProfesionalId
+            en useGenerarHistoria). */}
         {mostrarSelectorProfesional && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%', marginBottom: 14 }}>
-            {activeProfesionales.map(p => {
-              const selected = selectedProfesionalId === p.id;
-              const color    = p.color || colors.primary;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
-                    border: `1px solid ${selected ? color : colors.divider}`,
-                    backgroundColor: selected ? color : colors.surface,
-                    color: selected ? '#FFF' : colors.text,
-                  }}
-                >
-                  <span style={{
-                    width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                    backgroundColor: selected ? '#FFF' : color,
-                  }} />
-                  {p.nombre}
-                </button>
-              );
-            })}
+          <div style={{ width: '100%', marginBottom: 14 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
+              Mostrar agenda de:
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {activeProfesionales.map(p => {
+                const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
+                const color    = p.color || colors.primary;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
+                      border: `1px solid ${selected ? color : colors.divider}`,
+                      backgroundColor: selected ? color : colors.surface,
+                      color: selected ? '#FFF' : colors.text,
+                    }}
+                  >
+                    <span style={{
+                      width: 8, height: 8, borderRadius: 4, flexShrink: 0,
+                      backgroundColor: selected ? '#FFF' : color,
+                    }} />
+                    {p.nombre}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -210,10 +229,20 @@ function HistoriaContent() {
             />
 
             {agendaGenerada.length > 0 && (
-              <div style={{ width: '100%', marginTop: 25 }}>
+              <div style={{
+                width: '100%', marginTop: 25, paddingTop: 20,
+                borderTop: `1px solid ${colors.divider}`,
+              }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 4px' }}>
+                  Editar disponibilidad
+                </p>
+                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 10px' }}>
+                  Ya se muestra tu disponibilidad real. Usá esto solo si querés ocultar algo puntual antes de compartir.
+                </p>
                 <AgendaEditor
                   agenda={diasQuincena}
                   diasOcultos={diasOcultos}
+                  slotsOcultos={slotsOcultos}
                   onToggleSlot={toggleSlot}
                   onOcultarDia={toggleDiaOculto}
                   onToggleHoraEnTodos={toggleHoraEnTodos}

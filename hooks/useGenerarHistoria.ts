@@ -53,6 +53,13 @@ function tieneContenido(dias: DisponibilidadDia[]): boolean {
   return dias.some(dia => dia.slots.some(s => s.libre));
 }
 
+// Identifica un slot por fecha+hora — clave estable para el set de slots
+// ocultados manualmente (independiente del índice, que puede correrse si
+// cambia la data del backend).
+export function claveSlot(fecha: string, hora: string): string {
+  return `${fecha}|${hora}`;
+}
+
 function filtrarQuincena(dias: DisponibilidadDia[], quincena: 0 | 1): DisponibilidadDia[] {
   return dias.filter(dia => {
     const nro = new Date(dia.fecha + 'T00:00:00').getDate();
@@ -163,6 +170,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const [agendaGenerada, setAgendaGenerada] = useState<DisponibilidadDia[]>([]);
   const [quincena,       setQuincena]       = useState<0 | 1>(0);
   const [diasOcultos,    setDiasOcultos]    = useState<string[]>([]);
+  // Claves (claveSlot) de slots que el usuario ocultó manualmente de la
+  // imagen. Nunca incluye slots que el sistema marca ocupados — eso se
+  // garantiza en toggleSlot/toggleHoraEnTodos, no acá.
+  const [slotsOcultos,   setSlotsOcultos]   = useState<string[]>([]);
   const [textosCanvas,   setTextosCanvas]   = useState<TextoLibre[]>([]);
   const [textoInput,     setTextoInput]     = useState('');
   const [mostrarEmojis,  setMostrarEmojis]  = useState(false);
@@ -343,6 +354,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const resetear = useCallback(() => {
     setQuincena(0);
     setDiasOcultos([]);
+    setSlotsOcultos([]);
     setTextosCanvas([]);
     setTextoInput('');
     setMostrarEmojis(false);
@@ -385,9 +397,22 @@ export function useGenerarHistoria(fechaInicial?: string) {
     return filtrarQuincena(agendaGenerada, quincena);
   }, [agendaGenerada, modo, quincena]);
 
+  // diasAMostrar es lo único que llega al canvas — acá se aplica el overlay
+  // de slotsOcultos por encima del dato real (diasQuincena/agendaGenerada
+  // nunca se tocan), así un turno ocupado jamás puede terminar mostrándose
+  // como disponible en la imagen.
   const diasAMostrar = useMemo(
-    () => diasQuincena.filter(dia => !diasOcultos.includes(dia.fecha)),
-    [diasQuincena, diasOcultos]
+    () => diasQuincena
+      .filter(dia => !diasOcultos.includes(dia.fecha))
+      .map(dia => ({
+        ...dia,
+        slots: dia.slots.map(slot =>
+          slotsOcultos.includes(claveSlot(dia.fecha, slot.hora))
+            ? { ...slot, libre: false }
+            : slot
+        ),
+      })),
+    [diasQuincena, diasOcultos, slotsOcultos]
   );
 
   const hayContenido = useMemo(() => tieneContenido(diasAMostrar), [diasAMostrar]);
@@ -401,45 +426,38 @@ export function useGenerarHistoria(fechaInicial?: string) {
     );
   }, []);
 
+  // Solo puede ocultar/restaurar un slot que el sistema ya marca libre —
+  // un turno ocupado nunca es togglable, así no hay forma de que termine
+  // mostrándose como disponible en la historia.
   const toggleSlot = useCallback((fechaIdx: number, slotIdx: number) => {
-    const fechaReal = diasQuincena[fechaIdx]?.fecha;
-    if (!fechaReal) return;
-    setAgendaGenerada(prev =>
-      prev.map(dia =>
-        dia.fecha !== fechaReal ? dia : {
-          ...dia,
-          slots: dia.slots.map((slot, si) =>
-            si !== slotIdx ? slot : { ...slot, libre: !slot.libre }
-          ),
-        }
-      )
+    const dia  = diasQuincena[fechaIdx];
+    const slot = dia?.slots[slotIdx];
+    if (!dia || !slot || !slot.libre) return;
+
+    const clave = claveSlot(dia.fecha, slot.hora);
+    setSlotsOcultos(prev =>
+      prev.includes(clave) ? prev.filter(k => k !== clave) : [...prev, clave]
     );
   }, [diasQuincena]);
 
   // Ocultar/restaurar una hora puntual en todos los días actualmente
   // visibles (respeta el filtro día/semana/mes y la quincena activa, porque
   // opera sobre diasQuincena — lo mismo que ya se le pasa a AgendaEditor).
-  // Si la hora todavía está libre en algún día visible, oculta esa hora en
-  // todos; si ya está oculta en todos, la restaura en todos — mismo criterio
-  // de toggle que un "seleccionar todo".
+  // Solo considera los slots que el sistema marca libres en esos días —
+  // los ocupados quedan afuera del cálculo y nunca se tocan.
   const toggleHoraEnTodos = useCallback((hora: string) => {
-    const fechasVisibles = new Set(diasQuincena.map(d => d.fecha));
-    const hayAlgunaLibre = diasQuincena.some(dia =>
-      dia.slots.some(s => s.hora === hora && s.libre)
-    );
-    const nuevoLibre = !hayAlgunaLibre;
+    const clavesLibres = diasQuincena
+      .filter(dia => dia.slots.some(s => s.hora === hora && s.libre))
+      .map(dia => claveSlot(dia.fecha, hora));
+    if (clavesLibres.length === 0) return;
 
-    setAgendaGenerada(prev =>
-      prev.map(dia =>
-        !fechasVisibles.has(dia.fecha) ? dia : {
-          ...dia,
-          slots: dia.slots.map(slot =>
-            slot.hora !== hora ? slot : { ...slot, libre: nuevoLibre }
-          ),
-        }
-      )
-    );
-  }, [diasQuincena]);
+    const hayAlgunaVisible = clavesLibres.some(clave => !slotsOcultos.includes(clave));
+
+    setSlotsOcultos(prev => {
+      const sinEstas = prev.filter(k => !clavesLibres.includes(k));
+      return hayAlgunaVisible ? [...sinEstas, ...clavesLibres] : sinEstas;
+    });
+  }, [diasQuincena, slotsOcultos]);
 
   // ─────────────────────────────────────────────
   // Free-text CRUD — agregarTexto doubles as "guardar" when editandoId
@@ -745,15 +763,15 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
   return {
     // state
-    fechaBase, modo, fondoUri, quincena, diasOcultos,
+    fechaBase, modo, fondoUri, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
-    selectedProfesionalId, setSelectedProfesionalId,
+    selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
     fondoFijoGuardado, nombreEstudio,
 
     // navigation / mode
-    handleModo, handleNavegar, setQuincena, setDiasOcultos,
+    handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
 
     // editor
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
