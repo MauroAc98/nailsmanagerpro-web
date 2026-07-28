@@ -10,6 +10,7 @@ export const primaryRaw = '#d79ea4';
 
 export const colors = {
   primary: 'var(--color-primary)',
+  primaryDeep: 'var(--color-primary-deep)',
   background: 'var(--color-background)',
   text: 'var(--color-text)',
   subtext: 'var(--color-subtext)',

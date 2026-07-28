@@ -20,6 +20,10 @@
   --color-placeholder: #bbbbbb;
   --color-divider: #dddddd;
   --color-primary-disabled: #e0c4c7;
+  /* Variante más saturada/oscura de --color-primary, solo para texto que
+     necesita contraste real sobre fondo claro (ej. el wordmark del login) —
+     el rosa pastel de --color-primary no alcanza para texto grande. */
+  --color-primary-deep: #a85568;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.08);
 
@@ -58,6 +62,12 @@
   --color-placeholder: #5c5c62;
   --color-divider: #45454c;
   --color-primary-disabled: #4a3639;
+  /* Reusar --color-primary acá hacía que el título y el subtítulo del login
+     quedaran del mismo color, sin jerarquía. Este es más saturado/vibrante
+     que el primary pastel, para que el wordmark se distinga del subtítulo
+     sin perder la identidad rosa (un tono más oscuro como en modo claro se
+     ve turbio contra el fondo casi negro, probado antes de elegir este). */
+  --color-primary-deep: #e8879a;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.45);
 

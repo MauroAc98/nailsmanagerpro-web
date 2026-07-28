@@ -3,8 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Playfair_Display } from 'next/font/google';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
+
+// Solo para el wordmark del login — el resto de la app usa la sans-serif
+// del sistema (app/globals.css), esto es la única excepción deliberada.
+const playfair = Playfair_Display({ subsets: ['latin'], weight: '700', style: 'italic' });
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,19 +37,27 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: '0 24px' }}>
 
-      {/* Header con logo */}
-      <div style={{ marginBottom: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Image
-          src="/icon-192.png"
-          alt="Nailsmanagerpro"
-          width={120}
-          height={120}
-          style={{ marginBottom: 12 }}
-        />
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 24, fontWeight: 700, color: colors.text, margin: 0, marginBottom: 4 }}>
+      {/* Header con logo — fondo circular suave (mismo lenguaje que los
+          círculos decorativos de WelcomeScreen) para que el logo asiente
+          en una superficie propia en vez de flotar solo sobre el fondo. */}
+      <div style={{ marginBottom: 24, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{
+          width: 200, height: 200, borderRadius: '50%',
+          backgroundColor: withAlpha(colors.primary, '12'),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 12,
+        }}>
+          <Image
+            src="/icon-192.png"
+            alt="Nailsmanagerpro"
+            width={168}
+            height={168}
+          />
+        </div>
+        <h1 className={playfair.className} style={{ fontSize: 38, color: colors.primaryDeep, margin: 0, marginBottom: 6 }}>
           Nailsmanagerpro
         </h1>
-        <p style={{ fontSize: 13, color: colors.subtext, margin: 0, letterSpacing: 0.2 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: colors.primary, margin: 0, letterSpacing: 0.5, textTransform: 'uppercase' }}>
           Día a día, sin perder el control
         </p>
       </div>
