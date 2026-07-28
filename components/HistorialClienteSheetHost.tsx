@@ -11,7 +11,7 @@ import type { Turno } from '@/services/turnoService';
 
 type FiltroEstado = 'todos' | 'completado' | 'cancelado';
 
-// Sheet global de "ver historial de turnos" de una clienta, disparado desde
+// Sheet global de "ver historial de turnos" de una cliente, disparado desde
 // ClienteCard en la lista — mismo patrón que el filtro de agenda (BottomSheet
 // con initialIndex=-1 + enablePanDownToClose, sincronizado con el store por
 // onChange). Reemplaza al historial que antes vivía inline en la pantalla de
@@ -74,7 +74,7 @@ export function HistorialClienteSheetHost() {
         {loading ? (
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Cargando...</p>
         ) : turnos.length === 0 ? (
-          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Esta clienta todavía no tiene turnos.</p>
+          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Esta cliente todavía no tiene turnos.</p>
         ) : turnosFiltrados.length === 0 ? (
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Ningún turno con ese filtro.</p>
         ) : (

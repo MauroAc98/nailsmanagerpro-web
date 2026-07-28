@@ -84,7 +84,7 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
           {stats.total_turnos} turno{stats.total_turnos === 1 ? '' : 's'}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-          {topServicio ? `Top: ${topServicio} · ` : ''}{stats.clientes.nuevas} clienta{stats.clientes.nuevas === 1 ? '' : 's'} nueva{stats.clientes.nuevas === 1 ? '' : 's'}
+          {topServicio ? `Top: ${topServicio} · ` : ''}{stats.clientes.nuevas} cliente{stats.clientes.nuevas === 1 ? '' : 's'} nueva{stats.clientes.nuevas === 1 ? '' : 's'}
         </p>
       </div>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>

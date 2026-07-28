@@ -250,10 +250,10 @@ function EstadisticasContent() {
               )}
             </div>
 
-            {/* Clientas nuevas vs. recurrentes */}
+            {/* Clientes nuevas vs. recurrentes */}
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
-                Clientas
+                Clientes
               </h2>
               {totalClientes === 0 ? (
                 <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>

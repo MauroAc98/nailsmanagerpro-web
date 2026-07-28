@@ -111,7 +111,7 @@ Si se desconecta solo (por ejemplo, cerraste sesión de WhatsApp Web en el telé
 Hay dos plantillas editables: "Recordatorio" y "Confirmación". Cada una se manda de una forma distinta:
 
 - "Confirmación" es automática: se manda sola apenas cargás un turno nuevo, si tenés WhatsApp vinculado.
-- "Recordatorio" tiene dos caminos: lo podés mandar vos a mano en cualquier momento, tocando el ícono de WhatsApp en una tarjeta de turno; y además, si activaste "Recordatorio automático" en Perfil, la app lo manda sola todos los días a la hora que elegiste, a cada clienta con turno confirmado para el día siguiente — sin que tengas que hacer nada.
+- "Recordatorio" tiene dos caminos: lo podés mandar vos a mano en cualquier momento, tocando el ícono de WhatsApp en una tarjeta de turno; y además, si activaste "Recordatorio automático" en Perfil, la app lo manda sola todos los días a la hora que elegiste, a cada cliente con turno confirmado para el día siguiente — sin que tengas que hacer nada.
 
 Escribí el texto que quieras y usá las variables que te ofrece el editor (como {nombre}, {servicios}, {fecha}, {hora}) — se completan solas con los datos de cada turno al mandarse el mensaje.`,
   },
@@ -131,10 +131,10 @@ Tus datos del estudio (nombre, teléfono, dirección), el estado de tu suscripci
 Elegí el mes con las flechas y, si trabajás con más de una profesional, filtrá por quién querés ver. Mostrás:
 
 - Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.
-- Clientas nuevas vs. recurrentes: "nueva" es la que tuvo su primer turno alguna vez dentro de ese mes; "recurrente" ya venía de antes.
+- Clientes nuevas vs. recurrentes: "nueva" es la que tuvo su primer turno alguna vez dentro de ese mes; "recurrente" ya venía de antes.
 - Servicios más pedidos: ranking de qué se agendó más ese mes.
 
-Los turnos cancelados no cuentan para clientas ni para servicios más pedidos — solo aparecen en "Turnos por estado", que es la única de las tres que sí los muestra.`,
+Los turnos cancelados no cuentan para clientes ni para servicios más pedidos — solo aparecen en "Turnos por estado", que es la única de las tres que sí los muestra.`,
   },
   {
     titulo: 'Apariencia',

@@ -48,7 +48,7 @@ export default function NuevoClientePage() {
     // Si parece traer código de país (empieza con "+" o es más largo que un
     // número local), lo separamos automáticamente en vez de concatenarlo
     // crudo — evita que pegar el número completo desde el perfil de
-    // WhatsApp de la clienta rompa el formato que esperan los mensajes
+    // WhatsApp de la cliente rompa el formato que esperan los mensajes
     // automáticos y semi-automáticos.
     const traeCodigoPais = pegado.trim().startsWith('+') || soloDigitos.length > 11;
     if (traeCodigoPais) {
