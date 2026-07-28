@@ -7,6 +7,7 @@ import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore'
 import { Cliente } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
+import { NAV_HEIGHT } from '@/constants/layout';
 
 // ─────────────────────────────────────────────
 // ClienteCard — switch de activo/inactivo — sin swipe, sin borrado físico.
@@ -123,7 +124,7 @@ export default function ClientesPage() {
       <button
         onClick={() => router.push('/clientes/nuevo')}
         style={{
-          position: 'fixed', bottom: 86, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primary, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

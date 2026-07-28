@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { colors } from '@/theme/colors';
+import { NAV_HEIGHT } from '@/constants/layout';
 
 const TABS = [
   {
@@ -53,7 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.background }}>
-      <div style={{ flex: 1, overflow: 'auto', paddingBottom: 'calc(78px + env(safe-area-inset-bottom))' }}>
+      <div style={{ flex: 1, overflow: 'auto', paddingBottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))` }}>
         {children}
       </div>
 
@@ -82,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => router.push(tab.path)}
               style={{
                 flex: 1,
-                height: 78,
+                height: NAV_HEIGHT,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',

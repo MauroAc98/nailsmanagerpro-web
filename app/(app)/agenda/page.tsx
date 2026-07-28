@@ -17,13 +17,13 @@ import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { showToast } from '@/store/useToastStore';
+import { NAV_HEIGHT } from '@/constants/layout';
 
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
 const SWIPE_REVEAL    = 80;
 const SWIPE_THRESHOLD = 55;
-const NAV_HEIGHT       = 78; // must match the bottom tab bar height in app/(app)/layout.tsx
 
 const DAYS   = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = [
@@ -1293,7 +1293,10 @@ export default function AgendaPage() {
         <button
           onClick={() => router.push(`/agenda/nuevo?fecha=${fechaSeleccionada}`)}
           style={{
-            position: 'fixed', bottom: 86, right: 24,
+            // calc() en vez de un número fijo: suma env(safe-area-inset-bottom)
+            // igual que el nav (app/(app)/layout.tsx) — sin esto el FAB queda
+            // tapado por el nav en iPhones con home indicator (inset ≠ 0).
+            position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
             width: 56, height: 56, borderRadius: 28,
             backgroundColor: colors.primary, border: 'none',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

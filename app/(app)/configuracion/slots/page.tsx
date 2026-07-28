@@ -10,6 +10,7 @@ import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
+import { NAV_HEIGHT } from '@/constants/layout';
 
 const HORAS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
@@ -249,7 +250,7 @@ export default function SlotsPage() {
       <button
         onClick={() => setPickerVisible(true)}
         style={{
-          position: 'fixed', bottom: 86, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primary, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
+import { NAV_HEIGHT } from '@/constants/layout';
 
 function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -112,7 +113,7 @@ export default function ServiciosPage() {
       <button
         onClick={() => router.push('/configuracion/servicios/nuevo')}
         style={{
-          position: 'fixed', bottom: 86, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primary, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
