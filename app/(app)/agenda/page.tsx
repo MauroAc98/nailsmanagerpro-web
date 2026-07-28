@@ -1132,7 +1132,13 @@ export default function AgendaPage() {
   const cargandoHeader = loading || cargandoBusqueda;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 100 }}>
+    // paddingBottom generoso a propósito: el sheet de turnos es position:fixed
+    // y tapa el 30% inferior del viewport incluso en su snap mínimo — sin
+    // suficiente scroll debajo del calendario, la última semana del mes
+    // queda atrapada detrás del sheet sin forma de verla (ni scrolleando).
+    // 340 deja margen incluso con el banner de suscripción visible + card de
+    // resumen, en viewports chicos (iPhone SE). Ver components/BottomSheet.tsx.
+    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 340 }}>
 
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
