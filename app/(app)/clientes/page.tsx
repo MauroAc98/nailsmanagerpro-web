@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
@@ -35,10 +36,11 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
 }
 
 function HistorialButton({ onClick }: { onClick: () => void }) {
+  const t = useTranslations('clientes.ClientesPage');
   return (
     <button
       onClick={e => { e.stopPropagation(); onClick(); }}
-      aria-label="Ver historial de turnos"
+      aria-label={t('historyButtonAriaLabel')}
       style={{
         height: 32, borderRadius: 16, flexShrink: 0,
         backgroundColor: colors.surfaceSubtle, border: 'none',
@@ -50,7 +52,7 @@ function HistorialButton({ onClick }: { onClick: () => void }) {
         <circle cx="12" cy="12" r="10" />
         <polyline points="12 6 12 12 16 14" />
       </svg>
-      <span style={{ fontSize: 12, fontWeight: 600, color: colors.subtext }}>Historial</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: colors.subtext }}>{t('historyButton')}</span>
     </button>
   );
 }
@@ -66,6 +68,7 @@ function ClienteCard({
   onToggle: (activo: boolean) => void;
   onVerHistorial: () => void;
 }) {
+  const t = useTranslations('clientes.ClientesPage');
   return (
     <div
       onClick={onPress}
@@ -88,7 +91,7 @@ function ClienteCard({
           {cliente.nombre} {cliente.apellido}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
-          {cliente.telefono || 'Sin datos de contacto'}
+          {cliente.telefono || t('noContactInfo')}
         </p>
       </div>
 
@@ -106,6 +109,7 @@ function ClienteCard({
 // Page
 // ─────────────────────────────────────────────
 export default function ClientesPage() {
+  const t = useTranslations('clientes.ClientesPage');
   const router = useRouter();
   const { loading, error, buscar, fetchClientes, setBuscar, toggleCliente } = useClientesStore();
   const clientesFiltrados = useClientesFiltrados();
@@ -117,7 +121,7 @@ export default function ClientesPage() {
 
       {/* Header */}
       <div style={{ padding: '24px 20px 12px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>Clientes</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* FAB */}
@@ -149,7 +153,7 @@ export default function ClientesPage() {
           </svg>
           <input
             type="text"
-            placeholder="Buscar por nombre o teléfono..."
+            placeholder={t('searchPlaceholder')}
             value={buscar}
             onChange={e => setBuscar(e.target.value)}
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: colors.text, background: 'transparent' }}
@@ -174,7 +178,7 @@ export default function ClientesPage() {
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando clientes...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
       )}
 
@@ -183,7 +187,7 @@ export default function ClientesPage() {
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {clientesFiltrados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-              {buscar ? 'No se encontraron clientes' : '¡Cargá a tu primer cliente!'}
+              {buscar ? t('noResults') : t('emptyState')}
             </p>
           ) : (
             clientesFiltrados.map(cliente => (
@@ -193,7 +197,7 @@ export default function ClientesPage() {
                 onPress={() => router.push(`/clientes/${cliente.id}`)}
                 onToggle={async activo => {
                   const result = await toggleCliente(cliente.id, activo);
-                  if (!result.success) await alertDialog(result.message ?? 'No se pudo actualizar el cliente.');
+                  if (!result.success) await alertDialog(result.message ?? t('toggleError'));
                 }}
                 onVerHistorial={() => abrirHistorial(cliente.id)}
               />

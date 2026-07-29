@@ -1,0 +1,72 @@
+{
+  "cargando": "Cargando...",
+  "SubscriptionExpiredPage": {
+    "title": "Tu suscripción venció",
+    "subtitle": "Para continuar usando Nailsmanagerpro necesitás renovar tu suscripción. Contactanos y te ayudamos.",
+    "checking": "Verificando…",
+    "recheck": "Volver a verificar",
+    "stillExpired": "Tu suscripción sigue inactiva. Si ya la renovaste, escribinos y lo resolvemos.",
+    "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Nailsmanagerpro.",
+    "renewWhatsapp": "Renovar por WhatsApp",
+    "emailSubject": "Renovar suscripción Nailsmanagerpro",
+    "sendEmail": "Enviar un email",
+    "logout": "Cerrar sesión"
+  },
+  "SubscriptionWarningBanner": {
+    "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Nailsmanagerpro.",
+    "expiresToday": "Tu suscripción vence hoy",
+    "expiresInDays": "Tu suscripción vence en {days, plural, one {# día} other {# días}}",
+    "renew": "Renovar"
+  },
+  "WelcomeScreen": {
+    "greetingMorning": "Buenos días",
+    "greetingAfternoon": "Buenas tardes",
+    "greetingEvening": "Buenas noches",
+    "firstLogin": "¡Todo listo para empezar! ✨",
+    "returning": "Hola de nuevo, qué bueno\nverte otra vez 🌸"
+  },
+  "DuracionPicker": {
+    "hoursLabel": "Horas",
+    "minutesLabel": "Minutos",
+    "hoursUnit": "hs",
+    "minutesUnit": "min",
+    "summaryHoursAndMinutes": "{h}h {mins}min  ·  {total} min totales",
+    "summaryHoursOnly": "{h, plural, one {# hora} other {# horas}}  ·  {total} min totales",
+    "summaryMinutesOnly": "{mins} minutos totales"
+  },
+  "HistorialClienteSheetHost": {
+    "title": "Historial de turnos",
+    "titleWithName": "Historial de turnos — {nombre} {apellido}",
+    "noTurnos": "Esta cliente todavía no tiene turnos.",
+    "noResultsForFilter": "Ningún turno con ese filtro.",
+    "filterAll": "Todos",
+    "filterCompleted": "Completado",
+    "filterCancelled": "Cancelado",
+    "estadoConfirmado": "Confirmado",
+    "estadoCompletado": "Completado",
+    "estadoCancelado": "Cancelado",
+    "motivo": "Motivo: {motivo}"
+  },
+  "MotivoCancelacionSheetHost": {
+    "title": "¿Por qué se cancela el turno?",
+    "otherPlaceholder": "Contanos qué pasó...",
+    "back": "Volver",
+    "confirm": "Cancelar turno",
+    "reasonAvisoPrevio": "Cliente canceló con aviso",
+    "reasonNoShow": "Cliente no se presentó",
+    "reasonReprogramar": "Cliente pidió reprogramar",
+    "reasonImprevisto": "Imprevisto de la profesional",
+    "reasonOtro": "Otro"
+  },
+  "ColorSwatchPicker": {
+    "ariaLabel": "Color {color}"
+  },
+  "ConfirmDialog": {
+    "confirmDefault": "Confirmar",
+    "cancelDefault": "Cancelar",
+    "alertButtonDefault": "OK"
+  },
+  "Errors": {
+    "unexpectedError": "Error inesperado"
+  }
+}

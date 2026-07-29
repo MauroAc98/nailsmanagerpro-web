@@ -2,14 +2,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats } from '@/services/statsService';
-
-const MONTHS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
+import { nombreMes } from '@/lib/dateFormat';
 
 function formatFecha(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -77,6 +74,7 @@ function parseMesParam(mes: string | null): Date {
 
 function EstadisticasContent() {
   const router = useRouter();
+  const t = useTranslations('estadisticas.EstadisticasPage');
   const searchParams = useSearchParams();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
@@ -135,7 +133,7 @@ function EstadisticasContent() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Estadísticas</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -154,7 +152,7 @@ function EstadisticasContent() {
             </svg>
           </button>
           <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
-            {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
+            {nombreMes(viewDate, 'long')} {viewDate.getFullYear()}
           </span>
           <button
             onClick={() => cambiarMes(1)}
@@ -185,7 +183,7 @@ function EstadisticasContent() {
                 color: profesionalFiltro === null ? '#FFF' : colors.text,
               }}
             >
-              Todas
+              {t('all')}
             </button>
             {activeProfesionales.map(p => {
               const selected = profesionalFiltro === p.id;
@@ -214,7 +212,7 @@ function EstadisticasContent() {
         )}
 
         {loading ? (
-          <p style={{ textAlign: 'center', color: colors.subtext, fontSize: 14, marginTop: 40 }}>Cargando...</p>
+          <p style={{ textAlign: 'center', color: colors.subtext, fontSize: 14, marginTop: 40 }}>{t('loading')}</p>
         ) : (
           <>
             {/* Hero figure — el número que lidera la pantalla */}
@@ -222,28 +220,28 @@ function EstadisticasContent() {
               <span style={{ fontSize: 48, fontWeight: 700, color: colors.textStrong, lineHeight: 1 }}>
                 {stats?.total_turnos ?? 0}
               </span>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>turnos este período</p>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>{t('period')}</p>
             </div>
 
             {/* Turnos por estado */}
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
-                Turnos por estado
+                {t('appointmentsByStatus')}
               </h2>
               {totalConCancelados === 0 ? (
                 <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                  No hay turnos este período.
+                  {t('noAppointmentsThisPeriod')}
                 </p>
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <StatTile label="Completados" value={completados} color={colors.success} />
-                    <StatTile label="Confirmados" value={confirmados} color={colors.muted} />
-                    <StatTile label="Cancelados" value={cancelados} color={colors.danger} />
+                    <StatTile label={t('completed')} value={completados} color={colors.success} />
+                    <StatTile label={t('confirmed')} value={confirmados} color={colors.muted} />
+                    <StatTile label={t('cancelled')} value={cancelados} color={colors.danger} />
                   </div>
                   {tasaCancelacion !== null && (
                     <p style={{ margin: '8px 0 0', fontSize: 12, color: colors.subtext }}>
-                      {tasaCancelacion}% de los turnos se cancelaron este período.
+                      {t('cancellationRate', { pct: tasaCancelacion })}
                     </p>
                   )}
                 </>
@@ -253,17 +251,17 @@ function EstadisticasContent() {
             {/* Clientes nuevas vs. recurrentes */}
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
-                Clientes
+                {t('clients')}
               </h2>
               {totalClientes === 0 ? (
                 <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                  No hay turnos confirmados este período.
+                  {t('noConfirmedAppointmentsThisPeriod')}
                 </p>
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <StatTile label="Nuevas" value={stats!.clientes.nuevas} color={colors.chart1} />
-                    <StatTile label="Recurrentes" value={stats!.clientes.recurrentes} color={colors.chart2} />
+                    <StatTile label={t('newClients')} value={stats!.clientes.nuevas} color={colors.chart1} />
+                    <StatTile label={t('returningClients')} value={stats!.clientes.recurrentes} color={colors.chart2} />
                   </div>
                   <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 10, gap: 2 }}>
                     <div style={{ flex: stats!.clientes.nuevas || 0.0001, backgroundColor: colors.chart1, borderRadius: 4 }} />
@@ -276,11 +274,11 @@ function EstadisticasContent() {
             {/* Servicios más pedidos */}
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
-                Servicios más pedidos
+                {t('topServices')}
               </h2>
               {servicios.length === 0 ? (
                 <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                  No hay servicios agendados este período.
+                  {t('noServicesThisPeriod')}
                 </p>
               ) : (
                 <div style={{
@@ -302,8 +300,9 @@ function EstadisticasContent() {
 }
 
 export default function EstadisticasPage() {
+  const t = useTranslations('estadisticas.EstadisticasPage');
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>Cargando...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
       <EstadisticasContent />
     </Suspense>
   );

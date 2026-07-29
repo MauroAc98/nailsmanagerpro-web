@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useHistorialClienteStore, cerrarHistorial } from '@/store/useHistorialClienteStore';
@@ -18,6 +19,8 @@ type FiltroEstado = 'todos' | 'completado' | 'cancelado';
 // editar cliente.
 
 export function HistorialClienteSheetHost() {
+  const t = useTranslations('common.HistorialClienteSheetHost');
+  const tCommon = useTranslations('common');
   const clienteId = useHistorialClienteStore(state => state.clienteId);
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
@@ -52,7 +55,7 @@ export function HistorialClienteSheetHost() {
   );
   const turnosFiltrados = filtroEstado === 'todos'
     ? turnos
-    : turnos.filter(t => t.estado === filtroEstado);
+    : turnos.filter(turno => turno.estado === filtroEstado);
 
   return (
     <BottomSheet
@@ -64,19 +67,19 @@ export function HistorialClienteSheetHost() {
     >
       <div style={{ padding: '4px 20px 24px' }}>
         <p style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: '0 0 14px' }}>
-          Historial de turnos{cliente ? ` — ${cliente.nombre} ${cliente.apellido}` : ''}
+          {cliente ? t('titleWithName', { nombre: cliente.nombre, apellido: cliente.apellido }) : t('title')}
         </p>
 
         {!loading && turnos.length > 0 && (
-          <FiltroEstadoChips value={filtroEstado} onChange={setFiltroEstado} />
+          <FiltroEstadoChips value={filtroEstado} onChange={setFiltroEstado} t={t} />
         )}
 
         {loading ? (
-          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Cargando...</p>
+          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>{tCommon('cargando')}</p>
         ) : turnos.length === 0 ? (
-          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Esta cliente todavía no tiene turnos.</p>
+          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>{t('noTurnos')}</p>
         ) : turnosFiltrados.length === 0 ? (
-          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>Ningún turno con ese filtro.</p>
+          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>{t('noResultsForFilter')}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {turnosFiltrados.map(turno => (
@@ -84,6 +87,7 @@ export function HistorialClienteSheetHost() {
                 key={turno.id}
                 turno={turno}
                 profesional={turno.profesional_id != null ? profesionalesById.get(turno.profesional_id) : undefined}
+                t={t}
               />
             ))}
           </div>
@@ -97,16 +101,18 @@ export function HistorialClienteSheetHost() {
 // FiltroEstadoChips — mismo estilo de pill que el selector de profesional
 // de la agenda (borde/fondo del color activo cuando está seleccionado).
 // ─────────────────────────────────────────────
-const FILTRO_OPCIONES: { value: FiltroEstado; label: string }[] = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'completado', label: 'Completado' },
-  { value: 'cancelado', label: 'Cancelado' },
-];
+type TFn = ReturnType<typeof useTranslations>;
 
-function FiltroEstadoChips({ value, onChange }: { value: FiltroEstado; onChange: (v: FiltroEstado) => void }) {
+function FiltroEstadoChips({ value, onChange, t }: { value: FiltroEstado; onChange: (v: FiltroEstado) => void; t: TFn }) {
+  const filtroOpciones: { value: FiltroEstado; label: string }[] = [
+    { value: 'todos', label: t('filterAll') },
+    { value: 'completado', label: t('filterCompleted') },
+    { value: 'cancelado', label: t('filterCancelled') },
+  ];
+
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-      {FILTRO_OPCIONES.map(opcion => {
+      {filtroOpciones.map(opcion => {
         const selected = value === opcion.value;
         return (
           <button
@@ -132,11 +138,13 @@ function FiltroEstadoChips({ value, onChange }: { value: FiltroEstado; onChange:
 // TurnoHistorialCard — solo lectura, sin acciones de swipe/cancelar/completar
 // (migrado desde clientes/[id]/page.tsx)
 // ─────────────────────────────────────────────
-const ESTADO_LABELS: Record<string, string> = {
-  confirmado: 'Confirmado',
-  completado: 'Completado',
-  cancelado: 'Cancelado',
-};
+function estadoLabels(t: TFn): Record<string, string> {
+  return {
+    confirmado: t('estadoConfirmado'),
+    completado: t('estadoCompletado'),
+    cancelado: t('estadoCancelado'),
+  };
+}
 
 function estiloEstado(estado: string): { bg: string; border: string; text: string } {
   if (estado === 'completado') return { bg: colors.successBg, border: colors.successBorder, text: colors.success };
@@ -150,8 +158,9 @@ function formatFechaHora(fechaHora: string): string {
   return `${dia}/${mes}/${anio}${hora ? ` ${hora.slice(0, 5)}` : ''}`;
 }
 
-function TurnoHistorialCard({ turno, profesional }: { turno: Turno; profesional?: Profesional }) {
+function TurnoHistorialCard({ turno, profesional, t }: { turno: Turno; profesional?: Profesional; t: TFn }) {
   const estilo = estiloEstado(turno.estado);
+  const labels = estadoLabels(t);
 
   return (
     <div
@@ -171,7 +180,7 @@ function TurnoHistorialCard({ turno, profesional }: { turno: Turno; profesional?
             backgroundColor: estilo.bg, border: `1px solid ${estilo.border}`, color: estilo.text,
           }}
         >
-          {ESTADO_LABELS[turno.estado] ?? turno.estado}
+          {labels[turno.estado] ?? turno.estado}
         </span>
       </div>
 
@@ -194,7 +203,7 @@ function TurnoHistorialCard({ turno, profesional }: { turno: Turno; profesional?
 
       {turno.estado === 'cancelado' && turno.motivo_cancelacion && (
         <p style={{ margin: 0, fontSize: 13, color: colors.danger }}>
-          Motivo: {turno.motivo_cancelacion}
+          {t('motivo', { motivo: turno.motivo_cancelacion })}
           {turno.cancelado_en ? ` · ${formatFechaHora(turno.cancelado_en)}` : ''}
         </p>
       )}

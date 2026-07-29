@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { SheetInput } from './SheetInput';
 
@@ -52,22 +53,23 @@ export function SheetPassword({
   onGuardar, guardando, error, onClose,
 }: Props) {
   const [mostrarPassword, setMostrarPassword] = useState(false);
+  const t = useTranslations('perfil.SheetPassword');
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>Cambiar contraseña</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
           <IconClose />
         </button>
       </div>
 
       <SheetInput
-        label="Nueva contraseña"
+        label={t('newPassword')}
         icon={<IconLock />}
         value={password}
         onChange={setPassword}
-        placeholder="Mínimo 8 caracteres"
+        placeholder={t('minChars')}
         type={mostrarPassword ? 'text' : 'password'}
         rightAdornment={
           <button
@@ -81,11 +83,11 @@ export function SheetPassword({
       />
 
       <SheetInput
-        label="Confirmar contraseña"
+        label={t('confirmPassword')}
         icon={<IconLock />}
         value={passwordConfirmation}
         onChange={setPasswordConfirmation}
-        placeholder="Repetí la contraseña"
+        placeholder={t('repeatPassword')}
         type="password"
       />
 
@@ -102,7 +104,7 @@ export function SheetPassword({
           opacity: guardando ? 0.6 : 1,
         }}
       >
-        {guardando ? 'Guardando...' : 'Cambiar contraseña'}
+        {guardando ? t('saving') : t('changePassword')}
       </button>
     </div>
   );

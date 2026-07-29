@@ -1,20 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
 import { useAuth } from '@/hooks/useAuth';
 
-function getSaludo(): string {
-  const hora = new Date().getHours();
-  if (hora >= 6 && hora < 12) return 'Buenos días';
-  if (hora >= 12 && hora < 20) return 'Buenas tardes';
-  return 'Buenas noches';
-}
-
 export function WelcomeScreen() {
+  const t = useTranslations('common.WelcomeScreen');
   const { user, esPrimerLogin, setMostrarBienvenida } = useAuth();
   const [entrada, setEntrada] = useState(false); // fade + slide-up del contenido
   const [progreso, setProgreso] = useState(false); // barra de progreso 0% -> 100%
+
+  const hora = new Date().getHours();
+  const saludo = hora >= 6 && hora < 12
+    ? t('greetingMorning')
+    : hora >= 12 && hora < 20
+      ? t('greetingAfternoon')
+      : t('greetingEvening');
 
   // Nombre completo del estudio, no solo la primera palabra — nombres de
   // fantasía como "Beauty studio nails" quedaban cortados a "Beauty". El
@@ -69,7 +71,7 @@ export function WelcomeScreen() {
           fontSize: 13, fontWeight: 600, color: colors.primary,
           letterSpacing: 3, textTransform: 'uppercase', margin: '0 0 12px',
         }}>
-          {getSaludo()}
+          {saludo}
         </p>
         <p style={{
           fontSize: fontSizeNombre, fontWeight: 700, color: colors.textStrong, margin: 0,
@@ -85,7 +87,7 @@ export function WelcomeScreen() {
           fontSize: 15, color: colors.subtext, lineHeight: '24px', letterSpacing: 0.3, margin: 0,
           whiteSpace: 'pre-line',
         }}>
-          {esPrimerLogin ? '¡Todo listo para empezar! ✨' : 'Hola de nuevo, qué bueno\nverte otra vez 🌸'}
+          {esPrimerLogin ? t('firstLogin') : t('returning')}
         </p>
       </div>
 

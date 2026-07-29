@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Profesional } from '@/services/profesionalService';
@@ -38,6 +39,7 @@ function ProfesionalCard({
   onEdit:      () => void;
   onToggle:    (activo: boolean) => void;
 }) {
+  const t = useTranslations('configuracion.ProfesionalesPage');
   const color = profesional.color || colors.primary;
   const cantidadServicios = profesional.servicios?.length ?? 0;
 
@@ -73,8 +75,8 @@ function ProfesionalCard({
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
           {cantidadServicios === 0
-            ? 'Sin servicios asignados'
-            : `${cantidadServicios} servicio${cantidadServicios === 1 ? '' : 's'}`}
+            ? t('noServices')
+            : t('serviceCount', { count: cantidadServicios })}
         </p>
       </div>
 
@@ -88,6 +90,7 @@ function ProfesionalCard({
 }
 
 export default function ProfesionalesPage() {
+  const t = useTranslations('configuracion.ProfesionalesPage');
   const router = useRouter();
   const { profesionales, loading, fetchProfesionales, toggleActivo } = useProfesionalStore();
 
@@ -108,7 +111,7 @@ export default function ProfesionalesPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Profesionales</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* FAB */}
@@ -129,14 +132,14 @@ export default function ProfesionalesPage() {
 
       <div style={{ padding: '0 20px 8px' }}>
         <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-          Desactivar una profesional no borra su historial de turnos — solo deja de aparecer para agendar nuevos.
+          {t('disclaimer')}
         </p>
       </div>
 
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando profesionales...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
       )}
 
@@ -145,7 +148,7 @@ export default function ProfesionalesPage() {
         <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {profesionales.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-              ¡Cargá tu primera profesional!
+              {t('emptyState')}
             </p>
           ) : (
             profesionales.map(p => (

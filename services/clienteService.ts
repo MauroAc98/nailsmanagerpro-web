@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import type { Turno } from '@/services/turnoService';
+import { tStatic } from '@/store/useLocaleStore';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -55,7 +56,7 @@ export const clienteService = {
 export const extraerMensajeError = (e: unknown): string => {
   if (e && typeof e === 'object' && 'response' in e) {
     const err = e as { response?: { data?: { message?: string } } };
-    return err.response?.data?.message ?? 'Error inesperado';
+    return err.response?.data?.message ?? tStatic('common.Errors.unexpectedError');
   }
-  return 'Error inesperado';
+  return tStatic('common.Errors.unexpectedError');
 };

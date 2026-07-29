@@ -1,0 +1,89 @@
+{
+  "AgendaPage": {
+    "title": "Mi Agenda",
+    "share": "COMPARTIR",
+    "professionalWithAppointmentToday": "Profesional con turno hoy",
+    "professionalWithAppointmentOn": "Profesional con turno el {fecha}",
+    "noResultsFound": "No se encontraron turnos",
+    "noAppointmentsToday": "No hay turnos para hoy",
+    "noAppointmentsOn": "No hay turnos el {fecha}",
+    "finished": "Turno finalizado",
+    "finishError": "No se pudo finalizar el turno.",
+    "cancelled": "Turno cancelado",
+    "cancelError": "No se pudo cancelar el turno."
+  },
+  "SwipeableTurnoCard": {
+    "deletedClient": "Cliente eliminado",
+    "finishNow": "Finalizar ahora",
+    "inProgress": "● EN CURSO",
+    "cancel": "CANCELAR"
+  },
+  "FinalizadoCard": {
+    "deletedClient": "Cliente eliminado",
+    "finished": "✓ FINALIZADO"
+  },
+  "AgendaListHeader": {
+    "results": "Resultados",
+    "todayAppointments": "Turnos de hoy",
+    "appointmentsOf": "Turnos del {fecha}",
+    "activeFilters": "Filtros activos",
+    "filter": "Filtrar"
+  },
+  "FiltroSheetContent": {
+    "title": "Filtros",
+    "clearAll": "Limpiar todo",
+    "searchClient": "Buscar cliente",
+    "clientNamePlaceholder": "Nombre del cliente...",
+    "searchByDate": "Buscar por fecha",
+    "datePlaceholder": "DD/MM/YYYY",
+    "invalidDate": "Fecha inválida",
+    "filterByService": "Filtrar por servicio",
+    "viewResults": "Ver resultados"
+  },
+  "SelectorProfesionalDia": {
+    "all": "Todas"
+  },
+  "EditarTurnoPage": {
+    "title": "Editar Turno",
+    "loadingAppointment": "Cargando turno...",
+    "back": "Volver",
+    "editingAppointment": "EDITANDO TURNO: {fecha}",
+    "client": "CLIENTE",
+    "select": "Seleccionar...",
+    "searchByName": "Buscar por nombre...",
+    "professional": "PROFESIONAL",
+    "services": "SERVICIOS",
+    "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
+    "appointmentTime": "HORA DEL TURNO",
+    "saving": "Guardando...",
+    "saveChanges": "Guardar Cambios",
+    "updateError": "No se pudo actualizar el turno.",
+    "timeModalTitle": "Hora del turno",
+    "confirm": "Confirmar"
+  },
+  "NuevoTurnoPage": {
+    "title": "Nuevo Turno",
+    "loading": "Cargando...",
+    "selectedDay": "DÍA SELECCIONADO: {fecha}",
+    "client": "CLIENTE",
+    "select": "Seleccionar...",
+    "searchByName": "Buscar por nombre...",
+    "professional": "PROFESIONAL",
+    "services": "SERVICIOS",
+    "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
+    "noServicesAssigned": "Esta profesional no tiene servicios asignados.",
+    "appointmentTime": "HORA DEL TURNO",
+    "saving": "Guardando...",
+    "confirmAppointment": "Confirmar Turno",
+    "createError": "No se pudo crear el turno.",
+    "timeModalTitle": "Hora del turno",
+    "confirm": "Confirmar"
+  },
+  "ResumenMesCard": {
+    "statsThisMonth": "Estadísticas de este mes",
+    "statsOfMonth": "Estadísticas de {mes}",
+    "appointmentsCount": "{count, plural, one {# turno} other {# turnos}}",
+    "topService": "Top: {nombre} · ",
+    "newClientsCount": "{count, plural, one {# cliente nueva} other {# clientes nuevas}}"
+  }
+}

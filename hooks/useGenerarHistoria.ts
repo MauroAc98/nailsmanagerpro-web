@@ -6,6 +6,8 @@ import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
+import { nombreDia, nombreMes } from '@/lib/dateFormat';
+import { tStatic } from '@/store/useLocaleStore';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -16,12 +18,6 @@ export interface TextoLibre {
   y:        number;
   fontSize: number;
 }
-
-const DIAS_LARGO  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const MESES_LARGO = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -69,7 +65,7 @@ function filtrarQuincena(dias: DisponibilidadDia[], quincena: 0 | 1): Disponibil
 
 export function formatFechaLarga(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
-  return `${DIAS_LARGO[d.getDay()]}, ${d.getDate()} de ${MESES_LARGO[d.getMonth()]}`;
+  return `${nombreDia(d, 'long')}, ${d.getDate()} de ${nombreMes(d, 'long')}`;
 }
 
 // Convierte una URL (misma origin — p.ej. nuestro proxy /api/historia-fondo)
@@ -299,10 +295,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
       const { desde, hasta } = getRango(fechaBase, 'semana');
       const d = new Date(desde + 'T00:00:00');
       const h = new Date(hasta + 'T00:00:00');
-      return `${d.getDate()} - ${h.getDate()} ${MESES_LARGO[h.getMonth()].toUpperCase()}`;
+      return `${d.getDate()} - ${h.getDate()} ${nombreMes(h, 'long', 'mayusculas')}`;
     }
 
-    return `${MESES_LARGO[fechaBase.getMonth()].toUpperCase()} DE ${fechaBase.getFullYear()}`;
+    return `${nombreMes(fechaBase, 'long', 'mayusculas')} DE ${fechaBase.getFullYear()}`;
   }, [fechaBase, modo]);
 
   // Título del canvas — StoryCanvas lo uppercasea igual, así que acá no hace falta.
@@ -313,10 +309,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
       const { desde, hasta } = getRango(fechaBase, 'semana');
       const d = new Date(desde + 'T00:00:00');
       const h = new Date(hasta + 'T00:00:00');
-      return `Semana ${d.getDate()} al ${h.getDate()} de ${MESES_LARGO[h.getMonth()]}`;
+      return `Semana ${d.getDate()} al ${h.getDate()} de ${nombreMes(h, 'long')}`;
     }
 
-    return `Agenda ${MESES_LARGO[fechaBase.getMonth()]}`;
+    return `Agenda ${nombreMes(fechaBase, 'long')}`;
   }, [fechaBase, modo]);
 
   // ─────────────────────────────────────────────
@@ -590,13 +586,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
       }
 
       if (!profesionalId) {
-        await alertDialog('No se pudo identificar la profesional para guardar el fondo fijo. Se usa solo por esta vez.');
+        await alertDialog(tStatic('historia.HistoriaPage.noProfessionalForFixedBg'));
         return;
       }
 
       const resultado = await guardarFondoHistoria(profesionalId, archivoParaSubir);
       if (!resultado.success) {
-        await alertDialog(resultado.message ?? 'No se pudo guardar el fondo fijo. Se usa solo por esta vez.');
+        await alertDialog(resultado.message ?? tStatic('historia.HistoriaPage.couldNotSaveFixedBackground'));
       }
     })();
   }, [effectiveProfesionalId, selectedProfesionalId, guardarFondoHistoria]);
@@ -607,7 +603,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     if (resultado.success) {
       setFondoUri(null);
     } else {
-      await alertDialog(resultado.message ?? 'No se pudo quitar el fondo fijo.');
+      await alertDialog(resultado.message ?? tStatic('historia.HistoriaPage.couldNotRemoveFixedBackground'));
     }
   }, [effectiveProfesionalId, borrarFondoHistoria]);
 
@@ -705,7 +701,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
   const descargarImagen = useCallback(async () => {
     if (!hayContenido) {
-      await alertDialog('Sin contenido: No hay slots libres para mostrar en la imagen.');
+      await alertDialog(tStatic('historia.HistoriaPage.noContentToShow'));
       return;
     }
     let blob: Blob | null;
@@ -713,7 +709,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       blob = await capturar();
     } catch (err) {
       console.error('descargarImagen: fallo al generar la imagen', err);
-      await alertDialog('No se pudo generar la imagen. Intentá de nuevo.');
+      await alertDialog(tStatic('historia.HistoriaPage.couldNotGenerateImage'));
       return;
     }
     if (!blob) return;
@@ -732,7 +728,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       blob = await capturar();
     } catch (err) {
       console.error('compartirImagen: fallo al generar la imagen', err);
-      await alertDialog('No se pudo generar la imagen. Intentá de nuevo.');
+      await alertDialog(tStatic('historia.HistoriaPage.couldNotGenerateImage'));
       return;
     }
     if (!blob) return;
@@ -742,7 +738,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       const file = new File([blob], 'mi-agenda.png', { type: 'image/png' });
       if (nav.canShare({ files: [file] })) {
         try {
-          await nav.share({ files: [file], title: 'Mi agenda' });
+          await nav.share({ files: [file], title: tStatic('historia.HistoriaPage.shareTitle') });
         } catch (err) {
           if (err instanceof Error && err.name !== 'AbortError') {
             console.error('compartirImagen: share falló', err);

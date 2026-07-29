@@ -3,6 +3,13 @@ import Providers from "./providers";
 import { primaryRaw } from "@/theme/colors";
 import "./globals.css";
 
+// Metadata queda en español fijo a propósito: es un export estático de un
+// Server Component fuera de NextIntlClientProvider, así que traducirlo de
+// verdad requeriría generateMetadata() leyendo el locale desde la cookie vía
+// next/headers — infraestructura server-side que hoy no existe en el resto
+// del proyecto (todo el i18n es client-side, ver store/useLocaleStore.ts).
+// Como SUPPORTED solo tiene 'es' hasta la Fase 11, ese trabajo no cambiaría
+// nada observable todavía — se hace cuando pt-BR/en se habiliten de verdad.
 export const metadata: Metadata = {
   title: "Nailsmanagerpro",
   description: "Gestión de turnos para profesionales de uñas",
@@ -63,13 +70,17 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Corre antes de la hidratación de React para fijar data-theme sin
-            el flash blanco que se vería si esperáramos a que useThemeStore
-            monte (localStorage/matchMedia pueden fallar en algunos
-            contextos — ej. modo privado — de ahí el try/catch). */}
+        {/* Corre antes de la hidratación de React para fijar data-theme y
+            lang sin el flash que se vería si esperáramos a que
+            useThemeStore/useLocaleStore monten (localStorage/matchMedia
+            pueden fallar en algunos contextos — ej. modo privado — de ahí
+            el try/catch). El bloque de locale mantiene la misma lista de
+            SUPPORTED que lib/locale.ts — si se agrega un locale ahí,
+            actualizar también acá (no se puede importar el módulo TS
+            dentro de un string inline). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var dark=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var dark=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';}catch(e){}try{var SUPPORTED=['es'];var loc=localStorage.getItem('locale');if(!loc||SUPPORTED.indexOf(loc)===-1){try{var au=localStorage.getItem('auth_user');if(au){var u=JSON.parse(au);if(u&&u.locale&&SUPPORTED.indexOf(u.locale)!==-1)loc=u.locale;}}catch(e){}}if(!loc||SUPPORTED.indexOf(loc)===-1)loc='es';document.documentElement.lang=loc;document.cookie='locale='+loc+';path=/;max-age=31536000';}catch(e){}})();`,
           }}
         />
         <link rel="apple-touch-icon" href="/icon-192.png" />

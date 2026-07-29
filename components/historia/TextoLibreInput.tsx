@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
 import { ALL_EMOJIS } from '@/constants/editor';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
@@ -23,6 +24,7 @@ export function TextoLibreInput({
   textoInput, setTextoInput, textosCanvas, mostrarEmojis, setMostrarEmojis, editandoId,
   onAgregarTexto, onIniciarEdicion, onCancelarEdicion, onEliminarTexto, onCambiarFontSize,
 }: Props) {
+  const t = useTranslations('historia.TextoLibreInput');
   return (
     <div style={{ width: '100%', marginTop: 16 }}>
 
@@ -32,7 +34,7 @@ export function TextoLibreInput({
           <input
             value={textoInput}
             onChange={e => setTextoInput(e.target.value)}
-            placeholder="Agregá un texto a tu historia..."
+            placeholder={t('placeholder')}
             maxLength={60}
             style={{
               width: '100%', boxSizing: 'border-box',

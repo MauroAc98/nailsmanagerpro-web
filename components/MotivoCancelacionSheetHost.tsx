@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import {
   useMotivoCancelacionStore,
@@ -15,7 +16,20 @@ const Z_INDEX = 100; // mismo nivel que ConfirmSheetHost — nunca están abiert
 // campo libre cuando se elige "Otro". El motivo es obligatorio: no hay forma
 // de cancelar un turno sin dejarlo asentado para el historial.
 export function MotivoCancelacionSheetHost() {
+  const t = useTranslations('common.MotivoCancelacionSheetHost');
   const visible = useMotivoCancelacionStore(state => state.visible);
+  // MOTIVOS_CANCELACION son los valores canónicos que viajan tal cual al
+  // backend (motivo_cancelacion es texto libre, sin enum — ver
+  // HistorialClienteSheetHost, que interpola el valor crudo guardado). Este
+  // mapeo es solo para el label del botón; la selección/comparación/envío
+  // siguen usando el valor canónico en español, nunca el traducido.
+  const REASON_LABELS: Record<string, string> = {
+    'Cliente canceló con aviso': t('reasonAvisoPrevio'),
+    'Cliente no se presentó': t('reasonNoShow'),
+    'Cliente pidió reprogramar': t('reasonReprogramar'),
+    'Imprevisto de la profesional': t('reasonImprevisto'),
+    Otro: t('reasonOtro'),
+  };
   const [seleccion, setSeleccion] = useState<string>(MOTIVOS_CANCELACION[0]);
   const [otroTexto, setOtroTexto] = useState('');
 
@@ -64,7 +78,7 @@ export function MotivoCancelacionSheetHost() {
         }}
       >
         <p style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: '0 0 16px' }}>
-          ¿Por qué se cancela el turno?
+          {t('title')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: esOtro ? 12 : 20 }}>
@@ -84,7 +98,7 @@ export function MotivoCancelacionSheetHost() {
                 cursor: 'pointer',
               }}
             >
-              {motivo}
+              {REASON_LABELS[motivo] ?? motivo}
             </button>
           ))}
         </div>
@@ -92,7 +106,7 @@ export function MotivoCancelacionSheetHost() {
         {esOtro && (
           <textarea
             autoFocus
-            placeholder="Contanos qué pasó..."
+            placeholder={t('otherPlaceholder')}
             value={otroTexto}
             onChange={e => setOtroTexto(e.target.value)}
             style={{
@@ -128,7 +142,7 @@ export function MotivoCancelacionSheetHost() {
               cursor: 'pointer',
             }}
           >
-            Volver
+            {t('back')}
           </button>
           <button
             onClick={() => puedeConfirmar && cerrar(motivoFinal)}
@@ -145,7 +159,7 @@ export function MotivoCancelacionSheetHost() {
               cursor: puedeConfirmar ? 'pointer' : 'not-allowed',
             }}
           >
-            Cancelar turno
+            {t('confirm')}
           </button>
         </div>
       </div>

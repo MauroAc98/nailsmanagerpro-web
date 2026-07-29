@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -39,6 +40,7 @@ function Checkbox({ checked }: { checked: boolean }) {
 }
 
 export default function NuevoProfesionalPage() {
+  const t = useTranslations('configuracion.NuevoProfesionalPage');
   const router = useRouter();
   const { profesionales, agregarProfesional } = useProfesionalStore();
   const { servicios, fetchServicios } = useServiciosStore();
@@ -59,7 +61,7 @@ export default function NuevoProfesionalPage() {
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
-      setErrorNombre('El nombre es obligatorio');
+      setErrorNombre(t('nameRequired'));
       return;
     }
 
@@ -67,8 +69,8 @@ export default function NuevoProfesionalPage() {
     const existente = profesionales.find(p => p.nombre.toLowerCase() === nombreNormalizado);
     if (existente) {
       const msg = existente.activo
-        ? 'Ya existe una profesional con ese nombre.'
-        : 'Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.';
+        ? t('duplicateActive')
+        : t('duplicateInactive');
       await alertDialog(msg);
       return;
     }
@@ -84,7 +86,7 @@ export default function NuevoProfesionalPage() {
     if (result.success) {
       router.push('/configuracion/profesionales');
     } else {
-      await alertDialog(result.message ?? 'No se pudo guardar la profesional.');
+      await alertDialog(result.message ?? t('saveError'));
     }
   };
 
@@ -105,17 +107,17 @@ export default function NuevoProfesionalPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Nueva profesional</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* Form */}
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Nombre */}
         <div>
-          <label style={labelStyle}>Nombre *</label>
+          <label style={labelStyle}>{t('nameLabel')}</label>
           <input
             type="text"
-            placeholder="Ej: Sofía"
+            placeholder={t('namePlaceholder')}
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
             style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
@@ -125,16 +127,16 @@ export default function NuevoProfesionalPage() {
 
         {/* Color */}
         <div>
-          <label style={labelStyle}>Color</label>
+          <label style={labelStyle}>{t('colorLabel')}</label>
           <ColorSwatchPicker value={color} onChange={setColor} />
         </div>
 
         {/* Servicios */}
         <div>
-          <label style={labelStyle}>Servicios que puede realizar</label>
+          <label style={labelStyle}>{t('servicesLabel')}</label>
           {serviciosActivos.length === 0 ? (
             <p style={{ fontSize: 13, color: colors.subtext, margin: '4px 0 0 2px' }}>
-              No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.
+              {t('noActiveServices')}
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -168,7 +170,7 @@ export default function NuevoProfesionalPage() {
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}
         >
-          {saving ? 'Guardando...' : 'Agregar profesional'}
+          {saving ? t('saving') : t('submit')}
         </button>
       </div>
     </div>

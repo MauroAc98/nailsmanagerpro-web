@@ -1,0 +1,27 @@
+{
+  "WhatsappPage": {
+    "title": "Vincular WhatsApp",
+    "autoMessageNotice": "Los mensajes de confirmación se enviarán automáticamente desde tu propio WhatsApp.",
+    "verifyingStatus": "Verificando estado...",
+    "generatingQr": "Generando código QR...",
+    "connectedTitle": "Tu WhatsApp ya está vinculado",
+    "connectedSubtitle": "Los turnos nuevos van a enviar el mensaje de confirmación automáticamente.",
+    "disconnect": "Desvincular",
+    "disconnectConfirm": "¿Desvincular WhatsApp? Vas a dejar de recibir mensajes automáticos de confirmación hasta que vuelvas a conectar.",
+    "disconnectConfirmButton": "Desvincular",
+    "disconnected": "WhatsApp desvinculado",
+    "expiredNotice": "El código expiró sin confirmarse. Generá uno nuevo cuando estés listo para escanearlo.",
+    "generateQr": "Generar código QR",
+    "qrAlt": "QR WhatsApp",
+    "step1": "1. Abrí WhatsApp en el teléfono donde querés usarlo",
+    "step2": "2. Configuración → Dispositivos vinculados",
+    "step3": "3. Vincular un dispositivo",
+    "step4": "4. Escaneá este código con la cámara",
+    "sameDeviceHint": "¿Usás el mismo teléfono para esta app? Descargá el QR y abrilo desde otro dispositivo para escanearlo.",
+    "download": "Descargar",
+    "share": "Compartir",
+    "shareTitle": "Código QR de WhatsApp",
+    "generateAnother": "Generar otro",
+    "waitingConfirmation": "Esperando confirmación..."
+  }
+}

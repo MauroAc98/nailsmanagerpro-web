@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { colors } from '@/theme/colors';
 
 export default function SubscriptionExpiredPage() {
   const router = useRouter();
+  const t = useTranslations('common.SubscriptionExpiredPage');
   const { supportInfo, logout, checkSubscription } = useAuth();
   const [checking, setChecking] = useState(false);
   const [stillExpired, setStillExpired] = useState(false);
@@ -28,13 +30,13 @@ export default function SubscriptionExpiredPage() {
   const handleWhatsApp = () => {
     if (!supportInfo?.whatsapp) return;
     const number = supportInfo.whatsapp.replace(/\D/g, '');
-    const message = encodeURIComponent('Hola! Quiero renovar mi suscripción de Nailsmanagerpro.');
+    const message = encodeURIComponent(t('renewWhatsappMessage'));
     window.open(`https://wa.me/${number}?text=${message}`, '_blank');
   };
 
   const handleEmail = () => {
     if (!supportInfo?.email) return;
-    window.location.href = `mailto:${supportInfo.email}?subject=Renovar suscripción Nailsmanagerpro`;
+    window.location.href = `mailto:${supportInfo.email}?subject=${encodeURIComponent(t('emailSubject'))}`;
   };
 
   const handleLogout = async () => {
@@ -56,12 +58,12 @@ export default function SubscriptionExpiredPage() {
 
         {/* Título */}
         <h1 style={{ fontSize: 24, fontWeight: 'bold', color: colors.text, marginTop: 20, marginBottom: 12, textAlign: 'center', margin: 0 }}>
-          Tu suscripción venció
+          {t('title')}
         </h1>
 
         {/* Subtítulo */}
         <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', lineHeight: 1.6, marginBottom: 8, margin: 0, marginTop: 12, maxWidth: 320 }}>
-          Para continuar usando Nailsmanagerpro necesitás renovar tu suscripción. Contactanos y te ayudamos.
+          {t('subtitle')}
         </p>
 
         {/* Volver a verificar */}
@@ -80,12 +82,12 @@ export default function SubscriptionExpiredPage() {
             opacity: checking ? 0.6 : 1,
           }}
         >
-          {checking ? 'Verificando…' : 'Volver a verificar'}
+          {checking ? t('checking') : t('recheck')}
         </button>
 
         {stillExpired && (
           <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', lineHeight: 1.5, margin: 0, marginTop: 8, maxWidth: 320 }}>
-            Tu suscripción sigue inactiva. Si ya la renovaste, escribinos y lo resolvemos.
+            {t('stillExpired')}
           </p>
         )}
 
@@ -113,7 +115,7 @@ export default function SubscriptionExpiredPage() {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#fff' }}>
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-4.783 1.14L4.08 3.86 5.239 8.35c-.788 1.356-1.24 2.923-1.24 4.581 0 4.444 3.645 8.426 8.127 8.426 2.205 0 4.281-.824 5.83-2.304 1.547-1.48 2.399-3.519 2.399-5.631 0-4.445-3.646-8.426-8.127-8.426"/>
             </svg>
-            <span style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Renovar por WhatsApp</span>
+            <span style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>{t('renewWhatsapp')}</span>
           </button>
 
           {/* Email Button */}
@@ -141,7 +143,7 @@ export default function SubscriptionExpiredPage() {
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
               <polyline points="22,6 12,13 2,6"/>
             </svg>
-            <span style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>Enviar un email</span>
+            <span style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>{t('sendEmail')}</span>
           </button>
         </div>
       </div>
@@ -160,7 +162,7 @@ export default function SubscriptionExpiredPage() {
           alignSelf: 'center',
         }}
       >
-        Cerrar sesión
+        {t('logout')}
       </button>
     </div>
   );

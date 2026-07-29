@@ -2,10 +2,12 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
 
 function ResetPasswordForm() {
+  const t = useTranslations('auth.ResetPasswordPage');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resetPassword, forgotPassword, loading, error, clearError } = useAuth();
@@ -73,7 +75,7 @@ function ResetPasswordForm() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Volver
+          {t('back')}
         </button>
       </div>
 
@@ -97,11 +99,11 @@ function ResetPasswordForm() {
         </div>
 
         <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, marginBottom: 8 }}>
-          Revisá tu email
+          {t('title')}
         </h2>
 
         <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.6, margin: 0 }}>
-          Te enviamos un código de 6 dígitos a <br />
+          {t('subtitle')} <br />
           <span style={{ fontWeight: 700, color: colors.text }}>{email}</span>
         </p>
       </div>
@@ -119,11 +121,11 @@ function ResetPasswordForm() {
         {/* Código */}
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
-            Código de verificación
+            {t('codeLabel')}
           </label>
           <input
             type="text"
-            placeholder="------"
+            placeholder={t('codePlaceholder')}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             maxLength={6}
@@ -148,7 +150,7 @@ function ResetPasswordForm() {
         {/* Nueva contraseña */}
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
-            Nueva contraseña
+            {t('newPasswordLabel')}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
@@ -157,7 +159,7 @@ function ResetPasswordForm() {
             </svg>
             <input
               type={showPassword ? 'text' : 'password'}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{
@@ -194,11 +196,11 @@ function ResetPasswordForm() {
         {/* Confirmar contraseña */}
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
-            Confirmar contraseña
+            {t('confirmPasswordLabel')}
           </label>
           <input
             type={showPassword ? 'text' : 'password'}
-            placeholder="Repetí la contraseña"
+            placeholder={t('confirmPasswordPlaceholder')}
             value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)}
             style={{
@@ -219,13 +221,13 @@ function ResetPasswordForm() {
         {/* Validaciones */}
         {password && passwordConfirmation && password !== passwordConfirmation && (
           <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
-            Las contraseñas no coinciden
+            {t('passwordsDontMatch')}
           </p>
         )}
 
         {password && password.length < 8 && (
           <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
-            La contraseña debe tener al menos 8 caracteres
+            {t('passwordTooShort')}
           </p>
         )}
 
@@ -246,7 +248,7 @@ function ResetPasswordForm() {
             marginTop: 8,
           }}
         >
-          {loading ? 'Guardando...' : 'Restablecer contraseña'}
+          {loading ? t('saving') : t('submit')}
         </button>
 
         {/* Reenviar código */}
@@ -261,8 +263,8 @@ function ResetPasswordForm() {
           }}
         >
           <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-            ¿No recibiste el código?{' '}
-            <span style={{ color: colors.primary, fontWeight: 700 }}>Reenviar</span>
+            {t('didntReceiveCode')}{' '}
+            <span style={{ color: colors.primary, fontWeight: 700 }}>{t('resend')}</span>
           </p>
         </button>
       </div>
@@ -270,9 +272,18 @@ function ResetPasswordForm() {
   );
 }
 
+function ResetPasswordFallback() {
+  const t = useTranslations('auth.ResetPasswordPage');
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {t('loading')}
+    </div>
+  );
+}
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando...</div>}>
+    <Suspense fallback={<ResetPasswordFallback />}>
       <ResetPasswordForm />
     </Suspense>
   );

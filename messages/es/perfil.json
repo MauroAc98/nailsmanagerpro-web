@@ -1,0 +1,73 @@
+{
+  "SheetNegocio": {
+    "title": "Mi negocio",
+    "depositAmount": "Monto de seña ($)",
+    "autoReminder": "Recordatorio automático",
+    "autoReminderSubtitle": "Enviá un WhatsApp la noche anterior a tus clientes",
+    "saving": "Guardando...",
+    "save": "Guardar cambios"
+  },
+  "SheetPassword": {
+    "title": "Cambiar contraseña",
+    "newPassword": "Nueva contraseña",
+    "minChars": "Mínimo 8 caracteres",
+    "confirmPassword": "Confirmar contraseña",
+    "repeatPassword": "Repetí la contraseña",
+    "saving": "Guardando...",
+    "changePassword": "Cambiar contraseña"
+  },
+  "SheetDatosPersonales": {
+    "title": "Datos personales",
+    "studioName": "Nombre del estudio",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "saving": "Guardando...",
+    "save": "Guardar cambios"
+  },
+  "SheetMensajeWhatsapp": {
+    "title": "Mensajes de WhatsApp",
+    "reminder": "Recordatorio",
+    "confirmation": "Confirmación",
+    "reminderLower": "recordatorio",
+    "confirmationLower": "confirmación",
+    "availableVariables": "Variables disponibles",
+    "preview": "Vista previa",
+    "reset": "Resetear",
+    "saving": "Guardando...",
+    "save": "Guardar",
+    "resetConfirm": "¿Restablecer el mensaje de {label} al predeterminado?",
+    "resetConfirmButton": "Restablecer",
+    "emptyMessage": "El mensaje no puede estar vacío.",
+    "saved": "Mensaje guardado",
+    "saveError": "No se pudo guardar el mensaje."
+  },
+  "PerfilPage": {
+    "title": "Perfil",
+    "sectionPersonalData": "Datos personales",
+    "studioName": "Nombre del estudio",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "sectionBusiness": "Mi negocio",
+    "depositAmount": "Monto de seña",
+    "autoReminder": "Recordatorio automático",
+    "yes": "Sí",
+    "no": "No",
+    "reminderTime": "Hora de recordatorio",
+    "sectionSubscription": "Suscripción",
+    "exemptAccount": "Cuenta exenta",
+    "status": "Estado",
+    "expired": "Vencida",
+    "active": "Activa",
+    "expiresOn": "Vence el",
+    "daysLeft": "Días restantes",
+    "whatsappMessages": "Mensajes de WhatsApp",
+    "changePassword": "Cambiar contraseña",
+    "logout": "Cerrar sesión",
+    "logoutConfirm": "¿Seguro que querés salir?",
+    "logoutConfirmButton": "Salir",
+    "passwordUpdated": "Contraseña actualizada",
+    "changesSaved": "Cambios guardados",
+    "dataSaved": "Datos guardados",
+    "passwordsDontMatch": "Las contraseñas no coinciden."
+  }
+}

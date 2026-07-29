@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { authService, SupportInfo, User } from '@/services/authService';
 import api from '@/lib/api';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
+import { resolveLocale } from '@/lib/locale';
+import { useLocaleStore, setLocale, tStatic } from '@/store/useLocaleStore';
 
 // sessionStorage (no localStorage): sobrevive a un refresh accidental dentro
 // de la misma pestaña, pero se limpia al cerrarla — evita repetir la
@@ -78,9 +80,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   checkSubscription: async () => {
     try {
-      const [statusResponse, supportResponse] = await Promise.all([
+      const [statusResponse, supportResponse, meResponse] = await Promise.all([
         api.get('/auth/subscription-status'),
         authService.getSupportInfo(),
+        authService.me(),
       ]);
       set({
         subscriptionExpired: statusResponse.data.status === 'VENCIDO',
@@ -89,6 +92,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isExempt: statusResponse.data.is_exempt,
         supportInfo: supportResponse,
       });
+
+      // Reconcile de idioma cross-device (ver spec "Cross-device
+      // persistence" y design.md "Cross-device reconcile via existing
+      // bootstrap call"): si el idioma cambió en otro dispositivo, lo
+      // aplicamos acá sin round-trip extra. No pisamos `user` completo
+      // con meResponse — solo el idioma, para no introducir cambios de
+      // comportamiento fuera del alcance de esta fase.
+      const localeRemoto = resolveLocale(meResponse.locale);
+      if (localeRemoto !== useLocaleStore.getState().locale) {
+        await setLocale(localeRemoto);
+      }
     } catch {
       // Si falla no bloqueamos
     }
@@ -142,7 +156,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const message =
           e.response?.data?.message ??
           e.response?.data?.errors?.email?.[0] ??
-          'Error al iniciar sesión. Intentá de nuevo.';
+          tStatic('auth.Errors.loginFailed');
         set({ loading: false, error: message });
         return false;
       }
@@ -155,7 +169,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   cambiarPasswordObligatorio: async (data) => {
     const email = get().emailPendiente;
     if (!email) {
-      set({ error: 'No se encontró el email. Volvé a iniciar sesión.' });
+      set({ error: tStatic('auth.Errors.emailNotFound') });
       return false;
     }
 
@@ -179,7 +193,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const message =
           e.response?.data?.message ??
           e.response?.data?.errors?.password_actual?.[0] ??
-          'No pudimos actualizar la contraseña.';
+          tStatic('auth.Errors.passwordUpdateFailed');
         set({ loading: false, error: message });
         return false;
       }
@@ -224,7 +238,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const user = await authService.updatePerfil(data);
         set({ user, loading: false });
       } catch (e: any) {
-        const message = e.response?.data?.message ?? 'Error al actualizar el perfil.';
+        const message = e.response?.data?.message ?? tStatic('auth.Errors.profileUpdateFailed');
         set({ loading: false, error: message });
         throw e;
       }
@@ -245,7 +259,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const message =
           e.response?.data?.message ??
           e.response?.data?.errors?.email?.[0] ??
-          'No pudimos enviar el código. Verificá el email.';
+          tStatic('auth.Errors.codeSendFailed');
         set({ loading: false, error: message });
         return false;
       }
@@ -266,7 +280,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const message =
           e.response?.data?.message ??
           e.response?.data?.errors?.code?.[0] ??
-          'No pudimos actualizar la contraseña.';
+          tStatic('auth.Errors.passwordUpdateFailed');
         set({ loading: false, error: message });
         return false;
       }

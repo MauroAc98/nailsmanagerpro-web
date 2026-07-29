@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { colors, profesionalPalette } from '@/theme/colors';
 
 interface Props {
@@ -14,6 +15,8 @@ interface Props {
 // small sizes used in the agenda (chips, 9px name label on the turno card).
 // ─────────────────────────────────────────────
 export default function ColorSwatchPicker({ value, onChange }: Props) {
+  const t = useTranslations('common.ColorSwatchPicker');
+
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
       {profesionalPalette.map(color => {
@@ -23,7 +26,7 @@ export default function ColorSwatchPicker({ value, onChange }: Props) {
             key={color}
             type="button"
             onClick={() => onChange(color)}
-            aria-label={`Color ${color}`}
+            aria-label={t('ariaLabel', { color })}
             style={{
               width: 36, height: 36, borderRadius: 18,
               backgroundColor: color, cursor: 'pointer',

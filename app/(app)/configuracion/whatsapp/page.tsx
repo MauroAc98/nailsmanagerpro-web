@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { useWhatsappStore } from '@/store/useWhatsappStore';
 import { confirmDialog } from '@/store/useConfirmStore';
@@ -18,7 +19,7 @@ function downloadQR(qrBase64: string) {
 // Mismo patrón que compartirImagen en agenda/historia: intenta el share
 // nativo con el archivo adjunto, y si no está disponible cae al mismo
 // comportamiento que "Descargar".
-async function shareQR(qrBase64: string) {
+async function shareQR(qrBase64: string, shareTitle: string) {
   const base64 = qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`;
 
   const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
@@ -29,7 +30,7 @@ async function shareQR(qrBase64: string) {
       const file = new File([blob], `whatsapp_qr_${Date.now()}.png`, { type: 'image/png' });
       if (nav.canShare({ files: [file] })) {
         try {
-          await nav.share({ files: [file], title: 'Código QR de WhatsApp' });
+          await nav.share({ files: [file], title: shareTitle });
         } catch {
           // usuario canceló o compartir falló — no-op silencioso
         }
@@ -44,6 +45,7 @@ async function shareQR(qrBase64: string) {
 }
 
 export default function WhatsappPage() {
+  const t = useTranslations('whatsapp.WhatsappPage');
   const router = useRouter();
   const {
     estado, qrBase64, loading, polling, error, expirado,
@@ -74,13 +76,13 @@ export default function WhatsappPage() {
 
   const handleDesconectar = async () => {
     const ok = await confirmDialog(
-      '¿Desvincular WhatsApp? Vas a dejar de recibir mensajes automáticos de confirmación hasta que vuelvas a conectar.',
-      { confirmText: 'Desvincular', danger: true },
+      t('disconnectConfirm'),
+      { confirmText: t('disconnectConfirmButton'), danger: true },
     );
     if (!ok) return;
     desconectar().then(() => {
       reset();
-      showToast('WhatsApp desvinculado');
+      showToast(t('disconnected'));
     });
   };
 
@@ -99,7 +101,7 @@ export default function WhatsappPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Vincular WhatsApp</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
@@ -116,7 +118,7 @@ export default function WhatsappPage() {
             </svg>
           </div>
           <p style={{ flex: 1, fontSize: 13, color: colors.subtext, lineHeight: 1.5, margin: 0 }}>
-            Los mensajes de confirmación se enviarán automáticamente desde tu propio WhatsApp.
+            {t('autoMessageNotice')}
           </p>
         </div>
 
@@ -140,7 +142,7 @@ export default function WhatsappPage() {
               animation: 'spin 0.8s linear infinite',
             }} />
             <p style={{ color: colors.subtext, fontSize: 14 }}>
-              {verificando ? 'Verificando estado...' : 'Generando código QR...'}
+              {verificando ? t('verifyingStatus') : t('generatingQr')}
             </p>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
@@ -158,10 +160,10 @@ export default function WhatsappPage() {
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
             <p style={{ fontSize: 16, fontWeight: 700, color: colors.textStrong, marginTop: 12, marginBottom: 6 }}>
-              Tu WhatsApp ya está vinculado
+              {t('connectedTitle')}
             </p>
             <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', marginBottom: 20 }}>
-              Los turnos nuevos van a enviar el mensaje de confirmación automáticamente.
+              {t('connectedSubtitle')}
             </p>
             <button
               onClick={handleDesconectar}
@@ -176,7 +178,7 @@ export default function WhatsappPage() {
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 <line x1="5" y1="5" x2="19" y2="19"/>
               </svg>
-              <span style={{ fontSize: 14, fontWeight: 600, color: colors.danger }}>Desvincular</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: colors.danger }}>{t('disconnect')}</span>
             </button>
           </div>
         )}
@@ -189,7 +191,7 @@ export default function WhatsappPage() {
             border: `1px solid ${colors.border}`,
           }}>
             <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', marginBottom: 18 }}>
-              El código expiró sin confirmarse. Generá uno nuevo cuando estés listo para escanearlo.
+              {t('expiredNotice')}
             </p>
             <button
               onClick={() => conectar()}
@@ -199,7 +201,7 @@ export default function WhatsappPage() {
                 fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer',
               }}
             >
-              Generar código QR
+              {t('generateQr')}
             </button>
           </div>
         )}
@@ -213,23 +215,18 @@ export default function WhatsappPage() {
           }}>
             <img
               src={qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`}
-              alt="QR WhatsApp"
+              alt={t('qrAlt')}
               style={{ width: 220, height: 220, objectFit: 'contain', marginBottom: 16 }}
             />
 
             <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-              {[
-                '1. Abrí WhatsApp en el teléfono donde querés usarlo',
-                '2. Configuración → Dispositivos vinculados',
-                '3. Vincular un dispositivo',
-                '4. Escaneá este código con la cámara',
-              ].map(paso => (
+              {[t('step1'), t('step2'), t('step3'), t('step4')].map(paso => (
                 <p key={paso} style={{ margin: 0, fontSize: 13, color: colors.textStrong }}>{paso}</p>
               ))}
             </div>
 
             <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', marginBottom: 16, marginTop: 4 }}>
-              ¿Usás el mismo teléfono para esta app? Descargá el QR y abrilo desde otro dispositivo para escanearlo.
+              {t('sameDeviceHint')}
             </p>
 
             <div style={{ width: '100%', display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -244,11 +241,11 @@ export default function WhatsappPage() {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Descargar</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('download')}</span>
               </button>
 
               <button
-                onClick={() => shareQR(qrBase64)}
+                onClick={() => shareQR(qrBase64, t('shareTitle'))}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                   padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
@@ -258,7 +255,7 @@ export default function WhatsappPage() {
                   <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                   <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Compartir</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('share')}</span>
               </button>
 
               <button
@@ -274,7 +271,7 @@ export default function WhatsappPage() {
                   <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
                   <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Generar otro</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('generateAnother')}</span>
               </button>
             </div>
 
@@ -286,7 +283,7 @@ export default function WhatsappPage() {
                   animation: 'spin 0.8s linear infinite',
                 }} />
                 <span style={{ fontSize: 12, color: colors.primary, fontWeight: 600 }}>
-                  Esperando confirmación...
+                  {t('waitingConfirmation')}
                 </span>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
@@ -306,7 +303,7 @@ export default function WhatsappPage() {
               cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.7 : 1,
             }}
           >
-            Generar código QR
+            {t('generateQr')}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { ALL_EMOJIS } from '@/constants/editor';
 import { TipoPlantilla } from '@/services/authService';
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function SheetMensajeWhatsapp({ onClose }: Props) {
+  const t = useTranslations('perfil.SheetMensajeWhatsapp');
   const { cargando, guardando, obtenerContenido, actualizar, resetear } = useWhatsappTemplates();
   const [tipoActual, setTipoActual] = useState<TipoPlantilla>('recordatorio');
   const [mensaje, setMensaje] = useState(() => obtenerContenido('recordatorio'));
@@ -80,26 +82,26 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
   };
 
   const handleResetear = async () => {
-    const label = tipoActual === 'recordatorio' ? 'recordatorio' : 'confirmación';
-    if (!(await confirmDialog(`¿Restablecer el mensaje de ${label} al predeterminado?`, { confirmText: 'Restablecer' }))) return;
+    const label = tipoActual === 'recordatorio' ? t('reminderLower') : t('confirmationLower');
+    if (!(await confirmDialog(t('resetConfirm', { label }), { confirmText: t('resetConfirmButton') }))) return;
     const reseteada = await resetear(tipoActual);
     if (reseteada) setMensaje(reseteada.contenido);
   };
 
   const handleGuardar = async () => {
     if (!mensaje.trim()) {
-      await alertDialog('El mensaje no puede estar vacío.');
+      await alertDialog(t('emptyMessage'));
       return;
     }
     const ok = await actualizar(tipoActual, mensaje);
-    if (ok) showToast('Mensaje guardado');
-    else await alertDialog('No se pudo guardar el mensaje.');
+    if (ok) showToast(t('saved'));
+    else await alertDialog(t('saveError'));
   };
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>Mensajes de WhatsApp</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
           <IconClose />
         </button>
@@ -117,13 +119,13 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
               color: tipoActual === tipo ? '#fff' : colors.subtext,
             }}
           >
-            {tipo === 'recordatorio' ? 'Recordatorio' : 'Confirmación'}
+            {tipo === 'recordatorio' ? t('reminder') : t('confirmation')}
           </button>
         ))}
       </div>
 
       <p style={{ fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
-        Variables disponibles
+        {t('availableVariables')}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {VARIABLES.map(v => (
@@ -187,7 +189,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
       )}
 
       <p style={{ fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
-        Vista previa
+        {t('preview')}
       </p>
       {/* Burbuja de chat de WhatsApp — imita el fondo doodle + el bubble
           verde claro reales de WhatsApp a propósito, así que quedan fijos
@@ -222,7 +224,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
             cursor: 'pointer', opacity: guardando ? 0.6 : 1,
           }}
         >
-          Resetear
+          {t('reset')}
         </button>
         <button
           onClick={handleGuardar}
@@ -233,7 +235,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
             cursor: 'pointer', opacity: guardando ? 0.6 : 1,
           }}
         >
-          {guardando ? 'Guardando...' : 'Guardar'}
+          {guardando ? t('saving') : t('save')}
         </button>
       </div>
     </div>

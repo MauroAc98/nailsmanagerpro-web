@@ -1,18 +1,20 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useThemeStore, setTheme, ThemePreference } from '@/store/useThemeStore';
 
-const OPCIONES: { value: ThemePreference; title: string; subtitle: string }[] = [
-  { value: 'light',  title: 'Claro',   subtitle: 'Fondo blanco, siempre' },
-  { value: 'dark',   title: 'Oscuro',  subtitle: 'Fondo oscuro, siempre' },
-  { value: 'system', title: 'Sistema', subtitle: 'Sigue la configuración del dispositivo' },
-];
-
 export default function AparienciaPage() {
+  const t = useTranslations('configuracion.AparienciaPage');
   const router = useRouter();
   const theme  = useThemeStore(state => state.theme);
+
+  const OPCIONES: { value: ThemePreference; title: string; subtitle: string }[] = [
+    { value: 'light',  title: t('light'),  subtitle: t('lightSubtitle') },
+    { value: 'dark',   title: t('dark'),   subtitle: t('darkSubtitle') },
+    { value: 'system', title: t('system'), subtitle: t('systemSubtitle') },
+  ];
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 100 }}>
@@ -29,11 +31,11 @@ export default function AparienciaPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Apariencia</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       <p style={{ margin: '0 20px 16px', fontSize: 14, color: colors.subtext, lineHeight: 1.5 }}>
-        Elegí cómo se ve la app. "Sistema" sigue el modo claro u oscuro configurado en tu dispositivo.
+        {t('subtitle')}
       </p>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>

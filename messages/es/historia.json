@@ -1,0 +1,38 @@
+{
+  "TextoLibreInput": {
+    "placeholder": "Agregá un texto a tu historia..."
+  },
+  "StoryCanvas": {
+    "complete": "COMPLETO 🤍",
+    "bookYourSpot": "RESERVÁ TU LUGAR"
+  },
+  "HistoriaPage": {
+    "title": "Generar historia",
+    "loading": "Cargando...",
+    "tabDay": "DÍA",
+    "tabWeek": "SEMANA",
+    "tabMonth": "MES",
+    "firstHalf": "1 — 15",
+    "secondHalf": "16 — Fin",
+    "showScheduleOf": "Mostrar agenda de:",
+    "editAvailability": "Editar disponibilidad",
+    "editAvailabilityHint": "Ya se muestra tu disponibilidad real. Usá esto solo si querés ocultar algo puntual antes de compartir.",
+    "background": "Fondo",
+    "save": "Guardar",
+    "share": "Compartir",
+    "removeFixedBackground": "Quitar fondo fijo guardado",
+    "removeFixedBackgroundConfirm": "Se va a quitar el fondo fijo guardado. La próxima vez que generes una historia no va a tener fondo por default.",
+    "removeFixedBackgroundConfirmButton": "Quitar fondo fijo",
+    "cancel": "Cancelar",
+    "saveBackgroundPrompt": "¿Guardás esta imagen como fondo fijo para la próxima vez, o la usás solo por esta historia?",
+    "saveFixed": "Guardar como fijo",
+    "useOnce": "Usar solo esta vez",
+    "emptyState": "No hay disponibilidad para mostrar en este período",
+    "noProfessionalForFixedBg": "No se pudo identificar la profesional para guardar el fondo fijo. Se usa solo por esta vez.",
+    "couldNotSaveFixedBackground": "No se pudo guardar el fondo fijo. Se usa solo por esta vez.",
+    "couldNotRemoveFixedBackground": "No se pudo quitar el fondo fijo.",
+    "noContentToShow": "Sin contenido: No hay slots libres para mostrar en la imagen.",
+    "couldNotGenerateImage": "No se pudo generar la imagen. Intentá de nuevo.",
+    "shareTitle": "Mi agenda"
+  }
+}

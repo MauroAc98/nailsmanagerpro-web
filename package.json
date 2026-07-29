@@ -7,13 +7,14 @@
     "build": "next build",
     "postbuild": "node scripts/copy-standalone.js",
     "start": "node .next/standalone/server.js",
-    "lint": "eslint",
+    "lint": "node scripts/check-messages.js && eslint",
     "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "axios": "^1.18.1",
     "html-to-image": "^1.11.13",
     "next": "16.2.9",
+    "next-intl": "^4.13.4",
     "next-pwa": "^5.6.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",

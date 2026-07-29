@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { Locale } from '@/lib/locale';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -17,6 +18,10 @@ export interface User {
   debe_cambiar_password?: boolean;
   evolution_instance_name: string | null;
   whatsapp_estado: 'conectado' | 'desconectado';
+  // null = sin preferencia guardada en el backend (usuarios creados antes
+  // de la Fase 0, o campo todavía no desplegado) → resolveLocale() cae a
+  // 'es'. Ver spec "Unset resolves to es".
+  locale: Locale | null;
 }
 
 export interface LoginResponse {

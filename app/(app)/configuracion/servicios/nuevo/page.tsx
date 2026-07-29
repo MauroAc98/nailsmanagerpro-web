@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useServiciosStore } from '@/store/useServicioStore';
 import DuracionPicker from '@/components/DuracionPicker';
@@ -20,6 +21,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function NuevoServicioPage() {
+  const t = useTranslations('configuracion.NuevoServicioPage');
   const router = useRouter();
   const { servicios, agregarServicio } = useServiciosStore();
 
@@ -31,11 +33,11 @@ export default function NuevoServicioPage() {
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
-      setErrorNombre('El nombre es obligatorio');
+      setErrorNombre(t('nameRequired'));
       return;
     }
     if (duracion <= 0) {
-      await alertDialog('Ingresá una duración válida.');
+      await alertDialog(t('invalidDuration'));
       return;
     }
 
@@ -43,8 +45,8 @@ export default function NuevoServicioPage() {
     const existente = servicios.find(s => s.nombre.toLowerCase() === nombreNormalizado);
     if (existente) {
       const msg = existente.activo
-        ? 'Ya existe un servicio con ese nombre.'
-        : 'Ya tenés un servicio con ese nombre (inactivo). Reactivalo desde el listado en vez de crear uno nuevo.';
+        ? t('duplicateActive')
+        : t('duplicateInactive');
       await alertDialog(msg);
       return;
     }
@@ -60,7 +62,7 @@ export default function NuevoServicioPage() {
     if (result.success) {
       router.push('/configuracion/servicios');
     } else {
-      await alertDialog(result.message ?? 'No se pudo guardar el servicio.');
+      await alertDialog(result.message ?? t('saveError'));
     }
   };
 
@@ -79,17 +81,17 @@ export default function NuevoServicioPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Nuevo servicio</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* Form */}
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Nombre */}
         <div>
-          <label style={labelStyle}>Nombre *</label>
+          <label style={labelStyle}>{t('nameLabel')}</label>
           <input
             type="text"
-            placeholder="Ej: Kapping"
+            placeholder={t('namePlaceholder')}
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
             style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
@@ -99,16 +101,16 @@ export default function NuevoServicioPage() {
 
         {/* Duración */}
         <div>
-          <label style={labelStyle}>Duración *</label>
+          <label style={labelStyle}>{t('durationLabel')}</label>
           <DuracionPicker value={duracion} onChange={setDuracion} />
         </div>
 
         {/* Precio */}
         <div>
-          <label style={labelStyle}>Precio (opcional)</label>
+          <label style={labelStyle}>{t('priceLabel')}</label>
           <input
             type="number"
-            placeholder="Ej: 5000"
+            placeholder={t('pricePlaceholder')}
             value={precio}
             onChange={e => setPrecio(e.target.value)}
             style={inputStyle}
@@ -127,7 +129,7 @@ export default function NuevoServicioPage() {
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}
         >
-          {saving ? 'Guardando...' : 'Agregar servicio'}
+          {saving ? t('saving') : t('submit')}
         </button>
       </div>
     </div>

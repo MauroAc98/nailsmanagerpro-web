@@ -1,0 +1,11 @@
+{
+  "TurnoValidaciones": {
+    "pastDateTime": "No se pueden agendar turnos en una fecha u hora que ya pasó.",
+    "noSlotsConfigured": "No tenés horarios de atención configurados. Configurálos en Ajustes.",
+    "outsideBusinessHours": "El horario de atención es de {horaMin} a {horaMax}hs.",
+    "maxTurnosPerClient": "El cliente ya tiene el máximo de {max} turnos para este día.",
+    "serviceAlreadyBooked": "El cliente ya tiene agendado: {nombres} para este día.",
+    "unknownClientFallback": "otro cliente",
+    "scheduleConflict": "Las {hora} cae dentro del turno de {cliente} ({servicios}, {desde} - {hasta}). Elegí otro horario."
+  }
+}

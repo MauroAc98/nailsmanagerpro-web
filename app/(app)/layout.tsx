@@ -1,13 +1,14 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { NAV_HEIGHT } from '@/constants/layout';
 
-const TABS = [
+const TAB_DEFS = [
   {
     path: '/agenda',
-    label: 'Agenda',
+    labelKey: 'agenda',
     icon: (active: boolean) => (
       <svg width="26" height="26" viewBox="0 0 24 24" fill={active ? colors.primary : 'none'} stroke={active ? colors.primary : colors.muted} strokeWidth="2">
         <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -17,7 +18,7 @@ const TABS = [
   },
   {
     path: '/clientes',
-    label: 'Clientes',
+    labelKey: 'clientes',
     icon: (active: boolean) => (
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={active ? colors.primary : colors.muted} strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -28,7 +29,7 @@ const TABS = [
   },
   {
     path: '/configuracion',
-    label: 'Config',
+    labelKey: 'config',
     icon: (active: boolean) => (
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={active ? colors.primary : colors.muted} strokeWidth="2">
         <circle cx="12" cy="12" r="3"/>
@@ -38,7 +39,7 @@ const TABS = [
   },
   {
     path: '/perfil',
-    label: 'Perfil',
+    labelKey: 'perfil',
     icon: (active: boolean) => (
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={active ? colors.primary : colors.muted} strokeWidth="2">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -46,11 +47,14 @@ const TABS = [
       </svg>
     ),
   },
-];
+] as const;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('nav.AppLayout');
+
+  const TABS = TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.background }}>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
@@ -84,6 +85,7 @@ function ServicioCard({
 }
 
 export default function ServiciosPage() {
+  const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
   const { loading, buscar, fetchServicios, toggleServicio, setBuscar } = useServiciosStore();
   const serviciosFiltrados = useServiciosFiltrados();
@@ -106,7 +108,7 @@ export default function ServiciosPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Servicios</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* FAB */}
@@ -138,7 +140,7 @@ export default function ServiciosPage() {
           </svg>
           <input
             type="text"
-            placeholder="Buscar servicio..."
+            placeholder={t('searchPlaceholder')}
             value={buscar}
             onChange={e => setBuscar(e.target.value)}
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: colors.text, background: 'transparent' }}
@@ -156,7 +158,7 @@ export default function ServiciosPage() {
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando servicios...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
       )}
 
@@ -165,7 +167,7 @@ export default function ServiciosPage() {
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {serviciosFiltrados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-              {buscar ? 'No se encontraron coincidencias' : '¡Cargá tu primer servicio!'}
+              {buscar ? t('noResults') : t('emptyState')}
             </p>
           ) : (
             serviciosFiltrados.map(s => (

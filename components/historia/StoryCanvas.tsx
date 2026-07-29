@@ -1,16 +1,16 @@
 'use client';
 
 import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { primaryRaw } from '@/theme/colors';
-
-const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
-  return `${DAYS[d.getDay()].toUpperCase()} ${d.getDate()}`;
+  return `${nombreDiaIntl(d, 'short', 'mayusculas')} ${d.getDate()}`;
 }
 
 // ─────────────────────────────────────────────
@@ -81,6 +81,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   { titulo, nombreEstudio, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
+  const t = useTranslations('historia.StoryCanvas');
   const esModoDia = dias.length === 1;
 
   // Con una profesional puntual elegida, su nombre reemplaza al del estudio
@@ -197,7 +198,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                         color: primaryRaw, fontSize: 9, fontWeight: 600,
                         fontStyle: 'italic', letterSpacing: 0.5,
                       }}>
-                        COMPLETO 🤍
+                        {t('complete')}
                       </span>
                     ) : (
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -217,7 +218,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           {/* Footer */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <span style={{ fontSize: 8, fontWeight: 300, letterSpacing: 4, color: '#fff', opacity: 0.7 }}>
-              RESERVÁ TU LUGAR
+              {t('bookYourSpot')}
             </span>
           </div>
         </div>

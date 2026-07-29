@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
 
 export default function CambiarPasswordPage() {
+  const t = useTranslations('auth.CambiarPasswordPage');
   const router = useRouter();
   const { cambiarPasswordObligatorio, emailPendiente, loading, error, clearError } = useAuth();
 
@@ -64,11 +66,11 @@ export default function CambiarPasswordPage() {
         </div>
 
         <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, marginBottom: 8 }}>
-          Creá tu contraseña
+          {t('title')}
         </h2>
 
         <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.6, margin: 0 }}>
-          Por seguridad, tenés que establecer una contraseña nueva antes de continuar.
+          {t('subtitle')}
           {emailPendiente && (
             <>
               {'\n'}
@@ -91,7 +93,7 @@ export default function CambiarPasswordPage() {
         {/* Contraseña provisoria */}
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
-            Contraseña provisoria
+            {t('currentPasswordLabel')}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
@@ -100,7 +102,7 @@ export default function CambiarPasswordPage() {
             </svg>
             <input
               type={showActual ? 'text' : 'password'}
-              placeholder="La que recibiste por email"
+              placeholder={t('currentPasswordPlaceholder')}
               value={passwordActual}
               onChange={(e) => setPasswordActual(e.target.value)}
               style={{
@@ -137,7 +139,7 @@ export default function CambiarPasswordPage() {
         {/* Nueva contraseña */}
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
-            Nueva contraseña
+            {t('newPasswordLabel')}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
@@ -146,7 +148,7 @@ export default function CambiarPasswordPage() {
             </svg>
             <input
               type={showNueva ? 'text' : 'password'}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('newPasswordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{
@@ -183,11 +185,11 @@ export default function CambiarPasswordPage() {
         {/* Confirmar contraseña */}
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: 'block' }}>
-            Confirmar nueva contraseña
+            {t('confirmPasswordLabel')}
           </label>
           <input
             type={showNueva ? 'text' : 'password'}
-            placeholder="Repetí la contraseña"
+            placeholder={t('confirmPasswordPlaceholder')}
             value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)}
             style={{
@@ -208,19 +210,19 @@ export default function CambiarPasswordPage() {
         {/* Validaciones */}
         {password && passwordConfirmation && password !== passwordConfirmation && (
           <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
-            Las contraseñas nuevas no coinciden
+            {t('passwordsDontMatch')}
           </p>
         )}
 
         {password && password.length < 8 && (
           <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
-            La nueva contraseña debe tener al menos 8 caracteres
+            {t('passwordTooShort')}
           </p>
         )}
 
         {password && passwordActual && password === passwordActual && (
           <p style={{ color: colors.dangerBorder, fontSize: 13, margin: 0, marginTop: -8 }}>
-            La nueva contraseña debe ser distinta a la provisoria
+            {t('samePassword')}
           </p>
         )}
 
@@ -241,7 +243,7 @@ export default function CambiarPasswordPage() {
             marginTop: 8,
           }}
         >
-          {loading ? 'Guardando...' : 'Confirmar y continuar'}
+          {loading ? t('saving') : t('submit')}
         </button>
       </div>
     </div>

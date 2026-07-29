@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
 
 const MINUTE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
@@ -21,10 +22,10 @@ function partsToMinutes(h: number, mIdx: number) {
   return h * 60 + MINUTE_STEPS[mIdx];
 }
 
-function formatLabel(total: number, h: number, mins: number) {
-  if (h > 0 && mins > 0) return `${h}h ${mins}min  ·  ${total} min totales`;
-  if (h > 0) return `${h} ${h === 1 ? 'hora' : 'horas'}  ·  ${total} min totales`;
-  return `${mins} minutos totales`;
+function formatLabel(t: ReturnType<typeof useTranslations>, total: number, h: number, mins: number) {
+  if (h > 0 && mins > 0) return t('summaryHoursAndMinutes', { h, mins, total });
+  if (h > 0) return t('summaryHoursOnly', { h, total });
+  return t('summaryMinutesOnly', { mins });
 }
 
 const btnStyle: React.CSSProperties = {
@@ -36,6 +37,7 @@ const btnStyle: React.CSSProperties = {
 };
 
 export default function DuracionPicker({ value, onChange }: Props) {
+  const t = useTranslations('common.DuracionPicker');
   const { h, mIdx } = minutesToParts(value);
   const mins = MINUTE_STEPS[mIdx];
   const total = partsToMinutes(h, mIdx);
@@ -64,7 +66,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
         {/* Horas */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-            Horas
+            {t('hoursLabel')}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button style={btnStyle} onClick={() => changeH(-1)}>−</button>
@@ -73,7 +75,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
             </span>
             <button style={btnStyle} onClick={() => changeH(1)}>+</button>
           </div>
-          <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>hs</span>
+          <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>{t('hoursUnit')}</span>
         </div>
 
         <div style={{ width: 1, height: 44, backgroundColor: colors.border, margin: '0 6px' }} />
@@ -81,7 +83,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
         {/* Minutos */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-            Minutos
+            {t('minutesLabel')}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button style={btnStyle} onClick={() => changeM(-1)}>−</button>
@@ -90,7 +92,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
             </span>
             <button style={btnStyle} onClick={() => changeM(1)}>+</button>
           </div>
-          <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>min</span>
+          <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 500 }}>{t('minutesUnit')}</span>
         </div>
       </div>
 
@@ -102,7 +104,7 @@ export default function DuracionPicker({ value, onChange }: Props) {
       }}>
         <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
         <span style={{ fontSize: 13, color: colors.primary, fontWeight: 600 }}>
-          {formatLabel(total, h, mins)}
+          {formatLabel(t, total, h, mins)}
         </span>
       </div>
     </div>

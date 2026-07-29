@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 
@@ -11,6 +12,7 @@ import { colors } from '@/theme/colors';
 // (daysLeft viene null en ese caso, ver AuthController::subscriptionStatus).
 // ─────────────────────────────────────────────
 export function SubscriptionWarningBanner() {
+  const t = useTranslations('common.SubscriptionWarningBanner');
   const { daysLeft, supportInfo } = useAuth();
 
   const warningDays = supportInfo?.subscription_warning_days ?? 15;
@@ -22,7 +24,7 @@ export function SubscriptionWarningBanner() {
   const handleWhatsApp = () => {
     if (!supportInfo?.whatsapp) return;
     const numero = supportInfo.whatsapp.replace(/\D/g, '');
-    const mensaje = encodeURIComponent('Hola! Quiero renovar mi suscripción de Nailsmanagerpro.');
+    const mensaje = encodeURIComponent(t('renewWhatsappMessage'));
     window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
   };
 
@@ -42,8 +44,8 @@ export function SubscriptionWarningBanner() {
       </svg>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: isUrgent ? colors.danger : colors.warningFg }}>
         {daysLeft === 0
-          ? 'Tu suscripción vence hoy'
-          : `Tu suscripción vence en ${daysLeft} día${daysLeft === 1 ? '' : 's'}`}
+          ? t('expiresToday')
+          : t('expiresInDays', { days: daysLeft })}
       </span>
       <button
         onClick={handleWhatsApp}
@@ -53,7 +55,7 @@ export function SubscriptionWarningBanner() {
           color: isUrgent ? colors.danger : colors.warningFg,
         }}
       >
-        Renovar
+        {t('renew')}
       </button>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
@@ -32,6 +33,7 @@ function tabStyle(active: boolean): React.CSSProperties {
 // Inner component (uses useSearchParams)
 // ─────────────────────────────────────────────
 function HistoriaContent() {
+  const t            = useTranslations('historia.HistoriaPage');
   const router       = useRouter();
   const searchParams = useSearchParams();
   const fechaInicial = searchParams.get('fecha') ?? undefined;
@@ -68,8 +70,8 @@ function HistoriaContent() {
     if (!file) return;
 
     const guardarFijo = await confirmDialog(
-      '¿Guardás esta imagen como fondo fijo para la próxima vez, o la usás solo por esta historia?',
-      { confirmText: 'Guardar como fijo', cancelText: 'Usar solo esta vez' }
+      t('saveBackgroundPrompt'),
+      { confirmText: t('saveFixed'), cancelText: t('useOnce') }
     );
     elegirFoto(file, guardarFijo);
   };
@@ -87,7 +89,7 @@ function HistoriaContent() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Generar historia</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* width = canvasWidth (sin padding horizontal, project usa
@@ -106,7 +108,7 @@ function HistoriaContent() {
         <div style={{ ...tabContainerStyle, width: '100%' }}>
           {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
             <button key={m} onClick={() => handleModo(m)} style={tabStyle(modo === m)}>
-              {m === 'dia' ? 'DÍA' : m === 'semana' ? 'SEMANA' : 'MES'}
+              {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
             </button>
           ))}
         </div>
@@ -152,7 +154,7 @@ function HistoriaContent() {
                 onClick={() => { setQuincena(i as 0 | 1); setDiasOcultos([]); setSlotsOcultos([]); }}
                 style={tabStyle(quincena === i)}
               >
-                {i === 0 ? '1 — 15' : '16 — Fin'}
+                {i === 0 ? t('firstHalf') : t('secondHalf')}
               </button>
             ))}
           </div>
@@ -166,7 +168,7 @@ function HistoriaContent() {
         {mostrarSelectorProfesional && (
           <div style={{ width: '100%', marginBottom: 14 }}>
             <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
-              Mostrar agenda de:
+              {t('showScheduleOf')}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {activeProfesionales.map(p => {
@@ -234,10 +236,10 @@ function HistoriaContent() {
                 borderTop: `1px solid ${colors.divider}`,
               }}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 4px' }}>
-                  Editar disponibilidad
+                  {t('editAvailability')}
                 </p>
                 <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 10px' }}>
-                  Ya se muestra tu disponibilidad real. Usá esto solo si querés ocultar algo puntual antes de compartir.
+                  {t('editAvailabilityHint')}
                 </p>
                 <AgendaEditor
                   agenda={diasQuincena}
@@ -264,7 +266,7 @@ function HistoriaContent() {
                   <circle cx="9" cy="9" r="2" />
                   <path d="m21 15-5-5L5 21" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Fondo</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('background')}</span>
               </button>
               <button
                 onClick={descargarImagen}
@@ -277,7 +279,7 @@ function HistoriaContent() {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Guardar</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('save')}</span>
               </button>
               <button
                 onClick={compartirImagen}
@@ -290,7 +292,7 @@ function HistoriaContent() {
                   <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                   <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>Compartir</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('share')}</span>
               </button>
             </div>
 
@@ -298,8 +300,8 @@ function HistoriaContent() {
               <button
                 onClick={async () => {
                   const confirmado = await confirmDialog(
-                    'Se va a quitar el fondo fijo guardado. La próxima vez que generes una historia no va a tener fondo por default.',
-                    { confirmText: 'Quitar fondo fijo', cancelText: 'Cancelar', danger: true }
+                    t('removeFixedBackgroundConfirm'),
+                    { confirmText: t('removeFixedBackgroundConfirmButton'), cancelText: t('cancel'), danger: true }
                   );
                   if (confirmado) await quitarFondoFijo();
                 }}
@@ -309,7 +311,7 @@ function HistoriaContent() {
                   textDecoration: 'underline', textUnderlineOffset: 2,
                 }}
               >
-                Quitar fondo fijo guardado
+                {t('removeFixedBackground')}
               </button>
             )}
           </>
@@ -329,7 +331,7 @@ function HistoriaContent() {
               <line x1="14.5" y1="13.5" x2="9.5" y2="18.5" />
             </svg>
             <p style={{ color: colors.muted, fontSize: 14, textAlign: 'center', padding: '0 30px', margin: 0 }}>
-              No hay disponibilidad para mostrar en este período
+              {t('emptyState')}
             </p>
           </div>
         )}
@@ -351,8 +353,9 @@ function HistoriaContent() {
 // Default export — wraps in Suspense for useSearchParams
 // ─────────────────────────────────────────────
 export default function HistoriaPage() {
+  const t = useTranslations('historia.HistoriaPage');
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>Cargando...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
       <HistoriaContent />
     </Suspense>
   );

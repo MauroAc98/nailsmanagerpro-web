@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { tStatic } from '@/store/useLocaleStore';
 
 // Global, imperative replacement for window.alert/window.confirm — plain
 // promise-returning functions (not hooks) so they can be called from event
@@ -34,8 +35,8 @@ export function confirmDialog(message: string, options: ConfirmOptions = {}): Pr
       dialog: {
         kind: 'confirm',
         message,
-        confirmText: options.confirmText ?? 'Confirmar',
-        cancelText: options.cancelText ?? 'Cancelar',
+        confirmText: options.confirmText ?? tStatic('common.ConfirmDialog.confirmDefault'),
+        cancelText: options.cancelText ?? tStatic('common.ConfirmDialog.cancelDefault'),
         danger: options.danger ?? false,
         resolve,
       },
@@ -49,7 +50,7 @@ export function alertDialog(message: string, options: AlertOptions = {}): Promis
       dialog: {
         kind: 'alert',
         message,
-        buttonText: options.buttonText ?? 'OK',
+        buttonText: options.buttonText ?? tStatic('common.ConfirmDialog.alertButtonDefault'),
         resolve,
       },
     });

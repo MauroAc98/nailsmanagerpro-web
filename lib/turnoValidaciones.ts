@@ -1,6 +1,7 @@
 import { Turno } from '@/services/turnoService';
 import { Servicio } from '@/services/servicioService';
 import { Slot } from '@/services/slotService';
+import { tStatic } from '@/store/useLocaleStore';
 
 // ─────────────────────────────────────────────
 // Validaciones client-side que espejan las reglas de negocio
@@ -46,20 +47,20 @@ export function validarTurno({
 
   // ── Fecha/hora pasada ─────────────────────────────────────
   if (candidato.getTime() < Date.now()) {
-    return 'No se pueden agendar turnos en una fecha u hora que ya pasó.';
+    return tStatic('validation.TurnoValidaciones.pastDateTime');
   }
 
   // ── Horario de atención ───────────────────────────────────
   const slotsActivos = slots.filter(s => s.activo).sort((a, b) => a.hora.localeCompare(b.hora));
   if (slotsActivos.length === 0) {
-    return 'No tenés horarios de atención configurados. Configurálos en Ajustes.';
+    return tStatic('validation.TurnoValidaciones.noSlotsConfigured');
   }
   const horaMin = toMinutos(slotsActivos[0].hora);
   const horaMax = toMinutos(slotsActivos[slotsActivos.length - 1].hora);
   const horaTurno = toMinutos(hora);
   if (horaTurno < horaMin || horaTurno > horaMax) {
     const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
-    return `El horario de atención es de ${fmt(horaMin)} a ${fmt(horaMax)}hs.`;
+    return tStatic('validation.TurnoValidaciones.outsideBusinessHours', { horaMin: fmt(horaMin), horaMax: fmt(horaMax) });
   }
 
   const turnosDelCliente = turnosDelDia.filter(t =>
@@ -70,7 +71,7 @@ export function validarTurno({
 
   // ── Máximo de turnos por cliente por día (solo al crear) ──
   if (aplicarMaxPorCliente && turnosDelCliente.length >= MAX_TURNOS_POR_CLIENTE) {
-    return `El cliente ya tiene el máximo de ${MAX_TURNOS_POR_CLIENTE} turnos para este día.`;
+    return tStatic('validation.TurnoValidaciones.maxTurnosPerClient', { max: MAX_TURNOS_POR_CLIENTE });
   }
 
   // ── Servicio repetido el mismo día ─────────────────────────
@@ -83,7 +84,7 @@ export function validarTurno({
       .filter(s => repetidos.includes(s.id))
       .map(s => s.nombre)
       .join(', ');
-    return `El cliente ya tiene agendado: ${nombresRepetidos} para este día.`;
+    return tStatic('validation.TurnoValidaciones.serviceAlreadyBooked', { nombres: nombresRepetidos });
   }
 
   // ── Choque de horario ──────────────────────────────────────
@@ -102,10 +103,16 @@ export function validarTurno({
     const finExistente     = inicioExistente + t.duracion_total_minutos;
     const hayChoque = inicioExistente < finNuevo && finExistente > inicioNuevo;
     if (hayChoque) {
-      const nombreCliente   = t.cliente ? `${t.cliente.nombre} ${t.cliente.apellido}` : 'otro cliente';
+      const nombreCliente   = t.cliente ? `${t.cliente.nombre} ${t.cliente.apellido}` : tStatic('validation.TurnoValidaciones.unknownClientFallback');
       const serviciosChoque = t.servicios.filter(s => s != null).map(s => s.nombre).join(' + ');
       const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
-      return `Las ${fmt(horaTurno)} cae dentro del turno de ${nombreCliente} (${serviciosChoque}, ${fmt(inicioExistente)} - ${fmt(finExistente)}). Elegí otro horario.`;
+      return tStatic('validation.TurnoValidaciones.scheduleConflict', {
+        hora: fmt(horaTurno),
+        cliente: nombreCliente,
+        servicios: serviciosChoque,
+        desde: fmt(inicioExistente),
+        hasta: fmt(finExistente),
+      });
     }
   }
 

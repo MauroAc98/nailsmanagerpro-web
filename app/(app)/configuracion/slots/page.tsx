@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -49,6 +50,7 @@ function SlotCard({
   onToggle: (activo: boolean) => void;
   onDelete: () => void;
 }) {
+  const t = useTranslations('configuracion.SlotsPage');
   const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
   const initOffset = useRef(0);
@@ -130,7 +132,7 @@ function SlotCard({
             <path d="M10 11v6M14 11v6"/>
             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
-          <span style={{ fontSize: 10, fontWeight: 700, color: colors.danger }}>ELIMINAR</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: colors.danger }}>{t('delete')}</span>
         </div>
 
         <div
@@ -152,7 +154,7 @@ function SlotCard({
               {slot.hora} hs
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              {slot.activo ? 'Disponible' : 'Desactivado'}
+              {slot.activo ? t('available') : t('disabled')}
             </p>
           </div>
 
@@ -164,6 +166,7 @@ function SlotCard({
 }
 
 export default function SlotsPage() {
+  const t = useTranslations('configuracion.SlotsPage');
   const router = useRouter();
   const { slots, loading, fetchSlots, agregarSlot, toggleSlot, eliminarSlot } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
@@ -206,8 +209,8 @@ export default function SlotsPage() {
     const existente = slots.find(s => s.hora === timeStr);
     if (existente) {
       const msg = existente.activo
-        ? 'Ya existe un slot para ese horario.'
-        : 'Ya tenés un slot para ese horario (inactivo). Activalo desde el listado.';
+        ? t('duplicateActive')
+        : t('duplicateInactive');
       await alertDialog(msg);
       setPickerVisible(false);
       return;
@@ -217,15 +220,15 @@ export default function SlotsPage() {
       timeStr,
       mostrarSelectorProfesional && selectedProfesionalId ? selectedProfesionalId : undefined,
     );
-    if (result.success) showToast('Horario agregado');
-    else await alertDialog(result.message ?? 'No se pudo agregar el horario.');
+    if (result.success) showToast(t('added'));
+    else await alertDialog(result.message ?? t('addError'));
   };
 
   const handleEliminar = async (id: number, hora: string) => {
-    if (!(await confirmDialog(`¿Eliminás el slot de las ${hora}?`, { confirmText: 'Eliminar', danger: true }))) return;
+    if (!(await confirmDialog(t('deleteConfirm', { hora }), { confirmText: t('deleteConfirmButton'), danger: true }))) return;
     const result = await eliminarSlot(id);
-    if (result.success) showToast('Horario eliminado');
-    else await alertDialog(result.message ?? 'No se pudo eliminar el horario.');
+    if (result.success) showToast(t('deleted'));
+    else await alertDialog(result.message ?? t('deleteError'));
   };
 
   return (
@@ -243,7 +246,7 @@ export default function SlotsPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Horarios Disponibles</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* FAB */}
@@ -264,7 +267,7 @@ export default function SlotsPage() {
 
       {/* Description */}
       <p style={{ margin: '0 20px 16px', fontSize: 14, color: colors.subtext, lineHeight: 1.5 }}>
-        Estos son los horarios en los que tus clientes pueden reservar turnos.
+        {t('subtitle')}
       </p>
 
       {/* Selector de profesional — invisible con ≤1 profesional activa */}
@@ -299,7 +302,7 @@ export default function SlotsPage() {
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>Cargando horarios...</p>
+          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
       )}
 
@@ -308,7 +311,7 @@ export default function SlotsPage() {
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {slots.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 15 }}>
-              No hay horarios cargados. Tocá + para agregar uno.
+              {t('emptyState')}
             </p>
           ) : (
             slots.map(s => (
@@ -342,7 +345,7 @@ export default function SlotsPage() {
             }}
           >
             <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: '0 0 20px' }}>
-              Agregar horario
+              {t('addModalTitle')}
             </h2>
             <DrumPicker
               columns={[
@@ -360,7 +363,7 @@ export default function SlotsPage() {
                 fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
               }}
             >
-              Agregar
+              {t('add')}
             </button>
           </div>
         </div>

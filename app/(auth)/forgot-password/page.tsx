@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth.ForgotPasswordPage');
   const router = useRouter();
   const { forgotPassword, loading, error, clearError } = useAuth();
 
@@ -55,7 +57,7 @@ export default function ForgotPasswordPage() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Volver
+          {t('back')}
         </button>
       </div>
 
@@ -80,11 +82,11 @@ export default function ForgotPasswordPage() {
         </div>
 
         <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, marginBottom: 8 }}>
-          ¿Olvidaste tu contraseña?
+          {t('title')}
         </h2>
 
         <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.6, margin: 0 }}>
-          Ingresá tu email y te enviaremos un código para restablecerla.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -99,7 +101,7 @@ export default function ForgotPasswordPage() {
       {enviado && (
         <div style={{ width: '100%', maxWidth: 360, marginBottom: 24, padding: '12px 16px', borderRadius: 8, backgroundColor: colors.successBg, borderLeft: `4px solid ${colors.successBorder}` }}>
           <p style={{ fontSize: 13, color: colors.success, margin: 0 }}>
-            Te enviamos un código a <strong>{email}</strong>. Revisá tu bandeja.
+            {t.rich('sentMessage', { email, b: (chunks) => <strong key="b">{chunks}</strong> })}
           </p>
         </div>
       )}
@@ -115,7 +117,7 @@ export default function ForgotPasswordPage() {
           </svg>
           <input
             type="email"
-            placeholder="tu@email.com"
+            placeholder={t('emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -152,7 +154,7 @@ export default function ForgotPasswordPage() {
               transition: 'background-color 0.2s',
             }}
           >
-            {loading ? 'Enviando...' : 'Enviar código'}
+            {loading ? t('sending') : t('sendCode')}
           </button>
         ) : (
           <button
@@ -169,7 +171,7 @@ export default function ForgotPasswordPage() {
               transition: 'background-color 0.2s',
             }}
           >
-            Ingresar código
+            {t('enterCode')}
           </button>
         )}
       </div>

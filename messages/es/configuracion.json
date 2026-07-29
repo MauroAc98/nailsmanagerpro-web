@@ -1,0 +1,185 @@
+{
+  "ConfiguracionPage": {
+    "title": "Configuración",
+    "servicios": "Servicios",
+    "slots": "Horarios Disponibles",
+    "profesionales": "Profesionales",
+    "whatsapp": "Vincular WhatsApp",
+    "estadisticas": "Estadísticas",
+    "apariencia": "Apariencia",
+    "idioma": "Idioma",
+    "ayuda": "Ayuda"
+  },
+  "IdiomaPage": {
+    "title": "Idioma",
+    "subtitle": "Elegí el idioma de la app. El cambio se aplica al instante y se sincroniza con tu cuenta.",
+    "persistFailedWarning": "No pudimos guardar el idioma en el servidor. Se aplicó solo en este dispositivo."
+  },
+  "ServiciosPage": {
+    "title": "Servicios",
+    "searchPlaceholder": "Buscar servicio...",
+    "loading": "Cargando servicios...",
+    "noResults": "No se encontraron coincidencias",
+    "emptyState": "¡Cargá tu primer servicio!"
+  },
+  "NuevoServicioPage": {
+    "title": "Nuevo servicio",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Ej: Kapping",
+    "nameRequired": "El nombre es obligatorio",
+    "durationLabel": "Duración *",
+    "priceLabel": "Precio (opcional)",
+    "pricePlaceholder": "Ej: 5000",
+    "invalidDuration": "Ingresá una duración válida.",
+    "duplicateActive": "Ya existe un servicio con ese nombre.",
+    "duplicateInactive": "Ya tenés un servicio con ese nombre (inactivo). Reactivalo desde el listado en vez de crear uno nuevo.",
+    "saving": "Guardando...",
+    "submit": "Agregar servicio",
+    "saveError": "No se pudo guardar el servicio."
+  },
+  "EditarServicioPage": {
+    "title": "Editar servicio",
+    "loading": "Cargando...",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Ej: Kapping",
+    "nameRequired": "El nombre es obligatorio",
+    "durationLabel": "Duración *",
+    "priceLabel": "Precio (opcional)",
+    "pricePlaceholder": "Ej: 5000",
+    "invalidDuration": "Ingresá una duración válida.",
+    "duplicateActive": "Ya existe un servicio con ese nombre.",
+    "duplicateInactive": "Ya tenés un servicio con ese nombre (inactivo). Reactivalo desde el listado en vez de crear uno nuevo.",
+    "loadError": "No se pudo cargar el servicio.",
+    "saving": "Guardando...",
+    "submit": "Guardar cambios",
+    "saveError": "No se pudo guardar el servicio."
+  },
+  "ProfesionalesPage": {
+    "title": "Profesionales",
+    "disclaimer": "Desactivar una profesional no borra su historial de turnos — solo deja de aparecer para agendar nuevos.",
+    "loading": "Cargando profesionales...",
+    "emptyState": "¡Cargá tu primera profesional!",
+    "noServices": "Sin servicios asignados",
+    "serviceCount": "{count, plural, one {# servicio} other {# servicios}}"
+  },
+  "NuevoProfesionalPage": {
+    "title": "Nueva profesional",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Ej: Sofía",
+    "nameRequired": "El nombre es obligatorio",
+    "colorLabel": "Color",
+    "servicesLabel": "Servicios que puede realizar",
+    "noActiveServices": "No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.",
+    "duplicateActive": "Ya existe una profesional con ese nombre.",
+    "duplicateInactive": "Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.",
+    "saving": "Guardando...",
+    "submit": "Agregar profesional",
+    "saveError": "No se pudo guardar la profesional."
+  },
+  "EditarProfesionalPage": {
+    "title": "Editar profesional",
+    "loading": "Cargando...",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Ej: Sofía",
+    "nameRequired": "El nombre es obligatorio",
+    "colorLabel": "Color",
+    "activeLabel": "Activa",
+    "activeSubtitleOn": "Disponible para agendar turnos",
+    "activeSubtitleOff": "No aparece para agendar nuevos turnos",
+    "servicesLabel": "Servicios que puede realizar",
+    "noActiveServices": "No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.",
+    "loadError": "No se pudo cargar la profesional.",
+    "duplicateActive": "Ya existe una profesional con ese nombre.",
+    "duplicateInactive": "Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.",
+    "saving": "Guardando...",
+    "submit": "Guardar cambios",
+    "saveError": "No se pudo guardar la profesional."
+  },
+  "AparienciaPage": {
+    "title": "Apariencia",
+    "subtitle": "Elegí cómo se ve la app. \"Sistema\" sigue el modo claro u oscuro configurado en tu dispositivo.",
+    "light": "Claro",
+    "lightSubtitle": "Fondo blanco, siempre",
+    "dark": "Oscuro",
+    "darkSubtitle": "Fondo oscuro, siempre",
+    "system": "Sistema",
+    "systemSubtitle": "Sigue la configuración del dispositivo"
+  },
+  "SlotsPage": {
+    "title": "Horarios Disponibles",
+    "subtitle": "Estos son los horarios en los que tus clientes pueden reservar turnos.",
+    "loading": "Cargando horarios...",
+    "emptyState": "No hay horarios cargados. Tocá + para agregar uno.",
+    "available": "Disponible",
+    "disabled": "Desactivado",
+    "delete": "ELIMINAR",
+    "addModalTitle": "Agregar horario",
+    "add": "Agregar",
+    "duplicateActive": "Ya existe un slot para ese horario.",
+    "duplicateInactive": "Ya tenés un slot para ese horario (inactivo). Activalo desde el listado.",
+    "added": "Horario agregado",
+    "addError": "No se pudo agregar el horario.",
+    "deleteConfirm": "¿Eliminás el slot de las {hora}?",
+    "deleteConfirmButton": "Eliminar",
+    "deleted": "Horario eliminado",
+    "deleteError": "No se pudo eliminar el horario."
+  },
+  "AyudaPage": {
+    "title": "Ayuda",
+    "subtitle": "Una explicación corta de cada sección de la app. Tocá un módulo para ver el detalle.",
+    "sections": {
+      "gettingStarted": {
+        "title": "Primeros pasos",
+        "text": "Ingresá con el email y la contraseña provisoria que te llegó por correo cuando se creó tu cuenta. La primera vez, la app te va a pedir que la cambies por una nueva antes de dejarte entrar — es un paso obligatorio, una sola vez.\n\nUna vez adentro, la app se maneja con 4 secciones fijas abajo de la pantalla:\n\n- Agenda: tus turnos, día por día. Es la pantalla principal.\n- Clientes: la lista de tus clientes.\n- Config: servicios, horarios, profesionales, WhatsApp, apariencia y esta Ayuda.\n- Perfil: tus datos, la seña, y tu suscripción."
+      },
+      "initialSetup": {
+        "title": "Antes de empezar: qué configurar primero",
+        "text": "Para poder cargar tu primer turno necesitás, en este orden:\n\n1. Al menos un servicio activo (Configuración → Servicios) — sin esto no podés elegir qué se le va a hacer al cliente.\n2. Al menos un horario de atención activo (Configuración → Horarios Disponibles) — sin esto la app no te deja guardar ningún turno, te avisa \"No tenés horarios de atención configurados\".\n3. Al menos un cliente cargado (pestaña Clientes) — los turnos siempre se asignan a un cliente ya guardado, no se puede escribir el nombre al vuelo desde la agenda.\n\nCon esos tres pasos ya podés cargar turnos."
+      },
+      "bookingAppointment": {
+        "title": "Cómo agendar un turno",
+        "text": "1. Entrá a Agenda y tocá el botón + (abajo a la derecha, en un día que no sea pasado).\n2. Elegí el cliente buscándolo por nombre.\n3. Si trabajás con más de una profesional, elegí quién lo va a atender — los servicios que se muestran después se filtran a lo que esa persona sabe hacer.\n4. Elegí uno o más servicios.\n5. Elegí la hora. La app valida sola: no te deja elegir un horario fuera de tu horario de atención, ni uno que se superponga con otro turno del día.\n6. Tocá \"Confirmar Turno\".\n\nPara cancelar un turno: deslizalo hacia la izquierda en la lista de la agenda y tocá \"Cancelar\". Para editarlo: tocalo directamente.\n\nMientras se está atendiendo, la tarjeta muestra \"EN CURSO\" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por cliente, servicio o fecha), usá el botón \"Filtrar\" arriba de la lista.\n\nSi trabajás con más de una profesional, arriba de la lista del día vas a ver chips con los nombres de las que tienen turno ese día puntual — tocá uno para ver solo sus turnos, o \"Todas\" para verlos juntos. Cambia según el día que estés mirando en el calendario: si una profesional no tiene nada agendado ese día, no aparece como opción."
+      },
+      "services": {
+        "title": "Servicios",
+        "text": "Configuración → Servicios.\n\nCargá cada servicio con su nombre y la duración en minutos — esa duración es la que usa la app para calcular cuánto ocupa un turno y evitar que se superpongan dos turnos.\n\nPodés desactivar un servicio sin borrarlo si dejás de ofrecerlo por un tiempo; los turnos viejos que ya lo tenían no se ven afectados."
+      },
+      "availableSlots": {
+        "title": "Horarios Disponibles",
+        "text": "Configuración → Horarios Disponibles.\n\nEs la lista de horas en las que se puede reservar (por ejemplo 09:00, 09:30, 10:00...). Tocá + para agregar una hora nueva, y usá el interruptor para activarla o desactivarla sin borrarla.\n\nEste paso es obligatorio: sin ningún horario activo, la app no te deja cargar turnos.\n\nSi trabajás con más de una profesional, cada una tiene su propio horario — elegí su nombre en la fila de arriba de esta pantalla antes de cargar sus horas (ver la sección \"Profesionales\" para más detalle)."
+      },
+      "clients": {
+        "title": "Clientes",
+        "text": "Pestaña Clientes.\n\nAhí cargás nombre, apellido y teléfono de cada una. El teléfono es el que se usa para el botón de WhatsApp que aparece en cada turno y para los mensajes automáticos.\n\nPodés buscarlas por nombre y ver su historial de turnos. El interruptor en cada tarjeta la desactiva sin borrarla (por ejemplo si dejó de venir) — sus turnos anteriores quedan intactos, y podés reactivarla en cualquier momento con el mismo interruptor."
+      },
+      "professionals": {
+        "title": "Profesionales: cómo agregar una nueva",
+        "text": "Esta sección solo importa si trabajás con más de una persona en el estudio. Si trabajás sola, no hace falta tocar nada acá.\n\n1. Configuración → Profesionales → botón +.\n2. Escribí su nombre y elegí un color para distinguirla en la agenda.\n3. Tildá los servicios que sabe hacer — eso filtra lo que se le puede asignar al crear un turno para ella.\n4. Guardá.\n5. Importante: andá a Configuración → Horarios Disponibles, elegí su nombre en el selector de arriba, y cargale sus propios horarios de atención. Cada profesional tiene un horario independiente — si no se lo configurás, no va a tener ninguna hora disponible para agendar, aunque ya la hayas creado.\n\nPara dar de baja a una profesional sin perder su historial de turnos, desactivala desde el listado (el interruptor) en vez de borrarla."
+      },
+      "instagramStory": {
+        "title": "Generar Historia de Instagram: todas las opciones",
+        "text": "Se abre desde el botón COMPARTIR, arriba a la derecha en Agenda.\n\n- Período: elegí Día, Semana o Mes. En Mes además elegís primera quincena (1 al 15) o segunda (16 al fin).\n- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — su nombre queda visible en la imagen generada (salvo que sea la dueña y coincida con el nombre del estudio, ya visible arriba: ahí no se repite).\n- Fondo: botón \"Fondo\" para subir una foto de fondo para la imagen. Al elegirla, te pregunta si la querés guardar como fondo fijo (se reusa sola la próxima vez que generes una historia) o usarla solo por esta vez. Si guardaste una, aparece un link \"Quitar fondo fijo guardado\" para sacarla cuando quieras.\n- Texto libre: escribí un texto y tocá + para agregarlo a la imagen. Podés ponerle emojis, arrastrarlo a la posición que quieras dentro de la imagen, y agrandarlo o achicarlo con los botones A- / A+ (o el tirador en la esquina, tocando y arrastrando).\n- Editar qué se muestra: tocá un horario suelto en la lista de abajo para sacarlo de la imagen, o el ícono del ojo en un día para ocultarlo completo.\n- Al final: \"Guardar\" descarga la imagen a tu dispositivo, \"Compartir\" abre el menú para mandarla directo (por ejemplo a Instagram o WhatsApp)."
+      },
+      "whatsappLink": {
+        "title": "Vincular WhatsApp",
+        "text": "Configuración → Vincular WhatsApp.\n\nEscaneá el código QR con el WhatsApp del teléfono que uses para el negocio: en ese teléfono, Configuración de WhatsApp → Dispositivos vinculados → Vincular un dispositivo, y apuntá la cámara al código.\n\nUna vez conectado, los mensajes de confirmación se mandan solos cada vez que cargás un turno nuevo, sin que tengas que escribir nada. Podés desvincularlo en cualquier momento desde la misma pantalla.\n\nSi se desconecta solo (por ejemplo, cerraste sesión de WhatsApp Web en el teléfono, o pasó mucho tiempo sin uso), esta pantalla te vuelve a mostrar el código QR — repetí el mismo paso para reconectarlo."
+      },
+      "whatsappMessages": {
+        "title": "Mensajes de WhatsApp",
+        "text": "Perfil → Mensajes de WhatsApp.\n\nHay dos plantillas editables: \"Recordatorio\" y \"Confirmación\". Cada una se manda de una forma distinta:\n\n- \"Confirmación\" es automática: se manda sola apenas cargás un turno nuevo, si tenés WhatsApp vinculado.\n- \"Recordatorio\" tiene dos caminos: lo podés mandar vos a mano en cualquier momento, tocando el ícono de WhatsApp en una tarjeta de turno; y además, si activaste \"Recordatorio automático\" en Perfil, la app lo manda sola todos los días a la hora que elegiste, a cada cliente con turno confirmado para el día siguiente — sin que tengas que hacer nada.\n\nEscribí el texto que quieras y usá las variables que te ofrece el editor (como '{nombre}', '{servicios}', '{fecha}', '{hora}') — se completan solas con los datos de cada turno al mandarse el mensaje."
+      },
+      "myProfile": {
+        "title": "Mi Perfil",
+        "text": "Pestaña Perfil.\n\nTus datos del estudio (nombre, teléfono, dirección), el estado de tu suscripción (activa o vencida, fecha de vencimiento y días restantes), y dos ajustes:\n\n- Seña: un monto de referencia que guardás para tus turnos. Por ahora es solo informativo — todavía no se descuenta ni se cobra automáticamente en ningún lugar de la app.\n- Recordatorio automático: activalo y elegí la hora — ver el detalle de qué manda exactamente en \"Mensajes de WhatsApp\"."
+      },
+      "statistics": {
+        "title": "Estadísticas",
+        "text": "Configuración → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda — tocala para ir directo a la pantalla completa.\n\nElegí el mes con las flechas y, si trabajás con más de una profesional, filtrá por quién querés ver. Mostrás:\n\n- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.\n- Clientes nuevas vs. recurrentes: \"nueva\" es la que tuvo su primer turno alguna vez dentro de ese mes; \"recurrente\" ya venía de antes.\n- Servicios más pedidos: ranking de qué se agendó más ese mes.\n\nLos turnos cancelados no cuentan para clientes ni para servicios más pedidos — solo aparecen en \"Turnos por estado\", que es la única de las tres que sí los muestra."
+      },
+      "appearance": {
+        "title": "Apariencia",
+        "text": "Configuración → Apariencia.\n\nElegí cómo se ve la app: Claro, Oscuro, o Sistema (sigue el modo que tengas configurado en tu celular o computadora). Se aplica al instante."
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -12,16 +13,14 @@ import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
+import { formatFecha } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
 function formatFechaLarga(fecha: string): string {
-  const d     = new Date(fecha + 'T00:00:00');
-  const dias  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  return `${dias[d.getDay()]}, ${d.getDate()} De ${meses[d.getMonth()]}`;
+  const d = new Date(fecha + 'T00:00:00');
+  return formatFecha(d, 'diaSemanaFechaMes');
 }
 
 function formatHora12(hora24: string): string {
@@ -52,6 +51,7 @@ const inputStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────
 function NuevoTurnoContent() {
   const router       = useRouter();
+  const t            = useTranslations('agenda.NuevoTurnoPage');
   const searchParams = useSearchParams();
   const today        = new Date().toISOString().split('T')[0];
   const fecha        = searchParams.get('fecha') ?? today;
@@ -162,7 +162,7 @@ function NuevoTurnoContent() {
     });
     setSaving(false);
     if (result.success) router.back();
-    else await alertDialog(result.message ?? 'No se pudo crear el turno.');
+    else await alertDialog(result.message ?? t('createError'));
   };
 
   const clientesFiltrados = clientes.filter(c =>
@@ -182,20 +182,20 @@ function NuevoTurnoContent() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Nuevo Turno</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* Banner */}
       <div style={{ padding: '8px 20px 16px' }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: colors.primary, letterSpacing: 0.5, margin: 0, textTransform: 'uppercase' }}>
-          DÍA SELECCIONADO: {formatFechaLarga(fecha)}
+          {t('selectedDay', { fecha: formatFechaLarga(fecha) })}
         </p>
       </div>
 
       <div style={{ padding: '0 20px' }}>
 
         {/* ─── CLIENTE ─── */}
-        <p style={sectionLabelStyle}>CLIENTE</p>
+        <p style={sectionLabelStyle}>{t('client')}</p>
         <div style={{ marginBottom: 20, position: 'relative' }}>
           <div
             onClick={() => setShowClienteDropdown(prev => !prev)}
@@ -211,7 +211,7 @@ function NuevoTurnoContent() {
               <circle cx="12" cy="7" r="4" />
             </svg>
             <span style={{ flex: 1, color: selectedCliente ? colors.text : colors.placeholder, fontSize: 15 }}>
-              {selectedCliente ? `${selectedCliente.nombre} ${selectedCliente.apellido}` : 'Seleccionar...'}
+              {selectedCliente ? `${selectedCliente.nombre} ${selectedCliente.apellido}` : t('select')}
             </span>
             <svg
               width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2"
@@ -229,7 +229,7 @@ function NuevoTurnoContent() {
             }}>
               <input
                 autoFocus
-                placeholder="Buscar por nombre..."
+                placeholder={t('searchByName')}
                 value={clienteBuscar}
                 onChange={e => setClienteBuscar(e.target.value)}
                 style={{
@@ -253,7 +253,7 @@ function NuevoTurnoContent() {
         {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa) */}
         {mostrarSelectorProfesional && (
           <>
-            <p style={sectionLabelStyle}>PROFESIONAL</p>
+            <p style={sectionLabelStyle}>{t('professional')}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
               {activeProfesionales.map(p => {
                 const selected = selectedProfesionalId === p.id;
@@ -283,16 +283,16 @@ function NuevoTurnoContent() {
         )}
 
         {/* ─── SERVICIOS ─── */}
-        <p style={sectionLabelStyle}>SERVICIOS</p>
+        <p style={sectionLabelStyle}>{t('services')}</p>
         {mostrarSelectorProfesional && !profesionalSeleccionado ? (
           <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
-            Elegí una profesional para ver sus servicios.
+            {t('chooseProfessionalFirst')}
           </p>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
             {serviciosDisponibles.length === 0 ? (
               <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                Esta profesional no tiene servicios asignados.
+                {t('noServicesAssigned')}
               </p>
             ) : serviciosDisponibles.map(s => (
               <button
@@ -312,7 +312,7 @@ function NuevoTurnoContent() {
         )}
 
         {/* ─── HORA DEL TURNO ─── */}
-        <p style={sectionLabelStyle}>HORA DEL TURNO</p>
+        <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
         <div
           onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
           style={{ ...inputStyle, cursor: 'pointer', marginBottom: 32 }}
@@ -337,7 +337,7 @@ function NuevoTurnoContent() {
             ) ? 0.5 : 1,
           }}
         >
-          {saving ? 'Guardando...' : 'Confirmar Turno'}
+          {saving ? t('saving') : t('confirmAppointment')}
         </button>
       </div>
 
@@ -351,7 +351,7 @@ function NuevoTurnoContent() {
           }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.divider, margin: '0 auto 16px' }} />
             <p style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, marginBottom: 16, color: colors.text }}>
-              Hora del turno
+              {t('timeModalTitle')}
             </p>
             <DrumPicker
               columns={[
@@ -369,7 +369,7 @@ function NuevoTurnoContent() {
                 fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
               }}
             >
-              Confirmar
+              {t('confirm')}
             </button>
           </div>
         </div>
@@ -382,8 +382,9 @@ function NuevoTurnoContent() {
 // Default export — wraps in Suspense for useSearchParams
 // ─────────────────────────────────────────────
 export default function NuevoTurnoPage() {
+  const t = useTranslations('agenda.NuevoTurnoPage');
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>Cargando...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
       <NuevoTurnoContent />
     </Suspense>
   );

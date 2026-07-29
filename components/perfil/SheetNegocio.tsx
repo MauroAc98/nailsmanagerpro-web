@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
 import { SheetInput } from './SheetInput';
 
@@ -60,17 +61,18 @@ export function SheetNegocio({
   senaMonto, setSenaMonto, recordatorioAutomatico, setRecordatorioAutomatico,
   horaRecordatorio, setHoraRecordatorio, onGuardar, guardando, onClose,
 }: Props) {
+  const t = useTranslations('perfil.SheetNegocio');
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>Mi negocio</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
           <IconClose />
         </button>
       </div>
 
       <SheetInput
-        label="Monto de seña ($)"
+        label={t('depositAmount')}
         icon={<IconMoney />}
         value={senaMonto}
         onChange={setSenaMonto}
@@ -84,9 +86,9 @@ export function SheetNegocio({
         backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
       }}>
         <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>Recordatorio automático</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('autoReminder')}</p>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
-            Enviá un WhatsApp la noche anterior a tus clientes
+            {t('autoReminderSubtitle')}
           </p>
         </div>
         <PillToggle value={recordatorioAutomatico} onChange={setRecordatorioAutomatico} />
@@ -119,7 +121,7 @@ export function SheetNegocio({
           opacity: guardando ? 0.6 : 1,
         }}
       >
-        {guardando ? 'Guardando...' : 'Guardar cambios'}
+        {guardando ? t('saving') : t('save')}
       </button>
     </div>
   );

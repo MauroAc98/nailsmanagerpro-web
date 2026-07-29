@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 
 interface Props {
@@ -56,18 +57,19 @@ export function SheetDatosPersonales({
   nombreEstudio, setNombreEstudio, telefono, setTelefono, direccion, setDireccion,
   onGuardar, guardando, onClose,
 }: Props) {
+  const t = useTranslations('perfil.SheetDatosPersonales');
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>Datos personales</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
           <IconClose />
         </button>
       </div>
 
-      <SheetInput label="Nombre del estudio" icon={<IconStore />} value={nombreEstudio} onChange={setNombreEstudio} placeholder="Nombre del estudio" />
-      <SheetInput label="Teléfono" icon={<IconPhone />} value={telefono} onChange={setTelefono} placeholder="Teléfono" type="tel" inputMode="tel" />
-      <SheetInput label="Dirección" icon={<IconMapPin />} value={direccion} onChange={setDireccion} placeholder="Dirección" />
+      <SheetInput label={t('studioName')} icon={<IconStore />} value={nombreEstudio} onChange={setNombreEstudio} placeholder={t('studioName')} />
+      <SheetInput label={t('phone')} icon={<IconPhone />} value={telefono} onChange={setTelefono} placeholder={t('phone')} type="tel" inputMode="tel" />
+      <SheetInput label={t('address')} icon={<IconMapPin />} value={direccion} onChange={setDireccion} placeholder={t('address')} />
 
       <button
         onClick={onGuardar}
@@ -78,7 +80,7 @@ export function SheetDatosPersonales({
           opacity: guardando ? 0.6 : 1,
         }}
       >
-        {guardando ? 'Guardando...' : 'Guardar cambios'}
+        {guardando ? t('saving') : t('save')}
       </button>
     </div>
   );

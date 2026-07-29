@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
@@ -87,6 +88,7 @@ function IconChevronRight() {
 }
 
 export default function PerfilPage() {
+  const t = useTranslations('perfil.PerfilPage');
   const router = useRouter();
   const { user, updatePerfil, logout, subscriptionExpired, daysLeft, subscriptionEndsAt, isExempt } = useAuth();
 
@@ -141,7 +143,7 @@ export default function PerfilPage() {
     if (!sheetActivo || sheetActivo === 'mensaje') return;
 
     if (sheetActivo === 'password' && password !== passwordConfirmation) {
-      setPasswordError('Las contraseñas no coinciden.');
+      setPasswordError(t('passwordsDontMatch'));
       return;
     }
 
@@ -162,9 +164,9 @@ export default function PerfilPage() {
         setPasswordConfirmation('');
       }
       showToast(
-        sheetActivo === 'password' ? 'Contraseña actualizada' :
-        sheetActivo === 'negocio'  ? 'Cambios guardados' :
-        'Datos guardados'
+        sheetActivo === 'password' ? t('passwordUpdated') :
+        sheetActivo === 'negocio'  ? t('changesSaved') :
+        t('dataSaved')
       );
       cerrarSheet();
     } catch (e) {
@@ -180,7 +182,7 @@ export default function PerfilPage() {
   };
 
   const handleLogout = async () => {
-    if (await confirmDialog('¿Seguro que querés salir?', { confirmText: 'Salir' })) {
+    if (await confirmDialog(t('logoutConfirm'), { confirmText: t('logoutConfirmButton') })) {
       await logout();
       router.push('/login');
     }
@@ -239,38 +241,38 @@ export default function PerfilPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surfaceSubtle, paddingBottom: 24 }}>
       <div style={{ padding: '24px 20px 12px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>Perfil</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <HeroPerfil user={user} />
 
-        <CardSeccion titulo="Datos personales" icono={<IconStore />} onEditar={() => abrirSheet('personal')}>
-          <FilaDato label="Nombre del estudio" valor={user.name} />
-          <FilaDato label="Teléfono" valor={user.telefono} />
-          <FilaDato label="Dirección" valor={user.direccion} />
+        <CardSeccion titulo={t('sectionPersonalData')} icono={<IconStore />} onEditar={() => abrirSheet('personal')}>
+          <FilaDato label={t('studioName')} valor={user.name} />
+          <FilaDato label={t('phone')} valor={user.telefono} />
+          <FilaDato label={t('address')} valor={user.direccion} />
         </CardSeccion>
 
-        <CardSeccion titulo="Mi negocio" icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>
-          <FilaDato label="Monto de seña" valor={user.sena_monto != null ? `$${user.sena_monto}` : null} />
-          <FilaDato label="Recordatorio automático" valor={user.recordatorio_automatico ? 'Sí' : 'No'} />
+        <CardSeccion titulo={t('sectionBusiness')} icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>
+          <FilaDato label={t('depositAmount')} valor={user.sena_monto != null ? `$${user.sena_monto}` : null} />
+          <FilaDato label={t('autoReminder')} valor={user.recordatorio_automatico ? t('yes') : t('no')} />
           {user.recordatorio_automatico && (
-            <FilaDato label="Hora de recordatorio" valor={user.hora_recordatorio} />
+            <FilaDato label={t('reminderTime')} valor={user.hora_recordatorio} />
           )}
         </CardSeccion>
 
-        <CardSeccion titulo="Suscripción" icono={<IconSuscripcion />}>
+        <CardSeccion titulo={t('sectionSubscription')} icono={<IconSuscripcion />}>
           {isExempt ? (
-            <FilaDato label="Estado" valor="Cuenta exenta" />
+            <FilaDato label={t('status')} valor={t('exemptAccount')} />
           ) : (
             <>
-              <FilaDato label="Estado" valor={subscriptionExpired ? 'Vencida' : 'Activa'} />
+              <FilaDato label={t('status')} valor={subscriptionExpired ? t('expired') : t('active')} />
               <FilaDato
-                label="Vence el"
+                label={t('expiresOn')}
                 valor={subscriptionEndsAt ? formatFechaCorta(subscriptionEndsAt) : null}
               />
               {!subscriptionExpired && daysLeft != null && (
-                <FilaDato label="Días restantes" valor={String(daysLeft)} />
+                <FilaDato label={t('daysLeft')} valor={String(daysLeft)} />
               )}
             </>
           )}
@@ -291,7 +293,7 @@ export default function PerfilPage() {
           }}>
             <IconWhatsapp />
           </div>
-          <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: colors.text }}>Mensajes de WhatsApp</span>
+          <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: colors.text }}>{t('whatsappMessages')}</span>
           <IconChevronRight />
         </button>
 
@@ -310,7 +312,7 @@ export default function PerfilPage() {
           }}>
             <IconLock />
           </div>
-          <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: colors.text }}>Cambiar contraseña</span>
+          <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: colors.text }}>{t('changePassword')}</span>
           <IconChevronRight />
         </button>
 
@@ -323,7 +325,7 @@ export default function PerfilPage() {
             color: colors.danger, fontSize: 15, fontWeight: 600,
           }}
         >
-          Cerrar sesión
+          {t('logout')}
         </button>
       </div>
 

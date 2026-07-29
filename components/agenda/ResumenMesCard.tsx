@@ -2,13 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { statsService, DashboardStats } from '@/services/statsService';
-
-const MONTHS = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
+import { nombreMes } from '@/lib/dateFormat';
 
 function formatFecha(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -30,6 +27,7 @@ interface Props {
 // ─────────────────────────────────────────────
 export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   const router = useRouter();
+  const t = useTranslations('agenda.ResumenMesCard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
   const esMesActual = viewDate.getFullYear() === new Date().getFullYear()
@@ -77,14 +75,14 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
             <line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: colors.subtext, textTransform: 'uppercase' }}>
-            {esMesActual ? 'Estadísticas de este mes' : `Estadísticas de ${MONTHS[viewDate.getMonth()]}`}
+            {esMesActual ? t('statsThisMonth') : t('statsOfMonth', { mes: nombreMes(viewDate, 'long', 'ninguna') })}
           </p>
         </div>
         <p style={{ margin: '3px 0 0', fontSize: 18, fontWeight: 700, color: colors.textStrong }}>
-          {stats.total_turnos} turno{stats.total_turnos === 1 ? '' : 's'}
+          {t('appointmentsCount', { count: stats.total_turnos })}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-          {topServicio ? `Top: ${topServicio} · ` : ''}{stats.clientes.nuevas} cliente{stats.clientes.nuevas === 1 ? '' : 's'} nueva{stats.clientes.nuevas === 1 ? '' : 's'}
+          {topServicio && t('topService', { nombre: topServicio })}{t('newClientsCount', { count: stats.clientes.nuevas })}
         </p>
       </div>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>

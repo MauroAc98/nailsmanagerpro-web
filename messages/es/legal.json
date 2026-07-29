@@ -1,0 +1,20 @@
+{
+  "LegalPage": {
+    "back": "← Volver",
+    "title": "Términos y Condiciones",
+    "lastUpdated": "Última actualización: julio de 2026",
+    "ownershipTitle": "Titularidad",
+    "ownershipText": "Nailsmanagerpro es el nombre comercial bajo el cual Mauro Hernan Acosta, monotributista registrado ante ARCA (ex AFIP), ofrece un sistema de gestión de turnos y clientes para profesionales de la industria de la belleza.",
+    "responsibleTitle": "Datos del responsable",
+    "legalNameLabel": "Nombre legal:",
+    "legalNameValue": "Mauro Hernan Acosta",
+    "brandLabel": "Marca comercial:",
+    "brandValue": "Nailsmanagerpro",
+    "taxStatusLabel": "Condición fiscal:",
+    "taxStatusValue": "Monotributista (ARCA)",
+    "usageTitle": "Uso del servicio",
+    "usageText": "El acceso a Nailsmanagerpro está sujeto a una suscripción activa. Los datos cargados por cada usuario (clientes, turnos, historial) son de su exclusiva responsabilidad y se utilizan únicamente para el funcionamiento del servicio.",
+    "contactTitle": "Contacto",
+    "contactText": "Para consultas sobre estos términos, soporte técnico o cualquier otro tema relacionado con el servicio, podés escribir a <email>nailsmanagerpro.app@gmail.com</email>."
+  }
+}

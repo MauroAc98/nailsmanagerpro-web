@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
+import { initLocale, useLocaleStore } from '@/store/useLocaleStore';
 import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
@@ -38,11 +40,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { token, inicializado, debeCambiarPassword, subscriptionExpired, mostrarBienvenida } = useAuthStore();
   const isLoading = useLoadingStore(state => state.isLoading);
+  const { locale, messages, mensajesListos } = useLocaleStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     useAuthStore.getState().inicializar();
     initTheme();
+    initLocale();
     setMounted(true);
   }, []);
 
@@ -130,7 +134,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   let puedeMostrarContenido: boolean;
   if (esRutaNeutral) {
     puedeMostrarContenido = true;
-  } else if (!mounted || !inicializado) {
+  } else if (!mounted || !inicializado || !mensajesListos) {
+    // mensajesListos evita el flash de español en el primer paint de un
+    // usuario pt-BR: el catálogo `es` es estático (síncrono) pero
+    // pt-BR/en se cargan con `await import()`, así que hay un tick donde
+    // todavía no están listos.
     puedeMostrarContenido = false;
   } else if (!token) {
     puedeMostrarContenido = debeCambiarPassword
@@ -143,7 +151,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <NextIntlClientProvider locale={locale} messages={messages ?? undefined}>
       {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
@@ -151,6 +159,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <MotivoCancelacionSheetHost />
       <HistorialClienteSheetHost />
       <ToastHost />
-    </>
+    </NextIntlClientProvider>
   );
 }

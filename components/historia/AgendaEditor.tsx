@@ -4,12 +4,11 @@ import React from 'react';
 import { colors, shadows } from '@/theme/colors';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { claveSlot } from '@/hooks/useGenerarHistoria';
-
-const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
-  return `${DAYS[d.getDay()].toUpperCase()} ${d.getDate()}`;
+  return `${nombreDiaIntl(d, 'short', 'mayusculas')} ${d.getDate()}`;
 }
 
 interface Props {

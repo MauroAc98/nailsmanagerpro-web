@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Playfair_Display } from 'next/font/google';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
 
@@ -12,6 +13,7 @@ import { colors, shadows, withAlpha } from '@/theme/colors';
 const playfair = Playfair_Display({ subsets: ['latin'], weight: '700', style: 'italic' });
 
 export default function LoginPage() {
+  const t = useTranslations('auth.LoginPage');
   const router = useRouter();
   const { login, loading, error, clearError, debeCambiarPassword } = useAuth();
 
@@ -58,7 +60,7 @@ export default function LoginPage() {
           Nailsmanagerpro
         </h1>
         <p style={{ fontSize: 13, fontWeight: 600, color: colors.primary, margin: 0, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-          Día a día, sin perder el control
+          {t('tagline')}
         </p>
       </div>
 
@@ -77,7 +79,7 @@ export default function LoginPage() {
 
         {/* Email */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, margin: 0, marginLeft: 2 }}>Email</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, margin: 0, marginLeft: 2 }}>{t('emailLabel')}</p>
           <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={withAlpha(colors.primary, 'aa')} strokeWidth="1.8">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -85,7 +87,7 @@ export default function LoginPage() {
             </svg>
             <input
               type="email"
-              placeholder="tu@email.com"
+              placeholder={t('emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -99,7 +101,7 @@ export default function LoginPage() {
 
         {/* Contraseña */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, margin: 0, marginLeft: 2 }}>Contraseña</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, margin: 0, marginLeft: 2 }}>{t('passwordLabel')}</p>
           <div style={{ display: 'flex', alignItems: 'center', height: 52, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card, borderRadius: 12, paddingLeft: 16, paddingRight: 16, gap: 12 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={withAlpha(colors.primary, 'aa')} strokeWidth="1.8">
               <rect x="3" y="11" width="18" height="11" rx="2"/>
@@ -141,7 +143,7 @@ export default function LoginPage() {
             onClick={() => router.push('/forgot-password')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary, fontSize: 13, fontWeight: 600, padding: 0 }}
           >
-            ¿Olvidaste tu contraseña?
+            {t('forgotPassword')}
           </button>
         </div>
 
@@ -161,7 +163,7 @@ export default function LoginPage() {
             transition: 'background-color 0.2s',
           }}
         >
-          {loading ? 'Ingresando...' : 'Ingresar'}
+          {loading ? t('submitting') : t('submit')}
         </button>
       </div>
 
@@ -170,7 +172,7 @@ export default function LoginPage() {
         onClick={() => router.push('/legal')}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.subtext, fontSize: 12, marginTop: 28, padding: 8 }}
       >
-        Términos y condiciones
+        {t('terms')}
       </button>
     </div>
   );

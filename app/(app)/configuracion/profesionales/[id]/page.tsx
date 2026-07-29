@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -61,6 +62,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
 }
 
 export default function EditarProfesionalPage() {
+  const t = useTranslations('configuracion.EditarProfesionalPage');
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
@@ -86,7 +88,7 @@ export default function EditarProfesionalPage() {
       p = useProfesionalStore.getState().profesionales.find(x => x.id === id);
 
       if (!p) {
-        await alertDialog('No se pudo cargar la profesional.');
+        await alertDialog(t('loadError'));
         router.push('/configuracion/profesionales');
         return;
       }
@@ -106,7 +108,7 @@ export default function EditarProfesionalPage() {
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
-      setErrorNombre('El nombre es obligatorio');
+      setErrorNombre(t('nameRequired'));
       return;
     }
 
@@ -114,8 +116,8 @@ export default function EditarProfesionalPage() {
     const duplicado = profesionales.find(p => p.nombre.toLowerCase() === nombreNormalizado && p.id !== id);
     if (duplicado) {
       const msg = duplicado.activo
-        ? 'Ya existe una profesional con ese nombre.'
-        : 'Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.';
+        ? t('duplicateActive')
+        : t('duplicateInactive');
       await alertDialog(msg);
       return;
     }
@@ -132,7 +134,7 @@ export default function EditarProfesionalPage() {
     if (result.success) {
       router.push('/configuracion/profesionales');
     } else {
-      await alertDialog(result.message ?? 'No se pudo guardar la profesional.');
+      await alertDialog(result.message ?? t('saveError'));
     }
   };
 
@@ -141,7 +143,7 @@ export default function EditarProfesionalPage() {
   if (loadingProfesional) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: colors.subtext }}>Cargando...</p>
+        <p style={{ color: colors.subtext }}>{t('loading')}</p>
       </div>
     );
   }
@@ -161,17 +163,17 @@ export default function EditarProfesionalPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Editar profesional</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* Form */}
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Nombre */}
         <div>
-          <label style={labelStyle}>Nombre *</label>
+          <label style={labelStyle}>{t('nameLabel')}</label>
           <input
             type="text"
-            placeholder="Ej: Sofía"
+            placeholder={t('namePlaceholder')}
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
             style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
@@ -181,7 +183,7 @@ export default function EditarProfesionalPage() {
 
         {/* Color */}
         <div>
-          <label style={labelStyle}>Color</label>
+          <label style={labelStyle}>{t('colorLabel')}</label>
           <ColorSwatchPicker value={color} onChange={setColor} />
         </div>
 
@@ -191,9 +193,9 @@ export default function EditarProfesionalPage() {
           backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '12px 16px',
         }}>
           <div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>Activa</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('activeLabel')}</p>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              {activo ? 'Disponible para agendar turnos' : 'No aparece para agendar nuevos turnos'}
+              {activo ? t('activeSubtitleOn') : t('activeSubtitleOff')}
             </p>
           </div>
           <PillToggle value={activo} onChange={setActivo} />
@@ -201,10 +203,10 @@ export default function EditarProfesionalPage() {
 
         {/* Servicios */}
         <div>
-          <label style={labelStyle}>Servicios que puede realizar</label>
+          <label style={labelStyle}>{t('servicesLabel')}</label>
           {serviciosActivos.length === 0 ? (
             <p style={{ fontSize: 13, color: colors.subtext, margin: '4px 0 0 2px' }}>
-              No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.
+              {t('noActiveServices')}
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -238,7 +240,7 @@ export default function EditarProfesionalPage() {
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}
         >
-          {saving ? 'Guardando...' : 'Guardar cambios'}
+          {saving ? t('saving') : t('submit')}
         </button>
       </div>
     </div>

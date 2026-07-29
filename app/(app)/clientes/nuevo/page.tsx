@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useClientesStore } from '@/store/useClienteStore';
 import { alertDialog } from '@/store/useConfirmStore';
@@ -21,6 +22,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function NuevoClientePage() {
+  const t = useTranslations('clientes.NuevoClientePage');
   const router = useRouter();
   const { crearCliente } = useClientesStore();
 
@@ -33,8 +35,8 @@ export default function NuevoClientePage() {
 
   const validate = () => {
     const e: { nombre?: string; apellido?: string } = {};
-    if (!nombre.trim()) e.nombre = 'El nombre es obligatorio';
-    if (!apellido.trim()) e.apellido = 'El apellido es obligatorio';
+    if (!nombre.trim()) e.nombre = t('nameRequired');
+    if (!apellido.trim()) e.apellido = t('lastNameRequired');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -72,7 +74,7 @@ export default function NuevoClientePage() {
     if (result.success) {
       router.push('/clientes');
     } else {
-      await alertDialog(result.message ?? 'No se pudo guardar el cliente.');
+      await alertDialog(result.message ?? t('saveError'));
     }
   };
 
@@ -93,7 +95,7 @@ export default function NuevoClientePage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>Nuevo cliente</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* Formulario */}
@@ -101,10 +103,10 @@ export default function NuevoClientePage() {
 
         {/* Nombre */}
         <div>
-          <label style={labelStyle}>Nombre *</label>
+          <label style={labelStyle}>{t('nameLabel')}</label>
           <input
             type="text"
-            placeholder="Ej: Carla"
+            placeholder={t('namePlaceholder')}
             value={nombre}
             onChange={e => { setNombre(e.target.value); setErrors(prev => ({ ...prev, nombre: undefined })); }}
             style={{ ...inputStyle, borderColor: errors.nombre ? colors.dangerBorder : colors.border }}
@@ -114,10 +116,10 @@ export default function NuevoClientePage() {
 
         {/* Apellido */}
         <div>
-          <label style={labelStyle}>Apellido *</label>
+          <label style={labelStyle}>{t('lastNameLabel')}</label>
           <input
             type="text"
-            placeholder="Ej: Gomez"
+            placeholder={t('lastNamePlaceholder')}
             value={apellido}
             onChange={e => { setApellido(e.target.value); setErrors(prev => ({ ...prev, apellido: undefined })); }}
             style={{ ...inputStyle, borderColor: errors.apellido ? colors.dangerBorder : colors.border }}
@@ -127,7 +129,7 @@ export default function NuevoClientePage() {
 
         {/* Teléfono */}
         <div>
-          <label style={labelStyle}>Teléfono</label>
+          <label style={labelStyle}>{t('phoneLabel')}</label>
           <div style={{ display: 'flex', gap: 8 }}>
             <select
               value={codigoPais}
@@ -145,7 +147,7 @@ export default function NuevoClientePage() {
             </select>
             <input
               type="tel"
-              placeholder="Número sin código de país"
+              placeholder={t('phonePlaceholder')}
               value={telefono}
               onChange={e => setTelefono(e.target.value)}
               onPaste={handlePasteTelefono}
@@ -165,7 +167,7 @@ export default function NuevoClientePage() {
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}
         >
-          {saving ? 'Guardando...' : 'Registrar Cliente'}
+          {saving ? t('saving') : t('submit')}
         </button>
       </div>
     </div>
