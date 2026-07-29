@@ -1,1 +1,20 @@
-{}
+{
+  "EstadisticasPage": {
+    "title": "Estatísticas",
+    "loading": "Carregando...",
+    "all": "Todas",
+    "period": "agendamentos neste período",
+    "appointmentsByStatus": "Agendamentos por status",
+    "noAppointmentsThisPeriod": "Não há agendamentos neste período.",
+    "completed": "Concluídos",
+    "confirmed": "Confirmados",
+    "cancelled": "Cancelados",
+    "cancellationRate": "{pct}% dos agendamentos foram cancelados neste período.",
+    "clients": "Clientes",
+    "noConfirmedAppointmentsThisPeriod": "Não há agendamentos confirmados neste período.",
+    "newClients": "Novas",
+    "returningClients": "Recorrentes",
+    "topServices": "Serviços mais pedidos",
+    "noServicesThisPeriod": "Não há serviços agendados neste período."
+  }
+}

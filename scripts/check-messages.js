@@ -62,10 +62,51 @@ function flatten(obj, prefix = "") {
   return out;
 }
 
-const TOKEN_RE = /\{[^}]+\}/g;
+// Extrae la "firma" de cada placeholder ICU de un string: para uno simple
+// como "{email}" es solo el nombre del argumento; para uno con plural/select
+// como "{days, plural, one {# día} other {# días}}" es el nombre del
+// argumento + el tipo + las categorías (one/other/...), ignorando el texto
+// traducible que hay dentro de cada rama — ese texto es justamente lo que
+// difiere entre locales a propósito, no es parte del placeholder.
 function tokens(value) {
   if (typeof value !== "string") return [];
-  return (value.match(TOKEN_RE) ?? []).sort();
+  const signatures = [];
+  let i = 0;
+  while (i < value.length) {
+    if (value[i] === "{") {
+      const start = i;
+      let depth = 1;
+      i++;
+      while (i < value.length && depth > 0) {
+        if (value[i] === "{") depth++;
+        else if (value[i] === "}") depth--;
+        i++;
+      }
+      signatures.push(parseIcuBlock(value.slice(start + 1, i - 1)));
+    } else {
+      i++;
+    }
+  }
+  return signatures.sort();
+}
+
+function parseIcuBlock(inner) {
+  const firstComma = inner.indexOf(",");
+  if (firstComma === -1) return inner.trim(); // placeholder simple: "{name}"
+
+  const argName = inner.slice(0, firstComma).trim();
+  const rest = inner.slice(firstComma + 1);
+  const secondComma = rest.indexOf(",");
+  if (secondComma === -1) return inner.trim();
+
+  const formatType = rest.slice(0, secondComma).trim(); // plural | select | selectordinal
+  const categoriesPart = rest.slice(secondComma + 1);
+  const categories = [];
+  const catRe = /(\w+)\s*\{/g;
+  let m;
+  while ((m = catRe.exec(categoriesPart))) categories.push(m[1]);
+
+  return `${argName},${formatType},${categories.sort().join(",")}`;
 }
 
 function main() {

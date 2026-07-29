@@ -80,7 +80,7 @@ export default function RootLayout({
             dentro de un string inline). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var dark=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';}catch(e){}try{var SUPPORTED=['es'];var loc=localStorage.getItem('locale');if(!loc||SUPPORTED.indexOf(loc)===-1){try{var au=localStorage.getItem('auth_user');if(au){var u=JSON.parse(au);if(u&&u.locale&&SUPPORTED.indexOf(u.locale)!==-1)loc=u.locale;}}catch(e){}}if(!loc||SUPPORTED.indexOf(loc)===-1)loc='es';document.documentElement.lang=loc;document.cookie='locale='+loc+';path=/;max-age=31536000';}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var dark=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';}catch(e){}try{var SUPPORTED=['es','pt-BR'];var loc=localStorage.getItem('locale');if(!loc||SUPPORTED.indexOf(loc)===-1){try{var au=localStorage.getItem('auth_user');if(au){var u=JSON.parse(au);if(u&&u.locale&&SUPPORTED.indexOf(u.locale)!==-1)loc=u.locale;}}catch(e){}}if(!loc||SUPPORTED.indexOf(loc)===-1)loc='es';document.documentElement.lang=loc;document.cookie='locale='+loc+';path=/;max-age=31536000';}catch(e){}})();`,
           }}
         />
         <link rel="apple-touch-icon" href="/icon-192.png" />

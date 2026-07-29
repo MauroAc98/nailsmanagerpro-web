@@ -1,1 +1,89 @@
-{}
+{
+  "AgendaPage": {
+    "title": "Minha Agenda",
+    "share": "COMPARTILHAR",
+    "professionalWithAppointmentToday": "Profissional com agendamento hoje",
+    "professionalWithAppointmentOn": "Profissional com agendamento em {fecha}",
+    "noResultsFound": "Nenhum agendamento encontrado",
+    "noAppointmentsToday": "Não há agendamentos para hoje",
+    "noAppointmentsOn": "Não há agendamentos em {fecha}",
+    "finished": "Agendamento finalizado",
+    "finishError": "Não foi possível finalizar o agendamento.",
+    "cancelled": "Agendamento cancelado",
+    "cancelError": "Não foi possível cancelar o agendamento."
+  },
+  "SwipeableTurnoCard": {
+    "deletedClient": "Cliente excluído",
+    "finishNow": "Finalizar agora",
+    "inProgress": "● EM ANDAMENTO",
+    "cancel": "CANCELAR"
+  },
+  "FinalizadoCard": {
+    "deletedClient": "Cliente excluído",
+    "finished": "✓ FINALIZADO"
+  },
+  "AgendaListHeader": {
+    "results": "Resultados",
+    "todayAppointments": "Agendamentos de hoje",
+    "appointmentsOf": "Agendamentos de {fecha}",
+    "activeFilters": "Filtros ativos",
+    "filter": "Filtrar"
+  },
+  "FiltroSheetContent": {
+    "title": "Filtros",
+    "clearAll": "Limpar tudo",
+    "searchClient": "Buscar cliente",
+    "clientNamePlaceholder": "Nome da cliente...",
+    "searchByDate": "Buscar por data",
+    "datePlaceholder": "DD/MM/AAAA",
+    "invalidDate": "Data inválida",
+    "filterByService": "Filtrar por serviço",
+    "viewResults": "Ver resultados"
+  },
+  "SelectorProfesionalDia": {
+    "all": "Todas"
+  },
+  "EditarTurnoPage": {
+    "title": "Editar Agendamento",
+    "loadingAppointment": "Carregando agendamento...",
+    "back": "Voltar",
+    "editingAppointment": "EDITANDO AGENDAMENTO: {fecha}",
+    "client": "CLIENTE",
+    "select": "Selecionar...",
+    "searchByName": "Buscar por nome...",
+    "professional": "PROFISSIONAL",
+    "services": "SERVIÇOS",
+    "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
+    "appointmentTime": "HORÁRIO DO AGENDAMENTO",
+    "saving": "Salvando...",
+    "saveChanges": "Salvar Alterações",
+    "updateError": "Não foi possível atualizar o agendamento.",
+    "timeModalTitle": "Horário do agendamento",
+    "confirm": "Confirmar"
+  },
+  "NuevoTurnoPage": {
+    "title": "Novo Agendamento",
+    "loading": "Carregando...",
+    "selectedDay": "DIA SELECIONADO: {fecha}",
+    "client": "CLIENTE",
+    "select": "Selecionar...",
+    "searchByName": "Buscar por nome...",
+    "professional": "PROFISSIONAL",
+    "services": "SERVIÇOS",
+    "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
+    "noServicesAssigned": "Essa profissional não tem serviços atribuídos.",
+    "appointmentTime": "HORÁRIO DO AGENDAMENTO",
+    "saving": "Salvando...",
+    "confirmAppointment": "Confirmar Agendamento",
+    "createError": "Não foi possível criar o agendamento.",
+    "timeModalTitle": "Horário do agendamento",
+    "confirm": "Confirmar"
+  },
+  "ResumenMesCard": {
+    "statsThisMonth": "Estatísticas deste mês",
+    "statsOfMonth": "Estatísticas de {mes}",
+    "appointmentsCount": "{count, plural, one {# agendamento} other {# agendamentos}}",
+    "topService": "Top: {nombre} · ",
+    "newClientsCount": "{count, plural, one {# cliente nova} other {# clientes novas}}"
+  }
+}

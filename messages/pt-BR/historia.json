@@ -1,1 +1,38 @@
-{}
+{
+  "TextoLibreInput": {
+    "placeholder": "Adicione um texto ao seu story..."
+  },
+  "StoryCanvas": {
+    "complete": "COMPLETO 🤍",
+    "bookYourSpot": "RESERVE SEU HORÁRIO"
+  },
+  "HistoriaPage": {
+    "title": "Gerar story",
+    "loading": "Carregando...",
+    "tabDay": "DIA",
+    "tabWeek": "SEMANA",
+    "tabMonth": "MÊS",
+    "firstHalf": "1 — 15",
+    "secondHalf": "16 — Fim",
+    "showScheduleOf": "Mostrar agenda de:",
+    "editAvailability": "Editar disponibilidade",
+    "editAvailabilityHint": "Sua disponibilidade real já está sendo mostrada. Use isto só se quiser ocultar algo pontual antes de compartilhar.",
+    "background": "Fundo",
+    "save": "Salvar",
+    "share": "Compartilhar",
+    "removeFixedBackground": "Remover fundo fixo salvo",
+    "removeFixedBackgroundConfirm": "O fundo fixo salvo será removido. Na próxima vez que você gerar um story, ele não vai ter fundo por padrão.",
+    "removeFixedBackgroundConfirmButton": "Remover fundo fixo",
+    "cancel": "Cancelar",
+    "saveBackgroundPrompt": "Você quer salvar esta imagem como fundo fixo para a próxima vez, ou usá-la só neste story?",
+    "saveFixed": "Salvar como fixo",
+    "useOnce": "Usar só desta vez",
+    "emptyState": "Não há disponibilidade para mostrar neste período",
+    "noProfessionalForFixedBg": "Não foi possível identificar a profissional para salvar o fundo fixo. Será usado só desta vez.",
+    "couldNotSaveFixedBackground": "Não foi possível salvar o fundo fixo. Será usado só desta vez.",
+    "couldNotRemoveFixedBackground": "Não foi possível remover o fundo fixo.",
+    "noContentToShow": "Sem conteúdo: não há horários livres para mostrar na imagem.",
+    "couldNotGenerateImage": "Não foi possível gerar a imagem. Tente novamente.",
+    "shareTitle": "Minha agenda"
+  }
+}

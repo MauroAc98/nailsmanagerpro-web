@@ -1,1 +1,43 @@
-{}
+{
+  "ClientesPage": {
+    "title": "Clientes",
+    "searchPlaceholder": "Buscar por nome ou telefone...",
+    "historyButton": "Histórico",
+    "historyButtonAriaLabel": "Ver histórico de agendamentos",
+    "noContactInfo": "Sem dados de contato",
+    "loading": "Carregando clientes...",
+    "noResults": "Nenhum cliente encontrado",
+    "emptyState": "Cadastre seu primeiro cliente!",
+    "toggleError": "Não foi possível atualizar o cliente."
+  },
+  "NuevoClientePage": {
+    "title": "Novo cliente",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Carla",
+    "nameRequired": "O nome é obrigatório",
+    "lastNameLabel": "Sobrenome *",
+    "lastNamePlaceholder": "Ex: Gomez",
+    "lastNameRequired": "O sobrenome é obrigatório",
+    "phoneLabel": "Telefone",
+    "phonePlaceholder": "Número sem código do país",
+    "saving": "Salvando...",
+    "submit": "Cadastrar Cliente",
+    "saveError": "Não foi possível salvar o cliente."
+  },
+  "EditarClientePage": {
+    "title": "Editar cliente",
+    "loading": "Carregando...",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Carla",
+    "nameRequired": "O nome é obrigatório",
+    "lastNameLabel": "Sobrenome *",
+    "lastNamePlaceholder": "Ex: Gomez",
+    "lastNameRequired": "O sobrenome é obrigatório",
+    "phoneLabel": "Telefone",
+    "phonePlaceholder": "Número sem código do país",
+    "saving": "Salvando...",
+    "submit": "Atualizar Dados",
+    "saveError": "Não foi possível salvar o cliente.",
+    "loadError": "Não foi possível carregar o cliente."
+  }
+}

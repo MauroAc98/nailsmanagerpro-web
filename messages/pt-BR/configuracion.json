@@ -1,1 +1,185 @@
-{}
+{
+  "ConfiguracionPage": {
+    "title": "Configurações",
+    "servicios": "Serviços",
+    "slots": "Horários Disponíveis",
+    "profesionales": "Profissionais",
+    "whatsapp": "Vincular WhatsApp",
+    "estadisticas": "Estatísticas",
+    "apariencia": "Aparência",
+    "idioma": "Idioma",
+    "ayuda": "Ajuda"
+  },
+  "IdiomaPage": {
+    "title": "Idioma",
+    "subtitle": "Escolha o idioma do app. A mudança é aplicada na hora e sincronizada com sua conta.",
+    "persistFailedWarning": "Não foi possível salvar o idioma no servidor. Foi aplicado apenas neste dispositivo."
+  },
+  "ServiciosPage": {
+    "title": "Serviços",
+    "searchPlaceholder": "Buscar serviço...",
+    "loading": "Carregando serviços...",
+    "noResults": "Nenhum resultado encontrado",
+    "emptyState": "Cadastre seu primeiro serviço!"
+  },
+  "NuevoServicioPage": {
+    "title": "Novo serviço",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Kapping",
+    "nameRequired": "O nome é obrigatório",
+    "durationLabel": "Duração *",
+    "priceLabel": "Preço (opcional)",
+    "pricePlaceholder": "Ex: 5000",
+    "invalidDuration": "Informe uma duração válida.",
+    "duplicateActive": "Já existe um serviço com esse nome.",
+    "duplicateInactive": "Você já tem um serviço com esse nome (inativo). Reative-o na lista em vez de criar um novo.",
+    "saving": "Salvando...",
+    "submit": "Adicionar serviço",
+    "saveError": "Não foi possível salvar o serviço."
+  },
+  "EditarServicioPage": {
+    "title": "Editar serviço",
+    "loading": "Carregando...",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Kapping",
+    "nameRequired": "O nome é obrigatório",
+    "durationLabel": "Duração *",
+    "priceLabel": "Preço (opcional)",
+    "pricePlaceholder": "Ex: 5000",
+    "invalidDuration": "Informe uma duração válida.",
+    "duplicateActive": "Já existe um serviço com esse nome.",
+    "duplicateInactive": "Você já tem um serviço com esse nome (inativo). Reative-o na lista em vez de criar um novo.",
+    "loadError": "Não foi possível carregar o serviço.",
+    "saving": "Salvando...",
+    "submit": "Salvar alterações",
+    "saveError": "Não foi possível salvar o serviço."
+  },
+  "ProfesionalesPage": {
+    "title": "Profissionais",
+    "disclaimer": "Desativar uma profissional não apaga o histórico de agendamentos dela — só deixa de aparecer para novos agendamentos.",
+    "loading": "Carregando profissionais...",
+    "emptyState": "Cadastre sua primeira profissional!",
+    "noServices": "Sem serviços atribuídos",
+    "serviceCount": "{count, plural, one {# serviço} other {# serviços}}"
+  },
+  "NuevoProfesionalPage": {
+    "title": "Nova profissional",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Sofía",
+    "nameRequired": "O nome é obrigatório",
+    "colorLabel": "Cor",
+    "servicesLabel": "Serviços que ela pode realizar",
+    "noActiveServices": "Ainda não há serviços ativos. Cadastre-os primeiro em Configurações → Serviços.",
+    "duplicateActive": "Já existe uma profissional com esse nome.",
+    "duplicateInactive": "Você já tem uma profissional com esse nome (inativa). Reative-a na lista em vez de criar uma nova.",
+    "saving": "Salvando...",
+    "submit": "Adicionar profissional",
+    "saveError": "Não foi possível salvar a profissional."
+  },
+  "EditarProfesionalPage": {
+    "title": "Editar profissional",
+    "loading": "Carregando...",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Sofía",
+    "nameRequired": "O nome é obrigatório",
+    "colorLabel": "Cor",
+    "activeLabel": "Ativa",
+    "activeSubtitleOn": "Disponível para novos agendamentos",
+    "activeSubtitleOff": "Não aparece para novos agendamentos",
+    "servicesLabel": "Serviços que ela pode realizar",
+    "noActiveServices": "Ainda não há serviços ativos. Cadastre-os primeiro em Configurações → Serviços.",
+    "loadError": "Não foi possível carregar a profissional.",
+    "duplicateActive": "Já existe uma profissional com esse nome.",
+    "duplicateInactive": "Você já tem uma profissional com esse nome (inativa). Reative-a na lista em vez de criar uma nova.",
+    "saving": "Salvando...",
+    "submit": "Salvar alterações",
+    "saveError": "Não foi possível salvar a profissional."
+  },
+  "AparienciaPage": {
+    "title": "Aparência",
+    "subtitle": "Escolha como o app aparece. \"Sistema\" segue o modo claro ou escuro configurado no seu dispositivo.",
+    "light": "Claro",
+    "lightSubtitle": "Fundo branco, sempre",
+    "dark": "Escuro",
+    "darkSubtitle": "Fundo escuro, sempre",
+    "system": "Sistema",
+    "systemSubtitle": "Segue a configuração do dispositivo"
+  },
+  "SlotsPage": {
+    "title": "Horários Disponíveis",
+    "subtitle": "Estes são os horários em que suas clientes podem reservar agendamentos.",
+    "loading": "Carregando horários...",
+    "emptyState": "Nenhum horário cadastrado. Toque em + para adicionar um.",
+    "available": "Disponível",
+    "disabled": "Desativado",
+    "delete": "EXCLUIR",
+    "addModalTitle": "Adicionar horário",
+    "add": "Adicionar",
+    "duplicateActive": "Já existe um horário para esse valor.",
+    "duplicateInactive": "Você já tem um horário para esse valor (inativo). Ative-o na lista.",
+    "added": "Horário adicionado",
+    "addError": "Não foi possível adicionar o horário.",
+    "deleteConfirm": "Excluir o horário das {hora}?",
+    "deleteConfirmButton": "Excluir",
+    "deleted": "Horário excluído",
+    "deleteError": "Não foi possível excluir o horário."
+  },
+  "AyudaPage": {
+    "title": "Ajuda",
+    "subtitle": "Uma explicação curta de cada seção do app. Toque em um módulo para ver o detalhe.",
+    "sections": {
+      "gettingStarted": {
+        "title": "Primeiros passos",
+        "text": "Entre com o e-mail e a senha provisória que você recebeu por e-mail quando sua conta foi criada. Na primeira vez, o app vai pedir que você a troque por uma nova antes de deixar você entrar — é um passo obrigatório, só uma vez.\n\nDepois de entrar, o app funciona com 4 seções fixas na parte de baixo da tela:\n\n- Agenda: seus agendamentos, dia a dia. É a tela principal.\n- Clientes: a lista das suas clientes.\n- Config: serviços, horários, profissionais, WhatsApp, aparência e esta Ajuda.\n- Perfil: seus dados, o sinal, e sua assinatura."
+      },
+      "initialSetup": {
+        "title": "Antes de começar: o que configurar primeiro",
+        "text": "Para conseguir criar seu primeiro agendamento, você precisa, nesta ordem:\n\n1. Pelo menos um serviço ativo (Configurações → Serviços) — sem isso você não consegue escolher o que vai ser feito na cliente.\n2. Pelo menos um horário de atendimento ativo (Configurações → Horários Disponíveis) — sem isso o app não deixa você salvar nenhum agendamento, e avisa \"Você não tem horários de atendimento configurados\".\n3. Pelo menos uma cliente cadastrada (aba Clientes) — os agendamentos sempre são atribuídos a uma cliente já cadastrada, não dá para digitar o nome na hora direto na agenda.\n\nCom esses três passos você já pode criar agendamentos."
+      },
+      "bookingAppointment": {
+        "title": "Como fazer um agendamento",
+        "text": "1. Vá em Agenda e toque no botão + (embaixo à direita, em um dia que não seja passado).\n2. Escolha a cliente buscando pelo nome.\n3. Se você trabalha com mais de uma profissional, escolha quem vai atender — os serviços mostrados depois são filtrados pelo que essa pessoa sabe fazer.\n4. Escolha um ou mais serviços.\n5. Escolha o horário. O app valida sozinho: não deixa você escolher um horário fora do seu horário de atendimento, nem um que se sobreponha a outro agendamento do dia.\n6. Toque em \"Confirmar Agendamento\".\n\nPara cancelar um agendamento: deslize para a esquerda na lista da agenda e toque em \"Cancelar\". Para editá-lo: toque diretamente nele.\n\nEnquanto está sendo atendido, o cartão mostra \"EM ANDAMENTO\" com um botão para finalizar manualmente; depois que o horário passa, ele é marcado sozinho como finalizado e aparece esmaecido. Para procurar um agendamento específico (por cliente, serviço ou data), use o botão \"Filtrar\" acima da lista.\n\nSe você trabalha com mais de uma profissional, acima da lista do dia vão aparecer chips com os nomes das que têm agendamento naquele dia específico — toque em um para ver só os agendamentos dela, ou em \"Todas\" para ver todos juntos. Isso muda de acordo com o dia que você está vendo no calendário: se uma profissional não tem nada agendado naquele dia, ela não aparece como opção."
+      },
+      "services": {
+        "title": "Serviços",
+        "text": "Configurações → Serviços.\n\nCadastre cada serviço com o nome e a duração em minutos — essa duração é o que o app usa para calcular quanto tempo um agendamento ocupa e evitar que dois agendamentos se sobreponham.\n\nVocê pode desativar um serviço sem apagá-lo, caso pare de oferecê-lo por um tempo; os agendamentos antigos que já tinham esse serviço não são afetados."
+      },
+      "availableSlots": {
+        "title": "Horários Disponíveis",
+        "text": "Configurações → Horários Disponíveis.\n\nÉ a lista de horários em que é possível reservar (por exemplo 09:00, 09:30, 10:00...). Toque em + para adicionar um novo horário, e use o interruptor para ativá-lo ou desativá-lo sem apagá-lo.\n\nEsse passo é obrigatório: sem nenhum horário ativo, o app não deixa você criar agendamentos.\n\nSe você trabalha com mais de uma profissional, cada uma tem seu próprio horário — escolha o nome dela na linha no topo desta tela antes de cadastrar os horários dela (veja a seção \"Profissionais\" para mais detalhes)."
+      },
+      "clients": {
+        "title": "Clientes",
+        "text": "Aba Clientes.\n\nAli você cadastra nome, sobrenome e telefone de cada uma. O telefone é usado no botão de WhatsApp que aparece em cada agendamento e nas mensagens automáticas.\n\nVocê pode buscá-las pelo nome e ver o histórico de agendamentos delas. O interruptor em cada cartão desativa a cliente sem apagá-la (por exemplo, se ela parou de vir) — os agendamentos anteriores dela ficam intactos, e você pode reativá-la a qualquer momento com o mesmo interruptor."
+      },
+      "professionals": {
+        "title": "Profissionais: como adicionar uma nova",
+        "text": "Esta seção só é importante se você trabalha com mais de uma pessoa no salão. Se você trabalha sozinha, não precisa mexer em nada aqui.\n\n1. Configurações → Profissionais → botão +.\n2. Digite o nome dela e escolha uma cor para diferenciá-la na agenda.\n3. Marque os serviços que ela sabe fazer — isso filtra o que pode ser atribuído a ela ao criar um agendamento.\n4. Salve.\n5. Importante: vá em Configurações → Horários Disponíveis, escolha o nome dela no seletor no topo, e cadastre os horários de atendimento próprios dela. Cada profissional tem um horário independente — se você não configurar isso, ela não vai ter nenhum horário disponível para agendar, mesmo já tendo sido criada.\n\nPara desativar uma profissional sem perder o histórico de agendamentos dela, desative-a na lista (o interruptor) em vez de apagá-la."
+      },
+      "instagramStory": {
+        "title": "Gerar Story do Instagram: todas as opções",
+        "text": "Abre a partir do botão COMPARTILHAR, no canto superior direito da Agenda.\n\n- Período: escolha Dia, Semana ou Mês. Em Mês você também escolhe a primeira quinzena (1 a 15) ou a segunda (16 ao fim).\n- Profissional: se você trabalha com mais de uma, escolha de quem mostrar a disponibilidade — o nome dela fica visível na imagem gerada (a menos que seja a dona e coincida com o nome do salão, já visível acima: nesse caso não se repete).\n- Fundo: botão \"Fundo\" para enviar uma foto de fundo para a imagem. Ao escolhê-la, o app pergunta se você quer salvá-la como fundo fixo (é reutilizada sozinha na próxima vez que você gerar um story) ou usá-la só desta vez. Se você salvou uma, aparece um link \"Remover fundo fixo salvo\" para tirá-la quando quiser.\n- Texto livre: escreva um texto e toque em + para adicioná-lo à imagem. Você pode colocar emojis, arrastá-lo para a posição que quiser dentro da imagem, e aumentar ou diminuir com os botões A- / A+ (ou a alça no canto, tocando e arrastando).\n- Editar o que é mostrado: toque em um horário avulso na lista abaixo para tirá-lo da imagem, ou no ícone do olho em um dia para ocultá-lo por completo.\n- No final: \"Salvar\" baixa a imagem no seu dispositivo, \"Compartilhar\" abre o menu para enviá-la direto (por exemplo para o Instagram ou WhatsApp)."
+      },
+      "whatsappLink": {
+        "title": "Vincular WhatsApp",
+        "text": "Configurações → Vincular WhatsApp.\n\nEscaneie o código QR com o WhatsApp do celular que você usa para o negócio: nesse celular, vá em Configurações do WhatsApp → Aparelhos conectados → Conectar um aparelho, e aponte a câmera para o código.\n\nDepois de conectado, as mensagens de confirmação são enviadas sozinhas toda vez que você cria um novo agendamento, sem precisar escrever nada. Você pode desvincular a qualquer momento na mesma tela.\n\nSe ele se desconectar sozinho (por exemplo, você saiu do WhatsApp Web no celular, ou ficou muito tempo sem uso), esta tela volta a mostrar o código QR — repita o mesmo passo para reconectar."
+      },
+      "whatsappMessages": {
+        "title": "Mensagens de WhatsApp",
+        "text": "Perfil → Mensagens de WhatsApp.\n\nHá dois modelos editáveis: \"Lembrete\" e \"Confirmação\". Cada um é enviado de um jeito diferente:\n\n- \"Confirmação\" é automática: é enviada sozinha assim que você cria um novo agendamento, se você tiver o WhatsApp vinculado.\n- \"Lembrete\" tem dois caminhos: você pode enviá-lo manualmente a qualquer momento, tocando no ícone do WhatsApp em um cartão de agendamento; e além disso, se você ativou \"Lembrete automático\" no Perfil, o app o envia sozinho todos os dias no horário que você escolheu, para cada cliente com agendamento confirmado para o dia seguinte — sem que você precise fazer nada.\n\nEscreva o texto que quiser e use as variáveis que o editor oferece (como '{nombre}', '{servicios}', '{fecha}', '{hora}') — elas são preenchidas sozinhas com os dados de cada agendamento ao enviar a mensagem."
+      },
+      "myProfile": {
+        "title": "Meu Perfil",
+        "text": "Aba Perfil.\n\nSeus dados do salão (nome, telefone, endereço), o status da sua assinatura (ativa ou vencida, data de vencimento e dias restantes), e dois ajustes:\n\n- Sinal: um valor de referência que você guarda para seus agendamentos. Por enquanto é só informativo — ainda não é descontado nem cobrado automaticamente em nenhum lugar do app.\n- Lembrete automático: ative e escolha o horário — veja o detalhe do que é enviado exatamente em \"Mensagens de WhatsApp\"."
+      },
+      "statistics": {
+        "title": "Estatísticas",
+        "text": "Configurações → Estatísticas. Também há um cartão resumo bem no topo da Agenda — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas e, se você trabalha com mais de uma profissional, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Clientes novas vs. recorrentes: \"nova\" é a que teve o primeiro agendamento dela dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das três que os mostra."
+      },
+      "appearance": {
+        "title": "Aparência",
+        "text": "Configurações → Aparência.\n\nEscolha como o app aparece: Claro, Escuro, ou Sistema (segue o modo configurado no seu celular ou computador). É aplicado na hora."
+      }
+    }
+  }
+}

@@ -12,11 +12,11 @@ export type Locale = 'es' | 'pt-BR' | 'en';
 
 export const DEFAULT_LOCALE: Locale = 'es';
 
-// Fase 1: solo 'es' es un locale seleccionable. pt-BR se habilita en la
-// Fase 11 cuando su catálogo esté completo (ver design.md, "Migration /
-// Rollout"). 'en' nunca se agrega — es scaffold estructural puro, cae
-// siempre al fallback de 'es' (ver spec, "en Scaffold Only, es Fallback").
-export const SUPPORTED: readonly Locale[] = ['es'];
+// Fase 11: pt-BR se agrega ya con su catálogo completo (los 12 namespaces
+// traducidos, ver messages/pt-BR/*.json y scripts/check-messages.js). 'en'
+// nunca se agrega — es scaffold estructural puro, cae siempre al fallback
+// de 'es' (ver spec, "en Scaffold Only, es Fallback").
+export const SUPPORTED: readonly Locale[] = ['es', 'pt-BR'];
 
 // Autónimos: cada idioma se muestra en su propio nombre (igual que
 // cualquier selector de idioma estándar), no traducido al locale activo.
