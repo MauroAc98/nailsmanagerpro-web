@@ -1,5 +1,6 @@
 export const PAISES = [
   { codigo: '54',  label: '🇦🇷 +54'  },
+  { codigo: '55',  label: '🇧🇷 +55'  },
   { codigo: '598', label: '🇺🇾 +598' },
   { codigo: '595', label: '🇵🇾 +595' },
   { codigo: '56',  label: '🇨🇱 +56'  },

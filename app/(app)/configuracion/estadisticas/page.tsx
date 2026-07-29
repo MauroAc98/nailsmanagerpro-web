@@ -47,13 +47,23 @@ function BarraRanking({ nombre, cantidad, maxCantidad }: { nombre: string; canti
 // ─────────────────────────────────────────────
 function StatTile({ label, value, color }: { label: string; value: number; color: string }) {
   return (
+    // minWidth: 0 es necesario para que flex:1 pueda achicar la tarjeta por
+    // debajo del ancho de contenido — sin esto, en filas de 3 (Turnos por
+    // estado) el navegador respeta el min-width de contenido de cada hijo y,
+    // en pantallas angostas (~320px), la última tarjeta se corta y se sale
+    // del contenedor en vez de compartir el espacio en partes iguales.
     <div style={{
-      flex: 1, backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 14, padding: '14px 16px',
+      flex: 1, minWidth: 0, backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+      boxShadow: shadows.card, borderRadius: 14, padding: '14px 12px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, minWidth: 0 }}>
         <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, flexShrink: 0 }} />
-        <span style={{ fontSize: 12, color: colors.subtext, fontWeight: 600 }}>{label}</span>
+        <span style={{
+          fontSize: 12, color: colors.subtext, fontWeight: 600,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {label}
+        </span>
       </div>
       <span style={{ fontSize: 28, fontWeight: 700, color: colors.textStrong }}>{value}</span>
     </div>
