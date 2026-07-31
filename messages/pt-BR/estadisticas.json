@@ -22,6 +22,17 @@
     "granularity_dia": "Dia",
     "granularity_semana": "Semana",
     "granularity_mes": "Mês",
-    "retry": "Tentar novamente"
+    "earningsScope_rangoPersonalizado": "De {desde} até {hasta}",
+    "earningsScope_semana": "Últimas 12 semanas",
+    "earningsScope_mes": "Últimos 12 meses",
+    "earningsScope_rangoLargo": "Escolha um período de até {max} dias para ver o detalhe diário. O total e o detalhamento por serviço acima continuam funcionando normalmente.",
+    "earningsScope_truncado": "O período escolhido é muito longo, mostrando os primeiros intervalos.",
+    "earningsChartEmpty": "Sem ganhos neste período",
+    "retry": "Tentar novamente",
+    "rangeMode_mes": "Mês",
+    "rangeMode_personalizado": "Período personalizado",
+    "rangeFrom": "De",
+    "rangeTo": "Até",
+    "rangeInvalid": "\"Até\" não pode ser anterior a \"De\"."
   }
 }

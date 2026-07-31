@@ -49,16 +49,22 @@ export const statsService = {
     return data;
   },
 
-  // Independiente del rango del dashboard a propósito — siempre trae los
-  // últimos 12 buckets terminando hoy, sin importar qué mes esté navegando
-  // el resto de la pantalla.
+  // Con `rango` (modo "Rango personalizado" de la pantalla): bucketiza
+  // exactamente ese desde/hasta. Sin `rango` (modo "Mes" normal, que no
+  // aplica acá): últimos 12 buckets terminando hoy — vistazo de tendencia
+  // reciente sin importar qué mes calendario se esté navegando.
   getGananciasPorPeriodo: async (
     granularidad: 'semana' | 'mes',
-    profesionalId?: number
-  ): Promise<PuntoGanancia[]> => {
-    const { data } = await api.get<{ puntos: PuntoGanancia[] }>('/stats/ganancias-por-periodo', {
-      params: { granularidad, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
+    profesionalId?: number,
+    rango?: { desde: string; hasta: string }
+  ): Promise<{ puntos: PuntoGanancia[]; truncado: boolean }> => {
+    const { data } = await api.get<{ puntos: PuntoGanancia[]; truncado: boolean }>('/stats/ganancias-por-periodo', {
+      params: {
+        granularidad,
+        ...(profesionalId ? { profesional_id: profesionalId } : {}),
+        ...(rango ? { desde: rango.desde, hasta: rango.hasta } : {}),
+      },
     });
-    return data.puntos;
+    return data;
   },
 };

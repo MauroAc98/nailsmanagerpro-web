@@ -19,6 +19,28 @@ function rangoDelMes(viewDate: Date): { desde: string; hasta: string } {
   return { desde: formatFecha(desde), hasta: formatFecha(hasta) };
 }
 
+// Enumera cada fecha entre desde y hasta (inclusive) como "YYYY-MM-DD" — se
+// usa para rellenar con $0 los días sin turnos en el gráfico de ganancias
+// por día, sea el rango un mes calendario o un rango personalizado elegido
+// a mano (puede cruzar meses, por eso no puede asumirse "día 1..N de un mes").
+function enumerarFechas(desde: string, hasta: string): string[] {
+  const fechas: string[] = [];
+  const cursor = new Date(`${desde}T00:00:00`);
+  const fin = new Date(`${hasta}T00:00:00`);
+  while (cursor <= fin) {
+    fechas.push(formatFecha(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return fechas;
+}
+
+// Por arriba de esto, el gráfico de barras compacto deja de ser legible
+// (demasiadas barras finitas) — el mismo motivo por el que se rehizo el
+// gráfico de "por día" la primera vez. Se limita el detalle diario del
+// rango personalizado, no el rango en sí (el total y el desglose por
+// servicio siguen funcionando para cualquier rango).
+const MAX_DIAS_GRAFICO_DIARIO = 62;
+
 // ─────────────────────────────────────────────
 // Gráfico de barras compacto — una serie de puntos {label, monto} en una
 // sola fila, todos visibles sin scroll (pensado para "todo el mes junto").
@@ -29,8 +51,25 @@ function rangoDelMes(viewDate: Date): { desde: string; hasta: string } {
 // nativo (hover en desktop).
 // ─────────────────────────────────────────────
 function MiniBarChart({ puntos, height = 90 }: { puntos: { label: string; monto: number }[]; height?: number }) {
+  const t = useTranslations('estadisticas.EstadisticasPage');
   const maxMonto = puntos.reduce((max, p) => Math.max(max, p.monto), 0);
   if (puntos.length === 0) return null;
+
+  // Con maxMonto=0 las barras quedan en su altura mínima (2%), casi
+  // invisibles — indistinguible de "el gráfico no cargó". Un mensaje
+  // explícito es más honesto que un rectángulo vacío.
+  if (maxMonto === 0) {
+    return (
+      <div style={{
+        backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+        boxShadow: shadows.card, borderRadius: 14, padding: '16px',
+        height, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>{t('earningsChartEmpty')}</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
@@ -142,12 +181,27 @@ function EstadisticasContent() {
   const [error, setError] = useState<string | null>(null);
   const [retryTick, setRetryTick] = useState(0);
 
-  // Granularidad del gráfico de ganancias — independiente del navegador de
-  // mes de arriba a propósito (ver architecture/gastos-ganancias-scope):
-  // "semana"/"mes" siempre muestran los últimos 12 buckets terminando hoy,
-  // no lo que esté navegando el resto de la pantalla.
+  // Alternativa al navegador de mes: elegir un "desde"/"hasta" a mano en vez
+  // de un mes calendario completo (ej. "ganancias del 8 al 14 de junio").
+  // Reusa el mismo /stats/dashboard, que ya acepta cualquier rango — no hizo
+  // falta backend nuevo, solo dejar de forzar el rango a "el mes entero".
+  const [modoRango, setModoRango] = useState<'mes' | 'personalizado'>('mes');
+  const [rangoPersonalizado, setRangoPersonalizado] = useState(() => {
+    const hasta = new Date();
+    const desde = new Date();
+    desde.setDate(desde.getDate() - 6);
+    return { desde: formatFecha(desde), hasta: formatFecha(hasta) };
+  });
+  const rangoInvalido = modoRango === 'personalizado' && rangoPersonalizado.hasta < rangoPersonalizado.desde;
+
+  // Granularidad del gráfico de ganancias. "Semana"/"Mes" bucketizan el
+  // rango personalizado cuando ese modo está activo (ver rangoActivo más
+  // abajo); en modo "Mes" del navegador de arriba, en cambio, muestran
+  // siempre los últimos 12 buckets terminando hoy — vistazo de tendencia
+  // reciente sin importar qué mes calendario se esté navegando.
   const [granularidadGanancias, setGranularidadGanancias] = useState<'dia' | 'semana' | 'mes'>('dia');
   const [puntosPeriodo, setPuntosPeriodo] = useState<PuntoGanancia[]>([]);
+  const [truncadoPeriodo, setTruncadoPeriodo] = useState(false);
   const [errorPeriodo, setErrorPeriodo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -157,31 +211,41 @@ function EstadisticasContent() {
   const activeProfesionales = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
 
+  const rangoActivo = modoRango === 'mes' ? rangoDelMes(viewDate) : rangoPersonalizado;
+
   useEffect(() => {
+    if (rangoInvalido) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const { desde, hasta } = rangoDelMes(viewDate);
 
-    statsService.getDashboard(desde, hasta, profesionalFiltro ?? undefined)
+    statsService.getDashboard(rangoActivo.desde, rangoActivo.hasta, profesionalFiltro ?? undefined)
       .then(data => { if (!cancelled) setStats(data); })
       .catch(e => { if (!cancelled) setError(extraerMensajeError(e)); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [viewDate, profesionalFiltro, retryTick]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
 
   useEffect(() => {
-    if (granularidadGanancias === 'dia') return;
+    if (granularidadGanancias === 'dia' || rangoInvalido) return;
     let cancelled = false;
     setErrorPeriodo(null);
 
-    statsService.getGananciasPorPeriodo(granularidadGanancias, profesionalFiltro ?? undefined)
-      .then(puntos => { if (!cancelled) setPuntosPeriodo(puntos); })
+    const rango = modoRango === 'personalizado' ? rangoActivo : undefined;
+
+    statsService.getGananciasPorPeriodo(granularidadGanancias, profesionalFiltro ?? undefined, rango)
+      .then(({ puntos, truncado }) => {
+        if (cancelled) return;
+        setPuntosPeriodo(puntos);
+        setTruncadoPeriodo(truncado);
+      })
       .catch(e => { if (!cancelled) setErrorPeriodo(extraerMensajeError(e)); });
 
     return () => { cancelled = true; };
-  }, [granularidadGanancias, profesionalFiltro, retryTick]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [granularidadGanancias, modoRango, rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
 
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -191,14 +255,17 @@ function EstadisticasContent() {
   const maxCantidad = servicios.reduce((max, s) => Math.max(max, s.cantidad), 0);
   const gananciasPorServicio = stats?.ganancias_por_servicio ?? [];
   const maxMonto = gananciasPorServicio.reduce((max, s) => Math.max(max, s.monto), 0);
-  // Rellena todos los días del mes (no solo los que tuvieron turnos) para
-  // que el gráfico muestre el mes completo en un eje continuo, sin huecos.
-  const diasEnMes = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
-  const montoPorDia = new Map((stats?.ganancias_por_dia ?? []).map(d => [Number(d.fecha.split('-')[2]), d.monto]));
-  const puntosGananciasPorDia = Array.from({ length: diasEnMes }, (_, i) => ({
-    label: String(i + 1),
-    monto: montoPorDia.get(i + 1) ?? 0,
-  }));
+  // Rellena todos los días del rango activo (no solo los que tuvieron
+  // turnos) para que el gráfico muestre un eje continuo, sin huecos.
+  // Se basa en `rangoActivo`, no en el mes de `viewDate` — con rango
+  // personalizado el período puede no coincidir con un mes calendario.
+  const diasDelRango = enumerarFechas(rangoActivo.desde, rangoActivo.hasta);
+  const rangoDiarioDemasiadoLargo = diasDelRango.length > MAX_DIAS_GRAFICO_DIARIO;
+  const montoPorFecha = new Map((stats?.ganancias_por_dia ?? []).map(d => [d.fecha, d.monto]));
+  const puntosGananciasPorDia = rangoDiarioDemasiadoLargo ? [] : diasDelRango.map(fechaStr => {
+    const fecha = new Date(`${fechaStr}T00:00:00`);
+    return { label: `${fecha.getDate()}/${fecha.getMonth() + 1}`, monto: montoPorFecha.get(fechaStr) ?? 0 };
+  });
 
   const puntosGananciasChart = granularidadGanancias === 'dia'
     ? puntosGananciasPorDia
@@ -209,6 +276,21 @@ function EstadisticasContent() {
         : `${fecha.getDate()}/${fecha.getMonth() + 1}`;
       return { label, monto: p.monto };
     });
+
+  const formatCorto = (fechaStr: string) => {
+    const d = new Date(`${fechaStr}T00:00:00`);
+    return `${d.getDate()}/${d.getMonth() + 1}`;
+  };
+  // Solo para "Semana"/"Mes" — ahí sí hay algo que aclarar: bucketizan el
+  // rango personalizado si está activo, o los últimos 12 si no (ver
+  // gananciasPorPeriodo). "Día" no necesita label: su rango es siempre
+  // exactamente el que ya se ve en el navegador de mes o en los inputs
+  // Desde/Hasta de arriba — repetirlo abajo es información duplicada.
+  const alcanceGanancias = granularidadGanancias === 'dia'
+    ? null
+    : modoRango === 'personalizado'
+      ? t('earningsScope_rangoPersonalizado', { desde: formatCorto(rangoActivo.desde), hasta: formatCorto(rangoActivo.hasta) })
+      : t(`earningsScope_${granularidadGanancias}`);
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
@@ -234,32 +316,92 @@ function EstadisticasContent() {
       </div>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Selector de mes */}
+        {/* Modo: mes calendario vs. rango de fechas elegido a mano — para
+            responder consultas puntuales tipo "cuánto gané del 8 al 14 de
+            junio" que no encajan en un mes completo. */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-          boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
+          display: 'flex', backgroundColor: colors.surfaceSubtle, borderRadius: 8, padding: 2, alignSelf: 'flex-start',
         }}>
-          <button
-            onClick={() => cambiarMes(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
-            {nombreMes(viewDate, 'long')} {viewDate.getFullYear()}
-          </span>
-          <button
-            onClick={() => cambiarMes(1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
+          {(['mes', 'personalizado'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setModoRango(m)}
+              style={{
+                border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                cursor: 'pointer',
+                backgroundColor: modoRango === m ? colors.surface : 'transparent',
+                color: modoRango === m ? colors.text : colors.subtext,
+                boxShadow: modoRango === m ? shadows.card : 'none',
+              }}
+            >
+              {t(`rangeMode_${m}`)}
+            </button>
+          ))}
         </div>
+
+        {modoRango === 'mes' ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
+          }}>
+            <button
+              onClick={() => cambiarMes(-1)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
+              {nombreMes(viewDate, 'long')} {viewDate.getFullYear()}
+            </span>
+            <button
+              onClick={() => cambiarMes(1)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14, padding: '12px 14px',
+            display: 'flex', flexDirection: 'column', gap: 8,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <label style={{ fontSize: 13, color: colors.subtext, width: 40 }}>{t('rangeFrom')}</label>
+              <input
+                type="date"
+                value={rangoPersonalizado.desde}
+                max={rangoPersonalizado.hasta}
+                onChange={e => setRangoPersonalizado(prev => ({ ...prev, desde: e.target.value }))}
+                style={{
+                  flex: 1, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '8px 10px',
+                  fontSize: 14, color: colors.text, backgroundColor: colors.surface,
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <label style={{ fontSize: 13, color: colors.subtext, width: 40 }}>{t('rangeTo')}</label>
+              <input
+                type="date"
+                value={rangoPersonalizado.hasta}
+                min={rangoPersonalizado.desde}
+                onChange={e => setRangoPersonalizado(prev => ({ ...prev, hasta: e.target.value }))}
+                style={{
+                  flex: 1, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '8px 10px',
+                  fontSize: 14, color: colors.text, backgroundColor: colors.surface,
+                }}
+              />
+            </div>
+            {rangoInvalido && (
+              <p style={{ fontSize: 12, color: colors.danger, margin: 0 }}>{t('rangeInvalid')}</p>
+            )}
+          </div>
+        )}
 
         {/* Selector de profesional — invisible con ≤1 profesional activa. Con
             superficie propia (igual que el de Agenda) y un chip "Todas"
@@ -308,7 +450,7 @@ function EstadisticasContent() {
           </div>
         )}
 
-        {error ? (
+        {rangoInvalido ? null : error ? (
           <div style={{
             margin: '20px 0', padding: '12px 16px', borderRadius: 8,
             backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}`,
@@ -421,7 +563,20 @@ function EstadisticasContent() {
                   ))}
                 </div>
               </div>
-              {granularidadGanancias !== 'dia' && errorPeriodo ? (
+              {alcanceGanancias && (
+                <p style={{ fontSize: 11, color: colors.subtext, margin: '0 0 8px' }}>
+                  {alcanceGanancias}
+                </p>
+              )}
+              {granularidadGanancias === 'dia' && rangoDiarioDemasiadoLargo ? (
+                <p style={{
+                  padding: '16px', borderRadius: 14, backgroundColor: colors.surface,
+                  border: `1px solid ${colors.border}`, fontSize: 13, color: colors.subtext,
+                  textAlign: 'center', margin: 0,
+                }}>
+                  {t('earningsScope_rangoLargo', { max: MAX_DIAS_GRAFICO_DIARIO })}
+                </p>
+              ) : granularidadGanancias !== 'dia' && errorPeriodo ? (
                 <div style={{
                   padding: '12px 16px', borderRadius: 14, backgroundColor: colors.dangerBg,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
@@ -438,7 +593,14 @@ function EstadisticasContent() {
                   </button>
                 </div>
               ) : (
-                <MiniBarChart puntos={puntosGananciasChart} />
+                <>
+                  <MiniBarChart puntos={puntosGananciasChart} />
+                  {granularidadGanancias !== 'dia' && truncadoPeriodo && (
+                    <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
+                      {t('earningsScope_truncado')}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
