@@ -18,6 +18,10 @@
     "expiresInDays": "Sua assinatura vence em {days, plural, one {# dia} other {# dias}}",
     "renew": "Renovar"
   },
+  "PendientesDeCobroBanner": {
+    "message": "{count, plural, one {Você tem # agendamento com preço pendente} other {Você tem # agendamentos com preço pendente}}",
+    "view": "Ver"
+  },
   "WelcomeScreen": {
     "greetingMorning": "Bom dia",
     "greetingAfternoon": "Boa tarde",

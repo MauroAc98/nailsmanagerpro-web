@@ -14,6 +14,7 @@ import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
+import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
@@ -1178,6 +1179,7 @@ export default function AgendaPage() {
       </div>
 
       <SubscriptionWarningBanner />
+      <PendientesDeCobroBanner />
 
       {/* Resumen del mes — vistazo rápido, detalle completo en
           Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}

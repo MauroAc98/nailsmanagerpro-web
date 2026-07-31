@@ -15,6 +15,7 @@
     "newClients": "Nuevas",
     "returningClients": "Recurrentes",
     "topServices": "Servicios más pedidos",
-    "noServicesThisPeriod": "No hay servicios agendados este período."
+    "noServicesThisPeriod": "No hay servicios agendados este período.",
+    "earnings": "Ganancias"
   }
 }

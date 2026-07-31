@@ -6,6 +6,12 @@ export interface ServicioMasPedido {
   cantidad: number;
 }
 
+export interface GananciaPorServicio {
+  servicio_id: number;
+  nombre: string;
+  monto: number;
+}
+
 export interface DashboardStats {
   total_turnos: number;
   turnos_por_estado: {
@@ -18,6 +24,8 @@ export interface DashboardStats {
     nuevas: number;
     recurrentes: number;
   };
+  ganancias: number;
+  ganancias_por_servicio: GananciaPorServicio[];
 }
 
 export const statsService = {

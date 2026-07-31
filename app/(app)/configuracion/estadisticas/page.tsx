@@ -24,13 +24,15 @@ function rangoDelMes(viewDate: Date): { desde: string; hasta: string } {
 // (colors.primary) alcanza; la etiqueta de valor va afuera, en tinta de
 // texto, nunca en el color de la barra.
 // ─────────────────────────────────────────────
-function BarraRanking({ nombre, cantidad, maxCantidad }: { nombre: string; cantidad: number; maxCantidad: number }) {
+function BarraRanking({
+  nombre, cantidad, maxCantidad, valorLabel,
+}: { nombre: string; cantidad: number; maxCantidad: number; valorLabel?: string }) {
   const pct = maxCantidad > 0 ? Math.max((cantidad / maxCantidad) * 100, 4) : 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
         <span style={{ color: colors.text, fontWeight: 600 }}>{nombre}</span>
-        <span style={{ color: colors.subtext }}>{cantidad}</span>
+        <span style={{ color: colors.subtext }}>{valorLabel ?? cantidad}</span>
       </div>
       <div style={{ height: 10, borderRadius: 5, backgroundColor: colors.surfaceSubtle, overflow: 'hidden' }}>
         <div style={{
@@ -45,7 +47,7 @@ function BarraRanking({ nombre, cantidad, maxCantidad }: { nombre: string; canti
 // ─────────────────────────────────────────────
 // Stat tile — identidad por swatch + etiqueta (nunca color en el número).
 // ─────────────────────────────────────────────
-function StatTile({ label, value, color }: { label: string; value: number; color: string }) {
+function StatTile({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
     // minWidth: 0 es necesario para que flex:1 pueda achicar la tarjeta por
     // debajo del ancho de contenido — sin esto, en filas de 3 (Turnos por
@@ -122,6 +124,8 @@ function EstadisticasContent() {
 
   const servicios = stats?.servicios_mas_pedidos ?? [];
   const maxCantidad = servicios.reduce((max, s) => Math.max(max, s.cantidad), 0);
+  const gananciasPorServicio = stats?.ganancias_por_servicio ?? [];
+  const maxMonto = gananciasPorServicio.reduce((max, s) => Math.max(max, s.monto), 0);
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
@@ -255,6 +259,35 @@ function EstadisticasContent() {
                     </p>
                   )}
                 </>
+              )}
+            </div>
+
+            {/* Ganancias */}
+            <div>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
+                {t('earnings')}
+              </h2>
+              <StatTile
+                label={t('earnings')}
+                value={`$${(stats?.ganancias ?? 0).toFixed(2)}`}
+                color={colors.success}
+              />
+              {gananciasPorServicio.length > 0 && (
+                <div style={{
+                  marginTop: 10, backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                  boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
+                  flexDirection: 'column', gap: 14,
+                }}>
+                  {gananciasPorServicio.map(s => (
+                    <BarraRanking
+                      key={s.servicio_id}
+                      nombre={s.nombre}
+                      cantidad={s.monto}
+                      maxCantidad={maxMonto}
+                      valorLabel={`$${s.monto.toFixed(2)}`}
+                    />
+                  ))}
+                </div>
               )}
             </div>
 
