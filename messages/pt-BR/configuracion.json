@@ -1,6 +1,9 @@
 {
   "ConfiguracionPage": {
     "title": "Configurações",
+    "group_negocio": "Gestão",
+    "group_cuenta": "Conta",
+    "group_soporte": "Suporte",
     "servicios": "Serviços",
     "slots": "Horários Disponíveis",
     "profesionales": "Profissionais",
@@ -174,7 +177,7 @@
       },
       "statistics": {
         "title": "Estatísticas",
-        "text": "Configurações → Estatísticas. Também há um cartão resumo bem no topo da Agenda — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas e, se você trabalha com mais de uma profissional, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Clientes novas vs. recorrentes: \"nova\" é a que teve o primeiro agendamento dela dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das três que os mostra."
+        "text": "Configurações → Estatísticas. Também há um cartão resumo bem no topo da Agenda (agora inclui quanto você faturou naquele mês) — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas, ou toque em \"Período personalizado\" se precisar de um período específico (por exemplo, uma semana pontual). Se você trabalha com mais de uma profissional, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Ganhos: o total recebido no período, o detalhamento por serviço, e um gráfico de tendência que se ajusta sozinho (dia a dia se o período for curto, por semana ou por mês se for mais longo — não precisa escolher).\n- Clientes novas vs. recorrentes: \"nova\" é a que teve o primeiro agendamento dela dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para ganhos, clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das quatro que os mostra.\n\nSe um agendamento passa do horário sem que você o tenha finalizado manualmente, o sistema o marca como concluído sozinho, mas sem preço cadastrado. Esses casos aparecem em \"Pendentes de cobrança\" — acessível pelo numerozinho na barra de navegação ou pelo aviso acima da Agenda."
       },
       "appearance": {
         "title": "Aparência",
