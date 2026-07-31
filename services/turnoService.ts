@@ -7,7 +7,11 @@ export interface Turno {
   id: number;
   cliente_id: number;
   cliente: { nombre: string; apellido: string; telefono?: string };
-  servicios: { id: number; nombre: string }[];
+  // pivot solo viene poblado (precio no-null) una vez que el turno se
+  // completó con precios cargados — antes de eso, o para turnos que cayeron
+  // en "pendientes de cobro", precio es null. Laravel serializa decimal
+  // como string, igual que Servicio.precio.
+  servicios: { id: number; nombre: string; pivot?: { precio: string | null } }[];
   fecha_hora: string;              // "YYYY-MM-DD HH:MM:SS" or ISO
   duracion_total_minutos: number;
   estado: 'confirmado' | 'completado' | 'cancelado';
@@ -103,8 +107,14 @@ export const turnoService = {
     return data;
   },
 
-  completar: async (id: number): Promise<Turno> => {
-    const { data } = await api.patch<Turno>(`/turnos/${id}/completar`);
+  completar: async (
+    id: number,
+    servicios?: { servicio_id: number; precio: number }[]
+  ): Promise<Turno> => {
+    const { data } = await api.patch<Turno>(
+      `/turnos/${id}/completar`,
+      servicios ? { servicios } : undefined
+    );
     return data;
   },
 

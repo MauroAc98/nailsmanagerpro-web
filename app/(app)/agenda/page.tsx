@@ -17,6 +17,7 @@ import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanne
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
+import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
 import { nombreDia, nombreMes, diasSemanaCortos } from '@/lib/dateFormat';
@@ -1065,8 +1066,23 @@ export default function AgendaPage() {
     setProfesionalFiltro(null);
   }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
 
-  const handleFinalizar = async (id: number) => {
-    const result = await completarTurno(id);
+  const handleFinalizar = async (turno: Turno) => {
+    const referencias = new Map(servicios.map(s => [s.id, s.precio]));
+    const serviciosAPrecificar = turno.servicios
+      .filter(s => s != null)
+      .map(s => {
+        const ref = referencias.get(s.id);
+        return {
+          servicio_id: s.id,
+          nombre: s.nombre,
+          precioReferencia: ref != null ? Number(ref) : null,
+        };
+      });
+
+    const precios = await pedirPreciosServicios(serviciosAPrecificar);
+    if (!precios) return;
+
+    const result = await completarTurno(turno.id, precios);
     if (result.success) showToast(t('finished'));
     else await alertDialog(result.message ?? t('finishError'));
   };
@@ -1254,7 +1270,7 @@ export default function AgendaPage() {
                   key={turno.id}
                   turno={turno}
                   onCancel={cursando ? undefined : () => handleCancelar(turno.id)}
-                  onFinalizar={cursando ? () => handleFinalizar(turno.id) : undefined}
+                  onFinalizar={cursando ? () => handleFinalizar(turno) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   plantillaWhatsapp={obtenerContenido('recordatorio')}
                   profesionalLabel={profesionalLabel}

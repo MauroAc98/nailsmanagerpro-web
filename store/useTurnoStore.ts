@@ -44,7 +44,10 @@ interface TurnosState {
   fetchTurno: (id: number) => Promise<void>;
   crearTurno: (dto: CreateTurnoDto) => Promise<OperacionResult>;
   actualizarTurno: (id: number, dto: UpdateTurnoDto) => Promise<OperacionResult>;
-  completarTurno: (id: number) => Promise<OperacionResult>;
+  completarTurno: (
+    id: number,
+    servicios?: { servicio_id: number; precio: number }[]
+  ) => Promise<OperacionResult>;
   cancelarTurno: (id: number, motivoCancelacion: string) => Promise<OperacionResult>;
   setFechaSeleccionada: (fecha: string) => void;
 
@@ -195,10 +198,10 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // ─────────────────────────────────────────────
   // completarTurno
   // ─────────────────────────────────────────────
-  completarTurno: async (id) => {
+  completarTurno: async (id, servicios) => {
     return withGlobalLoader(async () => {
       try {
-        await turnoService.completar(id);
+        await turnoService.completar(id, servicios);
         await refrescarAgenda(get, set, get().fechaSeleccionada);
         return { success: true };
       } catch (e) {

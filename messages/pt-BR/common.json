@@ -58,6 +58,12 @@
     "reasonImprevisto": "Imprevisto da profissional",
     "reasonOtro": "Outro"
   },
+  "PrecioServiciosSheetHost": {
+    "title": "Preço final de cada serviço",
+    "pricePlaceholder": "$",
+    "back": "Voltar",
+    "confirm": "Finalizar agendamento"
+  },
   "ColorSwatchPicker": {
     "ariaLabel": "Cor {color}"
   },
