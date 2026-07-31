@@ -80,6 +80,7 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
         </div>
         <p style={{ margin: '3px 0 0', fontSize: 18, fontWeight: 700, color: colors.textStrong }}>
           {t('appointmentsCount', { count: stats.total_turnos })}
+          {stats.ganancias > 0 && ` · $${stats.ganancias.toFixed(2)}`}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
           {topServicio && t('topService', { nombre: topServicio })}{t('newClientsCount', { count: stats.clientes.nuevas })}
