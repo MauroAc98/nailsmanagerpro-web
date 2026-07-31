@@ -7,6 +7,7 @@
     "noContactInfo": "Sin datos de contacto",
     "loading": "Cargando clientes...",
     "noResults": "No se encontraron clientes",
+    "resultCount": "{count, plural, one {# cliente} other {# clientes}}",
     "emptyState": "¡Cargá a tu primer cliente!",
     "toggleError": "No se pudo actualizar el cliente."
   },

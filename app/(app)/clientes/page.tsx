@@ -185,6 +185,11 @@ export default function ClientesPage() {
       {/* Lista */}
       {!loading && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {clientesFiltrados.length > 0 && (
+            <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 0 4px' }}>
+              {t('resultCount', { count: clientesFiltrados.length })}
+            </p>
+          )}
           {clientesFiltrados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               {buscar ? t('noResults') : t('emptyState')}
