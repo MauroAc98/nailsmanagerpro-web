@@ -17,6 +17,8 @@
     "subtitle": "Agendamentos finalizados aos quais ainda falta cadastrar o preço",
     "loading": "Carregando...",
     "emptyState": "Você não tem agendamentos pendentes de cobrança",
+    "searchPlaceholder": "Buscar por nome da cliente...",
+    "noResults": "Nenhum agendamento encontrado",
     "loadPriceButton": "Cadastrar preço",
     "saved": "Preço salvo",
     "saveError": "Não foi possível salvar o preço."

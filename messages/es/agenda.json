@@ -17,6 +17,8 @@
     "subtitle": "Turnos finalizados a los que todavía les falta cargar el precio",
     "loading": "Cargando...",
     "emptyState": "No tenés turnos pendientes de cobro",
+    "searchPlaceholder": "Buscar por nombre de clienta...",
+    "noResults": "No se encontraron turnos",
     "loadPriceButton": "Cargar precio",
     "saved": "Precio guardado",
     "saveError": "No se pudo guardar el precio."
