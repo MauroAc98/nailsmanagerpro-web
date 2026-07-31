@@ -12,6 +12,11 @@ export interface GananciaPorServicio {
   monto: number;
 }
 
+export interface GananciaPorDia {
+  fecha: string; // "YYYY-MM-DD"
+  monto: number;
+}
+
 export interface DashboardStats {
   total_turnos: number;
   turnos_por_estado: {
@@ -26,6 +31,7 @@ export interface DashboardStats {
   };
   ganancias: number;
   ganancias_por_servicio: GananciaPorServicio[];
+  ganancias_por_dia: GananciaPorDia[];
 }
 
 export const statsService = {

@@ -16,6 +16,8 @@
     "returningClients": "Recurrentes",
     "topServices": "Servicios más pedidos",
     "noServicesThisPeriod": "No hay servicios agendados este período.",
-    "earnings": "Ganancias"
+    "earnings": "Ganancias",
+    "earningsByService": "Por servicio",
+    "earningsByDay": "Por día"
   }
 }

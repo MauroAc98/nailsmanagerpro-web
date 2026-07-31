@@ -126,6 +126,8 @@ function EstadisticasContent() {
   const maxCantidad = servicios.reduce((max, s) => Math.max(max, s.cantidad), 0);
   const gananciasPorServicio = stats?.ganancias_por_servicio ?? [];
   const maxMonto = gananciasPorServicio.reduce((max, s) => Math.max(max, s.monto), 0);
+  const gananciasPorDia = stats?.ganancias_por_dia ?? [];
+  const maxMontoDia = gananciasPorDia.reduce((max, d) => Math.max(max, d.monto), 0);
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
@@ -273,21 +275,48 @@ function EstadisticasContent() {
                 color={colors.success}
               />
               {gananciasPorServicio.length > 0 && (
-                <div style={{
-                  marginTop: 10, backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                  boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
-                  flexDirection: 'column', gap: 14,
-                }}>
-                  {gananciasPorServicio.map(s => (
-                    <BarraRanking
-                      key={s.servicio_id}
-                      nombre={s.nombre}
-                      cantidad={s.monto}
-                      maxCantidad={maxMonto}
-                      valorLabel={`$${s.monto.toFixed(2)}`}
-                    />
-                  ))}
-                </div>
+                <>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
+                    {t('earningsByService')}
+                  </p>
+                  <div style={{
+                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                    boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
+                    flexDirection: 'column', gap: 14,
+                  }}>
+                    {gananciasPorServicio.map(s => (
+                      <BarraRanking
+                        key={s.servicio_id}
+                        nombre={s.nombre}
+                        cantidad={s.monto}
+                        maxCantidad={maxMonto}
+                        valorLabel={`$${s.monto.toFixed(2)}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+              {gananciasPorDia.length > 0 && (
+                <>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
+                    {t('earningsByDay')}
+                  </p>
+                  <div style={{
+                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                    boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
+                    flexDirection: 'column', gap: 14,
+                  }}>
+                    {gananciasPorDia.map(d => (
+                      <BarraRanking
+                        key={d.fecha}
+                        nombre={String(new Date(`${d.fecha}T00:00:00`).getDate())}
+                        cantidad={d.monto}
+                        maxCantidad={maxMontoDia}
+                        valorLabel={`$${d.monto.toFixed(2)}`}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
