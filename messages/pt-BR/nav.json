@@ -3,6 +3,7 @@
     "agenda": "Agenda",
     "clientes": "Clientes",
     "config": "Config",
-    "perfil": "Perfil"
+    "perfil": "Perfil",
+    "pendingCobroAriaLabel": "Agendamentos pendentes de cobrança"
   }
 }

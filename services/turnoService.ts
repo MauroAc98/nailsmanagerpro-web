@@ -122,6 +122,19 @@ export const turnoService = {
     await api.delete(`/turnos/${id}`, { data: { motivo_cancelacion: motivoCancelacion } });
   },
 
+  pendientesDeCobro: async (): Promise<Turno[]> => {
+    const { data } = await api.get<Turno[]>('/turnos/pendientes-de-cobro');
+    return data;
+  },
+
+  actualizarPrecios: async (
+    id: number,
+    servicios: { servicio_id: number; precio: number }[]
+  ): Promise<Turno> => {
+    const { data } = await api.patch<Turno>(`/turnos/${id}/precios`, { servicios });
+    return data;
+  },
+
   // profesionalId opcional — mismo patrón que getByMes/slotService.getAll:
   // el backend filtra server-side, cae al default de la cuenta si se omite.
   getDisponibilidad: async (desde: string, hasta: string, profesionalId?: number): Promise<DisponibilidadDia[]> => {

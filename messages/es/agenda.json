@@ -12,6 +12,15 @@
     "cancelled": "Turno cancelado",
     "cancelError": "No se pudo cancelar el turno."
   },
+  "PendientesDeCobroPage": {
+    "title": "Pendientes de cobro",
+    "subtitle": "Turnos finalizados a los que todavía les falta cargar el precio",
+    "loading": "Cargando...",
+    "emptyState": "No tenés turnos pendientes de cobro",
+    "loadPriceButton": "Cargar precio",
+    "saved": "Precio guardado",
+    "saveError": "No se pudo guardar el precio."
+  },
   "SwipeableTurnoCard": {
     "deletedClient": "Cliente eliminado",
     "finishNow": "Finalizar ahora",

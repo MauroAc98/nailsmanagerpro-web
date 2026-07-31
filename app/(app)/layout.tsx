@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { NAV_HEIGHT } from '@/constants/layout';
+import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
 
 const TAB_DEFS = [
   {
@@ -53,6 +55,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations('nav.AppLayout');
+  const { pendientes, fetchPendientes } = usePendientesDeCobroStore();
+
+  useEffect(() => {
+    fetchPendientes();
+    // El cron que autocompleta turnos corre server-side sin avisar al cliente —
+    // re-consultamos al volver a primer plano (typical PWA: se abre/cierra todo
+    // el tiempo) en vez de pollear de fondo y gastar batería sin necesidad.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchPendientes();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchPendientes]);
 
   const TABS = TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
 
@@ -81,6 +96,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }}>
         {TABS.map((tab) => {
           const active = pathname === tab.path || pathname.startsWith(tab.path + '/');
+          const mostrarBadge = tab.path === '/agenda' && pendientes.length > 0;
           return (
             <button
               key={tab.path}
@@ -98,9 +114,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 borderTop: active ? `3px solid ${colors.primary}` : '3px solid transparent',
                 cursor: 'pointer',
                 padding: 0,
+                position: 'relative',
               }}
             >
-              {tab.icon(active)}
+              <div style={{ position: 'relative' }}>
+                {tab.icon(active)}
+                {mostrarBadge && (
+                  <span
+                    onClick={e => { e.stopPropagation(); router.push('/pendientes-de-cobro'); }}
+                    aria-label={t('pendingCobroAriaLabel')}
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -8,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 8,
+                      backgroundColor: colors.danger,
+                      color: '#FFF',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {pendientes.length > 99 ? '99+' : pendientes.length}
+                  </span>
+                )}
+              </div>
               <span style={{ fontSize: 12, color: active ? colors.primary : colors.subtext, fontWeight: active ? 600 : 400 }}>
                 {tab.label}
               </span>
