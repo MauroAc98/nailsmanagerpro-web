@@ -34,13 +34,6 @@ function enumerarFechas(desde: string, hasta: string): string[] {
   return fechas;
 }
 
-// Por arriba de esto, el gráfico de barras compacto deja de ser legible
-// (demasiadas barras finitas) — el mismo motivo por el que se rehizo el
-// gráfico de "por día" la primera vez. Se limita el detalle diario del
-// rango personalizado, no el rango en sí (el total y el desglose por
-// servicio siguen funcionando para cualquier rango).
-const MAX_DIAS_GRAFICO_DIARIO = 62;
-
 // ─────────────────────────────────────────────
 // Gráfico de barras compacto — una serie de puntos {label, monto} en una
 // sola fila, todos visibles sin scroll (pensado para "todo el mes junto").
@@ -187,8 +180,7 @@ function EstadisticasContent() {
 
   // Alternativa al navegador de mes: elegir un "desde"/"hasta" a mano en vez
   // de un mes calendario completo (ej. "ganancias del 8 al 14 de junio").
-  // Reusa el mismo /stats/dashboard, que ya acepta cualquier rango — no hizo
-  // falta backend nuevo, solo dejar de forzar el rango a "el mes entero".
+  // Reusa el mismo /stats/dashboard, que ya acepta cualquier rango.
   const [modoRango, setModoRango] = useState<'mes' | 'personalizado'>('mes');
   const [rangoPersonalizado, setRangoPersonalizado] = useState(() => {
     const hasta = new Date();
@@ -198,12 +190,6 @@ function EstadisticasContent() {
   });
   const rangoInvalido = modoRango === 'personalizado' && rangoPersonalizado.hasta < rangoPersonalizado.desde;
 
-  // Granularidad del gráfico de ganancias. "Semana"/"Mes" bucketizan el
-  // rango personalizado cuando ese modo está activo (ver rangoActivo más
-  // abajo); en modo "Mes" del navegador de arriba, en cambio, muestran
-  // siempre los últimos 12 buckets terminando hoy — vistazo de tendencia
-  // reciente sin importar qué mes calendario se esté navegando.
-  const [granularidadGanancias, setGranularidadGanancias] = useState<'dia' | 'semana' | 'mes'>('dia');
   const [puntosPeriodo, setPuntosPeriodo] = useState<PuntoGanancia[]>([]);
   const [truncadoPeriodo, setTruncadoPeriodo] = useState(false);
   const [errorPeriodo, setErrorPeriodo] = useState<string | null>(null);
@@ -216,6 +202,19 @@ function EstadisticasContent() {
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
 
   const rangoActivo = modoRango === 'mes' ? rangoDelMes(viewDate) : rangoPersonalizado;
+  // Rellena todos los días del rango activo (no solo los que tuvieron
+  // turnos) para que el gráfico muestre un eje continuo, sin huecos. Se basa
+  // en `rangoActivo`, no en el mes de `viewDate` — con rango personalizado
+  // el período puede no coincidir con un mes calendario.
+  const diasDelRango = rangoInvalido ? [] : enumerarFechas(rangoActivo.desde, rangoActivo.hasta);
+  // El ANCHO del rango decide cómo se agrupa el gráfico de ganancias — nunca
+  // una elección manual. Un toggle "Agrupar por Día/Semana/Mes" aparte se
+  // probó hoy y, confirmado con revisión externa (fable + patrones de Stripe/
+  // GlossGenius), resultó un control de nivel analista que nadie entendía
+  // sin explicación repetida. Con esto, "una semana" siempre se ve día a
+  // día y "un año" siempre se ve mes a mes, sin que nadie tenga que decidirlo.
+  const granularidadGanancias: 'dia' | 'semana' | 'mes' =
+    diasDelRango.length <= 31 ? 'dia' : diasDelRango.length <= 90 ? 'semana' : 'mes';
 
   useEffect(() => {
     if (rangoInvalido) return;
@@ -237,9 +236,7 @@ function EstadisticasContent() {
     let cancelled = false;
     setErrorPeriodo(null);
 
-    const rango = modoRango === 'personalizado' ? rangoActivo : undefined;
-
-    statsService.getGananciasPorPeriodo(granularidadGanancias, profesionalFiltro ?? undefined, rango)
+    statsService.getGananciasPorPeriodo(granularidadGanancias, profesionalFiltro ?? undefined, rangoActivo)
       .then(({ puntos, truncado }) => {
         if (cancelled) return;
         setPuntosPeriodo(puntos);
@@ -249,7 +246,7 @@ function EstadisticasContent() {
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [granularidadGanancias, modoRango, rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
+  }, [granularidadGanancias, rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
 
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -259,14 +256,8 @@ function EstadisticasContent() {
   const maxCantidad = servicios.reduce((max, s) => Math.max(max, s.cantidad), 0);
   const gananciasPorServicio = stats?.ganancias_por_servicio ?? [];
   const maxMonto = gananciasPorServicio.reduce((max, s) => Math.max(max, s.monto), 0);
-  // Rellena todos los días del rango activo (no solo los que tuvieron
-  // turnos) para que el gráfico muestre un eje continuo, sin huecos.
-  // Se basa en `rangoActivo`, no en el mes de `viewDate` — con rango
-  // personalizado el período puede no coincidir con un mes calendario.
-  const diasDelRango = enumerarFechas(rangoActivo.desde, rangoActivo.hasta);
-  const rangoDiarioDemasiadoLargo = diasDelRango.length > MAX_DIAS_GRAFICO_DIARIO;
   const montoPorFecha = new Map((stats?.ganancias_por_dia ?? []).map(d => [d.fecha, d.monto]));
-  const puntosGananciasPorDia = rangoDiarioDemasiadoLargo ? [] : diasDelRango.map(fechaStr => {
+  const puntosGananciasPorDia = diasDelRango.map(fechaStr => {
     const fecha = new Date(`${fechaStr}T00:00:00`);
     return { label: `${fecha.getDate()}/${fecha.getMonth() + 1}`, monto: montoPorFecha.get(fechaStr) ?? 0 };
   });
@@ -281,37 +272,6 @@ function EstadisticasContent() {
       return { label, monto: p.monto, completo: p.completo };
     });
   const algunBucketParcial = granularidadGanancias !== 'dia' && puntosPeriodo.some(p => !p.completo);
-
-  const formatCorto = (fechaStr: string) => {
-    const d = new Date(`${fechaStr}T00:00:00`);
-    return `${d.getDate()}/${d.getMonth() + 1}`;
-  };
-  // Etiqueta de un bucket puntual, con año — para el texto de alcance (a
-  // diferencia de los ticks del gráfico, que van sin año por compacidad).
-  const formatBucket = (fechaStr: string) => {
-    const d = new Date(`${fechaStr}T00:00:00`);
-    return granularidadGanancias === 'mes' ? `${nombreMes(d, 'short')} ${d.getFullYear()}` : formatCorto(fechaStr);
-  };
-  // Solo para "Semana"/"Mes" — ahí sí hay algo que aclarar: bucketizan el
-  // rango personalizado si está activo, o los últimos 12 si no (ver
-  // gananciasPorPeriodo). "Día" no necesita label: su rango es siempre
-  // exactamente el que ya se ve en el navegador de mes o en los inputs
-  // Desde/Hasta de arriba — repetirlo abajo es información duplicada.
-  // Con rango personalizado, el label sale de los buckets REALES devueltos
-  // (no de las fechas crudas que se tipearon) — así nunca dice algo distinto
-  // de lo que el gráfico terminó mostrando.
-  const alcanceGanancias = granularidadGanancias === 'dia'
-    ? null
-    : modoRango !== 'personalizado'
-      ? t(`earningsScope_${granularidadGanancias}`)
-      : puntosPeriodo.length === 0
-        ? null
-        : puntosPeriodo.length === 1
-          ? formatBucket(puntosPeriodo[0].fecha)
-          : t('earningsScope_rangoPersonalizado', {
-            desde: formatBucket(puntosPeriodo[0].fecha),
-            hasta: formatBucket(puntosPeriodo[puntosPeriodo.length - 1].fecha),
-          });
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
@@ -338,8 +298,11 @@ function EstadisticasContent() {
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Modo: mes calendario vs. rango de fechas elegido a mano — para
-            responder consultas puntuales tipo "cuánto gané del 8 al 14 de
-            junio" que no encajan en un mes completo. */}
+            consultas puntuales tipo "cuánto gané del 8 al 14 de junio". Es
+            el único control manual que queda: la agrupación del gráfico de
+            ganancias (día/semana/mes) ya no se elige acá, se infiere sola
+            del ancho del rango (ver `granularidadGanancias` más arriba en
+            el componente). */}
         <div style={{
           display: 'flex', backgroundColor: colors.surfaceSubtle, borderRadius: 8, padding: 2, alignSelf: 'flex-start',
         }}>
@@ -393,7 +356,7 @@ function EstadisticasContent() {
             display: 'flex', flexDirection: 'column', gap: 8,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <label style={{ fontSize: 13, color: colors.subtext, width: 40 }}>{t('rangeFrom')}</label>
+              <label style={{ fontSize: 13, color: colors.subtext, width: 50 }}>{t('rangeFrom')}</label>
               <input
                 type="date"
                 value={rangoPersonalizado.desde}
@@ -406,7 +369,7 @@ function EstadisticasContent() {
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <label style={{ fontSize: 13, color: colors.subtext, width: 40 }}>{t('rangeTo')}</label>
+              <label style={{ fontSize: 13, color: colors.subtext, width: 50 }}>{t('rangeTo')}</label>
               <input
                 type="date"
                 value={rangoPersonalizado.hasta}
@@ -557,74 +520,46 @@ function EstadisticasContent() {
                   </div>
                 </>
               )}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                margin: '14px 0 6px',
-              }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: 0 }}>
-                  {t('earningsTrend')}
-                </p>
-                <div style={{
-                  display: 'flex', backgroundColor: colors.surfaceSubtle, borderRadius: 8, padding: 2,
-                }}>
-                  {(['dia', 'semana', 'mes'] as const).map(g => (
-                    <button
-                      key={g}
-                      onClick={() => setGranularidadGanancias(g)}
-                      style={{
-                        border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600,
-                        cursor: 'pointer',
-                        backgroundColor: granularidadGanancias === g ? colors.surface : 'transparent',
-                        color: granularidadGanancias === g ? colors.text : colors.subtext,
-                        boxShadow: granularidadGanancias === g ? shadows.card : 'none',
-                      }}
-                    >
-                      {t(`granularity_${g}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {alcanceGanancias && (
-                <p style={{ fontSize: 11, color: colors.subtext, margin: '0 0 8px' }}>
-                  {alcanceGanancias}
-                </p>
-              )}
-              {granularidadGanancias === 'dia' && rangoDiarioDemasiadoLargo ? (
-                <p style={{
-                  padding: '16px', borderRadius: 14, backgroundColor: colors.surface,
-                  border: `1px solid ${colors.border}`, fontSize: 13, color: colors.subtext,
-                  textAlign: 'center', margin: 0,
-                }}>
-                  {t('earningsScope_rangoLargo', { max: MAX_DIAS_GRAFICO_DIARIO })}
-                </p>
-              ) : granularidadGanancias !== 'dia' && errorPeriodo ? (
-                <div style={{
-                  padding: '12px 16px', borderRadius: 14, backgroundColor: colors.dangerBg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                }}>
-                  <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorPeriodo}</p>
-                  <button
-                    onClick={() => setRetryTick(v => v + 1)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
-                    }}
-                  >
-                    {t('retry')}
-                  </button>
-                </div>
-              ) : (
+              {/* Igual que "Por servicio" arriba: si el total ya es $0, no hay
+                  nada que la tendencia agregue — mostrar un título "Por día"
+                  seguido de un cartel "sin ganancias" es ruido, no información.
+                  El error de la tendencia sí se muestra aunque el total sea
+                  $0, porque ahí el problema es otro (falló el fetch). */}
+              {((stats?.ganancias ?? 0) > 0 || errorPeriodo) && (
                 <>
-                  <MiniBarChart puntos={puntosGananciasChart} />
-                  {algunBucketParcial && (
-                    <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
-                      {t('earningsScope_parcial')}
-                    </p>
-                  )}
-                  {truncadoPeriodo && (
-                    <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
-                      {t('earningsScope_truncado')}
-                    </p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
+                    {t(`earningsTrendLabel_${granularidadGanancias}`)}
+                  </p>
+                  {granularidadGanancias !== 'dia' && errorPeriodo ? (
+                    <div style={{
+                      padding: '12px 16px', borderRadius: 14, backgroundColor: colors.dangerBg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                    }}>
+                      <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorPeriodo}</p>
+                      <button
+                        onClick={() => setRetryTick(v => v + 1)}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                          fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
+                        }}
+                      >
+                        {t('retry')}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <MiniBarChart puntos={puntosGananciasChart} />
+                      {algunBucketParcial && (
+                        <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
+                          {t('earningsScope_parcial')}
+                        </p>
+                      )}
+                      {truncadoPeriodo && (
+                        <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
+                          {t('earningsScope_truncado')}
+                        </p>
+                      )}
+                    </>
                   )}
                 </>
               )}
