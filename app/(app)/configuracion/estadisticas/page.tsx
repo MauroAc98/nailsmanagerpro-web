@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { statsService, DashboardStats } from '@/services/statsService';
+import { statsService, DashboardStats, PuntoGanancia } from '@/services/statsService';
+import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes } from '@/lib/dateFormat';
 
 function formatFecha(d: Date): string {
@@ -16,6 +17,47 @@ function rangoDelMes(viewDate: Date): { desde: string; hasta: string } {
   const desde = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
   const hasta = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
   return { desde: formatFecha(desde), hasta: formatFecha(hasta) };
+}
+
+// ─────────────────────────────────────────────
+// Gráfico de barras compacto — una serie de puntos {label, monto} en una
+// sola fila, todos visibles sin scroll (pensado para "todo el mes junto").
+// Genérico a propósito: sirve igual para día, semana o mes — solo cambia
+// qué datos y labels le pasa el caller. No pinta un label por barra (se
+// pondría ilegible con ~30 puntos); dos labels de referencia (primero/
+// último) alcanzan para orientarse, el monto exacto queda en el title
+// nativo (hover en desktop).
+// ─────────────────────────────────────────────
+function MiniBarChart({ puntos, height = 90 }: { puntos: { label: string; monto: number }[]; height?: number }) {
+  const maxMonto = puntos.reduce((max, p) => Math.max(max, p.monto), 0);
+  if (puntos.length === 0) return null;
+  return (
+    <div style={{
+      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+      boxShadow: shadows.card, borderRadius: 14, padding: '16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height }}>
+        {puntos.map((p, i) => {
+          const pct = maxMonto > 0 ? Math.max((p.monto / maxMonto) * 100, p.monto > 0 ? 4 : 2) : 2;
+          return (
+            <div
+              key={i}
+              title={`${p.label}: $${p.monto.toFixed(2)}`}
+              style={{
+                flex: 1, minWidth: 2, height: `${pct}%`,
+                backgroundColor: p.monto > 0 ? colors.success : colors.surfaceSubtle,
+                borderRadius: '3px 3px 0 0',
+              }}
+            />
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10, color: colors.subtext }}>
+        <span>{puntos[0].label}</span>
+        {puntos.length > 1 && <span>{puntos[puntos.length - 1].label}</span>}
+      </div>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -97,6 +139,16 @@ function EstadisticasContent() {
   });
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
+
+  // Granularidad del gráfico de ganancias — independiente del navegador de
+  // mes de arriba a propósito (ver architecture/gastos-ganancias-scope):
+  // "semana"/"mes" siempre muestran los últimos 12 buckets terminando hoy,
+  // no lo que esté navegando el resto de la pantalla.
+  const [granularidadGanancias, setGranularidadGanancias] = useState<'dia' | 'semana' | 'mes'>('dia');
+  const [puntosPeriodo, setPuntosPeriodo] = useState<PuntoGanancia[]>([]);
+  const [errorPeriodo, setErrorPeriodo] = useState<string | null>(null);
 
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
@@ -108,15 +160,28 @@ function EstadisticasContent() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     const { desde, hasta } = rangoDelMes(viewDate);
 
     statsService.getDashboard(desde, hasta, profesionalFiltro ?? undefined)
       .then(data => { if (!cancelled) setStats(data); })
-      .catch(e => console.error('fetchDashboardStats:', e))
+      .catch(e => { if (!cancelled) setError(extraerMensajeError(e)); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [viewDate, profesionalFiltro]);
+  }, [viewDate, profesionalFiltro, retryTick]);
+
+  useEffect(() => {
+    if (granularidadGanancias === 'dia') return;
+    let cancelled = false;
+    setErrorPeriodo(null);
+
+    statsService.getGananciasPorPeriodo(granularidadGanancias, profesionalFiltro ?? undefined)
+      .then(puntos => { if (!cancelled) setPuntosPeriodo(puntos); })
+      .catch(e => { if (!cancelled) setErrorPeriodo(extraerMensajeError(e)); });
+
+    return () => { cancelled = true; };
+  }, [granularidadGanancias, profesionalFiltro, retryTick]);
 
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -126,8 +191,24 @@ function EstadisticasContent() {
   const maxCantidad = servicios.reduce((max, s) => Math.max(max, s.cantidad), 0);
   const gananciasPorServicio = stats?.ganancias_por_servicio ?? [];
   const maxMonto = gananciasPorServicio.reduce((max, s) => Math.max(max, s.monto), 0);
-  const gananciasPorDia = stats?.ganancias_por_dia ?? [];
-  const maxMontoDia = gananciasPorDia.reduce((max, d) => Math.max(max, d.monto), 0);
+  // Rellena todos los días del mes (no solo los que tuvieron turnos) para
+  // que el gráfico muestre el mes completo en un eje continuo, sin huecos.
+  const diasEnMes = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+  const montoPorDia = new Map((stats?.ganancias_por_dia ?? []).map(d => [Number(d.fecha.split('-')[2]), d.monto]));
+  const puntosGananciasPorDia = Array.from({ length: diasEnMes }, (_, i) => ({
+    label: String(i + 1),
+    monto: montoPorDia.get(i + 1) ?? 0,
+  }));
+
+  const puntosGananciasChart = granularidadGanancias === 'dia'
+    ? puntosGananciasPorDia
+    : puntosPeriodo.map(p => {
+      const fecha = new Date(`${p.fecha}T00:00:00`);
+      const label = granularidadGanancias === 'mes'
+        ? nombreMes(fecha, 'short')
+        : `${fecha.getDate()}/${fecha.getMonth() + 1}`;
+      return { label, monto: p.monto };
+    });
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
@@ -227,7 +308,24 @@ function EstadisticasContent() {
           </div>
         )}
 
-        {loading ? (
+        {error ? (
+          <div style={{
+            margin: '20px 0', padding: '12px 16px', borderRadius: 8,
+            backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+          }}>
+            <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
+            <button
+              onClick={() => setRetryTick(v => v + 1)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
+              }}
+            >
+              {t('retry')}
+            </button>
+          </div>
+        ) : loading ? (
           <p style={{ textAlign: 'center', color: colors.subtext, fontSize: 14, marginTop: 40 }}>{t('loading')}</p>
         ) : (
           <>
@@ -296,27 +394,51 @@ function EstadisticasContent() {
                   </div>
                 </>
               )}
-              {gananciasPorDia.length > 0 && (
-                <>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
-                    {t('earningsByDay')}
-                  </p>
-                  <div style={{
-                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                    boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
-                    flexDirection: 'column', gap: 14,
-                  }}>
-                    {gananciasPorDia.map(d => (
-                      <BarraRanking
-                        key={d.fecha}
-                        nombre={String(new Date(`${d.fecha}T00:00:00`).getDate())}
-                        cantidad={d.monto}
-                        maxCantidad={maxMontoDia}
-                        valorLabel={`$${d.monto.toFixed(2)}`}
-                      />
-                    ))}
-                  </div>
-                </>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                margin: '14px 0 6px',
+              }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: 0 }}>
+                  {t('earningsTrend')}
+                </p>
+                <div style={{
+                  display: 'flex', backgroundColor: colors.surfaceSubtle, borderRadius: 8, padding: 2,
+                }}>
+                  {(['dia', 'semana', 'mes'] as const).map(g => (
+                    <button
+                      key={g}
+                      onClick={() => setGranularidadGanancias(g)}
+                      style={{
+                        border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600,
+                        cursor: 'pointer',
+                        backgroundColor: granularidadGanancias === g ? colors.surface : 'transparent',
+                        color: granularidadGanancias === g ? colors.text : colors.subtext,
+                        boxShadow: granularidadGanancias === g ? shadows.card : 'none',
+                      }}
+                    >
+                      {t(`granularity_${g}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {granularidadGanancias !== 'dia' && errorPeriodo ? (
+                <div style={{
+                  padding: '12px 16px', borderRadius: 14, backgroundColor: colors.dangerBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                }}>
+                  <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorPeriodo}</p>
+                  <button
+                    onClick={() => setRetryTick(v => v + 1)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                      fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
+                    }}
+                  >
+                    {t('retry')}
+                  </button>
+                </div>
+              ) : (
+                <MiniBarChart puntos={puntosGananciasChart} />
               )}
             </div>
 

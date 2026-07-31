@@ -34,6 +34,11 @@ export interface DashboardStats {
   ganancias_por_dia: GananciaPorDia[];
 }
 
+export interface PuntoGanancia {
+  fecha: string; // "YYYY-MM-DD" — inicio del bucket (lunes de la semana / día 1 del mes)
+  monto: number;
+}
+
 export const statsService = {
   // profesionalId opcional — mismo patrón que turnoService.getByMes/getDisponibilidad:
   // el backend filtra server-side, sin profesional_id devuelve la cuenta entera.
@@ -42,5 +47,18 @@ export const statsService = {
       params: { desde, hasta, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
     });
     return data;
+  },
+
+  // Independiente del rango del dashboard a propósito — siempre trae los
+  // últimos 12 buckets terminando hoy, sin importar qué mes esté navegando
+  // el resto de la pantalla.
+  getGananciasPorPeriodo: async (
+    granularidad: 'semana' | 'mes',
+    profesionalId?: number
+  ): Promise<PuntoGanancia[]> => {
+    const { data } = await api.get<{ puntos: PuntoGanancia[] }>('/stats/ganancias-por-periodo', {
+      params: { granularidad, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
+    });
+    return data.puntos;
   },
 };

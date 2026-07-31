@@ -18,6 +18,10 @@
     "noServicesThisPeriod": "Não há serviços agendados neste período.",
     "earnings": "Ganhos",
     "earningsByService": "Por serviço",
-    "earningsByDay": "Por dia"
+    "earningsTrend": "Tendência",
+    "granularity_dia": "Dia",
+    "granularity_semana": "Semana",
+    "granularity_mes": "Mês",
+    "retry": "Tentar novamente"
   }
 }
