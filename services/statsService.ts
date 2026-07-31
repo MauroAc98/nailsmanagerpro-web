@@ -37,6 +37,10 @@ export interface DashboardStats {
 export interface PuntoGanancia {
   fecha: string; // "YYYY-MM-DD" — inicio del bucket (lunes de la semana / día 1 del mes)
   monto: number;
+  // false si el rango elegido no cubre la semana/mes calendario completa de
+  // este bucket (ej. elegiste "25/7 al 31/7" — el bucket de julio queda
+  // parcial, monto solo refleja esos días, no el mes entero).
+  completo: boolean;
 }
 
 export const statsService = {

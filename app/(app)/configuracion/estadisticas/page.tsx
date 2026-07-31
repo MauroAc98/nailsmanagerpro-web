@@ -50,7 +50,9 @@ const MAX_DIAS_GRAFICO_DIARIO = 62;
 // último) alcanzan para orientarse, el monto exacto queda en el title
 // nativo (hover en desktop).
 // ─────────────────────────────────────────────
-function MiniBarChart({ puntos, height = 90 }: { puntos: { label: string; monto: number }[]; height?: number }) {
+function MiniBarChart({
+  puntos, height = 90,
+}: { puntos: { label: string; monto: number; completo?: boolean }[]; height?: number }) {
   const t = useTranslations('estadisticas.EstadisticasPage');
   const maxMonto = puntos.reduce((max, p) => Math.max(max, p.monto), 0);
   if (puntos.length === 0) return null;
@@ -78,13 +80,15 @@ function MiniBarChart({ puntos, height = 90 }: { puntos: { label: string; monto:
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height }}>
         {puntos.map((p, i) => {
           const pct = maxMonto > 0 ? Math.max((p.monto / maxMonto) * 100, p.monto > 0 ? 4 : 2) : 2;
+          const esParcial = p.completo === false;
           return (
             <div
               key={i}
-              title={`${p.label}: $${p.monto.toFixed(2)}`}
+              title={`${p.label}: $${p.monto.toFixed(2)}${esParcial ? ` (${t('earningsPartialBucket')})` : ''}`}
               style={{
                 flex: 1, minWidth: 2, height: `${pct}%`,
                 backgroundColor: p.monto > 0 ? colors.success : colors.surfaceSubtle,
+                opacity: esParcial ? 0.5 : 1,
                 borderRadius: '3px 3px 0 0',
               }}
             />
@@ -274,23 +278,40 @@ function EstadisticasContent() {
       const label = granularidadGanancias === 'mes'
         ? nombreMes(fecha, 'short')
         : `${fecha.getDate()}/${fecha.getMonth() + 1}`;
-      return { label, monto: p.monto };
+      return { label, monto: p.monto, completo: p.completo };
     });
+  const algunBucketParcial = granularidadGanancias !== 'dia' && puntosPeriodo.some(p => !p.completo);
 
   const formatCorto = (fechaStr: string) => {
     const d = new Date(`${fechaStr}T00:00:00`);
     return `${d.getDate()}/${d.getMonth() + 1}`;
+  };
+  // Etiqueta de un bucket puntual, con año — para el texto de alcance (a
+  // diferencia de los ticks del gráfico, que van sin año por compacidad).
+  const formatBucket = (fechaStr: string) => {
+    const d = new Date(`${fechaStr}T00:00:00`);
+    return granularidadGanancias === 'mes' ? `${nombreMes(d, 'short')} ${d.getFullYear()}` : formatCorto(fechaStr);
   };
   // Solo para "Semana"/"Mes" — ahí sí hay algo que aclarar: bucketizan el
   // rango personalizado si está activo, o los últimos 12 si no (ver
   // gananciasPorPeriodo). "Día" no necesita label: su rango es siempre
   // exactamente el que ya se ve en el navegador de mes o en los inputs
   // Desde/Hasta de arriba — repetirlo abajo es información duplicada.
+  // Con rango personalizado, el label sale de los buckets REALES devueltos
+  // (no de las fechas crudas que se tipearon) — así nunca dice algo distinto
+  // de lo que el gráfico terminó mostrando.
   const alcanceGanancias = granularidadGanancias === 'dia'
     ? null
-    : modoRango === 'personalizado'
-      ? t('earningsScope_rangoPersonalizado', { desde: formatCorto(rangoActivo.desde), hasta: formatCorto(rangoActivo.hasta) })
-      : t(`earningsScope_${granularidadGanancias}`);
+    : modoRango !== 'personalizado'
+      ? t(`earningsScope_${granularidadGanancias}`)
+      : puntosPeriodo.length === 0
+        ? null
+        : puntosPeriodo.length === 1
+          ? formatBucket(puntosPeriodo[0].fecha)
+          : t('earningsScope_rangoPersonalizado', {
+            desde: formatBucket(puntosPeriodo[0].fecha),
+            hasta: formatBucket(puntosPeriodo[puntosPeriodo.length - 1].fecha),
+          });
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
@@ -595,7 +616,12 @@ function EstadisticasContent() {
               ) : (
                 <>
                   <MiniBarChart puntos={puntosGananciasChart} />
-                  {granularidadGanancias !== 'dia' && truncadoPeriodo && (
+                  {algunBucketParcial && (
+                    <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
+                      {t('earningsScope_parcial')}
+                    </p>
+                  )}
+                  {truncadoPeriodo && (
                     <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
                       {t('earningsScope_truncado')}
                     </p>

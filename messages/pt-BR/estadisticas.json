@@ -27,6 +27,8 @@
     "earningsScope_mes": "Últimos 12 meses",
     "earningsScope_rangoLargo": "Escolha um período de até {max} dias para ver o detalhe diário. O total e o detalhamento por serviço acima continuam funcionando normalmente.",
     "earningsScope_truncado": "O período escolhido é muito longo, mostrando os primeiros intervalos.",
+    "earningsScope_parcial": "Os períodos mais claros não coincidem por completo com o período escolhido — o valor conta apenas os dias selecionados.",
+    "earningsPartialBucket": "parcial",
     "earningsChartEmpty": "Sem ganhos neste período",
     "retry": "Tentar novamente",
     "rangeMode_mes": "Mês",
