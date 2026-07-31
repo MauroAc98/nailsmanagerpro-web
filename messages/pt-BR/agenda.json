@@ -19,6 +19,7 @@
     "emptyState": "Você não tem agendamentos pendentes de cobrança",
     "searchPlaceholder": "Buscar por nome da cliente...",
     "noResults": "Nenhum agendamento encontrado",
+    "resultCount": "{count, plural, one {# agendamento} other {# agendamentos}}",
     "loadPriceButton": "Cadastrar preço",
     "saved": "Preço salvo",
     "saveError": "Não foi possível salvar o preço."

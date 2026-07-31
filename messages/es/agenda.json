@@ -19,6 +19,7 @@
     "emptyState": "No tenés turnos pendientes de cobro",
     "searchPlaceholder": "Buscar por nombre de clienta...",
     "noResults": "No se encontraron turnos",
+    "resultCount": "{count, plural, one {# turno} other {# turnos}}",
     "loadPriceButton": "Cargar precio",
     "saved": "Precio guardado",
     "saveError": "No se pudo guardar el precio."
