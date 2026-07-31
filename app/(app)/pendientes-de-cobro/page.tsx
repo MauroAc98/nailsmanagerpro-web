@@ -68,7 +68,7 @@ function PendienteCard({ turno, onCargarPrecio }: { turno: Turno; onCargarPrecio
 
 export default function PendientesDeCobroPage() {
   const t = useTranslations('agenda.PendientesDeCobroPage');
-  const { pendientes, loading, fetchPendientes, actualizarPrecios } = usePendientesDeCobroStore();
+  const { pendientes, loading, error, fetchPendientes, actualizarPrecios } = usePendientesDeCobroStore();
   const { servicios, fetchServicios } = useServiciosStore();
 
   useEffect(() => {
@@ -101,6 +101,15 @@ export default function PendientesDeCobroPage() {
         <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
         <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>{t('subtitle')}</p>
       </div>
+
+      {error && (
+        <div style={{
+          margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8,
+          backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}`,
+        }}>
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
+        </div>
+      )}
 
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>

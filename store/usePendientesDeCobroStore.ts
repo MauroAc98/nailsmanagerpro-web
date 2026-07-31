@@ -11,6 +11,7 @@ interface OperacionResult {
 interface PendientesDeCobroState {
   pendientes: Turno[];
   loading: boolean;
+  error: string | null;
 
   fetchPendientes: () => Promise<void>;
   actualizarPrecios: (
@@ -22,14 +23,19 @@ interface PendientesDeCobroState {
 export const usePendientesDeCobroStore = create<PendientesDeCobroState>((set, get) => ({
   pendientes: [],
   loading: false,
+  error: null,
 
   fetchPendientes: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const pendientes = await turnoService.pendientesDeCobro();
       set({ pendientes });
     } catch (e) {
-      console.error('fetchPendientes:', e);
+      // No se pisa `pendientes` acá a propósito: si ya había datos de un
+      // fetch anterior exitoso, un fallo puntual no debe hacerlos
+      // desaparecer. `error` es lo que le avisa al badge/banner que el
+      // conteo actual puede no ser confiable — ver PendientesDeCobroBanner.
+      set({ error: extraerMensajeError(e) });
     } finally {
       set({ loading: false });
     }

@@ -20,7 +20,9 @@
   },
   "PendientesDeCobroBanner": {
     "message": "{count, plural, one {Tenés # turno con precio sin cargar} other {Tenés # turnos con precio sin cargar}}",
-    "view": "Ver"
+    "view": "Ver",
+    "checkError": "No pudimos verificar turnos pendientes de cobro",
+    "retry": "Reintentar"
   },
   "WelcomeScreen": {
     "greetingMorning": "Buenos días",

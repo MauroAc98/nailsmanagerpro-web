@@ -130,7 +130,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       minWidth: 16,
                       height: 16,
                       borderRadius: 8,
-                      backgroundColor: colors.danger,
+                      backgroundColor: colors.amber,
                       color: '#FFF',
                       fontSize: 10,
                       fontWeight: 700,

@@ -13,9 +13,14 @@ import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
 export function PendientesDeCobroBanner() {
   const t = useTranslations('common.PendientesDeCobroBanner');
   const router = useRouter();
-  const pendientes = usePendientesDeCobroStore(state => state.pendientes);
+  const { pendientes, error, fetchPendientes } = usePendientesDeCobroStore();
 
-  if (pendientes.length === 0) return null;
+  // Si falló el último fetch y no hay datos previos, no hay forma de saber
+  // si realmente no hay pendientes o si el conteo está desactualizado — se
+  // avisa en vez de quedar en silencio (que es indistinguible de "todo al día").
+  if (pendientes.length === 0 && !error) return null;
+
+  const esError = error && pendientes.length === 0;
 
   return (
     <div style={{
@@ -32,17 +37,17 @@ export function PendientesDeCobroBanner() {
         <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: colors.amber }}>
-        {t('message', { count: pendientes.length })}
+        {esError ? t('checkError') : t('message', { count: pendientes.length })}
       </span>
       <button
-        onClick={() => router.push('/pendientes-de-cobro')}
+        onClick={() => esError ? fetchPendientes() : router.push('/pendientes-de-cobro')}
         style={{
           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           fontSize: 13, fontWeight: 700, textDecoration: 'underline',
           color: colors.amber,
         }}
       >
-        {t('view')}
+        {esError ? t('retry') : t('view')}
       </button>
     </div>
   );

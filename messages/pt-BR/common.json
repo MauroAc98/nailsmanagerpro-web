@@ -20,7 +20,9 @@
   },
   "PendientesDeCobroBanner": {
     "message": "{count, plural, one {Você tem # agendamento com preço pendente} other {Você tem # agendamentos com preço pendente}}",
-    "view": "Ver"
+    "view": "Ver",
+    "checkError": "Não foi possível verificar agendamentos pendentes",
+    "retry": "Tentar novamente"
   },
   "WelcomeScreen": {
     "greetingMorning": "Bom dia",
