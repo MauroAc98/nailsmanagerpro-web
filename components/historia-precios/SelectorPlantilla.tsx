@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { LayoutId, EstiloId } from '@/services/profesionalService';
 import { Servicio } from '@/services/servicioService';
 import { colors, withAlpha } from '@/theme/colors';
@@ -33,6 +34,7 @@ interface Props {
 export function SelectorPlantilla({
   fotos, servicios, layoutId, estiloId, onLayoutChange, onEstiloChange,
 }: Props) {
+  const t = useTranslations('historia.SelectorPlantilla');
   const combinaciones = useMemo(
     () => LAYOUTS.flatMap(layout => ESTILOS.map(estilo => ({ layout, estilo }))),
     []
@@ -49,8 +51,9 @@ export function SelectorPlantilla({
     if (!layoutActual) return;
     if (fotos.length < layoutActual.minFotos && layoutId !== 'single') {
       onLayoutChange('single');
-      showToast('El diseño elegido necesita más fotos: se cambió a diseño simple.');
+      showToast(t('fallbackToast'));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fotos.length, layoutId, onLayoutChange]);
 
   return (
@@ -86,7 +89,7 @@ export function SelectorPlantilla({
             />
             {bloqueado && (
               <span style={{ fontSize: 9, fontWeight: 600, color: colors.subtext, textAlign: 'center' }}>
-                faltan {faltan} foto{faltan === 1 ? '' : 's'}
+                {t('missingPhotos', { count: faltan })}
               </span>
             )}
           </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { FotoHistoria } from '@/services/profesionalService';
 import { resizeFondoFile } from '@/lib/historia/captura';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -48,6 +49,7 @@ function leerComoDataUrl(file: File): Promise<string> {
 // (design D4). Cada foto en vuelo (subida o borrado) muestra un spinner en
 // su propio slot en vez de bloquear la grilla entera.
 export function GestorFotos({ profesionalId, fotos }: Props) {
+  const t = useTranslations('historia.GestorFotos');
   const { subirFotoHistoriaPrecios, borrarFotoHistoriaPrecios } = useProfesionalStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +96,7 @@ export function GestorFotos({ profesionalId, fotos }: Props) {
       setPreviews(prev => prev.slice(1));
 
       if (!resultado.success) {
-        await alertDialog(resultado.message ?? 'No se pudo subir la foto.');
+        await alertDialog(resultado.message ?? t('uploadError'));
       }
     }
     setSubiendo(false);
@@ -102,8 +104,8 @@ export function GestorFotos({ profesionalId, fotos }: Props) {
 
   const handleBorrar = async (foto: FotoHistoria) => {
     const confirmado = await confirmDialog(
-      '¿Eliminar esta foto de la historia de precios?',
-      { confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true }
+      t('deleteConfirm'),
+      { confirmText: t('deleteConfirmButton'), cancelText: t('cancel'), danger: true }
     );
     if (!confirmado) return;
 
@@ -112,7 +114,7 @@ export function GestorFotos({ profesionalId, fotos }: Props) {
     setBorrandoId(null);
 
     if (!resultado.success) {
-      await alertDialog(resultado.message ?? 'No se pudo eliminar la foto.');
+      await alertDialog(resultado.message ?? t('deleteError'));
     }
   };
 
@@ -139,7 +141,7 @@ export function GestorFotos({ profesionalId, fotos }: Props) {
               <button
                 type="button"
                 onClick={() => handleBorrar(foto)}
-                aria-label="Eliminar foto"
+                aria-label={t('deletePhotoAria')}
                 style={{
                   position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11,
                   border: `1px solid ${colors.dangerBorder}`, background: colors.dangerBg,
@@ -177,7 +179,7 @@ export function GestorFotos({ profesionalId, fotos }: Props) {
           type="button"
           onClick={handleAgregarClick}
           disabled={subiendo}
-          aria-label="Agregar fotos"
+          aria-label={t('addPhotosAria')}
           style={{
             width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: 12,
             border: `1.5px dashed ${colors.border}`, background: colors.surfaceSubtle,

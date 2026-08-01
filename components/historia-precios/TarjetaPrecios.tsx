@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 
@@ -20,6 +21,7 @@ interface Props {
 // the same reason StoryCanvas hardcodes its own raw colors instead of
 // reading theme/colors.ts. See design decision D3.
 export function TarjetaPrecios({ tokens, servicios }: Props) {
+  const t = useTranslations('historia.TarjetaPrecios');
   return (
     <div
       style={{
@@ -43,7 +45,7 @@ export function TarjetaPrecios({ tokens, servicios }: Props) {
             textTransform: 'uppercase',
           }}
         >
-          Lista de precios
+          {t('header')}
         </span>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

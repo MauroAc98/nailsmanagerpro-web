@@ -34,5 +34,35 @@
     "noContentToShow": "Sin contenido: No hay slots libres para mostrar en la imagen.",
     "couldNotGenerateImage": "No se pudo generar la imagen. Intentá de nuevo.",
     "shareTitle": "Mi agenda"
+  },
+  "TarjetaPrecios": {
+    "header": "Lista de precios"
+  },
+  "SelectorPlantilla": {
+    "missingPhotos": "faltan {count, plural, one {# foto} other {# fotos}}",
+    "fallbackToast": "El diseño elegido necesita más fotos: se cambió a diseño simple."
+  },
+  "GestorFotos": {
+    "deleteConfirm": "¿Eliminar esta foto de la historia de precios?",
+    "deleteConfirmButton": "Eliminar",
+    "cancel": "Cancelar",
+    "uploadError": "No se pudo subir la foto.",
+    "deleteError": "No se pudo eliminar la foto.",
+    "deletePhotoAria": "Eliminar foto",
+    "addPhotosAria": "Agregar fotos"
+  },
+  "HistoriaPreciosPage": {
+    "title": "Historia de precios",
+    "loading": "Cargando...",
+    "noProfessional": "No se pudo identificar tu perfil profesional.",
+    "templateSectionTitle": "Elegí tu diseño",
+    "photosSectionTitle": "Fotos",
+    "photosSectionHint": "Subí fotos dedicadas a tu historia de precios.",
+    "emptyPhotosState": "Subí al menos una foto para generar tu historia de precios.",
+    "save": "Guardar",
+    "share": "Compartir",
+    "noContentToShow": "Subí al menos una foto para generar la imagen.",
+    "couldNotGenerateImage": "No se pudo generar la imagen. Intentá de nuevo.",
+    "shareTitle": "Mi historia de precios"
   }
 }

@@ -158,9 +158,9 @@ export default function EditarServicioPage() {
           backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '12px 16px',
         }}>
           <div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>Es promoción</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('promoLabel')}</p>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              Marcá este servicio como promoción
+              {t('promoHint')}
             </p>
           </div>
           <PillToggle value={esPromo} onChange={setEsPromo} />

@@ -34,5 +34,35 @@
     "noContentToShow": "Sem conteúdo: não há horários livres para mostrar na imagem.",
     "couldNotGenerateImage": "Não foi possível gerar a imagem. Tente novamente.",
     "shareTitle": "Minha agenda"
+  },
+  "TarjetaPrecios": {
+    "header": "Lista de preços"
+  },
+  "SelectorPlantilla": {
+    "missingPhotos": "faltam {count, plural, one {# foto} other {# fotos}}",
+    "fallbackToast": "O design escolhido precisa de mais fotos: foi trocado para o design simples."
+  },
+  "GestorFotos": {
+    "deleteConfirm": "Remover esta foto do story de preços?",
+    "deleteConfirmButton": "Remover",
+    "cancel": "Cancelar",
+    "uploadError": "Não foi possível enviar a foto.",
+    "deleteError": "Não foi possível remover a foto.",
+    "deletePhotoAria": "Remover foto",
+    "addPhotosAria": "Adicionar fotos"
+  },
+  "HistoriaPreciosPage": {
+    "title": "Story de preços",
+    "loading": "Carregando...",
+    "noProfessional": "Não foi possível identificar seu perfil profissional.",
+    "templateSectionTitle": "Escolha seu design",
+    "photosSectionTitle": "Fotos",
+    "photosSectionHint": "Envie fotos dedicadas ao seu story de preços.",
+    "emptyPhotosState": "Envie ao menos uma foto para gerar seu story de preços.",
+    "save": "Salvar",
+    "share": "Compartilhar",
+    "noContentToShow": "Envie ao menos uma foto para gerar a imagem.",
+    "couldNotGenerateImage": "Não foi possível gerar a imagem. Tente novamente.",
+    "shareTitle": "Meu story de preços"
   }
 }
