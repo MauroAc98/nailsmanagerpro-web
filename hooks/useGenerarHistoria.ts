@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
+import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -66,93 +67,6 @@ function filtrarQuincena(dias: DisponibilidadDia[], quincena: 0 | 1): Disponibil
 export function formatFechaLarga(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
   return `${nombreDia(d, 'long')}, ${d.getDate()} de ${nombreMes(d, 'long')}`;
-}
-
-// Convierte una URL (misma origin — p.ej. nuestro proxy /api/historia-fondo)
-// a data: URL vía fetch()+FileReader. Reusado tanto por el efecto que
-// resuelve el fondo fijo apenas se conoce como por el fallback defensivo
-// dentro de capturar() — ver los comentarios en ambos usos.
-async function fetchAsDataUrl(url: string): Promise<string> {
-  const res  = await fetch(url);
-  const blob = await res.blob();
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
-
-// ─────────────────────────────────────────────
-// Redimensionado client-side de la foto de fondo — ver capturar() más abajo
-// para el detalle completo del pipeline de exportación, pero el resumen es:
-// html-to-image serializa el nodo a un <foreignObject> SVG y lo rasteriza a
-// través de un <img> off-DOM propio (nodeToDataURL + createImage en
-// node_modules/html-to-image/lib/util.js). Ese <img> interno decodifica la
-// foto de fondo A SU RESOLUCIÓN ORIGINAL sin importar cuánto la achique el
-// object-fit del CSS en pantalla — el object-fit es puramente de pintado,
-// no reduce lo que WebKit tiene que decodificar. Con una foto de cámara sin
-// redimensionar (fácil varios MB, miles de píxeles por lado) eso pasa DOS
-// veces por captura (el warm-up + la real), y iOS Safari devuelve
-// documentadamente buffers en blanco/negro bajo presión de memoria del
-// decoder de imágenes en vez de tirar un error (mismo patrón silencioso que
-// los bugs de fondo negro anteriores en esta pantalla). Achicar acá, ANTES
-// de que la foto se vuelva fondoUri o se suba, baja el payload para TODOS
-// los pasos siguientes: el estado, el <img> del DOM, ambas pasadas de
-// toBlob() por captura, y (en "fijo") la subida + el refetch por el proxy.
-// Nunca hizo falta una foto de varios miles de píxeles para un canvas del
-// tamaño de una story.
-//
-// Se carga el archivo original vía object URL (no FileReader) para no
-// materializar un base64 gigante del original solo para tirarlo enseguida —
-// el base64 recién se genera sobre el blob YA achicado.
-// ─────────────────────────────────────────────
-const FONDO_MAX_EDGE      = 1440;
-const FONDO_JPEG_QUALITY  = 0.82;
-
-function resizeFondoFile(file: File): Promise<{ dataUrl: string; file: File }> {
-  return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-
-    img.onload = () => {
-      const longEdge = Math.max(img.naturalWidth, img.naturalHeight);
-      const scale    = longEdge > FONDO_MAX_EDGE ? FONDO_MAX_EDGE / longEdge : 1;
-      const targetW  = Math.max(1, Math.round(img.naturalWidth * scale));
-      const targetH  = Math.max(1, Math.round(img.naturalHeight * scale));
-
-      const canvas = document.createElement('canvas');
-      canvas.width  = targetW;
-      canvas.height = targetH;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('resizeFondoFile: sin contexto 2d'));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, targetW, targetH);
-      URL.revokeObjectURL(objectUrl);
-
-      canvas.toBlob(blob => {
-        if (!blob) {
-          reject(new Error('resizeFondoFile: toBlob devolvió null'));
-          return;
-        }
-        const resized = new File([blob], 'fondo-historia.jpg', { type: 'image/jpeg' });
-        const reader  = new FileReader();
-        reader.onload  = () => resolve({ dataUrl: reader.result as string, file: resized });
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      }, 'image/jpeg', FONDO_JPEG_QUALITY);
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error('resizeFondoFile: no se pudo cargar la imagen elegida'));
-    };
-
-    img.src = objectUrl;
-  });
 }
 
 // ─────────────────────────────────────────────
@@ -654,47 +568,24 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // the moment it's known — mount or profesional switch — with seconds of
   // slack instead of milliseconds, so by the time compartir actually runs
   // fondoUri is normally ALREADY a data: URL, the same zero-branch path
-  // "por esta vez" always used. The fetch/mutate below is now only a
-  // last-resort fallback for the rare case that effect hasn't resolved yet
-  // (share tapped immediately) or failed — it also writes back through
-  // setFondoUri so React's state doesn't drift from a DOM node mutated
-  // outside its render cycle.
+  // "por esta vez" always used.
+  //
+  // The fetch->data:/decode()/settle sequence itself now lives in
+  // `lib/historia/captura.ts` (prepararImagenesParaCaptura), shared with
+  // the price-story canvas — it's a last-resort fallback for the rare case
+  // the effect above hasn't resolved yet (share tapped immediately) or
+  // failed, generalized from this single-<img> path to N images. We still
+  // write the resolved data: URL back through setFondoUri here so React's
+  // state doesn't drift from a DOM node mutated outside its render cycle —
+  // that reconciliation is this hook's job, not the shared module's.
   // ─────────────────────────────────────────────
-  const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-
   const capturar = useCallback(async (): Promise<Blob | null> => {
     if (!canvasRef.current) return null;
 
-    const img = canvasRef.current.querySelector('img');
-    if (img && img.src && !img.src.startsWith('data:')) {
-      // Último recurso: el efecto de arriba normalmente ya resolvió el
-      // fondo fijo a data: URL con segundos de margen. Esto solo entra en
-      // juego si el usuario comparte antes de que ese fetch termine, o si
-      // falló. img.src = dataUrl se toma igual en el toBlob() que sigue
-      // (cada llamada vuelve a clonar el nodo desde el DOM), pero además
-      // escribimos a fondoUri para que el estado de React no quede
-      // desincronizado del DOM en una captura futura.
-      try {
-        const dataUrl = await fetchAsDataUrl(img.src);
-        img.src = dataUrl;
-        setFondoUri(dataUrl);
-      } catch {
-        // prefetch falló (offline, proxy caído) — seguimos con la url de
-        // red original, el decode()+warm-up de abajo es el mejor esfuerzo
-      }
+    const resueltas = await prepararImagenesParaCaptura(canvasRef.current);
+    for (const dataUrl of resueltas.values()) {
+      setFondoUri(dataUrl);
     }
-
-    if (img) {
-      try {
-        await img.decode();
-      } catch {
-        // imagen todavía sin src resuelto o decode no soportado — seguimos
-        // igual, el warm-up de abajo es el mejor esfuerzo que queda
-      }
-    }
-
-    await nextFrame();
-    await nextFrame();
 
     await toBlob(canvasRef.current, { pixelRatio: 2 });
     return toBlob(canvasRef.current, { pixelRatio: 2 });
