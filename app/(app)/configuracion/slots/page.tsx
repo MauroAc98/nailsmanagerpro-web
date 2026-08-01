@@ -25,7 +25,7 @@ function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       onClick={e => { e.stopPropagation(); onChange(!value); }}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.border,
+        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
       }}

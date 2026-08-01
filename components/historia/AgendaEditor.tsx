@@ -129,7 +129,12 @@ export function AgendaEditor({ agenda, diasOcultos, slotsOcultos, onToggleSlot, 
                         onClick={() => clickeable && onToggleSlot(fechaIdx, slotIdx)}
                         style={{
                           padding: '5px 8px', borderRadius: 5, minWidth: 40, border: 'none',
-                          background: off ? colors.border : colors.primary,
+                          // colors.border (línea divisoria) no fondo de pill: al reforzar
+                          // su contraste para separadores reales quedó casi igual a
+                          // colors.placeholder, y texto placeholder sobre fondo border
+                          // se volvía ilegible (gris sobre gris). surfaceSubtle es el
+                          // token correcto para "fondo apagado con texto encima".
+                          background: off ? colors.surfaceSubtle : colors.primary,
                           color: off ? colors.placeholder : '#fff',
                           fontSize: 10, fontWeight: 700,
                           cursor: clickeable ? 'pointer' : 'default',
