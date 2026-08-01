@@ -8,6 +8,8 @@ import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioSto
 import { Servicio } from '@/services/servicioService';
 import { NAV_HEIGHT } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { profesionalJefa } from '@/services/profesionalService';
 
 function ServicioCard({
   servicio,
@@ -71,6 +73,18 @@ export default function ServiciosPage() {
 
   useEffect(() => { fetchServicios(); }, []);
 
+  // Entry point a "historia de precios" (spec: price-story) — gateado en que
+  // el campo NUEVO exista en la respuesta del backend (no en que tenga un
+  // valor truthy: `historia_precios_layout_id` es válidamente `null` cuando
+  // la profesional todavía no eligió plantilla). Mientras el backend no
+  // mande el campo, `historia_precios_layout_id` viene `undefined` en el
+  // objeto real (aunque el tipo lo declare como `LayoutId | null`), así que
+  // el botón queda invisible hasta que el backend despliegue el feature —
+  // ver design.md, "Migration / Rollout".
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
+  useEffect(() => { if (profesionales.length === 0) fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const jefa = profesionalJefa(profesionales);
+  const mostrarHistoriaPreciosButton = jefa !== null && jefa.historia_precios_layout_id !== undefined;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
@@ -89,6 +103,44 @@ export default function ServiciosPage() {
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
+
+      {/* Entry point: historia de precios (spec: price-story) */}
+      {mostrarHistoriaPreciosButton && (
+        <div style={{ padding: '0 20px 16px' }}>
+          <button
+            onClick={() => router.push('/historia-precios')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+              backgroundColor: withAlpha(colors.primary, '15'),
+              border: `1px solid ${withAlpha(colors.primary, '33')}`,
+              boxShadow: shadows.card, borderRadius: 14,
+              padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <div style={{
+              width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '25'),
+              borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-5-5L5 21" />
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.text }}>
+                {t('priceStoryButton')}
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+                {t('priceStoryButtonHint')}
+              </p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* FAB */}
       <button

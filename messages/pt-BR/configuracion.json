@@ -23,7 +23,9 @@
     "searchPlaceholder": "Buscar serviço...",
     "loading": "Carregando serviços...",
     "noResults": "Nenhum resultado encontrado",
-    "emptyState": "Cadastre seu primeiro serviço!"
+    "emptyState": "Cadastre seu primeiro serviço!",
+    "priceStoryButton": "Story de preços",
+    "priceStoryButtonHint": "Monte uma imagem com sua lista de preços para compartilhar"
   },
   "NuevoServicioPage": {
     "title": "Novo serviço",
@@ -36,6 +38,8 @@
     "invalidDuration": "Informe uma duração válida.",
     "duplicateActive": "Já existe um serviço com esse nome.",
     "duplicateInactive": "Você já tem um serviço com esse nome (inativo). Reative-o na lista em vez de criar um novo.",
+    "promoLabel": "É promoção",
+    "promoHint": "Marque este serviço como promoção",
     "saving": "Salvando...",
     "submit": "Adicionar serviço",
     "saveError": "Não foi possível salvar o serviço."
@@ -52,6 +56,8 @@
     "invalidDuration": "Informe uma duração válida.",
     "duplicateActive": "Já existe um serviço com esse nome.",
     "duplicateInactive": "Você já tem um serviço com esse nome (inativo). Reative-o na lista em vez de criar um novo.",
+    "promoLabel": "É promoção",
+    "promoHint": "Marque este serviço como promoção",
     "loadError": "Não foi possível carregar o serviço.",
     "saving": "Salvando...",
     "submit": "Salvar alterações",
