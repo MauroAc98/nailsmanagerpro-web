@@ -48,6 +48,7 @@ export default function HistoriaPreciosPage() {
 
   const {
     effectiveProfesionalId, serviciosActivos,
+    nombreNegocio, telefono,
     layoutId, estiloId, handleLayoutChange, handleEstiloChange,
     fotos, fotosUrls, puedeCapturar,
     canvasRef, descargarImagen, compartirImagen,
@@ -94,6 +95,8 @@ export default function HistoriaPreciosPage() {
                 estiloId={estiloId}
                 fotos={fotosUrls}
                 servicios={serviciosActivos}
+                nombreNegocio={nombreNegocio}
+                telefono={telefono}
               />
             </div>
           </div>
@@ -106,6 +109,8 @@ export default function HistoriaPreciosPage() {
             <SelectorPlantilla
               fotos={fotosUrls}
               servicios={serviciosActivos}
+              nombreNegocio={nombreNegocio}
+              telefono={telefono}
               layoutId={layoutId}
               estiloId={estiloId}
               onLayoutChange={handleLayoutChange}

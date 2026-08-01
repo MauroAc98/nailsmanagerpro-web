@@ -36,7 +36,8 @@
     "shareTitle": "Mi agenda"
   },
   "TarjetaPrecios": {
-    "header": "Lista de precios"
+    "header": "Lista de precios",
+    "reservarLabel": "Reservá tu turno"
   },
   "SelectorPlantilla": {
     "missingPhotos": "faltan {count, plural, one {# foto} other {# fotos}}",

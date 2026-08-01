@@ -3,6 +3,7 @@ import { toBlob } from 'html-to-image';
 import { alertDialog } from '@/store/useConfirmStore';
 import { tStatic } from '@/store/useLocaleStore';
 import { fetchAsDataUrl, prepararImagenesParaCaptura } from '@/lib/historia/captura';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { profesionalJefa, LayoutId, EstiloId } from '@/services/profesionalService';
@@ -37,6 +38,16 @@ export function useHistoriaPrecios() {
     () => profesionales.find(p => p.id === effectiveProfesionalId) ?? null,
     [profesionales, effectiveProfesionalId]
   );
+
+  // ─────────────────────────────────────────────
+  // Footer credit — account-level (`User.name`/`User.telefono` via
+  // useAuthStore), NOT the profesional-level data above. Same slot the
+  // reference Canva price-list used for a professional's @handle, but the
+  // business name/phone belong to the account, not to `Profesional`.
+  // ─────────────────────────────────────────────
+  const { user } = useAuthStore();
+  const nombreNegocio = user?.name ?? '';
+  const telefono = user?.telefono ?? null;
 
   // Servicios activos — el price story no distingue es_promo visualmente
   // (spec: "Generated image reflects live service data", sin tratamiento
@@ -229,6 +240,9 @@ export function useHistoriaPrecios() {
   return {
     // professional / servicios
     effectiveProfesionalId, serviciosActivos,
+
+    // footer credit (account-level)
+    nombreNegocio, telefono,
 
     // template selection
     layoutId, estiloId, handleLayoutChange, handleEstiloChange,

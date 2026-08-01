@@ -20,6 +20,12 @@ interface Props {
   // Already-filtered active `Servicio` list, same as what TarjetaPrecios
   // expects — this component is purely presentational, no store access.
   servicios:      Servicio[];
+  // Account-level footer credit (business name/phone), same values passed
+  // straight through to TarjetaPrecios — every thumbnail previews the same
+  // real footer content the export renders (spec: "Picker previews with
+  // real data", design decision D3).
+  nombreNegocio:  string;
+  telefono:       string | null;
   layoutId:       LayoutId;
   estiloId:       EstiloId;
   onLayoutChange: (id: LayoutId) => void;
@@ -32,7 +38,7 @@ interface Props {
 // previewed with the caller's real photos and real service prices — never
 // placeholder content (spec: "Picker previews with real data").
 export function SelectorPlantilla({
-  fotos, servicios, layoutId, estiloId, onLayoutChange, onEstiloChange,
+  fotos, servicios, nombreNegocio, telefono, layoutId, estiloId, onLayoutChange, onEstiloChange,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
   const combinaciones = useMemo(
@@ -85,6 +91,8 @@ export function SelectorPlantilla({
               estiloId={estilo.id}
               fotos={fotos}
               servicios={servicios}
+              nombreNegocio={nombreNegocio}
+              telefono={telefono}
               width={THUMB_WIDTH}
             />
             {bloqueado && (

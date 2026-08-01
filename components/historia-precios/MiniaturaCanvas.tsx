@@ -5,13 +5,15 @@ import { Servicio } from '@/services/servicioService';
 import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from './HistoriaPreciosCanvas';
 
 interface Props {
-  layoutId:  LayoutId;
-  estiloId:  EstiloId;
-  fotos:     string[];
-  servicios: Servicio[];
+  layoutId:      LayoutId;
+  estiloId:      EstiloId;
+  fotos:         string[];
+  servicios:     Servicio[];
+  nombreNegocio: string;
+  telefono:      string | null;
   // Target on-screen width of the thumbnail — height is derived to keep
   // BASE_WIDTH/BASE_HEIGHT's aspect ratio.
-  width:     number;
+  width:         number;
 }
 
 // MiniaturaCanvas — renders HistoriaPreciosCanvas at its real BASE_WIDTH /
@@ -21,7 +23,7 @@ interface Props {
 // is smaller, the DOM node under the transform is untouched. Thumbnails are
 // inert (`pointer-events: none`): no drag/click passthrough into the canvas
 // underneath, selection happens on the wrapping button in SelectorPlantilla.
-export function MiniaturaCanvas({ layoutId, estiloId, fotos, servicios, width }: Props) {
+export function MiniaturaCanvas({ layoutId, estiloId, fotos, servicios, nombreNegocio, telefono, width }: Props) {
   const scale  = width / BASE_WIDTH;
   const height = BASE_HEIGHT * scale;
 
@@ -33,7 +35,14 @@ export function MiniaturaCanvas({ layoutId, estiloId, fotos, servicios, width }:
       }}
     >
       <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-        <HistoriaPreciosCanvas layoutId={layoutId} estiloId={estiloId} fotos={fotos} servicios={servicios} />
+        <HistoriaPreciosCanvas
+          layoutId={layoutId}
+          estiloId={estiloId}
+          fotos={fotos}
+          servicios={servicios}
+          nombreNegocio={nombreNegocio}
+          telefono={telefono}
+        />
       </div>
     </div>
   );

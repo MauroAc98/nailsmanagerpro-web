@@ -15,6 +15,11 @@ interface Props {
   // styling — v1 has no visual promo treatment (spec: price-story,
   // "Generated image reflects live service data").
   servicios: Servicio[];
+  // Account/business name (`User.name`, useAuthStore — NOT `Profesional`,
+  // a different concept) and phone (`User.telefono`). Threaded down from
+  // useHistoriaPrecios through every layer, purely presentational here.
+  nombreNegocio: string;
+  telefono:      string | null;
 }
 
 // TarjetaPrecios — price list panel, rendered as the foreground `children`
@@ -30,7 +35,7 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
-export function TarjetaPrecios({ tokens, servicios }: Props) {
+export function TarjetaPrecios({ tokens, servicios, nombreNegocio, telefono }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   return (
     <div
@@ -107,6 +112,41 @@ export function TarjetaPrecios({ tokens, servicios }: Props) {
             </div>
           ))}
         </div>
+
+        {/* Footer credit line — same slot the reference Canva price-list
+            used for a professional's @handle, repurposed for the account's
+            business name + phone (see useHistoriaPrecios: `User.name`/
+            `User.telefono` via useAuthStore, not `Profesional`). Guarded on
+            nombreNegocio so a not-yet-loaded/empty account never renders a
+            bare divider over nothing. */}
+        {nombreNegocio && (
+          <>
+            <div
+              style={{
+                width: 48, height: 1, margin: '18px auto 0',
+                background: tokens.dividerColor,
+              }}
+            />
+            <span
+              style={{
+                marginTop: 10, fontSize: 11, fontWeight: 600, letterSpacing: 1,
+                color: tokens.nombreColor, textAlign: 'center',
+              }}
+            >
+              {nombreNegocio}
+            </span>
+            {telefono && (
+              <span
+                style={{
+                  marginTop: 3, fontSize: 9, fontWeight: 500,
+                  color: tokens.nombreColor, opacity: 0.65, textAlign: 'center',
+                }}
+              >
+                {t('reservarLabel')}: {telefono}
+              </span>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

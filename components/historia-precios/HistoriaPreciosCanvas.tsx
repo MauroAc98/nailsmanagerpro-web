@@ -10,10 +10,12 @@ export const BASE_WIDTH  = 420;
 export const BASE_HEIGHT = (BASE_WIDTH * 16) / 9;
 
 interface Props {
-  layoutId:  LayoutId;
-  estiloId:  EstiloId;
-  fotos:     string[];
-  servicios: Servicio[];
+  layoutId:      LayoutId;
+  estiloId:      EstiloId;
+  fotos:         string[];
+  servicios:     Servicio[];
+  nombreNegocio: string;
+  telefono:      string | null;
 }
 
 // HistoriaPreciosCanvas — always renders at the intrinsic BASE_WIDTH /
@@ -26,7 +28,7 @@ interface Props {
 // matches export" guarantee (spec: price-story-templates). See design
 // decision D3 in sdd/dynamic-price-story.
 export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function HistoriaPreciosCanvas(
-  { layoutId, estiloId, fotos, servicios },
+  { layoutId, estiloId, fotos, servicios, nombreNegocio, telefono },
   ref
 ) {
   const layout = LAYOUTS.find(l => l.id === layoutId) ?? LAYOUTS[0];
@@ -45,7 +47,12 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
         style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
       >
         <Layout fotos={fotos} overlayOpacity={estilo.tokens.overlayOpacity}>
-          <TarjetaPrecios tokens={estilo.tokens} servicios={servicios} />
+          <TarjetaPrecios
+            tokens={estilo.tokens}
+            servicios={servicios}
+            nombreNegocio={nombreNegocio}
+            telefono={telefono}
+          />
         </Layout>
       </div>
     </div>
