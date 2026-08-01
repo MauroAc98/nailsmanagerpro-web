@@ -449,7 +449,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // que no quedó guardada para la próxima.
   //
   // La foto elegida se redimensiona ANTES de convertirse en fondoUri o de
-  // subirse (ver resizeFondoFile arriba) — sin este paso, elegir una segunda
+  // subirse (ver resizeFondoFile en lib/historia/captura.ts) — sin este paso, elegir una segunda
   // foto en la misma sesión (por esta vez o fijo, cualquier combinación)
   // exportaba la historia con fondo negro: cada foto sin achicar son varios
   // MB a resolución de cámara, y capturar() rasteriza esa imagen dos veces
