@@ -1,7 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display } from "next/font/google";
 import Providers from "./providers";
 import { primaryRaw } from "@/theme/colors";
 import "./globals.css";
+
+// Playfair Display — display serif loaded globally via CSS variable so any
+// component can opt in with `fontFamily: 'var(--font-serif-display), serif'`
+// (currently: TarjetaPrecios's price-list title, see historia-precios).
+// Self-hosted by next/font/google (no runtime request to Google, no CLS).
+// `display: 'swap'` means the fallback renders first and the browser swaps
+// in Playfair Display once it's loaded — capture code that rasterizes this
+// DOM (html-to-image in useHistoriaPrecios) MUST await `document.fonts.ready`
+// before calling toBlob(), otherwise it can bake in the fallback font.
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif-display",
+  display: "swap",
+});
 
 // Metadata queda en español fijo a propósito: es un export estático de un
 // Server Component fuera de NextIntlClientProvider, así que traducirlo de
@@ -68,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={playfairDisplay.variable}>
       <head>
         {/* Corre antes de la hidratación de React para fijar data-theme y
             lang sin el flash que se vería si esperáramos a que

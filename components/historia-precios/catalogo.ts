@@ -11,8 +11,13 @@ import { LayoutGrid4 } from './layouts/LayoutGrid4';
 import { EstiloTokens, estiloClassic, estiloModern, estiloBold } from './estilos';
 
 export interface LayoutComponentProps {
-  fotos:    string[];
-  children: ReactNode;
+  fotos:          string[];
+  // Opacity of the dark scrim drawn over the background photo(s), sourced
+  // from the active estilo's `EstiloTokens.overlayOpacity` (see estilos.ts)
+  // — classic's opaque light card needs far less photo-dimming than
+  // modern/bold's translucent panels.
+  overlayOpacity: number;
+  children:       ReactNode;
 }
 
 export interface LayoutEntry {

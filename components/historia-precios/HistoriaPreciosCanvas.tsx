@@ -44,7 +44,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
         ref={ref}
         style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
       >
-        <Layout fotos={fotos}>
+        <Layout fotos={fotos} overlayOpacity={estilo.tokens.overlayOpacity}>
           <TarjetaPrecios tokens={estilo.tokens} servicios={servicios} />
         </Layout>
       </div>

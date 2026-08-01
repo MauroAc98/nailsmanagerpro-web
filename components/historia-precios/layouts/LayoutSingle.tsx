@@ -1,14 +1,15 @@
 import { ReactNode } from 'react';
 
 interface Props {
-  fotos:    string[];
-  children: ReactNode;
+  fotos:          string[];
+  overlayOpacity: number;
+  children:       ReactNode;
 }
 
 // LayoutSingle — 1 background photo, full-bleed. minFotos: 1 (see
 // catalogo.ts) — always the fallback layout, never locked once at least one
 // photo is uploaded.
-export function LayoutSingle({ fotos, children }: Props) {
+export function LayoutSingle({ fotos, overlayOpacity, children }: Props) {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <img
@@ -16,7 +17,7 @@ export function LayoutSingle({ fotos, children }: Props) {
         alt=""
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.38)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: `rgba(0,0,0,${overlayOpacity})` }} />
       {children}
     </div>
   );

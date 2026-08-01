@@ -134,6 +134,17 @@ export function useHistoriaPrecios() {
   const capturar = useCallback(async (): Promise<Blob | null> => {
     if (!canvasRef.current) return null;
 
+    // document.fonts.ready — same class of bug prepararImagenesParaCaptura
+    // guards against for <img>s (decode()+settle before rasterizing), but
+    // for the self-hosted, lazy-loaded serif (TarjetaPrecios's title, see
+    // app/layout.tsx). Without this, toBlob() can run before the browser
+    // finishes swapping in the real font (next/font's `display: 'swap'`),
+    // silently baking the fallback font into the exported PNG forever while
+    // the on-screen preview looks correct once it loads a moment later.
+    // Standard Font Loading API — supported in all target browsers
+    // including iOS Safari.
+    await document.fonts.ready;
+
     const resueltas = await prepararImagenesParaCaptura(canvasRef.current);
     if (resueltas.size > 0) {
       setDataUrlsPorFoto(prev => {
