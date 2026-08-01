@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { statsService, DashboardStats } from '@/services/statsService';
 import { nombreMes } from '@/lib/dateFormat';
+import { formatMonto } from '@/lib/money';
 
 function formatFecha(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -80,7 +81,7 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
         </div>
         <p style={{ margin: '3px 0 0', fontSize: 18, fontWeight: 700, color: colors.textStrong }}>
           {t('appointmentsCount', { count: stats.total_turnos })}
-          {stats.ganancias > 0 && ` · $${stats.ganancias.toFixed(2)}`}
+          {stats.ganancias > 0 && ` · $${formatMonto(stats.ganancias)}`}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
           {topServicio && t('topService', { nombre: topServicio })}{t('newClientsCount', { count: stats.clientes.nuevas })}

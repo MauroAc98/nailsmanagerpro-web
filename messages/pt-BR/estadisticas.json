@@ -28,6 +28,8 @@
     "earningsScope_parcial": "Os períodos mais claros não coincidem por completo com o período escolhido — o valor conta apenas os dias selecionados.",
     "earningsPartialBucket": "parcial",
     "earningsChartEmpty": "Sem ganhos neste período",
+    "earningsChartMax": "Máx: ${monto}",
+    "earningsChartHint": "Toque em uma barra para ver o detalhe",
     "retry": "Tentar novamente",
     "rangeMode_mes": "Mês calendário",
     "rangeMode_personalizado": "Período personalizado",

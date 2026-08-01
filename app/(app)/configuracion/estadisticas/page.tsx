@@ -8,6 +8,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats, PuntoGanancia } from '@/services/statsService';
 import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes } from '@/lib/dateFormat';
+import { formatMonto } from '@/lib/money';
 
 function formatFecha(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -40,13 +41,20 @@ function enumerarFechas(desde: string, hasta: string): string[] {
 // Genérico a propósito: sirve igual para día, semana o mes — solo cambia
 // qué datos y labels le pasa el caller. No pinta un label por barra (se
 // pondría ilegible con ~30 puntos); dos labels de referencia (primero/
-// último) alcanzan para orientarse, el monto exacto queda en el title
-// nativo (hover en desktop).
+// último) alcanzan para orientarse.
+//
+// El monto exacto NO vive solo en el `title` nativo — en mobile (el
+// contexto real de esta app) no hay hover, así que un `title` a secas deja
+// el gráfico ilegible: solo la silueta, sin ningún número. Por eso cada
+// barra es un <button> tocable que fija el detalle (fecha + monto) arriba,
+// y el máximo del período queda siempre visible como referencia de escala
+// — sin eso, una barra al 100% de alto no dice si fue $10 o $10.000.000.
 // ─────────────────────────────────────────────
 function MiniBarChart({
   puntos, height = 90,
 }: { puntos: { label: string; monto: number; completo?: boolean }[]; height?: number }) {
   const t = useTranslations('estadisticas.EstadisticasPage');
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
   const maxMonto = puntos.reduce((max, p) => Math.max(max, p.monto), 0);
   if (puntos.length === 0) return null;
 
@@ -65,26 +73,53 @@ function MiniBarChart({
     );
   }
 
+  const activo = seleccionado != null ? puntos[seleccionado] : null;
+
   return (
     <div style={{
       backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
       boxShadow: shadows.card, borderRadius: 14, padding: '16px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 11, color: colors.subtext, flexShrink: 0 }}>
+          {t('earningsChartMax', { monto: formatMonto(maxMonto) })}
+        </span>
+        <span style={{
+          fontSize: 12, fontWeight: activo ? 700 : 400,
+          color: activo ? colors.textStrong : colors.subtext,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {activo
+            ? `${activo.label} · $${formatMonto(activo.monto)}${activo.completo === false ? ` (${t('earningsPartialBucket')})` : ''}`
+            : t('earningsChartHint')}
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: 2, height }}>
         {puntos.map((p, i) => {
           const pct = maxMonto > 0 ? Math.max((p.monto / maxMonto) * 100, p.monto > 0 ? 4 : 2) : 2;
           const esParcial = p.completo === false;
+          const esSeleccionado = seleccionado === i;
           return (
-            <div
+            <button
               key={i}
-              title={`${p.label}: $${p.monto.toFixed(2)}${esParcial ? ` (${t('earningsPartialBucket')})` : ''}`}
+              type="button"
+              onClick={() => setSeleccionado(prev => (prev === i ? null : i))}
+              title={`${p.label}: $${formatMonto(p.monto)}`}
+              aria-label={`${p.label}: $${formatMonto(p.monto)}`}
               style={{
-                flex: 1, minWidth: 2, height: `${pct}%`,
-                backgroundColor: p.monto > 0 ? colors.success : colors.surfaceSubtle,
-                opacity: esParcial ? 0.5 : 1,
-                borderRadius: '3px 3px 0 0',
+                flex: 1, minWidth: 2, height: '100%', padding: 0, border: 'none',
+                background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'flex-end',
               }}
-            />
+            >
+              <span style={{
+                display: 'block', width: '100%', height: `${pct}%`,
+                backgroundColor: p.monto > 0 ? colors.success : colors.surfaceSubtle,
+                opacity: esParcial ? 0.5 : (seleccionado === null || esSeleccionado ? 1 : 0.4),
+                outline: esSeleccionado ? `2px solid ${colors.primary}` : 'none',
+                outlineOffset: -1,
+                borderRadius: '3px 3px 0 0',
+              }} />
+            </button>
           );
         })}
       </div>
@@ -495,7 +530,7 @@ function EstadisticasContent() {
               </h2>
               <StatTile
                 label={t('earnings')}
-                value={`$${(stats?.ganancias ?? 0).toFixed(2)}`}
+                value={`$${formatMonto(stats?.ganancias ?? 0)}`}
                 color={colors.success}
               />
               {gananciasPorServicio.length > 0 && (
@@ -514,7 +549,7 @@ function EstadisticasContent() {
                         nombre={s.nombre}
                         cantidad={s.monto}
                         maxCantidad={maxMonto}
-                        valorLabel={`$${s.monto.toFixed(2)}`}
+                        valorLabel={`$${formatMonto(s.monto)}`}
                       />
                     ))}
                   </div>
@@ -548,7 +583,7 @@ function EstadisticasContent() {
                     </div>
                   ) : (
                     <>
-                      <MiniBarChart puntos={puntosGananciasChart} />
+                      <MiniBarChart key={`${granularidadGanancias}-${rangoActivo.desde}-${rangoActivo.hasta}`} puntos={puntosGananciasChart} />
                       {algunBucketParcial && (
                         <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
                           {t('earningsScope_parcial')}
