@@ -115,6 +115,7 @@ export default function HistoriaPreciosPage() {
               estiloId={estiloId}
               onLayoutChange={handleLayoutChange}
               onEstiloChange={handleEstiloChange}
+              containerWidth={canvasWidth}
             />
           </div>
 

@@ -9,7 +9,16 @@ import { showToast } from '@/store/useToastStore';
 import { LAYOUTS, ESTILOS } from './catalogo';
 import { MiniaturaCanvas } from './MiniaturaCanvas';
 
-const THUMB_WIDTH = 100;
+// Grid chrome around each thumbnail — must match the `<button>` style below
+// (padding: 4 * 2 sides + border: 1.5px * 2 sides) so the width formula in
+// SelectorPlantilla derives a thumbWidth that genuinely fits 3 columns +
+// 2 gaps inside containerWidth, instead of a hardcoded constant independent
+// of the actual available screen width (was overflowing on narrow phones —
+// default CSS Grid `1fr` tracks don't shrink below their content's
+// min-content size).
+const GRID_GAP     = 10;
+const THUMB_CHROME = 11; // padding 4+4 + border 1.5+1.5, rounded up
+const MIN_THUMB_WIDTH = 70;
 
 interface Props {
   // Memoized `data:` photo URLs, already resolved upstream (see
@@ -30,6 +39,10 @@ interface Props {
   estiloId:       EstiloId;
   onLayoutChange: (id: LayoutId) => void;
   onEstiloChange: (id: EstiloId) => void;
+  // Same value the page derives via useCanvasScale() for the main canvas
+  // preview — reused here (not recomputed) so the picker's 3 columns fit
+  // the actual available width instead of a fixed 100px constant.
+  containerWidth: number;
 }
 
 // SelectorPlantilla — 3x3 picker (layout x estilo = 9 combinations, spec:
@@ -38,12 +51,17 @@ interface Props {
 // previewed with the caller's real photos and real service prices — never
 // placeholder content (spec: "Picker previews with real data").
 export function SelectorPlantilla({
-  fotos, servicios, nombreNegocio, telefono, layoutId, estiloId, onLayoutChange, onEstiloChange,
+  fotos, servicios, nombreNegocio, telefono, layoutId, estiloId, onLayoutChange, onEstiloChange, containerWidth,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
   const combinaciones = useMemo(
     () => LAYOUTS.flatMap(layout => ESTILOS.map(estilo => ({ layout, estilo }))),
     []
+  );
+
+  const thumbWidth = Math.max(
+    MIN_THUMB_WIDTH,
+    Math.floor((containerWidth - GRID_GAP * 2) / 3) - THUMB_CHROME
   );
 
   // Reactive fallback (task 3.8) — if a photo is later deleted (Phase 4's
@@ -63,7 +81,7 @@ export function SelectorPlantilla({
   }, [fotos.length, layoutId, onLayoutChange]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: GRID_GAP }}>
       {combinaciones.map(({ layout, estilo }) => {
         const bloqueado    = fotos.length < layout.minFotos;
         const seleccionado = layoutId === layout.id && estiloId === estilo.id;
@@ -93,7 +111,7 @@ export function SelectorPlantilla({
               servicios={servicios}
               nombreNegocio={nombreNegocio}
               telefono={telefono}
-              width={THUMB_WIDTH}
+              width={thumbWidth}
             />
             {bloqueado && (
               <span style={{ fontSize: 9, fontWeight: 600, color: colors.subtext, textAlign: 'center' }}>
