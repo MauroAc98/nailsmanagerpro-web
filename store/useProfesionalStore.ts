@@ -23,6 +23,8 @@ interface ProfesionalesState {
   toggleActivo: (id: number, activo: boolean) => Promise<void>;
   guardarFondoHistoria: (id: number, archivo: File) => Promise<OperacionResult>;
   borrarFondoHistoria: (id: number) => Promise<OperacionResult>;
+  subirFotoHistoriaPrecios: (id: number, archivo: File) => Promise<OperacionResult>;
+  borrarFotoHistoriaPrecios: (id: number, fotoId: number) => Promise<OperacionResult>;
 }
 
 export const useProfesionalStore = create<ProfesionalesState>((set) => ({
@@ -102,6 +104,34 @@ export const useProfesionalStore = create<ProfesionalesState>((set) => ({
     return withGlobalLoader(async () => {
       try {
         const actualizado = await profesionalService.borrarFondoHistoria(id);
+        set(state => ({
+          profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  subirFotoHistoriaPrecios: async (id, archivo) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await profesionalService.subirFotoHistoriaPrecios(id, archivo);
+        set(state => ({
+          profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  borrarFotoHistoriaPrecios: async (id, fotoId) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await profesionalService.borrarFotoHistoriaPrecios(id, fotoId);
         set(state => ({
           profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
         }));

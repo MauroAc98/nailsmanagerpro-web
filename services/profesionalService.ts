@@ -4,6 +4,22 @@ import type { Servicio } from '@/services/servicioService';
 // ─────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────
+// Ids de catálogo del picker de "historia de precios" — el catálogo (layouts
+// x estilos) vive en el frontend (components/historia-precios/catalogo.ts,
+// Fase 3), por eso son string literal unions y no un id numérico con lookup
+// en el backend.
+export type LayoutId = 'grid4' | 'single' | 'split2';
+export type EstiloId = 'classic' | 'modern' | 'bold';
+
+// Una foto subida específicamente para la historia de precios (no reutiliza
+// ninguna otra foto existente del profesional). `orden` determina el slot
+// del layout al que se asigna (asignación por orden de subida, sin drag).
+export interface FotoHistoria {
+  id: number;
+  url: string;
+  orden: number;
+}
+
 export interface Profesional {
   id: number;
   user_id: number;
@@ -18,6 +34,14 @@ export interface Profesional {
   // no tiene uno guardado. Siempre viene como URL pública lista para usar
   // (appended por el backend), nunca como ruta interna del disco.
   fondo_historia_url: string | null;
+  // Selección actual del picker de "historia de precios" — null si la
+  // profesional todavía no eligió layout/estilo.
+  historia_precios_layout_id: LayoutId | null;
+  historia_precios_estilo_id: EstiloId | null;
+  // Proyección de solo lectura: fotos subidas para la historia de precios,
+  // en orden de subida. Se modifica vía los endpoints multipart de abajo,
+  // nunca directamente por PUT /profesionales/{id}.
+  historia_precios_fotos: FotoHistoria[];
 }
 
 // La profesional "jefa": la primera en crearse (id más chico) entre las
@@ -43,6 +67,11 @@ export interface UpdateProfesionalDto {
   color?: string | null;
   activo?: boolean;
   servicio_ids?: number[];
+  // Scalars picked from the frontend-owned catalog — same precedent as
+  // `color`, patched through the main PUT. Photos go through the dedicated
+  // multipart sub-resource below instead (see `subirFotoHistoriaPrecios`).
+  historia_precios_layout_id?: LayoutId | null;
+  historia_precios_estilo_id?: EstiloId | null;
 }
 
 // ─────────────────────────────────────────────
@@ -88,6 +117,33 @@ export const profesionalService = {
 
   borrarFondoHistoria: async (id: number): Promise<Profesional> => {
     const { data } = await api.delete<Profesional>(`/profesionales/${id}/fondo-historia`);
+    return data;
+  },
+
+  // Sube una foto dedicada a la historia de precios (no reemplaza, agrega un
+  // slot nuevo — ver `borrarFotoHistoriaPrecios` para reemplazar/quitar).
+  // Mismo motivo que `subirFondoHistoria` para pisar el Content-Type: sin
+  // esto axios serializa el FormData como JSON y el backend responde 422.
+  // Devuelve el Profesional completo (incluye `historia_precios_fotos`
+  // actualizado) para que el reducer del store siga siendo un simple `map`.
+  subirFotoHistoriaPrecios: async (id: number, archivo: File): Promise<Profesional> => {
+    const form = new FormData();
+    form.append('imagen', archivo);
+    const { data } = await api.post<Profesional>(
+      `/profesionales/${id}/historia-precios-fotos`,
+      form,
+      { headers: { 'Content-Type': undefined } },
+    );
+    return data;
+  },
+
+  // Borra una foto puntual de la historia de precios por su id de slot.
+  // Devuelve el Profesional completo, igual que el resto de los endpoints
+  // de fotos.
+  borrarFotoHistoriaPrecios: async (id: number, fotoId: number): Promise<Profesional> => {
+    const { data } = await api.delete<Profesional>(
+      `/profesionales/${id}/historia-precios-fotos/${fotoId}`,
+    );
     return data;
   },
 };

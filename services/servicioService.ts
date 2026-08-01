@@ -7,6 +7,11 @@ export interface Servicio {
   duracion_minutos: number;
   precio: string | null;
   activo: boolean;
+  // Marca el servicio como promoción. Puramente informativo en v1: no
+  // afecta la visibilidad (los inactivos se filtran igual por `activo`,
+  // sin importar este flag) ni tiene un tratamiento visual distinto en la
+  // historia de precios.
+  es_promo: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +20,7 @@ export interface CreateServicioDto {
   nombre: string;
   duracion_minutos: number;
   precio?: number;
+  es_promo?: boolean;
 }
 
 export interface UpdateServicioDto {
@@ -22,6 +28,7 @@ export interface UpdateServicioDto {
   duracion_minutos?: number;
   precio?: number;
   activo?: boolean;
+  es_promo?: boolean;
 }
 
 export const servicioService = {

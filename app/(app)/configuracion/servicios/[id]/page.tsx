@@ -8,6 +8,7 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { servicioService } from '@/services/servicioService';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
+import PillToggle from '@/components/PillToggle';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -31,6 +32,7 @@ export default function EditarServicioPage() {
   const [nombre,   setNombre]   = useState('');
   const [duracion, setDuracion] = useState(30);
   const [precio,   setPrecio]   = useState('');
+  const [esPromo,  setEsPromo]  = useState(false);
   const [errorNombre, setErrorNombre] = useState('');
   const [loadingServicio, setLoadingServicio] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,6 +45,7 @@ export default function EditarServicioPage() {
         setNombre(s.nombre);
         setDuracion(s.duracion_minutos);
         setPrecio(s.precio ?? '');
+        setEsPromo(s.es_promo);
       } catch {
         await alertDialog(t('loadError'));
         router.push('/configuracion/servicios');
@@ -78,6 +81,7 @@ export default function EditarServicioPage() {
       nombre: nombre.trim(),
       duracion_minutos: duracion,
       precio: precio ? parseFloat(precio) : undefined,
+      es_promo: esPromo,
     });
     setSaving(false);
 
@@ -146,6 +150,20 @@ export default function EditarServicioPage() {
             style={inputStyle}
             inputMode="decimal"
           />
+        </div>
+
+        {/* Promo */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '12px 16px',
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>Es promoción</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+              Marcá este servicio como promoción
+            </p>
+          </div>
+          <PillToggle value={esPromo} onChange={setEsPromo} />
         </div>
 
         {/* Button */}
