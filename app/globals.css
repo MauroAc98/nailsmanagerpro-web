@@ -4,28 +4,43 @@
   color-scheme: light;
 
   --color-primary: #d79ea4;
-  --color-background: #ffffff;
+  /* Antes idéntico a --color-surface (#ffffff) — una card blanca sobre una
+     página blanca dependía 100% del borde para notarse, y ese borde
+     (#eeeeee sobre blanco) da un contraste de apenas 1.17:1, casi
+     imperceptible. El modo oscuro ya evita este problema porque su
+     --color-background (#16161a) y su --color-surface (#1e1e22) son
+     colores distintos: la card se separa por color antes de sumarle el
+     borde. Este gris muy sutil replica esa misma relación en claro, así
+     las cards/bottom sheets vuelven a "flotar" sobre la página incluso
+     antes de que el borde entre en juego. */
+  --color-background: #f7f7f8;
   --color-text: #333333;
   --color-subtext: #666666;
-  --color-border: #eeeeee;
+  /* De #eeeeee (1.17:1 sobre blanco) a este tono — ~2:1 sobre blanco, un
+     punto más marcado que el separador estándar de iOS (~1.7:1) porque el
+     primer ajuste seguía pidiendo "un poco más". Con --color-background ya
+     diferenciado de --color-surface arriba, esto es el refuerzo para los
+     casos donde el borde SÍ es la única separación (inputs, BottomSheet,
+     que no tiene sombra suficiente por sí sola). */
+  --color-border: #b9b9bc;
   --color-success: #4caf50;
   --color-danger: #c62828;
   --color-danger-bg: #fdecea;
   --color-danger-border: #e57373;
 
   --color-surface: #ffffff;
-  --color-surface-subtle: #f7f7f8;
+  --color-surface-subtle: #eeeeef;
   --color-text-strong: #1a1a1a;
   --color-muted: #999999;
   --color-placeholder: #bbbbbb;
-  --color-divider: #dddddd;
+  --color-divider: #a8a8ac;
   --color-primary-disabled: #e0c4c7;
   /* Variante más saturada/oscura de --color-primary, solo para texto que
      necesita contraste real sobre fondo claro (ej. el wordmark del login) —
      el rosa pastel de --color-primary no alcanza para texto grande. */
   --color-primary-deep: #a85568;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.09);
+  --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.15);
 
   --color-warning-bg: #fff3cd;
   --color-warning-fg: #856404;
