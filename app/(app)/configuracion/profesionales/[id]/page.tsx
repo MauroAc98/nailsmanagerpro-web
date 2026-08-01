@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, withAlpha, shadows } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
 import { alertDialog } from '@/store/useConfirmStore';
+import PillToggle from '@/components/PillToggle';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -35,28 +36,6 @@ function Checkbox({ checked }: { checked: boolean }) {
           <polyline points="20 6 9 17 4 12" />
         </svg>
       )}
-    </div>
-  );
-}
-
-function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div
-      onClick={() => onChange(!value)}
-      style={{
-        width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
-        position: 'relative', cursor: 'pointer',
-        transition: 'background 0.2s', flexShrink: 0,
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 3,
-        left: value ? 21 : 3,
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : colors.placeholder,
-        transition: 'left 0.2s',
-      }} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { colors, withAlpha } from '@/theme/colors';
+import { colors } from '@/theme/colors';
 import { SheetInput } from './SheetInput';
+import PillToggle from '@/components/PillToggle';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 
@@ -32,28 +33,6 @@ function IconMoney() {
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v10M15 9.5c0-1.5-1.5-2.5-3-2.5s-3 1-3 2.5 1.5 2 3 2.5 3 1 3 2.5-1.5 2.5-3 2.5-3-1-3-2.5" />
     </svg>
-  );
-}
-
-function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div
-      onClick={() => onChange(!value)}
-      style={{
-        width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
-        position: 'relative', cursor: 'pointer',
-        transition: 'background 0.2s', flexShrink: 0,
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 3,
-        left: value ? 21 : 3,
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : colors.placeholder,
-        transition: 'left 0.2s',
-      }} />
-    </div>
   );
 }
 

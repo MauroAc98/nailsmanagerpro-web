@@ -12,34 +12,13 @@ import { DrumPicker } from '@/components/DrumPicker';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
+import PillToggle from '@/components/PillToggle';
 
 const HORAS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
 const SWIPE_REVEAL    = 90;
 const SWIPE_THRESHOLD = 55;
-
-function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div
-      onClick={e => { e.stopPropagation(); onChange(!value); }}
-      style={{
-        width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
-        position: 'relative', cursor: 'pointer',
-        transition: 'background 0.2s', flexShrink: 0,
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 3,
-        left: value ? 21 : 3,
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : colors.placeholder,
-        transition: 'left 0.2s',
-      }} />
-    </div>
-  );
-}
 
 function SlotCard({
   slot,
@@ -158,7 +137,7 @@ function SlotCard({
             </p>
           </div>
 
-          <PillToggle value={slot.activo} onChange={onToggle} />
+          <PillToggle value={slot.activo} onChange={onToggle} stopPropagation />
         </div>
       </div>
     </div>

@@ -3,37 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, withAlpha, shadows } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
 import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
 import { NAV_HEIGHT } from '@/constants/layout';
-
-// ─────────────────────────────────────────────
-// ClienteCard — switch de activo/inactivo — sin swipe, sin borrado físico.
-// ─────────────────────────────────────────────
-function PillToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div
-      onClick={e => { e.stopPropagation(); onChange(!value); }}
-      style={{
-        width: 44, height: 26, borderRadius: 13,
-        backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
-        position: 'relative', cursor: 'pointer',
-        transition: 'background 0.2s', flexShrink: 0,
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 3,
-        left: value ? 21 : 3,
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : colors.placeholder,
-        transition: 'left 0.2s',
-      }} />
-    </div>
-  );
-}
+import PillToggle from '@/components/PillToggle';
 
 function HistorialButton({ onClick }: { onClick: () => void }) {
   const t = useTranslations('clientes.ClientesPage');
@@ -96,7 +72,7 @@ function ClienteCard({
       </div>
 
       <HistorialButton onClick={onVerHistorial} />
-      <PillToggle value={cliente.activo} onChange={onToggle} />
+      <PillToggle value={cliente.activo} onChange={onToggle} stopPropagation />
 
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
         <polyline points="9 18 15 12 9 6"/>
