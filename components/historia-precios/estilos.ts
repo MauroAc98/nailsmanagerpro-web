@@ -9,7 +9,7 @@
 // silently. TarjetaPrecios reads these values directly as inline styles,
 // the same reason StoryCanvas hardcodes raw hex/rgba instead of reading
 // theme/colors.ts. See design decision D3 in sdd/dynamic-price-story.
-import { primaryRaw } from '@/theme/colors';
+import { primaryDeepRaw } from '@/theme/colors';
 
 export interface EstiloTokens {
   cardBackground:   string;
@@ -37,9 +37,11 @@ export const estiloClassic: EstiloTokens = {
   cardBorder:       'rgba(0,0,0,0.08)',
   headerColor:      '#2b2b2b',
   nombreColor:      '#3a3a3a',
-  dividerColor:     'rgba(0,0,0,0.25)',
+  dividerColor:     'rgba(0,0,0,0.11)',
   precioColor:      '#2b2b2b',
-  precioFontWeight: 700,
+  // 700->600: el nombre subió a 600 (ver TarjetaPrecios), el precio no
+  // debe seguir siendo el elemento más pesado de la fila.
+  precioFontWeight: 600,
   letterSpacing:    2,
   overlayOpacity:   0.1,
 };
@@ -47,8 +49,12 @@ export const estiloClassic: EstiloTokens = {
 // Modern — dark glass card over the background photo, white text, wide
 // tracked header. Mirrors StoryCanvas's own translucent-panel treatment.
 export const estiloModern: EstiloTokens = {
-  cardBackground:   'rgba(15,15,20,0.55)',
-  cardBorder:       'rgba(255,255,255,0.18)',
+  // Alpha subida (0.55->0.75 fondo, 0.18->0.4 borde) — contra una foto casi
+  // negra el panel se volvía indistinguible del fondo aunque el texto
+  // blanco siguiera legible (contraste tarjeta/fondo ~1.05:1 antes del
+  // ajuste, ver design review). El texto en sí nunca fue el problema.
+  cardBackground:   'rgba(15,15,20,0.75)',
+  cardBorder:       'rgba(255,255,255,0.4)',
   headerColor:      '#ffffff',
   nombreColor:      'rgba(255,255,255,0.85)',
   dividerColor:     'rgba(255,255,255,0.3)',
@@ -58,10 +64,15 @@ export const estiloModern: EstiloTokens = {
   overlayOpacity:   0.38,
 };
 
-// Bold — solid brand-color card (primaryRaw, not colors.primary — same
-// CSS-var caveat as above), heaviest price weight of the 3 styles.
+// Bold — solid brand-color card (primaryDeepRaw, not colors.primaryDeep —
+// same CSS-var caveat as above), heaviest price weight of the 3 styles.
+// Uses the DEEP variant, not primaryRaw's pastel pink: white text on
+// primaryRaw computes to ~2.25:1 contrast (fails WCAG AA's 4.5:1, and even
+// the relaxed 3:1 large-text threshold) — the same "pastel isn't enough
+// for text" problem the app already solved elsewhere (see the comment on
+// colors.primaryDeep). primaryDeepRaw computes to ~5:1, passes AA.
 export const estiloBold: EstiloTokens = {
-  cardBackground:   primaryRaw,
+  cardBackground:   primaryDeepRaw,
   cardBorder:       'rgba(255,255,255,0.4)',
   headerColor:      '#ffffff',
   nombreColor:      '#ffffff',

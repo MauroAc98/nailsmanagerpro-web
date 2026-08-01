@@ -2,6 +2,10 @@ import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 
+const formatoPrecio = new Intl.NumberFormat('es-AR');
+const formatearPrecio = (precio: string | null): string =>
+  precio ? `$${formatoPrecio.format(Number(precio))}` : '-';
+
 interface Props {
   tokens:    EstiloTokens;
   // Already-filtered active list (activo: true) — TarjetaPrecios does not
@@ -39,21 +43,36 @@ export function TarjetaPrecios({ tokens, servicios }: Props) {
       <div
         style={{
           display: 'flex', flexDirection: 'column',
-          padding: '24px 20px', borderRadius: 7,
+          padding: '24px 20px', borderRadius: 10,
           background: tokens.cardBackground,
           border: `1px solid ${tokens.cardBorder}`,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          // Sombra más sutil (era 4px/16px blur — 5x más difusa que
+          // --shadow-card del resto de la app) para leer "carta de precios"
+          // en vez de "banner". Ver design review.
+          boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
         }}
       >
         <span
           style={{
             fontFamily: 'var(--font-serif-display), serif',
-            fontSize: 30, fontWeight: 700, letterSpacing: tokens.letterSpacing,
-            color: tokens.headerColor, textAlign: 'center', marginBottom: 22,
+            // 700->600: al peso completo el serif se vuelve un titular
+            // asertivo en vez de delicado — Playfair ya tiene suficiente
+            // presencia en peso medio por su propio contraste de trazo.
+            fontSize: 30, fontWeight: 600, letterSpacing: tokens.letterSpacing,
+            color: tokens.headerColor, textAlign: 'center', marginBottom: 14,
           }}
         >
           {t('header')}
         </span>
+
+        {/* Filete fino centrado bajo el título en vez de solo espacio en
+            blanco — tratamiento clásico de carta/menú boutique. */}
+        <div
+          style={{
+            width: 48, height: 1, margin: '0 auto 22px',
+            background: tokens.dividerColor,
+          }}
+        />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
           {servicios.map((servicio, index) => (
@@ -65,9 +84,12 @@ export function TarjetaPrecios({ tokens, servicios }: Props) {
                 borderBottom: index === servicios.length - 1 ? 'none' : `1px solid ${tokens.dividerColor}`,
               }}
             >
+              {/* Nombre con un poco más de peso, precio con un poco menos
+                  — la jerarquía estaba invertida (precio más grande Y más
+                  negrita que el nombre del servicio). */}
               <span
                 style={{
-                  flex: 1, minWidth: 0, fontSize: 12, fontWeight: 500,
+                  flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600,
                   color: tokens.nombreColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}
               >
@@ -76,10 +98,11 @@ export function TarjetaPrecios({ tokens, servicios }: Props) {
               <span
                 style={{
                   fontSize: 13, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
+                  letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {servicio.precio ? `$${servicio.precio}` : '-'}
+                {formatearPrecio(servicio.precio)}
               </span>
             </div>
           ))}

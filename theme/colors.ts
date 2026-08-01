@@ -8,6 +8,16 @@
 // entre claro/oscuro), así que no hace falta una versión "oscura".
 export const primaryRaw = '#d79ea4';
 
+// Mismo criterio que primaryRaw: versión cruda de --color-primary-deep para
+// consumidores que no resuelven var(...) (acá, estilos.ts — html-to-image
+// serializa el nodo capturado a SVG foreignObject y descarta custom
+// properties heredadas, ver design decision D3 en sdd/dynamic-price-story).
+// A diferencia de primaryRaw, primaryDeep SÍ cambia entre temas
+// (app/globals.css) — se fija el valor de modo claro porque la exportación
+// de la historia de precios es una imagen fija, no debe variar según el
+// tema activo del usuario al momento de generarla.
+export const primaryDeepRaw = '#a85568';
+
 export const colors = {
   primary: 'var(--color-primary)',
   primaryDeep: 'var(--color-primary-deep)',
