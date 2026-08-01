@@ -55,8 +55,13 @@ export const clienteService = {
 
 export const extraerMensajeError = (e: unknown): string => {
   if (e && typeof e === 'object' && 'response' in e) {
-    const err = e as { response?: { data?: { message?: string } } };
-    return err.response?.data?.message ?? tStatic('common.Errors.unexpectedError');
+    const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+    // Laravel pone el mensaje específico de un campo bajo `errors.<campo>[0]`
+    // — el `message` de nivel superior es siempre el genérico "The given
+    // data was invalid." de ValidationException. Priorizamos el mensaje de
+    // campo cuando existe (ej. el límite de fotos de historia-precios).
+    const primerMensajeDeCampo = Object.values(err.response?.data?.errors ?? {})[0]?.[0];
+    return primerMensajeDeCampo ?? err.response?.data?.message ?? tStatic('common.Errors.unexpectedError');
   }
   return tStatic('common.Errors.unexpectedError');
 };

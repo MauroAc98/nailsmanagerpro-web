@@ -40,10 +40,20 @@ export function useHistoriaPrecios() {
 
   // Servicios activos — el price story no distingue es_promo visualmente
   // (spec: "Generated image reflects live service data", sin tratamiento
-  // especial en v1), así que alcanza con el mismo filtro `activo` que ya
-  // usa el resto de la app.
+  // especial en v1), pero SÍ tiene que restringirse a los servicios de
+  // profesionalActual (mismo criterio que agenda/nuevo cuando hay más de
+  // una profesional: `profesionalSeleccionado.servicios.some(...)`) — la
+  // historia de precios es un artefacto por profesional (layout/estilo/
+  // fotos viven en Profesional, no en la cuenta), así que mostrar el
+  // catálogo entero de la cuenta filtraría mal en cuentas con varias
+  // profesionales con servicios asignados por separado.
   const { servicios } = useServiciosStore();
-  const serviciosActivos = useMemo(() => servicios.filter(s => s.activo), [servicios]);
+  const serviciosActivos = useMemo(
+    () => profesionalActual
+      ? servicios.filter(s => s.activo && profesionalActual.servicios.some(ps => ps.id === s.id))
+      : [],
+    [servicios, profesionalActual]
+  );
 
   // ─────────────────────────────────────────────
   // Layout / estilo selection — puramente local a esta sesión. Ningún task
