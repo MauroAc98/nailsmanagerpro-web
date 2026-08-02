@@ -9,7 +9,8 @@
 // silently. TarjetaPrecios reads these values directly as inline styles,
 // the same reason StoryCanvas hardcodes raw hex/rgba instead of reading
 // theme/colors.ts. See design decision D3 in sdd/dynamic-price-story.
-import { primaryDeepRaw } from '@/theme/colors';
+// (primaryDeepRaw ya no se importa acá: bold pasó de sólido a rgba() con
+// alpha propio, ver comentario en estiloBold más abajo.)
 
 export interface EstiloTokens {
   cardBackground:   string;
@@ -29,11 +30,19 @@ export interface EstiloTokens {
   overlayOpacity:   number;
 }
 
-// Classic — light opaque card, monochrome ink price (weight carries the
-// emphasis instead of color — see design review), generous letter spacing
-// on the header (echoes a printed price list).
+// Classic — light glass card (not opaque), monochrome ink price (weight
+// carries the emphasis instead of color — see design review), generous
+// letter spacing on the header (echoes a printed price list).
+// Alpha bajada (0.92->0.5 fondo, 0.08->0.06 borde) a pedido — la card leía
+// "opaca" en vez de delicada. El primer overlayOpacity (0.22) no alcanzó:
+// contra un collage de fotos claras (piel/fondos blancos) el texto del
+// collage se filtraba a través de la card y competía con el texto propio
+// de la lista — ver captura de pantalla. overlayOpacity subido a 0.4 (el
+// collage queda notoriamente más oscuro/desaturado de fondo) y el fondo de
+// la card subido a 0.68 (sigue siendo translúcido, no opaco) para que el
+// texto oscuro tenga suficiente base sólida sin depender del overlay solo.
 export const estiloClassic: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.92)',
+  cardBackground:   'rgba(255,255,255,0.68)',
   cardBorder:       'rgba(0,0,0,0.08)',
   headerColor:      '#2b2b2b',
   nombreColor:      '#3a3a3a',
@@ -43,42 +52,49 @@ export const estiloClassic: EstiloTokens = {
   // debe seguir siendo el elemento más pesado de la fila.
   precioFontWeight: 600,
   letterSpacing:    2,
-  overlayOpacity:   0.1,
+  overlayOpacity:   0.4,
 };
 
 // Modern — dark glass card over the background photo, white text, wide
 // tracked header. Mirrors StoryCanvas's own translucent-panel treatment.
 export const estiloModern: EstiloTokens = {
-  // Alpha subida (0.55->0.75 fondo, 0.18->0.4 borde) — contra una foto casi
-  // negra el panel se volvía indistinguible del fondo aunque el texto
-  // blanco siguiera legible (contraste tarjeta/fondo ~1.05:1 antes del
-  // ajuste, ver design review). El texto en sí nunca fue el problema.
-  cardBackground:   'rgba(15,15,20,0.75)',
-  cardBorder:       'rgba(255,255,255,0.4)',
+  // Alpha bajada de nuevo (0.75->0.42 fondo, 0.4->0.2 borde) a pedido — más
+  // delicada/transparente. Para no reintroducir el problema documentado
+  // abajo (panel indistinguible del fondo en foto casi negra), esta vez el
+  // overlayOpacity sube en vez del alpha de la card: la foto de base queda
+  // más oscura ANTES de que el glass panel, ahora más claro, se dibuje
+  // encima — mantiene el panel visible sin volver a subirle el alpha.
+  cardBackground:   'rgba(15,15,20,0.42)',
+  cardBorder:       'rgba(255,255,255,0.2)',
   headerColor:      '#ffffff',
   nombreColor:      'rgba(255,255,255,0.85)',
   dividerColor:     'rgba(255,255,255,0.3)',
   precioColor:      '#ffffff',
   precioFontWeight: 600,
   letterSpacing:    4,
-  overlayOpacity:   0.38,
+  overlayOpacity:   0.46,
 };
 
-// Bold — solid brand-color card (primaryDeepRaw, not colors.primaryDeep —
-// same CSS-var caveat as above), heaviest price weight of the 3 styles.
-// Uses the DEEP variant, not primaryRaw's pastel pink: white text on
-// primaryRaw computes to ~2.25:1 contrast (fails WCAG AA's 4.5:1, and even
-// the relaxed 3:1 large-text threshold) — the same "pastel isn't enough
-// for text" problem the app already solved elsewhere (see the comment on
-// colors.primaryDeep). primaryDeepRaw computes to ~5:1, passes AA.
+// Bold — brand-color card, heaviest price weight of the 3 styles. Color
+// base es primaryDeepRaw (#a85568, ver theme/colors.ts) escrito acá como
+// rgb() explícito porque un hex de 6 dígitos no admite alpha por sufijo y
+// esta card no puede usar color-mix()/var() (string plano, ver D3 arriba)
+// — si primaryDeepRaw cambia algún día, este valor hay que actualizarlo a
+// mano. Con blanco, ~5:1 de contraste (pasa AA) a diferencia de primaryRaw
+// (el rosa pastel, ~2.25:1, no pasa ni el umbral relajado de texto grande).
+// Alpha bajada acá también (0.5, era sólido) — decisión revertida: se había
+// dejado bold opaco a propósito para diferenciarlo, pero el pedido pasó a
+// ser consistencia total con el formato delicado de classic/modern. Mismo
+// truco que en modern: overlayOpacity sube (0.38->0.46) para compensar en
+// vez de subir el alpha de la card.
 export const estiloBold: EstiloTokens = {
-  cardBackground:   primaryDeepRaw,
-  cardBorder:       'rgba(255,255,255,0.4)',
+  cardBackground:   'rgba(168,85,104,0.5)',
+  cardBorder:       'rgba(255,255,255,0.22)',
   headerColor:      '#ffffff',
   nombreColor:      '#ffffff',
   dividerColor:     'rgba(255,255,255,0.5)',
   precioColor:      '#ffffff',
   precioFontWeight: 800,
   letterSpacing:    1,
-  overlayOpacity:   0.38,
+  overlayOpacity:   0.46,
 };

@@ -6,9 +6,11 @@ interface Props {
   children:       ReactNode;
 }
 
-// LayoutSplit2 — 2 background photos, stacked top/bottom halves. minFotos: 2
-// (see catalogo.ts). Vertical split (not side-by-side) matches the tall
-// 9:16 canvas aspect ratio.
+// Vuelto a la versión original a pedido explícito, después de varios
+// intentos de tratar la unión entre las 2 fotos (degradé oscuro, gap con
+// esquinas redondeadas, polaroid superpuesta, línea de color, insignia
+// circular — ninguno convenció). Plano y sin adornos a propósito, a
+// diferencia de LayoutGrid4 (que sí quedó en estilo polaroid).
 export function LayoutSplit2({ fotos, overlayOpacity, children }: Props) {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
