@@ -8,6 +8,7 @@ interface Props {
   layoutId:      LayoutId;
   estiloId:      EstiloId;
   fotos:         string[];
+  titulo:        string;
   servicios:     Servicio[];
   nombreNegocio: string;
   telefono:      string | null;
@@ -23,7 +24,7 @@ interface Props {
 // is smaller, the DOM node under the transform is untouched. Thumbnails are
 // inert (`pointer-events: none`): no drag/click passthrough into the canvas
 // underneath, selection happens on the wrapping button in SelectorPlantilla.
-export function MiniaturaCanvas({ layoutId, estiloId, fotos, servicios, nombreNegocio, telefono, width }: Props) {
+export function MiniaturaCanvas({ layoutId, estiloId, fotos, titulo, servicios, nombreNegocio, telefono, width }: Props) {
   const scale  = width / BASE_WIDTH;
   const height = BASE_HEIGHT * scale;
 
@@ -39,6 +40,7 @@ export function MiniaturaCanvas({ layoutId, estiloId, fotos, servicios, nombreNe
           layoutId={layoutId}
           estiloId={estiloId}
           fotos={fotos}
+          titulo={titulo}
           servicios={servicios}
           nombreNegocio={nombreNegocio}
           telefono={telefono}

@@ -49,21 +49,32 @@ export function useHistoriaPrecios() {
   const nombreNegocio = user?.name ?? '';
   const telefono = user?.telefono ?? null;
 
-  // Servicios activos — el price story no distingue es_promo visualmente
-  // (spec: "Generated image reflects live service data", sin tratamiento
-  // especial en v1), pero SÍ tiene que restringirse a los servicios de
-  // profesionalActual (mismo criterio que agenda/nuevo cuando hay más de
-  // una profesional: `profesionalSeleccionado.servicios.some(...)`) — la
-  // historia de precios es un artefacto por profesional (layout/estilo/
-  // fotos viven en Profesional, no en la cuenta), así que mostrar el
-  // catálogo entero de la cuenta filtraría mal en cuentas con varias
-  // profesionales con servicios asignados por separado.
+  // Modo — separa "Precios" (servicios fijos, es_promo:false) de
+  // "Promociones" (es_promo:true) en 2 imágenes distintas, cada una con su
+  // propio título de card (ver page.tsx) y su propia lista filtrada acá.
+  // Reemplaza el comportamiento anterior donde ambos se mezclaban en una
+  // sola lista sin distinción visual.
+  const [modo, setModo] = useState<'precios' | 'promociones'>('precios');
+  const handleModoChange = useCallback((id: 'precios' | 'promociones') => setModo(id), []);
+
+  // Servicios activos — filtrados por `modo` (es_promo según corresponda) Y
+  // restringidos a los servicios de profesionalActual (mismo criterio que
+  // agenda/nuevo cuando hay más de una profesional:
+  // `profesionalSeleccionado.servicios.some(...)`) — la historia de precios
+  // es un artefacto por profesional (layout/estilo/fotos viven en
+  // Profesional, no en la cuenta), así que mostrar el catálogo entero de la
+  // cuenta filtraría mal en cuentas con varias profesionales con servicios
+  // asignados por separado.
   const { servicios } = useServiciosStore();
   const serviciosActivos = useMemo(
     () => profesionalActual
-      ? servicios.filter(s => s.activo && profesionalActual.servicios.some(ps => ps.id === s.id))
+      ? servicios.filter(s =>
+          s.activo &&
+          s.es_promo === (modo === 'promociones') &&
+          profesionalActual.servicios.some(ps => ps.id === s.id)
+        )
       : [],
-    [servicios, profesionalActual]
+    [servicios, profesionalActual, modo]
   );
 
   // ─────────────────────────────────────────────
@@ -246,6 +257,7 @@ export function useHistoriaPrecios() {
 
     // template selection
     layoutId, estiloId, handleLayoutChange, handleEstiloChange,
+    modo, handleModoChange,
 
     // photos
     fotos: fotosOrdenadas, fotosUrls, puedeCapturar,

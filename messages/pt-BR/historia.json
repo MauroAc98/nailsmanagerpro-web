@@ -36,7 +36,8 @@
     "shareTitle": "Minha agenda"
   },
   "TarjetaPrecios": {
-    "header": "Lista de preços",
+    "header": "Serviços",
+    "headerPromociones": "Promos",
     "reservarLabel": "Reserve seu horário"
   },
   "SelectorPlantilla": {
@@ -56,6 +57,9 @@
     "title": "Story de preços",
     "loading": "Carregando...",
     "noProfessional": "Não foi possível identificar seu perfil profissional.",
+    "modePrecios": "Preços",
+    "modePromociones": "Promoções",
+    "emptyPromoState": "Você ainda não tem serviços marcados como promoção.",
     "templateSectionTitle": "Escolha seu design",
     "photosSectionTitle": "Fotos",
     "photosSectionHint": "Envie fotos dedicadas ao seu story de preços.",

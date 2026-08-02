@@ -26,6 +26,11 @@ interface Props {
   // thumbnails so each photo is fetched once total, not once per
   // combination. SelectorPlantilla never fetches or mutates this array.
   fotos:          string[];
+  // Card title for the active modo (precios/promociones), same value
+  // passed straight through to TarjetaPrecios — every thumbnail previews
+  // the real title, not a placeholder (spec: "Picker previews with real
+  // data").
+  titulo:         string;
   // Already-filtered active `Servicio` list, same as what TarjetaPrecios
   // expects — this component is purely presentational, no store access.
   servicios:      Servicio[];
@@ -51,7 +56,7 @@ interface Props {
 // previewed with the caller's real photos and real service prices — never
 // placeholder content (spec: "Picker previews with real data").
 export function SelectorPlantilla({
-  fotos, servicios, nombreNegocio, telefono, layoutId, estiloId, onLayoutChange, onEstiloChange, containerWidth,
+  fotos, titulo, servicios, nombreNegocio, telefono, layoutId, estiloId, onLayoutChange, onEstiloChange, containerWidth,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
   const combinaciones = useMemo(
@@ -108,6 +113,7 @@ export function SelectorPlantilla({
               layoutId={layout.id}
               estiloId={estilo.id}
               fotos={fotos}
+              titulo={titulo}
               servicios={servicios}
               nombreNegocio={nombreNegocio}
               telefono={telefono}

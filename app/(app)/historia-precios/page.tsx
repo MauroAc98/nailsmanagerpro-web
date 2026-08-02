@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors } from '@/theme/colors';
+import { colors, withAlpha } from '@/theme/colors';
 import { useHistoriaPrecios } from '@/hooks/useHistoriaPrecios';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -23,6 +23,25 @@ import { GestorFotos } from '@/components/historia-precios/GestorFotos';
 // DOM, so this stays byte-identical to the export, same guarantee D3
 // documents for the picker.
 // ─────────────────────────────────────────────
+// Mode tabs — same visual pattern as app/(app)/agenda/historia/page.tsx
+// (tabContainerStyle + tabStyle), reused here for the Precios/Promociones
+// toggle instead of inventing a new tab style.
+// ─────────────────────────────────────────────
+const tabContainerStyle: React.CSSProperties = {
+  display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 14,
+};
+
+function tabStyle(active: boolean): React.CSSProperties {
+  return {
+    flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
+    cursor: 'pointer',
+    background:  active ? colors.primary : 'transparent',
+    color:       active ? '#fff' : colors.subtext,
+    fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
+    boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '4D')}` : 'none',
+  };
+}
+
 function useCanvasScale() {
   const [width, setWidth] = useState(0);
   useEffect(() => {
@@ -37,6 +56,7 @@ function useCanvasScale() {
 
 export default function HistoriaPreciosPage() {
   const t      = useTranslations('historia.HistoriaPreciosPage');
+  const tCard  = useTranslations('historia.TarjetaPrecios');
   const router = useRouter();
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
@@ -50,9 +70,12 @@ export default function HistoriaPreciosPage() {
     effectiveProfesionalId, serviciosActivos,
     nombreNegocio, telefono,
     layoutId, estiloId, handleLayoutChange, handleEstiloChange,
+    modo, handleModoChange,
     fotos, fotosUrls, puedeCapturar,
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
+
+  const titulo = modo === 'promociones' ? tCard('headerPromociones') : tCard('header');
 
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
@@ -86,6 +109,17 @@ export default function HistoriaPreciosPage() {
           paddingTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center',
           width: canvasWidth || '100%', margin: '0 auto',
         }}>
+          {/* Mode toggle — Precios/Promociones, separa servicios fijos
+              (es_promo:false) de promociones (es_promo:true) en 2 imágenes
+              distintas (ver useHistoriaPrecios.serviciosActivos). */}
+          <div style={{ ...tabContainerStyle, width: '100%' }}>
+            {(['precios', 'promociones'] as const).map(m => (
+              <button key={m} onClick={() => handleModoChange(m)} style={tabStyle(modo === m)}>
+                {m === 'precios' ? t('modePrecios') : t('modePromociones')}
+              </button>
+            ))}
+          </div>
+
           {/* Canvas preview — same node the capture targets, see useCanvasScale above */}
           <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 16 }}>
             <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
@@ -94,12 +128,19 @@ export default function HistoriaPreciosPage() {
                 layoutId={layoutId}
                 estiloId={estiloId}
                 fotos={fotosUrls}
+                titulo={titulo}
                 servicios={serviciosActivos}
                 nombreNegocio={nombreNegocio}
                 telefono={telefono}
               />
             </div>
           </div>
+
+          {modo === 'promociones' && serviciosActivos.length === 0 && (
+            <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '10px 0 0' }}>
+              {t('emptyPromoState')}
+            </p>
+          )}
 
           {/* Plantilla picker */}
           <div style={{ width: '100%', marginTop: 20 }}>
@@ -108,6 +149,7 @@ export default function HistoriaPreciosPage() {
             </p>
             <SelectorPlantilla
               fotos={fotosUrls}
+              titulo={titulo}
               servicios={serviciosActivos}
               nombreNegocio={nombreNegocio}
               telefono={telefono}

@@ -3,17 +3,21 @@ import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 
 const formatoPrecio = new Intl.NumberFormat('es-AR');
+// Espacio entre "$" y el número (antes pegados) — separa el signo del
+// monto como en la referencia, en vez de leerse como un solo token.
 const formatearPrecio = (precio: string | null): string =>
-  precio ? `$${formatoPrecio.format(Number(precio))}` : '-';
+  precio ? `$ ${formatoPrecio.format(Number(precio))}` : '-';
 
 interface Props {
   tokens:    EstiloTokens;
-  // Already-filtered active list (activo: true) — TarjetaPrecios does not
-  // filter or read the store itself, it's purely presentational (see
-  // architecture constraint for this phase). `es_promo` services render
-  // through the exact same row as regular ones: no badge, no distinct
-  // styling — v1 has no visual promo treatment (spec: price-story,
-  // "Generated image reflects live service data").
+  // Card title — resolved by the caller (page.tsx) from `modo`
+  // ('precios' | 'promociones', see useHistoriaPrecios), not looked up
+  // internally, since TarjetaPrecios has no notion of modo itself.
+  titulo:    string;
+  // Already-filtered list (activo: true AND es_promo matching the active
+  // modo, see useHistoriaPrecios.serviciosActivos) — TarjetaPrecios does
+  // not filter or read the store itself, it's purely presentational (see
+  // architecture constraint for this phase).
   servicios: Servicio[];
   // Account/business name (`User.name`, useAuthStore — NOT `Profesional`,
   // a different concept) and phone (`User.telefono`). Threaded down from
@@ -35,7 +39,7 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
-export function TarjetaPrecios({ tokens, servicios, nombreNegocio, telefono }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   return (
     <div
@@ -48,53 +52,51 @@ export function TarjetaPrecios({ tokens, servicios, nombreNegocio, telefono }: P
       <div
         style={{
           display: 'flex', flexDirection: 'column',
-          padding: '24px 20px', borderRadius: 10,
+          padding: '24px 20px', borderRadius: 18,
           background: tokens.cardBackground,
           border: `1px solid ${tokens.cardBorder}`,
           // Sombra más sutil (era 4px/16px blur — 5x más difusa que
           // --shadow-card del resto de la app) para leer "carta de precios"
           // en vez de "banner". Ver design review.
           boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+          // Montserrat para todo el cuerpo (nombre/precio/footer) en vez de
+          // la sans del sistema — el título (Cormorant, serif) ya tenía
+          // fuente propia, el resto del contenido no. Puesto acá una sola
+          // vez en el contenedor en vez de en cada span para que herede.
+          fontFamily: 'var(--font-sans-display), sans-serif',
         }}
       >
+        {/* Título en itálica, sin filetes ni línea — la referencia "delicada"
+            (carta translúcida sobre foto) no usa ningún elemento de línea en
+            todo el diseño, la elegancia sale de la tipografía y el espacio
+            en blanco solos. Cormorant Garamond itálica (ver app/layout.tsx)
+            en vez de recta: mucho más carácter para una frase de 3 palabras
+            que una script real habría hecho ilegible a este tamaño. */}
         <span
           style={{
             fontFamily: 'var(--font-serif-display), serif',
-            // 700->600: al peso completo el serif se vuelve un titular
-            // asertivo en vez de delicado — Playfair ya tiene suficiente
-            // presencia en peso medio por su propio contraste de trazo.
-            fontSize: 30, fontWeight: 600, letterSpacing: tokens.letterSpacing,
-            color: tokens.headerColor, textAlign: 'center', marginBottom: 14,
+            fontStyle: 'italic',
+            fontSize: 32, fontWeight: 600, letterSpacing: 0.5,
+            color: tokens.headerColor, textAlign: 'center', marginBottom: 26,
           }}
         >
-          {t('header')}
+          {titulo}
         </span>
 
-        {/* Filete fino centrado bajo el título en vez de solo espacio en
-            blanco — tratamiento clásico de carta/menú boutique. */}
-        <div
-          style={{
-            width: 48, height: 1, margin: '0 auto 22px',
-            background: tokens.dividerColor,
-          }}
-        />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-          {servicios.map((servicio, index) => (
+        {/* Nombre en minúscula/oración (no versalita con tracking) y precio
+            a un tamaño/peso mucho más parejo con el nombre — la referencia
+            no hace que ninguno de los dos "grite" sobre el otro, la
+            jerarquía es puramente posicional (izq/der), no tipográfica.
+            Sigue sin bordes/divisores entre filas, solo espacio (gap 18). */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {servicios.map(servicio => (
             <div
               key={servicio.id}
-              style={{
-                display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8,
-                paddingBottom: index === servicios.length - 1 ? 0 : 7,
-                borderBottom: index === servicios.length - 1 ? 'none' : `1px solid ${tokens.dividerColor}`,
-              }}
+              style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}
             >
-              {/* Nombre con un poco más de peso, precio con un poco menos
-                  — la jerarquía estaba invertida (precio más grande Y más
-                  negrita que el nombre del servicio). */}
               <span
                 style={{
-                  flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600,
+                  flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 400, letterSpacing: 0.2,
                   color: tokens.nombreColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}
               >
@@ -102,6 +104,11 @@ export function TarjetaPrecios({ tokens, servicios, nombreNegocio, telefono }: P
               </span>
               <span
                 style={{
+                  // tokens.precioFontWeight (no un valor fijo): classic/
+                  // modern quedan cerca del peso del nombre (600 vs 400,
+                  // sutil), bold sigue siendo notoriamente más pesado (800)
+                  // — la variación entre estilos se mantiene, solo que
+                  // ninguno "grita" tanto como antes (17px -> 13px).
                   fontSize: 13, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
                   letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
                   whiteSpace: 'nowrap',
@@ -116,20 +123,15 @@ export function TarjetaPrecios({ tokens, servicios, nombreNegocio, telefono }: P
         {/* Footer credit line — same slot the reference Canva price-list
             used for a professional's @handle, repurposed for the account's
             business name + phone (see useHistoriaPrecios: `User.name`/
-            `User.telefono` via useAuthStore, not `Profesional`). Guarded on
-            nombreNegocio so a not-yet-loaded/empty account never renders a
-            bare divider over nothing. */}
+            `User.telefono` via useAuthStore, not `Profesional`). Sin línea
+            divisoria arriba (antes sí) — consistente con el resto de la
+            carta, que ya no usa ningún filete/borde, solo margen (28px,
+            era 18+altura de la línea) para separarlo de la lista. */}
         {nombreNegocio && (
           <>
-            <div
-              style={{
-                width: 48, height: 1, margin: '18px auto 0',
-                background: tokens.dividerColor,
-              }}
-            />
             <span
               style={{
-                marginTop: 10, fontSize: 11, fontWeight: 600, letterSpacing: 1,
+                marginTop: 28, display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 1,
                 color: tokens.nombreColor, textAlign: 'center',
               }}
             >
@@ -144,8 +146,10 @@ export function TarjetaPrecios({ tokens, servicios, nombreNegocio, telefono }: P
               <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                 <span
                   style={{
-                    fontSize: 8, fontWeight: 300, letterSpacing: 3, textTransform: 'uppercase',
-                    color: tokens.nombreColor, opacity: 0.65,
+                    // Peso/tamaño/opacidad subidos (300->500, 8->9, 0.65->0.9)
+                    // — quedaba casi ilegible ("muy clarito").
+                    fontSize: 9, fontWeight: 500, letterSpacing: 3, textTransform: 'uppercase',
+                    color: tokens.nombreColor, opacity: 0.9,
                   }}
                 >
                   {t('reservarLabel')}

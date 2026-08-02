@@ -13,6 +13,7 @@ interface Props {
   layoutId:      LayoutId;
   estiloId:      EstiloId;
   fotos:         string[];
+  titulo:        string;
   servicios:     Servicio[];
   nombreNegocio: string;
   telefono:      string | null;
@@ -28,7 +29,7 @@ interface Props {
 // matches export" guarantee (spec: price-story-templates). See design
 // decision D3 in sdd/dynamic-price-story.
 export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function HistoriaPreciosCanvas(
-  { layoutId, estiloId, fotos, servicios, nombreNegocio, telefono },
+  { layoutId, estiloId, fotos, titulo, servicios, nombreNegocio, telefono },
   ref
 ) {
   const layout = LAYOUTS.find(l => l.id === layoutId) ?? LAYOUTS[0];
@@ -49,6 +50,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
         <Layout fotos={fotos} overlayOpacity={estilo.tokens.overlayOpacity}>
           <TarjetaPrecios
             tokens={estilo.tokens}
+            titulo={titulo}
             servicios={servicios}
             nombreNegocio={nombreNegocio}
             telefono={telefono}
