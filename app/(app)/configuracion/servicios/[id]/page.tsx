@@ -80,7 +80,10 @@ export default function EditarServicioPage() {
     const result = await actualizarServicio(id, {
       nombre: nombre.trim(),
       duracion_minutos: duracion,
-      precio: precio ? parseFloat(precio) : undefined,
+      // null (no undefined) cuando el campo queda vacío: undefined se cae
+      // del JSON al serializar y el PUT saldría sin la clave `precio`, así
+      // que borrar el precio nunca llegaba a impactar en el backend.
+      precio: precio ? parseFloat(precio) : null,
       es_promo: esPromo,
     });
     setSaving(false);

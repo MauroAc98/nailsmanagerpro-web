@@ -26,7 +26,11 @@ export interface CreateServicioDto {
 export interface UpdateServicioDto {
   nombre?: string;
   duracion_minutos?: number;
-  precio?: number;
+  // number | null (no solo number): null es la señal explícita de "borrar
+  // el precio" que el caller debe mandar — un `undefined` desaparece al
+  // serializar a JSON, así que el PUT saldría sin la clave y el backend
+  // nunca se enteraría de que hay que limpiarlo (ver [id]/page.tsx).
+  precio?: number | null;
   activo?: boolean;
   es_promo?: boolean;
 }
