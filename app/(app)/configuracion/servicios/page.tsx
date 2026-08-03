@@ -15,6 +15,8 @@ import { NAV_HEIGHT } from '@/constants/layout';
 import ServicioCard from '@/components/ServicioCard';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalJefa } from '@/services/profesionalService';
+import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 
 // ReorderableSection — un grupo (regular o promo) con su propio DndContext
 // / SortableContext, así arrastrar nunca mezcla ids entre grupos: cada
@@ -23,13 +25,14 @@ import { profesionalJefa } from '@/services/profesionalService';
 // mensaje de `emptyState` existente cuando el grupo específico queda vacío
 // (ej. cuenta sin promociones cargadas todavía).
 function ReorderableSection({
-  title, servicios, emptyLabel, onEdit, onToggle, onReorder,
+  title, servicios, emptyLabel, onEdit, onToggle, onDelete, onReorder,
 }: {
   title:      string;
   servicios:  Servicio[];
   emptyLabel: string;
   onEdit:     (id: number) => void;
   onToggle:   (id: number, activo: boolean) => void;
+  onDelete:   (servicio: Servicio) => void;
   onReorder:  (ids: number[]) => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -65,6 +68,7 @@ function ReorderableSection({
                   draggable
                   onEdit={() => onEdit(s.id)}
                   onToggle={activo => onToggle(s.id, activo)}
+                  onDelete={() => onDelete(s)}
                 />
               ))}
             </div>
@@ -78,10 +82,26 @@ function ReorderableSection({
 export default function ServiciosPage() {
   const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
-  const { loading, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar } = useServiciosStore();
+  const { loading, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar, eliminarServicio } = useServiciosStore();
   const serviciosFiltrados = useServiciosFiltrados();
 
   useEffect(() => { fetchServicios(); }, []);
+
+  // Eliminar — el backend bloquea el borrado (409) si el servicio tiene
+  // turnos asociados; `result.message` ya trae ese texto explicando por qué
+  // (extraerMensajeError lee el campo `message` del body de Laravel), así
+  // que alertDialog lo muestra directo sin plomería extra acá.
+  const handleEliminar = async (servicio: Servicio) => {
+    const confirmado = await confirmDialog(
+      t('deleteConfirm', { nombre: servicio.nombre }),
+      { confirmText: t('deleteConfirmButton'), danger: true }
+    );
+    if (!confirmado) return;
+
+    const result = await eliminarServicio(servicio.id);
+    if (result.success) showToast(t('deleted'));
+    else await alertDialog(result.message ?? t('deleteError'));
+  };
 
   // Split en 2 grupos independientemente reordenables (regular vs. promo —
   // ver reordenarServicios). Solo se usa cuando `!buscar`: buscando, la
@@ -227,6 +247,7 @@ export default function ServiciosPage() {
                   servicio={s}
                   onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
                   onToggle={activo => toggleServicio(s.id, activo)}
+                  onDelete={() => handleEliminar(s)}
                 />
               ))}
             </div>
@@ -238,6 +259,7 @@ export default function ServiciosPage() {
                 emptyLabel={t('emptyState')}
                 onEdit={id => router.push(`/configuracion/servicios/${id}`)}
                 onToggle={(id, activo) => toggleServicio(id, activo)}
+                onDelete={handleEliminar}
                 onReorder={reordenarServicios}
               />
               <ReorderableSection
@@ -246,6 +268,7 @@ export default function ServiciosPage() {
                 emptyLabel={t('emptyState')}
                 onEdit={id => router.push(`/configuracion/servicios/${id}`)}
                 onToggle={(id, activo) => toggleServicio(id, activo)}
+                onDelete={handleEliminar}
                 onReorder={reordenarServicios}
               />
             </>

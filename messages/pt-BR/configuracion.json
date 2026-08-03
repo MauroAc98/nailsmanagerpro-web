@@ -27,7 +27,12 @@
     "sectionServicios": "Serviços",
     "sectionPromociones": "Promoções",
     "priceStoryButton": "Story de preços",
-    "priceStoryButtonHint": "Monte uma imagem com sua lista de preços para compartilhar"
+    "priceStoryButtonHint": "Monte uma imagem com sua lista de preços para compartilhar",
+    "delete": "EXCLUIR",
+    "deleteConfirm": "Excluir o serviço {nombre}?",
+    "deleteConfirmButton": "Excluir",
+    "deleted": "Serviço excluído",
+    "deleteError": "Não foi possível excluir o serviço."
   },
   "NuevoServicioPage": {
     "title": "Novo serviço",
