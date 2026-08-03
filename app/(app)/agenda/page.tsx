@@ -76,8 +76,11 @@ const sectionLabelStyle: React.CSSProperties = {
 
 // ─────────────────────────────────────────────
 // SwipeableTurnoCard — PENDIENTE and EN_CURSO
-// onCancel is optional: when omitted (completado/en_curso per caller),
-// the swipe-reveal cancel panel and touch handlers are skipped entirely.
+// onCancel is optional: when omitted, the swipe-reveal cancel panel and
+// touch handlers are skipped entirely. completado never reaches this
+// component (rendered as FinalizadoCard instead); en_curso DOES pass
+// onCancel — an auto-started turno whose client never showed up must stay
+// cancellable, not just finishable.
 // ─────────────────────────────────────────────
 // Multi-agenda — nombre + color de la profesional a cargo, para la tercera
 // línea de timeSection. undefined/null = no se muestra (cuenta con ≤1
@@ -206,6 +209,14 @@ function SwipeableTurnoCard({
                       // sibling, not part of this element) still reaches the
                       // true right edge when revealed, since only this
                       // sliding foreground gets inset, not the region behind it.
+    // minWidth: 0 — needed for the !onCancel branch below, where this element
+    // is a plain `flex: 1` child (not absolutely positioned like the onCancel
+    // branch's inset:0 sliding layer, which already gets a definite width from
+    // its positioned parent regardless of minWidth). Without it, a flex item's
+    // default min-width is 'auto': the browser refuses to shrink it below the
+    // client name's full nowrap width, so the inner ellipsis never triggers
+    // for long names on en_curso cards.
+    minWidth: 0,
   };
 
   const restBody = (
@@ -1271,7 +1282,7 @@ export default function AgendaPage() {
                 <SwipeableTurnoCard
                   key={turno.id}
                   turno={turno}
-                  onCancel={cursando ? undefined : () => handleCancelar(turno.id)}
+                  onCancel={() => handleCancelar(turno.id)}
                   onFinalizar={cursando ? () => handleFinalizar(turno) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   plantillaWhatsapp={obtenerContenido('recordatorio')}
