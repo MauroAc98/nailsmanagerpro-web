@@ -71,7 +71,7 @@ function ProfesionalCard({
 export default function ProfesionalesPage() {
   const t = useTranslations('configuracion.ProfesionalesPage');
   const router = useRouter();
-  const { profesionales, loading, fetchProfesionales, toggleActivo } = useProfesionalStore();
+  const { profesionales, loading, error, fetchProfesionales, toggleActivo } = useProfesionalStore();
 
   useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -115,6 +115,13 @@ export default function ProfesionalesPage() {
         </p>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -123,7 +130,7 @@ export default function ProfesionalesPage() {
       )}
 
       {/* List */}
-      {!loading && (
+      {!loading && !error && (
         <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {profesionales.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>

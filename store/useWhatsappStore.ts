@@ -16,7 +16,7 @@ interface WhatsappState {
 
   conectar: () => Promise<boolean>;
   consultarEstado: () => Promise<void>;
-  desconectar: () => Promise<void>;
+  desconectar: () => Promise<boolean>;
   iniciarPolling: () => void;
   detenerPolling: () => void;
   reset: () => void;
@@ -68,8 +68,10 @@ export const useWhatsappStore = create<WhatsappState>((set, get) => ({
         await whatsappService.desconectar();
         set({ estado: 'desconectado', qrBase64: null, loading: false });
         get().detenerPolling();
+        return true;
       } catch (e) {
         set({ loading: false, error: extraerMensajeError(e) });
+        return false;
       }
     });
   },

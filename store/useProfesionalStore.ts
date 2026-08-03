@@ -16,6 +16,7 @@ interface OperacionResult {
 interface ProfesionalesState {
   profesionales: Profesional[];
   loading: boolean;
+  error: string | null;
 
   fetchProfesionales: () => Promise<void>;
   agregarProfesional: (dto: CreateProfesionalDto) => Promise<OperacionResult>;
@@ -30,15 +31,16 @@ interface ProfesionalesState {
 export const useProfesionalStore = create<ProfesionalesState>((set) => ({
   profesionales: [],
   loading: false,
+  error: null,
 
   fetchProfesionales: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     return withGlobalLoader(async () => {
       try {
         const profesionales = await profesionalService.getAll();
         set({ profesionales });
       } catch (e) {
-        console.error('fetchProfesionales:', e);
+        set({ error: extraerMensajeError(e) });
       } finally {
         set({ loading: false });
       }

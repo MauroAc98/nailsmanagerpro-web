@@ -11,6 +11,7 @@ interface OperacionResult {
 interface SlotsState {
   slots: Slot[];
   loading: boolean;
+  error: string | null;
 
   fetchSlots: (profesionalId?: number) => Promise<void>;
   agregarSlot: (hora: string, profesionalId?: number) => Promise<OperacionResult>;
@@ -21,15 +22,16 @@ interface SlotsState {
 export const useSlotsStore = create<SlotsState>((set) => ({
   slots: [],
   loading: false,
+  error: null,
 
   fetchSlots: async (profesionalId) => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     return withGlobalLoader(async () => {
       try {
         const slots = await slotService.getAll(profesionalId);
         set({ slots });
       } catch (e) {
-        console.error('fetchSlots:', e);
+        set({ error: extraerMensajeError(e) });
       } finally {
         set({ loading: false });
       }

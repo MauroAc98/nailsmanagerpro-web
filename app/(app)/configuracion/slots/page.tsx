@@ -147,7 +147,7 @@ function SlotCard({
 export default function SlotsPage() {
   const t = useTranslations('configuracion.SlotsPage');
   const router = useRouter();
-  const { slots, loading, fetchSlots, agregarSlot, toggleSlot, eliminarSlot } = useSlotsStore();
+  const { slots, loading, error, fetchSlots, agregarSlot, toggleSlot, eliminarSlot } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [horaSeleccionada, setHoraSeleccionada] = useState<Record<string, string>>({ hora: '09', minuto: '00' });
@@ -278,6 +278,13 @@ export default function SlotsPage() {
         </div>
       )}
 
+      {/* Error */}
+      {error && (
+        <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -286,7 +293,7 @@ export default function SlotsPage() {
       )}
 
       {/* List */}
-      {!loading && (
+      {!loading && !error && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {slots.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 15 }}>

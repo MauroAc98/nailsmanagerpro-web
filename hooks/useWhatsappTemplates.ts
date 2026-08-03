@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { authService, WhatsappTemplate, TipoPlantilla } from '@/services/authService';
+import { extraerMensajeError } from '@/services/clienteService';
 
 const DEFAULTS: Record<TipoPlantilla, string> = {
   recordatorio: 'Hola {nombre} 💅 Te recuerdo tu turno el {fecha} a las {hora} para {servicios}. ¡Te espero!'
@@ -11,14 +12,17 @@ export function useWhatsappTemplates() {
   const [templates, setTemplates] = useState<WhatsappTemplate[]>([]);
   const [cargando,  setCargando]  = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cargar = async () => {
     try {
       setCargando(true);
       const data = await authService.whatsappTemplates.obtener();
       setTemplates(data);
+      setError(null);
     } catch (e) {
       console.error('cargar plantillas whatsapp:', e);
+      setError(extraerMensajeError(e));
     } finally {
       setCargando(false);
     }
@@ -33,8 +37,11 @@ export function useWhatsappTemplates() {
         const data = await authService.whatsappTemplates.obtener();
         if (cancelled) return;
         setTemplates(data);
+        setError(null);
       } catch (e) {
+        if (cancelled) return;
         console.error('cargar plantillas whatsapp:', e);
+        setError(extraerMensajeError(e));
       } finally {
         if (!cancelled) setCargando(false);
       }
@@ -74,5 +81,5 @@ export function useWhatsappTemplates() {
     }
   };
 
-  return { templates, cargando, guardando, obtenerContenido, actualizar, resetear, recargar: cargar };
+  return { templates, cargando, guardando, error, obtenerContenido, actualizar, resetear, recargar: cargar };
 }

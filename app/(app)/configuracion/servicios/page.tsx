@@ -82,7 +82,7 @@ function ReorderableSection({
 export default function ServiciosPage() {
   const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
-  const { loading, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar, eliminarServicio } = useServiciosStore();
+  const { loading, error, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar, eliminarServicio } = useServiciosStore();
   const serviciosFiltrados = useServiciosFiltrados();
 
   useEffect(() => { fetchServicios(); }, []);
@@ -223,6 +223,13 @@ export default function ServiciosPage() {
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{error}</p>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -231,7 +238,7 @@ export default function ServiciosPage() {
       )}
 
       {/* List */}
-      {!loading && (
+      {!loading && !error && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
           {serviciosFiltrados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>

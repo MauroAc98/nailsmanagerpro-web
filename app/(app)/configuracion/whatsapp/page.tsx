@@ -80,10 +80,11 @@ export default function WhatsappPage() {
       { confirmText: t('disconnectConfirmButton'), danger: true },
     );
     if (!ok) return;
-    desconectar().then(() => {
+    const success = await desconectar();
+    if (success) {
       reset();
       showToast(t('disconnected'));
-    });
+    }
   };
 
   return (

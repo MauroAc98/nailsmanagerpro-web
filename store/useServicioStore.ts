@@ -9,6 +9,8 @@ import { extraerMensajeError } from '@/services/clienteService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalService } from '@/services/profesionalService';
+import { alertDialog } from '@/store/useConfirmStore';
+import { tStatic } from '@/store/useLocaleStore';
 
 // Refresca Profesional.servicios (relación anidada) directo contra el
 // service, sin pasar por useProfesionalStore.fetchProfesionales() — ese
@@ -29,6 +31,7 @@ interface OperacionResult {
 interface ServiciosState {
   servicios: Servicio[];
   loading: boolean;
+  error: string | null;
   buscar: string;
 
   fetchServicios: () => Promise<void>;
@@ -62,18 +65,19 @@ function reordenarEnSitio<T extends { id: number }>(items: T[], newOrder: number
 export const useServiciosStore = create<ServiciosState>((set, get) => ({
   servicios: [],
   loading: false,
+  error: null,
   buscar: '',
 
   setBuscar: (texto) => set({ buscar: texto }),
 
   fetchServicios: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     return withGlobalLoader(async () => {
       try {
         const servicios = await servicioService.getAll();
         set({ servicios });
       } catch (e) {
-        console.error('fetchServicios:', e);
+        set({ error: extraerMensajeError(e) });
       } finally {
         set({ loading: false });
       }
@@ -152,6 +156,7 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
     } catch (e) {
       console.error('reordenarServicios:', e);
       set({ servicios: anterior });
+      await alertDialog(tStatic('configuracion.ServiciosPage.reorderError'));
     }
   },
 }));

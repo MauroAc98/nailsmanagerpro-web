@@ -39,7 +39,8 @@
     "resetConfirmButton": "Restablecer",
     "emptyMessage": "El mensaje no puede estar vacío.",
     "saved": "Mensaje guardado",
-    "saveError": "No se pudo guardar el mensaje."
+    "saveError": "No se pudo guardar el mensaje.",
+    "retry": "Reintentar"
   },
   "PerfilPage": {
     "title": "Perfil",

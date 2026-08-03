@@ -32,7 +32,8 @@
     "deleteConfirm": "¿Eliminás el servicio {nombre}?",
     "deleteConfirmButton": "Eliminar",
     "deleted": "Servicio eliminado",
-    "deleteError": "No se pudo eliminar el servicio."
+    "deleteError": "No se pudo eliminar el servicio.",
+    "reorderError": "No se pudo guardar el nuevo orden."
   },
   "NuevoServicioPage": {
     "title": "Nuevo servicio",

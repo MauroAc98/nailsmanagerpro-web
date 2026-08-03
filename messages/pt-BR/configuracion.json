@@ -32,7 +32,8 @@
     "deleteConfirm": "Excluir o serviço {nombre}?",
     "deleteConfirmButton": "Excluir",
     "deleted": "Serviço excluído",
-    "deleteError": "Não foi possível excluir o serviço."
+    "deleteError": "Não foi possível excluir o serviço.",
+    "reorderError": "Não foi possível salvar a nova ordem."
   },
   "NuevoServicioPage": {
     "title": "Novo serviço",

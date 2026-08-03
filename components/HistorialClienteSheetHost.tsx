@@ -25,6 +25,7 @@ export function HistorialClienteSheetHost() {
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
@@ -43,9 +44,11 @@ export function HistorialClienteSheetHost() {
     }
     setLoading(true);
     setCliente(null);
+    setError(false);
     setFiltroEstado('todos');
     clienteService.getOne(clienteId)
       .then(setCliente)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
     sheetRef.current?.snapToIndex(0);
   }, [clienteId]);
@@ -76,6 +79,8 @@ export function HistorialClienteSheetHost() {
 
         {loading ? (
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>{tCommon('cargando')}</p>
+        ) : error ? (
+          <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{t('loadError')}</p>
         ) : turnos.length === 0 ? (
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>{t('noTurnos')}</p>
         ) : turnosFiltrados.length === 0 ? (

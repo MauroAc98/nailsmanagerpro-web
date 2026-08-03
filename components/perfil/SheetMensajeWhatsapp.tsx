@@ -45,7 +45,7 @@ interface Props {
 
 export function SheetMensajeWhatsapp({ onClose }: Props) {
   const t = useTranslations('perfil.SheetMensajeWhatsapp');
-  const { cargando, guardando, obtenerContenido, actualizar, resetear } = useWhatsappTemplates();
+  const { cargando, guardando, error, obtenerContenido, actualizar, resetear, recargar } = useWhatsappTemplates();
   const [tipoActual, setTipoActual] = useState<TipoPlantilla>('recordatorio');
   const [mensaje, setMensaje] = useState(() => obtenerContenido('recordatorio'));
   const [mostrarEmojis, setMostrarEmojis] = useState(false);
@@ -66,15 +66,18 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
   // Reseed `mensaje` when `tipoActual` changes, or once the async template
   // fetch resolves (the initial seed above runs before it — while it still
   // falls back to DEFAULTS) — "adjust state during render" pattern (no
-  // effect) so in-progress edits survive unrelated re-renders.
+  // effect) so in-progress edits survive unrelated re-renders. If the fetch
+  // failed, `obtenerContenido` can't tell "no custom template yet" apart
+  // from "fetch failed" — never seed DEFAULTS in that case, so a save can't
+  // silently overwrite the real (unknown) template with generic text.
   const [tipoAnterior, setTipoAnterior] = useState(tipoActual);
-  const [cargaPendiente, setCargaPendiente] = useState(cargando);
+  const [cargandoAnterior, setCargandoAnterior] = useState(cargando);
   if (tipoActual !== tipoAnterior) {
     setTipoAnterior(tipoActual);
-    setMensaje(obtenerContenido(tipoActual));
-  } else if (cargaPendiente && !cargando) {
-    setCargaPendiente(false);
-    setMensaje(obtenerContenido(tipoActual));
+    setMensaje(error ? '' : obtenerContenido(tipoActual));
+  } else if (cargando !== cargandoAnterior) {
+    setCargandoAnterior(cargando);
+    if (!cargando) setMensaje(error ? '' : obtenerContenido(tipoActual));
   }
 
   const handleAgregarVariable = (variable: string) => {
@@ -106,6 +109,25 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
           <IconClose />
         </button>
       </div>
+
+      {error && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+          marginBottom: 16, backgroundColor: colors.dangerBg, border: `1px solid ${colors.dangerBorder}`,
+          borderRadius: 12, padding: '12px 14px',
+        }}>
+          <p style={{ margin: 0, fontSize: 13, color: colors.danger }}>{error}</p>
+          <button
+            onClick={() => recargar()}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
+              fontSize: 13, fontWeight: 700, color: colors.danger, textDecoration: 'underline',
+            }}
+          >
+            {t('retry')}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 16 }}>
         {(['recordatorio', 'confirmacion'] as TipoPlantilla[]).map(tipo => (
@@ -228,11 +250,11 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
         </button>
         <button
           onClick={handleGuardar}
-          disabled={guardando}
+          disabled={guardando || !!error}
           style={{
             flex: 1, background: colors.primary, borderRadius: 14, padding: 14,
             border: 'none', color: '#fff', fontWeight: 700, fontSize: 14,
-            cursor: 'pointer', opacity: guardando ? 0.6 : 1,
+            cursor: 'pointer', opacity: (guardando || error) ? 0.6 : 1,
           }}
         >
           {guardando ? t('saving') : t('save')}

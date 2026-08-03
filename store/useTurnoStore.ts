@@ -83,11 +83,17 @@ const refrescarAgenda = async (
     ];
 
     if (ultimaBusqueda.trim().length > 0) {
-      tareas.push(turnoService.buscarPorNombre(ultimaBusqueda).then(r => set({ turnosBusqueda: r })));
+      tareas.push(turnoService.buscarPorNombre(ultimaBusqueda).then(r => set({ turnosBusqueda: r })).catch(e => {
+        console.error('buscarPorNombre (refrescarAgenda):', e);
+      }));
     } else if (ultimoServicioId !== null) {
-      tareas.push(turnoService.buscarPorServicio(ultimoServicioId).then(r => set({ turnosBusqueda: r })));
+      tareas.push(turnoService.buscarPorServicio(ultimoServicioId).then(r => set({ turnosBusqueda: r })).catch(e => {
+        console.error('buscarPorServicio (refrescarAgenda):', e);
+      }));
     } else if (ultimaFecha !== null) {
-      tareas.push(turnoService.buscarPorFecha(ultimaFecha).then(r => set({ turnosBusqueda: r })));
+      tareas.push(turnoService.buscarPorFecha(ultimaFecha).then(r => set({ turnosBusqueda: r })).catch(e => {
+        console.error('buscarPorFecha (refrescarAgenda):', e);
+      }));
     }
 
     await Promise.all(tareas);
