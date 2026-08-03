@@ -7,11 +7,16 @@ export interface Servicio {
   duracion_minutos: number;
   precio: string | null;
   activo: boolean;
-  // Marca el servicio como promoción. Puramente informativo en v1: no
-  // afecta la visibilidad (los inactivos se filtran igual por `activo`,
-  // sin importar este flag) ni tiene un tratamiento visual distinto en la
-  // historia de precios.
+  // Marca el servicio como promoción. Separa el catálogo en dos grupos
+  // reordenables por separado (ver useServicioStore.reordenarServicios) y
+  // determina el modo "Promociones" de la historia de precios — no es
+  // puramente informativo (ver hooks/useHistoriaPrecios.ts).
   es_promo: boolean;
+  // Posición dentro de su grupo (regular vs. promo), asignada por el
+  // backend. `GET /servicios` ya devuelve el array ordenado por este
+  // campo — el frontend nunca lo recalcula, solo lo reordena vía
+  // `reordenar` (PATCH /servicios/reordenar).
+  orden: number;
   created_at: string;
   updated_at: string;
 }
@@ -58,5 +63,14 @@ export const servicioService = {
 
   delete: async (id: number): Promise<void> => {
     await api.delete(`/servicios/${id}`);
+  },
+
+  // Reordena UN solo grupo (regular o promo, nunca mezclados — ver
+  // useServicioStore.reordenarServicios). `ids` es el array completo de
+  // ese grupo en el nuevo orden; el backend responde con el catálogo
+  // entero ya re-ordenado por `orden`.
+  reordenar: async (ids: number[]): Promise<Servicio[]> => {
+    const { data } = await api.patch<Servicio[]>('/servicios/reordenar', { ids });
+    return data;
   },
 };

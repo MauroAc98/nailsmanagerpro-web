@@ -23,10 +23,30 @@ interface ServiciosState {
   actualizarServicio: (id: number, dto: UpdateServicioDto) => Promise<OperacionResult>;
   eliminarServicio: (id: number) => Promise<OperacionResult>;
   toggleServicio: (id: number, activo: boolean) => Promise<void>;
+  reordenarServicios: (ids: number[]) => Promise<void>;
   setBuscar: (texto: string) => void;
 }
 
-export const useServiciosStore = create<ServiciosState>((set) => ({
+// Reordena `items` sin moverlos fuera de las posiciones que ya ocupan: se
+// recorre el array en su orden actual y, en cada posición cuyo id está en
+// `newOrder`, se sustituye por el siguiente id de `newOrder` (en secuencia).
+// Así el resultado nunca reagrupa entre sí ids afectados y no afectados —
+// necesario porque `newOrder` es solo UN grupo (regular o promo) y el resto
+// de consumidores (la otra sección de esta pantalla, el filtro `modo` de
+// useHistoriaPrecios) dependen únicamente del orden relativo dentro de su
+// propio subconjunto, nunca de un intercalado entre grupos.
+function reordenarEnSitio<T extends { id: number }>(items: T[], newOrder: number[]): T[] {
+  const afectados = new Set(newOrder);
+  const porId = new Map(items.map(item => [item.id, item]));
+  let cursor = 0;
+  return items.map(item => {
+    if (!afectados.has(item.id)) return item;
+    const siguienteId = newOrder[cursor++];
+    return porId.get(siguienteId) ?? item;
+  });
+}
+
+export const useServiciosStore = create<ServiciosState>((set, get) => ({
   servicios: [],
   loading: false,
   buscar: '',
@@ -99,6 +119,19 @@ export const useServiciosStore = create<ServiciosState>((set) => ({
         }));
       }
     });
+  },
+
+  reordenarServicios: async (ids) => {
+    // Sin withGlobalLoader: el drag-and-drop debe sentirse instantáneo, no
+    // dispara un spinner de pantalla completa igual que toggleServicio.
+    const anterior = get().servicios;
+    set({ servicios: reordenarEnSitio(anterior, ids) });
+    try {
+      await servicioService.reordenar(ids);
+    } catch (e) {
+      console.error('reordenarServicios:', e);
+      set({ servicios: anterior });
+    }
   },
 }));
 

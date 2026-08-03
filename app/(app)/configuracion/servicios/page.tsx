@@ -3,64 +3,74 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
 import { NAV_HEIGHT } from '@/constants/layout';
-import PillToggle from '@/components/PillToggle';
+import ServicioCard from '@/components/ServicioCard';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalJefa } from '@/services/profesionalService';
 
-function ServicioCard({
-  servicio,
-  onEdit,
-  onToggle,
+// ReorderableSection — un grupo (regular o promo) con su propio DndContext
+// / SortableContext, así arrastrar nunca mezcla ids entre grupos: cada
+// drag-end llama a `onReorder` con el array COMPLETO del grupo afectado
+// (contrato de reordenarServicios / PATCH /servicios/reordenar). Reusa el
+// mensaje de `emptyState` existente cuando el grupo específico queda vacío
+// (ej. cuenta sin promociones cargadas todavía).
+function ReorderableSection({
+  title, servicios, emptyLabel, onEdit, onToggle, onReorder,
 }: {
-  servicio: Servicio;
-  onEdit:   () => void;
-  onToggle: (activo: boolean) => void;
+  title:      string;
+  servicios:  Servicio[];
+  emptyLabel: string;
+  onEdit:     (id: number) => void;
+  onToggle:   (id: number, activo: boolean) => void;
+  onReorder:  (ids: number[]) => void;
 }) {
-  const precioLabel = servicio.precio ? `  ·  $${servicio.precio}` : '';
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    const ids = servicios.map(s => s.id);
+    const oldIndex = ids.indexOf(active.id as number);
+    const newIndex = ids.indexOf(over.id as number);
+    onReorder(arrayMove(ids, oldIndex, newIndex));
+  }
 
   return (
-    <div
-      onClick={onEdit}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        backgroundColor: servicio.activo ? colors.surface : colors.surfaceSubtle,
-        border: `1px solid ${colors.border}`,
-        boxShadow: shadows.card, borderRadius: 14,
-        padding: '14px 16px', cursor: 'pointer',
-        opacity: servicio.activo ? 1 : 0.65,
-        userSelect: 'none',
-      }}
-    >
-      <div style={{
-        width: 36, height: 36,
-        backgroundColor: servicio.activo ? withAlpha(colors.primary, '15') : colors.surfaceSubtle,
-        borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
+    <div>
+      <h2 style={{
+        margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: colors.subtext,
+        textTransform: 'uppercase', letterSpacing: 0.5,
       }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke={servicio.activo ? colors.primary : colors.placeholder} strokeWidth="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: servicio.activo ? colors.text : colors.placeholder }}>
-          {servicio.nombre}
+        {title}
+      </h2>
+      {servicios.length === 0 ? (
+        <p style={{ textAlign: 'center', margin: '12px 0', color: colors.subtext, fontSize: 14 }}>
+          {emptyLabel}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-          {servicio.duracion_minutos} min{precioLabel}
-        </p>
-      </div>
-
-      <PillToggle value={servicio.activo} onChange={onToggle} stopPropagation />
-
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {servicios.map(s => (
+                <ServicioCard
+                  key={s.id}
+                  servicio={s}
+                  draggable
+                  onEdit={() => onEdit(s.id)}
+                  onToggle={activo => onToggle(s.id, activo)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   );
 }
@@ -68,10 +78,17 @@ function ServicioCard({
 export default function ServiciosPage() {
   const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
-  const { loading, buscar, fetchServicios, toggleServicio, setBuscar } = useServiciosStore();
+  const { loading, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar } = useServiciosStore();
   const serviciosFiltrados = useServiciosFiltrados();
 
   useEffect(() => { fetchServicios(); }, []);
+
+  // Split en 2 grupos independientemente reordenables (regular vs. promo —
+  // ver reordenarServicios). Solo se usa cuando `!buscar`: buscando, la
+  // lista plana filtrada de useServiciosFiltrados no tiene un agrupamiento
+  // estable que tenga sentido para drag-and-drop (ver render abajo).
+  const serviciosRegulares = serviciosFiltrados.filter(s => !s.es_promo);
+  const serviciosPromo = serviciosFiltrados.filter(s => s.es_promo);
 
   // Entry point a "historia de precios" (spec: price-story) — gateado en que
   // el campo NUEVO exista en la respuesta del backend (no en que tenga un
@@ -195,20 +212,43 @@ export default function ServiciosPage() {
 
       {/* List */}
       {!loading && (
-        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
           {serviciosFiltrados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               {buscar ? t('noResults') : t('emptyState')}
             </p>
+          ) : buscar ? (
+            // Buscando: lista plana sin agrupar ni drag-and-drop — reordenar
+            // no tiene sentido sobre un recorte de búsqueda.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {serviciosFiltrados.map(s => (
+                <ServicioCard
+                  key={s.id}
+                  servicio={s}
+                  onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
+                  onToggle={activo => toggleServicio(s.id, activo)}
+                />
+              ))}
+            </div>
           ) : (
-            serviciosFiltrados.map(s => (
-              <ServicioCard
-                key={s.id}
-                servicio={s}
-                onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
-                onToggle={activo => toggleServicio(s.id, activo)}
+            <>
+              <ReorderableSection
+                title={t('sectionServicios')}
+                servicios={serviciosRegulares}
+                emptyLabel={t('emptyState')}
+                onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                onToggle={(id, activo) => toggleServicio(id, activo)}
+                onReorder={reordenarServicios}
               />
-            ))
+              <ReorderableSection
+                title={t('sectionPromociones')}
+                servicios={serviciosPromo}
+                emptyLabel={t('emptyState')}
+                onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                onToggle={(id, activo) => toggleServicio(id, activo)}
+                onReorder={reordenarServicios}
+              />
+            </>
           )}
         </div>
       )}

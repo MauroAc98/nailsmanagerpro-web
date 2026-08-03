@@ -24,6 +24,8 @@
     "loading": "Carregando serviços...",
     "noResults": "Nenhum resultado encontrado",
     "emptyState": "Cadastre seu primeiro serviço!",
+    "sectionServicios": "Serviços",
+    "sectionPromociones": "Promoções",
     "priceStoryButton": "Story de preços",
     "priceStoryButtonHint": "Monte uma imagem com sua lista de preços para compartilhar"
   },

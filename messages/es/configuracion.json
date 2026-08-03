@@ -24,6 +24,8 @@
     "loading": "Cargando servicios...",
     "noResults": "No se encontraron coincidencias",
     "emptyState": "¡Cargá tu primer servicio!",
+    "sectionServicios": "Servicios",
+    "sectionPromociones": "Promociones",
     "priceStoryButton": "Historia de precios",
     "priceStoryButtonHint": "Armá una imagen con tu lista de precios para compartir"
   },
