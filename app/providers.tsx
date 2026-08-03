@@ -152,7 +152,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages ?? undefined}>
+    <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">
       {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
