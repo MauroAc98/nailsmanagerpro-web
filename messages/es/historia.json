@@ -57,6 +57,7 @@
     "title": "Historia de precios",
     "loading": "Cargando...",
     "noProfessional": "No se pudo identificar tu perfil profesional.",
+    "showPricesOf": "Mostrar precios de:",
     "modePrecios": "Precios",
     "modePromociones": "Promociones",
     "emptyPromoState": "No tenés servicios marcados como promoción todavía.",

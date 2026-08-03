@@ -27,13 +27,19 @@ const proxiedUrl = (url: string) => `/api/historia-fondo?url=${encodeURIComponen
 // hook's.
 export function useHistoriaPrecios() {
   // ─────────────────────────────────────────────
-  // Professional context — no professional selector for the price story
-  // (unlike agenda-historia's multi-agenda picker): layout/estilo/fotos are
-  // scoped to a single "effective" professional, same jefa-default fallback
-  // used everywhere else in the app when there's no explicit selection.
+  // Professional context — same multi-profesional picker pattern as
+  // useGenerarHistoria: `selectedProfesionalId` is an explicit override
+  // (null = no selection), `effectiveProfesionalId` falls back to the jefa
+  // when nothing's selected. Layout/estilo/fotos stay scoped to whichever
+  // professional is "effective" so each one can promote her own promos/
+  // servicios, not just the jefa's.
   // ─────────────────────────────────────────────
   const { profesionales } = useProfesionalStore();
-  const effectiveProfesionalId = useMemo(() => profesionalJefa(profesionales)?.id ?? null, [profesionales]);
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const effectiveProfesionalId = useMemo(() => {
+    if (selectedProfesionalId) return selectedProfesionalId;
+    return profesionalJefa(profesionales)?.id ?? null;
+  }, [selectedProfesionalId, profesionales]);
   const profesionalActual = useMemo(
     () => profesionales.find(p => p.id === effectiveProfesionalId) ?? null,
     [profesionales, effectiveProfesionalId]
@@ -251,6 +257,7 @@ export function useHistoriaPrecios() {
   return {
     // professional / servicios
     effectiveProfesionalId, serviciosActivos,
+    selectedProfesionalId, setSelectedProfesionalId,
 
     // footer credit (account-level)
     nombreNegocio, telefono,

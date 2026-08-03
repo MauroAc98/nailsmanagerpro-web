@@ -68,6 +68,7 @@ export default function HistoriaPreciosPage() {
 
   const {
     effectiveProfesionalId, serviciosActivos,
+    selectedProfesionalId, setSelectedProfesionalId,
     nombreNegocio, telefono,
     layoutId, estiloId, handleLayoutChange, handleEstiloChange,
     modo, handleModoChange,
@@ -80,6 +81,16 @@ export default function HistoriaPreciosPage() {
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
   const cargando = profesionales.length === 0;
+
+  // Multi-profesional — invisible con ≤1 profesional activa, mismo criterio
+  // que app/(app)/agenda/historia/page.tsx. profesionalSeleccionada solo
+  // existe con pick EXPLÍCITO (selectedProfesionalId, no el fallback a la
+  // jefa) — mismo criterio que StoryCanvas.profesionalNombre: reemplaza el
+  // nombre del negocio en el footer para que la historia lea como la
+  // tarjeta de esa profesional puntual, no como la del negocio.
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
@@ -120,6 +131,44 @@ export default function HistoriaPreciosPage() {
             ))}
           </div>
 
+          {/* Selector de profesional — invisible con ≤1 profesional activa,
+              mismo patrón que agenda/historia (ver useHistoriaPrecios:
+              selectedProfesionalId/effectiveProfesionalId). Permite que cada
+              profesional promocione sus propios precios/promos, no solo la
+              jefa. */}
+          {mostrarSelectorProfesional && (
+            <div style={{ width: '100%', marginBottom: 14 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
+                {t('showPricesOf')}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {activeProfesionales.map(p => {
+                  const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
+                  const color    = p.color || colors.primary;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
+                        border: `1px solid ${selected ? color : colors.divider}`,
+                        backgroundColor: selected ? color : colors.surface,
+                        color: selected ? '#FFF' : colors.text,
+                      }}
+                    >
+                      <span style={{
+                        width: 8, height: 8, borderRadius: 4, flexShrink: 0,
+                        backgroundColor: selected ? '#FFF' : color,
+                      }} />
+                      {p.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Canvas preview — same node the capture targets, see useCanvasScale above */}
           <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 16 }}>
             <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
@@ -132,6 +181,7 @@ export default function HistoriaPreciosPage() {
                 servicios={serviciosActivos}
                 nombreNegocio={nombreNegocio}
                 telefono={telefono}
+                profesionalNombre={profesionalSeleccionada?.nombre}
               />
             </div>
           </div>
@@ -153,6 +203,7 @@ export default function HistoriaPreciosPage() {
               servicios={serviciosActivos}
               nombreNegocio={nombreNegocio}
               telefono={telefono}
+              profesionalNombre={profesionalSeleccionada?.nombre}
               layoutId={layoutId}
               estiloId={estiloId}
               onLayoutChange={handleLayoutChange}

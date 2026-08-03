@@ -57,6 +57,7 @@
     "title": "Story de preços",
     "loading": "Carregando...",
     "noProfessional": "Não foi possível identificar seu perfil profissional.",
+    "showPricesOf": "Mostrar preços de:",
     "modePrecios": "Preços",
     "modePromociones": "Promoções",
     "emptyPromoState": "Você ainda não tem serviços marcados como promoção.",

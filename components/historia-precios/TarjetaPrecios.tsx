@@ -24,6 +24,13 @@ interface Props {
   // useHistoriaPrecios through every layer, purely presentational here.
   nombreNegocio: string;
   telefono:      string | null;
+  // Name of the professional explicitly picked via the multi-profesional
+  // selector (page.tsx) — same precedent as StoryCanvas's `profesionalNombre`
+  // (agenda/historia): when set, replaces nombreNegocio in the footer credit
+  // so each professional's price story reads as HER card, not the business
+  // owner's. undefined (no explicit pick) keeps the existing nombreNegocio-only
+  // behavior for single-profesional accounts.
+  profesionalNombre?: string;
 }
 
 // TarjetaPrecios — price list panel, rendered as the foreground `children`
@@ -39,8 +46,9 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
+  const nombreFooter = profesionalNombre || nombreNegocio;
   return (
     <div
       style={{
@@ -127,7 +135,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             divisoria arriba (antes sí) — consistente con el resto de la
             carta, que ya no usa ningún filete/borde, solo margen (28px,
             era 18+altura de la línea) para separarlo de la lista. */}
-        {nombreNegocio && (
+        {nombreFooter && (
           <>
             <span
               style={{
@@ -135,7 +143,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
                 color: tokens.nombreColor, textAlign: 'center',
               }}
             >
-              {nombreNegocio}
+              {nombreFooter}
             </span>
             {/* CTA + phone — same visual language as StoryCanvas's footer
                 (thin/wide-tracked uppercase label + icon-paired phone row),

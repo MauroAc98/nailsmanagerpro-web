@@ -40,6 +40,7 @@ interface Props {
   // real data", design decision D3).
   nombreNegocio:  string;
   telefono:       string | null;
+  profesionalNombre?: string;
   layoutId:       LayoutId;
   estiloId:       EstiloId;
   onLayoutChange: (id: LayoutId) => void;
@@ -56,7 +57,7 @@ interface Props {
 // previewed with the caller's real photos and real service prices — never
 // placeholder content (spec: "Picker previews with real data").
 export function SelectorPlantilla({
-  fotos, titulo, servicios, nombreNegocio, telefono, layoutId, estiloId, onLayoutChange, onEstiloChange, containerWidth,
+  fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, layoutId, estiloId, onLayoutChange, onEstiloChange, containerWidth,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
   const combinaciones = useMemo(
@@ -117,6 +118,7 @@ export function SelectorPlantilla({
               servicios={servicios}
               nombreNegocio={nombreNegocio}
               telefono={telefono}
+              profesionalNombre={profesionalNombre}
               width={thumbWidth}
             />
             {bloqueado && (
