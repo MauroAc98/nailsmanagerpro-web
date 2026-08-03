@@ -7,6 +7,19 @@ import {
 } from '@/services/servicioService';
 import { extraerMensajeError } from '@/services/clienteService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { profesionalService } from '@/services/profesionalService';
+
+// Refresca Profesional.servicios (relación anidada) directo contra el
+// service, sin pasar por useProfesionalStore.fetchProfesionales() — ese
+// action envuelve en withGlobalLoader, y como isLoading es un booleano
+// simple (no contador), anidarlo dentro del withGlobalLoader de
+// agregar/eliminarServicio apagaría el spinner antes de que termine la
+// operación externa.
+const refrescarProfesionales = async () => {
+  const profesionales = await profesionalService.getAll();
+  useProfesionalStore.setState({ profesionales });
+};
 
 interface OperacionResult {
   success: boolean;
@@ -73,6 +86,11 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
         await servicioService.create(dto);
         const servicios = await servicioService.getAll();
         set({ servicios });
+        // Profesional.servicios (relación anidada, ver profesionalService.ts)
+        // gana un id nuevo con esta creación; sin refetch queda desincronizada
+        // hasta un F5 — la afecta cualquier consumidor que filtre por
+        // pertenencia ahí (useHistoriaPrecios, agenda/nuevo).
+        await refrescarProfesionales();
         return { success: true };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
@@ -99,6 +117,9 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
         await servicioService.delete(id);
         const servicios = await servicioService.getAll();
         set({ servicios });
+        // Mismo motivo que agregarServicio: el id borrado sigue viviendo en
+        // Profesional.servicios hasta refrescar ese store aparte.
+        await refrescarProfesionales();
         return { success: true };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
