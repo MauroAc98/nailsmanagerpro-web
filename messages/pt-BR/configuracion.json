@@ -153,7 +153,11 @@
       },
       "services": {
         "title": "Serviços",
-        "text": "Configurações → Serviços.\n\nCadastre cada serviço com o nome e a duração em minutos — essa duração é o que o app usa para calcular quanto tempo um agendamento ocupa e evitar que dois agendamentos se sobreponham.\n\nVocê pode desativar um serviço sem apagá-lo, caso pare de oferecê-lo por um tempo; os agendamentos antigos que já tinham esse serviço não são afetados."
+        "text": "Configurações → Serviços.\n\nCadastre cada serviço com o nome e a duração em minutos — essa duração é o que o app usa para calcular quanto tempo um agendamento ocupa e evitar que dois agendamentos se sobreponham.\n\nA lista é dividida em dois grupos, \"Serviços\" e \"Promoções\": ative ou desative \"É promoção\" ao criar ou editar um serviço para movê-lo de um grupo para o outro. Dentro de cada grupo, mantenha pressionado o ícone de pontinhos à direita do cartão e arraste para mudar a ordem — é a mesma ordem usada depois no \"Story de preços\" (veja essa seção). Enquanto você estiver buscando um serviço pelo nome, a lista aparece sem agrupamento e não pode ser reordenada.\n\nVocê pode desativar um serviço sem apagá-lo, caso pare de oferecê-lo por um tempo; os agendamentos antigos que já tinham esse serviço não são afetados."
+      },
+      "priceStory": {
+        "title": "Story de preços",
+        "text": "Abre a partir do botão \"Story de preços\", acima da lista em Configurações → Serviços (aparece assim que você tiver pelo menos um serviço cadastrado).\n\nEm cima ficam duas abas, \"Preços\" e \"Promoções\": cada uma gera uma imagem diferente, só com os serviços daquele grupo (os que você marcou com \"É promoção\" em Serviços — veja essa seção). Se você não tiver nenhum marcado como promoção, essa aba avisa que está vazia.\n\n\"Escolha seu design\" mostra 9 combinações: 3 designs × 3 estilos. Um design fica bloqueado se você não enviou fotos suficientes para ele — o app diz quantas faltam — e ele se desbloqueia sozinho assim que você envia as que faltam.\n\nMais abaixo, em \"Fotos\", você envia as imagens de fundo dedicadas a este story — são fotos próprias desta tela, não as mesmas usadas no Story do Instagram de disponibilidade (veja essa seção). Você pode enviar várias e apagá-las quando quiser.\n\nNo final, \"Salvar\" baixa a imagem no seu dispositivo e \"Compartilhar\" abre o menu para enviá-la direto."
       },
       "availableSlots": {
         "title": "Horários Disponíveis",
@@ -168,7 +172,7 @@
         "text": "Esta seção só é importante se você trabalha com mais de uma pessoa no salão. Se você trabalha sozinha, não precisa mexer em nada aqui.\n\n1. Configurações → Profissionais → botão +.\n2. Digite o nome dela e escolha uma cor para diferenciá-la na agenda.\n3. Marque os serviços que ela sabe fazer — isso filtra o que pode ser atribuído a ela ao criar um agendamento.\n4. Salve.\n5. Importante: vá em Configurações → Horários Disponíveis, escolha o nome dela no seletor no topo, e cadastre os horários de atendimento próprios dela. Cada profissional tem um horário independente — se você não configurar isso, ela não vai ter nenhum horário disponível para agendar, mesmo já tendo sido criada.\n\nPara desativar uma profissional sem perder o histórico de agendamentos dela, desative-a na lista (o interruptor) em vez de apagá-la."
       },
       "instagramStory": {
-        "title": "Gerar Story do Instagram: todas as opções",
+        "title": "Story do Instagram: disponibilidade (todas as opções)",
         "text": "Abre a partir do botão COMPARTILHAR, no canto superior direito da Agenda.\n\n- Período: escolha Dia, Semana ou Mês. Em Mês você também escolhe a primeira quinzena (1 a 15) ou a segunda (16 ao fim).\n- Profissional: se você trabalha com mais de uma, escolha de quem mostrar a disponibilidade — o nome dela fica visível na imagem gerada (a menos que seja a dona e coincida com o nome do salão, já visível acima: nesse caso não se repete).\n- Fundo: botão \"Fundo\" para enviar uma foto de fundo para a imagem. Ao escolhê-la, o app pergunta se você quer salvá-la como fundo fixo (é reutilizada sozinha na próxima vez que você gerar um story) ou usá-la só desta vez. Se você salvou uma, aparece um link \"Remover fundo fixo salvo\" para tirá-la quando quiser.\n- Texto livre: escreva um texto e toque em + para adicioná-lo à imagem. Você pode colocar emojis, arrastá-lo para a posição que quiser dentro da imagem, e aumentar ou diminuir com os botões A- / A+ (ou a alça no canto, tocando e arrastando).\n- Editar o que é mostrado: toque em um horário avulso na lista abaixo para tirá-lo da imagem, ou no ícone do olho em um dia para ocultá-lo por completo.\n- No final: \"Salvar\" baixa a imagem no seu dispositivo, \"Compartilhar\" abre o menu para enviá-la direto (por exemplo para o Instagram ou WhatsApp)."
       },
       "whatsappLink": {
@@ -187,9 +191,17 @@
         "title": "Estatísticas",
         "text": "Configurações → Estatísticas. Também há um cartão resumo bem no topo da Agenda (agora inclui quanto você faturou naquele mês) — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas, ou toque em \"Período personalizado\" se precisar de um período específico (por exemplo, uma semana pontual). Se você trabalha com mais de uma profissional, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Ganhos: o total recebido no período, o detalhamento por serviço, e um gráfico de tendência que se ajusta sozinho (dia a dia se o período for curto, por semana ou por mês se for mais longo — não precisa escolher).\n- Clientes novas vs. recorrentes: \"nova\" é a que teve o primeiro agendamento dela dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para ganhos, clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das quatro que os mostra.\n\nSe um agendamento passa do horário sem que você o tenha finalizado manualmente, o sistema o marca como concluído sozinho, mas sem preço cadastrado. Esses casos aparecem em \"Pendentes de cobrança\" — acessível pelo numerozinho na barra de navegação ou pelo aviso acima da Agenda."
       },
+      "pendingPayments": {
+        "title": "Pendentes de cobrança",
+        "text": "Você acessa pelo numerozinho na barra de navegação de baixo, ou pelo aviso que aparece acima da Agenda.\n\nAqui aparecem os agendamentos que o app marcou como concluídos sozinho (porque o horário passou) mas sem preço cadastrado — acontece quando você não chega a finalizá-los manualmente pela Agenda. Procure o agendamento na lista e toque em \"Cadastrar preço\" para completá-lo; depois de cadastrado, ele sai desta lista e passa a contar nas Estatísticas."
+      },
       "appearance": {
         "title": "Aparência",
         "text": "Configurações → Aparência.\n\nEscolha como o app aparece: Claro, Escuro, ou Sistema (segue o modo configurado no seu celular ou computador). É aplicado na hora."
+      },
+      "language": {
+        "title": "Idioma",
+        "text": "Configurações → Idioma.\n\nEscolha entre os idiomas disponíveis (por enquanto, Español e Português) — a mudança é aplicada na hora, sem precisar recarregar o app, e é salva na sua conta (se você entrar de outro dispositivo, mantém o mesmo idioma). Se por algum motivo não for possível salvar no servidor, o idioma continua aplicado neste dispositivo e você recebe um aviso."
       }
     }
   }

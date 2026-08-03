@@ -15,6 +15,7 @@ const SECTION_IDS = [
   'initialSetup',
   'bookingAppointment',
   'services',
+  'priceStory',
   'availableSlots',
   'clients',
   'professionals',
@@ -23,7 +24,9 @@ const SECTION_IDS = [
   'whatsappMessages',
   'myProfile',
   'statistics',
+  'pendingPayments',
   'appearance',
+  'language',
 ] as const;
 
 function IconChevron({ abierto }: { abierto: boolean }) {

@@ -153,7 +153,11 @@
       },
       "services": {
         "title": "Servicios",
-        "text": "Configuración → Servicios.\n\nCargá cada servicio con su nombre y la duración en minutos — esa duración es la que usa la app para calcular cuánto ocupa un turno y evitar que se superpongan dos turnos.\n\nPodés desactivar un servicio sin borrarlo si dejás de ofrecerlo por un tiempo; los turnos viejos que ya lo tenían no se ven afectados."
+        "text": "Configuración → Servicios.\n\nCargá cada servicio con su nombre y la duración en minutos — esa duración es la que usa la app para calcular cuánto ocupa un turno y evitar que se superpongan dos turnos.\n\nLa lista se separa en dos grupos, \"Servicios\" y \"Promociones\": activá o desactivá \"Es promoción\" al crear o editar un servicio para moverlo de un grupo al otro. Dentro de cada grupo, mantené presionado el ícono de puntitos a la derecha de la tarjeta y arrastrá para cambiar el orden — es el mismo orden que después se usa en \"Historia de precios\" (ver esa sección). Mientras estés buscando un servicio por nombre, la lista se ve plana y no se puede reordenar.\n\nPodés desactivar un servicio sin borrarlo si dejás de ofrecerlo por un tiempo; los turnos viejos que ya lo tenían no se ven afectados."
+      },
+      "priceStory": {
+        "title": "Historia de precios",
+        "text": "Se abre desde el botón \"Historia de precios\", arriba de la lista en Configuración → Servicios (aparece una vez que tengas al menos un servicio cargado).\n\nArriba tenés dos pestañas, \"Precios\" y \"Promociones\": cada una genera una imagen distinta, con solo los servicios de ese grupo (los que marcaste con \"Es promoción\" en Servicios — ver esa sección). Si no tenés ninguno marcado como promoción, esa pestaña te avisa que está vacía.\n\n\"Elegí tu diseño\" te muestra 9 combinaciones: 3 diseños × 3 estilos. Un diseño se bloquea si no subiste suficientes fotos para él — te dice cuántas faltan — y se desbloquea solo apenas subís las que necesita.\n\nMás abajo, en \"Fotos\", subís las imágenes de fondo dedicadas a esta historia — son fotos propias de esta pantalla, no las mismas que usás en la Historia de Instagram de disponibilidad (ver esa sección). Podés subir varias y borrarlas cuando quieras.\n\nAl final, \"Guardar\" descarga la imagen a tu dispositivo y \"Compartir\" abre el menú para mandarla directo."
       },
       "availableSlots": {
         "title": "Horarios Disponibles",
@@ -168,7 +172,7 @@
         "text": "Esta sección solo importa si trabajás con más de una persona en el estudio. Si trabajás sola, no hace falta tocar nada acá.\n\n1. Configuración → Profesionales → botón +.\n2. Escribí su nombre y elegí un color para distinguirla en la agenda.\n3. Tildá los servicios que sabe hacer — eso filtra lo que se le puede asignar al crear un turno para ella.\n4. Guardá.\n5. Importante: andá a Configuración → Horarios Disponibles, elegí su nombre en el selector de arriba, y cargale sus propios horarios de atención. Cada profesional tiene un horario independiente — si no se lo configurás, no va a tener ninguna hora disponible para agendar, aunque ya la hayas creado.\n\nPara dar de baja a una profesional sin perder su historial de turnos, desactivala desde el listado (el interruptor) en vez de borrarla."
       },
       "instagramStory": {
-        "title": "Generar Historia de Instagram: todas las opciones",
+        "title": "Historia de Instagram: disponibilidad (todas las opciones)",
         "text": "Se abre desde el botón COMPARTIR, arriba a la derecha en Agenda.\n\n- Período: elegí Día, Semana o Mes. En Mes además elegís primera quincena (1 al 15) o segunda (16 al fin).\n- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — su nombre queda visible en la imagen generada (salvo que sea la dueña y coincida con el nombre del estudio, ya visible arriba: ahí no se repite).\n- Fondo: botón \"Fondo\" para subir una foto de fondo para la imagen. Al elegirla, te pregunta si la querés guardar como fondo fijo (se reusa sola la próxima vez que generes una historia) o usarla solo por esta vez. Si guardaste una, aparece un link \"Quitar fondo fijo guardado\" para sacarla cuando quieras.\n- Texto libre: escribí un texto y tocá + para agregarlo a la imagen. Podés ponerle emojis, arrastrarlo a la posición que quieras dentro de la imagen, y agrandarlo o achicarlo con los botones A- / A+ (o el tirador en la esquina, tocando y arrastrando).\n- Editar qué se muestra: tocá un horario suelto en la lista de abajo para sacarlo de la imagen, o el ícono del ojo en un día para ocultarlo completo.\n- Al final: \"Guardar\" descarga la imagen a tu dispositivo, \"Compartir\" abre el menú para mandarla directo (por ejemplo a Instagram o WhatsApp)."
       },
       "whatsappLink": {
@@ -187,9 +191,17 @@
         "title": "Estadísticas",
         "text": "Configuración → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda (ahora incluye cuánto facturaste ese mes) — tocala para ir directo a la pantalla completa.\n\nElegí el mes con las flechas, o tocá \"Rango personalizado\" si necesitás un período puntual (por ejemplo, una semana específica). Si trabajás con más de una profesional, filtrá por quién querés ver. Mostrás:\n\n- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.\n- Ganancias: el total cobrado en el período, el desglose por servicio, y un gráfico de tendencia que se ajusta solo (día a día si el rango es corto, por semana o por mes si es más largo — no hace falta elegirlo).\n- Clientes nuevas vs. recurrentes: \"nueva\" es la que tuvo su primer turno alguna vez dentro de ese mes; \"recurrente\" ya venía de antes.\n- Servicios más pedidos: ranking de qué se agendó más ese mes.\n\nLos turnos cancelados no cuentan para ganancias, clientes ni servicios más pedidos — solo aparecen en \"Turnos por estado\", que es la única de las cuatro que sí los muestra.\n\nSi un turno pasa su horario sin que lo hayas finalizado a mano, el sistema lo marca completado solo, pero sin precio cargado. Esos casos aparecen en \"Pendientes de cobro\" — accedés desde el numerito en la barra de navegación o desde el aviso arriba de la Agenda."
       },
+      "pendingPayments": {
+        "title": "Pendientes de cobro",
+        "text": "Se accede desde el numerito en la barra de navegación de abajo, o desde el aviso que aparece arriba de la Agenda.\n\nAcá aparecen los turnos que la app marcó como completados sola (porque pasó la hora) pero sin precio cargado — pasa cuando no llegaste a finalizarlos a mano desde la Agenda. Buscá el turno en la lista y tocá \"Cargar precio\" para completarlo; una vez cargado, sale de esta lista y pasa a contar en Estadísticas."
+      },
       "appearance": {
         "title": "Apariencia",
         "text": "Configuración → Apariencia.\n\nElegí cómo se ve la app: Claro, Oscuro, o Sistema (sigue el modo que tengas configurado en tu celular o computadora). Se aplica al instante."
+      },
+      "language": {
+        "title": "Idioma",
+        "text": "Configuración → Idioma.\n\nElegí entre los idiomas disponibles (por ahora, Español y Português) — el cambio se aplica al instante, sin recargar la app, y se guarda en tu cuenta (si entrás desde otro dispositivo, mantiene el mismo idioma). Si por algún motivo no se pudo guardar en el servidor, igual queda aplicado en este dispositivo y te avisa con un mensaje."
       }
     }
   }
