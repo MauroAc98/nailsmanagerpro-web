@@ -14,6 +14,13 @@ interface OperacionResult {
   message?: string;
 }
 
+// Compara por valor, no por referencia — `rango`/`rangoActual` son objetos
+// literales nuevos en cada llamado (ver page.tsx: `rango` se recalcula en
+// cada render), así que `===` siempre daría falso incluso para el mismo mes.
+function mismoRango(a: RangoFechas | undefined, b: RangoFechas | undefined): boolean {
+  return a?.desde === b?.desde && a?.hasta === b?.hasta;
+}
+
 interface GastosState {
   gastos: Gasto[];
   loading: boolean;
@@ -36,16 +43,27 @@ export const useGastosStore = create<GastosState>((set, get) => ({
   error: null,
   rangoActual: undefined,
 
+  // Guardia anti-carrera: si el usuario navega de mes rápido, dos fetch
+  // pueden quedar en vuelo a la vez y resolver fuera de orden — sin esto,
+  // el que responde último "gana" aunque sea el más viejo, y el header
+  // termina mostrando un mes con los datos de otro (mismo problema que
+  // estadisticas/page.tsx ya resuelve con su flag `cancelled`, acá resuelto
+  // a nivel store en vez de por componente para cubrir cualquier consumidor
+  // futuro). Se compara `rangoActual` recién leído post-await contra el
+  // `rango` que ESTE llamado pidió — si otro fetch más nuevo ya lo pisó,
+  // este resultado se descarta.
   fetchGastos: async (rango) => {
     set({ loading: true, error: null, rangoActual: rango });
     return withGlobalLoader(async () => {
       try {
         const gastos = await gastoService.getAll(rango);
+        if (!mismoRango(get().rangoActual, rango)) return;
         set({ gastos });
       } catch (e) {
+        if (!mismoRango(get().rangoActual, rango)) return;
         set({ error: extraerMensajeError(e) });
       } finally {
-        set({ loading: false });
+        if (mismoRango(get().rangoActual, rango)) set({ loading: false });
       }
     });
   },
