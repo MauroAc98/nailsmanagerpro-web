@@ -30,6 +30,13 @@ export interface DashboardStats {
     recurrentes: number;
   };
   ganancias: number;
+  // Ambos campos son additive keys en `StatsController::dashboard()` (ver
+  // Phase 2 de gastos-module) — un build de frontend desplegado antes de
+  // que la API los sirva recibe la respuesta sin estas claves, por eso los
+  // consumidores deben usar `stats?.gastos ?? 0` / `stats?.ganancia_neta ??
+  // stats?.ganancias ?? 0` en vez de asumirlas siempre presentes.
+  gastos: number;
+  ganancia_neta: number;
   ganancias_por_servicio: GananciaPorServicio[];
   ganancias_por_dia: GananciaPorDia[];
 }
