@@ -180,7 +180,17 @@ function StatTile({ label, value, color }: { label: string; value: number | stri
           {label}
         </span>
       </div>
-      <span style={{ fontSize: 28, fontWeight: 700, color: colors.textStrong }}>{value}</span>
+      {/* wordBreak — un monto largo ($45.678,90) es un solo token sin
+          espacios; sin esto el navegador no tiene dónde cortarlo y desborda
+          la tarjeta en vez de ajustarse (mismo problema de fondo que
+          minWidth: 0 arriba, pero ese solo resuelve el contenedor, no el
+          texto sin espacios adentro). */}
+      <span style={{
+        display: 'block', fontSize: 28, fontWeight: 700, color: colors.textStrong,
+        wordBreak: 'break-word',
+      }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -539,7 +549,7 @@ function EstadisticasContent() {
                   competir con el hero real de la pantalla (total_turnos). */}
               <div style={{ textAlign: 'center', padding: '4px 0 14px' }}>
                 <span style={{
-                  fontSize: 36, fontWeight: 700, lineHeight: 1,
+                  fontSize: 36, fontWeight: 700, lineHeight: 1, wordBreak: 'break-word',
                   color: gananciaNeta >= 0 ? colors.success : colors.danger,
                 }}>
                   {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
