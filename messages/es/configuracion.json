@@ -35,6 +35,22 @@
     "deleteError": "No se pudo eliminar el servicio.",
     "reorderError": "No se pudo guardar el nuevo orden."
   },
+  "GastosPage": {
+    "title": "Gastos",
+    "loading": "Cargando gastos...",
+    "emptyState": "Sin gastos cargados este mes",
+    "totalLabel": "Total del mes",
+    "delete": "ELIMINAR",
+    "deleteConfirm": "¿Eliminás este gasto? Vas a modificar la ganancia neta ya reportada de ese período.",
+    "deleteConfirmButton": "Eliminar",
+    "deleted": "Gasto eliminado",
+    "deleteError": "No se pudo eliminar el gasto.",
+    "category_insumos": "Insumos",
+    "category_alquiler": "Alquiler",
+    "category_servicios_publicos": "Servicios públicos",
+    "category_marketing": "Marketing",
+    "category_otros": "Otros"
+  },
   "NuevoServicioPage": {
     "title": "Nuevo servicio",
     "nameLabel": "Nombre *",
