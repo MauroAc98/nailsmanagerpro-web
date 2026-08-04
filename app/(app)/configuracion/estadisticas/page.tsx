@@ -542,7 +542,7 @@ function EstadisticasContent() {
                   fontSize: 36, fontWeight: 700, lineHeight: 1,
                   color: gananciaNeta >= 0 ? colors.success : colors.danger,
                 }}>
-                  ${formatMonto(gananciaNeta)}
+                  {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
                 </span>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
               </div>
