@@ -17,6 +17,8 @@
     "topServices": "Servicios más pedidos",
     "noServicesThisPeriod": "No hay servicios agendados este período.",
     "earnings": "Ganancias",
+    "expenses": "Gastos",
+    "netProfit": "Ganancia neta",
     "earningsByService": "Por servicio",
     "earningsTrendLabel_dia": "Por día",
     "earningsTrendLabel_semana": "Por semana",

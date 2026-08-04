@@ -308,6 +308,10 @@ function EstadisticasContent() {
     });
   const algunBucketParcial = granularidadGanancias !== 'dia' && puntosPeriodo.some(p => !p.completo);
   const totalClientes = (stats?.clientes.nuevas ?? 0) + (stats?.clientes.recurrentes ?? 0);
+  // `ganancia_neta` es additive en el payload (ver statsService.ts) — cae a
+  // `ganancias` cuando el backend todavía no la sirve, no a 0, para no
+  // mostrar "ganancia neta $0" con ganancias reales en pantalla.
+  const gananciaNeta = stats?.ganancia_neta ?? stats?.ganancias ?? 0;
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
   const totalConCancelados = completados + confirmados + cancelados;
@@ -528,11 +532,32 @@ function EstadisticasContent() {
               <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
                 {t('earnings')}
               </h2>
-              <StatTile
-                label={t('earnings')}
-                value={`$${formatMonto(stats?.ganancias ?? 0)}`}
-                color={colors.success}
-              />
+              {/* Ganancia neta es el número que importa (ganancias por sí
+                  solas no dicen si el período fue rentable) — extiende el
+                  mismo tratamiento tipográfico del hero figure de arriba
+                  (grande, bold, centrado), un escalón más chico para no
+                  competir con el hero real de la pantalla (total_turnos). */}
+              <div style={{ textAlign: 'center', padding: '4px 0 14px' }}>
+                <span style={{
+                  fontSize: 36, fontWeight: 700, lineHeight: 1,
+                  color: gananciaNeta >= 0 ? colors.success : colors.danger,
+                }}>
+                  ${formatMonto(gananciaNeta)}
+                </span>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <StatTile
+                  label={t('earnings')}
+                  value={`$${formatMonto(stats?.ganancias ?? 0)}`}
+                  color={colors.success}
+                />
+                <StatTile
+                  label={t('expenses')}
+                  value={`$${formatMonto(stats?.gastos ?? 0)}`}
+                  color={colors.danger}
+                />
+              </div>
               {gananciasPorServicio.length > 0 && (
                 <>
                   <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
