@@ -111,3 +111,28 @@ body {
 .loader-spinner {
   animation: spin 0.8s linear infinite;
 }
+
+/* Gate mobile-only vía CSS puro, no JS — aplica desde el primer paint (sin
+   el flash-of-wrong-content que tendría un chequeo en un effect de React) y
+   no depende de sniffear user-agent (poco confiable, spoofeable, y lo que
+   realmente importa acá es el ancho disponible, no qué dispositivo dice
+   ser). 600px deja pasar celulares grandes en portrait y bloquea tablets/
+   desktop — la app nunca fue pensada para esos anchos (layouts fijos tipo
+   bottom nav de 4 tabs, canvases de historia a min(420, viewport*0.85)). */
+.app-shell {
+  display: block;
+}
+
+.mobile-only-notice {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .app-shell {
+    display: none;
+  }
+
+  .mobile-only-notice {
+    display: flex;
+  }
+}

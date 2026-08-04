@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Image from "next/image";
 import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import Providers from "./providers";
 import { primaryRaw } from "@/theme/colors";
@@ -134,7 +135,33 @@ export default function RootLayout({
         ))}
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <div className="app-shell">
+          <Providers>{children}</Providers>
+        </div>
+        {/* Fuera de NextIntlClientProvider a propósito, mismo motivo que
+            `metadata` arriba: todo el i18n de este proyecto es client-side
+            (useLocaleStore), y traducir esto agregaría un flash de contenido
+            sin traducir antes de que React hidrate — exactamente lo que el
+            gate CSS puro (ver globals.css) evita para el resto de la
+            pantalla. Español fijo, como el resto de lo pre-hidratación. */}
+        <div className="mobile-only-notice" style={{
+          minHeight: '100dvh', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', textAlign: 'center', padding: 32, gap: 16,
+        }}>
+          <Image src="/icon-192.png" alt="" width={72} height={72} priority style={{ borderRadius: 18 }} />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-strong)', margin: 0 }}>
+            Nailsmanagerpro es para celular
+          </h1>
+          {/* Gatea por ANCHO, no por dispositivo (ver globals.css) — un
+              celular rotado a horizontal también dispara este aviso, porque
+              el ancho real es el mismo problema que en tablet/desktop (los
+              layouts fijos de la app tampoco están pensados para esos
+              anchos). El texto tiene que cubrir los dos casos sin mentirle
+              a quien ya está en su celular. */}
+          <p style={{ fontSize: 15, color: 'var(--color-subtext)', margin: 0, maxWidth: 340 }}>
+            Esta app está pensada para una pantalla angosta y vertical, como la de un celular. Si ya estás en tu celular, probá girarlo a modo vertical — si no, abrí este mismo enlace desde tu teléfono.
+          </p>
+        </div>
       </body>
     </html>
   );
