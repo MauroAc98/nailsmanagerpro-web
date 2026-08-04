@@ -4,6 +4,7 @@ import {
   Gasto,
   CreateGastoDto,
   UpdateGastoDto,
+  RangoFechas,
 } from '@/services/gastoService';
 import { extraerMensajeError } from '@/services/clienteService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
@@ -17,23 +18,29 @@ interface GastosState {
   gastos: Gasto[];
   loading: boolean;
   error: string | null;
+  // Último rango pedido — las mutaciones (agregar/actualizar/eliminar)
+  // refrescan CON ESTE MISMO rango, no con el listado completo, para no
+  // "perder" el filtro de mes activo en la pantalla (ver estadisticas/
+  // page.tsx: mismo problema con rangoActivo, mismo criterio de refetch).
+  rangoActual: RangoFechas | undefined;
 
-  fetchGastos: () => Promise<void>;
+  fetchGastos: (rango?: RangoFechas) => Promise<void>;
   agregarGasto: (dto: CreateGastoDto) => Promise<OperacionResult>;
   actualizarGasto: (id: number, dto: UpdateGastoDto) => Promise<OperacionResult>;
   eliminarGasto: (id: number) => Promise<OperacionResult>;
 }
 
-export const useGastosStore = create<GastosState>((set) => ({
+export const useGastosStore = create<GastosState>((set, get) => ({
   gastos: [],
   loading: false,
   error: null,
+  rangoActual: undefined,
 
-  fetchGastos: async () => {
-    set({ loading: true, error: null });
+  fetchGastos: async (rango) => {
+    set({ loading: true, error: null, rangoActual: rango });
     return withGlobalLoader(async () => {
       try {
-        const gastos = await gastoService.getAll();
+        const gastos = await gastoService.getAll(rango);
         set({ gastos });
       } catch (e) {
         set({ error: extraerMensajeError(e) });
@@ -47,7 +54,7 @@ export const useGastosStore = create<GastosState>((set) => ({
     return withGlobalLoader(async () => {
       try {
         await gastoService.create(dto);
-        const gastos = await gastoService.getAll();
+        const gastos = await gastoService.getAll(get().rangoActual);
         set({ gastos });
         return { success: true };
       } catch (e) {
@@ -60,7 +67,7 @@ export const useGastosStore = create<GastosState>((set) => ({
     return withGlobalLoader(async () => {
       try {
         await gastoService.update(id, dto);
-        const gastos = await gastoService.getAll();
+        const gastos = await gastoService.getAll(get().rangoActual);
         set({ gastos });
         return { success: true };
       } catch (e) {
@@ -73,7 +80,7 @@ export const useGastosStore = create<GastosState>((set) => ({
     return withGlobalLoader(async () => {
       try {
         await gastoService.delete(id);
-        const gastos = await gastoService.getAll();
+        const gastos = await gastoService.getAll(get().rangoActual);
         set({ gastos });
         return { success: true };
       } catch (e) {
@@ -82,17 +89,3 @@ export const useGastosStore = create<GastosState>((set) => ({
     });
   },
 }));
-
-// `GET /gastos` no soporta filtro server-side por rango de fechas (ver
-// gastoService.getAll) — a diferencia de lo que design.md asumía. El
-// listado mensual (PR3b) filtra client-side sobre el array completo ya
-// cargado en el store, mismo patrón que useServiciosFiltrados en
-// useServicioStore.ts. `month` es 1-indexado (enero = 1), igual que el
-// componente Date-picker del resto de la app.
-export const useGastosDelMes = (year: number, month: number): Gasto[] => {
-  const { gastos } = useGastosStore();
-  return gastos.filter((g) => {
-    const [y, m] = g.fecha.split('-').map(Number);
-    return y === year && m === month;
-  });
-};

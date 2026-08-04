@@ -42,14 +42,18 @@ export interface CreateGastoDto {
 // UpdateServicioDto.precio en servicioService.ts.
 export type UpdateGastoDto = Partial<CreateGastoDto>;
 
+export interface RangoFechas {
+  desde?: string; // "YYYY-MM-DD"
+  hasta?: string; // "YYYY-MM-DD"
+}
+
 export const gastoService = {
-  // `GastoController::index` no acepta query params — devuelve SIEMPRE
-  // el listado completo de la cuenta, ordenado `fecha desc, id desc`.
-  // No hay `desde`/`hasta` server-side pese a lo que el design.md original
-  // asumía; cualquier scoping por mes se resuelve client-side (ver
-  // useGastosDelMes en useGastoStore.ts).
-  getAll: async (): Promise<Gasto[]> => {
-    const { data } = await api.get<Gasto[]>('/gastos');
+  // `desde`/`hasta` opcionales e independientes (`GastoController::index`,
+  // ambos inclusive vía whereBetween). Sin params devuelve el listado
+  // completo de la cuenta, ordenado `fecha desc, id desc` — mismo
+  // comportamiento que antes de que el filtro existiera.
+  getAll: async (rango?: RangoFechas): Promise<Gasto[]> => {
+    const { data } = await api.get<Gasto[]>('/gastos', { params: rango });
     return data;
   },
 
