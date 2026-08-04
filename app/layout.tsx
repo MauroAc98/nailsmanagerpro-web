@@ -148,12 +148,18 @@ export default function RootLayout({
           minHeight: '100dvh', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', textAlign: 'center', padding: 32, gap: 16,
         }}>
-          <Image src="/icon-192.png" alt="" width={72} height={72} style={{ borderRadius: 18 }} />
+          <Image src="/icon-192.png" alt="" width={72} height={72} priority style={{ borderRadius: 18 }} />
           <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-strong)', margin: 0 }}>
             Nailsmanagerpro es para celular
           </h1>
+          {/* Gatea por ANCHO, no por dispositivo (ver globals.css) — un
+              celular rotado a horizontal también dispara este aviso, porque
+              el ancho real es el mismo problema que en tablet/desktop (los
+              layouts fijos de la app tampoco están pensados para esos
+              anchos). El texto tiene que cubrir los dos casos sin mentirle
+              a quien ya está en su celular. */}
           <p style={{ fontSize: 15, color: 'var(--color-subtext)', margin: 0, maxWidth: 340 }}>
-            Esta app está pensada para pantallas de celular. Abrí este mismo enlace desde tu teléfono para poder usarla.
+            Esta app está pensada para una pantalla angosta y vertical, como la de un celular. Si ya estás en tu celular, probá girarlo a modo vertical — si no, abrí este mismo enlace desde tu teléfono.
           </p>
         </div>
       </body>
