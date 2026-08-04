@@ -50,6 +50,18 @@ const OPCIONES = [
     ),
   },
   {
+    path: '/configuracion/gastos',
+    titleKey: 'gastos',
+    grupo: 'negocio' as const,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="6" width="20" height="12" rx="2" />
+        <circle cx="12" cy="12" r="2" />
+        <path d="M6 12h.01M18 12h.01" />
+      </svg>
+    ),
+  },
+  {
     path: '/configuracion/estadisticas',
     titleKey: 'estadisticas',
     grupo: 'cuenta' as const,

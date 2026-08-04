@@ -8,6 +8,7 @@
     "slots": "Horários Disponíveis",
     "profesionales": "Profissionais",
     "whatsapp": "Vincular WhatsApp",
+    "gastos": "Despesas",
     "estadisticas": "Estatísticas",
     "apariencia": "Aparência",
     "idioma": "Idioma",
@@ -34,6 +35,22 @@
     "deleted": "Serviço excluído",
     "deleteError": "Não foi possível excluir o serviço.",
     "reorderError": "Não foi possível salvar a nova ordem."
+  },
+  "GastosPage": {
+    "title": "Despesas",
+    "loading": "Carregando despesas...",
+    "emptyState": "Nenhuma despesa cadastrada neste mês",
+    "totalLabel": "Total do mês",
+    "delete": "EXCLUIR",
+    "deleteConfirm": "Excluir esta despesa? Isso vai alterar o lucro líquido já reportado daquele período.",
+    "deleteConfirmButton": "Excluir",
+    "deleted": "Despesa excluída",
+    "deleteError": "Não foi possível excluir a despesa.",
+    "category_insumos": "Insumos",
+    "category_alquiler": "Aluguel",
+    "category_servicios_publicos": "Contas de serviços públicos",
+    "category_marketing": "Marketing",
+    "category_otros": "Outros"
   },
   "NuevoServicioPage": {
     "title": "Novo serviço",
