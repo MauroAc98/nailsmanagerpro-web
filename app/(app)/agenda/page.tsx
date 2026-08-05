@@ -254,6 +254,16 @@ function SwipeableTurnoCard({
             {onFinalizar && (
               <button
                 onClick={e => { e.stopPropagation(); onFinalizar(); }}
+                // El botón vive dentro del área con los handlers de swipe
+                // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
+                // en onClick no alcanza — los eventos táctiles burbujean antes
+                // y de forma independiente del click, así que un tap con
+                // apenas unos px de deriva podía marcar dragged.current=true
+                // en el padre y hacer que el navegador cancele el click
+                // sintético del botón (el panel de precios nunca se abría).
+                onTouchStart={e => e.stopPropagation()}
+                onTouchMove={e => e.stopPropagation()}
+                onTouchEnd={e => e.stopPropagation()}
                 style={{
                   fontSize: 10, fontWeight: 600, color: colors.primary,
                   border: `1px solid ${colors.primary}`, borderRadius: 12,

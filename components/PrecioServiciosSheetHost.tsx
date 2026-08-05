@@ -20,17 +20,33 @@ export function PrecioServiciosSheetHost() {
   const servicios = usePrecioServiciosStore(state => state.servicios);
 
   const [valores, setValores] = useState<Record<number, string>>({});
+  // Ventana de gracia tras abrirse: si el usuario tocó "Finalizar" y el tap
+  // no registró (ver fix en agenda/page.tsx), es común que vuelva a tocar
+  // casi en el mismo lugar. Como este sheet se renderiza pegado al fondo y
+  // "Confirmar" queda ahí, ese segundo toque podía caer directo sobre
+  // Confirmar y cerrar el turno con el precio de catálogo sin que la
+  // profesional llegara a ver ni tocar el panel. Bloqueamos Confirmar los
+  // primeros instantes para que un tap fantasma en tránsito no alcance.
+  const [armado, setArmado] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setArmado(false);
+      return;
+    }
     const iniciales: Record<number, string> = {};
     for (const s of servicios) {
       iniciales[s.servicio_id] = s.precioReferencia != null ? String(s.precioReferencia) : '';
     }
     setValores(iniciales);
+
+    setArmado(false);
+    const timer = setTimeout(() => setArmado(true), 350);
+    return () => clearTimeout(timer);
   }, [visible, servicios]);
 
   const puedeConfirmar =
+    armado &&
     servicios.length > 0 &&
     servicios.every(s => {
       const v = valores[s.servicio_id];
