@@ -14,6 +14,9 @@ import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
 import { formatFecha } from '@/lib/dateFormat';
+import { useAuth } from '@/hooks/useAuth';
+import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
+import { whatsappHelper } from '@/lib/whatsappHelper';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -61,6 +64,8 @@ function NuevoTurnoContent() {
   const { clientes, fetchClientes }          = useClientesStore();
   const { slots, fetchSlots }                = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const { requiereEnvioManualWhatsapp }      = useAuth();
+  const { obtenerContenido }                 = useWhatsappTemplates();
 
   const [selectedCliente,      setSelectedCliente]      = useState<Cliente | null>(null);
   const [selectedServicioIds,  setSelectedServicioIds]  = useState<number[]>([]);
@@ -69,6 +74,11 @@ function NuevoTurnoContent() {
   const [clienteBuscar,        setClienteBuscar]        = useState('');
   const [showHoraPicker,       setShowHoraPicker]       = useState(false);
   const [saving,               setSaving]               = useState(false);
+  const [turnoCreado, setTurnoCreado] = useState<{
+    cliente: Cliente;
+    servicios: string;
+    profesional?: string;
+  } | null>(null);
 
   const now      = new Date();
   const initialH = String(now.getHours()).padStart(2, '0');
@@ -161,8 +171,24 @@ function NuevoTurnoContent() {
         : {}),
     });
     setSaving(false);
-    if (result.success) router.back();
-    else await alertDialog(result.message ?? t('createError'));
+    if (!result.success) {
+      await alertDialog(result.message ?? t('createError'));
+      return;
+    }
+
+    if (requiereEnvioManualWhatsapp && selectedCliente.telefono) {
+      const nombresServicios = servicios
+        .filter(s => selectedServicioIds.includes(s.id))
+        .map(s => s.nombre)
+        .join(' + ');
+      setTurnoCreado({
+        cliente: selectedCliente,
+        servicios: nombresServicios,
+        profesional: mostrarSelectorProfesional ? (profesionalSeleccionado?.nombre ?? undefined) : undefined,
+      });
+    } else {
+      router.back();
+    }
   };
 
   const clientesFiltrados = clientes.filter(c =>
@@ -192,6 +218,49 @@ function NuevoTurnoContent() {
         </p>
       </div>
 
+      {turnoCreado ? (
+        <div style={{ padding: '0 20px' }}>
+          <p style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
+            {t('appointmentCreatedTitle')}
+          </p>
+          <p style={{ fontSize: 14, color: colors.subtext, marginBottom: 24 }}>
+            {t('manualConfirmationNotice')}
+          </p>
+          <a
+            href={whatsappHelper.buildUrl({
+              clienteNombre:   turnoCreado.cliente.nombre,
+              clienteApellido: turnoCreado.cliente.apellido,
+              clienteTelefono: turnoCreado.cliente.telefono!,
+              servicio:        turnoCreado.servicios,
+              fecha,
+              hora:            `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`,
+              plantilla:       obtenerContenido('confirmacion'),
+              profesional:     turnoCreado.profesional,
+            })}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '100%', height: 52, borderRadius: 14, marginBottom: 12,
+              backgroundColor: colors.primary, color: '#fff', textDecoration: 'none',
+              fontSize: 16, fontWeight: 600, boxSizing: 'border-box',
+            }}
+          >
+            {t('sendConfirmationWhatsapp')}
+          </a>
+          <button
+            onClick={() => router.back()}
+            style={{
+              width: '100%', height: 52, borderRadius: 14,
+              backgroundColor: 'transparent', color: colors.text,
+              border: `1px solid ${colors.border}`,
+              fontSize: 16, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            {t('readyButton')}
+          </button>
+        </div>
+      ) : (
       <div style={{ padding: '0 20px' }}>
 
         {/* ─── CLIENTE ─── */}
@@ -340,6 +409,7 @@ function NuevoTurnoContent() {
           {saving ? t('saving') : t('confirmAppointment')}
         </button>
       </div>
+      )}
 
       {/* ─── Hora Picker modal ─── */}
       {showHoraPicker && (

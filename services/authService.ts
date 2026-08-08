@@ -18,6 +18,11 @@ export interface User {
   debe_cambiar_password?: boolean;
   evolution_instance_name: string | null;
   whatsapp_estado: 'conectado' | 'desconectado';
+  // true por cualquiera de estas razones: (a) no hay instancia de WhatsApp
+  // vinculada, (b) hay instancia pero con desconexión terminal reciente sin
+  // reconexión posterior, o (c) el ratio de mensajes fallidos es alto —
+  // aunque whatsapp_estado diga 'conectado'.
+  whatsapp_requiere_envio_manual: boolean;
   // null = sin preferencia guardada en el backend (usuarios creados antes
   // de la Fase 0, o campo todavía no desplegado) → resolveLocale() cae a
   // 'es'. Ver spec "Unset resolves to es".

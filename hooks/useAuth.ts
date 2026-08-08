@@ -65,5 +65,6 @@ export const useAuth = () => {
     slugAgenda: user?.slug ?? '',
     recordatorioAutomatico: user?.recordatorio_automatico ?? false,
     horaRecordatorio: user?.hora_recordatorio ?? '20:00',
+    requiereEnvioManualWhatsapp: user?.whatsapp_requiere_envio_manual ?? false,
   };
 };

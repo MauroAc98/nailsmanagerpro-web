@@ -89,7 +89,11 @@
     "confirmAppointment": "Confirmar Agendamento",
     "createError": "Não foi possível criar o agendamento.",
     "timeModalTitle": "Horário do agendamento",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "appointmentCreatedTitle": "Agendamento criado",
+    "manualConfirmationNotice": "O envio automático de confirmação não está disponível no momento para o seu WhatsApp. Envie você mesma:",
+    "sendConfirmationWhatsapp": "Enviar confirmação via WhatsApp",
+    "readyButton": "Pronto"
   },
   "ResumenMesCard": {
     "statsThisMonth": "Estatísticas deste mês",

@@ -89,7 +89,11 @@
     "confirmAppointment": "Confirmar Turno",
     "createError": "No se pudo crear el turno.",
     "timeModalTitle": "Hora del turno",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "appointmentCreatedTitle": "Turno agendado",
+    "manualConfirmationNotice": "El envío automático de confirmación no está disponible en este momento para tu WhatsApp. Enviala vos misma:",
+    "sendConfirmationWhatsapp": "Enviar confirmación por WhatsApp",
+    "readyButton": "Listo"
   },
   "ResumenMesCard": {
     "statsThisMonth": "Estadísticas de este mes",
