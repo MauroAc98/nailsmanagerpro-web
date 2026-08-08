@@ -1,20 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Playfair_Display } from 'next/font/google';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
+import { esRedirectSeguro } from '@/app/providers';
 
 // Solo para el wordmark del login — el resto de la app usa la sans-serif
 // del sistema (app/globals.css), esto es la única excepción deliberada.
 const playfair = Playfair_Display({ subsets: ['latin'], weight: '700', style: 'italic' });
 
-export default function LoginPage() {
+function LoginPageContent() {
   const t = useTranslations('auth.LoginPage');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, loading, error, clearError, debeCambiarPassword } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -26,7 +28,12 @@ export default function LoginPage() {
     clearError();
     const ok = await login(email.trim().toLowerCase(), password);
     if (ok) {
-      router.push(debeCambiarPassword ? '/cambiar-password' : '/agenda');
+      if (debeCambiarPassword) {
+        router.push('/cambiar-password');
+      } else {
+        const redirect = searchParams.get('redirect');
+        router.push(esRedirectSeguro(redirect) ? redirect : '/agenda');
+      }
     }
   };
 
@@ -175,5 +182,13 @@ export default function LoginPage() {
         {t('terms')}
       </button>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

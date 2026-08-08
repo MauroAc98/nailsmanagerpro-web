@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
@@ -21,6 +21,26 @@ const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
 // Rutas accesibles sin sesión que nunca fuerzan redirect (independientes del estado de auth)
 const NEUTRAL_PATHS = ['/legal'];
 
+// `redirect` es un query param controlado por la URL — no confiar ciegamente
+// en él para no habilitar un open redirect. Enumerar prefijos peligrosos a
+// mano (protocol-relative "//evil.com", etc.) no alcanza: "/\evil.com"
+// (barra invertida) pasa cualquier chequeo de string, pero el parser WHATWG
+// URL que usa el router de Next internamente la normaliza igual que
+// "//evil.com" y termina resolviendo a un origen externo real. En vez de
+// perseguir variantes, delegamos la normalización al mismo parser que las
+// explota: si resolver `path` contra un origen fijo arbitrario cambia el
+// origin, es una URL externa (protocol-relative, con host, o con backslash),
+// no un path interno.
+export function esRedirectSeguro(path: string | null): path is string {
+  if (!path) return false;
+  try {
+    const base = 'http://localhost';
+    return new URL(path, base).origin === base;
+  } catch {
+    return false;
+  }
+}
+
 const CLEARED_AUTH_STATE = {
   user: null,
   token: null,
@@ -36,9 +56,10 @@ const CLEARED_AUTH_STATE = {
   esPrimerLogin: false,
 };
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+function ProvidersInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { token, inicializado, debeCambiarPassword, subscriptionExpired, mostrarBienvenida } = useAuthStore();
   const isLoading = useLoadingStore(state => state.isLoading);
   const { locale, messages, mensajesListos } = useLocaleStore();
@@ -108,7 +129,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         return;
       }
       if (!PUBLIC_PATHS.includes(pathname) && !NEUTRAL_PATHS.includes(pathname)) {
-        router.push('/login');
+        const query = searchParams.toString();
+        const destino = query ? `${pathname}?${query}` : pathname;
+        router.push(`/login?redirect=${encodeURIComponent(destino)}`);
       }
       return;
     }
@@ -119,9 +142,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }
 
     if (PUBLIC_PATHS.includes(pathname)) {
-      router.push('/agenda');
+      const redirect = searchParams.get('redirect');
+      router.push(esRedirectSeguro(redirect) ? redirect : '/agenda');
     }
-  }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, router]);
+  }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, searchParams, router]);
 
   // Calculado en el render, no en el efecto: si dejáramos que {children} se
   // muestre siempre, la página protegida (ej. agenda) alcanza a pintarse un
@@ -162,5 +186,19 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <HistorialClienteSheetHost />
       <ToastHost />
     </NextIntlClientProvider>
+  );
+}
+
+// useSearchParams() (leído en ProvidersInner para el redirect post-login)
+// necesita un límite de Suspense arriba — sin esto, Next.js deoptea TODA la
+// app a client-side rendering en el build en vez de solo esta lectura. El
+// fallback es el mismo blanco que ProvidersInner ya usa para tapar el flash
+// mientras se resuelve el estado de auth, así que no se nota un fallback
+// distinto en la práctica.
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}>
+      <ProvidersInner>{children}</ProvidersInner>
+    </Suspense>
   );
 }
