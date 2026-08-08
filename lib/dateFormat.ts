@@ -96,3 +96,17 @@ export function formatFecha(fecha: Date, preset: PresetFecha): string {
       return `${nombreDia(fecha, 'long')}, ${fecha.getDate()} De ${nombreMes(fecha, 'long')}`;
   }
 }
+
+/**
+ * Fecha de mañana en formato "YYYY-MM-DD". Construida a mano (no
+ * `toISOString()`) para evitar el corrimiento de día que mete la
+ * conversión a UTC en husos horarios negativos como ART.
+ */
+export function fechaDeManana(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

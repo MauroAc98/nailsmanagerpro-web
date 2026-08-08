@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { NAV_HEIGHT } from '@/constants/layout';
 import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
+import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
+import { useAuth } from '@/hooks/useAuth';
 
 const TAB_DEFS = [
   {
@@ -56,18 +58,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations('nav.AppLayout');
   const { pendientes, fetchPendientes } = usePendientesDeCobroStore();
+  const { fetchRecordatoriosPendientes } = useRecordatoriosPendientesStore();
+  const { checkSubscription } = useAuth();
 
   useEffect(() => {
-    fetchPendientes();
+    // checkSubscription reconcilia whatsapp_requiere_envio_manual contra el
+    // backend (puede haber cambiado por un cron mientras la sesión seguía
+    // abierta) — hay que esperarlo antes de fetchRecordatoriosPendientes,
+    // que decide si pedir algo leyendo ese mismo flag desde el store.
+    const refrescar = async () => {
+      fetchPendientes();
+      await checkSubscription();
+      fetchRecordatoriosPendientes();
+    };
+    refrescar();
     // El cron que autocompleta turnos corre server-side sin avisar al cliente —
     // re-consultamos al volver a primer plano (typical PWA: se abre/cierra todo
     // el tiempo) en vez de pollear de fondo y gastar batería sin necesidad.
     const onVisible = () => {
-      if (document.visibilityState === 'visible') fetchPendientes();
+      if (document.visibilityState === 'visible') refrescar();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [fetchPendientes]);
+  }, [checkSubscription, fetchPendientes, fetchRecordatoriosPendientes]);
 
   const TABS = TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
 

@@ -15,6 +15,7 @@ import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
 import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
+import { RecordatoriosPendientesBanner } from '@/components/RecordatoriosPendientesBanner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
@@ -1201,6 +1202,7 @@ export default function AgendaPage() {
 
       <SubscriptionWarningBanner />
       <PendientesDeCobroBanner />
+      <RecordatoriosPendientesBanner />
 
       {/* Resumen del mes — vistazo rápido, detalle completo en
           Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}

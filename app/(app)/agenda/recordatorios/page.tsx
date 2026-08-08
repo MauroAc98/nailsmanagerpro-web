@@ -8,21 +8,11 @@ import { useTurnoStore } from '@/store/useTurnoStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
+import { fechaDeManana } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-// Construido a mano (no toISOString) para evitar el corrimiento de día que
-// mete la conversión a UTC en husos horarios negativos como ART.
-function fechaDeManana(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const y   = d.getFullYear();
-  const m   = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 function horaDeHora(fechaHora: string): string {
   return fechaHora.slice(11, 16); // "HH:MM"
 }

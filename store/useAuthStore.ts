@@ -103,6 +103,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (localeRemoto !== useLocaleStore.getState().locale) {
         await setLocale(localeRemoto);
       }
+
+      // whatsapp_requiere_envio_manual (y whatsapp_estado) pueden cambiar
+      // server-side en cualquier momento (un cron detecta que el WhatsApp
+      // automático se rompió) sin que el cliente se entere — a diferencia
+      // del resto de `user`, que es estable durante la sesión, este par sí
+      // necesita refrescarse acá para que el banner de recordatorios
+      // pendientes aparezca sin depender de un logout/login.
+      const userActual = get().user;
+      if (userActual) {
+        const userActualizado = {
+          ...userActual,
+          whatsapp_requiere_envio_manual: meResponse.whatsapp_requiere_envio_manual,
+          whatsapp_estado: meResponse.whatsapp_estado,
+        };
+        set({ user: userActualizado });
+        localStorage.setItem('auth_user', JSON.stringify(userActualizado));
+      }
     } catch {
       // Si falla no bloqueamos
     }

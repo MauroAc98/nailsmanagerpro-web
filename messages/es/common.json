@@ -24,6 +24,12 @@
     "checkError": "No pudimos verificar turnos pendientes de cobro",
     "retry": "Reintentar"
   },
+  "RecordatoriosPendientesBanner": {
+    "message": "{count, plural, one {Tenés # turno mañana sin recordatorio automático} other {Tenés # turnos mañana sin recordatorio automático}}",
+    "view": "Mandar",
+    "checkError": "No pudimos verificar los recordatorios pendientes",
+    "retry": "Reintentar"
+  },
   "WelcomeScreen": {
     "greetingMorning": "Buenos días",
     "greetingAfternoon": "Buenas tardes",
