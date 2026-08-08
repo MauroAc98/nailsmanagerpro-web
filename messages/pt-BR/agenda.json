@@ -101,5 +101,12 @@
     "appointmentsCount": "{count, plural, one {# agendamento} other {# agendamentos}}",
     "topService": "Top: {nombre} · ",
     "newClientsCount": "{count, plural, one {# cliente nova} other {# clientes novas}}"
+  },
+  "RecordatoriosPendientesPage": {
+    "title": "Lembretes pendentes",
+    "subtitle": "AGENDAMENTOS DE AMANHÃ",
+    "loading": "Carregando agendamentos de amanhã...",
+    "loadError": "Não foi possível carregar os agendamentos de amanhã. Tente novamente mais tarde.",
+    "empty": "Você não tem agendamentos confirmados para amanhã."
   }
 }

@@ -101,5 +101,12 @@
     "appointmentsCount": "{count, plural, one {# turno} other {# turnos}}",
     "topService": "Top: {nombre} · ",
     "newClientsCount": "{count, plural, one {# cliente nueva} other {# clientes nuevas}}"
+  },
+  "RecordatoriosPendientesPage": {
+    "title": "Recordatorios pendientes",
+    "subtitle": "TURNOS DE MAÑANA",
+    "loading": "Cargando turnos de mañana...",
+    "loadError": "No se pudieron cargar los turnos de mañana. Volvé a intentar más tarde.",
+    "empty": "No tenés turnos confirmados para mañana."
   }
 }
