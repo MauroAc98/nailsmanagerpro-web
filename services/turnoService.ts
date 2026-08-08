@@ -127,6 +127,15 @@ export const turnoService = {
     return data;
   },
 
+  recordatoriosPendientes: async (): Promise<Turno[]> => {
+    const { data } = await api.get<Turno[]>('/turnos/recordatorios-pendientes');
+    return data;
+  },
+
+  marcarRecordatorioManual: async (turnoId: number): Promise<void> => {
+    await api.post(`/turnos/${turnoId}/recordatorio-manual`);
+  },
+
   actualizarPrecios: async (
     id: number,
     servicios: { servicio_id: number; precio: number }[]

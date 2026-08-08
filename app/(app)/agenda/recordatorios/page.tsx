@@ -4,15 +4,18 @@ import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
-import { useTurnoStore } from '@/store/useTurnoStore';
+import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
-import { fechaDeManana } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
+function fechaDeHora(fechaHora: string): string {
+  return fechaHora.slice(0, 10); // "YYYY-MM-DD"
+}
+
 function horaDeHora(fechaHora: string): string {
   return fechaHora.slice(11, 16); // "HH:MM"
 }
@@ -30,24 +33,18 @@ export default function RecordatoriosPendientesPage() {
   const router = useRouter();
   const t = useTranslations('agenda.RecordatoriosPendientesPage');
 
-  const { turnos, loading, error, fetchTurnos } = useTurnoStore();
+  const { turnos: turnosParaRecordar, loading, error, fetchRecordatoriosPendientes, marcarEnviado } = useRecordatoriosPendientesStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { obtenerContenido } = useWhatsappTemplates();
 
-  const fechaManana = useMemo(() => fechaDeManana(), []);
-
   useEffect(() => {
-    fetchTurnos(fechaManana);
+    fetchRecordatoriosPendientes();
     if (profesionales.length === 0) fetchProfesionales();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const profesionalesById = useMemo(
     () => new Map(profesionales.map(p => [p.id, p])),
     [profesionales]
-  );
-
-  const turnosParaRecordar = turnos.filter(
-    turno => turno.estado_visual === 'confirmado' && !!turno.cliente?.telefono
   );
 
   return (
@@ -118,13 +115,14 @@ export default function RecordatoriosPendientesPage() {
                       clienteApellido: turno.cliente.apellido,
                       clienteTelefono: turno.cliente.telefono!,
                       servicio:        nombresServicios,
-                      fecha:           fechaManana,
+                      fecha:           fechaDeHora(turno.fecha_hora),
                       hora:            horaDeHora(turno.fecha_hora),
                       plantilla:       obtenerContenido('recordatorio'),
                       profesional:     profesionalNombreWhatsapp,
                     })}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => marcarEnviado(turno.id)}
                     style={{
                       flexShrink: 0, width: 38, height: 38, borderRadius: 19,
                       backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`,

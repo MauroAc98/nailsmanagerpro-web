@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { turnoService, Turno } from '@/services/turnoService';
 import { extraerMensajeError } from '@/services/clienteService';
-import { fechaDeManana } from '@/lib/dateFormat';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface RecordatoriosPendientesState {
@@ -10,9 +9,10 @@ interface RecordatoriosPendientesState {
   error: string | null;
 
   fetchRecordatoriosPendientes: () => Promise<void>;
+  marcarEnviado: (turnoId: number) => Promise<void>;
 }
 
-export const useRecordatoriosPendientesStore = create<RecordatoriosPendientesState>((set) => ({
+export const useRecordatoriosPendientesStore = create<RecordatoriosPendientesState>((set, get) => ({
   turnos: [],
   loading: false,
   error: null,
@@ -32,10 +32,10 @@ export const useRecordatoriosPendientesStore = create<RecordatoriosPendientesSta
 
     set({ loading: true, error: null });
     try {
-      const todos = await turnoService.getAll(fechaDeManana());
-      const turnos = todos.filter(
-        turno => turno.estado_visual === 'confirmado' && !!turno.cliente?.telefono
-      );
+      // El backend ya filtra confirmados de mañana con cliente con teléfono
+      // y excluye los que ya tienen recordatorio gestionado (automático o
+      // manual) — no hace falta repetir ese filtro acá.
+      const turnos = await turnoService.recordatoriosPendientes();
       set({ turnos });
     } catch (e) {
       // No se pisa `turnos` acá a propósito: si ya había datos de un fetch
@@ -45,6 +45,17 @@ export const useRecordatoriosPendientesStore = create<RecordatoriosPendientesSta
       set({ error: extraerMensajeError(e) });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  marcarEnviado: async (turnoId) => {
+    set({ turnos: get().turnos.filter(t => t.id !== turnoId) }); // optimista
+    try {
+      await turnoService.marcarRecordatorioManual(turnoId);
+    } catch (e) {
+      console.error('marcarRecordatorioManual:', e);
+      // no revertimos el filtro optimista: si falló, el próximo fetch
+      // (foreground) lo va a traer de nuevo si de verdad no quedó guardado
     }
   },
 }));
