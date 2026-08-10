@@ -217,17 +217,23 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, [fechaBase, modo]);
 
   // Título del canvas — StoryCanvas lo uppercasea igual, así que acá no hace falta.
+  // Framing consistente ("Turnos · ...") en los 3 modos — antes cada modo
+  // tenía su propio prefijo (o ninguno) y no comunicaba de qué se trataba
+  // el número/fecha. Se mantiene corto a propósito: esta línea no tiene
+  // auto-shrink (StoryCanvas no la envuelve en FitText como al nombre de
+  // la profesional), así que un texto más largo se desborda en pantallas
+  // angostas.
   const titulo = useMemo(() => {
-    if (modo === 'dia') return formatFechaLarga(fmt(fechaBase));
+    if (modo === 'dia') return `Turnos · ${formatFechaLarga(fmt(fechaBase)).replace(', ', ' ')}`;
 
     if (modo === 'semana') {
       const { desde, hasta } = getRango(fechaBase, 'semana');
       const d = new Date(desde + 'T00:00:00');
       const h = new Date(hasta + 'T00:00:00');
-      return `Semana ${d.getDate()} al ${h.getDate()} de ${nombreMes(h, 'long')}`;
+      return `Turnos · ${d.getDate()} al ${h.getDate()} de ${nombreMes(h, 'long')}`;
     }
 
-    return `Agenda ${nombreMes(fechaBase, 'long')}`;
+    return `Turnos · ${nombreMes(fechaBase, 'long')}`;
   }, [fechaBase, modo]);
 
   // ─────────────────────────────────────────────
