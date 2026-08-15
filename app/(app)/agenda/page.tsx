@@ -3,7 +3,10 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, withAlpha, shadows } from '@/theme/colors';
+import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal } from 'lucide-react';
+import { withAlpha } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { useThemeStore } from '@/store/useThemeStore';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -22,7 +25,7 @@ import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
-import { nombreDia, nombreMes, diasSemanaCortos } from '@/lib/dateFormat';
+import { nombreDia, nombreMes } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -158,7 +161,9 @@ function SwipeableTurnoCard({
   };
 
   const isEnCurso = turno.estado_visual === 'en_curso';
-  const cardBg = isEnCurso ? colors.amberBg : colors.surface;
+  // El mockup no tiñe la card entera en_curso — el fondo siempre es
+  // colors.surface, sólo el badge chiquito lleva el color de estado.
+  const cardBg = colors.surface;
 
   // Sección hora — ancho fijo, nunca se desliza. Si el swipe moviera esta
   // columna (junto con el resto del card) el overflow:hidden del wrapper la
@@ -172,10 +177,10 @@ function SwipeableTurnoCard({
         flexShrink: 0, backgroundColor: cardBg, cursor: 'pointer',
       }}
     >
-      <span style={{ fontSize: 17, fontWeight: 700, color: colors.primary, letterSpacing: -0.5 }}>
+      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong, letterSpacing: 0 }}>
         {horaDeHora(turno.fecha_hora)}
       </span>
-      <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 2, textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 9, fontWeight: 700, color: colors.muted, marginTop: 2, textTransform: 'uppercase' }}>
         {formatFechaMini(turno.fecha_hora)}
       </span>
       {profesionalLabel && (
@@ -226,14 +231,27 @@ function SwipeableTurnoCard({
           del alignItems del padre para centrarse (el padre puede crecer más
           alto que este bloque, ej. en_curso con el badge+botón apilados). */}
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <p style={{
+            fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+          </p>
+          {isEnCurso && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
+              fontSize: 9, fontWeight: 700, color: colors.amberFg, letterSpacing: 0.6, textTransform: 'uppercase',
+              backgroundColor: colors.amberBg,
+              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.amber, flexShrink: 0 }} />
+              {t('inProgress')}
+            </span>
+          )}
+        </div>
         <p style={{
-          fontSize: 16, fontWeight: 600, color: colors.text, margin: '0 0 2px',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-        </p>
-        <p style={{
-          fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0,
+          fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
@@ -243,38 +261,28 @@ function SwipeableTurnoCard({
       {/* Sección acción */}
       <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
         {isEnCurso ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: colors.amber, letterSpacing: 0.8,
-              backgroundColor: withAlpha(colors.amber, '26'),
-              border: `1px solid ${withAlpha(colors.amber, '80')}`,
-              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-            }}>
-              {t('inProgress')}
-            </span>
-            {onFinalizar && (
-              <button
-                onClick={e => { e.stopPropagation(); onFinalizar(); }}
-                // El botón vive dentro del área con los handlers de swipe
-                // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
-                // en onClick no alcanza — los eventos táctiles burbujean antes
-                // y de forma independiente del click, así que un tap con
-                // apenas unos px de deriva podía marcar dragged.current=true
-                // en el padre y hacer que el navegador cancele el click
-                // sintético del botón (el panel de precios nunca se abría).
-                onTouchStart={e => e.stopPropagation()}
-                onTouchMove={e => e.stopPropagation()}
-                onTouchEnd={e => e.stopPropagation()}
-                style={{
-                  fontSize: 10, fontWeight: 600, color: colors.primary,
-                  border: `1px solid ${colors.primary}`, borderRadius: 12,
-                  padding: '4px 10px', marginTop: 4, backgroundColor: 'transparent', cursor: 'pointer',
-                }}
-              >
-                {t('finishNow')}
-              </button>
-            )}
-          </div>
+          onFinalizar && (
+            <button
+              onClick={e => { e.stopPropagation(); onFinalizar(); }}
+              // El botón vive dentro del área con los handlers de swipe
+              // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
+              // en onClick no alcanza — los eventos táctiles burbujean antes
+              // y de forma independiente del click, así que un tap con
+              // apenas unos px de deriva podía marcar dragged.current=true
+              // en el padre y hacer que el navegador cancele el click
+              // sintético del botón (el panel de precios nunca se abría).
+              onTouchStart={e => e.stopPropagation()}
+              onTouchMove={e => e.stopPropagation()}
+              onTouchEnd={e => e.stopPropagation()}
+              style={{
+                fontSize: 11, fontWeight: 600, color: colors.primaryFg,
+                border: 'none', borderRadius: 20,
+                padding: '6px 14px', backgroundColor: colors.primary, cursor: 'pointer',
+              }}
+            >
+              {t('finishNow')}
+            </button>
+          )
         ) : (
           <>
             {turno.cliente?.telefono && (
@@ -294,18 +302,15 @@ function SwipeableTurnoCard({
                 onClick={e => e.stopPropagation()}
                 style={{
                   width: 38, height: 38, borderRadius: 19,
-                  backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={colors.whatsapp}>
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
               </a>
             )}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.border} strokeWidth="2" style={{ marginLeft: 4 }}>
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight size={20} color={colors.border} strokeWidth={2} style={{ marginLeft: 4 }} />
           </>
         )}
       </div>
@@ -318,7 +323,7 @@ function SwipeableTurnoCard({
     // sliding region need to stretch to the row's full height — the sliding
     // region's CANCELAR panel is top:0/bottom:0 within it, so it must span
     // the whole row, not just its own content's natural height.
-    borderRadius: 14,
+    borderRadius: 18,
     border: `1px solid ${colors.border}`,
     boxShadow: shadows.card,
     overflow: 'hidden',
@@ -360,17 +365,17 @@ function SwipeableTurnoCard({
         >
           <div style={{
             width: SWIPE_REVEAL, height: '100%',
-            backgroundColor: colors.dangerAccent,
+            backgroundColor: colors.danger,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             cursor: 'pointer',
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               <path d="M10 11v6M14 11v6" />
               <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
-            <span style={{ fontSize: 11, fontWeight: 700, color: colors.danger, letterSpacing: 0.5 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#fff', letterSpacing: 0.5 }}>
               {t('cancel')}
             </span>
           </div>
@@ -400,7 +405,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
   return (
     <div style={{ opacity: 0.6 }}>
       <div style={{
-        backgroundColor: colors.surfaceSubtle, borderRadius: 14,
+        backgroundColor: colors.surfaceSubtle, borderRadius: 18,
         border: `1px solid ${colors.border}`, boxShadow: shadows.card,
         padding: '12px 26px 12px 16px', display: 'flex', alignItems: 'center', minHeight: 75,
       }}>
@@ -409,7 +414,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
           width: 70, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: colors.muted, letterSpacing: -0.5 }}>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.muted, letterSpacing: 0 }}>
             {horaDeHora(turno.fecha_hora)}
           </span>
           <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 2, textTransform: 'uppercase' }}>
@@ -438,30 +443,29 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
 
         {/* Sección info central */}
         <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <p style={{
+              fontSize: 16, fontWeight: 600, color: colors.muted, margin: 0, minWidth: 0,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+            </p>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
+              fontSize: 9, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 0.6, textTransform: 'uppercase',
+              backgroundColor: colors.primarySoft,
+              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
+            }}>
+              <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} />
+              {t('finished')}
+            </span>
+          </div>
           <p style={{
-            fontSize: 16, fontWeight: 600, color: colors.muted, margin: '0 0 2px',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-          </p>
-          <p style={{
-            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0,
+            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
           </p>
-        </div>
-
-        {/* Sección acción */}
-        <div style={{ paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
-          <span style={{
-            fontSize: 9, fontWeight: 700, color: colors.primary, letterSpacing: 0.8,
-            backgroundColor: withAlpha(colors.primary, '26'),
-            border: `1px solid ${withAlpha(colors.primary, '66')}`,
-            borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-          }}>
-            {t('finished')}
-          </span>
         </div>
       </div>
     </div>
@@ -492,24 +496,22 @@ function AgendaListHeader({
   return (
     <div style={{ paddingBottom: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>
+        <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong }}>
           {titulo}
         </span>
 
         <button
           onClick={onAbrirFiltros}
           style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '6px 12px', borderRadius: 20,
-            border: `1px solid ${colors.primary}`,
-            backgroundColor: hayFiltroActivo ? colors.primary : 'transparent',
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 14px', borderRadius: 20,
+            border: `1px solid ${hayFiltroActivo ? 'transparent' : colors.border}`,
+            backgroundColor: hayFiltroActivo ? colors.primary : colors.surface,
             cursor: 'pointer',
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={hayFiltroActivo ? '#FFF' : colors.primary} strokeWidth="2">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-          </svg>
-          <span style={{ fontSize: 12, fontWeight: 600, color: hayFiltroActivo ? '#FFF' : colors.primary }}>
+          <SlidersHorizontal size={14} color={hayFiltroActivo ? colors.primaryFg : colors.text} strokeWidth={2} />
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: hayFiltroActivo ? colors.primaryFg : colors.text }}>
             {hayFiltroActivo ? t('activeFilters') : t('filter')}
           </span>
         </button>
@@ -766,7 +768,8 @@ function CalendarioMensual({
   const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  // Semana arranca en lunes, como el resto del calendario del rediseño.
+  const firstDayOfMonth = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth     = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
@@ -792,34 +795,34 @@ function CalendarioMensual({
   }
 
   return (
-    <div style={{ padding: '0 16px 12px' }}>
+    <div style={{ padding: '0 20px 12px' }}>
+    <div style={{
+      padding: 16, borderRadius: 24,
+      border: `1px solid ${colors.border}`, backgroundColor: colors.surface, boxShadow: shadows.card,
+    }}>
       {/* Month navigation */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <button
           onClick={() => onMonthChange(new Date(year, month - 1, 1))}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <ChevronLeft size={18} color={colors.sub} strokeWidth={2} />
         </button>
-        <span style={{ fontSize: 15, fontWeight: 700, color: colors.text, textTransform: 'capitalize' }}>
+        <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong, textTransform: 'capitalize' }}>
           {nombreMes(viewDate, 'long')} {year}
         </span>
         <button
           onClick={() => onMonthChange(new Date(year, month + 1, 1))}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <ChevronRight size={18} color={colors.sub} strokeWidth={2} />
         </button>
       </div>
 
-      {/* Day headers */}
+      {/* Day headers — L M M J V S D, semana arranca en lunes como el rediseño */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
-        {diasSemanaCortos().map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: colors.muted, paddingBottom: 4 }}>
+        {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: colors.muted, paddingBottom: 4 }}>
             {d}
           </div>
         ))}
@@ -853,29 +856,29 @@ function CalendarioMensual({
                 position: 'relative',
               }}>
                 <span style={{
+                  fontFamily: isSelected || isToday ? agendaFontSerif : undefined,
                   fontSize: 15,
                   fontWeight: isSelected || (isToday && !isSelected) ? 700 : 400,
                   color: isSelected
-                    ? '#FFF'
+                    ? colors.primaryFg
                     : esPasado
                       ? colors.placeholder
                       : isToday
-                        ? colors.primary
+                        ? colors.primaryDeep
                         : colors.text,
                 }}>
                   {cell.date.getDate()}
                 </span>
 
                 {/* Badge — any future day with turnos, count from turnosMes */}
-                {count > 0 && !esPasado && (
+                {count > 0 && !esPasado && !isSelected && (
                   <div style={{
-                    position: 'absolute', top: -2, right: -2,
-                    minWidth: 18, height: 18, borderRadius: 9, padding: '0 2px',
-                    backgroundColor: isSelected ? '#FFF' : colors.primary,
-                    border: `2px solid ${isSelected ? colors.primary : '#FFF'}`,
+                    position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)',
+                    minWidth: 14, height: 14, borderRadius: 7, padding: '0 3px',
+                    backgroundColor: colors.primarySoft,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <span style={{ fontSize: 9, fontWeight: 900, color: isSelected ? colors.primary : '#FFF' }}>
+                    <span style={{ fontSize: 8, fontWeight: 900, color: colors.primaryDeep }}>
                       {count}
                     </span>
                   </div>
@@ -893,6 +896,7 @@ function CalendarioMensual({
           );
         })}
       </div>
+    </div>
     </div>
   );
 }
@@ -915,10 +919,7 @@ function SelectorProfesionalDia({
   const t = useTranslations('agenda.SelectorProfesionalDia');
   return (
     <div style={{
-      display: 'flex', gap: 8,
-      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
-      overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+      display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
     }}>
       <button
         onClick={() => onSeleccionar(null)}
@@ -926,7 +927,7 @@ function SelectorProfesionalDia({
           flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
           border: `1px solid ${filtroActivo === null ? colors.primary : colors.divider}`,
           backgroundColor: filtroActivo === null ? colors.primary : colors.surface,
-          color: filtroActivo === null ? '#FFF' : colors.text,
+          color: filtroActivo === null ? colors.primaryFg : colors.text,
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}
       >
@@ -944,11 +945,11 @@ function SelectorProfesionalDia({
               borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
               border: `1px solid ${selected ? color : colors.divider}`,
               backgroundColor: selected ? color : colors.surface,
-              color: selected ? '#FFF' : colors.text,
+              color: selected ? colors.primaryFg : colors.text,
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: 4, flexShrink: 0, backgroundColor: selected ? '#FFF' : color }} />
+            <span style={{ width: 7, height: 7, borderRadius: 4, flexShrink: 0, backgroundColor: selected ? colors.primaryFg : color }} />
             {p.nombre}
           </button>
         );
@@ -963,6 +964,7 @@ function SelectorProfesionalDia({
 export default function AgendaPage() {
   const router = useRouter();
   const t = useTranslations('agenda.AgendaPage');
+  const resolvedTheme = useThemeStore(s => s.resolvedTheme);
 
   const {
     turnos, turnosMes, loading,
@@ -1179,24 +1181,31 @@ export default function AgendaPage() {
     // queda atrapada detrás del sheet sin forma de verla (ni scrolleando).
     // 340 deja margen incluso con el banner de suscripción visible + card de
     // resumen, en viewports chicos (iPhone SE). Ver components/BottomSheet.tsx.
-    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 340 }}>
+    <div
+      className={resolvedTheme === 'dark' ? 'agenda-dark' : 'agenda-light'}
+      style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 340 }}
+    >
 
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+        <div>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase', color: colors.primaryDeep }}>
+            NailsManager
+          </p>
+          <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: '2px 0 0' }}>
+            {t('title')}
+          </h1>
+        </div>
         <button
           onClick={() => router.push(`/agenda/historia?fecha=${fechaSeleccionada}`)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            fontSize: 11, fontWeight: 600, color: colors.primary, letterSpacing: 1,
-            border: 'none', padding: '4px 0', backgroundColor: 'transparent', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 11, fontWeight: 600, color: colors.text, letterSpacing: 1, textTransform: 'uppercase',
+            border: `1px solid ${colors.border}`, borderRadius: 20, padding: '8px 14px',
+            backgroundColor: colors.surface, cursor: 'pointer',
           }}>
+          <Camera size={16} color={colors.text} strokeWidth={1.8} />
           {t('share')}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8">
-            <rect x="3" y="3" width="18" height="18" rx="5" />
-            <circle cx="12" cy="12" r="4" />
-            <circle cx="17.5" cy="6.5" r="1" fill={colors.primary} stroke="none" />
-          </svg>
         </button>
       </div>
 
@@ -1245,7 +1254,8 @@ export default function AgendaPage() {
         snapPoints={[0.3, 0.5, 0.8]}
         initialIndex={0}
         enablePanDownToClose={false}
-        handleColor={colors.primary}
+        handleColor={colors.border}
+        backgroundColor={colors.surface}
         bottomOffset={NAV_HEIGHT}
       >
         <div style={{ padding: '0 20px' }}>
@@ -1314,6 +1324,8 @@ export default function AgendaPage() {
         initialIndex={-1}
         enablePanDownToClose
         onChange={handleFiltroSheetChange}
+        handleColor={colors.border}
+        backgroundColor={colors.surface}
         bottomOffset={NAV_HEIGHT}
       >
         <FiltroSheetContent
@@ -1343,12 +1355,10 @@ export default function AgendaPage() {
             width: 56, height: 56, borderRadius: 28,
             backgroundColor: colors.primary, border: 'none',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(215, 158, 164, 0.5)', zIndex: 45,
+            boxShadow: `0 8px 20px ${withAlpha(colors.primary, '80')}`, zIndex: 45,
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={24} color={colors.primaryFg} strokeWidth={2.5} />
         </button>
       )}
     </div>

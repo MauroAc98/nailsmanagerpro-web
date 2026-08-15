@@ -19,13 +19,15 @@
     "renew": "Renovar"
   },
   "PendientesDeCobroBanner": {
-    "message": "{count, plural, one {Tenés # turno con precio sin cargar} other {Tenés # turnos con precio sin cargar}}",
+    "title": "Pendientes de cobro",
+    "message": "{count, plural, one {# turno sin precio cargado} other {# turnos sin precio cargado}}",
     "view": "Ver",
     "checkError": "No pudimos verificar turnos pendientes de cobro",
     "retry": "Reintentar"
   },
   "RecordatoriosPendientesBanner": {
-    "message": "{count, plural, one {Tenés # turno mañana sin recordatorio automático} other {Tenés # turnos mañana sin recordatorio automático}}",
+    "title": "Recordatorios pendientes",
+    "message": "{count, plural, one {# turno de mañana sin aviso enviado} other {# turnos de mañana sin aviso enviado}}",
     "view": "Mandar",
     "checkError": "No pudimos verificar los recordatorios pendientes",
     "retry": "Reintentar"

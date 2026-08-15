@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { Sparkles, ArrowUpRight } from 'lucide-react';
+import { agendaColors, agendaShadows, agendaFontSerif } from '@/theme/agendaColors';
 import { statsService, DashboardStats } from '@/services/statsService';
 import { nombreMes } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
@@ -61,35 +62,45 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
         router.push(`/configuracion/estadisticas?${params.toString()}`);
       }}
       style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', margin: '0 0 12px', padding: '14px 16px',
-        backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-        boxShadow: shadows.card, borderRadius: 14, cursor: 'pointer', textAlign: 'left',
+        display: 'block', width: '100%', margin: '0 0 12px', padding: '16px 18px',
+        background: `linear-gradient(135deg, ${agendaColors.primarySoft}, ${agendaColors.surface})`,
+        border: `1px solid color-mix(in srgb, ${agendaColors.primary} 25%, transparent)`,
+        boxShadow: agendaShadows.card, borderRadius: 24, cursor: 'pointer', textAlign: 'left',
         boxSizing: 'border-box',
       }}
     >
-      <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/>
-            <line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: colors.subtext, textTransform: 'uppercase' }}>
+          <Sparkles size={14} color={agendaColors.primaryDeep} strokeWidth={2.5} />
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: agendaColors.primaryDeep, textTransform: 'uppercase' }}>
             {esMesActual ? t('statsThisMonth') : t('statsOfMonth', { mes: nombreMes(viewDate, 'long', 'ninguna') })}
           </p>
         </div>
-        <p style={{ margin: '3px 0 0', fontSize: 18, fontWeight: 700, color: colors.textStrong }}>
-          {t('appointmentsCount', { count: stats.total_turnos })}
-          {stats.ganancias > 0 && ` · $${formatMonto(stats.ganancias)}`}
-        </p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-          {topServicio && t('topService', { nombre: topServicio })}{t('newClientsCount', { count: stats.clientes.nuevas })}
+        <ArrowUpRight size={18} color={agendaColors.primaryDeep} strokeWidth={2} style={{ flexShrink: 0 }} />
+      </div>
+
+      <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <p style={{ margin: 0, fontSize: 28, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong }}>
+            ${formatMonto(stats.ganancias)}
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: agendaColors.sub }}>
+            {t('appointmentsCompleted', { count: stats.total_turnos })}
+          </p>
+        </div>
+        {topServicio && (
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: agendaColors.text }}>{topServicio}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 11, color: agendaColors.sub }}>{t('topServiceLabel')}</p>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid color-mix(in srgb, ${agendaColors.primary} 15%, transparent)` }}>
+        <p style={{ margin: 0, fontSize: 12, color: agendaColors.sub }}>
+          {t('newClientsThisMonth', { count: stats.clientes.nuevas })}
         </p>
       </div>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
     </button>
   );
 }

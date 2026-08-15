@@ -19,13 +19,15 @@
     "renew": "Renovar"
   },
   "PendientesDeCobroBanner": {
-    "message": "{count, plural, one {Você tem # agendamento com preço pendente} other {Você tem # agendamentos com preço pendente}}",
+    "title": "Pendências de cobrança",
+    "message": "{count, plural, one {# agendamento com preço pendente} other {# agendamentos com preço pendente}}",
     "view": "Ver",
     "checkError": "Não foi possível verificar agendamentos pendentes",
     "retry": "Tentar novamente"
   },
   "RecordatoriosPendientesBanner": {
-    "message": "{count, plural, one {Você tem # agendamento amanhã sem lembrete automático} other {Você tem # agendamentos amanhã sem lembrete automático}}",
+    "title": "Lembretes pendentes",
+    "message": "{count, plural, one {# agendamento amanhã sem lembrete automático} other {# agendamentos amanhã sem lembrete automático}}",
     "view": "Enviar",
     "checkError": "Não foi possível verificar os lembretes pendentes",
     "retry": "Tentar novamente"

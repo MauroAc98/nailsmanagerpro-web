@@ -2,14 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors } from '@/theme/colors';
+import { MessageSquareWarning, ChevronRight } from 'lucide-react';
+import { agendaColors as colors } from '@/theme/agendaColors';
 import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
 
-// Mismo patrón visual que PendientesDeCobroBanner (barra fina, ícono +
-// texto + acción) — oculto salvo que haya turnos de mañana sin recordatorio
-// automático. No dispara su propio fetch: lee el mismo store que ya
-// alimenta el ciclo de vida de la app (app/(app)/layout.tsx), que fetchea
-// al montar y al volver a primer plano.
+// Solo se renderiza dentro de app/(app)/agenda/page.tsx, que ya envuelve el
+// árbol en className="agenda-dark"/"agenda-light" — mismo criterio que
+// PendientesDeCobroBanner (ver ese archivo). Oculto salvo que haya turnos
+// de mañana sin recordatorio automático. No dispara su propio fetch: lee el
+// mismo store que ya alimenta el ciclo de vida de la app
+// (app/(app)/layout.tsx), que fetchea al montar y al volver a primer plano.
 export function RecordatoriosPendientesBanner() {
   const t = useTranslations('common.RecordatoriosPendientesBanner');
   const router = useRouter();
@@ -23,32 +25,29 @@ export function RecordatoriosPendientesBanner() {
   const esError = error && turnos.length === 0;
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '10px 16px',
-      backgroundColor: colors.amberBg,
-    }}>
-      <svg
-        width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke={colors.amber} strokeWidth="2"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: colors.amber }}>
-        {esError ? t('checkError') : t('message', { count: turnos.length })}
+    <button
+      onClick={() => esError ? fetchRecordatoriosPendientes() : router.push('/agenda/recordatorios')}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, width: 'calc(100% - 40px)',
+        margin: '0 20px 10px', padding: '12px 16px', textAlign: 'left', cursor: 'pointer',
+        borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.amberBg,
+      }}
+    >
+      <span style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        width: 36, height: 36, borderRadius: 18, backgroundColor: colors.amber, color: colors.amberBg,
+      }}>
+        <MessageSquareWarning size={18} strokeWidth={2} />
       </span>
-      <button
-        onClick={() => esError ? fetchRecordatoriosPendientes() : router.push('/agenda/recordatorios')}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-          fontSize: 13, fontWeight: 700, textDecoration: 'underline',
-          color: colors.amber,
-        }}
-      >
-        {esError ? t('retry') : t('view')}
-      </button>
-    </div>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: colors.amberFg }}>
+          {t('title')}
+        </span>
+        <span style={{ display: 'block', fontSize: 12, color: colors.amberFg, opacity: 0.85 }}>
+          {esError ? t('checkError') : t('message', { count: turnos.length })}
+        </span>
+      </span>
+      <ChevronRight size={16} color={colors.amberFg} style={{ flexShrink: 0, opacity: 0.7 }} />
+    </button>
   );
 }

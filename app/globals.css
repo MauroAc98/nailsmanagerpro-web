@@ -136,3 +136,58 @@ body {
     display: flex;
   }
 }
+
+/* Agenda redesign palette — scoped to .agenda-light/.agenda-dark (applied on
+   the Agenda screen root) instead of overwriting the app-wide --color-*
+   tokens above, so this visual refresh stays contained to Agenda until the
+   rest of the app is migrated to it deliberately. */
+.agenda-light {
+  color-scheme: light;
+  --ag-bg: #efe9e7;
+  --ag-surface: #ffffff;
+  --ag-surface-2: #f6f1ef;
+  --ag-text: #4a3f42;
+  --ag-strong: #2b2226;
+  --ag-sub: #8a7c80;
+  --ag-muted: #b3a7aa;
+  --ag-border: #e7dcde;
+  --ag-hairline: #efe6e7;
+  --ag-primary: #c07d89;
+  --ag-primary-deep: #9c5566;
+  --ag-primary-soft: #f3e4e6;
+  --ag-primary-fg: #ffffff;
+  --ag-amber: #c9871f;
+  --ag-amber-bg: #fbf1de;
+  --ag-amber-fg: #855d0e;
+  --ag-success: #4a9d6a;
+  --ag-success-bg: #e9f4ec;
+  /* No es un tono propio del rediseño: apunta al rojo global (--color-danger)
+     a propósito, para que "Cancelar" combine con los destructivos del resto
+     de la app en vez de traer un rojo aislado solo para esta pantalla. */
+  --ag-danger: var(--color-danger);
+  --ag-whatsapp: #25a366;
+}
+
+.agenda-dark {
+  color-scheme: dark;
+  --ag-bg: #131015;
+  --ag-surface: #1d181f;
+  --ag-surface-2: #262029;
+  --ag-text: #e9e1e4;
+  --ag-strong: #faf6f7;
+  --ag-sub: #a99ba0;
+  --ag-muted: #776b70;
+  --ag-border: #352d38;
+  --ag-hairline: #2a232e;
+  --ag-primary: #d79ea4;
+  --ag-primary-deep: #e8879a;
+  --ag-primary-soft: #3a2b30;
+  --ag-primary-fg: #241a1d;
+  --ag-amber: #e6a020;
+  --ag-amber-bg: #2e2418;
+  --ag-amber-fg: #e0b64d;
+  --ag-success: #66bb6a;
+  --ag-success-bg: #16281c;
+  --ag-danger: var(--color-danger);
+  --ag-whatsapp: #25d366;
+}

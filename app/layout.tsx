@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
-import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import { Cormorant_Garamond, Montserrat, Playfair_Display } from "next/font/google";
 import Providers from "./providers";
 import { primaryRaw } from "@/theme/colors";
 import "./globals.css";
@@ -41,6 +41,16 @@ const sansDisplay = Montserrat({
   subsets: ["latin"],
   weight: ["500", "600"],
   variable: "--font-sans-display",
+  display: "swap",
+});
+
+// Playfair Display — same opt-in-via-CSS-variable pattern as serifDisplay
+// above, scoped to the Agenda screen's v0 redesign (header title, turno
+// time column, calendar month label, bottom-sheet title — see
+// theme/agendaColors.ts agendaFontSerif). Self-hosted, no runtime request.
+const agendaSerif = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-agenda-serif",
   display: "swap",
 });
 
@@ -109,7 +119,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning className={`${serifDisplay.variable} ${sansDisplay.variable}`}>
+    <html lang="es" suppressHydrationWarning className={`${serifDisplay.variable} ${sansDisplay.variable} ${agendaSerif.variable}`}>
       <head>
         {/* Corre antes de la hidratación de React para fijar data-theme y
             lang sin el flash que se vería si esperáramos a que

@@ -27,12 +27,12 @@
   "SwipeableTurnoCard": {
     "deletedClient": "Cliente excluído",
     "finishNow": "Finalizar agora",
-    "inProgress": "● EM ANDAMENTO",
+    "inProgress": "EM ANDAMENTO",
     "cancel": "CANCELAR"
   },
   "FinalizadoCard": {
     "deletedClient": "Cliente excluído",
-    "finished": "✓ FINALIZADO"
+    "finished": "FINALIZADO"
   },
   "AgendaListHeader": {
     "results": "Resultados",
@@ -98,9 +98,9 @@
   "ResumenMesCard": {
     "statsThisMonth": "Estatísticas deste mês",
     "statsOfMonth": "Estatísticas de {mes}",
-    "appointmentsCount": "{count, plural, one {# agendamento} other {# agendamentos}}",
-    "topService": "Top: {nombre} · ",
-    "newClientsCount": "{count, plural, one {# cliente nova} other {# clientes novas}}"
+    "appointmentsCompleted": "{count, plural, one {# agendamento concluído} other {# agendamentos concluídos}}",
+    "topServiceLabel": "serviço top",
+    "newClientsThisMonth": "{count, plural, one {# cliente nova este mês} other {# clientes novas este mês}}"
   },
   "RecordatoriosPendientesPage": {
     "title": "Lembretes pendentes",
