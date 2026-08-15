@@ -44,7 +44,11 @@ export const agendaColors = {
   successBorder: 'color-mix(in srgb, var(--ag-success) 45%, transparent)',
   dangerBg: 'color-mix(in srgb, var(--ag-danger) 12%, transparent)',
   dangerBorder: 'color-mix(in srgb, var(--ag-danger) 45%, transparent)',
-  dangerAccent: 'var(--ag-danger)',
+  // Global directo (no --ag-*): el mismo rosa clarito que usa ServicioCard/
+  // GastoCard para el fondo del swipe-to-delete. Antes apuntaba a
+  // --ag-danger (igual que `danger`), dejando el ícono/texto del mismo
+  // color que su propio fondo — invisibles.
+  dangerAccent: 'var(--color-danger-accent)',
   primaryDisabled: 'color-mix(in srgb, var(--ag-primary) 35%, transparent)',
 };
 

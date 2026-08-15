@@ -365,17 +365,21 @@ function SwipeableTurnoCard({
         >
           <div style={{
             width: SWIPE_REVEAL, height: '100%',
-            backgroundColor: colors.danger,
+            // Mismo patrón que ServicioCard/GastoCard (fondo dangerAccent claro +
+            // ícono/texto en danger) en vez del rojo sólido del mockup — agenda
+            // sale sola a producción por ahora, así que este swipe-to-delete
+            // se mantiene visualmente unificado con el resto de la app.
+            backgroundColor: colors.dangerAccent,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             cursor: 'pointer',
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               <path d="M10 11v6M14 11v6" />
               <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
-            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#fff', letterSpacing: 0.5 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: colors.danger, letterSpacing: 0.5 }}>
               {t('cancel')}
             </span>
           </div>
