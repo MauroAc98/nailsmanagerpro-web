@@ -96,30 +96,23 @@ export function LoginScreen({ slug }: LoginScreenProps) {
     >
 
       {/* ===== LOGO DEL NEGOCIO =====
-          Con logo: ocupa todo el hero (como la foto de stock del diseño
-          original de v0), con degradado hacia el panel para que la
-          transición sea suave. Sin logo (o mientras resuelve, o sin slug)
-          cae al placeholder genérico centrado sobre la superficie tinteada
-          — mismo lenguaje visual que WelcomeScreen. */}
+          Con logo: ocupa todo el hero, pero con object-fit "contain" (no
+          "cover") — los logos vienen en cualquier proporción (cuadrados,
+          apaisados, con texto abajo como este) y recortar para llenar el
+          rectángulo le comía partes reales del logo. Prioridad: que se vea
+          completo siempre, aunque queden márgenes con el color de fondo a
+          los costados. Sin logo (o mientras resuelve, o sin slug) cae al
+          placeholder genérico — mismo lenguaje visual que WelcomeScreen. */}
       <div style={{ position: 'relative', height: 220, width: '100%', flexShrink: 0, overflow: 'hidden', backgroundColor: agendaColors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {branding?.logo_url ? (
-          <>
-            <Image
-              src={branding.logo_url}
-              alt={branding.nombre}
-              fill
-              priority
-              sizes="480px"
-              style={{ objectFit: 'cover' }}
-            />
-            <div
-              aria-hidden
-              style={{
-                position: 'absolute', inset: 0,
-                background: `linear-gradient(180deg, transparent 55%, ${agendaColors.bg} 100%)`,
-              }}
-            />
-          </>
+          <Image
+            src={branding.logo_url}
+            alt={branding.nombre}
+            fill
+            priority
+            sizes="480px"
+            style={{ objectFit: 'contain', padding: 20 }}
+          />
         ) : (
           <Store size={40} color={colors.primary} strokeWidth={1.5} />
         )}
