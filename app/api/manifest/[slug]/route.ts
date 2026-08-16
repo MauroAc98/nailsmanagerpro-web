@@ -17,6 +17,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       short_name: 'Nailsmanagerpro',
       description: 'Gestión de turnos para profesionales de uñas',
       start_url: `/login/${slug}`,
+      // Sin esto, el scope por defecto se calcula como el directorio del
+      // start_url (o sea "/login/") en vez de toda la app — en cuanto se
+      // navega fuera de /login/* (ej. a /agenda tras loguearse), iOS lo
+      // trata como "salir" del PWA instalado y muestra la interfaz del
+      // navegador. El manifest estático (public/manifest.json) no lo
+      // necesitaba porque su start_url ya era "/", así que su scope
+      // implícito ya cubría toda la app.
+      scope: '/',
       display: 'standalone',
       background_color: '#ffffff',
       theme_color: '#d79ea4',

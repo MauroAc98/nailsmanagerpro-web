@@ -3,6 +3,7 @@
   "short_name": "Nailsmanagerpro",
   "description": "Gestión de turnos para profesionales de uñas",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#d79ea4",
