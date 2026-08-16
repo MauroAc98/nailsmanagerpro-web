@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Image from 'next/image';
+import { Camera } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
 import { User } from '@/services/authService';
@@ -60,29 +61,50 @@ export function HeroPerfil({ user }: Props) {
         disabled={subiendo}
         aria-label={t('changeLogo')}
         style={{
-          position: 'relative', width: 54, height: 54, borderRadius: 27, padding: 0,
-          backgroundColor: withAlpha(colors.primary, '33'), border: `2px solid ${colors.surface}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          overflow: 'hidden', cursor: subiendo ? 'default' : 'pointer',
+          position: 'relative', width: 54, height: 54, padding: 0,
+          background: 'none', border: 'none', flexShrink: 0,
+          cursor: subiendo ? 'default' : 'pointer',
         }}
       >
-        {user.logo_url ? (
-          <Image src={user.logo_url} alt="" fill sizes="54px" style={{ objectFit: 'cover' }} />
-        ) : (
-          <span style={{ fontSize: 22, fontWeight: 700, color: colors.primary }}>
-            {user.name.charAt(0).toUpperCase()}
+        <div style={{
+          position: 'relative', width: '100%', height: '100%', borderRadius: 27,
+          backgroundColor: withAlpha(colors.primary, '33'), border: `2px solid ${colors.surface}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        }}>
+          {user.logo_url ? (
+            <Image src={user.logo_url} alt="" fill sizes="54px" style={{ objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontSize: 22, fontWeight: 700, color: colors.primary }}>
+              {user.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          {subiendo && (
+            <div style={{
+              position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div className="loader-spinner" style={{
+                width: 18, height: 18, borderRadius: '50%',
+                border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+              }} />
+            </div>
+          )}
+        </div>
+
+        {/* Badge flotante — deja claro que el círculo es tocable y para qué,
+            en vez de depender de que la usuaria lo intente sin ninguna
+            pista. Se oculta mientras sube para no competir con el spinner. */}
+        {!subiendo && (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: '50%',
+              backgroundColor: colors.primary, border: `2px solid ${colors.surface}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Camera size={11} color="#fff" strokeWidth={2.2} />
           </span>
-        )}
-        {subiendo && (
-          <div style={{
-            position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <div className="loader-spinner" style={{
-              width: 18, height: 18, borderRadius: '50%',
-              border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
-            }} />
-          </div>
         )}
       </button>
       <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleArchivo} />
