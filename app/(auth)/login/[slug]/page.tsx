@@ -1,13 +1,24 @@
-'use client';
-
 import { Suspense } from 'react';
-import { useParams } from 'next/navigation';
+import type { Metadata } from 'next';
 import { LoginScreen } from '@/components/LoginScreen';
 import { colors } from '@/theme/colors';
 
-export default function LoginPageConSlug() {
-  const params = useParams<{ slug: string }>();
-  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+// Server Component (única excepción a "todo cliente" en las rutas
+// dinámicas de este proyecto): generateMetadata solo corre en componentes
+// de servidor, y es la única forma de que "Agregar a Inicio" instale un
+// ícono con el manifest correcto por negocio — ver
+// app/api/manifest/[slug]/route.ts para el porqué.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  return { manifest: `/api/manifest/${slug}` };
+}
+
+export default async function LoginPageConSlug({ params }: Props) {
+  const { slug } = await params;
 
   return (
     <Suspense fallback={<div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}>
