@@ -9,6 +9,7 @@ import { User } from '@/services/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
+import { ajustarLogoAProporcion } from '@/lib/logo';
 
 interface Props {
   user: User;
@@ -42,7 +43,8 @@ export function HeroPerfil({ user }: Props) {
 
     setSubiendo(true);
     try {
-      await subirLogo(archivo);
+      const archivoAjustado = await ajustarLogoAProporcion(archivo);
+      await subirLogo(archivoAjustado);
     } catch (err) {
       await alertDialog(extraerMensajeError(err));
     } finally {
