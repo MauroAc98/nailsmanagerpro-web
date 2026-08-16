@@ -972,11 +972,18 @@ export default function AgendaPage() {
 
   const {
     turnos, turnosMes, loading,
-    fechaSeleccionada, fetchTurnos, fetchTurnosMes,
+    fechaSeleccionada, fetchTurnos, fetchTurnosMes, errorMes,
     completarTurno, cancelarTurno, setFechaSeleccionada,
     turnosBusqueda, cargandoBusqueda,
     buscarPorNombre, buscarPorServicio, buscarPorFecha, limpiarBusqueda,
   } = useTurnoStore();
+
+  // Sin esto, un fallo de red al traer el mes se veía indistinguible de
+  // "no hay turnos este mes" — el calendario quedaba sin badges y sin
+  // ningún aviso de que en realidad falló la carga.
+  useEffect(() => {
+    if (errorMes) showToast(errorMes);
+  }, [errorMes]);
 
   const { servicios, fetchServicios } = useServiciosStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();

@@ -26,6 +26,16 @@ import { NAV_HEIGHT } from '@/constants/layout';
 function parsearSenaMonto(texto: string): { valor: number | undefined } | null {
   const limpio = texto.trim();
   if (limpio === '') return { valor: undefined };
+
+  // Exige el shape exacto de un monto: dígitos, con a lo sumo un separador
+  // decimal (coma o punto) seguido de 1-2 dígitos. Rechaza en vez de
+  // adivinar los casos ambiguos que antes se colaban:
+  // - "1.500" (¿mil quinientos, o uno coma cinco?) — sin coma de por
+  //   medio no hay forma de saber si el punto es de miles o decimal.
+  // - "150," / "150." (separador sin dígitos después, entrada a medio
+  //   escribir) — antes Number() los aceptaba igual como 150.
+  if (!/^\d+([.,]\d{1,2})?$/.test(limpio)) return null;
+
   const numero = Number(limpio.replace(',', '.'));
   if (!Number.isFinite(numero) || numero < 0) return null;
   return { valor: numero };

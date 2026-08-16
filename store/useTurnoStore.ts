@@ -24,6 +24,10 @@ interface TurnosState {
   loading: boolean;
   error: string | null;
   errorMes: string | null;
+  // Último mes pedido a fetchTurnosMes — mismo criterio que
+  // turnoIdSolicitado, descarta una respuesta que llega después de que se
+  // pidió OTRO mes (ej. navegar rápido entre meses del calendario).
+  mesSolicitado: string | null;
   fechaSeleccionada: string;
 
   turnoActual: Turno | null;
@@ -83,25 +87,23 @@ const refrescarAgenda = async (
   if (hayFiltro) set({ cargandoBusqueda: true });
 
   try {
+    // Delega a las propias acciones guardadas del store (fetchTurnos ya lo
+    // hacía; fetchTurnosMes/buscarPorX no) en vez de reimplementar el
+    // fetch acá — llamar directo a turnoService y hacer set() sin el guard
+    // de respuesta-vieja dejaba a refrescarAgenda pisando turnosBusqueda/
+    // turnosMes con una respuesta más vieja que la que ya haya resuelto la
+    // búsqueda/mes "real" del usuario mientras tanto.
     const tareas: Promise<void>[] = [
       get().fetchTurnos(fecha),
-      turnoService.getByMes(mes).then(turnosMes => set({ turnosMes })).catch(e => {
-        console.error('fetchTurnosMes:', e);
-      }),
+      get().fetchTurnosMes(mes),
     ];
 
     if (ultimaBusqueda.trim().length > 0) {
-      tareas.push(turnoService.buscarPorNombre(ultimaBusqueda).then(r => set({ turnosBusqueda: r })).catch(e => {
-        console.error('buscarPorNombre (refrescarAgenda):', e);
-      }));
+      tareas.push(get().buscarPorNombre(ultimaBusqueda));
     } else if (ultimoServicioId !== null) {
-      tareas.push(turnoService.buscarPorServicio(ultimoServicioId).then(r => set({ turnosBusqueda: r })).catch(e => {
-        console.error('buscarPorServicio (refrescarAgenda):', e);
-      }));
+      tareas.push(get().buscarPorServicio(ultimoServicioId));
     } else if (ultimaFecha !== null) {
-      tareas.push(turnoService.buscarPorFecha(ultimaFecha).then(r => set({ turnosBusqueda: r })).catch(e => {
-        console.error('buscarPorFecha (refrescarAgenda):', e);
-      }));
+      tareas.push(get().buscarPorFecha(ultimaFecha));
     }
 
     await Promise.all(tareas);
@@ -119,6 +121,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   loading: false,
   error: null,
   errorMes: null,
+  mesSolicitado: null,
   fechaSeleccionada: fechaDeHoy(),
 
   turnoActual: null,
@@ -161,11 +164,15 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // fetchTurnosMes
   // ─────────────────────────────────────────────
   fetchTurnosMes: async (mes) => {
-    set({ errorMes: null });
+    set({ errorMes: null, mesSolicitado: mes });
     try {
       const turnosMes = await turnoService.getByMes(mes);
+      // Descarta si mientras tanto se pidió OTRO mes — ver comentario de
+      // mesSolicitado arriba.
+      if (get().mesSolicitado !== mes) return;
       set({ turnosMes });
     } catch (e) {
+      if (get().mesSolicitado !== mes) return;
       // Antes solo console.error, sin campo de error expuesto — un fallo
       // de red era indistinguible de "no hay turnos este mes" para la UI.
       set({ errorMes: extraerMensajeError(e) });

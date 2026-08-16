@@ -49,10 +49,15 @@ export const useSlotsStore = create<SlotsState>((set, get) => ({
   },
 
   agregarSlot: async (hora, profesionalId) => {
+    const idPedido = profesionalId ?? null;
     return withGlobalLoader(async () => {
       try {
         await slotService.create(hora, profesionalId);
         const slots = await slotService.getAll(profesionalId);
+        // Mismo guard que fetchSlots — si mientras tanto el selector cambió
+        // de profesional, esta respuesta ya no corresponde a lo que se está
+        // mostrando y no debe pisar el store.
+        if (get().ultimoProfesionalIdSolicitado !== idPedido) return { success: true };
         set({ slots });
         return { success: true };
       } catch (e) {

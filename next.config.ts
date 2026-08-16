@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 // Default runtimeCaching de next-pwa (no reescribirlo desde cero: perdería
 // la caché de assets estáticos, etc. — solo se le antepone una regla).
-const runtimeCaching = require("next-pwa/cache");
+// Nombre distinto del que arma el array final más abajo (antes ambos se
+// llamaban `runtimeCaching`, confuso al leer/grepear cuál es cuál).
+const defaultRuntimeCaching = require("next-pwa/cache");
+
+// Derivado de NEXT_PUBLIC_API_URL (la misma fuente que usa lib/api.ts para
+// el baseURL de axios) en vez de hardcodeado — así un deploy de staging con
+// otro subdominio no desalinea silenciosamente esta regla ni la de
+// images.remotePatterns de abajo.
+const apiHostname = new URL(
+  process.env.NEXT_PUBLIC_API_URL ?? "https://api.nailsmanagerpro.com"
+).hostname;
+
 const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
@@ -18,11 +29,11 @@ const withPWA = require("next-pwa")({
     // primera regla que matchea gana.
     {
       urlPattern: ({ url }: { url: URL }) =>
-        url.hostname === "api.nailsmanagerpro.com" &&
+        url.hostname === apiHostname &&
         (url.pathname.startsWith("/auth/") || url.pathname === "/support-info"),
       handler: "NetworkOnly",
     },
-    ...runtimeCaching,
+    ...defaultRuntimeCaching,
   ],
 });
 
@@ -30,10 +41,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   turbopack: {},
   images: {
-    // Logo del negocio en LoginScreen (/login/{slug}) — servido por la API,
-    // único host en .env.local y .env.production (NEXT_PUBLIC_API_URL).
+    // Logo del negocio en LoginScreen (/login/{slug}) — servido por la API.
     remotePatterns: [
-      { protocol: "https", hostname: "api.nailsmanagerpro.com" },
+      { protocol: "https", hostname: apiHostname },
     ],
   },
 };
