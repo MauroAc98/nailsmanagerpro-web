@@ -36,9 +36,15 @@ export function LoginScreen({ slug }: LoginScreenProps) {
   const [branding, setBranding] = useState<NegocioBranding | null>(null);
 
   useEffect(() => {
-    if (!slug) return;
+    // Sin slug en la URL (ej. la PWA instalada, que siempre abre en /login
+    // por el start_url fijo del manifest — ver KEYS.negocioSlug en
+    // authService.ts) cae al último slug recordado en este dispositivo.
+    const slugEfectivo = slug ?? authService.getSlugNegocioGuardado();
+    if (!slugEfectivo) return;
+    if (slug) authService.guardarSlugNegocio(slug);
+
     let cancelado = false;
-    authService.obtenerBrandingNegocio(slug).then((resultado) => {
+    authService.obtenerBrandingNegocio(slugEfectivo).then((resultado) => {
       if (!cancelado) setBranding(resultado);
     });
     return () => {

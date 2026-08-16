@@ -76,6 +76,11 @@ export interface WhatsappTemplate {
 const KEYS = {
   token: 'auth_token',
   user:  'auth_user',
+  // Recordado en el dispositivo para la PWA instalada: el manifest tiene un
+  // único start_url fijo ("/"), así que abrir la app desde el ícono siempre
+  // aterriza en /login sin slug en la URL, sin importar por qué link se
+  // instaló. Guardar el slug acá es lo único que sobrevive esa limitación.
+  negocioSlug: 'negocio_slug',
 };
 
 // ─────────────────────────────────────────────
@@ -196,4 +201,11 @@ export const authService = {
   },
 
   estaAutenticado: (): boolean => !!localStorage.getItem(KEYS.token),
+
+  // Ver comentario en KEYS.negocioSlug — respaldo para la PWA instalada.
+  guardarSlugNegocio: (slug: string): void => {
+    localStorage.setItem(KEYS.negocioSlug, slug);
+  },
+
+  getSlugNegocioGuardado: (): string | null => localStorage.getItem(KEYS.negocioSlug),
 };

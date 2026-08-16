@@ -164,6 +164,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         sessionStorage.setItem(BIENVENIDA_KEY, '1');
+        // Cubre a quien nunca visitó /login/{slug} (ej. logueó desde el
+        // link genérico la primera vez) — así la próxima apertura de la PWA
+        // instalada (que siempre aterriza en /login sin slug) igual muestra
+        // su logo. Ver KEYS.negocioSlug en authService.ts.
+        authService.guardarSlugNegocio(result.user.slug);
         set({
           user: result.user, token: result.token, loading: false,
           mostrarBienvenida: true, esPrimerLogin: true,
