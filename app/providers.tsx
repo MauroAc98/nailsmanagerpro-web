@@ -16,10 +16,19 @@ import { HistorialClienteSheetHost } from '@/components/HistorialClienteSheetHos
 import { ToastHost } from '@/components/ToastHost';
 import { colors } from '@/theme/colors';
 
-// Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token
+// Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token.
+// '/login' matchea también '/login/{slug}' (login personalizado por
+// negocio) — antes esto era un array de igualdad exacta y no reconocía la
+// variante con slug, así que el guard de abajo trataba /login/{slug} como
+// ruta protegida: sacaba al usuario antes de que pudiera loguearse (perdiendo
+// el logo del negocio) y arrastraba un ?redirect= que rompía el flujo.
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
 // Rutas accesibles sin sesión que nunca fuerzan redirect (independientes del estado de auth)
 const NEUTRAL_PATHS = ['/legal'];
+
+function esRutaPublica(pathname: string): boolean {
+  return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 // `redirect` es un query param controlado por la URL — no confiar ciegamente
 // en él para no habilitar un open redirect. Enumerar prefijos peligrosos a
@@ -128,7 +137,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
         if (pathname !== '/cambiar-password') router.push('/cambiar-password');
         return;
       }
-      if (!PUBLIC_PATHS.includes(pathname) && !NEUTRAL_PATHS.includes(pathname)) {
+      if (!esRutaPublica(pathname) && !NEUTRAL_PATHS.includes(pathname)) {
         const query = searchParams.toString();
         const destino = query ? `${pathname}?${query}` : pathname;
         router.push(`/login?redirect=${encodeURIComponent(destino)}`);
@@ -141,7 +150,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (PUBLIC_PATHS.includes(pathname)) {
+    if (esRutaPublica(pathname)) {
       const redirect = searchParams.get('redirect');
       router.push(esRedirectSeguro(redirect) ? redirect : '/agenda');
     }
@@ -153,7 +162,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // que se veía. Acá decidimos, con lo que YA sabemos, si esta ruta es
   // válida para el estado de auth actual; si no, mostramos blanco mientras
   // el efecto hace la redirección real.
-  const esRutaPublica = PUBLIC_PATHS.includes(pathname);
+  const rutaEsPublica = esRutaPublica(pathname);
   const esRutaNeutral = NEUTRAL_PATHS.includes(pathname);
 
   let puedeMostrarContenido: boolean;
@@ -168,11 +177,11 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   } else if (!token) {
     puedeMostrarContenido = debeCambiarPassword
       ? pathname === '/cambiar-password'
-      : esRutaPublica;
+      : rutaEsPublica;
   } else if (subscriptionExpired) {
     puedeMostrarContenido = pathname === '/subscription-expired';
   } else {
-    puedeMostrarContenido = !esRutaPublica;
+    puedeMostrarContenido = !rutaEsPublica;
   }
 
   return (
