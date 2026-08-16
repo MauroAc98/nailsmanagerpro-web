@@ -96,28 +96,33 @@ export function LoginScreen({ slug }: LoginScreenProps) {
     >
 
       {/* ===== LOGO DEL NEGOCIO =====
-          Sin slug (o mientras resuelve, o si el negocio no subió logo
-          todavía) se ve el placeholder genérico. Mismo lenguaje visual
-          (superficie tinteada + círculo) que WelcomeScreen. */}
+          Con logo: ocupa todo el hero (como la foto de stock del diseño
+          original de v0), con degradado hacia el panel para que la
+          transición sea suave. Sin logo (o mientras resuelve, o sin slug)
+          cae al placeholder genérico centrado sobre la superficie tinteada
+          — mismo lenguaje visual que WelcomeScreen. */}
       <div style={{ position: 'relative', height: 220, width: '100%', flexShrink: 0, overflow: 'hidden', backgroundColor: agendaColors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{
-          width: 88, height: 88, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: agendaColors.surface, boxShadow: agendaShadows.card,
-          overflow: 'hidden',
-        }}>
-          {branding?.logo_url ? (
+        {branding?.logo_url ? (
+          <>
             <Image
               src={branding.logo_url}
               alt={branding.nombre}
-              width={88}
-              height={88}
-              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              fill
+              priority
+              sizes="480px"
+              style={{ objectFit: 'cover' }}
             />
-          ) : (
-            <Store size={32} color={colors.primary} strokeWidth={1.6} />
-          )}
-        </div>
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0,
+                background: `linear-gradient(180deg, transparent 55%, ${agendaColors.bg} 100%)`,
+              }}
+            />
+          </>
+        ) : (
+          <Store size={40} color={colors.primary} strokeWidth={1.5} />
+        )}
       </div>
 
       {/* ===== PANEL DE FORMULARIO ===== */}
