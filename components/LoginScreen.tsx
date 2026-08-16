@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Mail, Lock, Eye, EyeOff, Store } from 'lucide-react';
@@ -18,6 +17,10 @@ interface LoginScreenProps {
   // genérico compartido hoy) siempre queda en el placeholder.
   slug?: string;
 }
+
+// Techo de altura del logo del negocio — evita que un logo con proporción
+// muy vertical empuje el formulario fuera de la pantalla.
+const LOGO_MAX_HEIGHT = 260;
 
 export function LoginScreen({ slug }: LoginScreenProps) {
   const t = useTranslations('auth.LoginPage');
@@ -96,27 +99,35 @@ export function LoginScreen({ slug }: LoginScreenProps) {
     >
 
       {/* ===== LOGO DEL NEGOCIO =====
-          Con logo: ocupa todo el hero, pero con object-fit "contain" (no
-          "cover") — los logos vienen en cualquier proporción (cuadrados,
-          apaisados, con texto abajo como este) y recortar para llenar el
-          rectángulo le comía partes reales del logo. Prioridad: que se vea
-          completo siempre, aunque queden márgenes con el color de fondo a
-          los costados. Sin logo (o mientras resuelve, o sin slug) cae al
-          placeholder genérico — mismo lenguaje visual que WelcomeScreen. */}
-      <div style={{ position: 'relative', height: 220, width: '100%', flexShrink: 0, overflow: 'hidden', backgroundColor: agendaColors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {branding?.logo_url ? (
-          <Image
+          Con logo: NO metemos la imagen en una caja de alto fijo — cada
+          negocio sube un logo con una proporción distinta (cuadrado,
+          apaisado, con texto abajo), así que cualquier alto fijo con
+          "contain" deja franjas del color de fondo alrededor que no pegan
+          con el fondo propio de la imagen (pasaba en la captura: marco
+          bordó alrededor de un logo con fondo crema). Ancho 100% + alto
+          automático = el logo define su propia altura, sin recortes y sin
+          márgenes de color, para la mayoría de las proporciones. Techo de
+          altura (LOGO_MAX_HEIGHT) para el caso raro de un logo muy angosto/
+          vertical: a partir de ahí escala por alto en vez de por ancho
+          (maxWidth+maxHeight con width/height auto deja que el navegador
+          elija la restricción más chica) para que el formulario nunca
+          quede empujado fuera de la pantalla. Sin logo (o mientras
+          resuelve, o sin slug) cae al placeholder genérico en una franja de
+          alto fijo — mismo lenguaje visual que WelcomeScreen. */}
+      {branding?.logo_url ? (
+        <div style={{ width: '100%', flexShrink: 0, backgroundColor: agendaColors.primarySoft, display: 'flex', justifyContent: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- proporción intrínseca real de la imagen, que next/image no expone sin declararla de antemano (y no la conocemos: la sube cada negocio). */}
+          <img
             src={branding.logo_url}
             alt={branding.nombre}
-            fill
-            priority
-            sizes="480px"
-            style={{ objectFit: 'contain', padding: 20 }}
+            style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: LOGO_MAX_HEIGHT }}
           />
-        ) : (
+        </div>
+      ) : (
+        <div style={{ height: 220, width: '100%', flexShrink: 0, backgroundColor: agendaColors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Store size={40} color={colors.primary} strokeWidth={1.5} />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ===== PANEL DE FORMULARIO ===== */}
       <div style={{ position: 'relative', zIndex: 1, marginTop: -28, flex: 1, borderRadius: '28px 28px 0 0', backgroundColor: agendaColors.bg, padding: '32px 28px 36px' }}>
