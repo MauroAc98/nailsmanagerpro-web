@@ -27,6 +27,14 @@ export interface User {
   // de la Fase 0, o campo todavía no desplegado) → resolveLocale() cae a
   // 'es'. Ver spec "Unset resolves to es".
   locale: Locale | null;
+  // null = todavía no subió un logo propio — el login (LoginScreen, por
+  // slug) y el resto de la app caen al placeholder genérico.
+  logo_url: string | null;
+}
+
+export interface NegocioBranding {
+  nombre: string;
+  logo_url: string | null;
 }
 
 export interface LoginResponse {
@@ -115,6 +123,20 @@ export const authService = {
     return response.data;
   },
 
+  // Multipart — mismo mecanismo que profesionalService.subirFotoHistoriaPrecios:
+  // pisar 'Content-Type' a undefined para que axios arme el multipart con su
+  // propio boundary en vez de serializar el FormData como JSON (la instancia
+  // `api` fija 'application/json' por default en todos los requests).
+  subirLogo: async (archivo: File): Promise<User> => {
+    const form = new FormData();
+    form.append('imagen', archivo);
+    const response = await api.post<User>('/perfil/logo', form, {
+      headers: { 'Content-Type': undefined },
+    });
+    localStorage.setItem(KEYS.user, JSON.stringify(response.data));
+    return response.data;
+  },
+
   forgotPassword: async (email: string): Promise<{ message: string }> => {
     const response = await api.post<{ message: string }>('/auth/forgot-password', { email });
     return response.data;
@@ -133,6 +155,19 @@ export const authService = {
   getSupportInfo: async (): Promise<SupportInfo> => {
     const response = await api.get<SupportInfo>('/support-info');
     return response.data;
+  },
+
+  // Público (sin auth) — usado por LoginScreen cuando entran por
+  // /login/{slug} para mostrar el logo del negocio antes de autenticarse.
+  // 404 (slug inexistente) se resuelve a null en vez de propagar: es una
+  // ruta de personalización best-effort, nunca debe romper el login.
+  obtenerBrandingNegocio: async (slug: string): Promise<NegocioBranding | null> => {
+    try {
+      const response = await api.get<NegocioBranding>(`/public/${slug}/branding`);
+      return response.data;
+    } catch {
+      return null;
+    }
   },
 
   whatsappTemplates: {

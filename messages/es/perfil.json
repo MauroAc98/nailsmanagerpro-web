@@ -1,4 +1,8 @@
 {
+  "HeroPerfil": {
+    "changeLogo": "Cambiar logo del negocio",
+    "logoTooLarge": "La imagen no puede pesar más de 5MB."
+  },
   "SheetNegocio": {
     "title": "Mi negocio",
     "depositAmount": "Monto de seña ($)",

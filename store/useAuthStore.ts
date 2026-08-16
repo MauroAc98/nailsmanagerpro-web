@@ -42,6 +42,7 @@ interface AuthState {
   logout: () => Promise<void>;
   inicializar: () => void;
   updatePerfil: (data: Partial<User> & { password?: string; password_confirmation?: string }) => Promise<void>;
+  subirLogo: (archivo: File) => Promise<void>;
   clearError: () => void;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (data: {
@@ -260,6 +261,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw e;
       }
     });
+  },
+
+  // ─────────────────────────────────────────────
+  // subirLogo
+  // ─────────────────────────────────────────────
+  // Sin withGlobalLoader a propósito (a diferencia de updatePerfil y el
+  // resto de las acciones de este store): esto se dispara desde un tap
+  // sobre el avatar circular en HeroPerfil, que maneja su propio spinner
+  // chico superpuesto — un loader de pantalla completa sería demasiado
+  // para subir una sola imagen. El error se re-lanza tal cual (sin tocar
+  // `error` global) para que HeroPerfil lo capture y muestre con
+  // extraerMensajeError + alertDialog, igual que ya hace perfil/page.tsx
+  // con sus propios guardados.
+  subirLogo: async (archivo) => {
+    const user = await authService.subirLogo(archivo);
+    set({ user });
   },
 
   // ─────────────────────────────────────────────
