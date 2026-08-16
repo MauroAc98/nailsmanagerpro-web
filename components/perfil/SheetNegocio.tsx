@@ -16,6 +16,7 @@ interface Props {
   setHoraRecordatorio: (v: string) => void;
   onGuardar: () => void;
   guardando: boolean;
+  error: string | null;
   onClose: () => void;
 }
 
@@ -38,7 +39,7 @@ function IconMoney() {
 
 export function SheetNegocio({
   senaMonto, setSenaMonto, recordatorioAutomatico, setRecordatorioAutomatico,
-  horaRecordatorio, setHoraRecordatorio, onGuardar, guardando, onClose,
+  horaRecordatorio, setHoraRecordatorio, onGuardar, guardando, error, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
   return (
@@ -59,6 +60,10 @@ export function SheetNegocio({
         type="text"
         inputMode="decimal"
       />
+
+      {error && (
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
+      )}
 
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,

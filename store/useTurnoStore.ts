@@ -8,6 +8,7 @@ import {
   extraerMensajeError,
 } from '@/services/turnoService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
+import { fechaDeHoy } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -22,11 +23,18 @@ interface TurnosState {
   turnosMes: TurnoMes[];
   loading: boolean;
   error: string | null;
+  errorMes: string | null;
   fechaSeleccionada: string;
 
   turnoActual: Turno | null;
   loadingTurno: boolean;
   errorTurno: string | null;
+  // Último id pedido a fetchTurno — descarta una respuesta que llega
+  // después de que se pidió OTRO turno (ej. volver a la lista y abrir uno
+  // distinto antes de que la primera resuelva), que si no quedaría
+  // pisando turnoActual con datos de un turno que ya no es el que se está
+  // editando.
+  turnoIdSolicitado: number | null;
 
   // ── Búsqueda server-side (nombre/servicio/fecha arbitraria) ──
   // Espejo de RN: resultados en un array separado, con su propio flag de
@@ -110,11 +118,13 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   turnosMes: [],
   loading: false,
   error: null,
-  fechaSeleccionada: new Date().toISOString().split('T')[0],
+  errorMes: null,
+  fechaSeleccionada: fechaDeHoy(),
 
   turnoActual: null,
   loadingTurno: false,
   errorTurno: null,
+  turnoIdSolicitado: null,
 
   turnosBusqueda: [],
   buscando: false,
@@ -133,11 +143,16 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     return withGlobalLoader(async () => {
       try {
         const turnos = await turnoService.getAll(fecha);
+        // Descarta si mientras tanto se pidió OTRO día (ej. click rápido
+        // entre días/meses) — fechaSeleccionada ya refleja el pedido más
+        // reciente porque se setea sincrónicamente arriba.
+        if (get().fechaSeleccionada !== fecha) return;
         set({ turnos });
       } catch (e) {
+        if (get().fechaSeleccionada !== fecha) return;
         set({ error: extraerMensajeError(e) });
       } finally {
-        set({ loading: false });
+        if (get().fechaSeleccionada === fecha) set({ loading: false });
       }
     });
   },
@@ -146,11 +161,14 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // fetchTurnosMes
   // ─────────────────────────────────────────────
   fetchTurnosMes: async (mes) => {
+    set({ errorMes: null });
     try {
       const turnosMes = await turnoService.getByMes(mes);
       set({ turnosMes });
     } catch (e) {
-      console.error('fetchTurnosMes:', e);
+      // Antes solo console.error, sin campo de error expuesto — un fallo
+      // de red era indistinguible de "no hay turnos este mes" para la UI.
+      set({ errorMes: extraerMensajeError(e) });
     }
   },
 
@@ -158,15 +176,19 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // fetchTurno — carga un turno individual (pantalla de edición)
   // ─────────────────────────────────────────────
   fetchTurno: async (id) => {
-    set({ loadingTurno: true, errorTurno: null, turnoActual: null });
+    set({ loadingTurno: true, errorTurno: null, turnoActual: null, turnoIdSolicitado: id });
     return withGlobalLoader(async () => {
       try {
         const turno = await turnoService.getOne(id);
+        // Descarta si mientras tanto se pidió OTRO turno — ver comentario
+        // de turnoIdSolicitado arriba.
+        if (get().turnoIdSolicitado !== id) return;
         set({ turnoActual: turno });
       } catch (e) {
+        if (get().turnoIdSolicitado !== id) return;
         set({ errorTurno: extraerMensajeError(e) });
       } finally {
-        set({ loadingTurno: false });
+        if (get().turnoIdSolicitado === id) set({ loadingTurno: false });
       }
     });
   },
@@ -245,11 +267,15 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     set({ buscando: true, cargandoBusqueda: true, ultimaBusqueda: nombre, ultimoServicioId: null, ultimaFecha: null });
     try {
       const resultados = await turnoService.buscarPorNombre(nombre);
+      // Descarta si mientras tanto se tipeó otra búsqueda — sin esto, una
+      // respuesta vieja que llega tarde (ej. "ana" resuelve después de
+      // "anabel") pisa los resultados con el término anterior.
+      if (get().ultimaBusqueda !== nombre) return;
       set({ turnosBusqueda: resultados });
     } catch (e) {
       console.error('buscarPorNombre:', extraerMensajeError(e));
     } finally {
-      set({ cargandoBusqueda: false });
+      if (get().ultimaBusqueda === nombre) set({ cargandoBusqueda: false });
     }
   },
 
@@ -261,11 +287,12 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     set({ buscando: true, cargandoBusqueda: true, ultimoServicioId: id, ultimaBusqueda: '', ultimaFecha: null });
     try {
       const resultados = await turnoService.buscarPorServicio(id);
+      if (get().ultimoServicioId !== id) return;
       set({ turnosBusqueda: resultados });
     } catch (e) {
       console.error('buscarPorServicio:', extraerMensajeError(e));
     } finally {
-      set({ cargandoBusqueda: false });
+      if (get().ultimoServicioId === id) set({ cargandoBusqueda: false });
     }
   },
 
@@ -277,11 +304,12 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     set({ buscando: true, cargandoBusqueda: true, ultimaFecha: fecha, ultimaBusqueda: '', ultimoServicioId: null });
     try {
       const resultados = await turnoService.buscarPorFecha(fecha);
+      if (get().ultimaFecha !== fecha) return;
       set({ turnosBusqueda: resultados });
     } catch (e) {
       console.error('buscarPorFecha:', extraerMensajeError(e));
     } finally {
-      set({ cargandoBusqueda: false });
+      if (get().ultimaFecha === fecha) set({ cargandoBusqueda: false });
     }
   },
 

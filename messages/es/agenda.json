@@ -107,6 +107,7 @@
     "subtitle": "TURNOS DE MAÑANA",
     "loading": "Cargando turnos de mañana...",
     "loadError": "No se pudieron cargar los turnos de mañana. Volvé a intentar más tarde.",
-    "empty": "No tenés turnos confirmados para mañana."
+    "empty": "No tenés turnos confirmados para mañana.",
+    "marcarEnviadoError": "No se pudo guardar. Volvé a marcarlo como enviado en un rato."
   }
 }

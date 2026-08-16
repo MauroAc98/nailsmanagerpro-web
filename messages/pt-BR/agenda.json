@@ -107,6 +107,7 @@
     "subtitle": "AGENDAMENTOS DE AMANHÃ",
     "loading": "Carregando agendamentos de amanhã...",
     "loadError": "Não foi possível carregar os agendamentos de amanhã. Tente novamente mais tarde.",
-    "empty": "Você não tem agendamentos confirmados para amanhã."
+    "empty": "Você não tem agendamentos confirmados para amanhã.",
+    "marcarEnviadoError": "Não foi possível salvar. Marque como enviado novamente daqui a pouco."
   }
 }

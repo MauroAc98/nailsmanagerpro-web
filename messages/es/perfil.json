@@ -73,6 +73,7 @@
     "passwordUpdated": "Contraseña actualizada",
     "changesSaved": "Cambios guardados",
     "dataSaved": "Datos guardados",
-    "passwordsDontMatch": "Las contraseñas no coinciden."
+    "passwordsDontMatch": "Las contraseñas no coinciden.",
+    "depositAmountInvalid": "Ingresá un monto válido (o dejalo vacío para no pedir seña)."
   }
 }

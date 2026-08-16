@@ -11,11 +11,14 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
-import { nombreMes } from '@/lib/dateFormat';
+import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
 
+// Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
+// corre la fecha un día para atrás en husos negativos como ART/BRT (UTC-3)
+// cuando `d` no es medianoche local.
 function formatFecha(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return formatoYMD(d);
 }
 
 // Mismo cálculo que estadisticas/page.tsx::rangoDelMes — no está exportado

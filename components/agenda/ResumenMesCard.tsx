@@ -6,11 +6,14 @@ import { useTranslations } from 'next-intl';
 import { Sparkles, ArrowUpRight } from 'lucide-react';
 import { agendaColors, agendaShadows, agendaFontSerif } from '@/theme/agendaColors';
 import { statsService, DashboardStats } from '@/services/statsService';
-import { nombreMes } from '@/lib/dateFormat';
+import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
 
+// Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
+// corre la fecha un día para atrás en husos negativos como ART/BRT (UTC-3)
+// cuando `d` no es medianoche local.
 function formatFecha(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return formatoYMD(d);
 }
 
 interface Props {

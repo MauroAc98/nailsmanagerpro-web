@@ -42,15 +42,20 @@ export function HistorialClienteSheetHost() {
       sheetRef.current?.close();
       return;
     }
+    let cancelado = false;
     setLoading(true);
     setCliente(null);
     setError(false);
     setFiltroEstado('todos');
     clienteService.getOne(clienteId)
-      .then(setCliente)
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .then(c => { if (!cancelado) setCliente(c); })
+      .catch(() => { if (!cancelado) setError(true); })
+      .finally(() => { if (!cancelado) setLoading(false); });
     sheetRef.current?.snapToIndex(0);
+    // Sin esto, abrir el historial de la cliente A y después el de B rápido
+    // (antes de que resuelva el fetch de A) podía terminar mostrando los
+    // datos de A en el sheet que dice ser de B.
+    return () => { cancelado = true; };
   }, [clienteId]);
 
   const turnos = [...(cliente?.turnos ?? [])].sort(

@@ -84,6 +84,38 @@ const KEYS = {
 };
 
 // ─────────────────────────────────────────────
+// Wrappers seguros de localStorage — puede tirar en modo privado de iOS
+// Safari (setItem con QuotaExceededError) o si el storage está deshabilitado.
+// Sin esto, una excepción de storage se confundía con un fallo real de
+// login/guardado (ej. "no se pudo iniciar sesión" con credenciales
+// correctas). Mismo criterio que useThemeStore/useLocaleStore; se extrae
+// acá porque este archivo tiene ~10 call sites en vez de 2-3.
+// ─────────────────────────────────────────────
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // sin acceso a localStorage — la sesión no persiste entre recargas, no bloqueamos
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // sin acceso a localStorage
+  }
+}
+
+// ─────────────────────────────────────────────
 // Service
 // ─────────────────────────────────────────────
 export const authService = {
@@ -91,8 +123,8 @@ export const authService = {
   login: async (email: string, password: string): Promise<LoginResult> => {
     const response = await api.post<LoginResult>('/auth/login', { email, password });
     if ('debe_cambiar_password' in response.data) return response.data;
-    localStorage.setItem(KEYS.token, response.data.token);
-    localStorage.setItem(KEYS.user, JSON.stringify(response.data.user));
+    safeSetItem(KEYS.token, response.data.token);
+    safeSetItem(KEYS.user, JSON.stringify(response.data.user));
     return response.data;
   },
 
@@ -103,8 +135,8 @@ export const authService = {
     password_confirmation: string;
   }): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/auth/cambiar-password-obligatorio', data);
-    localStorage.setItem(KEYS.token, response.data.token);
-    localStorage.setItem(KEYS.user, JSON.stringify(response.data.user));
+    safeSetItem(KEYS.token, response.data.token);
+    safeSetItem(KEYS.user, JSON.stringify(response.data.user));
     return response.data;
   },
 
@@ -112,8 +144,8 @@ export const authService = {
     try {
       await api.post('/auth/logout');
     } finally {
-      localStorage.removeItem(KEYS.token);
-      localStorage.removeItem(KEYS.user);
+      safeRemoveItem(KEYS.token);
+      safeRemoveItem(KEYS.user);
     }
   },
 
@@ -124,7 +156,7 @@ export const authService = {
 
   updatePerfil: async (data: Partial<User> & { password?: string; password_confirmation?: string }): Promise<User> => {
     const response = await api.put<User>('/perfil', data);
-    localStorage.setItem(KEYS.user, JSON.stringify(response.data));
+    safeSetItem(KEYS.user, JSON.stringify(response.data));
     return response.data;
   },
 
@@ -138,7 +170,7 @@ export const authService = {
     const response = await api.post<User>('/perfil/logo', form, {
       headers: { 'Content-Type': undefined },
     });
-    localStorage.setItem(KEYS.user, JSON.stringify(response.data));
+    safeSetItem(KEYS.user, JSON.stringify(response.data));
     return response.data;
   },
 
@@ -193,19 +225,19 @@ export const authService = {
   // ─────────────────────────────────────────────
   // Helpers de storage — síncronos en web
   // ─────────────────────────────────────────────
-  getToken: (): string | null => localStorage.getItem(KEYS.token),
+  getToken: (): string | null => safeGetItem(KEYS.token),
 
   getUsuarioGuardado: (): User | null => {
-    const raw = localStorage.getItem(KEYS.user);
+    const raw = safeGetItem(KEYS.user);
     return raw ? JSON.parse(raw) : null;
   },
 
-  estaAutenticado: (): boolean => !!localStorage.getItem(KEYS.token),
+  estaAutenticado: (): boolean => !!safeGetItem(KEYS.token),
 
   // Ver comentario en KEYS.negocioSlug — respaldo para la PWA instalada.
   guardarSlugNegocio: (slug: string): void => {
-    localStorage.setItem(KEYS.negocioSlug, slug);
+    safeSetItem(KEYS.negocioSlug, slug);
   },
 
-  getSlugNegocioGuardado: (): string | null => localStorage.getItem(KEYS.negocioSlug),
+  getSlugNegocioGuardado: (): string | null => safeGetItem(KEYS.negocioSlug),
 };

@@ -12,6 +12,12 @@ interface SlotsState {
   slots: Slot[];
   loading: boolean;
   error: string | null;
+  // Último profesionalId pedido a fetchSlots (normalizado con ?? null,
+  // porque undefined = "todas" es un pedido válido y hay que poder
+  // distinguirlo de "sin pedido todavía") — descarta una respuesta que
+  // llega después de que se pidió otra profesional (ej. cambiar el
+  // selector rápido en agenda/[id]).
+  ultimoProfesionalIdSolicitado: number | null;
 
   fetchSlots: (profesionalId?: number) => Promise<void>;
   agregarSlot: (hora: string, profesionalId?: number) => Promise<OperacionResult>;
@@ -19,21 +25,25 @@ interface SlotsState {
   eliminarSlot: (id: number) => Promise<OperacionResult>;
 }
 
-export const useSlotsStore = create<SlotsState>((set) => ({
+export const useSlotsStore = create<SlotsState>((set, get) => ({
   slots: [],
   loading: false,
   error: null,
+  ultimoProfesionalIdSolicitado: null,
 
   fetchSlots: async (profesionalId) => {
-    set({ loading: true, error: null });
+    const idPedido = profesionalId ?? null;
+    set({ loading: true, error: null, ultimoProfesionalIdSolicitado: idPedido });
     return withGlobalLoader(async () => {
       try {
         const slots = await slotService.getAll(profesionalId);
+        if (get().ultimoProfesionalIdSolicitado !== idPedido) return;
         set({ slots });
       } catch (e) {
+        if (get().ultimoProfesionalIdSolicitado !== idPedido) return;
         set({ error: extraerMensajeError(e) });
       } finally {
-        set({ loading: false });
+        if (get().ultimoProfesionalIdSolicitado === idPedido) set({ loading: false });
       }
     });
   },

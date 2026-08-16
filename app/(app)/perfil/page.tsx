@@ -18,6 +18,19 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
 
+// Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
+// punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
+// entrada inválida (vacío, coma, texto) en `undefined` sin avisar — la
+// seña quedaba sin guardar mientras la UI mostraba "cambios guardados".
+// null = inválido (hay que avisar), undefined = vacío a propósito (sin seña).
+function parsearSenaMonto(texto: string): { valor: number | undefined } | null {
+  const limpio = texto.trim();
+  if (limpio === '') return { valor: undefined };
+  const numero = Number(limpio.replace(',', '.'));
+  if (!Number.isFinite(numero) || numero < 0) return null;
+  return { valor: numero };
+}
+
 function formatFechaCorta(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -105,6 +118,7 @@ export default function PerfilPage() {
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [senaMontoError, setSenaMontoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (sheetActivo) {
@@ -124,6 +138,7 @@ export default function PerfilPage() {
     setPassword('');
     setPasswordConfirmation('');
     setPasswordError(null);
+    setSenaMontoError(null);
     setSheetActivo(sheet);
   };
 
@@ -147,13 +162,24 @@ export default function PerfilPage() {
       return;
     }
 
+    let senaMontoParseada: number | undefined;
+    if (sheetActivo === 'negocio') {
+      const resultado = parsearSenaMonto(senaMonto);
+      if (!resultado) {
+        setSenaMontoError(t('depositAmountInvalid'));
+        return;
+      }
+      setSenaMontoError(null);
+      senaMontoParseada = resultado.valor;
+    }
+
     setGuardando(true);
     try {
       if (sheetActivo === 'personal') {
         await updatePerfil({ name: nombreEstudio, telefono, direccion });
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
-          sena_monto: parseFloat(senaMonto) || undefined,
+          sena_monto: senaMontoParseada,
           recordatorio_automatico: recordatorioAutomatico,
           hora_recordatorio: horaRecordatorio,
         });
@@ -215,6 +241,7 @@ export default function PerfilPage() {
             setHoraRecordatorio={setHoraRecordatorio}
             onGuardar={handleGuardar}
             guardando={guardando}
+            error={senaMontoError}
             onClose={cerrarSheet}
           />
         );

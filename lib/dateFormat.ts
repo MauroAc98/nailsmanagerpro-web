@@ -98,6 +98,28 @@ export function formatFecha(fecha: Date, preset: PresetFecha): string {
 }
 
 /**
+ * "YYYY-MM-DD" de `d` en sus componentes LOCALES (no UTC) — la base segura
+ * que reemplaza cualquier `d.toISOString().split('T')[0]` sobre una fecha
+ * que no sea explícitamente medianoche local. Ver fechaDeHoy/fechaDeManana.
+ */
+export function formatoYMD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Fecha de hoy en formato "YYYY-MM-DD", en hora LOCAL. Construida a mano
+ * (no `toISOString()`, que serializa en UTC) porque en husos horarios
+ * negativos como ART/BRT (UTC-3) `toISOString().split('T')[0]` da la fecha
+ * de MAÑANA entre las 21:00 y medianoche hora local.
+ */
+export function fechaDeHoy(): string {
+  return formatoYMD(new Date());
+}
+
+/**
  * Fecha de mañana en formato "YYYY-MM-DD". Construida a mano (no
  * `toISOString()`) para evitar el corrimiento de día que mete la
  * conversión a UTC en husos horarios negativos como ART.
@@ -105,8 +127,5 @@ export function formatFecha(fecha: Date, preset: PresetFecha): string {
 export function fechaDeManana(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return formatoYMD(d);
 }

@@ -7,11 +7,15 @@ import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats, PuntoGanancia } from '@/services/statsService';
 import { extraerMensajeError } from '@/services/clienteService';
-import { nombreMes } from '@/lib/dateFormat';
+import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
 
+// Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
+// corre la fecha un día para atrás en husos negativos como ART/BRT
+// (UTC-3) cuando `d` no es medianoche local, como el default de
+// rangoPersonalizado más abajo (new Date() = hora actual).
 function formatFecha(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return formatoYMD(d);
 }
 
 function rangoDelMes(viewDate: Date): { desde: string; hasta: string } {

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { turnoService, Turno } from '@/services/turnoService';
 import { extraerMensajeError } from '@/services/clienteService';
 import { useAuthStore } from '@/store/useAuthStore';
+import { alertDialog } from '@/store/useConfirmStore';
+import { tStatic } from '@/store/useLocaleStore';
 
 interface RecordatoriosPendientesState {
   turnos: Turno[];
@@ -54,8 +56,11 @@ export const useRecordatoriosPendientesStore = create<RecordatoriosPendientesSta
       await turnoService.marcarRecordatorioManual(turnoId);
     } catch (e) {
       console.error('marcarRecordatorioManual:', e);
-      // no revertimos el filtro optimista: si falló, el próximo fetch
+      // No revertimos el filtro optimista: si falló, el próximo fetch
       // (foreground) lo va a traer de nuevo si de verdad no quedó guardado
+      // — pero eso pasa en silencio; sin este aviso la profesional cree que
+      // ya lo gestionó y no se entera de que hay que reintentar.
+      await alertDialog(tStatic('agenda.RecordatoriosPendientesPage.marcarEnviadoError'));
     }
   },
 }));

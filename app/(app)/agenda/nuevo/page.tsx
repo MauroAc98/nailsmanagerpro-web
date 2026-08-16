@@ -13,7 +13,7 @@ import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
-import { formatFecha } from '@/lib/dateFormat';
+import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
 import { useAuth } from '@/hooks/useAuth';
 import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
 import { whatsappHelper } from '@/lib/whatsappHelper';
@@ -56,7 +56,7 @@ function NuevoTurnoContent() {
   const router       = useRouter();
   const t            = useTranslations('agenda.NuevoTurnoPage');
   const searchParams = useSearchParams();
-  const today        = new Date().toISOString().split('T')[0];
+  const today        = fechaDeHoy();
   const fecha        = searchParams.get('fecha') ?? today;
 
   const { crearTurno, turnos, fetchTurnos }  = useTurnoStore();

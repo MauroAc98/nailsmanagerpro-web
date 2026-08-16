@@ -25,7 +25,7 @@ import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
-import { nombreDia, nombreMes } from '@/lib/dateFormat';
+import { nombreDia, nombreMes, fechaDeHoy, formatoYMD } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -768,7 +768,7 @@ function CalendarioMensual({
   turnosMes:        TurnoMes[];
   onDayClick:       (fecha: string) => void;
 }) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = fechaDeHoy();
   const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
@@ -997,7 +997,7 @@ export default function AgendaPage() {
   const filtroSheetRef = useRef<BottomSheetHandle>(null);
 
   const hayFiltroActivo = !!textoBusqueda || servicioFiltro !== null || fechaFiltro !== null;
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = fechaDeHoy();
   const esFechaPasada = fechaSeleccionada < hoy;
 
   // ─────────────────────────────────────────────
@@ -1053,7 +1053,7 @@ export default function AgendaPage() {
 
   // Mount: load today's data
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = fechaDeHoy();
     setFechaSeleccionada(today);
     fetchTurnos(today);
     fetchTurnosMes(today.slice(0, 7));
@@ -1071,7 +1071,7 @@ export default function AgendaPage() {
     const today        = new Date();
     const isSameMonth  = today.getFullYear() === y && today.getMonth() === m;
     const newFecha     = isSameMonth
-      ? today.toISOString().split('T')[0]
+      ? formatoYMD(today)
       : `${y}-${String(m + 1).padStart(2, '0')}-01`;
 
     setFechaSeleccionada(newFecha);
@@ -1124,9 +1124,26 @@ export default function AgendaPage() {
     else await alertDialog(result.message ?? t('cancelError'));
   };
 
+  // Debounce: sin esto, cada tecla tipeada dispara un fetch — además de
+  // ser un desperdicio, una respuesta vieja que llega después de una más
+  // nueva (ej. "ana" resuelve después de "anabel") podía pisar los
+  // resultados con el término anterior (la guarda del store evita eso,
+  // pero el debounce ya evita disparar la mayoría de esas carreras).
+  const busquedaTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (busquedaTimeoutRef.current) clearTimeout(busquedaTimeoutRef.current);
+  }, []);
+
   const handleBuscarCliente = useCallback((txt: string) => {
     setTextoBusqueda(txt);
-    buscarPorNombre(txt);
+    if (busquedaTimeoutRef.current) clearTimeout(busquedaTimeoutRef.current);
+    busquedaTimeoutRef.current = setTimeout(() => buscarPorNombre(txt), 300);
+  }, [buscarPorNombre]);
+
+  const handleLimpiarBusqueda = useCallback(() => {
+    if (busquedaTimeoutRef.current) clearTimeout(busquedaTimeoutRef.current);
+    setTextoBusqueda('');
+    buscarPorNombre('');
   }, [buscarPorNombre]);
 
   const handleToggleServicio = useCallback((id: number) => {
@@ -1339,7 +1356,7 @@ export default function AgendaPage() {
           serviciosActivos={serviciosActivos}
           hayFiltroActivo={hayFiltroActivo}
           onChangeBusqueda={handleBuscarCliente}
-          onLimpiarBusqueda={() => { setTextoBusqueda(''); buscarPorNombre(''); }}
+          onLimpiarBusqueda={handleLimpiarBusqueda}
           onToggleServicio={handleToggleServicio}
           onCambiarFecha={handleCambiarFecha}
           onLimpiarTodo={handleLimpiarTodo}

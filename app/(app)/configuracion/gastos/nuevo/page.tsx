@@ -8,6 +8,7 @@ import { useGastosStore } from '@/store/useGastoStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { CATEGORIAS_GASTO, CategoriaGasto } from '@/services/gastoService';
 import { alertDialog } from '@/store/useConfirmStore';
+import { fechaDeHoy } from '@/lib/dateFormat';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -32,7 +33,7 @@ function chipStyle(selected: boolean, color: string): React.CSSProperties {
 }
 
 function fechaHoy(): string {
-  return new Date().toISOString().split('T')[0];
+  return fechaDeHoy();
 }
 
 export default function NuevoGastoPage() {

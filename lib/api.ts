@@ -8,9 +8,18 @@ const api = axios.create({
   },
 });
 
-// Interceptor para agregar el token en cada request
+// Interceptor para agregar el token en cada request. localStorage puede
+// tirar (modo privado de iOS Safari, storage deshabilitado) — sin el
+// try/catch, esa excepción rompía la request entera y un fallo de storage
+// se confundía con un login inválido pese a que el backend nunca llegaba a
+// ver la request. Mismo patrón que useThemeStore/useLocaleStore.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  let token: string | null = null;
+  try {
+    token = localStorage.getItem('auth_token');
+  } catch {
+    // sin acceso a localStorage — seguimos sin el header de auth en vez de romper la request
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -24,8 +33,12 @@ api.interceptors.response.use(
     const code   = error.response?.data?.code;
 
     if (status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
+      try {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+      } catch {
+        // sin acceso a localStorage — igual avisamos del logout vía el evento
+      }
       window.dispatchEvent(new CustomEvent('session-expired'));
     }
 
