@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Mail, Lock, Eye, EyeOff, Store } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,7 +9,6 @@ import { colors, withAlpha } from '@/theme/colors';
 import { agendaColors, agendaShadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useThemeStore } from '@/store/useThemeStore';
 import { authService, type NegocioBranding } from '@/services/authService';
-import { esRedirectSeguro } from '@/app/providers';
 
 interface LoginScreenProps {
   // Presente solo cuando se entra por /login/{slug} — dispara el fetch del
@@ -25,8 +24,7 @@ const LOGO_MAX_HEIGHT = 260;
 export function LoginScreen({ slug }: LoginScreenProps) {
   const t = useTranslations('auth.LoginPage');
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { login, loading, error, clearError, debeCambiarPassword } = useAuth();
+  const { login, loading, error, clearError } = useAuth();
   // Login no vive bajo app/(app)/agenda, así que no hereda la clase
   // agenda-light/agenda-dark de ahí — se aplica acá mismo para poder leer
   // la paleta cálida del rediseño (--ag-*) en vez del gris frío global.
@@ -55,18 +53,18 @@ export function LoginScreen({ slug }: LoginScreenProps) {
     };
   }, [slug]);
 
+  // No navegamos acá tras un login exitoso: el guard global en
+  // app/providers.tsx ya redirige de forma reactiva (a /cambiar-password,
+  // a ?redirect=, o a /agenda) apenas cambia el estado de auth en el store.
+  // Hacerlo también acá era lógica duplicada compitiendo con esa —
+  // handleLogin leía debeCambiarPassword con el valor de ANTES de loguearse
+  // (closure del render que armó este handler, no el que el login recién
+  // seteó), así que ocasionalmente tomaba la rama equivocada según el
+  // timing de la respuesta del servidor.
   const handleLogin = async () => {
     if (!email.trim() || !password) return;
     clearError();
-    const ok = await login(email.trim().toLowerCase(), password);
-    if (ok) {
-      if (debeCambiarPassword) {
-        router.push('/cambiar-password');
-      } else {
-        const redirect = searchParams.get('redirect');
-        router.push(esRedirectSeguro(redirect) ? redirect : '/agenda');
-      }
-    }
+    await login(email.trim().toLowerCase(), password);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
