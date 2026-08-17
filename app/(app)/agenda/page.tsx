@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { useThemeStore } from '@/store/useThemeStore';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -727,7 +726,7 @@ function FiltroSheetContent({
               padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
               border: `1px solid ${servicioFiltro === s.id ? colors.primary : colors.divider}`,
               backgroundColor: servicioFiltro === s.id ? colors.primary : colors.surfaceSubtle,
-              color: servicioFiltro === s.id ? '#FFF' : colors.textStrong,
+              color: servicioFiltro === s.id ? colors.primaryFg : colors.textStrong,
               cursor: 'pointer',
             }}
           >
@@ -742,7 +741,7 @@ function FiltroSheetContent({
         style={{
           width: '100%', padding: '14px', borderRadius: 12, border: 'none',
           backgroundColor: btnDeshabilitado ? colors.divider : colors.primary,
-          color: '#FFF', fontSize: 15, fontWeight: 600,
+          color: colors.primaryFg, fontSize: 15, fontWeight: 600,
           cursor: btnDeshabilitado ? 'default' : 'pointer',
         }}
       >
@@ -968,7 +967,6 @@ function SelectorProfesionalDia({
 export default function AgendaPage() {
   const router = useRouter();
   const t = useTranslations('agenda.AgendaPage');
-  const resolvedTheme = useThemeStore(s => s.resolvedTheme);
 
   const {
     turnos, turnosMes, loading,
@@ -1209,10 +1207,7 @@ export default function AgendaPage() {
     // queda atrapada detrás del sheet sin forma de verla (ni scrolleando).
     // 340 deja margen incluso con el banner de suscripción visible + card de
     // resumen, en viewports chicos (iPhone SE). Ver components/BottomSheet.tsx.
-    <div
-      className={resolvedTheme === 'dark' ? 'agenda-dark' : 'agenda-light'}
-      style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 340 }}
-    >
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 340 }}>
 
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

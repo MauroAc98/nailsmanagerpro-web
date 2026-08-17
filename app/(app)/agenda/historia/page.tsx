@@ -1,15 +1,22 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, withAlpha } from '@/theme/colors';
+import {
+  ChevronLeft, ChevronRight, ImagePlus, Download, Share2, ImageOff,
+  CalendarDays, Type, Eye,
+} from 'lucide-react';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { confirmDialog } from '@/store/useConfirmStore';
+
+type SeccionEditor = 'agenda' | 'texto' | 'fondo';
 
 // ─────────────────────────────────────────────
 // Style helpers
@@ -23,11 +30,35 @@ function tabStyle(active: boolean): React.CSSProperties {
     flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
     cursor: 'pointer',
     background:  active ? colors.primary : 'transparent',
-    color:       active ? '#fff' : colors.subtext,
+    color:       active ? colors.primaryFg : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
-    boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '4D')}` : 'none',
+    boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
   };
 }
+
+const sectionTabContainerStyle: React.CSSProperties = {
+  display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 16, width: '100%',
+};
+
+function sectionTabStyle(active: boolean): React.CSSProperties {
+  return {
+    flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 17, border: 'none', cursor: 'pointer',
+    background: active ? colors.primary : 'transparent',
+    color:      active ? colors.primaryFg : colors.subtext,
+    fontWeight: 700, fontSize: 12,
+    boxShadow:  active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
+  };
+}
+
+const navButtonStyle: React.CSSProperties = {
+  width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
+  background: colors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center',
+};
+
+const footerActionStyle: React.CSSProperties = {
+  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  padding: '13px 0', borderRadius: 16, background: colors.surface, border: `1px solid ${colors.border}`, cursor: 'pointer',
+};
 
 // ─────────────────────────────────────────────
 // Inner component (uses useSearchParams)
@@ -39,6 +70,8 @@ function HistoriaContent() {
   const fechaInicial = searchParams.get('fecha') ?? undefined;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [seccion, setSeccion] = useState<SeccionEditor>('agenda');
+  const [mostrarAyuda, setMostrarAyuda] = useState(false);
 
   const {
     modo, quincena, diasOcultos, slotsOcultos,
@@ -64,6 +97,22 @@ function HistoriaContent() {
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
 
+  // Cantidad de horarios que efectivamente van a la imagen — mismo dato que
+  // ya excluye días/slots ocultados manualmente (diasAMostrar), solo para el
+  // resumen arriba del canvas.
+  const horariosVisibles = diasAMostrar.reduce((acc, dia) => acc + dia.slots.filter(s => s.libre).length, 0);
+  const periodoLabel = modo === 'dia' ? t('tabDay') : modo === 'semana' ? t('tabWeek') : t('tabMonth');
+  const nombreParaResumen = profesionalSeleccionada?.nombre || nombreEstudio;
+
+  // Tocar un texto libre directo en el canvas es posible desde cualquier
+  // tab (el canvas se ve siempre) pero el editor de texto solo está montado
+  // en el tab "Texto" — sin este wrapper, tocar un texto estando en
+  // "Agenda" o "Fondo" entraba en modo edición sin que se viera nada.
+  const iniciarEdicionDesdeCanvas = (id: string) => {
+    iniciarEdicion(id);
+    setSeccion('texto');
+  };
+
   const handleFondoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -77,72 +126,47 @@ function HistoriaContent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 60 }}>
 
       {/* Header */}
-      <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: '20px 20px 4px' }}>
         <button
           onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', color: colors.text }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.text} strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <ChevronLeft size={24} strokeWidth={2} />
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
-      {/* width = canvasWidth (sin padding horizontal, project usa
-          box-sizing: border-box vía Tailwind preflight) para que todo lo que
-          use width:'100%' abajo (tabs, selector, input, agenda, botones)
-          quede exactamente tan ancho como la imagen y no sobresalga por los
-          costados. El propio ancho del canvas (min(420, viewport*0.85)) ya
-          deja margen de sobra a los costados de la pantalla, no hace falta
-          padding horizontal extra acá. */}
+      <div style={{ padding: '4px 20px 18px' }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
+          {t('title')}
+        </h1>
+      </div>
+
+      {/* width = canvasWidth, ver comentario original: todo lo que use
+          width:'100%' abajo queda tan ancho como la imagen. */}
       <div style={{
-        paddingTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        paddingTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center',
         width: canvasWidth || '100%', margin: '0 auto',
       }}>
 
-        {/* Mode tabs */}
-        <div style={{ ...tabContainerStyle, width: '100%' }}>
-          {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
-            <button key={m} onClick={() => handleModo(m)} style={tabStyle(modo === m)}>
-              {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
-            </button>
-          ))}
-        </div>
-
-        {/* Date nav */}
-        <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 8, marginBottom: 14 }}>
-          <button
-            onClick={() => handleNavegar(-1)}
-            style={{
-              width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: withAlpha(colors.primary, '1F'), display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <span style={{
-            flex: 1, textTransform: 'uppercase', fontWeight: 700, fontSize: 13,
-            letterSpacing: 1, textAlign: 'center', color: colors.text,
-          }}>
-            {tituloNav}
+        {/* Mode tabs — siempre visibles: es la única forma de salir de un
+            período sin contenido (p. ej. "Día" de hoy vacío) y volver a
+            elegir otro. Nunca deben quedar atrapados detrás del estado
+            vacío de más abajo. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginBottom: 12 }}>
+          <CalendarDays size={16} color={colors.primary} />
+          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
+            {t('whatToShow')}
           </span>
-          <button
-            onClick={() => handleNavegar(1)}
-            style={{
-              width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: withAlpha(colors.primary, '1F'), display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
+          <div style={{ ...tabContainerStyle, marginBottom: 0, marginLeft: 'auto' }}>
+            {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
+              <button key={m} onClick={() => handleModo(m)} style={{ ...tabStyle(modo === m), padding: '6px 12px' }}>
+                {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Quincena tabs */}
@@ -160,14 +184,10 @@ function HistoriaContent() {
           </div>
         )}
 
-        {/* Selector de profesional — invisible con ≤1 profesional activa. El
-            caption aclara que esto es un filtro (mismo criterio que el
-            selector de Agenda), y sin selección explícita se resalta la
-            jefa porque es la que ya se usa de fondo (ver effectiveProfesionalId
-            en useGenerarHistoria). */}
+        {/* Selector de profesional — invisible con ≤1 profesional activa */}
         {mostrarSelectorProfesional && (
           <div style={{ width: '100%', marginBottom: 14 }}>
-            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
               {t('showScheduleOf')}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -180,15 +200,15 @@ function HistoriaContent() {
                     onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
-                      borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
-                      border: `1px solid ${selected ? color : colors.divider}`,
+                      borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      border: `1px solid ${selected ? color : colors.border}`,
                       backgroundColor: selected ? color : colors.surface,
-                      color: selected ? '#FFF' : colors.text,
+                      color: selected ? colors.primaryFg : colors.text,
                     }}
                   >
                     <span style={{
                       width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                      backgroundColor: selected ? '#FFF' : color,
+                      backgroundColor: selected ? colors.primaryFg : color,
                     }} />
                     {p.nombre}
                   </button>
@@ -198,9 +218,45 @@ function HistoriaContent() {
           </div>
         )}
 
-        {/* Canvas + controls, or empty state */}
+        {/* Date nav */}
+        <div style={{
+          display: 'flex', alignItems: 'center', width: '100%', gap: 8, marginBottom: 16,
+          borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.surfaceSubtle, padding: '10px 14px',
+        }}>
+          <button onClick={() => handleNavegar(-1)} style={navButtonStyle}>
+            <ChevronLeft size={18} strokeWidth={2} color={colors.primaryDeep} />
+          </button>
+          <span style={{
+            flex: 1, fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 16,
+            textAlign: 'center', color: colors.textStrong,
+          }}>
+            {tituloNav}
+          </span>
+          <button onClick={() => handleNavegar(1)} style={navButtonStyle}>
+            <ChevronRight size={18} strokeWidth={2} color={colors.primaryDeep} />
+          </button>
+        </div>
+
         {hayContenido ? (
           <>
+            {/* Resumen + vista previa */}
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('readyToEdit')}</p>
+                <p style={{ fontSize: 11, color: colors.subtext, margin: '2px 0 0' }}>
+                  {periodoLabel} · {nombreParaResumen} · {t('visibleSlotsCount', { count: horariosVisibles })}
+                </p>
+              </div>
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+                borderRadius: 20, padding: '5px 10px', fontSize: 10, fontWeight: 700,
+                backgroundColor: colors.successBg, color: colors.success,
+              }}>
+                <Eye size={12} strokeWidth={2.5} />
+                {t('previewBadge')}
+              </span>
+            </div>
+
             <StoryCanvas
               ref={canvasRef}
               titulo={titulo}
@@ -214,124 +270,147 @@ function HistoriaContent() {
               textosLibres={textosCanvas}
               onMoverTexto={actualizarPosicion}
               onResizeTexto={redimensionarTexto}
-              onEditarTexto={iniciarEdicion}
+              onEditarTexto={iniciarEdicionDesdeCanvas}
             />
 
-            <TextoLibreInput
-              textoInput={textoInput}
-              setTextoInput={setTextoInput}
-              textosCanvas={textosCanvas}
-              mostrarEmojis={mostrarEmojis}
-              setMostrarEmojis={setMostrarEmojis}
-              editandoId={editandoId}
-              onAgregarTexto={agregarTexto}
-              onIniciarEdicion={iniciarEdicion}
-              onCancelarEdicion={cancelarEdicion}
-              onEliminarTexto={eliminarTexto}
-              onCambiarFontSize={cambiarFontSize}
-            />
-
-            {agendaGenerada.length > 0 && (
-              <div style={{
-                width: '100%', marginTop: 25, paddingTop: 20,
-                borderTop: `1px solid ${colors.divider}`,
-              }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 4px' }}>
-                  {t('editAvailability')}
-                </p>
-                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 10px' }}>
-                  {t('editAvailabilityHint')}
-                </p>
-                <AgendaEditor
-                  agenda={diasQuincena}
-                  diasOcultos={diasOcultos}
-                  slotsOcultos={slotsOcultos}
-                  onToggleSlot={toggleSlot}
-                  onOcultarDia={toggleDiaOculto}
-                  onToggleHoraEnTodos={toggleHoraEnTodos}
-                />
+            {/* Editor: Agenda / Texto / Fondo */}
+            <div style={{
+              width: '100%', marginTop: 20, paddingTop: 18, borderTop: `1px solid ${colors.hairline}`,
+            }}>
+              <div style={sectionTabContainerStyle}>
+                {(['agenda', 'texto', 'fondo'] as SeccionEditor[]).map(s => (
+                  <button key={s} onClick={() => setSeccion(s)} style={sectionTabStyle(seccion === s)}>
+                    {s === 'agenda' ? t('sectionAgenda') : s === 'texto' ? t('sectionText') : t('sectionBackground')}
+                  </button>
+                ))}
               </div>
-            )}
 
-            {/* Footer actions */}
-            <div style={{ width: '100%', marginTop: 25, display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="9" cy="9" r="2" />
-                  <path d="m21 15-5-5L5 21" />
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('background')}</span>
-              </button>
-              <button
-                onClick={descargarImagen}
-                style={{
-                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('save')}</span>
-              </button>
-              <button
-                onClick={compartirImagen}
-                style={{
-                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`, cursor: 'pointer',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
-                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                  <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('share')}</span>
-              </button>
+              {seccion === 'agenda' && (
+                <div>
+                  {agendaGenerada.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <p style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 17, color: colors.textStrong, margin: 0 }}>
+                          {t('editAvailability')}
+                        </p>
+                        <button
+                          onClick={() => setMostrarAyuda(v => !v)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: colors.primaryDeep, padding: 0 }}
+                        >
+                          {mostrarAyuda ? t('hideHelp') : t('howItWorks')}
+                        </button>
+                      </div>
+                      {mostrarAyuda && (
+                        <p style={{
+                          fontSize: 11, lineHeight: 1.5, color: colors.amberFg, backgroundColor: colors.amberBg,
+                          borderRadius: 12, padding: '8px 12px', margin: '6px 0 10px',
+                        }}>
+                          {t('editAvailabilityHint')}
+                        </p>
+                      )}
+                      <div style={{ marginTop: mostrarAyuda ? 0 : 10 }}>
+                        <AgendaEditor
+                          agenda={diasQuincena}
+                          diasOcultos={diasOcultos}
+                          slotsOcultos={slotsOcultos}
+                          onToggleSlot={toggleSlot}
+                          onOcultarDia={toggleDiaOculto}
+                          onToggleHoraEnTodos={toggleHoraEnTodos}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {seccion === 'texto' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Type size={16} color={colors.primary} />
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
+                      {t('sectionText')}
+                    </span>
+                  </div>
+                  <TextoLibreInput
+                    textoInput={textoInput}
+                    setTextoInput={setTextoInput}
+                    textosCanvas={textosCanvas}
+                    mostrarEmojis={mostrarEmojis}
+                    setMostrarEmojis={setMostrarEmojis}
+                    editandoId={editandoId}
+                    onAgregarTexto={agregarTexto}
+                    onIniciarEdicion={iniciarEdicion}
+                    onCancelarEdicion={cancelarEdicion}
+                    onEliminarTexto={eliminarTexto}
+                    onCambiarFontSize={cambiarFontSize}
+                  />
+                </div>
+              )}
+
+              {seccion === 'fondo' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <ImagePlus size={16} color={colors.primary} />
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
+                      {t('sectionBackground')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
+                      padding: '16px 0', borderRadius: 16, border: `1.5px dashed ${colors.primary}`,
+                      backgroundColor: colors.primarySoft, color: colors.primaryDeep,
+                      fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >
+                    <ImagePlus size={18} strokeWidth={2} />
+                    {t('changeBackgroundPhoto')}
+                  </button>
+
+                  {fondoFijoGuardado && (
+                    <button
+                      onClick={async () => {
+                        const confirmado = await confirmDialog(
+                          t('removeFixedBackgroundConfirm'),
+                          { confirmText: t('removeFixedBackgroundConfirmButton'), cancelText: t('cancel'), danger: true }
+                        );
+                        if (confirmado) await quitarFondoFijo();
+                      }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 8,
+                        marginTop: 8, fontSize: 12, fontWeight: 600, color: colors.subtext,
+                        textDecoration: 'underline', textUnderlineOffset: 2,
+                      }}
+                    >
+                      {t('removeFixedBackground')}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            {fondoFijoGuardado && (
-              <button
-                onClick={async () => {
-                  const confirmado = await confirmDialog(
-                    t('removeFixedBackgroundConfirm'),
-                    { confirmText: t('removeFixedBackgroundConfirmButton'), cancelText: t('cancel'), danger: true }
-                  );
-                  if (confirmado) await quitarFondoFijo();
-                }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 8,
-                  marginTop: 4, fontSize: 12, fontWeight: 600, color: colors.subtext,
-                  textDecoration: 'underline', textUnderlineOffset: 2,
-                }}
-              >
-                {t('removeFixedBackground')}
+            {/* Footer actions */}
+            <div style={{ width: '100%', marginTop: 22, display: 'flex', gap: 10 }}>
+              <button onClick={descargarImagen} style={footerActionStyle}>
+                <Download size={18} strokeWidth={2} color={colors.text} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{t('save')}</span>
               </button>
-            )}
+              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.whatsapp, border: 'none' }}>
+                <Share2 size={18} strokeWidth={2} color={colors.primaryFg} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: colors.primaryFg }}>{t('share')}</span>
+              </button>
+            </div>
           </>
         ) : (
           <div style={{
             width: canvasWidth, height: canvasHeight / 3,
-            background: colors.surfaceSubtle, borderRadius: 16, border: `1px solid ${colors.border}`,
+            background: colors.surfaceSubtle, borderRadius: 20, border: `1px solid ${colors.border}`,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 12, marginBottom: 15,
           }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="1.5">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="9.5" y1="13.5" x2="14.5" y2="18.5" />
-              <line x1="14.5" y1="13.5" x2="9.5" y2="18.5" />
-            </svg>
-            <p style={{ color: colors.muted, fontSize: 14, textAlign: 'center', padding: '0 30px', margin: 0 }}>
+            <ImageOff size={36} strokeWidth={1.5} color={colors.muted} />
+            <p style={{ color: colors.subtext, fontSize: 14, textAlign: 'center', padding: '0 30px', margin: 0 }}>
               {t('emptyState')}
             </p>
           </div>

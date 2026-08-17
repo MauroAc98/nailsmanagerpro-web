@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { ChevronLeft, ChevronDown, User } from 'lucide-react';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { ServicioPicker } from '@/components/agenda/ServicioPicker';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
@@ -36,14 +38,13 @@ function formatHora12(hora24: string): string {
 // Style constants
 // ─────────────────────────────────────────────
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 
 const inputStyle: React.CSSProperties = {
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-  boxShadow: shadows.card, borderRadius: 12,
-  padding: '14px 16px', fontSize: 15, color: colors.text,
+  backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
+  borderRadius: 12, padding: '14px 16px', fontSize: 15, color: colors.text,
 };
 
 // ─────────────────────────────────────────────
@@ -209,7 +210,7 @@ export default function EditarTurnoPage() {
 
   if (loadingTurno) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>
+      <div style={{ minHeight: '100vh', backgroundColor: colors.background, padding: 40, textAlign: 'center', color: colors.subtext }}>
         {t('loadingAppointment')}
       </div>
     );
@@ -217,12 +218,12 @@ export default function EditarTurnoPage() {
 
   if (errorTurno) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>
+      <div style={{ minHeight: '100vh', backgroundColor: colors.background, padding: 40, textAlign: 'center', color: colors.subtext }}>
         <p>{errorTurno}</p>
         <button
           onClick={() => router.back()}
           style={{
-            marginTop: 16, fontSize: 14, fontWeight: 600, color: colors.primary,
+            marginTop: 16, fontSize: 14, fontWeight: 700, color: colors.primary,
             border: `1px solid ${colors.primary}`, borderRadius: 20,
             padding: '8px 16px', backgroundColor: 'transparent', cursor: 'pointer',
           }}
@@ -237,23 +238,25 @@ export default function EditarTurnoPage() {
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
 
       {/* Header */}
-      <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: '20px 20px 4px' }}>
         <button
           onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', color: colors.text }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.text} strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <ChevronLeft size={24} strokeWidth={2} />
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
-      {/* Banner */}
-      <div style={{ padding: '8px 20px 16px' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: colors.primary, letterSpacing: 0.5, margin: 0, textTransform: 'uppercase' }}>
+      <div style={{ padding: '4px 20px 18px' }}>
+        <p style={{
+          fontSize: 11, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 1.5,
+          textTransform: 'uppercase', margin: '0 0 4px',
+        }}>
           {t('editingAppointment', { fecha: fecha ? formatFechaLarga(fecha) : '' })}
         </p>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
+          {t('title')}
+        </h1>
       </div>
 
       <div style={{ padding: '0 20px' }}>
@@ -270,19 +273,14 @@ export default function EditarTurnoPage() {
               borderColor: showClienteDropdown ? colors.primary : colors.border,
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="1.8">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User size={18} strokeWidth={1.8} color={colors.muted} />
             <span style={{ flex: 1, color: selectedCliente ? colors.text : colors.placeholder, fontSize: 15 }}>
               {selectedCliente ? `${selectedCliente.nombre} ${selectedCliente.apellido}` : t('select')}
             </span>
-            <svg
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2"
+            <ChevronDown
+              size={16} strokeWidth={2} color={colors.muted}
               style={{ transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            />
           </div>
 
           {showClienteDropdown && (
@@ -299,13 +297,14 @@ export default function EditarTurnoPage() {
                 style={{
                   padding: '10px 14px', border: 'none', borderBottom: `1px solid ${colors.border}`,
                   width: '100%', boxSizing: 'border-box', outline: 'none', fontSize: 14,
+                  backgroundColor: 'transparent', color: colors.text,
                 }}
               />
               {clientesFiltrados.map(c => (
                 <div
                   key={c.id}
                   onClick={() => { setSelectedCliente(c); setShowClienteDropdown(false); setClienteBuscar(''); }}
-                  style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: `1px solid ${colors.border}` }}
+                  style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: `1px solid ${colors.hairline}` }}
                 >
                   {c.nombre} {c.apellido}
                 </div>
@@ -328,15 +327,15 @@ export default function EditarTurnoPage() {
                     onClick={() => handleSeleccionarProfesional(p.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
-                      borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-                      border: `1px solid ${selected ? color : colors.divider}`,
+                      borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      border: `1px solid ${selected ? color : colors.border}`,
                       backgroundColor: selected ? color : colors.surface,
-                      color: selected ? '#FFF' : colors.text,
+                      color: selected ? colors.primaryFg : colors.text,
                     }}
                   >
                     <span style={{
                       width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                      backgroundColor: selected ? '#FFF' : color,
+                      backgroundColor: selected ? colors.primaryFg : color,
                     }} />
                     {p.nombre}
                   </button>
@@ -347,35 +346,19 @@ export default function EditarTurnoPage() {
         )}
 
         {/* ─── SERVICIOS ─── */}
-        <p style={sectionLabelStyle}>{t('services')}</p>
-        {mostrarSelectorProfesional && !profesionalSeleccionado ? (
-          <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
-            {t('chooseProfessionalFirst')}
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-            {serviciosDisponibles.map(s => (
-              <button
-                key={s.id}
-                onClick={() => toggleServicio(s.id)}
-                style={{
-                  borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-                  border: `1px solid ${selectedServicioIds.includes(s.id) ? colors.primary : colors.divider}`,
-                  backgroundColor: selectedServicioIds.includes(s.id) ? colors.primary : colors.surface,
-                  color: selectedServicioIds.includes(s.id) ? '#FFF' : colors.text,
-                }}
-              >
-                {s.nombre}
-              </button>
-            ))}
-          </div>
-        )}
+        <ServicioPicker
+          t={t}
+          mostrarSelectorProfesional={mostrarSelectorProfesional}
+          hayProfesionalSeleccionada={!!profesionalSeleccionado}
+          serviciosDisponibles={serviciosDisponibles}
+          selectedServicioIds={selectedServicioIds}
+          onToggleServicio={toggleServicio}
+        />
 
-        {/* ─── HORA DEL TURNO ─── */}
         <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
         <div
           onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
-          style={{ ...inputStyle, cursor: 'pointer', marginBottom: 32 }}
+          style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer', marginBottom: 32 }}
         >
           {formatHora12(`${horaSeleccionada.hora}:${horaSeleccionada.minuto}`)}
         </div>
@@ -389,8 +372,8 @@ export default function EditarTurnoPage() {
           }
           style={{
             width: '100%', height: 52, borderRadius: 14,
-            backgroundColor: colors.primary, color: '#fff',
-            fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
+            backgroundColor: colors.primary, color: colors.primaryFg,
+            fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
             opacity: (
               !selectedCliente || selectedServicioIds.length === 0 ||
               (mostrarSelectorProfesional && !selectedProfesionalId)
@@ -403,14 +386,19 @@ export default function EditarTurnoPage() {
 
       {/* ─── Hora Picker modal ─── */}
       {showHoraPicker && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60 }}>
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            backgroundColor: colors.surface, borderRadius: '20px 20px 0 0',
-            padding: 24, paddingBottom: 48,
-          }}>
-            <div style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.divider, margin: '0 auto 16px' }} />
-            <p style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, marginBottom: 16, color: colors.text }}>
+        <div
+          onClick={() => setShowHoraPicker(false)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              backgroundColor: colors.surface, borderRadius: '24px 24px 0 0',
+              boxShadow: shadows.sheet, padding: 24, paddingBottom: 48,
+            }}
+          >
+            <p style={{ textAlign: 'center', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, marginBottom: 16, color: colors.textStrong }}>
               {t('timeModalTitle')}
             </p>
             <DrumPicker
@@ -425,8 +413,8 @@ export default function EditarTurnoPage() {
               onClick={() => { setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
               style={{
                 marginTop: 24, width: '100%', height: 52, borderRadius: 14,
-                backgroundColor: colors.primary, color: '#fff',
-                fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
+                backgroundColor: colors.primary, color: colors.primaryFg,
+                fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
               }}
             >
               {t('confirm')}

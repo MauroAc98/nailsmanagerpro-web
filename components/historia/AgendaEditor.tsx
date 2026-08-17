@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { claveSlot } from '@/hooks/useGenerarHistoria';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
@@ -135,7 +135,7 @@ export function AgendaEditor({ agenda, diasOcultos, slotsOcultos, onToggleSlot, 
                           // se volvía ilegible (gris sobre gris). surfaceSubtle es el
                           // token correcto para "fondo apagado con texto encima".
                           background: off ? colors.surfaceSubtle : colors.primary,
-                          color: off ? colors.placeholder : '#fff',
+                          color: off ? colors.placeholder : colors.primaryFg,
                           fontSize: 10, fontWeight: 700,
                           cursor: clickeable ? 'pointer' : 'default',
                         }}

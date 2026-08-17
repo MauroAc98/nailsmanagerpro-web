@@ -216,24 +216,24 @@ export function useGenerarHistoria(fechaInicial?: string) {
     return `${nombreMes(fechaBase, 'long', 'mayusculas')} DE ${fechaBase.getFullYear()}`;
   }, [fechaBase, modo]);
 
-  // Título del canvas — StoryCanvas lo uppercasea igual, así que acá no hace falta.
-  // Framing consistente ("Turnos · ...") en los 3 modos — antes cada modo
-  // tenía su propio prefijo (o ninguno) y no comunicaba de qué se trataba
-  // el número/fecha. Se mantiene corto a propósito: esta línea no tiene
-  // auto-shrink (StoryCanvas no la envuelve en FitText como al nombre de
-  // la profesional), así que un texto más largo se desborda en pantallas
+  // Fecha del canvas — solo el rango/fecha, sin el prefijo "Turnos" (ese
+  // label fijo ahora lo pone StoryCanvas como parte del header, ver el
+  // rediseño de v0 que separa nombre / "TURNOS DISPONIBLES" / fecha en tres
+  // líneas en vez de una sola). Se mantiene corto a propósito: esta línea no
+  // tiene auto-shrink (StoryCanvas no la envuelve en FitText como al nombre
+  // de la profesional), así que un texto más largo se desborda en pantallas
   // angostas.
   const titulo = useMemo(() => {
-    if (modo === 'dia') return `Turnos · ${formatFechaLarga(fmt(fechaBase)).replace(', ', ' ')}`;
+    if (modo === 'dia') return formatFechaLarga(fmt(fechaBase)).replace(', ', ' ');
 
     if (modo === 'semana') {
       const { desde, hasta } = getRango(fechaBase, 'semana');
       const d = new Date(desde + 'T00:00:00');
       const h = new Date(hasta + 'T00:00:00');
-      return `Turnos · ${d.getDate()} al ${h.getDate()} de ${nombreMes(h, 'long')}`;
+      return `${d.getDate()} al ${h.getDate()} de ${nombreMes(h, 'long')}`;
     }
 
-    return `Turnos · ${nombreMes(fechaBase, 'long')}`;
+    return nombreMes(fechaBase, 'long');
   }, [fechaBase, modo]);
 
   // ─────────────────────────────────────────────

@@ -65,7 +65,13 @@
     "searchByName": "Buscar por nombre...",
     "professional": "PROFESIONAL",
     "services": "SERVICIOS",
+    "selectedCount": "{count, plural, one {# seleccionado} other {# seleccionados}}",
+    "filterServices": "Filtrar servicios...",
+    "noServicesFound": "No se encontraron servicios.",
+    "groupServicios": "Servicios",
+    "groupPromociones": "Promociones",
     "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
+    "noServicesAssigned": "Esta profesional no tiene servicios asignados.",
     "appointmentTime": "HORA DEL TURNO",
     "saving": "Guardando...",
     "saveChanges": "Guardar Cambios",
@@ -82,6 +88,11 @@
     "searchByName": "Buscar por nombre...",
     "professional": "PROFESIONAL",
     "services": "SERVICIOS",
+    "selectedCount": "{count, plural, one {# seleccionado} other {# seleccionados}}",
+    "filterServices": "Filtrar servicios...",
+    "noServicesFound": "No se encontraron servicios.",
+    "groupServicios": "Servicios",
+    "groupPromociones": "Promociones",
     "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
     "noServicesAssigned": "Esta profesional no tiene servicios asignados.",
     "appointmentTime": "HORA DEL TURNO",
@@ -103,11 +114,15 @@
     "newClientsThisMonth": "{count, plural, one {# clienta nueva este mes} other {# clientas nuevas este mes}}"
   },
   "RecordatoriosPendientesPage": {
+    "back": "Volver",
     "title": "Recordatorios pendientes",
     "subtitle": "TURNOS DE MAÑANA",
     "loading": "Cargando turnos de mañana...",
     "loadError": "No se pudieron cargar los turnos de mañana. Volvé a intentar más tarde.",
+    "bannerCount": "{count, plural, one {# turno de mañana sin aviso enviado} other {# turnos de mañana sin aviso enviado}}",
     "empty": "No tenés turnos confirmados para mañana.",
+    "emptyTitle": "¡Todo enviado!",
+    "sendButton": "Enviar recordatorio",
     "marcarEnviadoError": "No se pudo guardar. Volvé a marcarlo como enviado en un rato."
   }
 }

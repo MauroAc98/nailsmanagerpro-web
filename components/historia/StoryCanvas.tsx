@@ -2,10 +2,13 @@
 
 import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
+import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { primaryRaw } from '@/theme/colors';
+import { agendaFontSerif } from '@/theme/agendaColors';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 
 function nombreDia(fecha: string): string {
@@ -88,6 +91,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const t = useTranslations('historia.StoryCanvas');
   const esModoDia = dias.length === 1;
 
+  // Chip de fecha en el header — solo tiene sentido en modo Día (una fecha
+  // puntual). En Semana/Mes no hay "un" día que mostrar ahí: inventar uno
+  // (el primero del rango, por ejemplo) sugeriría que solo ese día tiene
+  // turnos. Ahí el chip cae a un ícono genérico en vez de un número.
+  const fechaChip     = esModoDia && dias[0] ? new Date(dias[0].fecha + 'T00:00:00') : null;
+  const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
+  const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
+
   // Con una profesional puntual elegida, su nombre reemplaza al del estudio
   // en el título — mostrar ambos es redundante (la propia profesional YA
   // identifica de qué estudio es) y en cuentas donde el nombre del estudio
@@ -96,6 +107,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 
   const alturaUtil = canvasHeight * 0.75;
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
+
+  // Zonas de blur local detrás de título y footer — alto aproximado, no
+  // medido en vivo (alcanza para cubrir cómodamente el chip+nombre+caption
+  // arriba y el bloque de reservas abajo con margen).
+  const tituloZonaAlto = Math.round(canvasHeight * 0.15);
+  const footerZonaAlto = Math.round(canvasHeight * 0.09);
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -126,16 +143,45 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           }}
         />
 
-        {/* Dark overlay — mas liviano que antes (0.72 -> 0.38): la foto queda
-            mas visible como ambientacion, y la legibilidad del contenido pasa
-            a apoyarse en el text-shadow (header/footer) y en la tarjeta propia
-            del bloque de disponibilidad (ver "Body" mas abajo), no en oscurecer
-            toda la imagen por igual. */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.38)' }} />
+        {/* Blur local detrás de título y footer — el texto arriba/abajo
+            queda nítido, solo el fondo en esas dos franjas se ve fuera de
+            foco para llevar la atención ahí, sin blurear toda la foto.
+            filter:blur() sobre una segunda copia de la misma imagen (no
+            backdrop-filter): es un filtro real sobre contenido rasterizado,
+            así que sí sobrevive la captura de html-to-image — backdrop-
+            filter no compone de forma confiable en su pipeline SVG
+            foreignObject. Cada copia se renderiza a canvasHeight completo
+            (mismo object-fit:cover que la foto base) y el wrapper con
+            overflow:hidden solo destapa la franja correspondiente, así el
+            blur queda alineado píxel a píxel con la foto de abajo. */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: tituloZonaAlto, overflow: 'hidden' }}>
+          <img
+            src={fondoUri ?? '/default_bg.jpg'}
+            alt=""
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: canvasHeight, objectFit: 'cover', filter: 'blur(16px)' }}
+          />
+        </div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerZonaAlto, overflow: 'hidden' }}>
+          <img
+            src={fondoUri ?? '/default_bg.jpg'}
+            alt=""
+            style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: canvasHeight, objectFit: 'cover', filter: 'blur(16px)' }}
+          />
+        </div>
 
-        {/* Content layer — margen respecto al borde del canvas nada más; el
-            panel de abajo es el que realmente engloba todo (header, body,
-            footer). */}
+        {/* Dark overlay — cubre todo el canvas de punta a punta. Antes era
+            más liviano (0.38) y el oscurecido real venía de un panel
+            redondeado inset por encima, que dejaba un margen de foto sin
+            oscurecer alrededor y dos tintes distintos superpuestos.
+            Unificado en una sola capa pareja (feedback de diseño
+            2026-08-17): la foto sigue de ambientación pero el oscurecido no
+            tiene "marco". */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />
+
+        {/* Content layer — margen respecto al borde del canvas nada más; ya
+            no tiene su propio panel/tinte, el oscurecido parejo de arriba
+            alcanza para la legibilidad (con el text-shadow de cada
+            elemento). */}
         <div
           style={{
             position: 'absolute', inset: 0,
@@ -143,37 +189,74 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             display: 'flex', flexDirection: 'column',
           }}
         >
-          {/* Panel único: envuelve título/marca, disponibilidad y el CTA
-              final, todo bajo la misma "pintura" (opacidad baja, sin borde ni
-              sombra). No le agrega altura por fila a nada — el padding es
-              fijo una sola vez para todo el bloque, así que un mes completo
-              (31 días) sigue entrando igual que antes; ver el cálculo de
-              gap/filas más abajo, que ya contempla el recorte del padding. */}
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-            padding: '16px 14px', borderRadius: 20,
-            background: 'rgba(0,0,0,0.34)',
           }}>
-            {/* Header */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-              {tituloPrincipal && (
-                // minFontSize 12: siempre por encima del tope de FitText de los
-                // turnos (maxFontSize 10) — el título nunca queda mas chico que
-                // la info de los turnos.
-                <FitText
-                  text={tituloPrincipal.toUpperCase()}
-                  maxFontSize={17}
-                  minFontSize={12}
-                  style={{ fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center', textShadow: '0 2px 6px rgba(0,0,0,0.85)' }}
-                />
-              )}
+            {/* Header — chip de fecha + nombre en serif + caption ("{fecha} ·
+                TURNOS DISPONIBLES"), flotando directo sobre el panel general
+                (mismo criterio que el resto del header/body/footer) en vez
+                de tener su propio panel anidado — un segundo panel con otro
+                tinte adentro del panel general sumaba un escalón de
+                contraste de más (feedback de diseño 2026-08-17). El chip
+                translúcida como el resto (feedback de diseño 2026-08-17),
+                no una superficie opaca — otro "panel" compitiendo. Colores
+                fijos (no colors.* / var(--ag-*)): esta imagen es un export
+                fijo que no debe cambiar según el tema claro/oscuro activo
+                del editor al momento de generarla, y html-to-image además
+                descarta las custom properties heredadas al capturar (mismo
+                problema que primaryRaw/primaryDeepRaw resuelven en
+                theme/colors.ts). */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
               <span style={{
-                fontSize: 15, fontWeight: 300, letterSpacing: 6, color: '#fff', textAlign: 'center',
-                marginTop: tituloPrincipal ? 4 : 0, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
               }}>
-                {titulo.toUpperCase()}
+                {chipDiaNumero !== null ? (
+                  <>
+                    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
+                      {chipDiaLabel}
+                    </span>
+                    <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
+                      {chipDiaNumero}
+                    </span>
+                  </>
+                ) : (
+                  <CalendarDays size={18} color="#fff" strokeWidth={2} />
+                )}
               </span>
-              <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.55)', marginTop: 8 }} />
+
+              <div style={{ minWidth: 0, flex: 1 }}>
+                {tituloPrincipal && (
+                  // minFontSize 15: siempre muy por encima del tope de FitText
+                  // de los turnos en el body (maxFontSize 10) — el nombre
+                  // nunca queda mas chico que la info de los turnos.
+                  <FitText
+                    text={tituloPrincipal}
+                    maxFontSize={22}
+                    minFontSize={15}
+                    style={{
+                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                      letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    }}
+                  />
+                )}
+                {/* Dos líneas separadas, no concatenadas — en modo Semana la
+                    fecha ("17 al 23 de agosto") ya es larga por sí sola, y
+                    sumarle "· TURNOS DISPONIBLES" en el mismo renglón lo
+                    hacía correr y perder orden. */}
+                <span style={{
+                  display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                  color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                }}>
+                  {t('availableAppointments')}
+                </span>
+                <span style={{
+                  display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
+                  color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                }}>
+                  {titulo}
+                </span>
+              </div>
             </div>
 
             {/* Body */}
@@ -235,26 +318,31 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               )}
             </div>
 
-            {/* Footer */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 8, fontWeight: 300, letterSpacing: 4, color: '#fff', opacity: 0.85, textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                {t('bookYourSpot')}
-              </span>
-              {/* Mismo tratamiento que el CTA de arriba (texto translúcido +
-                  sombra, sin fondo propio) — el ícono alcanza para
-                  diferenciarlo sin competirle protagonismo al "reservá tu
-                  lugar", que tiene que seguir siendo lo primero que se lee. */}
-              {telefonoEstudio && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: 0.85 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                  </svg>
-                  <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: 0.5, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+            {/* Footer — con teléfono, "RESERVAS" + ícono de WhatsApp +
+                número, flotando sobre el panel general sin caja propia
+                — mismo criterio que el header, nada de paneles anidados. El
+                ícono (no la palabra "WhatsApp" escrita) para quedar
+                consistente con cómo se representa esa acción en el resto de
+                la app (Recordatorios, botón de turno). Sin teléfono cargado
+                no hay número que mostrar, así que cae al CTA genérico de
+                siempre. */}
+            {telefonoEstudio ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                  {t('reservationsLabel')}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <WhatsappGlyph size={11} color="#fff" />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                     {telefonoEstudio}
                   </span>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <span style={{ fontSize: 8, fontWeight: 300, letterSpacing: 4, color: '#fff', opacity: 0.85, textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                {t('bookYourSpot')}
+              </span>
+            )}
           </div>
         </div>
 

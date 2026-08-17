@@ -3,8 +3,10 @@
     "placeholder": "Adicione um texto ao seu story..."
   },
   "StoryCanvas": {
+    "availableAppointments": "HORÁRIOS DISPONÍVEIS",
     "complete": "COMPLETO 🤍",
-    "bookYourSpot": "RESERVE SEU HORÁRIO"
+    "bookYourSpot": "RESERVE SEU HORÁRIO",
+    "reservationsLabel": "RESERVAS"
   },
   "HistoriaPage": {
     "title": "Gerar story",
@@ -17,7 +19,16 @@
     "showScheduleOf": "Mostrar agenda de:",
     "editAvailability": "Editar disponibilidade",
     "editAvailabilityHint": "Sua disponibilidade real já está sendo mostrada. Use isto só se quiser ocultar algo pontual antes de compartilhar.",
-    "background": "Fundo",
+    "sectionAgenda": "Agenda",
+    "sectionText": "Texto",
+    "sectionBackground": "Fundo",
+    "readyToEdit": "Seu story pronto para editar",
+    "previewBadge": "Pré-visualização",
+    "visibleSlotsCount": "{count, plural, one {# horário visível} other {# horários visíveis}}",
+    "howItWorks": "Como funciona?",
+    "hideHelp": "Ocultar ajuda",
+    "changeBackgroundPhoto": "Trocar foto de fundo",
+    "whatToShow": "O que mostrar",
     "save": "Salvar",
     "share": "Compartilhar",
     "removeFixedBackground": "Remover fundo fixo salvo",

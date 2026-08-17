@@ -3,8 +3,10 @@
     "placeholder": "Agregá un texto a tu historia..."
   },
   "StoryCanvas": {
+    "availableAppointments": "TURNOS DISPONIBLES",
     "complete": "COMPLETO 🤍",
-    "bookYourSpot": "RESERVÁ TU LUGAR"
+    "bookYourSpot": "RESERVÁ TU LUGAR",
+    "reservationsLabel": "RESERVAS"
   },
   "HistoriaPage": {
     "title": "Generar historia",
@@ -17,7 +19,16 @@
     "showScheduleOf": "Mostrar agenda de:",
     "editAvailability": "Editar disponibilidad",
     "editAvailabilityHint": "Ya se muestra tu disponibilidad real. Usá esto solo si querés ocultar algo puntual antes de compartir.",
-    "background": "Fondo",
+    "sectionAgenda": "Agenda",
+    "sectionText": "Texto",
+    "sectionBackground": "Fondo",
+    "readyToEdit": "Tu historia lista para editar",
+    "previewBadge": "Vista previa",
+    "visibleSlotsCount": "{count, plural, one {# horario visible} other {# horarios visibles}}",
+    "howItWorks": "¿Cómo funciona?",
+    "hideHelp": "Ocultar ayuda",
+    "changeBackgroundPhoto": "Cambiar foto de fondo",
+    "whatToShow": "Qué mostrar",
     "save": "Guardar",
     "share": "Compartir",
     "removeFixedBackground": "Quitar fondo fijo guardado",

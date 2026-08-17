@@ -65,7 +65,13 @@
     "searchByName": "Buscar por nome...",
     "professional": "PROFISSIONAL",
     "services": "SERVIÇOS",
+    "selectedCount": "{count, plural, one {# selecionado} other {# selecionados}}",
+    "filterServices": "Filtrar serviços...",
+    "noServicesFound": "Nenhum serviço encontrado.",
+    "groupServicios": "Serviços",
+    "groupPromociones": "Promoções",
     "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
+    "noServicesAssigned": "Essa profissional não tem serviços atribuídos.",
     "appointmentTime": "HORÁRIO DO AGENDAMENTO",
     "saving": "Salvando...",
     "saveChanges": "Salvar Alterações",
@@ -82,6 +88,11 @@
     "searchByName": "Buscar por nome...",
     "professional": "PROFISSIONAL",
     "services": "SERVIÇOS",
+    "selectedCount": "{count, plural, one {# selecionado} other {# selecionados}}",
+    "filterServices": "Filtrar serviços...",
+    "noServicesFound": "Nenhum serviço encontrado.",
+    "groupServicios": "Serviços",
+    "groupPromociones": "Promoções",
     "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
     "noServicesAssigned": "Essa profissional não tem serviços atribuídos.",
     "appointmentTime": "HORÁRIO DO AGENDAMENTO",
@@ -103,11 +114,15 @@
     "newClientsThisMonth": "{count, plural, one {# cliente nova este mês} other {# clientes novas este mês}}"
   },
   "RecordatoriosPendientesPage": {
+    "back": "Voltar",
     "title": "Lembretes pendentes",
     "subtitle": "AGENDAMENTOS DE AMANHÃ",
     "loading": "Carregando agendamentos de amanhã...",
     "loadError": "Não foi possível carregar os agendamentos de amanhã. Tente novamente mais tarde.",
+    "bannerCount": "{count, plural, one {# agendamento amanhã sem lembrete enviado} other {# agendamentos amanhã sem lembrete enviado}}",
     "empty": "Você não tem agendamentos confirmados para amanhã.",
+    "emptyTitle": "Tudo enviado!",
+    "sendButton": "Enviar lembrete",
     "marcarEnviadoError": "Não foi possível salvar. Marque como enviado novamente daqui a pouco."
   }
 }

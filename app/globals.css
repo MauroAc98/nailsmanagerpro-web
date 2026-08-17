@@ -182,7 +182,15 @@ body {
   --ag-primary: #d79ea4;
   --ag-primary-deep: #e8879a;
   --ag-primary-soft: #3a2b30;
-  --ag-primary-fg: #241a1d;
+  /* Blanco, no oscuro: --ag-primary en modo oscuro (#d79ea4) coincide exacto
+     con --color-primary del theme viejo (mismo valor en los dos temas, ver
+     theme/colors.ts) — que siempre usa texto/ícono blanco encima. Un
+     primary-fg oscuro acá (más "correcto" en aislamiento por contraste)
+     hacía que el mismo circulo rosa mostrara un "+" negro en Agenda y uno
+     blanco en Servicios/Clientes/etc. en modo oscuro — dos módulos con el
+     mismo color de fondo y el ícono invertido, lee como bug aunque cada uno
+     por separado esté bien. */
+  --ag-primary-fg: #ffffff;
   --ag-amber: #e6a020;
   --ag-amber-bg: #2e2418;
   --ag-amber-fg: #e0b64d;

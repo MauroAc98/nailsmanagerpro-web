@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
-import { colors, withAlpha } from '@/theme/colors';
+import { agendaColors as colors } from '@/theme/agendaColors';
 import { ALL_EMOJIS } from '@/constants/editor';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 
@@ -80,11 +80,11 @@ export function TextoLibreInput({
           }}
         >
           {editandoId ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryFg} strokeWidth="2">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryFg} strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           )}
@@ -122,7 +122,7 @@ export function TextoLibreInput({
           style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 8,
             padding: '4px 6px', borderRadius: 8,
-            background: editandoId === t.id ? withAlpha(colors.primary, '1F') : 'transparent',
+            background: editandoId === t.id ? colors.primarySoft : 'transparent',
           }}
         >
           <span style={{ color: colors.placeholder, fontSize: 14 }}>⠿</span>

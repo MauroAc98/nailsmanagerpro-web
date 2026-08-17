@@ -1,3 +1,5 @@
+import { withAlpha } from '@/theme/colors';
+
 // Agenda redesign palette — reads the --ag-* custom properties scoped to
 // .agenda-light/.agenda-dark (app/globals.css), the same var()-indirection
 // pattern as theme/colors.ts but kept separate so this visual refresh stays
@@ -41,15 +43,15 @@ export const agendaColors = {
   placeholder: 'var(--ag-muted)',
   warningBg: 'var(--ag-amber-bg)',
   warningFg: 'var(--ag-amber-fg)',
-  successBorder: 'color-mix(in srgb, var(--ag-success) 45%, transparent)',
-  dangerBg: 'color-mix(in srgb, var(--ag-danger) 12%, transparent)',
-  dangerBorder: 'color-mix(in srgb, var(--ag-danger) 45%, transparent)',
+  successBorder: withAlpha('var(--ag-success)', '73'),
+  dangerBg: withAlpha('var(--ag-danger)', '1F'),
+  dangerBorder: withAlpha('var(--ag-danger)', '73'),
   // Global directo (no --ag-*): el mismo rosa clarito que usa ServicioCard/
   // GastoCard para el fondo del swipe-to-delete. Antes apuntaba a
   // --ag-danger (igual que `danger`), dejando el ícono/texto del mismo
   // color que su propio fondo — invisibles.
   dangerAccent: 'var(--color-danger-accent)',
-  primaryDisabled: 'color-mix(in srgb, var(--ag-primary) 35%, transparent)',
+  primaryDisabled: withAlpha('var(--ag-primary)', '59'),
 };
 
 export const agendaShadows = {
