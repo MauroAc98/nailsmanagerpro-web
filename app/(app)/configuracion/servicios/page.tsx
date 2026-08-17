@@ -8,6 +8,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import BackButton from '@/components/BackButton';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
@@ -127,17 +128,7 @@ export default function ServiciosPage() {
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          onClick={() => router.back()}
-          style={{
-            width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
-            border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
+        <BackButton />
         <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 

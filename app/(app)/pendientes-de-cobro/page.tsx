@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import BackButton from '@/components/BackButton';
 import { colors, shadows } from '@/theme/colors';
 import { usePendientesDeCobroStore, usePendientesFiltrados } from '@/store/usePendientesDeCobroStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -68,7 +68,6 @@ function PendienteCard({ turno, onCargarPrecio }: { turno: Turno; onCargarPrecio
 }
 
 export default function PendientesDeCobroPage() {
-  const router = useRouter();
   const t = useTranslations('agenda.PendientesDeCobroPage');
   const { loading, error, buscar, setBuscar, fetchPendientes, actualizarPrecios } = usePendientesDeCobroStore();
   const pendientesFiltrados = usePendientesFiltrados();
@@ -102,18 +101,7 @@ export default function PendientesDeCobroPage() {
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       <div style={{ padding: '24px 20px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={() => router.back()}
-            style={{
-              width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceSubtle,
-              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
+          <BackButton />
           <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
         </div>
         <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0 48px' }}>{t('subtitle')}</p>

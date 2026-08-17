@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, MessageSquareWarning, CheckCircle2 } from 'lucide-react';
+import { MessageSquareWarning, CheckCircle2 } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
@@ -23,7 +23,6 @@ function horaDeHora(fechaHora: string): string {
 }
 
 export default function RecordatoriosPendientesPage() {
-  const router = useRouter();
   const t = useTranslations('agenda.RecordatoriosPendientesPage');
 
   const { turnos: turnosParaRecordar, loading, error, fetchRecordatoriosPendientes, marcarEnviado } = useRecordatoriosPendientesStore();
@@ -49,13 +48,7 @@ export default function RecordatoriosPendientesPage() {
 
       {/* Header */}
       <div style={{ padding: '20px 20px 4px' }}>
-        <button
-          onClick={() => router.back()}
-          aria-label={t('back')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', color: colors.text }}
-        >
-          <ChevronLeft size={24} strokeWidth={2} />
-        </button>
+        <BackButton />
       </div>
 
       <div style={{ padding: '4px 20px 18px' }}>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import BackButton from '@/components/BackButton';
 import { colors, withAlpha } from '@/theme/colors';
 import { useHistoriaPrecios } from '@/hooks/useHistoriaPrecios';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -57,7 +57,6 @@ function useCanvasScale() {
 export default function HistoriaPreciosPage() {
   const t      = useTranslations('historia.HistoriaPreciosPage');
   const tCard  = useTranslations('historia.TarjetaPrecios');
-  const router = useRouter();
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { servicios, fetchServicios }         = useServiciosStore();
@@ -96,14 +95,7 @@ export default function HistoriaPreciosPage() {
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.text} strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
+        <BackButton />
         <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 

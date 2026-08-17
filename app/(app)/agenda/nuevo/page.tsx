@@ -3,7 +3,8 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronDown, User, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, User, CheckCircle2 } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { ServicioPicker } from '@/components/agenda/ServicioPicker';
@@ -202,12 +203,7 @@ function NuevoTurnoContent() {
 
       {/* Header */}
       <div style={{ padding: '20px 20px 4px' }}>
-        <button
-          onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', color: colors.text }}
-        >
-          <ChevronLeft size={24} strokeWidth={2} />
-        </button>
+        <BackButton />
       </div>
 
       <div style={{ padding: '4px 20px 18px' }}>

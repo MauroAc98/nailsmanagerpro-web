@@ -1,12 +1,13 @@
 'use client';
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   ChevronLeft, ChevronRight, ImagePlus, Download, Share2, ImageOff,
   CalendarDays, Type, Eye,
 } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
@@ -65,7 +66,6 @@ const footerActionStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────
 function HistoriaContent() {
   const t            = useTranslations('historia.HistoriaPage');
-  const router       = useRouter();
   const searchParams = useSearchParams();
   const fechaInicial = searchParams.get('fecha') ?? undefined;
 
@@ -130,12 +130,7 @@ function HistoriaContent() {
 
       {/* Header */}
       <div style={{ padding: '20px 20px 4px' }}>
-        <button
-          onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', color: colors.text }}
-        >
-          <ChevronLeft size={24} strokeWidth={2} />
-        </button>
+        <BackButton />
       </div>
 
       <div style={{ padding: '4px 20px 18px' }}>
@@ -396,7 +391,7 @@ function HistoriaContent() {
                 <Download size={18} strokeWidth={2} color={colors.text} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{t('save')}</span>
               </button>
-              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.whatsapp, border: 'none' }}>
+              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.primary, border: 'none' }}>
                 <Share2 size={18} strokeWidth={2} color={colors.primaryFg} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.primaryFg }}>{t('share')}</span>
               </button>

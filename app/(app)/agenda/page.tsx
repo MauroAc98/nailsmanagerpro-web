@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useTurnoStore } from '@/store/useTurnoStore';
@@ -230,25 +230,12 @@ function SwipeableTurnoCard({
           del alignItems del padre para centrarse (el padre puede crecer más
           alto que este bloque, ej. en_curso con el badge+botón apilados). */}
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <p style={{
-            fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-          </p>
-          {isEnCurso && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
-              fontSize: 9, fontWeight: 700, color: colors.amberFg, letterSpacing: 0.6, textTransform: 'uppercase',
-              backgroundColor: colors.amberBg,
-              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.amber, flexShrink: 0 }} />
-              {t('inProgress')}
-            </span>
-          )}
-        </div>
+        <p style={{
+          fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+        </p>
         <p style={{
           fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -260,28 +247,43 @@ function SwipeableTurnoCard({
       {/* Sección acción */}
       <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
         {isEnCurso ? (
-          onFinalizar && (
-            <button
-              onClick={e => { e.stopPropagation(); onFinalizar(); }}
-              // El botón vive dentro del área con los handlers de swipe
-              // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
-              // en onClick no alcanza — los eventos táctiles burbujean antes
-              // y de forma independiente del click, así que un tap con
-              // apenas unos px de deriva podía marcar dragged.current=true
-              // en el padre y hacer que el navegador cancele el click
-              // sintético del botón (el panel de precios nunca se abría).
-              onTouchStart={e => e.stopPropagation()}
-              onTouchMove={e => e.stopPropagation()}
-              onTouchEnd={e => e.stopPropagation()}
-              style={{
-                fontSize: 11, fontWeight: 600, color: colors.primaryFg,
-                border: 'none', borderRadius: 20,
-                padding: '6px 14px', backgroundColor: colors.primary, cursor: 'pointer',
-              }}
-            >
-              {t('finishNow')}
-            </button>
-          )
+          // Badge apilado arriba del botón (no comparte fila con el nombre):
+          // cuando el badge iba al lado del nombre con flexShrink:0, absorbía
+          // el ancho que necesitaba y el nombre (minWidth:0) se llevaba toda
+          // la compresión, truncándose a un solo carácter en cards angostas.
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 9, fontWeight: 700, color: colors.amberFg, letterSpacing: 0.6, textTransform: 'uppercase',
+              backgroundColor: colors.amberBg,
+              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.amber, flexShrink: 0 }} />
+              {t('inProgress')}
+            </span>
+            {onFinalizar && (
+              <button
+                onClick={e => { e.stopPropagation(); onFinalizar(); }}
+                // El botón vive dentro del área con los handlers de swipe
+                // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
+                // en onClick no alcanza — los eventos táctiles burbujean antes
+                // y de forma independiente del click, así que un tap con
+                // apenas unos px de deriva podía marcar dragged.current=true
+                // en el padre y hacer que el navegador cancele el click
+                // sintético del botón (el panel de precios nunca se abría).
+                onTouchStart={e => e.stopPropagation()}
+                onTouchMove={e => e.stopPropagation()}
+                onTouchEnd={e => e.stopPropagation()}
+                style={{
+                  fontSize: 11, fontWeight: 600, color: colors.primaryFg,
+                  border: 'none', borderRadius: 20,
+                  padding: '6px 14px', backgroundColor: colors.primary, cursor: 'pointer',
+                }}
+              >
+                {t('finishNow')}
+              </button>
+            )}
+          </div>
         ) : (
           <>
             {turno.cliente?.telefono && (
@@ -446,29 +448,33 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
 
         {/* Sección info central */}
         <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <p style={{
-              fontSize: 16, fontWeight: 600, color: colors.muted, margin: 0, minWidth: 0,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-            </p>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
-              fontSize: 9, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 0.6, textTransform: 'uppercase',
-              backgroundColor: colors.primarySoft,
-              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-            }}>
-              <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} />
-              {t('finished')}
-            </span>
-          </div>
+          <p style={{
+            fontSize: 16, fontWeight: 600, color: colors.muted, margin: 0, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+          </p>
           <p style={{
             fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
           </p>
+        </div>
+
+        {/* Sección acción — mismo lugar que el badge de SwipeableTurnoCard
+            en_curso (columna propia a la derecha), para que el badge de
+            estado no se mezcle con el nombre/servicio del bloque central. */}
+        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, flexShrink: 0 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontSize: 9, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 0.6, textTransform: 'uppercase',
+            backgroundColor: colors.primarySoft,
+            borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
+          }}>
+            <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} />
+            {t('finished')}
+          </span>
         </div>
       </div>
     </div>
@@ -606,8 +612,19 @@ function FiltroSheetContent({
     fechaFiltro ? fechaFiltro.split('-').reverse().join('/') : '',
   );
   const [fechaError, setFechaError] = useState(false);
+  // Acordeón Servicios/Promociones — mismo agrupado que ServicioPicker, para
+  // que la lista no quede infinita si hay muchos servicios cargados. Sin
+  // buscador acá: a diferencia de ServicioPicker (elegir servicios de UN
+  // turno), esta hoja ya tiene busqueda por nombre y por fecha arriba.
+  const [grupoAbierto, setGrupoAbierto] = useState<'regulares' | 'promos' | null>('regulares');
 
   const btnDeshabilitado = !hayFiltroActivo || fechaError;
+
+  const gruposServicios = [
+    { key: 'regulares' as const, nombre: t('groupServicios'), items: serviciosActivos.filter(s => !s.es_promo) },
+    { key: 'promos' as const, nombre: t('groupPromociones'), items: serviciosActivos.filter(s => s.es_promo) },
+  ].filter(g => g.items.length > 0);
+  const servicioSeleccionado = serviciosActivos.find(s => s.id === servicioFiltro) ?? null;
 
   const handleCambiarTextoFecha = (texto: string) => {
     const formateado = autoFormatearFecha(texto, textoFecha);
@@ -713,26 +730,89 @@ function FiltroSheetContent({
         <p style={{ fontSize: 11, color: colors.danger, marginTop: 5, marginLeft: 2 }}>{t('invalidDate')}</p>
       )}
 
-      {/* Filtrar por servicio */}
+      {/* Filtrar por servicio — mismas filas con checkbox y el mismo
+          acordeón Servicios/Promociones que ServicioPicker (components/
+          agenda/ServicioPicker.tsx), pero sin buscador: acá alcanza con el
+          colapsado de grupos y sigue siendo selección única (servicioFiltro
+          es un solo id, no un array). */}
       <p style={{ ...sectionLabelStyle, marginTop: fechaError ? 12 : 16 }}>
         {t('filterByService')}
       </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-        {serviciosActivos.map(s => (
-          <button
-            key={s.id}
-            onClick={() => onToggleServicio(s.id)}
-            style={{
-              padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-              border: `1px solid ${servicioFiltro === s.id ? colors.primary : colors.divider}`,
-              backgroundColor: servicioFiltro === s.id ? colors.primary : colors.surfaceSubtle,
-              color: servicioFiltro === s.id ? colors.primaryFg : colors.textStrong,
-              cursor: 'pointer',
-            }}
-          >
-            {s.nombre}
-          </button>
-        ))}
+      <div style={{
+        marginBottom: 20, borderRadius: 16,
+        border: `1px solid ${colors.border}`, backgroundColor: colors.surface, overflow: 'hidden',
+      }}>
+        {/* Chip del seleccionado — visible siempre, sin importar qué grupo
+            esté colapsado. Sin esto, elegir un servicio y después cerrar (o
+            cambiar de) grupo lo dejaba sin ningún rastro visible. */}
+        {servicioSeleccionado && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 10, borderBottom: `1px solid ${colors.hairline}` }}>
+            <button
+              onClick={() => onToggleServicio(servicioSeleccionado.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, borderRadius: 20, padding: '6px 10px',
+                fontSize: 12, fontWeight: 600, color: colors.primaryDeep, backgroundColor: colors.primarySoft,
+                border: 'none', cursor: 'pointer',
+              }}
+            >
+              {servicioSeleccionado.nombre}
+              <X size={12} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+        {gruposServicios.map((grupo, groupIndex) => {
+          const isOpen = grupoAbierto === grupo.key;
+          return (
+            <div key={grupo.key} style={{ borderTop: groupIndex > 0 ? `1px solid ${colors.hairline}` : 'none' }}>
+              <button
+                onClick={() => setGrupoAbierto(isOpen ? null : grupo.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+                  padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.subtext }}>
+                  {grupo.nombre}
+                </span>
+                {isOpen ? <ChevronUp size={16} color={colors.muted} /> : <ChevronDown size={16} color={colors.muted} />}
+              </button>
+              {isOpen && (
+                <div style={{ padding: '0 8px 8px' }}>
+                  {grupo.items.map(s => {
+                    const checked = servicioFiltro === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => onToggleServicio(s.id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                          padding: '10px 8px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
+                          background: 'none', border: 'none',
+                        }}
+                      >
+                        <span style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          width: 20, height: 20, borderRadius: 6,
+                          border: `1px solid ${checked ? colors.primary : colors.border}`,
+                          backgroundColor: checked ? colors.primary : 'transparent',
+                          color: colors.primaryFg,
+                        }}>
+                          {checked && <Check size={14} strokeWidth={3} />}
+                        </span>
+                        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: colors.textStrong }}>
+                          {s.nombre}
+                        </span>
+                        <span style={{ fontSize: 12, color: colors.muted, flexShrink: 0 }}>
+                          {s.duracion_minutos} min
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <button
@@ -1212,10 +1292,7 @@ export default function AgendaPage() {
       {/* Header */}
       <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase', color: colors.primaryDeep }}>
-            NailsManager
-          </p>
-          <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: '2px 0 0' }}>
+          <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
             {t('title')}
           </h1>
         </div>

@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronDown, User } from 'lucide-react';
+import { ChevronDown, User } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { ServicioPicker } from '@/components/agenda/ServicioPicker';
 import { useTurnoStore } from '@/store/useTurnoStore';
@@ -239,12 +240,7 @@ export default function EditarTurnoPage() {
 
       {/* Header */}
       <div style={{ padding: '20px 20px 4px' }}>
-        <button
-          onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', color: colors.text }}
-        >
-          <ChevronLeft size={24} strokeWidth={2} />
-        </button>
+        <BackButton />
       </div>
 
       <div style={{ padding: '4px 20px 18px' }}>

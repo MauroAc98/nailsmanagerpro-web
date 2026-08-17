@@ -9,7 +9,7 @@
     "reservationsLabel": "RESERVAS"
   },
   "HistoriaPage": {
-    "title": "Generar historia",
+    "title": "Historia de turnos",
     "loading": "Cargando...",
     "tabDay": "DÍA",
     "tabWeek": "SEMANA",

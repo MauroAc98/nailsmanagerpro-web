@@ -50,6 +50,8 @@
     "datePlaceholder": "DD/MM/YYYY",
     "invalidDate": "Fecha inválida",
     "filterByService": "Filtrar por servicio",
+    "groupServicios": "Servicios",
+    "groupPromociones": "Promociones",
     "viewResults": "Ver resultados"
   },
   "SelectorProfesionalDia": {

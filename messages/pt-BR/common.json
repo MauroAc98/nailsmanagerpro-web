@@ -82,6 +82,9 @@
   "ColorSwatchPicker": {
     "ariaLabel": "Cor {color}"
   },
+  "BackButton": {
+    "ariaLabel": "Voltar"
+  },
   "ConfirmDialog": {
     "confirmDefault": "Confirmar",
     "cancelDefault": "Cancelar",
