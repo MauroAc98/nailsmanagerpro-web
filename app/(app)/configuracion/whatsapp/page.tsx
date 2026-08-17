@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { colors } from '@/theme/colors';
@@ -47,7 +46,6 @@ async function shareQR(qrBase64: string, shareTitle: string) {
 
 export default function WhatsappPage() {
   const t = useTranslations('whatsapp.WhatsappPage');
-  const router = useRouter();
   const {
     estado, qrBase64, loading, polling, error, expirado,
     conectar, consultarEstado, desconectar, detenerPolling, reset,

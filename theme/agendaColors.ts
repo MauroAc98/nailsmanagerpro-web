@@ -52,6 +52,11 @@ export const agendaColors = {
   // color que su propio fondo — invisibles.
   dangerAccent: 'var(--color-danger-accent)',
   primaryDisabled: withAlpha('var(--ag-primary)', '59'),
+  // Mismo criterio que dangerAccent: los dos colores de la comparación
+  // nuevas/recurrentes en Estadísticas no tienen equivalente --ag-*
+  // (no son parte de la paleta rosa), así que apuntan directo al global.
+  chart1: 'var(--color-chart-1)',
+  chart2: 'var(--color-chart-2)',
 };
 
 export const agendaShadows = {

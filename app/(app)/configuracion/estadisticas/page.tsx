@@ -1,14 +1,16 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Fragment, Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { TrendingDown, TrendingUp } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { statsService, DashboardStats, PuntoGanancia } from '@/services/statsService';
+import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/services/statsService';
 import { extraerMensajeError } from '@/services/clienteService';
-import { nombreMes, formatoYMD } from '@/lib/dateFormat';
+import { nombreMes, nombreDia, diasSemanaCortos, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
 
 // Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
@@ -38,6 +40,24 @@ function enumerarFechas(desde: string, hasta: string): string[] {
     cursor.setDate(cursor.getDate() + 1);
   }
   return fechas;
+}
+
+// dia_semana del backend es ISO (1=lunes...7=domingo); diasSemanaCortos()
+// devuelve Domingo..Sábado (índice 0=domingo, igual orden que Date#getDay).
+// iso % 7 mapea 7 (domingo) -> 0 y 1..6 (lunes..sábado) -> 1..6, sin tabla
+// de conversión aparte.
+function nombreDiaCortoIso(iso: number, dias: string[]): string {
+  return dias[iso % 7];
+}
+
+// Reconstruye una fecha real a partir de un dia_semana ISO (1=lunes) para
+// poder pedirle el nombre largo a `nombreDia` — 2024-01-01 es lunes, ancla
+// arbitraria en hora local (mismo cuidado de diasSemanaCortos: nunca UTC).
+function nombreDiaLargoIso(iso: number): string {
+  const lunesBase = new Date(2024, 0, 1);
+  const d = new Date(lunesBase);
+  d.setDate(lunesBase.getDate() + (iso - 1));
+  return nombreDia(d, 'long', 'ninguna');
 }
 
 // ─────────────────────────────────────────────
@@ -70,7 +90,7 @@ function MiniBarChart({
     return (
       <div style={{
         backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-        boxShadow: shadows.card, borderRadius: 14, padding: '16px',
+        boxShadow: shadows.card, borderRadius: 16, padding: '16px',
         height, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>{t('earningsChartEmpty')}</p>
@@ -83,7 +103,7 @@ function MiniBarChart({
   return (
     <div style={{
       backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 14, padding: '16px',
+      boxShadow: shadows.card, borderRadius: 16, padding: '16px',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
         <span style={{ fontSize: 11, color: colors.subtext, flexShrink: 0 }}>
@@ -137,14 +157,100 @@ function MiniBarChart({
 }
 
 // ─────────────────────────────────────────────
+// Gráfico de ritmo — barras apiladas (completados/confirmados/cancelados)
+// por día de la semana. Mismo criterio táctil que MiniBarChart: en mobile
+// no hay hover, así que el desglose exacto de cada día vive en un `button`
+// tocable con detalle fijado arriba, no en un `title` nativo (invisible sin
+// mouse).
+// ─────────────────────────────────────────────
+function RitmoTurnosChart({
+  dias,
+}: { dias: { dia_semana: number; label: string; completados: number; confirmados: number; cancelados: number }[] }) {
+  const t = useTranslations('estadisticas.EstadisticasPage');
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
+  const maxTotal = dias.reduce((max, d) => Math.max(max, d.completados + d.confirmados + d.cancelados), 0);
+  const activo = seleccionado != null ? dias[seleccionado] : null;
+
+  return (
+    <div style={{
+      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+      boxShadow: shadows.card, borderRadius: 16, padding: 16,
+    }}>
+      <p style={{
+        fontSize: 12, fontWeight: activo ? 700 : 400,
+        color: activo ? colors.textStrong : colors.subtext, margin: '0 0 10px',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {activo
+          ? `${activo.label} · ${t('completed')}: ${activo.completados} · ${t('confirmed')}: ${activo.confirmados} · ${t('cancelled')}: ${activo.cancelados}`
+          : t('earningsChartHint')}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 112 }}>
+        {dias.map((d, i) => {
+          const total = d.completados + d.confirmados + d.cancelados;
+          const alturaPct = maxTotal > 0 ? Math.max((total / maxTotal) * 100, total > 0 ? 6 : 2) : 2;
+          const esSeleccionado = seleccionado === i;
+          return (
+            <button
+              key={d.dia_semana}
+              type="button"
+              onClick={() => setSeleccionado(prev => (prev === i ? null : i))}
+              aria-label={`${d.label}: ${total}`}
+              style={{
+                flex: 1, minWidth: 2, height: '100%', padding: 0, border: 'none',
+                background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: 8, justifyContent: 'flex-end',
+              }}
+            >
+              <div style={{
+                width: '100%', height: `${alturaPct}%`, borderRadius: '6px 6px 0 0', overflow: 'hidden',
+                display: 'flex', flexDirection: 'column', backgroundColor: colors.surfaceSubtle,
+                opacity: seleccionado === null || esSeleccionado ? 1 : 0.4,
+                outline: esSeleccionado ? `2px solid ${colors.primary}` : 'none', outlineOffset: -1,
+              }}>
+                {total > 0 && (
+                  <>
+                    <span style={{ display: 'block', flexGrow: d.completados || 0, backgroundColor: colors.success }} />
+                    <span style={{ display: 'block', flexGrow: d.confirmados || 0, backgroundColor: colors.primary }} />
+                    <span style={{ display: 'block', flexGrow: d.cancelados || 0, backgroundColor: colors.danger }} />
+                  </>
+                )}
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext }}>{d.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{
+        display: 'flex', flexWrap: 'wrap', gap: 14, borderTop: `1px solid ${colors.hairline}`,
+        marginTop: 14, paddingTop: 12, fontSize: 10, color: colors.subtext,
+      }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, display: 'inline-block' }} />
+          {t('completed')}
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, display: 'inline-block' }} />
+          {t('confirmed')}
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger, display: 'inline-block' }} />
+          {t('cancelled')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Barra de ranking — magnitud de una sola serie (servicios más pedidos).
 // El nombre del servicio ya identifica la barra, así que un solo color
 // (colors.primary) alcanza; la etiqueta de valor va afuera, en tinta de
 // texto, nunca en el color de la barra.
 // ─────────────────────────────────────────────
 function BarraRanking({
-  nombre, cantidad, maxCantidad, valorLabel,
-}: { nombre: string; cantidad: number; maxCantidad: number; valorLabel?: string }) {
+  nombre, cantidad, maxCantidad, valorLabel, color = colors.primary,
+}: { nombre: string; cantidad: number; maxCantidad: number; valorLabel?: string; color?: string }) {
   const pct = maxCantidad > 0 ? Math.max((cantidad / maxCantidad) * 100, 4) : 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -152,10 +258,10 @@ function BarraRanking({
         <span style={{ color: colors.text, fontWeight: 600 }}>{nombre}</span>
         <span style={{ color: colors.subtext }}>{valorLabel ?? cantidad}</span>
       </div>
-      <div style={{ height: 10, borderRadius: 5, backgroundColor: colors.surfaceSubtle, overflow: 'hidden' }}>
+      <div style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceSubtle, overflow: 'hidden' }}>
         <div style={{
-          width: `${pct}%`, height: '100%', borderRadius: 5,
-          backgroundColor: colors.primary, transition: 'width 0.3s ease',
+          width: `${pct}%`, height: '100%', borderRadius: 3,
+          backgroundColor: color, transition: 'width 0.3s ease',
         }} />
       </div>
     </div>
@@ -168,13 +274,12 @@ function BarraRanking({
 function StatTile({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
     // minWidth: 0 es necesario para que flex:1 pueda achicar la tarjeta por
-    // debajo del ancho de contenido — sin esto, en filas de 3 (Turnos por
-    // estado) el navegador respeta el min-width de contenido de cada hijo y,
-    // en pantallas angostas (~320px), la última tarjeta se corta y se sale
+    // debajo del ancho de contenido — sin esto, en filas de 2-3 tiles, en
+    // pantallas angostas (~320px), la última tarjeta se corta y se sale
     // del contenedor en vez de compartir el espacio en partes iguales.
     <div style={{
       flex: 1, minWidth: 0, backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 14, padding: '14px 12px',
+      boxShadow: shadows.card, borderRadius: 16, padding: '14px 12px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, minWidth: 0 }}>
         <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, flexShrink: 0 }} />
@@ -191,7 +296,7 @@ function StatTile({ label, value, color }: { label: string; value: number | stri
           minWidth: 0 arriba, pero ese solo resuelve el contenedor, no el
           texto sin espacios adentro). */}
       <span style={{
-        display: 'block', fontSize: 28, fontWeight: 700, color: colors.textStrong,
+        display: 'block', fontSize: 26, fontWeight: 700, color: colors.textStrong,
         wordBreak: 'break-word',
       }}>
         {value}
@@ -213,7 +318,6 @@ function parseMesParam(mes: string | null): Date {
 }
 
 function EstadisticasContent() {
-  const router = useRouter();
   const t = useTranslations('estadisticas.EstadisticasPage');
   const searchParams = useSearchParams();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
@@ -244,12 +348,18 @@ function EstadisticasContent() {
   const [truncadoPeriodo, setTruncadoPeriodo] = useState(false);
   const [errorPeriodo, setErrorPeriodo] = useState<string | null>(null);
 
+  const [ocupacion, setOcupacion] = useState<BucketOcupacion[]>([]);
+  const [errorOcupacion, setErrorOcupacion] = useState<string | null>(null);
+
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeProfesionales = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const nombreProfesionalActivo = profesionalFiltro
+    ? activeProfesionales.find(p => p.id === profesionalFiltro)?.nombre
+    : t('all');
 
   const rangoActivo = modoRango === 'mes' ? rangoDelMes(viewDate) : rangoPersonalizado;
   // Rellena todos los días del rango activo (no solo los que tuvieron
@@ -298,6 +408,19 @@ function EstadisticasContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [granularidadGanancias, rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
 
+  useEffect(() => {
+    if (rangoInvalido) return;
+    let cancelled = false;
+    setErrorOcupacion(null);
+
+    statsService.getOcupacion(rangoActivo.desde, rangoActivo.hasta, profesionalFiltro ?? undefined)
+      .then(data => { if (!cancelled) setOcupacion(data); })
+      .catch(e => { if (!cancelled) setErrorOcupacion(extraerMensajeError(e)); });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
+
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
   };
@@ -332,12 +455,53 @@ function EstadisticasContent() {
   const totalConCancelados = completados + confirmados + cancelados;
   const tasaCancelacion = totalConCancelados > 0 ? Math.round((cancelados / totalConCancelados) * 100) : null;
 
+  // Ritmo de turnos — 7 entradas (dia_semana ISO 1..7, siempre completas)
+  // reordenadas Lunes..Domingo con label corto ya resuelto en el locale
+  // activo, listas para el gráfico apilado.
+  const diasCortos = diasSemanaCortos();
+  const ritmoDias = [1, 2, 3, 4, 5, 6, 7].map(iso => {
+    const d = stats?.turnos_por_estado_por_dia_semana?.find(x => x.dia_semana === iso)
+      ?? { dia_semana: iso, completados: 0, confirmados: 0, cancelados: 0 };
+    return { ...d, label: nombreDiaCortoIso(iso, diasCortos) };
+  });
+  const maxRitmo = ritmoDias.reduce((max, d) => Math.max(max, d.completados + d.confirmados + d.cancelados), 0);
+  const diaPico = maxRitmo > 0
+    ? ritmoDias.reduce((best, d) => (d.completados + d.confirmados) > (best.completados + best.confirmados) ? d : best, ritmoDias[0])
+    : null;
+
+  // Ocupación — grilla hora × día de la semana. Las filas son el rango
+  // CONTIGUO de horas observadas en los datos (no un horario fijo asumido),
+  // rellenando con 0 las horas intermedias sin turnos.
+  const ocupacionMap = new Map(ocupacion.map(b => [`${b.dia_semana}-${b.hora}`, b.cantidad]));
+  const horasConDatos = ocupacion.map(b => b.hora);
+  const horaMin = horasConDatos.length > 0 ? Math.min(...horasConDatos) : null;
+  const horaMax = horasConDatos.length > 0 ? Math.max(...horasConDatos) : null;
+  const filasHoras = horaMin !== null && horaMax !== null
+    ? Array.from({ length: horaMax - horaMin + 1 }, (_, i) => horaMin + i)
+    : [];
+  const maxOcupacion = ocupacion.reduce((max, b) => Math.max(max, b.cantidad), 0);
+  const horaPico = maxOcupacion > 0
+    ? ocupacion.reduce((best, b) => b.cantidad > best.cantidad ? b : best, ocupacion[0]).hora
+    : null;
+
+  function colorCeldaOcupacion(cantidad: number): string {
+    if (cantidad === 0 || maxOcupacion === 0) return colors.surfaceSubtle;
+    const ratio = cantidad / maxOcupacion;
+    if (ratio <= 0.33) return colors.primarySoft;
+    if (ratio <= 0.66) return withAlpha(colors.primary, '8C');
+    return colors.primaryDeep;
+  }
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
       {/* Header */}
-      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+      </div>
+      <div style={{ padding: '4px 20px 18px' }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
+          {t('title')}
+        </h1>
       </div>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -348,18 +512,18 @@ function EstadisticasContent() {
             del ancho del rango (ver `granularidadGanancias` más arriba en
             el componente). */}
         <div style={{
-          display: 'flex', backgroundColor: colors.surfaceSubtle, borderRadius: 8, padding: 2, alignSelf: 'flex-start',
+          display: 'flex', backgroundColor: colors.surfaceSubtle, borderRadius: 14, padding: 3, alignSelf: 'flex-start',
         }}>
           {(['mes', 'personalizado'] as const).map(m => (
             <button
               key={m}
               onClick={() => setModoRango(m)}
               style={{
-                border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                border: 'none', borderRadius: 11, padding: '8px 14px', fontSize: 11, fontWeight: 700,
                 cursor: 'pointer',
-                backgroundColor: modoRango === m ? colors.surface : 'transparent',
-                color: modoRango === m ? colors.text : colors.subtext,
-                boxShadow: modoRango === m ? shadows.card : 'none',
+                backgroundColor: modoRango === m ? colors.primary : 'transparent',
+                color: modoRango === m ? colors.primaryFg : colors.subtext,
+                boxShadow: modoRango === m ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
               }}
             >
               {t(`rangeMode_${m}`)}
@@ -371,7 +535,7 @@ function EstadisticasContent() {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
+            boxShadow: shadows.card, borderRadius: 16, padding: '10px 14px',
           }}>
             <button
               onClick={() => cambiarMes(-1)}
@@ -381,7 +545,7 @@ function EstadisticasContent() {
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
+            <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong }}>
               {nombreMes(viewDate, 'long')} {viewDate.getFullYear()}
             </span>
             <button
@@ -396,7 +560,7 @@ function EstadisticasContent() {
         ) : (
           <div style={{
             backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14, padding: '12px 14px',
+            boxShadow: shadows.card, borderRadius: 16, padding: '12px 14px',
             display: 'flex', flexDirection: 'column', gap: 8,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -407,7 +571,7 @@ function EstadisticasContent() {
                 max={rangoPersonalizado.hasta}
                 onChange={e => setRangoPersonalizado(prev => ({ ...prev, desde: e.target.value }))}
                 style={{
-                  flex: 1, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '8px 10px',
+                  flex: 1, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '8px 10px',
                   fontSize: 14, color: colors.text, backgroundColor: colors.surface,
                 }}
               />
@@ -420,7 +584,7 @@ function EstadisticasContent() {
                 min={rangoPersonalizado.desde}
                 onChange={e => setRangoPersonalizado(prev => ({ ...prev, hasta: e.target.value }))}
                 style={{
-                  flex: 1, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '8px 10px',
+                  flex: 1, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '8px 10px',
                   fontSize: 14, color: colors.text, backgroundColor: colors.surface,
                 }}
               />
@@ -431,23 +595,19 @@ function EstadisticasContent() {
           </div>
         )}
 
-        {/* Selector de profesional — invisible con ≤1 profesional activa. Con
-            superficie propia (igual que el de Agenda) y un chip "Todas"
-            explícito, para que quede claro qué se está mirando apenas
-            entrás — sin esto, sin selección no había ningún chip resaltado. */}
+        {/* Selector de profesional — invisible con ≤1 profesional activa.
+            Sin card propia (a diferencia del resto de las secciones): los
+            chips flotan directo sobre el fondo, mismo tratamiento que usa
+            el selector de "Historia de turnos". */}
         {mostrarSelectorProfesional && (
-          <div style={{
-            display: 'flex', flexWrap: 'wrap', gap: 8,
-            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
-          }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <button
               onClick={() => setProfesionalFiltro(null)}
               style={{
-                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                border: `1px solid ${profesionalFiltro === null ? colors.primary : colors.divider}`,
+                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                border: `1px solid ${profesionalFiltro === null ? colors.primary : colors.border}`,
                 backgroundColor: profesionalFiltro === null ? colors.primary : colors.surface,
-                color: profesionalFiltro === null ? '#FFF' : colors.text,
+                color: profesionalFiltro === null ? colors.primaryFg : colors.text,
               }}
             >
               {t('all')}
@@ -461,8 +621,8 @@ function EstadisticasContent() {
                   onClick={() => setProfesionalFiltro(selected ? null : p.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
-                    border: `1px solid ${selected ? color : colors.divider}`,
+                    borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    border: `1px solid ${selected ? color : colors.border}`,
                     backgroundColor: selected ? color : colors.surface,
                     color: selected ? '#FFF' : colors.text,
                   }}
@@ -501,30 +661,44 @@ function EstadisticasContent() {
           <>
             {/* Hero figure — el número que lidera la pantalla */}
             <div style={{ textAlign: 'center', padding: '4px 0 2px' }}>
-              <span style={{ fontSize: 48, fontWeight: 700, color: colors.textStrong, lineHeight: 1 }}>
+              <span style={{ fontSize: 48, fontWeight: 700, color: colors.textStrong, lineHeight: 1, letterSpacing: -1 }}>
                 {stats?.total_turnos ?? 0}
               </span>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>{t('period')}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
+                {t('period')}{mostrarSelectorProfesional && nombreProfesionalActivo ? ` · ${nombreProfesionalActivo}` : ''}
+              </p>
             </div>
 
-            {/* Turnos por estado */}
+            {/* Ritmo de turnos — completados/confirmados/cancelados por día
+                de la semana, agregados sobre todo el período elegido. */}
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
-                {t('appointmentsByStatus')}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div>
+                  <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: 0 }}>
+                    {t('peakLoad')}
+                  </h2>
+                  <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>{t('peakLoadSubtitle')}</p>
+                </div>
+                {cancelados > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: colors.danger, flexShrink: 0 }}>
+                    {t('cancelledBadge', { count: cancelados })}
+                  </span>
+                )}
+              </div>
               {totalConCancelados === 0 ? (
                 <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                  {t('noAppointmentsThisPeriod')}
+                  {t('noConfirmedAppointmentsThisPeriod')}
                 </p>
               ) : (
                 <>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <StatTile label={t('completed')} value={completados} color={colors.success} />
-                    <StatTile label={t('confirmed')} value={confirmados} color={colors.muted} />
-                    <StatTile label={t('cancelled')} value={cancelados} color={colors.danger} />
-                  </div>
+                  <RitmoTurnosChart dias={ritmoDias} />
+                  {diaPico && (
+                    <p style={{ fontSize: 12, color: colors.subtext, margin: '8px 0 0' }}>
+                      {t('peakDayInsight', { dia: nombreDiaLargoIso(diaPico.dia_semana) })}
+                    </p>
+                  )}
                   {tasaCancelacion !== null && (
-                    <p style={{ margin: '8px 0 0', fontSize: 12, color: colors.subtext }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
                       {t('cancellationRate', { pct: tasaCancelacion })}
                     </p>
                   )}
@@ -534,7 +708,7 @@ function EstadisticasContent() {
 
             {/* Ganancias */}
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
+              <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 10px' }}>
                 {t('earnings')}
               </h2>
               {/* Ganancia neta es el número que importa (ganancias por sí
@@ -542,14 +716,19 @@ function EstadisticasContent() {
                   mismo tratamiento tipográfico del hero figure de arriba
                   (grande, bold, centrado), un escalón más chico para no
                   competir con el hero real de la pantalla (total_turnos). */}
-              <div style={{ textAlign: 'center', padding: '4px 0 14px' }}>
-                <span style={{
-                  fontSize: 36, fontWeight: 700, lineHeight: 1, wordBreak: 'break-word',
-                  color: gananciaNeta >= 0 ? colors.success : colors.danger,
-                }}>
-                  {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
-                </span>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
+              <div style={{ textAlign: 'center', padding: '4px 0 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    fontSize: 36, fontWeight: 700, lineHeight: 1, wordBreak: 'break-word',
+                    color: gananciaNeta >= 0 ? colors.success : colors.danger,
+                  }}>
+                    {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
+                  </span>
+                  {gananciaNeta >= 0
+                    ? <TrendingUp size={20} color={colors.success} strokeWidth={2} />
+                    : <TrendingDown size={20} color={colors.danger} strokeWidth={2} />}
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <StatTile
@@ -570,7 +749,7 @@ function EstadisticasContent() {
                   </p>
                   <div style={{
                     backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                    boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
+                    boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
                     flexDirection: 'column', gap: 14,
                   }}>
                     {gananciasPorServicio.map(s => (
@@ -597,7 +776,7 @@ function EstadisticasContent() {
                   </p>
                   {granularidadGanancias !== 'dia' && errorPeriodo ? (
                     <div style={{
-                      padding: '12px 16px', borderRadius: 14, backgroundColor: colors.dangerBg,
+                      padding: '12px 16px', borderRadius: 16, backgroundColor: colors.dangerBg,
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                     }}>
                       <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorPeriodo}</p>
@@ -630,9 +809,79 @@ function EstadisticasContent() {
               )}
             </div>
 
+            {/* Ocupación de agenda — heatmap hora × día de la semana. Filas
+                acotadas al rango de horas realmente observado en los datos
+                (nunca un horario fijo asumido). */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div>
+                  <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: 0 }}>
+                    {t('occupancy')}
+                  </h2>
+                  <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>{t('occupancySubtitle')}</p>
+                </div>
+                {horaPico !== null && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: colors.primaryDeep, flexShrink: 0 }}>
+                    {t('occupancyPeakHourBadge', { hora: horaPico })}
+                  </span>
+                )}
+              </div>
+              {errorOcupacion ? (
+                <div style={{
+                  padding: '12px 16px', borderRadius: 16, backgroundColor: colors.dangerBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                }}>
+                  <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorOcupacion}</p>
+                  <button
+                    onClick={() => setRetryTick(v => v + 1)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                      fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
+                    }}
+                  >
+                    {t('retry')}
+                  </button>
+                </div>
+              ) : filasHoras.length === 0 ? (
+                <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>{t('occupancyEmpty')}</p>
+              ) : (
+                <div style={{
+                  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                  boxShadow: shadows.card, borderRadius: 16, padding: 16,
+                }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(7, 1fr)', gap: 5 }}>
+                    <span />
+                    {[1, 2, 3, 4, 5, 6, 7].map(iso => (
+                      <span key={iso} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: colors.muted }}>
+                        {nombreDiaCortoIso(iso, diasCortos).slice(0, 1)}
+                      </span>
+                    ))}
+                    {filasHoras.map(hora => (
+                      <Fragment key={hora}>
+                        <span style={{ alignSelf: 'center', fontSize: 9, color: colors.muted }}>
+                          {t('occupancyPeakHourBadge', { hora })}
+                        </span>
+                        {[1, 2, 3, 4, 5, 6, 7].map(iso => {
+                          const cantidad = ocupacionMap.get(`${iso}-${hora}`) ?? 0;
+                          return (
+                            <span
+                              key={`${iso}-${hora}`}
+                              title={`${cantidad}`}
+                              style={{ aspectRatio: '1 / 1', borderRadius: 6, backgroundColor: colorCeldaOcupacion(cantidad) }}
+                            />
+                          );
+                        })}
+                      </Fragment>
+                    ))}
+                  </div>
+                  <p style={{ marginTop: 12, fontSize: 10, color: colors.subtext }}>{t('occupancyFootnote')}</p>
+                </div>
+              )}
+            </div>
+
             {/* Clientes nuevas vs. recurrentes */}
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
+              <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 10px' }}>
                 {t('clients')}
               </h2>
               {totalClientes === 0 ? (
@@ -655,7 +904,7 @@ function EstadisticasContent() {
 
             {/* Servicios más pedidos */}
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
+              <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 10px' }}>
                 {t('topServices')}
               </h2>
               {servicios.length === 0 ? (
@@ -665,11 +914,14 @@ function EstadisticasContent() {
               ) : (
                 <div style={{
                   backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                  boxShadow: shadows.card, borderRadius: 14, padding: '16px', display: 'flex',
+                  boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
                   flexDirection: 'column', gap: 14,
                 }}>
                   {servicios.map(s => (
-                    <BarraRanking key={s.servicio_id} nombre={s.nombre} cantidad={s.cantidad} maxCantidad={maxCantidad} />
+                    <BarraRanking
+                      key={s.servicio_id} nombre={s.nombre} cantidad={s.cantidad} maxCantidad={maxCantidad}
+                      color={colors.primaryDeep}
+                    />
                   ))}
                 </div>
               )}

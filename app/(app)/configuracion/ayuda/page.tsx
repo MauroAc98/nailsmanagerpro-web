@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { colors, shadows } from '@/theme/colors';
@@ -43,7 +42,6 @@ function IconChevron({ abierto }: { abierto: boolean }) {
 
 export default function AyudaPage() {
   const t = useTranslations('configuracion.AyudaPage');
-  const router = useRouter();
   const [abierta, setAbierta] = useState<string | null>(null);
 
   const secciones = SECTION_IDS.map(id => ({

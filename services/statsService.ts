@@ -39,6 +39,21 @@ export interface DashboardStats {
   ganancia_neta: number;
   ganancias_por_servicio: GananciaPorServicio[];
   ganancias_por_dia: GananciaPorDia[];
+  // dia_semana en formato ISO (1 = lunes ... 7 = domingo) — siempre 7
+  // entradas, incluso en 0, para poder dibujar un eje fijo sin rellenar
+  // huecos del lado del frontend.
+  turnos_por_estado_por_dia_semana: {
+    dia_semana: number;
+    completados: number;
+    confirmados: number;
+    cancelados: number;
+  }[];
+}
+
+export interface BucketOcupacion {
+  dia_semana: number; // ISO: 1 = lunes ... 7 = domingo
+  hora: number; // 0-23
+  cantidad: number;
 }
 
 export interface PuntoGanancia {
@@ -75,6 +90,16 @@ export const statsService = {
         ...(profesionalId ? { profesional_id: profesionalId } : {}),
         ...(rango ? { desde: rango.desde, hasta: rango.hasta } : {}),
       },
+    });
+    return data;
+  },
+
+  // Lista rala — solo combinaciones día×hora con al menos un turno
+  // (confirmado/completado; cancelado no cuenta como ocupación real). El
+  // caller rellena con 0 los huecos, mismo criterio que ganancias_por_dia.
+  getOcupacion: async (desde: string, hasta: string, profesionalId?: number): Promise<BucketOcupacion[]> => {
+    const { data } = await api.get<BucketOcupacion[]>('/stats/ocupacion', {
+      params: { desde, hasta, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
     });
     return data;
   },

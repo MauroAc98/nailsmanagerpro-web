@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { colors, withAlpha, shadows } from '@/theme/colors';
@@ -147,7 +146,6 @@ function SlotCard({
 
 export default function SlotsPage() {
   const t = useTranslations('configuracion.SlotsPage');
-  const router = useRouter();
   const { slots, loading, error, fetchSlots, agregarSlot, toggleSlot, eliminarSlot } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const [pickerVisible, setPickerVisible] = useState(false);

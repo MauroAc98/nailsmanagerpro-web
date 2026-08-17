@@ -2,6 +2,6 @@
 
 import { AgendaThemeScope } from '@/components/AgendaThemeScope';
 
-export default function AgendaLayout({ children }: { children: React.ReactNode }) {
+export default function EstadisticasLayout({ children }: { children: React.ReactNode }) {
   return <AgendaThemeScope>{children}</AgendaThemeScope>;
 }
