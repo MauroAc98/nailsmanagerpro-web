@@ -217,12 +217,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, [fechaBase, modo]);
 
   // Fecha del canvas — solo el rango/fecha, sin el prefijo "Turnos" (ese
-  // label fijo ahora lo pone StoryCanvas como parte del header, ver el
-  // rediseño de v0 que separa nombre / "TURNOS DISPONIBLES" / fecha en tres
-  // líneas en vez de una sola). Se mantiene corto a propósito: esta línea no
-  // tiene auto-shrink (StoryCanvas no la envuelve en FitText como al nombre
-  // de la profesional), así que un texto más largo se desborda en pantallas
-  // angostas.
+  // label fijo ahora lo pone StoryCanvas como parte del header). Es la
+  // protagonista del header (caption + esta fecha, sin chip ni nombre —
+  // el nombre de estudio/profesional se sacó del canvas por completo, ver
+  // StoryCanvas), por eso lleva año en modo Mes: una historia posteada cerca
+  // de fin de año sobre el mes siguiente sin año generaba ambigüedad.
+  // StoryCanvas la envuelve en FitText, así que un texto largo se achica en
+  // vez de desbordar.
   const titulo = useMemo(() => {
     if (modo === 'dia') return formatFechaLarga(fmt(fechaBase)).replace(', ', ' ');
 
@@ -233,7 +234,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       return `${d.getDate()} al ${h.getDate()} de ${nombreMes(h, 'long')}`;
     }
 
-    return nombreMes(fechaBase, 'long');
+    return `${nombreMes(fechaBase, 'long')} ${fechaBase.getFullYear()}`;
   }, [fechaBase, modo]);
 
   // ─────────────────────────────────────────────

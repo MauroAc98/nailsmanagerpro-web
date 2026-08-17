@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
+import { agendaFontSerif } from '@/theme/agendaColors';
 
 export default function LegalPage() {
   const t = useTranslations('legal.LegalPage');
@@ -17,7 +18,7 @@ export default function LegalPage() {
           {t('back')}
         </Link>
 
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, fontWeight: 700, color: colors.text, marginTop: 24, marginBottom: 8 }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontSize: 28, fontWeight: 400, color: colors.text, marginTop: 24, marginBottom: 8 }}>
           {t('title')}
         </h1>
         <p style={{ fontSize: 13, color: colors.subtext, marginBottom: 32 }}>

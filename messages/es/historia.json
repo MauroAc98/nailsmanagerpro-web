@@ -5,8 +5,7 @@
   "StoryCanvas": {
     "availableAppointments": "TURNOS DISPONIBLES",
     "complete": "COMPLETO 🤍",
-    "bookYourSpot": "RESERVÁ TU LUGAR",
-    "reservationsLabel": "RESERVAS"
+    "reserveCta": "Reservá tu turno"
   },
   "HistoriaPage": {
     "title": "Historia de turnos",

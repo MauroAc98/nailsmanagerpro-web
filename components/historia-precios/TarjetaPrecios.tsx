@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
+import { agendaFontSerif } from '@/theme/agendaColors';
 
 const formatoPrecio = new Intl.NumberFormat('es-AR');
 // Espacio entre "$" y el número (antes pegados) — separa el signo del
@@ -67,24 +68,18 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
           // --shadow-card del resto de la app) para leer "carta de precios"
           // en vez de "banner". Ver design review.
           boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-          // Montserrat para todo el cuerpo (nombre/precio/footer) en vez de
-          // la sans del sistema — el título (Cormorant, serif) ya tenía
-          // fuente propia, el resto del contenido no. Puesto acá una sola
-          // vez en el contenedor en vez de en cada span para que herede.
-          fontFamily: 'var(--font-sans-display), sans-serif',
         }}
       >
-        {/* Título en itálica, sin filetes ni línea — la referencia "delicada"
-            (carta translúcida sobre foto) no usa ningún elemento de línea en
-            todo el diseño, la elegancia sale de la tipografía y el espacio
-            en blanco solos. Cormorant Garamond itálica (ver app/layout.tsx)
-            en vez de recta: mucho más carácter para una frase de 3 palabras
-            que una script real habría hecho ilegible a este tamaño. */}
+        {/* Título sin filetes ni línea — la referencia "delicada" (carta
+            translúcida sobre foto) no usa ningún elemento de línea en todo
+            el diseño, la elegancia sale de la tipografía y el espacio en
+            blanco solos. Playfair Display recta (agendaFontSerif), no
+            Cormorant Garamond itálica como antes — unificación del serif de
+            toda la app a uno solo, ver design decision 2026-08-17. */}
         <span
           style={{
-            fontFamily: 'var(--font-serif-display), serif',
-            fontStyle: 'italic',
-            fontSize: 32, fontWeight: 600, letterSpacing: 0.5,
+            fontFamily: agendaFontSerif,
+            fontSize: 32, fontWeight: 400, letterSpacing: 0.5,
             color: tokens.headerColor, textAlign: 'center', marginBottom: 26,
           }}
         >

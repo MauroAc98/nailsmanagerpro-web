@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { colors, withAlpha } from '@/theme/colors';
+import { agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
 
 export function WelcomeScreen() {
@@ -74,8 +75,8 @@ export function WelcomeScreen() {
           {saludo}
         </p>
         <p style={{
-          fontSize: fontSizeNombre, fontWeight: 700, color: colors.textStrong, margin: 0,
-          fontFamily: '"Times New Roman", Georgia, serif', letterSpacing: 0.5,
+          fontSize: fontSizeNombre, fontWeight: 400, color: colors.textStrong, margin: 0,
+          fontFamily: agendaFontSerif, letterSpacing: 0.5,
         }}>
           {nombre}
         </p>

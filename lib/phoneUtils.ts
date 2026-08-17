@@ -37,4 +37,22 @@ export const phoneUtils = {
       ? { codigo: prefijo, numero: raw.slice(prefijo.length) }
       : { codigo: '54', numero: raw };
   },
+
+  // Formato de lectura ("376 474-1700") para mostrar un teléfono en UI, no
+  // para linkear — a diferencia de formatForWhatsApp/splitCodigoPais, este
+  // campo (telefono del estudio, perfil) es texto libre sin selector de país
+  // asociado, así que no asumimos dónde termina un código de país: los
+  // últimos 4 dígitos siempre quedan como bloque final con guion (el
+  // "número" propiamente dicho), y todo lo anterior (área + código de país,
+  // si lo hay) se agrupa de a 3 desde la izquierda. Con un número local de
+  // 10 dígitos da exactamente "XXX XXX-XXXX"; con más dígitos (código de
+  // país incluido) sigue leyéndose en bloques en vez de un bloque corrido.
+  formatDisplay: (fullNumber: string): string => {
+    const d = phoneUtils.clean(fullNumber);
+    if (d.length < 6) return d;
+    const ultimo = d.slice(-4);
+    const resto  = d.slice(0, -4);
+    const grupos = resto.match(/.{1,3}/g) ?? [resto];
+    return `${grupos.join(' ')}-${ultimo}`;
+  },
 };

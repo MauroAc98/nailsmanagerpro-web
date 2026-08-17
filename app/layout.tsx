@@ -1,53 +1,22 @@
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
-import { Cormorant_Garamond, Montserrat, Playfair_Display } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import Providers from "./providers";
 import { primaryRaw } from "@/theme/colors";
 import "./globals.css";
 
-// Cormorant Garamond — display serif loaded globally via CSS variable so any
-// component can opt in with `fontFamily: 'var(--font-serif-display), serif'`
-// (currently: TarjetaPrecios's price-list title, see historia-precios).
-// Swapped from Playfair Display — read as "too common" for the price-list
-// title vs. the higher-contrast, more delicate reference look. Weight 600
-// is the only one TarjetaPrecios requests; listing it explicitly (next/font
-// needs a static weight list, this isn't a variable-font axis) keeps the
-// self-hosted subset small instead of pulling the full family.
-// Self-hosted by next/font/google (no runtime request to Google, no CLS).
+// Playfair Display — único serif de toda la app, loaded globally via CSS
+// variable so any component can opt in with `fontFamily: agendaFontSerif`
+// (theme/agendaColors.ts). Usado en títulos de pantalla en toda la app
+// (Agenda, Historia, Login, Estadísticas, TarjetaPrecios) — antes convivía
+// con Cormorant Garamond (solo TarjetaPrecios) y Georgia/Times New Roman
+// sueltos (legal, WelcomeScreen); unificados acá a uno solo (design decision
+// 2026-08-17). Self-hosted, no runtime request to Google, no CLS.
 // `display: 'swap'` means the fallback renders first and the browser swaps
-// in Cormorant Garamond once it's loaded — capture code that rasterizes this
-// DOM (html-to-image in useHistoriaPrecios) MUST await `document.fonts.ready`
-// before calling toBlob(), otherwise it can bake in the fallback font.
-const serifDisplay = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["600"],
-  // Itálica agregada (antes solo normal) — el título pasó de mayúsculas
-  // rectas con filetes a los costados a un tratamiento itálico fluido, más
-  // cercano a la referencia "delicado" (script/cursiva sobre carta
-  // translúcida) sin sacrificar legibilidad en una frase de 3 palabras.
-  style: ["italic"],
-  variable: "--font-serif-display",
-  display: "swap",
-});
-
-// Montserrat — sans-serif propia SOLO para el cuerpo de TarjetaPrecios
-// (nombre de servicio, precio, footer) vía `var(--font-sans-display)`.
-// Variable separada de la sans del sistema que usa el resto de la app
-// (app/globals.css `body{font-family:...}`) a propósito — este cambio es
-// puntual a la lista de precios, no un rebrand de la tipografía global.
-// Mismo cuidado de `display:'swap'` + `document.fonts.ready` que
-// serifDisplay (ver comentario arriba) para la captura de la historia.
-const sansDisplay = Montserrat({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  variable: "--font-sans-display",
-  display: "swap",
-});
-
-// Playfair Display — same opt-in-via-CSS-variable pattern as serifDisplay
-// above, scoped to the Agenda screen's v0 redesign (header title, turno
-// time column, calendar month label, bottom-sheet title — see
-// theme/agendaColors.ts agendaFontSerif). Self-hosted, no runtime request.
+// in Playfair Display once it's loaded — capture code that rasterizes DOM
+// using this font (html-to-image in useGenerarHistoria/useHistoriaPrecios)
+// MUST await `document.fonts.ready` before calling toBlob(), otherwise it
+// can bake in the fallback font.
 const agendaSerif = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-agenda-serif",
@@ -119,7 +88,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning className={`${serifDisplay.variable} ${sansDisplay.variable} ${agendaSerif.variable}`}>
+    <html lang="es" suppressHydrationWarning className={agendaSerif.variable}>
       <head>
         {/* Corre antes de la hidratación de React para fijar data-theme y
             lang sin el flash que se vería si esperáramos a que

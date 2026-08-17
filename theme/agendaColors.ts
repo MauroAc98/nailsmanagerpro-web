@@ -64,9 +64,10 @@ export const agendaShadows = {
   sheet: '0 -8px 28px rgba(0, 0, 0, 0.14)',
 };
 
-// Agenda-scoped serif — same self-hosted next/font/google pattern as
-// serifDisplay in app/layout.tsx (Cormorant, opted-in per component via a
-// CSS variable), so the "Mi Agenda" header / turno-card time / calendar
-// month / bottom-sheet title match the v0 redesign's Playfair Display
-// without swapping the app-wide sans body font.
+// The app's single serif — self-hosted next/font/google (app/layout.tsx),
+// opted into per-component via this CSS variable instead of swapping the
+// body's sans font globally. Used for every screen title across the app
+// (Agenda, Historia, Login, Estadísticas, TarjetaPrecios) — unified from
+// three separate serifs (Playfair/Cormorant/Georgia-Times) to this one,
+// design decision 2026-08-17.
 export const agendaFontSerif = 'var(--font-agenda-serif), Georgia, serif';

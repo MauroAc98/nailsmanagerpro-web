@@ -5,8 +5,7 @@
   "StoryCanvas": {
     "availableAppointments": "HORÁRIOS DISPONÍVEIS",
     "complete": "COMPLETO 🤍",
-    "bookYourSpot": "RESERVE SEU HORÁRIO",
-    "reservationsLabel": "RESERVAS"
+    "reserveCta": "Reserve seu horário"
   },
   "HistoriaPage": {
     "title": "Gerar story",

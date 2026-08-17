@@ -2,13 +2,13 @@
 
 import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { primaryRaw } from '@/theme/colors';
 import { agendaFontSerif } from '@/theme/agendaColors';
+import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 
 function nombreDia(fecha: string): string {
@@ -57,19 +57,10 @@ function FitText({
 
 interface Props {
   titulo:         string;
-  // Nombre del estudio (User.name / "Nombre del estudio" en perfil) — línea
-  // de marca, siempre visible cuando existe.
-  nombreEstudio?: string | null;
   // Teléfono del estudio (User.telefono, mismo dato que Perfil → Datos
   // personales) — se muestra en el footer para que quien vea la historia
   // compartida sepa por dónde contactar, sin tener que buscarlo aparte.
   telefonoEstudio?: string | null;
-  // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
-  // Si viene, reemplaza a nombreEstudio como título (ver tituloPrincipal).
-  // undefined = cuenta con ≤1 profesional activa o sin selección puntual:
-  // el título vuelve a ser nombreEstudio, canvas pixel-idéntico a como
-  // estaba antes de esta feature.
-  profesionalNombre?: string;
   dias:           DisponibilidadDia[]; // diasAMostrar
   fondoUri:       string | null;
   canvasWidth:    number;
@@ -85,34 +76,23 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, telefonoEstudio, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
   const esModoDia = dias.length === 1;
 
-  // Chip de fecha en el header — solo tiene sentido en modo Día (una fecha
-  // puntual). En Semana/Mes no hay "un" día que mostrar ahí: inventar uno
-  // (el primero del rango, por ejemplo) sugeriría que solo ese día tiene
-  // turnos. Ahí el chip cae a un ícono genérico en vez de un número.
-  const fechaChip     = esModoDia && dias[0] ? new Date(dias[0].fecha + 'T00:00:00') : null;
-  const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
-  const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
-
-  // Con una profesional puntual elegida, su nombre reemplaza al del estudio
-  // en el título — mostrar ambos es redundante (la propia profesional YA
-  // identifica de qué estudio es) y en cuentas donde el nombre del estudio
-  // es el nombre personal de la dueña, quedaba dos veces literal.
-  const tituloPrincipal = profesionalNombre || nombreEstudio;
-
   const alturaUtil = canvasHeight * 0.75;
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
 
   // Zonas de blur local detrás de título y footer — alto aproximado, no
-  // medido en vivo (alcanza para cubrir cómodamente el chip+nombre+caption
-  // arriba y el bloque de reservas abajo con margen).
-  const tituloZonaAlto = Math.round(canvasHeight * 0.15);
-  const footerZonaAlto = Math.round(canvasHeight * 0.09);
+  // medido en vivo. Header son solo dos líneas (caption + fecha/rango, sin
+  // chip ni nombre — el nombre de estudio/profesional se sacó del canvas por
+  // completo) y ambos textos bajaron de tamaño (fecha 24->19px, CTA
+  // 17->16px, feedback de diseño 2026-08-17: "ocupa más espacio del que
+  // debería"), así que las dos zonas achicaron con ellos.
+  const tituloZonaAlto = Math.round(canvasHeight * 0.09);
+  const footerZonaAlto = Math.round(canvasHeight * 0.095);
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -192,71 +172,42 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           }}>
-            {/* Header — chip de fecha + nombre en serif + caption ("{fecha} ·
-                TURNOS DISPONIBLES"), flotando directo sobre el panel general
-                (mismo criterio que el resto del header/body/footer) en vez
-                de tener su propio panel anidado — un segundo panel con otro
-                tinte adentro del panel general sumaba un escalón de
-                contraste de más (feedback de diseño 2026-08-17). El chip
-                translúcida como el resto (feedback de diseño 2026-08-17),
-                no una superficie opaca — otro "panel" compitiendo. Colores
-                fijos (no colors.* / var(--ag-*)): esta imagen es un export
-                fijo que no debe cambiar según el tema claro/oscuro activo
-                del editor al momento de generarla, y html-to-image además
-                descarta las custom properties heredadas al capturar (mismo
-                problema que primaryRaw/primaryDeepRaw resuelven en
-                theme/colors.ts). */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+            {/* Header — solo caption + fecha/rango grande, sin chip ni
+                nombre de estudio/profesional (sacado del canvas por
+                completo, no solo del header). Lo primero que el cliente
+                necesita leer acá es CUÁNDO hay turnos, no de qué cuenta es
+                la historia — eso ya lo sabe, la está viendo en el feed/story
+                de esa cuenta. Dos elementos nada más (antes competían hasta
+                cuatro: chip + nombre + caption + fecha) para que "TURNOS
+                DISPONIBLES" y el rango elegido sean los protagonistas.
+                Colores fijos (no colors.* / var(--ag-*)): esta imagen es un
+                export fijo que no debe cambiar según el tema claro/oscuro
+                activo del editor al momento de generarla, y html-to-image
+                además descarta las custom properties heredadas al capturar
+                (mismo problema que primaryRaw/primaryDeepRaw resuelven en
+                theme/colors.ts). (feedback de diseño 2026-08-17) */}
+            <div style={{ minWidth: 0 }}>
+              {/* Fecha bajada de nuevo (24->19px): seguía ocupando más lugar
+                  del que debería al lado de la caption (feedback de diseño
+                  2026-08-17). La fecha usa agendaFontSerif recta (no
+                  itálica) — unificación del serif de toda la app a uno solo,
+                  Playfair Display sin itálica en ningún lado. */}
               <span style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
+                display: 'block', fontSize: 13, fontWeight: 700, letterSpacing: 2,
+                color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
               }}>
-                {chipDiaNumero !== null ? (
-                  <>
-                    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
-                      {chipDiaLabel}
-                    </span>
-                    <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
-                      {chipDiaNumero}
-                    </span>
-                  </>
-                ) : (
-                  <CalendarDays size={18} color="#fff" strokeWidth={2} />
-                )}
+                {t('availableAppointments')}
               </span>
-
-              <div style={{ minWidth: 0, flex: 1 }}>
-                {tituloPrincipal && (
-                  // minFontSize 15: siempre muy por encima del tope de FitText
-                  // de los turnos en el body (maxFontSize 10) — el nombre
-                  // nunca queda mas chico que la info de los turnos.
-                  <FitText
-                    text={tituloPrincipal}
-                    maxFontSize={22}
-                    minFontSize={15}
-                    style={{
-                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-                      letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    }}
-                  />
-                )}
-                {/* Dos líneas separadas, no concatenadas — en modo Semana la
-                    fecha ("17 al 23 de agosto") ya es larga por sí sola, y
-                    sumarle "· TURNOS DISPONIBLES" en el mismo renglón lo
-                    hacía correr y perder orden. */}
-                <span style={{
-                  display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                  color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                }}>
-                  {t('availableAppointments')}
-                </span>
-                <span style={{
-                  display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
-                  color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                }}>
-                  {titulo}
-                </span>
-              </div>
+              <FitText
+                text={titulo}
+                maxFontSize={19}
+                minFontSize={15}
+                style={{
+                  display: 'block', marginTop: 4,
+                  fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                  letterSpacing: '-0.01em', lineHeight: 1.1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                }}
+              />
             </div>
 
             {/* Body */}
@@ -318,31 +269,37 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               )}
             </div>
 
-            {/* Footer — con teléfono, "RESERVAS" + ícono de WhatsApp +
-                número, flotando sobre el panel general sin caja propia
-                — mismo criterio que el header, nada de paneles anidados. El
-                ícono (no la palabra "WhatsApp" escrita) para quedar
-                consistente con cómo se representa esa acción en el resto de
-                la app (Recordatorios, botón de turno). Sin teléfono cargado
-                no hay número que mostrar, así que cae al CTA genérico de
-                siempre. */}
-            {telefonoEstudio ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                  {t('reservationsLabel')}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <WhatsappGlyph size={11} color="#fff" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                    {telefonoEstudio}
+            {/* Línea divisoria — separa el bloque de disponibilidad del
+                footer de contacto, tal cual la referencia. Margen bajado
+                (14->10) junto con el resto del footer, que ocupaba más
+                lugar del que debería (feedback de diseño 2026-08-17). */}
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }} />
+
+            {/* Footer — CTA "Reservá tu turno" + WhatsApp con el teléfono,
+                tal cual la referencia. Blanco liso (no primaryRaw): probado
+                en rosa de marca primero pero no convencía sobre la foto.
+                agendaFontSerif recta, no itálica — unificación del serif de
+                toda la app a uno solo. El ícono (no la palabra "WhatsApp"
+                escrita) para quedar consistente con cómo se representa esa
+                acción en el resto de la app (Recordatorios, botón de turno).
+                Sin teléfono cargado, el CTA solo alcanza — no hace falta un
+                mensaje genérico aparte. */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <span style={{
+                fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 16,
+                color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+              }}>
+                {t('reserveCta')}
+              </span>
+              {telefonoEstudio && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                  <WhatsappGlyph size={10} color="#fff" />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    {phoneUtils.formatDisplay(telefonoEstudio)}
                   </span>
                 </div>
-              </div>
-            ) : (
-              <span style={{ fontSize: 8, fontWeight: 300, letterSpacing: 4, color: '#fff', opacity: 0.85, textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                {t('bookYourSpot')}
-              </span>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
