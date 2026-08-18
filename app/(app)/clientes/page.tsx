@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { List, type RowComponentProps } from 'react-window';
@@ -114,12 +114,23 @@ export default function ClientesPage() {
     cargarPrimeraPagina, cargarSiguientePagina, toggleCliente,
   } = useClientesStore();
   const [buscarInput, setBuscarInput] = useState('');
+  // Evita que la carga inicial se dispare dos veces: sin este flag, el
+  // efecto de debounce de abajo también corre una vez al montar (todo
+  // efecto corre en el mount, sin importar sus deps) y agenda un segundo
+  // fetch 500ms después del inmediato, ambos con buscarInput=''.
+  const montado = useRef(false);
 
-  useEffect(() => { cargarPrimeraPagina(''); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    cargarPrimeraPagina('');
+    montado.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Búsqueda server-side con debounce — cada tipeo reinicia el timer, así
-  // no se dispara un fetch por tecla.
+  // no se dispara un fetch por tecla. Se salta el primer render (ver
+  // `montado`), la carga inicial ya la maneja el efecto de arriba.
   useEffect(() => {
+    if (!montado.current) return;
     const timer = setTimeout(() => cargarPrimeraPagina(buscarInput.trim()), 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,8 +201,11 @@ export default function ClientesPage() {
       {/* Contenido: loading / vacío / lista virtualizada */}
       <div style={{ flex: 1, minHeight: 0, padding: '0 20px' }}>
         {cargandoPagina ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+          <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+            <div
+              className="loader-spinner"
+              style={{ width: 32, height: 32, borderRadius: 16, border: `3px solid ${colors.border}`, borderTopColor: colors.primary }}
+            />
           </div>
         ) : clientesPagina.length === 0 ? (
           <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
