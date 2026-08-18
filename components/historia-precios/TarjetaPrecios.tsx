@@ -33,6 +33,13 @@ interface Props {
   // owner's. undefined (no explicit pick) keeps the existing nombreNegocio-only
   // behavior for single-profesional accounts.
   profesionalNombre?: string;
+  // Chrome del panel: 'flotante' (default) es la tarjeta centrada,
+  // translúcida, redondeada y con sombra que usan todas las plantillas
+  // salvo `fullbleed` — foto de fondo full-bleed detrás. 'panel' es un panel
+  // opaco, sin bordes redondeados ni sombra, pegado a la franja inferior del
+  // canvas — pareja de `LayoutFullBleed`, que confina la foto a la franja
+  // superior (ver su `PHOTO_HEIGHT_PCT`, debe coincidir con el `top` de acá).
+  variante?: 'flotante' | 'panel';
 }
 
 // TarjetaPrecios — price list panel, rendered as the foreground `children`
@@ -48,9 +55,10 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, variante = 'flotante' }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
+  const esPanel = variante === 'panel';
   // "AGOSTO 2026" en el locale activo — mismo criterio editorial que el
   // mock v0 (subtítulo bajo el título, ver captura de referencia), generado
   // al momento de renderizar (no persistido) porque la imagen se comparte
@@ -59,14 +67,21 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   const periodo = `${nombreMes(ahora, 'long', 'mayusculas')} ${ahora.getFullYear()}`;
   return (
     <div
-      style={{
+      style={esPanel ? {
+        position: 'absolute', top: '56%', left: 0, right: 0, bottom: 0,
+        padding: '26px 28px 22px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        background: tokens.cardBackground,
+      } : {
         position: 'absolute', inset: 0,
         padding: `20px ${OUTER_PADDING_X}px 16px`,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}
     >
       <div
-        style={{
+        style={esPanel ? {
+          display: 'flex', flexDirection: 'column',
+        } : {
           display: 'flex', flexDirection: 'column',
           padding: '24px 20px', borderRadius: 18,
           background: tokens.cardBackground,
@@ -138,11 +153,10 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
               </span>
               <span
                 style={{
-                  // tokens.precioFontWeight (no un valor fijo): classic/
-                  // modern quedan cerca del peso del nombre (600 vs 400,
-                  // sutil), bold sigue siendo notoriamente más pesado (800)
-                  // — la variación entre estilos se mantiene, solo que
-                  // ninguno "grita" tanto como antes (17px -> 13px).
+                  // tokens.precioFontWeight (no un valor fijo): varía por
+                  // plantilla (ver estilos.ts) — la variación entre estilos
+                  // se mantiene, solo que ninguno "grita" tanto como antes
+                  // (17px -> 13px).
                   fontSize: 13, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
                   letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
                   whiteSpace: 'nowrap',

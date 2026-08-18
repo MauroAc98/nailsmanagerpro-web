@@ -56,12 +56,10 @@
     "templates": {
       "editorial": { "name": "Editorial", "note": "Foto + lista" },
       "minimal": { "name": "Minimal", "note": "Aire y espacio" },
-      "rose": { "name": "Soft rose", "note": "Acento rosa" },
       "modern": { "name": "Modern", "note": "Fondo oscuro" },
       "split": { "name": "Split", "note": "Dos fotos" },
-      "bold": { "name": "Bold", "note": "Tipografía fuerte" },
       "collage": { "name": "Collage", "note": "Fotos + lista" },
-      "polaroid": { "name": "Polaroid", "note": "Detalle boutique" },
+      "fullbleed": { "name": "Full bleed", "note": "Foto superior + panel" },
       "type": { "name": "Tipográfico", "note": "Sin fotos" },
       "grid": { "name": "Mosaico", "note": "Cuatro fotos" }
     }

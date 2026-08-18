@@ -1,4 +1,4 @@
-// Catálogo declarativo para la historia de precios — 10 plantillas fijas
+// Catálogo declarativo para la historia de precios — 8 plantillas fijas
 // (spec: price-story-templates, migrado del catálogo original de 3 layouts
 // x 3 estilos a un catálogo plano por decisión explícita, ver plan de
 // migración). Un solo array, no un mapa keyed por id, así el picker
@@ -9,21 +9,21 @@ import { TemplateId } from '@/services/profesionalService';
 import { LayoutSingle } from './layouts/LayoutSingle';
 import { LayoutSplit2 } from './layouts/LayoutSplit2';
 import { LayoutGrid4 } from './layouts/LayoutGrid4';
-import { LayoutPolaroid } from './layouts/LayoutPolaroid';
+import { LayoutFullBleed } from './layouts/LayoutFullBleed';
 import { LayoutCollage } from './layouts/LayoutCollage';
 import { LayoutTipografico } from './layouts/LayoutTipografico';
 import {
   EstiloTokens,
-  estiloEditorial, estiloMinimal, estiloRose, estiloModern, estiloSplit,
-  estiloBold, estiloCollage, estiloPolaroid, estiloType, estiloGrid,
+  estiloEditorial, estiloMinimal, estiloModern, estiloSplit,
+  estiloCollage, estiloFullBleed, estiloType, estiloGrid,
 } from './estilos';
 
 export interface LayoutComponentProps {
   fotos:          string[];
   // Opacidad del scrim oscuro dibujado sobre la(s) foto(s) de fondo,
   // sourced de EstiloTokens.overlayOpacity de la plantilla activa (ver
-  // estilos.ts) — las plantillas claras (editorial/minimal/polaroid)
-  // necesitan mucho menos scrim que las oscuras (modern/collage/bold).
+  // estilos.ts) — las plantillas claras (editorial/minimal/fullbleed)
+  // necesitan mucho menos scrim que las oscuras (modern/collage).
   overlayOpacity: number;
   children:       ReactNode;
 }
@@ -38,6 +38,10 @@ export interface TemplateEntry {
   minFotos:  number;
   Component: ComponentType<LayoutComponentProps>;
   tokens:    EstiloTokens;
+  // Chrome del panel de precios que HistoriaPreciosCanvas pasa a
+  // TarjetaPrecios (ver su prop `variante`) — todas las plantillas usan
+  // 'flotante' salvo `fullbleed`, que usa 'panel'.
+  cardVariant: 'flotante' | 'panel';
 }
 
 // Orden = orden de presentación en el carrusel del picker. El fallback
@@ -46,14 +50,12 @@ export interface TemplateEntry {
 // búsqueda solo cae en `type` (al final, minFotos: 0) cuando ninguna de las
 // que piden foto(s) entra, que es exactamente el caso de 0 fotos.
 export const TEMPLATES: TemplateEntry[] = [
-  { id: 'editorial', minFotos: 1, Component: LayoutSingle,      tokens: estiloEditorial },
-  { id: 'minimal',   minFotos: 1, Component: LayoutSingle,      tokens: estiloMinimal },
-  { id: 'rose',      minFotos: 1, Component: LayoutSingle,      tokens: estiloRose },
-  { id: 'modern',    minFotos: 1, Component: LayoutSingle,      tokens: estiloModern },
-  { id: 'split',     minFotos: 2, Component: LayoutSplit2,      tokens: estiloSplit },
-  { id: 'bold',      minFotos: 1, Component: LayoutSingle,      tokens: estiloBold },
-  { id: 'collage',   minFotos: 3, Component: LayoutCollage,     tokens: estiloCollage },
-  { id: 'polaroid',  minFotos: 2, Component: LayoutPolaroid,    tokens: estiloPolaroid },
-  { id: 'type',      minFotos: 0, Component: LayoutTipografico, tokens: estiloType },
-  { id: 'grid',      minFotos: 4, Component: LayoutGrid4,       tokens: estiloGrid },
+  { id: 'editorial', minFotos: 1, Component: LayoutSingle,      tokens: estiloEditorial,  cardVariant: 'flotante' },
+  { id: 'minimal',   minFotos: 1, Component: LayoutSingle,      tokens: estiloMinimal,    cardVariant: 'flotante' },
+  { id: 'modern',    minFotos: 1, Component: LayoutSingle,      tokens: estiloModern,     cardVariant: 'flotante' },
+  { id: 'split',     minFotos: 2, Component: LayoutSplit2,      tokens: estiloSplit,      cardVariant: 'flotante' },
+  { id: 'collage',   minFotos: 3, Component: LayoutCollage,     tokens: estiloCollage,    cardVariant: 'flotante' },
+  { id: 'fullbleed', minFotos: 1, Component: LayoutFullBleed,   tokens: estiloFullBleed,  cardVariant: 'panel' },
+  { id: 'type',      minFotos: 0, Component: LayoutTipografico, tokens: estiloType,       cardVariant: 'flotante' },
+  { id: 'grid',      minFotos: 4, Component: LayoutGrid4,       tokens: estiloGrid,       cardVariant: 'flotante' },
 ];

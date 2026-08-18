@@ -4,14 +4,14 @@ import type { Servicio } from '@/services/servicioService';
 // ─────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────
-// Id de catálogo del picker de "historia de precios" — el catálogo (10
+// Id de catálogo del picker de "historia de precios" — el catálogo (8
 // plantillas fijas) vive en el frontend (components/historia-precios/catalogo.ts),
 // por eso es un string literal union y no un id numérico con lookup en el
 // backend. Reemplaza la vieja matriz LayoutId x EstiloId (3x3): ahora es un
 // catálogo plano de looks curados, no una combinación de 2 ejes.
 export type TemplateId =
-  | 'editorial' | 'minimal' | 'rose' | 'modern' | 'split'
-  | 'bold' | 'collage' | 'polaroid' | 'type' | 'grid';
+  | 'editorial' | 'minimal' | 'modern' | 'split'
+  | 'collage' | 'fullbleed' | 'type' | 'grid';
 
 // Una foto subida específicamente para la historia de precios (no reutiliza
 // ninguna otra foto existente del profesional). `orden` determina el slot

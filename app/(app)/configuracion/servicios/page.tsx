@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -18,6 +18,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
+import { PRICE_STORY_NUDGE_KEY } from '@/lib/priceStoryNudge';
 
 // ReorderableSection — un grupo (regular o promo) con su propio DndContext
 // / SortableContext, así arrastrar nunca mezcla ids entre grupos: cada
@@ -124,6 +125,18 @@ export default function ServiciosPage() {
   const jefa = profesionalJefa(profesionales);
   const mostrarHistoriaPreciosButton = jefa !== null && jefa.historia_precios_template_id !== undefined;
 
+  // Nudge proactivo — se prende una sola vez si venimos de guardar un
+  // precio (ver PRICE_STORY_NUDGE_KEY), no en cualquier visita normal a
+  // esta lista. Se limpia acá mismo así no vuelve a aparecer hasta el
+  // próximo guardado real.
+  const [mostrarNudge, setMostrarNudge] = useState(false);
+  useEffect(() => {
+    if (sessionStorage.getItem(PRICE_STORY_NUDGE_KEY)) {
+      setMostrarNudge(true);
+      sessionStorage.removeItem(PRICE_STORY_NUDGE_KEY);
+    }
+  }, []);
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       {/* Header */}
@@ -131,6 +144,61 @@ export default function ServiciosPage() {
         <BackButton />
         <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
+
+      {/* Nudge proactivo: solo justo después de guardar un precio (ver
+          PRICE_STORY_NUDGE_KEY) — el botón estático de abajo queda siempre
+          disponible, este es el empujón en el momento en que de verdad
+          conviene compartir la lista actualizada. */}
+      {mostrarHistoriaPreciosButton && mostrarNudge && (
+        <div style={{ padding: '0 20px 12px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+            backgroundColor: withAlpha(colors.primary, '15'),
+            border: `1px solid ${withAlpha(colors.primary, '33')}`,
+            boxShadow: shadows.card, borderRadius: 14,
+            padding: '14px 16px',
+          }}>
+            <button
+              onClick={() => router.push('/historia-precios')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0,
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '25'),
+                borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+                  <path d="M22 2 11 13" />
+                  <path d="M22 2 15 22 11 13 2 9 22 2Z" />
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: colors.text }}>
+                  {t('priceStoryNudgeTitle')}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+                  {t('priceStoryNudgeMessage')}
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => setMostrarNudge(false)}
+              aria-label={t('priceStoryNudgeCloseAria')}
+              style={{
+                width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: colors.subtext,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Entry point: historia de precios (spec: price-story) */}
       {mostrarHistoriaPreciosButton && (

@@ -14,7 +14,7 @@ const THUMB_WIDTH = 104;
 
 interface Props {
   // Memoized `data:` photo URLs, already resolved upstream (see
-  // useHistoriaPrecios) — reused by reference across las 10 miniaturas del
+  // useHistoriaPrecios) — reused by reference across las 8 miniaturas del
   // carrusel así cada foto se resuelve una sola vez total, no una vez por
   // plantilla. SelectorPlantilla nunca fetchea ni muta este array.
   fotos:          string[];
@@ -37,7 +37,7 @@ interface Props {
   onTemplateChange: (id: TemplateId) => void;
 }
 
-// SelectorPlantilla — carrusel horizontal de 10 plantillas (spec:
+// SelectorPlantilla — carrusel horizontal de 8 plantillas (spec:
 // price-story-templates, catálogo plano). Cada miniatura renderiza a través
 // del MISMO HistoriaPreciosCanvas/MiniaturaCanvas que captura la
 // exportación final (ver D3), previsualizada con las fotos y precios reales

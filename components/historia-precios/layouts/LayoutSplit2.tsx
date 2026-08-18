@@ -9,8 +9,7 @@ interface Props {
 // Vuelto a la versión original a pedido explícito, después de varios
 // intentos de tratar la unión entre las 2 fotos (degradé oscuro, gap con
 // esquinas redondeadas, polaroid superpuesta, línea de color, insignia
-// circular — ninguno convenció). Plano y sin adornos a propósito, a
-// diferencia de LayoutGrid4 (que sí quedó en estilo polaroid).
+// circular — ninguno convenció). Plano y sin adornos a propósito.
 export function LayoutSplit2({ fotos, overlayOpacity, children }: Props) {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>

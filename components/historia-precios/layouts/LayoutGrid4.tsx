@@ -9,9 +9,10 @@ interface Props {
 // LayoutGrid4 — Mosaico: 4 fotos en una grilla 2x2 pareja, full-bleed.
 // minFotos: 4 (ver catalogo.ts), la plantilla más exigente en fotos.
 // Reemplaza el tratamiento scattered-polaroid anterior de este archivo (ver
-// historial git) — la migración al catálogo de 10 plantillas (ver plan de
-// migración) le dio ese look a `polaroid` (LayoutPolaroid.tsx) en vez de
-// `grid`, así que este quedó como grilla pareja sin rotación.
+// historial git) — la migración al catálogo plano de plantillas (ver plan de
+// migración) movió ese look de "acento rotado" a un template dedicado
+// (`LayoutFullBleed`'s predecesor, ya reemplazado), así que este quedó como
+// grilla pareja sin rotación.
 const GAP = 3;
 
 export function LayoutGrid4({ fotos, overlayOpacity, children }: Props) {
