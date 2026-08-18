@@ -6,10 +6,9 @@ import { fetchAsDataUrl, prepararImagenesParaCaptura } from '@/lib/historia/capt
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { profesionalJefa, LayoutId, EstiloId } from '@/services/profesionalService';
+import { profesionalJefa, TemplateId } from '@/services/profesionalService';
 
-const DEFAULT_LAYOUT: LayoutId = 'single';
-const DEFAULT_ESTILO: EstiloId = 'classic';
+const DEFAULT_TEMPLATE: TemplateId = 'editorial';
 const FILENAME = 'historia-precios.png';
 
 // Ancho de exportación fijo — mismo criterio que useGenerarHistoria.capturar:
@@ -91,15 +90,13 @@ export function useHistoriaPrecios() {
   );
 
   // ─────────────────────────────────────────────
-  // Layout / estilo selection — puramente local a esta sesión. Ningún task
-  // de las 6 fases persiste esta selección de vuelta al backend (D1 define
-  // el contrato PUT pero ninguna fase lo llama todavía) — queda como ítem
+  // Selección de plantilla — puramente local a esta sesión. Ningún task de
+  // las 6 fases persiste esta selección de vuelta al backend (D1 define el
+  // contrato PUT pero ninguna fase lo llama todavía) — queda como ítem
   // abierto, ver apply-progress.
   // ─────────────────────────────────────────────
-  const [layoutId, setLayoutId] = useState<LayoutId>(DEFAULT_LAYOUT);
-  const [estiloId, setEstiloId] = useState<EstiloId>(DEFAULT_ESTILO);
-  const handleLayoutChange = useCallback((id: LayoutId) => setLayoutId(id), []);
-  const handleEstiloChange = useCallback((id: EstiloId) => setEstiloId(id), []);
+  const [templateId, setTemplateId] = useState<TemplateId>(DEFAULT_TEMPLATE);
+  const handleTemplateChange = useCallback((id: TemplateId) => setTemplateId(id), []);
 
   // ─────────────────────────────────────────────
   // Fotos — fuente de verdad cruda (FotoHistoria[], para GestorFotos) +
@@ -151,7 +148,10 @@ export function useHistoriaPrecios() {
     [fotosOrdenadas, dataUrlsPorFoto]
   );
 
-  const puedeCapturar = fotosOrdenadas.length > 0;
+  // 'type' (Tipográfico) es la única plantilla sin foto de fondo (ver
+  // catalogo.ts, minFotos: 0) — el resto sigue necesitando al menos 1 foto
+  // para habilitar Guardar/Compartir.
+  const puedeCapturar = fotosOrdenadas.length > 0 || templateId === 'type';
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
@@ -275,7 +275,7 @@ export function useHistoriaPrecios() {
     nombreNegocio, telefono,
 
     // template selection
-    layoutId, estiloId, handleLayoutChange, handleEstiloChange,
+    templateId, handleTemplateChange,
     modo, handleModoChange,
 
     // photos

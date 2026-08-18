@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 import { agendaFontSerif } from '@/theme/agendaColors';
+import { nombreMes } from '@/lib/dateFormat';
 
 const formatoPrecio = new Intl.NumberFormat('es-AR');
 // Espacio entre "$" y el número (antes pegados) — separa el signo del
@@ -50,6 +51,12 @@ const OUTER_PADDING_X = 54;
 export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
+  // "AGOSTO 2026" en el locale activo — mismo criterio editorial que el
+  // mock v0 (subtítulo bajo el título, ver captura de referencia), generado
+  // al momento de renderizar (no persistido) porque la imagen se comparte
+  // fresca cada vez que se genera.
+  const ahora = new Date();
+  const periodo = `${nombreMes(ahora, 'long', 'mayusculas')} ${ahora.getFullYear()}`;
   return (
     <div
       style={{
@@ -70,32 +77,56 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
           boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
         }}
       >
-        {/* Título sin filetes ni línea — la referencia "delicada" (carta
-            translúcida sobre foto) no usa ningún elemento de línea en todo
-            el diseño, la elegancia sale de la tipografía y el espacio en
-            blanco solos. Playfair Display recta (agendaFontSerif), no
-            Cormorant Garamond itálica como antes — unificación del serif de
-            toda la app a uno solo, ver design decision 2026-08-17. */}
+        {/* Encabezado editorial (ver mock v0, price-story.tsx): eyebrow con
+            el nombre de negocio/profesional, título grande alineado a la
+            izquierda (ya no centrado) y subtítulo con el período — 3 niveles
+            tipográficos en vez del título solo centrado de la versión
+            anterior (ver historial git de este archivo). Playfair Display
+            recta (agendaFontSerif), no Cormorant Garamond itálica como
+            antes — unificación del serif de toda la app a uno solo, ver
+            design decision 2026-08-17. */}
+        {nombreFooter && (
+          <span
+            style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase',
+              color: tokens.nombreColor, opacity: 0.65, marginBottom: 6,
+            }}
+          >
+            {nombreFooter}
+          </span>
+        )}
         <span
           style={{
             fontFamily: agendaFontSerif,
-            fontSize: 32, fontWeight: 400, letterSpacing: 0.5,
-            color: tokens.headerColor, textAlign: 'center', marginBottom: 26,
+            fontSize: 31, fontWeight: 400, letterSpacing: 0.3, lineHeight: 1.05,
+            color: tokens.headerColor, textAlign: 'left',
           }}
         >
           {titulo}
+        </span>
+        <span
+          style={{
+            fontSize: 9, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase',
+            color: tokens.nombreColor, opacity: 0.65, marginTop: 8, marginBottom: 24,
+          }}
+        >
+          {periodo}
         </span>
 
         {/* Nombre en minúscula/oración (no versalita con tracking) y precio
             a un tamaño/peso mucho más parejo con el nombre — la referencia
             no hace que ninguno de los dos "grite" sobre el otro, la
             jerarquía es puramente posicional (izq/der), no tipográfica.
-            Sigue sin bordes/divisores entre filas, solo espacio (gap 18). */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            Línea divisoria bajo cada fila (tokens.dividerColor, ver mock v0)
+            — reemplaza el espaciado puro sin bordes de la versión anterior. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {servicios.map(servicio => (
             <div
               key={servicio.id}
-              style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}
+              style={{
+                display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
+                paddingBottom: 10, borderBottom: `1px solid ${tokens.dividerColor}`,
+              }}
             >
               <span
                 style={{
@@ -123,30 +154,14 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
           ))}
         </div>
 
-        {/* Footer credit line — same slot the reference Canva price-list
-            used for a professional's @handle, repurposed for the account's
-            business name + phone (see useHistoriaPrecios: `User.name`/
-            `User.telefono` via useAuthStore, not `Profesional`). Sin línea
-            divisoria arriba (antes sí) — consistente con el resto de la
-            carta, que ya no usa ningún filete/borde, solo margen (28px,
-            era 18+altura de la línea) para separarlo de la lista. */}
-        {nombreFooter && (
-          <>
-            <span
-              style={{
-                marginTop: 28, display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 1,
-                color: tokens.nombreColor, textAlign: 'center',
-              }}
-            >
-              {nombreFooter}
-            </span>
-            {/* CTA + phone — same visual language as StoryCanvas's footer
-                (thin/wide-tracked uppercase label + icon-paired phone row),
-                adapted to per-estilo tokens instead of hardcoded white:
-                classic's opaque light card would make white text invisible.
-                See StoryCanvas.tsx lines ~238-257 for the reference. */}
-            {telefono && (
-              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        {/* Footer CTA — solo reservar+teléfono (el nombre ya se muestra
+            arriba como eyebrow, ver encabezado editorial); mismo lenguaje
+            visual que el footer de StoryCanvas (label mayúscula wide-tracked
+            + fila de ícono/teléfono), adaptado a los tokens por plantilla en
+            vez de blanco hardcodeado: la tarjeta opaca clara necesita texto
+            oscuro. See StoryCanvas.tsx lines ~238-257 for the reference. */}
+        {nombreFooter && telefono && (
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                 <span
                   style={{
                     // Peso/tamaño/opacidad subidos (300->500, 8->9, 0.65->0.9)
@@ -171,8 +186,6 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
                   </span>
                 </div>
               </div>
-            )}
-          </>
         )}
       </div>
     </div>

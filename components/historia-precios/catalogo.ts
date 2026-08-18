@@ -1,51 +1,59 @@
-// Declarative catalog for the price story — 3 layouts x 3 estilos = 9 fixed
-// combinations (spec: price-story-templates). Both registries are plain
-// arrays, not maps keyed by id, so the picker (SelectorPlantilla) can
-// iterate them directly to build the 3x3 grid without a separate ordering
-// list.
+// Catálogo declarativo para la historia de precios — 10 plantillas fijas
+// (spec: price-story-templates, migrado del catálogo original de 3 layouts
+// x 3 estilos a un catálogo plano por decisión explícita, ver plan de
+// migración). Un solo array, no un mapa keyed por id, así el picker
+// (SelectorPlantilla) lo itera directo para armar el carrusel en el mismo
+// orden en que están definidas acá.
 import { ComponentType, ReactNode } from 'react';
-import { LayoutId, EstiloId } from '@/services/profesionalService';
+import { TemplateId } from '@/services/profesionalService';
 import { LayoutSingle } from './layouts/LayoutSingle';
 import { LayoutSplit2 } from './layouts/LayoutSplit2';
 import { LayoutGrid4 } from './layouts/LayoutGrid4';
-import { EstiloTokens, estiloClassic, estiloModern, estiloBold } from './estilos';
+import { LayoutPolaroid } from './layouts/LayoutPolaroid';
+import { LayoutCollage } from './layouts/LayoutCollage';
+import { LayoutTipografico } from './layouts/LayoutTipografico';
+import {
+  EstiloTokens,
+  estiloEditorial, estiloMinimal, estiloRose, estiloModern, estiloSplit,
+  estiloBold, estiloCollage, estiloPolaroid, estiloType, estiloGrid,
+} from './estilos';
 
 export interface LayoutComponentProps {
   fotos:          string[];
-  // Opacity of the dark scrim drawn over the background photo(s), sourced
-  // from the active estilo's `EstiloTokens.overlayOpacity` (see estilos.ts)
-  // — classic's opaque light card needs far less photo-dimming than
-  // modern/bold's translucent panels.
+  // Opacidad del scrim oscuro dibujado sobre la(s) foto(s) de fondo,
+  // sourced de EstiloTokens.overlayOpacity de la plantilla activa (ver
+  // estilos.ts) — las plantillas claras (editorial/minimal/polaroid)
+  // necesitan mucho menos scrim que las oscuras (modern/collage/bold).
   overlayOpacity: number;
   children:       ReactNode;
 }
 
-export interface LayoutEntry {
-  id:        LayoutId;
-  // Minimum uploaded photos required to unlock this layout in the picker
+export interface TemplateEntry {
+  id:        TemplateId;
+  // Mínimo de fotos subidas para desbloquear esta plantilla en el picker
   // (spec: price-story-photos — "Layouts requiring more photos than
-  // uploaded are locked"). Slot assignment is by upload order (`orden`),
-  // no drag reorder in v1 — see design D4.
+  // uploaded are locked"). Asignación de fotos a cada slot por `orden`
+  // (reordenable vía drag-and-drop en GestorFotos). `type` (Tipográfico) es
+  // la única plantilla con minFotos: 0 — nunca se bloquea, ni sin fotos.
   minFotos:  number;
   Component: ComponentType<LayoutComponentProps>;
+  tokens:    EstiloTokens;
 }
 
-// Ordered so 'single' is first — SelectorPlantilla's reactive fallback
-// (task 3.8) always falls back to 'single' because it's the only layout
-// that's never locked once at least 1 photo exists (minFotos: 1).
-export const LAYOUTS: LayoutEntry[] = [
-  { id: 'single', minFotos: 1, Component: LayoutSingle },
-  { id: 'split2', minFotos: 2, Component: LayoutSplit2 },
-  { id: 'grid4',  minFotos: 4, Component: LayoutGrid4 },
-];
-
-export interface EstiloEntry {
-  id:     EstiloId;
-  tokens: EstiloTokens;
-}
-
-export const ESTILOS: EstiloEntry[] = [
-  { id: 'classic', tokens: estiloClassic },
-  { id: 'modern',  tokens: estiloModern },
-  { id: 'bold',    tokens: estiloBold },
+// Orden = orden de presentación en el carrusel del picker. El fallback
+// reactivo de SelectorPlantilla busca la PRIMERA entrada de este array cuyo
+// minFotos entre en la cantidad de fotos actual — con este orden, esa
+// búsqueda solo cae en `type` (al final, minFotos: 0) cuando ninguna de las
+// que piden foto(s) entra, que es exactamente el caso de 0 fotos.
+export const TEMPLATES: TemplateEntry[] = [
+  { id: 'editorial', minFotos: 1, Component: LayoutSingle,      tokens: estiloEditorial },
+  { id: 'minimal',   minFotos: 1, Component: LayoutSingle,      tokens: estiloMinimal },
+  { id: 'rose',      minFotos: 1, Component: LayoutSingle,      tokens: estiloRose },
+  { id: 'modern',    minFotos: 1, Component: LayoutSingle,      tokens: estiloModern },
+  { id: 'split',     minFotos: 2, Component: LayoutSplit2,      tokens: estiloSplit },
+  { id: 'bold',      minFotos: 1, Component: LayoutSingle,      tokens: estiloBold },
+  { id: 'collage',   minFotos: 3, Component: LayoutCollage,     tokens: estiloCollage },
+  { id: 'polaroid',  minFotos: 2, Component: LayoutPolaroid,    tokens: estiloPolaroid },
+  { id: 'type',      minFotos: 0, Component: LayoutTipografico, tokens: estiloType },
+  { id: 'grid',      minFotos: 4, Component: LayoutGrid4,       tokens: estiloGrid },
 ];

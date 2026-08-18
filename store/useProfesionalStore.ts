@@ -7,6 +7,9 @@ import {
   extraerMensajeError,
 } from '@/services/profesionalService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
+import { reordenarEnSitio } from '@/lib/reordenarEnSitio';
+import { alertDialog } from '@/store/useConfirmStore';
+import { tStatic } from '@/store/useLocaleStore';
 
 interface OperacionResult {
   success: boolean;
@@ -26,9 +29,10 @@ interface ProfesionalesState {
   borrarFondoHistoria: (id: number) => Promise<OperacionResult>;
   subirFotoHistoriaPrecios: (id: number, archivo: File) => Promise<OperacionResult>;
   borrarFotoHistoriaPrecios: (id: number, fotoId: number) => Promise<OperacionResult>;
+  reordenarFotosHistoriaPrecios: (id: number, ids: number[]) => Promise<void>;
 }
 
-export const useProfesionalStore = create<ProfesionalesState>((set) => ({
+export const useProfesionalStore = create<ProfesionalesState>((set, get) => ({
   profesionales: [],
   loading: false,
   error: null,
@@ -142,5 +146,25 @@ export const useProfesionalStore = create<ProfesionalesState>((set) => ({
         return { success: false, message: extraerMensajeError(e) };
       }
     });
+  },
+
+  reordenarFotosHistoriaPrecios: async (id, ids) => {
+    // Sin withGlobalLoader: el drag-and-drop debe sentirse instantáneo,
+    // mismo criterio que useServiciosStore.reordenarServicios.
+    const anterior = get().profesionales;
+    set(state => ({
+      profesionales: state.profesionales.map(p =>
+        p.id === id
+          ? { ...p, historia_precios_fotos: reordenarEnSitio(p.historia_precios_fotos, ids) }
+          : p
+      ),
+    }));
+    try {
+      await profesionalService.reordenarFotosHistoriaPrecios(id, ids);
+    } catch (e) {
+      console.error('reordenarFotosHistoriaPrecios:', e);
+      set({ profesionales: anterior });
+      await alertDialog(tStatic('historia.GestorFotos.reorderError'));
+    }
   },
 }));

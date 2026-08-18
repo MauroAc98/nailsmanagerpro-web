@@ -52,7 +52,19 @@
   },
   "SelectorPlantilla": {
     "missingPhotos": "faltam {count, plural, one {# foto} other {# fotos}}",
-    "fallbackToast": "O design escolhido precisa de mais fotos: foi trocado para o design simples."
+    "fallbackToast": "O design escolhido precisa de mais fotos: foi trocado para o design simples.",
+    "templates": {
+      "editorial": { "name": "Editorial", "note": "Foto + lista" },
+      "minimal": { "name": "Minimal", "note": "Ar e espaço" },
+      "rose": { "name": "Soft rose", "note": "Toque rosa" },
+      "modern": { "name": "Modern", "note": "Fundo escuro" },
+      "split": { "name": "Split", "note": "Duas fotos" },
+      "bold": { "name": "Bold", "note": "Tipografia forte" },
+      "collage": { "name": "Collage", "note": "Fotos + lista" },
+      "polaroid": { "name": "Polaroid", "note": "Detalhe boutique" },
+      "type": { "name": "Tipográfico", "note": "Sem fotos" },
+      "grid": { "name": "Mosaico", "note": "Quatro fotos" }
+    }
   },
   "GestorFotos": {
     "deleteConfirm": "Remover esta foto do story de preços?",
@@ -60,13 +72,18 @@
     "cancel": "Cancelar",
     "uploadError": "Não foi possível enviar a foto.",
     "deleteError": "Não foi possível remover a foto.",
+    "reorderError": "Não foi possível reordenar as fotos.",
     "deletePhotoAria": "Remover foto",
-    "addPhotosAria": "Adicionar fotos"
+    "addPhotosAria": "Adicionar fotos",
+    "dragPhotoAria": "Arrastar para reordenar"
   },
   "HistoriaPreciosPage": {
     "title": "Story de preços",
     "loading": "Carregando...",
     "noProfessional": "Não foi possível identificar seu perfil profissional.",
+    "previewTitle": "Prévia",
+    "previewFormat": "Formato story · 9:16",
+    "previewBadge": "Atualização instantânea",
     "showPricesOf": "Mostrar preços de:",
     "modePrecios": "Preços",
     "modePromociones": "Promoções",

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Eye } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import { colors, withAlpha } from '@/theme/colors';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { useHistoriaPrecios } from '@/hooks/useHistoriaPrecios';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -36,7 +38,7 @@ function tabStyle(active: boolean): React.CSSProperties {
     flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
     cursor: 'pointer',
     background:  active ? colors.primary : 'transparent',
-    color:       active ? '#fff' : colors.subtext,
+    color:       active ? colors.primaryFg : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
     boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '4D')}` : 'none',
   };
@@ -69,7 +71,7 @@ export default function HistoriaPreciosPage() {
     effectiveProfesionalId, serviciosActivos,
     selectedProfesionalId, setSelectedProfesionalId,
     nombreNegocio, telefono,
-    layoutId, estiloId, handleLayoutChange, handleEstiloChange,
+    templateId, handleTemplateChange,
     modo, handleModoChange,
     fotos, fotosUrls, puedeCapturar,
     canvasRef, descargarImagen, compartirImagen,
@@ -93,10 +95,15 @@ export default function HistoriaPreciosPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
-      {/* Header */}
-      <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Header — 2 filas (BackButton, después título), mismo patrón que
+          agenda/historia/page.tsx (26px, no inline con el botón). */}
+      <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+      </div>
+      <div style={{ padding: '4px 20px 18px' }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
+          {t('title')}
+        </h1>
       </div>
 
       {cargando ? (
@@ -161,20 +168,41 @@ export default function HistoriaPreciosPage() {
             </div>
           )}
 
-          {/* Canvas preview — same node the capture targets, see useCanvasScale above */}
-          <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 16 }}>
-            <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-              <HistoriaPreciosCanvas
-                ref={canvasRef}
-                layoutId={layoutId}
-                estiloId={estiloId}
-                fotos={fotosUrls}
-                titulo={titulo}
-                servicios={serviciosActivos}
-                nombreNegocio={nombreNegocio}
-                telefono={telefono}
-                profesionalNombre={profesionalSeleccionada?.nombre}
-              />
+          {/* Caption "Vista previa" — mismo patrón que agenda/historia/page.tsx
+              (título + subtítulo a la izquierda, badge a la derecha), no
+              existía antes de este rediseño. */}
+          <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('previewTitle')}</p>
+              <p style={{ fontSize: 11, color: colors.subtext, margin: '2px 0 0' }}>{t('previewFormat')}</p>
+            </div>
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 10, fontWeight: 700, color: colors.success,
+              background: withAlpha(colors.success, '1F'), padding: '4px 8px', borderRadius: 20,
+            }}>
+              <Eye size={12} strokeWidth={2.5} />
+              {t('previewBadge')}
+            </span>
+          </div>
+
+          {/* Canvas preview — marco tipo celular alrededor del MISMO nodo
+              que captura la exportación (ver useCanvasScale arriba); el
+              frame es puramente decorativo, no toca el nodo con canvasRef. */}
+          <div style={{ padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
+            <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 20 }}>
+              <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                <HistoriaPreciosCanvas
+                  ref={canvasRef}
+                  templateId={templateId}
+                  fotos={fotosUrls}
+                  titulo={titulo}
+                  servicios={serviciosActivos}
+                  nombreNegocio={nombreNegocio}
+                  telefono={telefono}
+                  profesionalNombre={profesionalSeleccionada?.nombre}
+                />
+              </div>
             </div>
           </div>
 
@@ -196,11 +224,8 @@ export default function HistoriaPreciosPage() {
               nombreNegocio={nombreNegocio}
               telefono={telefono}
               profesionalNombre={profesionalSeleccionada?.nombre}
-              layoutId={layoutId}
-              estiloId={estiloId}
-              onLayoutChange={handleLayoutChange}
-              onEstiloChange={handleEstiloChange}
-              containerWidth={canvasWidth}
+              templateId={templateId}
+              onTemplateChange={handleTemplateChange}
             />
           </div>
 

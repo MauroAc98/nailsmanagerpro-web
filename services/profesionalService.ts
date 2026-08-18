@@ -4,16 +4,19 @@ import type { Servicio } from '@/services/servicioService';
 // ─────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────
-// Ids de catálogo del picker de "historia de precios" — el catálogo (layouts
-// x estilos) vive en el frontend (components/historia-precios/catalogo.ts,
-// Fase 3), por eso son string literal unions y no un id numérico con lookup
-// en el backend.
-export type LayoutId = 'grid4' | 'single' | 'split2';
-export type EstiloId = 'classic' | 'modern' | 'bold';
+// Id de catálogo del picker de "historia de precios" — el catálogo (10
+// plantillas fijas) vive en el frontend (components/historia-precios/catalogo.ts),
+// por eso es un string literal union y no un id numérico con lookup en el
+// backend. Reemplaza la vieja matriz LayoutId x EstiloId (3x3): ahora es un
+// catálogo plano de looks curados, no una combinación de 2 ejes.
+export type TemplateId =
+  | 'editorial' | 'minimal' | 'rose' | 'modern' | 'split'
+  | 'bold' | 'collage' | 'polaroid' | 'type' | 'grid';
 
 // Una foto subida específicamente para la historia de precios (no reutiliza
 // ninguna otra foto existente del profesional). `orden` determina el slot
-// del layout al que se asigna (asignación por orden de subida, sin drag).
+// del layout al que se asigna — arranca por orden de subida, reordenable
+// después vía drag-and-drop (ver GestorFotos).
 export interface FotoHistoria {
   id: number;
   url: string;
@@ -35,9 +38,8 @@ export interface Profesional {
   // (appended por el backend), nunca como ruta interna del disco.
   fondo_historia_url: string | null;
   // Selección actual del picker de "historia de precios" — null si la
-  // profesional todavía no eligió layout/estilo.
-  historia_precios_layout_id: LayoutId | null;
-  historia_precios_estilo_id: EstiloId | null;
+  // profesional todavía no eligió plantilla.
+  historia_precios_template_id: TemplateId | null;
   // Proyección de solo lectura: fotos subidas para la historia de precios,
   // en orden de subida. Se modifica vía los endpoints multipart de abajo,
   // nunca directamente por PUT /profesionales/{id}.
@@ -67,11 +69,10 @@ export interface UpdateProfesionalDto {
   color?: string | null;
   activo?: boolean;
   servicio_ids?: number[];
-  // Scalars picked from the frontend-owned catalog — same precedent as
+  // Scalar picked from the frontend-owned catalog — same precedent as
   // `color`, patched through the main PUT. Photos go through the dedicated
   // multipart sub-resource below instead (see `subirFotoHistoriaPrecios`).
-  historia_precios_layout_id?: LayoutId | null;
-  historia_precios_estilo_id?: EstiloId | null;
+  historia_precios_template_id?: TemplateId | null;
 }
 
 // ─────────────────────────────────────────────
@@ -143,6 +144,17 @@ export const profesionalService = {
   borrarFotoHistoriaPrecios: async (id: number, fotoId: number): Promise<Profesional> => {
     const { data } = await api.delete<Profesional>(
       `/profesionales/${id}/historia-precios-fotos/${fotoId}`,
+    );
+    return data;
+  },
+
+  // Reordena las fotos de la historia de precios. `ids` es el array
+  // completo en el nuevo orden. Devuelve el Profesional completo, igual
+  // que el resto de los endpoints de fotos.
+  reordenarFotosHistoriaPrecios: async (id: number, ids: number[]): Promise<Profesional> => {
+    const { data } = await api.patch<Profesional>(
+      `/profesionales/${id}/historia-precios-fotos/reordenar`,
+      { ids },
     );
     return data;
   },

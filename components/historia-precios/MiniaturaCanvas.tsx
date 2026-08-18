@@ -1,12 +1,11 @@
 'use client';
 
-import { LayoutId, EstiloId } from '@/services/profesionalService';
+import { TemplateId } from '@/services/profesionalService';
 import { Servicio } from '@/services/servicioService';
 import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from './HistoriaPreciosCanvas';
 
 interface Props {
-  layoutId:      LayoutId;
-  estiloId:      EstiloId;
+  templateId:    TemplateId;
   fotos:         string[];
   titulo:        string;
   servicios:     Servicio[];
@@ -25,7 +24,7 @@ interface Props {
 // is smaller, the DOM node under the transform is untouched. Thumbnails are
 // inert (`pointer-events: none`): no drag/click passthrough into the canvas
 // underneath, selection happens on the wrapping button in SelectorPlantilla.
-export function MiniaturaCanvas({ layoutId, estiloId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, width }: Props) {
+export function MiniaturaCanvas({ templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, width }: Props) {
   const scale  = width / BASE_WIDTH;
   const height = BASE_HEIGHT * scale;
 
@@ -38,8 +37,7 @@ export function MiniaturaCanvas({ layoutId, estiloId, fotos, titulo, servicios, 
     >
       <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
         <HistoriaPreciosCanvas
-          layoutId={layoutId}
-          estiloId={estiloId}
+          templateId={templateId}
           fotos={fotos}
           titulo={titulo}
           servicios={servicios}

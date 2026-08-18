@@ -113,16 +113,16 @@ export default function ServiciosPage() {
 
   // Entry point a "historia de precios" (spec: price-story) — gateado en que
   // el campo NUEVO exista en la respuesta del backend (no en que tenga un
-  // valor truthy: `historia_precios_layout_id` es válidamente `null` cuando
+  // valor truthy: `historia_precios_template_id` es válidamente `null` cuando
   // la profesional todavía no eligió plantilla). Mientras el backend no
-  // mande el campo, `historia_precios_layout_id` viene `undefined` en el
-  // objeto real (aunque el tipo lo declare como `LayoutId | null`), así que
+  // mande el campo, `historia_precios_template_id` viene `undefined` en el
+  // objeto real (aunque el tipo lo declare como `TemplateId | null`), así que
   // el botón queda invisible hasta que el backend despliegue el feature —
   // ver design.md, "Migration / Rollout".
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   useEffect(() => { if (profesionales.length === 0) fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const jefa = profesionalJefa(profesionales);
-  const mostrarHistoriaPreciosButton = jefa !== null && jefa.historia_precios_layout_id !== undefined;
+  const mostrarHistoriaPreciosButton = jefa !== null && jefa.historia_precios_template_id !== undefined;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>

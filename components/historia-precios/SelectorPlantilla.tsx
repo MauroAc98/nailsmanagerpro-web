@@ -1,131 +1,110 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { LayoutId, EstiloId } from '@/services/profesionalService';
+import { TemplateId } from '@/services/profesionalService';
 import { Servicio } from '@/services/servicioService';
-import { colors, withAlpha } from '@/theme/colors';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { showToast } from '@/store/useToastStore';
-import { LAYOUTS, ESTILOS } from './catalogo';
+import { TEMPLATES } from './catalogo';
 import { MiniaturaCanvas } from './MiniaturaCanvas';
 
-// Grid chrome around each thumbnail — must match the `<button>` style below
-// (padding: 4 * 2 sides + border: 1.5px * 2 sides) so the width formula in
-// SelectorPlantilla derives a thumbWidth that genuinely fits 3 columns +
-// 2 gaps inside containerWidth, instead of a hardcoded constant independent
-// of the actual available screen width (was overflowing on narrow phones —
-// default CSS Grid `1fr` tracks don't shrink below their content's
-// min-content size).
-const GRID_GAP     = 10;
-const THUMB_CHROME = 11; // padding 4+4 + border 1.5+1.5, rounded up
-const MIN_THUMB_WIDTH = 70;
+const THUMB_WIDTH = 104;
 
 interface Props {
   // Memoized `data:` photo URLs, already resolved upstream (see
-  // useHistoriaPrecios, Phase 5) — reused by reference across all 9
-  // thumbnails so each photo is fetched once total, not once per
-  // combination. SelectorPlantilla never fetches or mutates this array.
+  // useHistoriaPrecios) — reused by reference across las 10 miniaturas del
+  // carrusel así cada foto se resuelve una sola vez total, no una vez por
+  // plantilla. SelectorPlantilla nunca fetchea ni muta este array.
   fotos:          string[];
-  // Card title for the active modo (precios/promociones), same value
-  // passed straight through to TarjetaPrecios — every thumbnail previews
-  // the real title, not a placeholder (spec: "Picker previews with real
-  // data").
+  // Título de la tarjeta para el modo activo (precios/promociones), mismo
+  // valor que recibe TarjetaPrecios directamente — cada miniatura
+  // previsualiza el título real, no un placeholder (spec: "Picker previews
+  // with real data").
   titulo:         string;
-  // Already-filtered active `Servicio` list, same as what TarjetaPrecios
-  // expects — this component is purely presentational, no store access.
+  // Lista ya filtrada de Servicios activos, misma que espera TarjetaPrecios
+  // — este componente es puramente presentacional, no lee el store.
   servicios:      Servicio[];
-  // Account-level footer credit (business name/phone), same values passed
-  // straight through to TarjetaPrecios — every thumbnail previews the same
-  // real footer content the export renders (spec: "Picker previews with
-  // real data", design decision D3).
+  // Crédito de pie de cuenta (nombre de negocio/teléfono), mismos valores
+  // que recibe TarjetaPrecios directamente — cada miniatura previsualiza el
+  // mismo contenido real de pie que renderiza la exportación (spec:
+  // "Picker previews with real data", design decision D3).
   nombreNegocio:  string;
   telefono:       string | null;
   profesionalNombre?: string;
-  layoutId:       LayoutId;
-  estiloId:       EstiloId;
-  onLayoutChange: (id: LayoutId) => void;
-  onEstiloChange: (id: EstiloId) => void;
-  // Same value the page derives via useCanvasScale() for the main canvas
-  // preview — reused here (not recomputed) so the picker's 3 columns fit
-  // the actual available width instead of a fixed 100px constant.
-  containerWidth: number;
+  templateId:       TemplateId;
+  onTemplateChange: (id: TemplateId) => void;
 }
 
-// SelectorPlantilla — 3x3 picker (layout x estilo = 9 combinations, spec:
-// price-story-templates). Every thumbnail renders through the SAME
-// HistoriaPreciosCanvas/MiniaturaCanvas the final export captures (see D3),
-// previewed with the caller's real photos and real service prices — never
-// placeholder content (spec: "Picker previews with real data").
+// SelectorPlantilla — carrusel horizontal de 10 plantillas (spec:
+// price-story-templates, catálogo plano). Cada miniatura renderiza a través
+// del MISMO HistoriaPreciosCanvas/MiniaturaCanvas que captura la
+// exportación final (ver D3), previsualizada con las fotos y precios reales
+// de quien llama — nunca contenido placeholder (spec: "Picker previews with
+// real data").
 export function SelectorPlantilla({
-  fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, layoutId, estiloId, onLayoutChange, onEstiloChange, containerWidth,
+  fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, templateId, onTemplateChange,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
-  const combinaciones = useMemo(
-    () => LAYOUTS.flatMap(layout => ESTILOS.map(estilo => ({ layout, estilo }))),
-    []
-  );
 
-  const thumbWidth = Math.max(
-    MIN_THUMB_WIDTH,
-    Math.floor((containerWidth - GRID_GAP * 2) / 3) - THUMB_CHROME
-  );
-
-  // Reactive fallback (task 3.8) — if a photo is later deleted (Phase 4's
-  // GestorFotos, not built here) and the CURRENTLY selected layout's
-  // minFotos no longer fits the live `fotos` prop, fall back to 'single'
-  // (minFotos: 1, never locked once at least 1 photo exists) and tell the
-  // user why. This effect only self-corrects whatever `fotos` it's given —
-  // it does not own or render any deletion UI itself.
+  // Fallback reactivo — si se borra una foto (GestorFotos) y la plantilla
+  // ACTUALMENTE elegida deja de entrar en el `fotos` prop en vivo, cae a la
+  // primera entrada de TEMPLATES cuyo minFotos entre (ver catalogo.ts: con
+  // el orden actual, eso siempre resuelve — en el peor caso, a 'type',
+  // minFotos: 0, que nunca se bloquea). Este efecto solo se autocorrige con
+  // lo que le llega en `fotos` — no dueño ni renderiza ninguna UI de borrado.
   useEffect(() => {
-    const layoutActual = LAYOUTS.find(l => l.id === layoutId);
-    if (!layoutActual) return;
-    if (fotos.length < layoutActual.minFotos && layoutId !== 'single') {
-      onLayoutChange('single');
-      showToast(t('fallbackToast'));
+    const templateActual = TEMPLATES.find(pl => pl.id === templateId);
+    if (!templateActual) return;
+    if (fotos.length < templateActual.minFotos) {
+      const fallback = TEMPLATES.find(pl => pl.minFotos <= fotos.length);
+      if (fallback && fallback.id !== templateId) {
+        onTemplateChange(fallback.id);
+        showToast(t('fallbackToast'));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fotos.length, layoutId, onLayoutChange]);
+  }, [fotos.length, templateId, onTemplateChange]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: GRID_GAP }}>
-      {combinaciones.map(({ layout, estilo }) => {
-        const bloqueado    = fotos.length < layout.minFotos;
-        const seleccionado = layoutId === layout.id && estiloId === estilo.id;
-        const faltan       = layout.minFotos - fotos.length;
+    <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginLeft: -4, paddingLeft: 4, scrollSnapType: 'x mandatory' }}>
+      {TEMPLATES.map(template => {
+        const bloqueado    = fotos.length < template.minFotos;
+        const seleccionado = templateId === template.id;
+        const faltan       = template.minFotos - fotos.length;
 
         return (
           <button
-            key={`${layout.id}-${estilo.id}`}
+            key={template.id}
             type="button"
             disabled={bloqueado}
-            onClick={() => {
-              onLayoutChange(layout.id);
-              onEstiloChange(estilo.id);
-            }}
+            onClick={() => onTemplateChange(template.id)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-              padding: 4, borderRadius: 14, cursor: bloqueado ? 'not-allowed' : 'pointer',
+              flexShrink: 0, scrollSnapAlign: 'start',
+              padding: 5, borderRadius: 16, cursor: bloqueado ? 'not-allowed' : 'pointer',
               background: seleccionado ? withAlpha(colors.primary, '1F') : 'transparent',
               border: `1.5px solid ${seleccionado ? colors.primary : colors.border}`,
               opacity: bloqueado ? 0.45 : 1,
             }}
           >
             <MiniaturaCanvas
-              layoutId={layout.id}
-              estiloId={estilo.id}
+              templateId={template.id}
               fotos={fotos}
               titulo={titulo}
               servicios={servicios}
               nombreNegocio={nombreNegocio}
               telefono={telefono}
               profesionalNombre={profesionalNombre}
-              width={thumbWidth}
+              width={THUMB_WIDTH}
             />
-            {bloqueado && (
-              <span style={{ fontSize: 9, fontWeight: 600, color: colors.subtext, textAlign: 'center' }}>
-                {t('missingPhotos', { count: faltan })}
-              </span>
-            )}
+            <span style={{ fontFamily: agendaFontSerif, fontSize: 11, fontWeight: 600, color: colors.textStrong, whiteSpace: 'nowrap' }}>
+              {t(`templates.${template.id}.name`)}
+            </span>
+            <span style={{ fontSize: 9, fontWeight: 500, color: colors.subtext, whiteSpace: 'nowrap' }}>
+              {bloqueado ? t('missingPhotos', { count: faltan }) : t(`templates.${template.id}.note`)}
+            </span>
           </button>
         );
       })}

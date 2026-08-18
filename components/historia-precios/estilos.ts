@@ -1,16 +1,30 @@
-// Estilo (card style) token sets for the price-story picker — 3 curated
-// looks (classic/modern/bold) combined with 3 layouts (see catalogo.ts) for
-// the fixed 9-combination catalog described in spec price-story-templates.
+// Token sets para las 10 plantillas del catálogo de "historia de precios"
+// (ver catalogo.ts) — reemplaza la vieja matriz de 3 EstiloTokens (classic/
+// modern/bold) combinados con 3 layouts. Ahora cada plantilla es un look
+// curado y fijo, con su propio token set.
 //
-// Tokens are plain string/number values, never CSS custom properties
-// (`var(--...)`). html-to-image serializes the captured node into an SVG
-// foreignObject and rasterizes it through its own off-DOM <img> — inherited
-// custom properties are exactly the kind of thing that pipeline drops
-// silently. TarjetaPrecios reads these values directly as inline styles,
-// the same reason StoryCanvas hardcodes raw hex/rgba instead of reading
-// theme/colors.ts. See design decision D3 in sdd/dynamic-price-story.
-// (primaryDeepRaw ya no se importa acá: bold pasó de sólido a rgba() con
-// alpha propio, ver comentario en estiloBold más abajo.)
+// 2026-08-18: el mock v0 se actualizó — las 10 plantillas dejaron de tener
+// un color hex único cada una y pasaron a reusar 5 "moods" compartidos
+// tomados directo de los tokens --ag-* ya establecidos por el resto del
+// rediseño agenda (ver theme/agendaColors.ts / .agenda-light en
+// app/globals.css): surface (blanco), surface-2 (hueso cálido), primary-soft
+// (rosa suave), strong (oscuro) y primary (rosa sólido, único para "bold").
+// La diferenciación entre plantillas ahora viene principalmente de la
+// COMPOSICIÓN (layouts/*.tsx: 1 foto, split, collage, polaroid, grid, sin
+// foto), no de un color exclusivo por plantilla — varias comparten mood a
+// propósito (ver comentarios de cada una abajo). Valores tomados de
+// .agenda-light (no .agenda-dark) por el mismo motivo que primaryDeepRaw en
+// theme/colors.ts: la imagen exportada es fija, no debe variar según el
+// tema activo del usuario al momento de generarla.
+//
+// Tokens son valores string/number planos, nunca CSS custom properties
+// (`var(--...)`). html-to-image serializa el nodo capturado a un SVG
+// foreignObject y lo rasteriza a través de su propio <img> off-DOM —
+// custom properties heredadas son justo el tipo de cosa que ese pipeline
+// descarta silenciosamente. TarjetaPrecios lee estos valores directo como
+// inline styles, mismo motivo que StoryCanvas hardcodea hex/rgba crudo en
+// vez de leer theme/colors.ts. Ver design decision D3 en
+// sdd/dynamic-price-story.
 
 export interface EstiloTokens {
   cardBackground:   string;
@@ -21,80 +35,160 @@ export interface EstiloTokens {
   precioColor:      string;
   precioFontWeight: number;
   letterSpacing:    number;
-  // Opacity of the dark scrim layouts draw over the background photo(s)
-  // (see LayoutGrid4/LayoutSingle/LayoutSplit2), 0-1. An opaque light card
-  // like classic doesn't need the photo dimmed for text legibility — it
-  // already sits on its own solid background — while modern/bold's
-  // translucent/photo-adjacent treatments still do. Per-style instead of
-  // a shared constant so classic can differ without touching the other two.
+  // Opacidad del scrim oscuro que dibujan los layouts sobre la(s) foto(s)
+  // de fondo, 0-1. Sin uso real en `estiloType` (sin foto de fondo, ver
+  // LayoutTipografico) — queda en 0 por prolijidad de tipo, no porque algo
+  // la lea.
   overlayOpacity:   number;
 }
 
-// Classic — light glass card (not opaque), monochrome ink price (weight
-// carries the emphasis instead of color — see design review), generous
-// letter spacing on the header (echoes a printed price list).
-// Alpha bajada (0.92->0.5 fondo, 0.08->0.06 borde) a pedido — la card leía
-// "opaca" en vez de delicada. El primer overlayOpacity (0.22) no alcanzó:
-// contra un collage de fotos claras (piel/fondos blancos) el texto del
-// collage se filtraba a través de la card y competía con el texto propio
-// de la lista — ver captura de pantalla. overlayOpacity subido a 0.4 (el
-// collage queda notoriamente más oscuro/desaturado de fondo) y el fondo de
-// la card subido a 0.68 (sigue siendo translúcido, no opaco) para que el
-// texto oscuro tenga suficiente base sólida sin depender del overlay solo.
-export const estiloClassic: EstiloTokens = {
+// Mood "surface" (--ag-surface, #ffffff) — tarjeta blanca translúcida,
+// texto tinta oscura (--ag-strong, #2b2226). Compartido por editorial/
+// split/polaroid (ver mock v0: mismas 3 usan `bg-ag-surface text-ag-strong`).
+const AG_STRONG = '#2b2226';
+
+// Editorial — foto + tarjeta blanca translúcida, texto tinta oscura.
+export const estiloEditorial: EstiloTokens = {
   cardBackground:   'rgba(255,255,255,0.68)',
-  cardBorder:       'rgba(0,0,0,0.08)',
-  headerColor:      '#2b2b2b',
-  nombreColor:      '#3a3a3a',
-  dividerColor:     'rgba(0,0,0,0.11)',
-  precioColor:      '#2b2b2b',
-  // 700->600: el nombre subió a 600 (ver TarjetaPrecios), el precio no
-  // debe seguir siendo el elemento más pesado de la fila.
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.15)',
+  precioColor:      AG_STRONG,
   precioFontWeight: 600,
-  letterSpacing:    2,
-  overlayOpacity:   0.4,
+  letterSpacing:    1,
+  overlayOpacity:   0.32,
 };
 
-// Modern — dark glass card over the background photo, white text, wide
-// tracked header. Mirrors StoryCanvas's own translucent-panel treatment.
+// Minimal — mood "surface-2" (--ag-surface-2, #f6f1ef), tarjeta hueso
+// cálido translúcida, texto tinta oscura. Compartido con `type` (ver mock).
+export const estiloMinimal: EstiloTokens = {
+  cardBackground:   'rgba(246,241,239,0.62)',
+  cardBorder:       'rgba(43,34,38,0.08)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.13)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 500,
+  letterSpacing:    2,
+  overlayOpacity:   0.22,
+};
+
+// Soft rose — mood "primary-soft" (--ag-primary-soft, #f3e4e6), tarjeta
+// rosa suave translúcida, texto tinta oscura (antes era blanco sobre rosa
+// saturado — el mock v0 actualizado pasó "rose" a un rosa mucho más claro
+// con texto oscuro, no blanco). Compartido con `grid` (ver mock).
+export const estiloRose: EstiloTokens = {
+  cardBackground:   'rgba(243,228,230,0.65)',
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.14)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 600,
+  letterSpacing:    2,
+  overlayOpacity:   0.3,
+};
+
+// Modern — mood "strong" (--ag-strong, #2b2226 oscuro), tarjeta oscura
+// translúcida, texto blanco (--ag-primary-fg). Tracking del header más
+// amplio. Compartido con `collage` (ver mock).
 export const estiloModern: EstiloTokens = {
-  // Alpha bajada de nuevo (0.75->0.42 fondo, 0.4->0.2 borde) a pedido — más
-  // delicada/transparente. Para no reintroducir el problema documentado
-  // abajo (panel indistinguible del fondo en foto casi negra), esta vez el
-  // overlayOpacity sube en vez del alpha de la card: la foto de base queda
-  // más oscura ANTES de que el glass panel, ahora más claro, se dibuje
-  // encima — mantiene el panel visible sin volver a subirle el alpha.
-  cardBackground:   'rgba(15,15,20,0.42)',
+  cardBackground:   'rgba(43,34,38,0.46)',
   cardBorder:       'rgba(255,255,255,0.2)',
   headerColor:      '#ffffff',
   nombreColor:      'rgba(255,255,255,0.85)',
-  dividerColor:     'rgba(255,255,255,0.3)',
+  dividerColor:     'rgba(255,255,255,0.18)',
   precioColor:      '#ffffff',
   precioFontWeight: 600,
   letterSpacing:    4,
   overlayOpacity:   0.46,
 };
 
-// Bold — brand-color card, heaviest price weight of the 3 styles. Color
-// base es primaryDeepRaw (#a85568, ver theme/colors.ts) escrito acá como
-// rgb() explícito porque un hex de 6 dígitos no admite alpha por sufijo y
-// esta card no puede usar color-mix()/var() (string plano, ver D3 arriba)
-// — si primaryDeepRaw cambia algún día, este valor hay que actualizarlo a
-// mano. Con blanco, ~5:1 de contraste (pasa AA) a diferencia de primaryRaw
-// (el rosa pastel, ~2.25:1, no pasa ni el umbral relajado de texto grande).
-// Alpha bajada acá también (0.5, era sólido) — decisión revertida: se había
-// dejado bold opaco a propósito para diferenciarlo, pero el pedido pasó a
-// ser consistencia total con el formato delicado de classic/modern. Mismo
-// truco que en modern: overlayOpacity sube (0.38->0.46) para compensar en
-// vez de subir el alpha de la card.
+// Split — 2 fotos apiladas (ver LayoutSplit2), mood "surface" (misma tarjeta
+// blanca que editorial/polaroid, ver mock).
+export const estiloSplit: EstiloTokens = {
+  cardBackground:   'rgba(255,255,255,0.68)',
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.15)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 600,
+  letterSpacing:    1,
+  overlayOpacity:   0.28,
+};
+
+// Bold — mood "primary" (--ag-primary, #c07d89), único entre las 10 (ver
+// mock: es la única que usa `bg-ag-primary`), tarjeta rosa sólido
+// translúcida, texto blanco, el peso de precio más pesado del catálogo.
 export const estiloBold: EstiloTokens = {
-  cardBackground:   'rgba(168,85,104,0.5)',
+  cardBackground:   'rgba(192,125,137,0.55)',
   cardBorder:       'rgba(255,255,255,0.22)',
   headerColor:      '#ffffff',
   nombreColor:      '#ffffff',
-  dividerColor:     'rgba(255,255,255,0.5)',
+  dividerColor:     'rgba(255,255,255,0.2)',
   precioColor:      '#ffffff',
   precioFontWeight: 800,
   letterSpacing:    1,
-  overlayOpacity:   0.46,
+  overlayOpacity:   0.42,
+};
+
+// Collage — 3 fotos (ver LayoutCollage), mood "strong" (misma tarjeta
+// oscura que modern, ver mock).
+export const estiloCollage: EstiloTokens = {
+  cardBackground:   'rgba(43,34,38,0.5)',
+  cardBorder:       'rgba(255,255,255,0.18)',
+  headerColor:      '#ffffff',
+  nombreColor:      'rgba(255,255,255,0.85)',
+  dividerColor:     'rgba(255,255,255,0.18)',
+  precioColor:      '#ffffff',
+  precioFontWeight: 700,
+  letterSpacing:    2,
+  overlayOpacity:   0.4,
+};
+
+// Polaroid — foto de fondo + 1 acento polaroid rotado (ver LayoutPolaroid),
+// mood "surface" (misma tarjeta blanca que editorial/split, ver mock),
+// sensación "boutique" por la composición, no por el color.
+export const estiloPolaroid: EstiloTokens = {
+  cardBackground:   'rgba(255,255,255,0.68)',
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.15)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 500,
+  letterSpacing:    1.5,
+  overlayOpacity:   0.3,
+};
+
+// Tipográfico — sin foto de fondo (ver LayoutTipografico), mood
+// "surface-2" (misma tarjeta hueso que minimal, ver mock) pero OPACA (no
+// translúcida como el resto: no hay nada detrás que se filtre) y
+// `overlayOpacity` queda sin uso.
+export const estiloType: EstiloTokens = {
+  cardBackground:   '#f6f1ef',
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.14)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 600,
+  letterSpacing:    2,
+  overlayOpacity:   0,
+};
+
+// Mosaico — 4 fotos en grilla pareja (ver LayoutGrid4 reescrito), mood
+// "primary-soft" (misma tarjeta rosa suave que rose, ver mock).
+export const estiloGrid: EstiloTokens = {
+  cardBackground:   'rgba(243,228,230,0.65)',
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.14)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 700,
+  letterSpacing:    1.5,
+  overlayOpacity:   0.34,
 };

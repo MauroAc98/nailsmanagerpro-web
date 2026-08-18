@@ -11,6 +11,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalService } from '@/services/profesionalService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { tStatic } from '@/store/useLocaleStore';
+import { reordenarEnSitio } from '@/lib/reordenarEnSitio';
 
 // Refresca Profesional.servicios (relación anidada) directo contra el
 // service, sin pasar por useProfesionalStore.fetchProfesionales() — ese
@@ -41,25 +42,6 @@ interface ServiciosState {
   toggleServicio: (id: number, activo: boolean) => Promise<void>;
   reordenarServicios: (ids: number[]) => Promise<void>;
   setBuscar: (texto: string) => void;
-}
-
-// Reordena `items` sin moverlos fuera de las posiciones que ya ocupan: se
-// recorre el array en su orden actual y, en cada posición cuyo id está en
-// `newOrder`, se sustituye por el siguiente id de `newOrder` (en secuencia).
-// Así el resultado nunca reagrupa entre sí ids afectados y no afectados —
-// necesario porque `newOrder` es solo UN grupo (regular o promo) y el resto
-// de consumidores (la otra sección de esta pantalla, el filtro `modo` de
-// useHistoriaPrecios) dependen únicamente del orden relativo dentro de su
-// propio subconjunto, nunca de un intercalado entre grupos.
-function reordenarEnSitio<T extends { id: number }>(items: T[], newOrder: number[]): T[] {
-  const afectados = new Set(newOrder);
-  const porId = new Map(items.map(item => [item.id, item]));
-  let cursor = 0;
-  return items.map(item => {
-    if (!afectados.has(item.id)) return item;
-    const siguienteId = newOrder[cursor++];
-    return porId.get(siguienteId) ?? item;
-  });
 }
 
 export const useServiciosStore = create<ServiciosState>((set, get) => ({
