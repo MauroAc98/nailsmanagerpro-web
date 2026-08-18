@@ -350,6 +350,11 @@ function EstadisticasContent() {
 
   const [ocupacion, setOcupacion] = useState<BucketOcupacion[]>([]);
   const [errorOcupacion, setErrorOcupacion] = useState<string | null>(null);
+  // Celda tocada en el heatmap de ocupación — el `title` nativo del <span>
+  // (tooltip on-hover) nunca se disparaba con un tap en mobile, que es como
+  // se usa esta pantalla en la práctica. Clickear la misma celda de nuevo
+  // deselecciona (mismo patrón toggle que el resto de la app).
+  const [celdaOcupacion, setCeldaOcupacion] = useState<{ iso: number; hora: number; cantidad: number } | null>(null);
 
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
@@ -412,6 +417,7 @@ function EstadisticasContent() {
     if (rangoInvalido) return;
     let cancelled = false;
     setErrorOcupacion(null);
+    setCeldaOcupacion(null);
 
     statsService.getOcupacion(rangoActivo.desde, rangoActivo.hasta, profesionalFiltro ?? undefined)
       .then(data => { if (!cancelled) setOcupacion(data); })
@@ -863,18 +869,39 @@ function EstadisticasContent() {
                         </span>
                         {[1, 2, 3, 4, 5, 6, 7].map(iso => {
                           const cantidad = ocupacionMap.get(`${iso}-${hora}`) ?? 0;
+                          const seleccionada = celdaOcupacion?.iso === iso && celdaOcupacion?.hora === hora;
                           return (
-                            <span
+                            <button
                               key={`${iso}-${hora}`}
-                              title={`${cantidad}`}
-                              style={{ aspectRatio: '1 / 1', borderRadius: 6, backgroundColor: colorCeldaOcupacion(cantidad) }}
+                              type="button"
+                              onClick={() => setCeldaOcupacion(prev =>
+                                prev?.iso === iso && prev?.hora === hora ? null : { iso, hora, cantidad }
+                              )}
+                              aria-label={t('occupancyCellDetail', { dia: nombreDiaLargoIso(iso), hora, count: cantidad })}
+                              style={{
+                                aspectRatio: '1 / 1', borderRadius: 6, backgroundColor: colorCeldaOcupacion(cantidad),
+                                border: 'none', padding: 0, cursor: 'pointer',
+                                outline: seleccionada ? `1.5px solid ${colors.primary}` : 'none',
+                                outlineOffset: 1,
+                              }}
                             />
                           );
                         })}
                       </Fragment>
                     ))}
                   </div>
-                  <p style={{ marginTop: 12, fontSize: 10, color: colors.subtext }}>{t('occupancyFootnote')}</p>
+                  {/* Detalle de la celda tocada — el `title` nativo (tooltip
+                      on-hover) nunca se disparaba con un tap en mobile, que
+                      es como se usa esta pantalla en la práctica. */}
+                  <p style={{
+                    marginTop: 12, fontSize: celdaOcupacion ? 12 : 10,
+                    fontWeight: celdaOcupacion ? 700 : 400,
+                    color: celdaOcupacion ? colors.textStrong : colors.subtext,
+                  }}>
+                    {celdaOcupacion
+                      ? t('occupancyCellDetail', { dia: nombreDiaLargoIso(celdaOcupacion.iso), hora: celdaOcupacion.hora, count: celdaOcupacion.cantidad })
+                      : t('occupancyFootnote')}
+                  </p>
                 </div>
               )}
             </div>
