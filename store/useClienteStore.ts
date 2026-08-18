@@ -20,14 +20,29 @@ interface ClientesState {
   clientes: Cliente[];
   loading: boolean;
   error: string | null;
-  buscar: string;
+
+  // Estado de la lista paginada con scroll infinito virtualizado (ver
+  // app/(app)/clientes/page.tsx) — completamente separado de `clientes`/
+  // `fetchClientes` de arriba, que sigue alimentando SIN cambios al picker
+  // de cliente de Agenda (nuevo/editar turno), el cual necesita la lista
+  // completa para buscar/autocompletar. `buscarActivo` es plumbing interno
+  // (el término con el que se cargó la página actual, para poder pedir la
+  // siguiente con el mismo filtro) — no pensado para lectura externa.
+  clientesPagina: Cliente[];
+  paginaActual: number;
+  totalPaginas: number;
+  totalClientesPagina: number;
+  cargandoPagina: boolean;
+  cargandoMasPagina: boolean;
+  buscarActivo: string;
 
   fetchClientes: () => Promise<void>;
   crearCliente: (dto: CreateClienteDto) => Promise<OperacionResult>;
   actualizarCliente: (id: number, dto: UpdateClienteDto) => Promise<OperacionResult>;
   eliminarCliente: (id: number) => Promise<OperacionResult>;
   toggleCliente: (id: number, activo: boolean) => Promise<OperacionResult>;
-  setBuscar: (texto: string) => void;
+  cargarPrimeraPagina: (buscar: string) => Promise<void>;
+  cargarSiguientePagina: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -38,9 +53,15 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   clientes: [],
   loading: false,
   error: null,
-  buscar: '',
 
-  setBuscar: (texto) => set({ buscar: texto }),
+  clientesPagina: [],
+  paginaActual: 0,
+  totalPaginas: 0,
+  totalClientesPagina: 0,
+  cargandoPagina: false,
+  cargandoMasPagina: false,
+  buscarActivo: '',
+
   clearError: () => set({ error: null }),
 
   // ─────────────────────────────────────────────
@@ -114,6 +135,7 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   toggleCliente: async (id, activo) => {
     set(state => ({
       clientes: state.clientes.map(c => c.id === id ? { ...c, activo } : c),
+      clientesPagina: state.clientesPagina.map(c => c.id === id ? { ...c, activo } : c),
     }));
     return withGlobalLoader(async () => {
       try {
@@ -122,22 +144,52 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
       } catch (e) {
         set(state => ({
           clientes: state.clientes.map(c => c.id === id ? { ...c, activo: !activo } : c),
+          clientesPagina: state.clientesPagina.map(c => c.id === id ? { ...c, activo: !activo } : c),
         }));
         return { success: false, message: extraerMensajeError(e) };
       }
     });
   },
-}));
 
-// ─────────────────────────────────────────────
-// Selector: clientes filtrados client-side
-// ─────────────────────────────────────────────
-export const useClientesFiltrados = () => {
-  const { clientes, buscar } = useClientesStore();
-  if (!buscar.trim()) return clientes;
-  const q = buscar.toLowerCase();
-  return clientes.filter(c =>
-    `${c.nombre} ${c.apellido}`.toLowerCase().includes(q) ||
-    c.telefono.includes(q)
-  );
-};
+  // ─────────────────────────────────────────────
+  // cargarPrimeraPagina / cargarSiguientePagina — lista paginada con scroll
+  // infinito virtualizado (ver app/(app)/clientes/page.tsx). Sin
+  // withGlobalLoader: usan su propio loading local (cargandoPagina/
+  // cargandoMasPagina) para no tapar la pantalla con el spinner global en
+  // cada búsqueda o scroll.
+  // ─────────────────────────────────────────────
+  cargarPrimeraPagina: async (buscar) => {
+    set({ cargandoPagina: true, error: null, buscarActivo: buscar });
+    try {
+      const res = await clienteService.getPaginado({ page: 1, buscar });
+      set({
+        clientesPagina: res.data,
+        paginaActual: res.current_page,
+        totalPaginas: res.last_page,
+        totalClientesPagina: res.total,
+      });
+    } catch (e) {
+      set({ error: extraerMensajeError(e) });
+    } finally {
+      set({ cargandoPagina: false });
+    }
+  },
+
+  cargarSiguientePagina: async () => {
+    const { paginaActual, totalPaginas, cargandoMasPagina, buscarActivo } = get();
+    if (cargandoMasPagina || paginaActual === 0 || paginaActual >= totalPaginas) return;
+    set({ cargandoMasPagina: true });
+    try {
+      const res = await clienteService.getPaginado({ page: paginaActual + 1, buscar: buscarActivo });
+      set(state => ({
+        clientesPagina: [...state.clientesPagina, ...res.data],
+        paginaActual: res.current_page,
+        totalPaginas: res.last_page,
+      }));
+    } catch (e) {
+      set({ error: extraerMensajeError(e) });
+    } finally {
+      set({ cargandoMasPagina: false });
+    }
+  },
+}));

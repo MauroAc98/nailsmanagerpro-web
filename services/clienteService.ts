@@ -24,12 +24,32 @@ export interface CreateClienteDto {
 
 export type UpdateClienteDto = Partial<CreateClienteDto> & { activo?: boolean };
 
+export interface ClientesPaginados {
+  data: Cliente[];
+  current_page: number;
+  last_page: number;
+  total: number;
+}
+
 // ─────────────────────────────────────────────
 // Service
 // ─────────────────────────────────────────────
 export const clienteService = {
   getAll: async (): Promise<Cliente[]> => {
     const { data } = await api.get<Cliente[]>('/clientes');
+    return data;
+  },
+
+  // Lista paginada + búsqueda server-side, para la pantalla de lista con
+  // scroll infinito virtualizado (ver useClienteStore.cargarPrimeraPagina /
+  // cargarSiguientePagina). Pega contra el mismo endpoint que getAll(), pero
+  // mandar `page` activa el shape paginado en el backend (ver
+  // ClienteController::index) — getAll() (sin `page`) sigue devolviendo el
+  // array plano de siempre, usado por el picker de cliente en Agenda.
+  getPaginado: async (params: { page: number; perPage?: number; buscar?: string }): Promise<ClientesPaginados> => {
+    const { data } = await api.get<ClientesPaginados>('/clientes', {
+      params: { page: params.page, per_page: params.perPage ?? 30, buscar: params.buscar || undefined },
+    });
     return data;
   },
 

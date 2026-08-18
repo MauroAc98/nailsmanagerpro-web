@@ -1,15 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { List, type RowComponentProps } from 'react-window';
 import { colors, shadows } from '@/theme/colors';
-import { useClientesStore, useClientesFiltrados } from '@/store/useClienteStore';
+import { useClientesStore } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
 import { NAV_HEIGHT } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
+
+// Altura real de la tarjeta (~70px) + 10px de gap, horneado en la fila
+// porque react-window no soporta gap entre filas absolutas.
+const ROW_HEIGHT = 80;
 
 function HistorialButton({ onClick }: { onClick: () => void }) {
   const t = useTranslations('clientes.ClientesPage');
@@ -33,50 +38,67 @@ function HistorialButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function ClienteCard({
-  cliente,
-  onPress,
-  onToggle,
-  onVerHistorial,
-}: {
-  cliente: Cliente;
-  onPress:  () => void;
-  onToggle: (activo: boolean) => void;
-  onVerHistorial: () => void;
-}) {
-  const t = useTranslations('clientes.ClientesPage');
+// Props "extra" de FilaCliente, sin `index`/`style`/`ariaAttributes` —
+// react-window se los agrega solo. Tipado vía RowComponentProps (no un
+// objeto inline con index/style incluidos a mano) para que TS infiera bien
+// el genérico de <List rowProps={...}>: un objeto inline que ya trae
+// index/style confunde esa inferencia (ExcludeForbiddenKeys_2 los tipa como
+// `never` en vez de sacarlos, así que `rowProps` termina "pidiéndolos" con
+// un tipo imposible de satisfacer).
+interface FilaClienteProps {
+  clientesPagina: Cliente[];
+  router: ReturnType<typeof useRouter>;
+  t: ReturnType<typeof useTranslations>;
+  onToggle: (id: number, activo: boolean) => void;
+}
+
+// FilaCliente — fila de react-window (ver <List> en ClientesPage). Mismo
+// contenido visual que la vieja ClienteCard, adaptado a la firma de
+// rowComponent: recibe `index`/`style` de react-window más lo que se le
+// pase por `rowProps`, y resuelve `cliente` indexando `clientesPagina` acá
+// adentro (react-window no re-renderiza automáticamente si le pasás un
+// `cliente` ya resuelto por fuera cuando cambia el array completo).
+function FilaCliente({
+  index, style, clientesPagina, router, t, onToggle,
+}: RowComponentProps<FilaClienteProps>) {
+  const cliente = clientesPagina[index];
+  if (!cliente) return null;
+
   return (
-    <div
-      onClick={onPress}
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: 14,
-        border: `1px solid ${colors.border}`,
-        boxShadow: shadows.card,
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        cursor: 'pointer',
-        opacity: cliente.activo ? 1 : 0.65,
-        userSelect: 'none',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? colors.text : colors.placeholder }}>
-          {cliente.nombre} {cliente.apellido}
-        </p>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
-          {cliente.telefono || t('noContactInfo')}
-        </p>
+    <div style={{ ...style, paddingBottom: 10, boxSizing: 'border-box' }}>
+      <div
+        onClick={() => router.push(`/clientes/${cliente.id}`)}
+        style={{
+          height: '100%', boxSizing: 'border-box',
+          backgroundColor: colors.surface,
+          borderRadius: 14,
+          border: `1px solid ${colors.border}`,
+          boxShadow: shadows.card,
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          cursor: 'pointer',
+          opacity: cliente.activo ? 1 : 0.65,
+          userSelect: 'none',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? colors.text : colors.placeholder }}>
+            {cliente.nombre} {cliente.apellido}
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
+            {cliente.telefono || t('noContactInfo')}
+          </p>
+        </div>
+
+        <HistorialButton onClick={() => abrirHistorial(cliente.id)} />
+        <PillToggle value={cliente.activo} onChange={activo => onToggle(cliente.id, activo)} stopPropagation />
+
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
       </div>
-
-      <HistorialButton onClick={onVerHistorial} />
-      <PillToggle value={cliente.activo} onChange={onToggle} stopPropagation />
-
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
     </div>
   );
 }
@@ -87,13 +109,27 @@ function ClienteCard({
 export default function ClientesPage() {
   const t = useTranslations('clientes.ClientesPage');
   const router = useRouter();
-  const { loading, error, buscar, fetchClientes, setBuscar, toggleCliente } = useClientesStore();
-  const clientesFiltrados = useClientesFiltrados();
+  const {
+    clientesPagina, totalClientesPagina, cargandoPagina, cargandoMasPagina, error,
+    cargarPrimeraPagina, cargarSiguientePagina, toggleCliente,
+  } = useClientesStore();
+  const [buscarInput, setBuscarInput] = useState('');
 
-  useEffect(() => { fetchClientes(); }, []);
+  useEffect(() => { cargarPrimeraPagina(''); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Búsqueda server-side con debounce — cada tipeo reinicia el timer, así
+  // no se dispara un fetch por tecla.
+  useEffect(() => {
+    const timer = setTimeout(() => cargarPrimeraPagina(buscarInput.trim()), 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscarInput]);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
+    <div style={{
+      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+      display: 'flex', flexDirection: 'column', backgroundColor: colors.background,
+    }}>
 
       {/* Header */}
       <div style={{ padding: '24px 20px 12px' }}>
@@ -130,12 +166,12 @@ export default function ClientesPage() {
           <input
             type="text"
             placeholder={t('searchPlaceholder')}
-            value={buscar}
-            onChange={e => setBuscar(e.target.value)}
+            value={buscarInput}
+            onChange={e => setBuscarInput(e.target.value)}
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: colors.text, background: 'transparent' }}
           />
-          {buscar && (
-            <button onClick={() => setBuscar('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+          {buscarInput && (
+            <button onClick={() => setBuscarInput('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -151,41 +187,49 @@ export default function ClientesPage() {
         </div>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
-        </div>
-      )}
-
-      {/* Lista */}
-      {!loading && (
-        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {clientesFiltrados.length > 0 && (
-            <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 0 4px' }}>
-              {t('resultCount', { count: clientesFiltrados.length })}
-            </p>
-          )}
-          {clientesFiltrados.length === 0 ? (
-            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-              {buscar ? t('noResults') : t('emptyState')}
-            </p>
-          ) : (
-            clientesFiltrados.map(cliente => (
-              <ClienteCard
-                key={cliente.id}
-                cliente={cliente}
-                onPress={() => router.push(`/clientes/${cliente.id}`)}
-                onToggle={async activo => {
-                  const result = await toggleCliente(cliente.id, activo);
-                  if (!result.success) await alertDialog(result.message ?? t('toggleError'));
+      {/* Contenido: loading / vacío / lista virtualizada */}
+      <div style={{ flex: 1, minHeight: 0, padding: '0 20px' }}>
+        {cargandoPagina ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+            <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+          </div>
+        ) : clientesPagina.length === 0 ? (
+          <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
+            {buscarInput ? t('noResults') : t('emptyState')}
+          </p>
+        ) : (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {totalClientesPagina > 0 && (
+              <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 8px 4px', flexShrink: 0 }}>
+                {t('resultCount', { count: totalClientesPagina })}
+              </p>
+            )}
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <List
+                rowComponent={FilaCliente}
+                rowCount={clientesPagina.length}
+                rowHeight={ROW_HEIGHT}
+                rowProps={{
+                  clientesPagina, router, t,
+                  onToggle: async (id: number, activo: boolean) => {
+                    const result = await toggleCliente(id, activo);
+                    if (!result.success) await alertDialog(result.message ?? t('toggleError'));
+                  },
                 }}
-                onVerHistorial={() => abrirHistorial(cliente.id)}
+                onRowsRendered={visible => {
+                  if (visible.stopIndex >= clientesPagina.length - 3) cargarSiguientePagina();
+                }}
+                style={{ height: '100%', width: '100%' }}
               />
-            ))
-          )}
-        </div>
-      )}
+            </div>
+            {cargandoMasPagina && (
+              <p style={{ textAlign: 'center', padding: '8px 0', color: colors.subtext, fontSize: 13, flexShrink: 0 }}>
+                {t('loadingMore')}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

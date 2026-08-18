@@ -60,10 +60,9 @@ export const usePendientesDeCobroStore = create<PendientesDeCobroState>((set, ge
 }));
 
 // ─────────────────────────────────────────────
-// Selector: pendientes filtrados client-side — mismo patrón que
-// useClientesFiltrados. El backend ya acota la lista a 90 días
-// (ver DIAS_VENTANA_PENDIENTES_DE_COBRO), así que filtrar en el cliente
-// sobre lo ya cargado alcanza, sin pegarle al backend en cada tecla.
+// Selector: pendientes filtrados client-side. El backend ya acota la lista
+// a 90 días (ver DIAS_VENTANA_PENDIENTES_DE_COBRO), así que filtrar en el
+// cliente sobre lo ya cargado alcanza, sin pegarle al backend en cada tecla.
 // ─────────────────────────────────────────────
 export const usePendientesFiltrados = () => {
   const { pendientes, buscar } = usePendientesDeCobroStore();

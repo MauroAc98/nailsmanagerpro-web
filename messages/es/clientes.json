@@ -9,7 +9,8 @@
     "noResults": "No se encontraron clientes",
     "resultCount": "{count, plural, one {# cliente} other {# clientes}}",
     "emptyState": "¡Cargá a tu primer cliente!",
-    "toggleError": "No se pudo actualizar el cliente."
+    "toggleError": "No se pudo actualizar el cliente.",
+    "loadingMore": "Cargando más..."
   },
   "NuevoClientePage": {
     "title": "Nuevo cliente",
