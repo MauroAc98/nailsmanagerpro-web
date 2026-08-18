@@ -155,7 +155,15 @@ export const useProfesionalStore = create<ProfesionalesState>((set, get) => ({
     set(state => ({
       profesionales: state.profesionales.map(p =>
         p.id === id
-          ? { ...p, historia_precios_fotos: reordenarEnSitio(p.historia_precios_fotos, ids) }
+          ? {
+              ...p,
+              // GestorFotos re-ordena la grilla por `foto.orden` en cada
+              // render — reordenarEnSitio solo reacomoda las posiciones del
+              // array, así que hay que reasignar `orden` a la posición nueva
+              // (0..n-1) o ese sort deshace el reorder visualmente.
+              historia_precios_fotos: reordenarEnSitio(p.historia_precios_fotos, ids)
+                .map((foto, index) => ({ ...foto, orden: index })),
+            }
           : p
       ),
     }));
