@@ -12,6 +12,13 @@ const DEFAULT_LAYOUT: LayoutId = 'single';
 const DEFAULT_ESTILO: EstiloId = 'classic';
 const FILENAME = 'historia-precios.png';
 
+// Ancho de exportación fijo — mismo criterio que useGenerarHistoria.capturar:
+// 1080px es la resolución estándar recomendada por Instagram Stories y
+// WhatsApp Estados (formato 9:16). HistoriaPreciosCanvas renderiza siempre a
+// BASE_WIDTH=420 (ver D3 en sdd/dynamic-price-story), así que un
+// pixelRatio:2 fijo exportaba siempre 840x1493, por debajo de ese estándar.
+const STORY_EXPORT_WIDTH = 1080;
+
 const proxiedUrl = (url: string) => `/api/historia-fondo?url=${encodeURIComponent(url)}`;
 
 // ─────────────────────────────────────────────
@@ -189,8 +196,13 @@ export function useHistoriaPrecios() {
       });
     }
 
-    await toBlob(canvasRef.current, { pixelRatio: 2 });
-    return toBlob(canvasRef.current, { pixelRatio: 2 });
+    // pixelRatio calculado, no fijo — mismo motivo que useGenerarHistoria:
+    // el PNG exportado sale a STORY_EXPORT_WIDTH de ancho real sin importar
+    // el ancho intrínseco del canvas (BASE_WIDTH).
+    const pixelRatio = STORY_EXPORT_WIDTH / canvasRef.current.getBoundingClientRect().width;
+
+    await toBlob(canvasRef.current, { pixelRatio });
+    return toBlob(canvasRef.current, { pixelRatio });
   }, [fotosOrdenadas, fotosUrls]);
 
   const descargarImagen = useCallback(async () => {

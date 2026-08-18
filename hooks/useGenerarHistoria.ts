@@ -20,6 +20,13 @@ export interface TextoLibre {
   fontSize: number;
 }
 
+// Ancho de exportación fijo — 1080px es la resolución estándar recomendada
+// por Instagram Stories y WhatsApp Estados (formato 9:16). canvasWidth es
+// puramente para el preview on-screen (viewport-relative, tope 420 CSS px);
+// sin este target fijo, toBlob() con pixelRatio:2 exportaba como máximo
+// 840x1493, por debajo de lo que ambas plataformas esperan.
+const STORY_EXPORT_WIDTH = 1080;
+
 const pad = (n: number) => String(n).padStart(2, '0');
 const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -594,8 +601,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
       setFondoUri(dataUrl);
     }
 
-    await toBlob(canvasRef.current, { pixelRatio: 2 });
-    return toBlob(canvasRef.current, { pixelRatio: 2 });
+    // pixelRatio calculado, no fijo — así el PNG exportado siempre sale a
+    // STORY_EXPORT_WIDTH de ancho real sin importar cuánto mida el preview
+    // en este viewport puntual.
+    const pixelRatio = STORY_EXPORT_WIDTH / canvasRef.current.getBoundingClientRect().width;
+
+    await toBlob(canvasRef.current, { pixelRatio });
+    return toBlob(canvasRef.current, { pixelRatio });
   }, []);
 
   const descargarImagen = useCallback(async () => {
