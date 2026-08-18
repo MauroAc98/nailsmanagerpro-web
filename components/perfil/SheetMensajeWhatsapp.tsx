@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { ALL_EMOJIS } from '@/constants/editor';
@@ -49,6 +49,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
   const [tipoActual, setTipoActual] = useState<TipoPlantilla>('recordatorio');
   const [mensaje, setMensaje] = useState(() => obtenerContenido('recordatorio'));
   const [mostrarEmojis, setMostrarEmojis] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Multi-agenda — {profesional} solo se ofrece como variable cuando la
   // cuenta tiene más de una profesional activa (misma regla que el resto
@@ -80,8 +81,32 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
     if (!cargando) setMensaje(error ? '' : obtenerContenido(tipoActual));
   }
 
+  // Inserta en la posición del cursor (o reemplaza la selección activa), no
+  // al final — un textarea controlado no mueve el cursor solo cuando el
+  // value cambia por código, así que sin esto la variable/emoji siempre
+  // caía al final sin importar dónde estuviera tipiando el usuario. La
+  // referencia al <textarea> (no el evento del botón) es la única forma de
+  // leer selectionStart/selectionEnd, porque el click en el botón le saca el
+  // foco al textarea antes de que este handler corra.
+  const insertarEnCursor = (texto: string) => {
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? mensaje.length;
+    const end   = textarea?.selectionEnd   ?? mensaje.length;
+    const nuevoMensaje = mensaje.slice(0, start) + texto + mensaje.slice(end);
+    setMensaje(nuevoMensaje);
+
+    // El re-render con el nuevo value todavía no corrió en este mismo tick
+    // — setSelectionRange antes de eso apunta al texto viejo. rAF espera al
+    // próximo paint, que ya lo tiene.
+    const cursorPos = start + texto.length;
+    requestAnimationFrame(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
+
   const handleAgregarVariable = (variable: string) => {
-    setMensaje(prev => prev + variable);
+    insertarEnCursor(variable);
   };
 
   const handleResetear = async () => {
@@ -166,6 +191,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
 
       <div style={{ position: 'relative', marginBottom: 16 }}>
         <textarea
+          ref={textareaRef}
           value={mensaje}
           onChange={e => setMensaje(e.target.value)}
           style={{
@@ -197,7 +223,7 @@ export function SheetMensajeWhatsapp({ onClose }: Props) {
             <button
               key={idx}
               type="button"
-              onClick={() => setMensaje(mensaje + emoji)}
+              onClick={() => insertarEnCursor(emoji)}
               style={{
                 flex: '0 0 auto', width: 40, height: 40, borderRadius: 10,
                 background: colors.surface, border: 'none', cursor: 'pointer', fontSize: 18,
