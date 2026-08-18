@@ -33,13 +33,18 @@ interface Props {
   // owner's. undefined (no explicit pick) keeps the existing nombreNegocio-only
   // behavior for single-profesional accounts.
   profesionalNombre?: string;
-  // Chrome del panel: 'flotante' (default) es la tarjeta centrada,
-  // translúcida, redondeada y con sombra que usan todas las plantillas
-  // salvo `fullbleed` — foto de fondo full-bleed detrás. 'panel' es un panel
-  // opaco, sin bordes redondeados ni sombra, pegado a la franja inferior del
-  // canvas — pareja de `LayoutFullBleed`, que confina la foto a la franja
-  // superior (ver su `PHOTO_HEIGHT_PCT`, debe coincidir con el `top` de acá).
+  // Chrome de la tarjeta: 'flotante' (default) es la tarjeta redondeada con
+  // sombra y borde que usan todas las plantillas salvo `fullbleed`. 'panel'
+  // (solo `fullbleed`) achica la sombra/borde. Ambas variantes ocupan el
+  // mismo alto (canvas completo) — a diferencia de un diseño anterior que
+  // confinaba `panel` a una franja inferior fija, eso se sacó por no
+  // alcanzar con listas largas.
   variante?: 'flotante' | 'panel';
+  // Anclaje vertical dentro del canvas — 'center' (default, la mayoría de
+  // las plantillas), 'start' (tarjeta arriba, deja que la foto respire
+  // abajo) o 'end' (tarjeta abajo, foto respira arriba). Nunca cambia la
+  // altura disponible, solo dónde se ancla dentro del alto completo.
+  align?: 'center' | 'start' | 'end';
 }
 
 // TarjetaPrecios — price list panel, rendered as the foreground `children`
@@ -55,10 +60,11 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, variante = 'flotante' }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, variante = 'flotante', align = 'center' }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
+  const justifyContent = align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : 'center';
   // "AGOSTO 2026" en el locale activo — mismo criterio editorial que el
   // mock v0 (subtítulo bajo el título, ver captura de referencia), generado
   // al momento de renderizar (no persistido) porque la imagen se comparte
@@ -67,29 +73,24 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   const periodo = `${nombreMes(ahora, 'long', 'mayusculas')} ${ahora.getFullYear()}`;
   return (
     <div
-      style={esPanel ? {
-        position: 'absolute', top: '56%', left: 0, right: 0, bottom: 0,
-        padding: '26px 28px 22px',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        background: tokens.cardBackground,
-      } : {
+      style={{
         position: 'absolute', inset: 0,
         padding: `20px ${OUTER_PADDING_X}px 16px`,
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        display: 'flex', flexDirection: 'column', justifyContent,
       }}
     >
       <div
-        style={esPanel ? {
+        style={{
           display: 'flex', flexDirection: 'column',
-        } : {
-          display: 'flex', flexDirection: 'column',
-          padding: '24px 20px', borderRadius: 18,
+          padding: '24px 20px', borderRadius: esPanel ? 12 : 18,
           background: tokens.cardBackground,
           border: `1px solid ${tokens.cardBorder}`,
           // Sombra más sutil (era 4px/16px blur — 5x más difusa que
           // --shadow-card del resto de la app) para leer "carta de precios"
-          // en vez de "banner". Ver design review.
-          boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+          // en vez de "banner". Ver design review. esPanel (fullbleed): sin
+          // sombra — ya lee "tarjeta" por el scrim de fondo, una sombra
+          // encima se veía redundante/pesada.
+          boxShadow: esPanel ? 'none' : '0 2px 8px rgba(0,0,0,0.10)',
         }}
       >
         {/* Encabezado editorial (ver mock v0, price-story.tsx): eyebrow con

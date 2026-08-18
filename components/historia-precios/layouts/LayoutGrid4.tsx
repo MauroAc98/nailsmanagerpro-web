@@ -6,8 +6,10 @@ interface Props {
   children:       ReactNode;
 }
 
-// LayoutGrid4 — Mosaico: 4 fotos en una grilla 2x2 pareja, full-bleed.
-// minFotos: 4 (ver catalogo.ts), la plantilla más exigente en fotos.
+// LayoutGrid4 — 4 fotos en una grilla 2x2 pareja, full-bleed. Reusado por
+// dos plantillas (Portafolio y Catálogo, ver catalogo.ts) que comparten
+// esta composición y se diferencian solo por mood/anclaje de tarjeta.
+// minFotos: 4, la composición más exigente en fotos del catálogo.
 // Reemplaza el tratamiento scattered-polaroid anterior de este archivo (ver
 // historial git) — la migración al catálogo plano de plantillas (ver plan de
 // migración) movió ese look de "acento rotado" a un template dedicado

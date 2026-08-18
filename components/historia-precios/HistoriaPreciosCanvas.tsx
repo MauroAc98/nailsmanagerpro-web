@@ -55,6 +55,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             telefono={telefono}
             profesionalNombre={profesionalNombre}
             variante={template.cardVariant}
+            align={template.align}
           />
         </Layout>
       </div>

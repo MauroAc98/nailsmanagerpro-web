@@ -50,10 +50,9 @@ export function SelectorPlantilla({
 
   // Fallback reactivo — si se borra una foto (GestorFotos) y la plantilla
   // ACTUALMENTE elegida deja de entrar en el `fotos` prop en vivo, cae a la
-  // primera entrada de TEMPLATES cuyo minFotos entre (ver catalogo.ts: con
-  // el orden actual, eso siempre resuelve — en el peor caso, a 'type',
-  // minFotos: 0, que nunca se bloquea). Este efecto solo se autocorrige con
-  // lo que le llega en `fotos` — no dueño ni renderiza ninguna UI de borrado.
+  // primera entrada de TEMPLATES cuyo minFotos entre (ver catalogo.ts).
+  // Este efecto solo se autocorrige con lo que le llega en `fotos` — no
+  // dueño ni renderiza ninguna UI de borrado.
   useEffect(() => {
     const templateActual = TEMPLATES.find(pl => pl.id === templateId);
     if (!templateActual) return;

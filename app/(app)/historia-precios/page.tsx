@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Eye } from 'lucide-react';
+import { Eye, ImagePlus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
@@ -168,78 +168,110 @@ export default function HistoriaPreciosPage() {
             </div>
           )}
 
-          {/* Caption "Vista previa" — mismo patrón que agenda/historia/page.tsx
-              (título + subtítulo a la izquierda, badge a la derecha), no
-              existía antes de este rediseño. */}
-          <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('previewTitle')}</p>
-              <p style={{ fontSize: 11, color: colors.subtext, margin: '2px 0 0' }}>{t('previewFormat')}</p>
-            </div>
-            <span style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontSize: 10, fontWeight: 700, color: colors.success,
-              background: withAlpha(colors.success, '1F'), padding: '4px 8px', borderRadius: 20,
-            }}>
-              <Eye size={12} strokeWidth={2.5} />
-              {t('previewBadge')}
-            </span>
-          </div>
+          {/* Preview + picker solo con al menos 1 foto subida — ninguna de
+              las 8 plantillas actuales tiene minFotos:0 (a diferencia del
+              catálogo anterior, que tenía un fallback sin foto). Sin esto,
+              un usuario nuevo (0 fotos) vería el picker entero bloqueado y
+              el preview de arriba con una imagen rota (`fotos[0]`
+              undefined). Muestra el mismo mensaje que ya existía más abajo
+              (`emptyPhotosState`), ahora también acá arriba. */}
+          {!puedeCapturar ? (
+            <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', margin: '20px 0' }}>
+              {t('emptyPhotosState')}
+            </p>
+          ) : (
+            <>
+              {/* Caption "Vista previa" — mismo patrón que agenda/historia/page.tsx
+                  (título + subtítulo a la izquierda, badge a la derecha), no
+                  existía antes de este rediseño. */}
+              <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('previewTitle')}</p>
+                  <p style={{ fontSize: 11, color: colors.subtext, margin: '2px 0 0' }}>{t('previewFormat')}</p>
+                </div>
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  fontSize: 10, fontWeight: 700, color: colors.success,
+                  background: withAlpha(colors.success, '1F'), padding: '4px 8px', borderRadius: 20,
+                }}>
+                  <Eye size={12} strokeWidth={2.5} />
+                  {t('previewBadge')}
+                </span>
+              </div>
 
-          {/* Canvas preview — marco tipo celular alrededor del MISMO nodo
-              que captura la exportación (ver useCanvasScale arriba); el
-              frame es puramente decorativo, no toca el nodo con canvasRef. */}
-          <div style={{ padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
-            <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 20 }}>
-              <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-                <HistoriaPreciosCanvas
-                  ref={canvasRef}
-                  templateId={templateId}
+              {/* Canvas preview — marco tipo celular alrededor del MISMO nodo
+                  que captura la exportación (ver useCanvasScale arriba); el
+                  frame es puramente decorativo, no toca el nodo con canvasRef. */}
+              <div style={{ padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
+                <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 20 }}>
+                  <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                    <HistoriaPreciosCanvas
+                      ref={canvasRef}
+                      templateId={templateId}
+                      fotos={fotosUrls}
+                      titulo={titulo}
+                      servicios={serviciosActivos}
+                      nombreNegocio={nombreNegocio}
+                      telefono={telefono}
+                      profesionalNombre={profesionalSeleccionada?.nombre}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {modo === 'promociones' && serviciosActivos.length === 0 && (
+                <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '10px 0 0' }}>
+                  {t('emptyPromoState')}
+                </p>
+              )}
+
+              {/* Plantilla picker */}
+              <div style={{ width: '100%', marginTop: 20 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
+                  {t('templateSectionTitle')}
+                </p>
+                <SelectorPlantilla
                   fotos={fotosUrls}
                   titulo={titulo}
                   servicios={serviciosActivos}
                   nombreNegocio={nombreNegocio}
                   telefono={telefono}
                   profesionalNombre={profesionalSeleccionada?.nombre}
+                  templateId={templateId}
+                  onTemplateChange={handleTemplateChange}
                 />
               </div>
-            </div>
-          </div>
-
-          {modo === 'promociones' && serviciosActivos.length === 0 && (
-            <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '10px 0 0' }}>
-              {t('emptyPromoState')}
-            </p>
+            </>
           )}
 
-          {/* Plantilla picker */}
-          <div style={{ width: '100%', marginTop: 20 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
-              {t('templateSectionTitle')}
-            </p>
-            <SelectorPlantilla
-              fotos={fotosUrls}
-              titulo={titulo}
-              servicios={serviciosActivos}
-              nombreNegocio={nombreNegocio}
-              telefono={telefono}
-              profesionalNombre={profesionalSeleccionada?.nombre}
-              templateId={templateId}
-              onTemplateChange={handleTemplateChange}
-            />
-          </div>
-
-          {/* Gestor de fotos */}
+          {/* Gestor de fotos — header con chip de ícono + título/hint dentro
+              de una tarjeta con borde, imitando el estilo de la sección
+              "Fotos de fondo" del mock v0 (icon chip + card, ver
+              price-story.tsx) — GestorFotos ya tiene su propio tile de "+"
+              para subir, no se duplica ese control acá. */}
           <div style={{
             width: '100%', marginTop: 25, paddingTop: 20,
             borderTop: `1px solid ${colors.divider}`,
           }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 4px' }}>
-              {t('photosSectionTitle')}
-            </p>
-            <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 10px' }}>
-              {t('photosSectionHint')}
-            </p>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14,
+              padding: '12px 14px', borderRadius: 14, border: `1px solid ${colors.border}`, background: colors.surface,
+            }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+                background: withAlpha(colors.primary, '20'), display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <ImagePlus size={18} color={colors.primary} strokeWidth={2} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: colors.textStrong }}>
+                  {t('photosSectionTitle')}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+                  {t('photosSectionHint')}
+                </p>
+              </div>
+            </div>
             <GestorFotos profesionalId={effectiveProfesionalId} fotos={fotos} />
           </div>
 

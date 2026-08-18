@@ -7,11 +7,12 @@ import type { Servicio } from '@/services/servicioService';
 // Id de catálogo del picker de "historia de precios" — el catálogo (8
 // plantillas fijas) vive en el frontend (components/historia-precios/catalogo.ts),
 // por eso es un string literal union y no un id numérico con lookup en el
-// backend. Reemplaza la vieja matriz LayoutId x EstiloId (3x3): ahora es un
-// catálogo plano de looks curados, no una combinación de 2 ejes.
+// backend. Roster reescrito 2026-08-18 (octava actualización, ver
+// estilos.ts): feature/fullbleed/split/beforeafter/collage/grid/catalog/
+// listphoto.
 export type TemplateId =
-  | 'editorial' | 'minimal' | 'modern' | 'split'
-  | 'collage' | 'fullbleed' | 'type' | 'grid';
+  | 'feature' | 'fullbleed' | 'split' | 'beforeafter'
+  | 'collage' | 'grid' | 'catalog' | 'listphoto';
 
 // Una foto subida específicamente para la historia de precios (no reutiliza
 // ninguna otra foto existente del profesional). `orden` determina el slot

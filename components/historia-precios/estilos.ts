@@ -27,6 +27,21 @@
 // distinta en TarjetaPrecios (ver estiloFullBleed abajo y
 // TarjetaPrecios.tsx prop `variante`).
 //
+// 2026-08-18 (octava actualización): el mock v0 se refrescó una vez más con
+// un catálogo de 8 plantillas totalmente nuevo (feature/fullbleed/split/
+// beforeafter/collage/grid/catalog/listphoto — ver catalogo.ts). Esta vez NO
+// se portó literal la composición del mock para `feature`/`catalog`/
+// `listphoto` (el mock las confina a una franja de foto fija con panel
+// abajo) — esa exact idea ya rompió dos veces hoy con listas de precios
+// reales largas (el panel se quedaba corto o el contenido se metía en la
+// franja de la foto). En su lugar, TODAS las plantillas le dan a la tarjeta
+// el alto COMPLETO del canvas (mismo patrón ya probado de editorial/modern/
+// fullbleed) y la variedad visual sale de la posición de anclaje
+// (`TarjetaPrecios` prop `align`: arriba/centro/abajo), la composición de
+// fotos (1/2/3/4) y el mood de color — nunca de confinar la altura
+// disponible. `fullbleed` mantiene su implementación intacta (ya arreglada
+// hoy: sin blur, foto nítida, paleta propia).
+//
 // Tokens son valores string/number planos, nunca CSS custom properties
 // (`var(--...)`). html-to-image serializa el nodo capturado a un SVG
 // foreignObject y lo rasteriza a través de su propio <img> off-DOM —
@@ -46,20 +61,21 @@ export interface EstiloTokens {
   precioFontWeight: number;
   letterSpacing:    number;
   // Opacidad del scrim oscuro que dibujan los layouts sobre la(s) foto(s)
-  // de fondo, 0-1. Sin uso real en `estiloType` (sin foto de fondo, ver
-  // LayoutTipografico) — queda en 0 por prolijidad de tipo, no porque algo
-  // la lea.
+  // de fondo, 0-1.
   overlayOpacity:   number;
 }
 
 // Mood "surface" (--ag-surface, #ffffff) — tarjeta blanca translúcida,
-// texto tinta oscura (--ag-strong, #2b2226). Compartido por editorial/split
-// (ver mock v0: mismas 2 usan `bg-ag-surface text-ag-strong`) y grid.
+// texto tinta oscura (--ag-strong, #2b2226). Compartido por feature/split/
+// grid.
 const AG_STRONG = '#2b2226';
 
-// Editorial — foto + tarjeta blanca translúcida, texto tinta oscura.
-export const estiloEditorial: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.68)',
+// Protagonista — 1 foto (ver LayoutSingle), mood "surface", tarjeta
+// anclada ABAJO (align: 'end', ver catalogo.ts) — deja que la foto
+// "respire" arriba, coherente con el nombre: el trabajo es el protagonista,
+// la tarjeta de precios queda como pie de página.
+export const estiloFeature: EstiloTokens = {
+  cardBackground:   'rgba(255,255,255,0.88)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -70,39 +86,40 @@ export const estiloEditorial: EstiloTokens = {
   overlayOpacity:   0.32,
 };
 
-// Minimal — mood "surface-2" (--ag-surface-2, #f6f1ef), tarjeta hueso
-// cálido translúcida, texto tinta oscura.
-export const estiloMinimal: EstiloTokens = {
-  cardBackground:   'rgba(246,241,239,0.62)',
-  cardBorder:       'rgba(43,34,38,0.08)',
-  headerColor:      AG_STRONG,
-  nombreColor:      'rgba(43,34,38,0.75)',
-  dividerColor:     'rgba(43,34,38,0.13)',
-  precioColor:      AG_STRONG,
-  precioFontWeight: 500,
-  letterSpacing:    2,
-  overlayOpacity:   0.22,
+// Full bleed — foto de fondo nítida, SIN blur (ver LayoutFullBleed — la
+// foto es la publicidad del trabajo, tiene que verse nítida, no
+// desenfocada). Tarjeta sin bordes redondeados marcados ni sombra (ver
+// TarjetaPrecios variante 'panel' — solo cambia el chrome, no el alto/
+// posición). Paleta propia, deliberadamente fuera del sistema de 5 moods
+// compartidos del resto del catálogo — carbón, blanco cálido, y un único
+// acento terracota (no rosa), pensada para leer "profesional/universal" en
+// vez de "belleza/uñas". Texto claro sobre scrim oscuro (no tinta oscura
+// sobre tarjeta clara como el resto). cardBackground subido de 0.5 a 0.72
+// (2026-08-18, séptima actualización): al sacar el blur, la tarjeta sola
+// tiene que sostener la legibilidad contra una foto nítida, no puede seguir
+// tan traslúcida.
+export const estiloFullBleed: EstiloTokens = {
+  cardBackground:   'rgba(18,15,14,0.72)',
+  cardBorder:       'rgba(255,255,255,0.14)',
+  headerColor:      '#faf7f2',
+  nombreColor:      'rgba(250,247,242,0.82)',
+  dividerColor:     'rgba(255,255,255,0.16)',
+  precioColor:      '#e0a483',
+  precioFontWeight: 700,
+  letterSpacing:    1,
+  // Bajado de 0.5 a 0.18: ese scrim cubre TODA la foto (LayoutFullBleed usa
+  // el mismo mecanismo que LayoutSingle), no solo detrás de la tarjeta —
+  // con 0.5 se oscurecía también el margen de foto visible alrededor de la
+  // tarjeta centrada, en contra de la premisa de que la foto se vea como
+  // publicidad. La legibilidad del texto la sostiene la opacidad de la
+  // tarjeta (0.72), no el scrim general.
+  overlayOpacity:   0.18,
 };
 
-// Modern — mood "strong" (--ag-strong, #2b2226 oscuro), tarjeta oscura
-// translúcida, texto blanco (--ag-primary-fg). Tracking del header más
-// amplio.
-export const estiloModern: EstiloTokens = {
-  cardBackground:   'rgba(43,34,38,0.46)',
-  cardBorder:       'rgba(255,255,255,0.2)',
-  headerColor:      '#ffffff',
-  nombreColor:      'rgba(255,255,255,0.85)',
-  dividerColor:     'rgba(255,255,255,0.18)',
-  precioColor:      '#ffffff',
-  precioFontWeight: 600,
-  letterSpacing:    4,
-  overlayOpacity:   0.46,
-};
-
-// Split — 2 fotos apiladas (ver LayoutSplit2), mood "surface" (misma tarjeta
-// blanca que editorial, ver mock).
+// Doble mirada — 2 fotos apiladas (ver LayoutSplit2), mood "surface",
+// tarjeta centrada (align: 'center').
 export const estiloSplit: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.68)',
+  cardBackground:   'rgba(255,255,255,0.88)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -113,11 +130,26 @@ export const estiloSplit: EstiloTokens = {
   overlayOpacity:   0.28,
 };
 
-// Collage — 3 fotos (ver LayoutCollage), mood "surface-2" (misma tarjeta
-// hueso que minimal — antes era "strong"/oscuro, el mock v0 lo cambió a
-// hueso claro, ver mock).
+// Antes / después — 2 fotos apiladas con etiquetas (ver LayoutBeforeAfter),
+// mood "strong" (oscuro, dramático — coherente con mostrar un proceso/
+// transformación), tarjeta centrada. Tracking del header más amplio (3,
+// como el modern anterior) para reforzar el tono editorial.
+export const estiloBeforeAfter: EstiloTokens = {
+  cardBackground:   'rgba(43,34,38,0.58)',
+  cardBorder:       'rgba(255,255,255,0.2)',
+  headerColor:      '#ffffff',
+  nombreColor:      'rgba(255,255,255,0.85)',
+  dividerColor:     'rgba(255,255,255,0.18)',
+  precioColor:      '#ffffff',
+  precioFontWeight: 700,
+  letterSpacing:    3,
+  overlayOpacity:   0.42,
+};
+
+// Editorial — 3 fotos (ver LayoutCollage), mood "surface-2" (tarjeta hueso
+// cálido), tarjeta centrada.
 export const estiloCollage: EstiloTokens = {
-  cardBackground:   'rgba(246,241,239,0.62)',
+  cardBackground:   'rgba(246,241,239,0.85)',
   cardBorder:       'rgba(43,34,38,0.08)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -125,49 +157,13 @@ export const estiloCollage: EstiloTokens = {
   precioColor:      AG_STRONG,
   precioFontWeight: 700,
   letterSpacing:    2,
-  overlayOpacity:   0.4,
+  overlayOpacity:   0.46,
 };
 
-// Full bleed — foto única confinada a la franja superior (ver
-// LayoutFullBleed), sin tarjeta flotante: el panel de precios ocupa la
-// franja inferior sólida, opaca, sin bordes redondeados ni sombra (ver
-// TarjetaPrecios variante 'panel'). Paleta propia, deliberadamente fuera
-// del sistema de 5 moods compartidos del resto del catálogo — carbón,
-// blanco cálido, arena, y un único acento terracota (no rosa), pensada
-// para leer "profesional/universal" en vez de "belleza/uñas".
-export const estiloFullBleed: EstiloTokens = {
-  cardBackground:   '#faf7f2',
-  cardBorder:       'rgba(42,38,36,0.08)',
-  headerColor:      '#2a2624',
-  nombreColor:      'rgba(42,38,36,0.7)',
-  dividerColor:     'rgba(42,38,36,0.12)',
-  precioColor:      '#a8623f',
-  precioFontWeight: 700,
-  letterSpacing:    1,
-  overlayOpacity:   0,
-};
-
-// Tipográfico — sin foto de fondo (ver LayoutTipografico), mood
-// "primary-soft" (rosa suave — antes era "surface-2"/hueso, el mock v0 lo
-// cambió a rosa suave, ver mock) pero OPACA (no translúcida como el resto:
-// no hay nada detrás que se filtre) y `overlayOpacity` queda sin uso.
-export const estiloType: EstiloTokens = {
-  cardBackground:   '#f3e4e6',
-  cardBorder:       'rgba(43,34,38,0.10)',
-  headerColor:      AG_STRONG,
-  nombreColor:      'rgba(43,34,38,0.75)',
-  dividerColor:     'rgba(43,34,38,0.14)',
-  precioColor:      AG_STRONG,
-  precioFontWeight: 600,
-  letterSpacing:    2,
-  overlayOpacity:   0,
-};
-
-// Mosaico — 4 fotos en grilla pareja (ver LayoutGrid4 reescrito), mood
-// "surface" (misma tarjeta blanca que editorial/split — antes era
-// "primary-soft"/rosa suave, el mock v0 lo cambió a blanco, ver mock).
+// Portafolio — 4 fotos en grilla pareja (ver LayoutGrid4), mood "surface",
+// tarjeta centrada.
 export const estiloGrid: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.68)',
+  cardBackground:   'rgba(255,255,255,0.88)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -175,5 +171,39 @@ export const estiloGrid: EstiloTokens = {
   precioColor:      AG_STRONG,
   precioFontWeight: 700,
   letterSpacing:    1.5,
+  overlayOpacity:   0.4,
+};
+
+// Catálogo — MISMA composición de 4 fotos que Portafolio (reusa
+// LayoutGrid4, ver catalogo.ts) — se diferencia solo por mood ("primary-soft",
+// rosa suave, en vez de blanco) y anclaje (align: 'start', tarjeta arriba en
+// vez de centrada), no por layout. Mismo criterio que el mock v0 (grid/
+// catalog comparten composición de fotos ahí también).
+export const estiloCatalog: EstiloTokens = {
+  cardBackground:   'rgba(243,228,230,0.85)',
+  cardBorder:       'rgba(43,34,38,0.10)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.14)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 600,
+  letterSpacing:    1.5,
   overlayOpacity:   0.34,
+};
+
+// Lista + foto — 1 foto (ver LayoutSingle, MISMO componente que Protagonista
+// — se diferencian por mood/anclaje, no por composición), mood "surface-2",
+// tarjeta anclada ARRIBA (align: 'start') y el precio más "pesado" del
+// catálogo (peso 800) — la nota del picker ("Precios primero") se refleja
+// en que el precio es lo que más grita tipográficamente acá.
+export const estiloListPhoto: EstiloTokens = {
+  cardBackground:   'rgba(246,241,239,0.85)',
+  cardBorder:       'rgba(43,34,38,0.08)',
+  headerColor:      AG_STRONG,
+  nombreColor:      'rgba(43,34,38,0.75)',
+  dividerColor:     'rgba(43,34,38,0.13)',
+  precioColor:      AG_STRONG,
+  precioFontWeight: 800,
+  letterSpacing:    0.5,
+  overlayOpacity:   0.3,
 };

@@ -54,15 +54,19 @@
     "missingPhotos": "faltam {count, plural, one {# foto} other {# fotos}}",
     "fallbackToast": "O design escolhido precisa de mais fotos: foi trocado para o design simples.",
     "templates": {
-      "editorial": { "name": "Editorial", "note": "Foto + lista" },
-      "minimal": { "name": "Minimal", "note": "Ar e espaço" },
-      "modern": { "name": "Modern", "note": "Fundo escuro" },
-      "split": { "name": "Split", "note": "Duas fotos" },
-      "collage": { "name": "Collage", "note": "Fotos + lista" },
-      "fullbleed": { "name": "Full bleed", "note": "Foto superior + painel" },
-      "type": { "name": "Tipográfico", "note": "Sem fotos" },
-      "grid": { "name": "Mosaico", "note": "Quatro fotos" }
+      "feature": { "name": "Protagonista", "note": "Foto + lista" },
+      "fullbleed": { "name": "Full bleed", "note": "Foto + painel" },
+      "split": { "name": "Dupla foto", "note": "Duas fotos" },
+      "beforeafter": { "name": "Antes / depois", "note": "Processo" },
+      "collage": { "name": "Editorial", "note": "Três fotos" },
+      "grid": { "name": "Portfólio", "note": "Quatro fotos" },
+      "catalog": { "name": "Catálogo", "note": "Quatro fotos" },
+      "listphoto": { "name": "Lista + foto", "note": "Preços primeiro" }
     }
+  },
+  "LayoutBeforeAfter": {
+    "antes": "Antes",
+    "despues": "Depois"
   },
   "GestorFotos": {
     "deleteConfirm": "Remover esta foto do story de preços?",

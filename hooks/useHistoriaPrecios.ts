@@ -8,7 +8,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { profesionalJefa, TemplateId } from '@/services/profesionalService';
 
-const DEFAULT_TEMPLATE: TemplateId = 'editorial';
+const DEFAULT_TEMPLATE: TemplateId = 'feature';
 const FILENAME = 'historia-precios.png';
 
 // Ancho de exportación fijo — mismo criterio que useGenerarHistoria.capturar:
@@ -148,10 +148,10 @@ export function useHistoriaPrecios() {
     [fotosOrdenadas, dataUrlsPorFoto]
   );
 
-  // 'type' (Tipográfico) es la única plantilla sin foto de fondo (ver
-  // catalogo.ts, minFotos: 0) — el resto sigue necesitando al menos 1 foto
-  // para habilitar Guardar/Compartir.
-  const puedeCapturar = fotosOrdenadas.length > 0 || templateId === 'type';
+  // Las 8 plantillas del catálogo actual piden al menos 1 foto (ver
+  // catalogo.ts, minFotos) — no hay plantilla sin foto de fondo, a
+  // diferencia del catálogo anterior ('type'/Tipográfico, minFotos: 0).
+  const puedeCapturar = fotosOrdenadas.length > 0;
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
