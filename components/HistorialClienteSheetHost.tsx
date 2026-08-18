@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
@@ -32,6 +33,22 @@ export function HistorialClienteSheetHost() {
   useEffect(() => {
     if (clienteId !== null && profesionales.length === 0) fetchProfesionales();
   }, [clienteId, profesionales.length, fetchProfesionales]);
+
+  // Este host vive montado una sola vez en app/providers.tsx, por ENCIMA del
+  // árbol de rutas — navegar a otra página (Link/router.push, sin pasar por
+  // el pan-down-to-close ni el botón de cerrar) nunca desmonta este
+  // componente, así que sin esto el sheet quedaba "colgado" flotando sobre
+  // la página nueva indefinidamente (bug reportado 2026-08-17). Cerrar acá
+  // en cuanto cambia la ruta es lo mismo que ya hace ProvidersInner con el
+  // resto de la navegación basada en `pathname`.
+  const pathname = usePathname();
+  const pathnameAnterior = useRef(pathname);
+  useEffect(() => {
+    if (pathnameAnterior.current !== pathname) {
+      pathnameAnterior.current = pathname;
+      cerrarHistorial();
+    }
+  }, [pathname]);
   const profesionalesById = useMemo(
     () => new Map(profesionales.map(p => [p.id, p])),
     [profesionales]
