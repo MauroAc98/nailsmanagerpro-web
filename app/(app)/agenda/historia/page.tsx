@@ -255,7 +255,9 @@ function HistoriaContent() {
             <StoryCanvas
               ref={canvasRef}
               titulo={titulo}
+              nombreEstudio={nombreEstudio}
               telefonoEstudio={telefonoEstudio}
+              profesionalNombre={profesionalSeleccionada?.nombre}
               dias={diasAMostrar}
               fondoUri={fondoUri}
               canvasWidth={canvasWidth}
