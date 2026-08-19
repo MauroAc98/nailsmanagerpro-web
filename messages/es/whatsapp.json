@@ -7,7 +7,7 @@
     "connectedTitle": "Tu WhatsApp ya está vinculado",
     "connectedSubtitle": "Los turnos nuevos van a enviar el mensaje de confirmación automáticamente.",
     "disconnect": "Desvincular",
-    "disconnectConfirm": "¿Desvincular WhatsApp? Vas a dejar de recibir mensajes automáticos de confirmación hasta que vuelvas a conectar.",
+    "disconnectConfirm": "¿Desvincular WhatsApp? Vas a dejar de recibir mensajes automáticos hasta que vuelvas a conectar. Desvincular y reconectar seguido puede hacer que WhatsApp bloquee el número — hacelo solo si es necesario.",
     "disconnectConfirmButton": "Desvincular",
     "disconnected": "WhatsApp desvinculado",
     "expiredNotice": "El código expiró sin confirmarse. Generá uno nuevo cuando estés listo para escanearlo.",
