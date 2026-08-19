@@ -54,11 +54,25 @@ export function HistorialClienteSheetHost() {
     [profesionales]
   );
 
+  // Evita llamar a sheetRef.close() en el mount cuando clienteId YA arranca
+  // en null (initialIndex=-1 ya deja el sheet cerrado, no hay nada que
+  // cerrar) — sin este guard, ese close() redundante deja una transition
+  // CSS puesta a mano en el nodo (BottomSheet.applyVisibleHeight, fuera del
+  // ciclo declarativo de React) que después "hereda" el salto de maxHeight
+  // de BottomSheet (0 -> alto real, una vez que mide window.innerHeight
+  // post-mount) y anima ese salto como si fuera un drag real: el sheet
+  // cerrado se veía aparecer y desaparecer en CADA carga de página donde
+  // este host está montado (bug reportado: pasaba incluso en /login, donde
+  // este componente vive siempre montado por estar en app/providers.tsx).
+  const montadoRef = useRef(false);
+
   useEffect(() => {
     if (clienteId === null) {
-      sheetRef.current?.close();
+      if (montadoRef.current) sheetRef.current?.close();
+      montadoRef.current = true;
       return;
     }
+    montadoRef.current = true;
     let cancelado = false;
     setLoading(true);
     setCliente(null);
