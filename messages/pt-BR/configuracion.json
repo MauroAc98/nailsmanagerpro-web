@@ -178,7 +178,6 @@
     "title": "Horários Disponíveis",
     "subtitle": "Estes são os horários em que suas clientes podem reservar agendamentos.",
     "loading": "Carregando horários...",
-    "chooseProfessionalPrompt": "Escolha uma profissional para ver e editar seus horários.",
     "emptyState": "Nenhum horário cadastrado. Toque em + para adicionar um.",
     "available": "Disponível",
     "disabled": "Desativado",

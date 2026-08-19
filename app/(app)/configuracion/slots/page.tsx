@@ -7,6 +7,7 @@ import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Slot } from '@/services/slotService';
+import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
@@ -159,11 +160,18 @@ export default function SlotsPage() {
 
   useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Con selector visible, YA NO defaultea a la jefa — el usuario elige
-  // explícito (mismo criterio que agenda/nuevo, 2026-08-19: la jefa
-  // aparecía tildada por default sin que nadie la eligiera). El efecto de
-  // abajo ya no fetchea nada hasta que haya un pick real, y el render más
-  // abajo muestra un prompt en vez de la lista mientras tanto.
+  // Con selector visible, defaultear a la profesional "jefa" (primera en
+  // crearse) apenas esté disponible, para no dejar la pantalla vacía sin
+  // selección — confirmado con el usuario (2026-08-19): acá corresponde
+  // arrancar tildada en la jefa, no vacío (a diferencia de agenda/nuevo).
+  // activeProfesionales[0] NO sirve acá — la lista viene ordenada por
+  // nombre, no por antigüedad. Ajustado durante el render (no en un
+  // efecto): la propia condición `selectedProfesionalId === null` se
+  // vuelve falsa apenas se setea, así que converge en un solo render extra.
+  if (mostrarSelectorProfesional && selectedProfesionalId === null) {
+    const jefa = profesionalJefa(profesionales);
+    if (jefa) setSelectedProfesionalId(jefa.id);
+  }
 
   // Sin selector (≤1 profesional activa): comportamiento intacto, fetch
   // único sin scope, igual que antes de multi-agenda. Con selector: refetch
@@ -211,17 +219,14 @@ export default function SlotsPage() {
         <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
       </div>
 
-      {/* FAB — deshabilitado hasta elegir profesional cuando el selector
-          está visible (evita mandar agregarSlot sin profesional_id). */}
+      {/* FAB */}
       <button
         onClick={() => setPickerVisible(true)}
-        disabled={mostrarSelectorProfesional && !selectedProfesionalId}
         style={{
           position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primary, border: 'none',
-          cursor: (mostrarSelectorProfesional && !selectedProfesionalId) ? 'not-allowed' : 'pointer',
-          opacity: (mostrarSelectorProfesional && !selectedProfesionalId) ? 0.5 : 1,
+          cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 12px rgba(215,158,164,0.5)', zIndex: 10,
         }}
@@ -272,22 +277,15 @@ export default function SlotsPage() {
         </div>
       )}
 
-      {/* Prompt — selector visible pero sin pick todavía */}
-      {mostrarSelectorProfesional && !selectedProfesionalId && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('chooseProfessionalPrompt')}</p>
-        </div>
-      )}
-
       {/* Loading */}
-      {loading && (!mostrarSelectorProfesional || selectedProfesionalId) && (
+      {loading && (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
       )}
 
       {/* List */}
-      {!loading && !error && (!mostrarSelectorProfesional || selectedProfesionalId) && (
+      {!loading && !error && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {slots.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 15 }}>

@@ -6,7 +6,7 @@ import { fetchAsDataUrl, prepararImagenesParaCaptura } from '@/lib/historia/capt
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
+import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
 const FILENAME = 'historia-precios.png';
@@ -34,22 +34,22 @@ const proxiedUrl = (url: string) => `/api/historia-fondo?url=${encodeURIComponen
 export function useHistoriaPrecios() {
   // ─────────────────────────────────────────────
   // Professional context — same multi-profesional picker pattern as
-  // agenda/nuevo (spec de referencia, 2026-08-19): `selectedProfesionalId`
-  // es un override explícito (null = sin elegir), `effectiveProfesionalId`
-  // NO cae en la jefa por default cuando hay más de una activa — antes sí lo
-  // hacía, y la jefa aparecía "tildada" en el picker sin que nadie la
-  // hubiera elegido (bug reportado por el usuario). Con exactamente 1
-  // profesional activa no hay ambigüedad real: se usa implícita, sin
-  // selector ni tilde visible, igual que agenda/nuevo esconde su selector
-  // con activeProfesionales.length <= 1.
+  // useGenerarHistoria: `selectedProfesionalId` is an explicit override
+  // (null = no selection), `effectiveProfesionalId` falls back to the jefa
+  // when nothing's selected — 2026-08-19, confirmado con el usuario: acá SÍ
+  // corresponde defaultear a la jefa (a diferencia de agenda/nuevo, que
+  // nunca defaultea porque asignar el turno a "nadie en particular" no
+  // tiene sentido). El pill del picker y el filtrado real de datos abajo
+  // (serviciosActivos) usan el MISMO effectiveProfesionalId, así que
+  // siempre están sincronizados: si el pill muestra a la jefa tildada, los
+  // datos mostrados son los de ella.
   // ─────────────────────────────────────────────
   const { profesionales, guardarNotaHistoriaPrecios } = useProfesionalStore();
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
-  const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
-    return activeProfesionales.length === 1 ? activeProfesionales[0].id : null;
-  }, [selectedProfesionalId, activeProfesionales]);
+    return profesionalJefa(profesionales)?.id ?? null;
+  }, [selectedProfesionalId, profesionales]);
   const profesionalActual = useMemo(
     () => profesionales.find(p => p.id === effectiveProfesionalId) ?? null,
     [profesionales, effectiveProfesionalId]

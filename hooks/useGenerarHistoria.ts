@@ -5,6 +5,7 @@ import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
 import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
@@ -102,12 +103,12 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // ─────────────────────────────────────────────
   // Fondo fijo por profesional — el hook sí lee useProfesionalStore acá
   // (además de por id, como arriba) porque necesita el fondo_historia_url
-  // guardado, no solo el nombre. Sin selección explícita, "efectiva" YA NO
-  // cae en la profesional "jefa" (2026-08-19: aparecía tildada por default
-  // sin que nadie la eligiera, mismo bug que historia-precios) — con más de
-  // una profesional activa, hay que elegir explícito (mismo criterio que
-  // agenda/nuevo). Con exactamente 1 activa no hay ambigüedad, se usa
-  // implícita.
+  // guardado, no solo el nombre. Sin selección explícita, "efectiva" cae en
+  // la profesional "jefa" (primera en crearse) — confirmado con el usuario
+  // (2026-08-19): acá corresponde arrancar tildada en la jefa y con sus
+  // datos filtrados, no "nada" (a diferencia de agenda/nuevo, que nunca
+  // defaultea porque asignar un turno a nadie en particular no tiene
+  // sentido).
   // ─────────────────────────────────────────────
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
@@ -115,8 +116,8 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
-    return activeProfesionales.length === 1 ? activeProfesionales[0].id : null;
-  }, [selectedProfesionalId, activeProfesionales]);
+    return profesionalJefa(profesionales)?.id ?? null;
+  }, [selectedProfesionalId, profesionales]);
   const fondoFijoGuardado = useMemo(
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]
@@ -256,7 +257,16 @@ export function useGenerarHistoria(fechaInicial?: string) {
       const { desde, hasta } = getRango(fechaBase, modo);
       await withGlobalLoader(async () => {
         try {
-          const data = await turnoService.getDisponibilidad(desde, hasta, selectedProfesionalId ?? undefined);
+          // effectiveProfesionalId, no selectedProfesionalId a secas — bug
+          // real encontrado 2026-08-19: el fetch nunca escopeaba a la jefa
+          // aunque el pill la mostrara tildada por default, mostrando
+          // siempre la agenda combinada de todas las profesionales. Solo se
+          // filtra con >1 profesional activa (selector realmente en juego)
+          // — con una sola, se mantiene el fetch sin scope de siempre, para
+          // no excluir turnos viejos con profesional_id null de antes de
+          // multi-agenda.
+          const filtro = activeProfesionales.length > 1 ? (effectiveProfesionalId ?? undefined) : undefined;
+          const data = await turnoService.getDisponibilidad(desde, hasta, filtro);
           if (cancelled) return;
           setAgendaGenerada(data);
 
@@ -273,7 +283,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
     cargar();
     return () => { cancelled = true; };
-  }, [fechaBase, modo, selectedProfesionalId]);
+  }, [fechaBase, modo, effectiveProfesionalId, activeProfesionales.length]);
 
   // ─────────────────────────────────────────────
   // Reset (mode switch / date nav) — fondoUri untouched
@@ -513,8 +523,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       // genuino sin identificar.
       if (!profesionalId) {
         await useProfesionalStore.getState().fetchProfesionales();
-        const activasRefetch = useProfesionalStore.getState().profesionales.filter(p => p.activo);
-        profesionalId = selectedProfesionalId ?? (activasRefetch.length === 1 ? activasRefetch[0].id : null);
+        profesionalId = selectedProfesionalId ?? profesionalJefa(useProfesionalStore.getState().profesionales)?.id ?? null;
       }
 
       if (!profesionalId) {

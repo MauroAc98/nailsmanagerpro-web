@@ -96,7 +96,11 @@ export default function HistoriaPreciosPage() {
   // existe con pick EXPLÍCITO (selectedProfesionalId, no el fallback a la
   // jefa) — mismo criterio que StoryCanvas.profesionalNombre: reemplaza el
   // nombre del negocio en el footer para que la historia lea como la
-  // tarjeta de esa profesional puntual, no como la del negocio.
+  // tarjeta de esa profesional puntual, no como la del negocio. El
+  // CONTENIDO (servicios, fotos, etc.) sí usa effectiveProfesionalId, que
+  // cae en la jefa por default (confirmado con el usuario, 2026-08-19):
+  // arrancar mostrando los datos de la jefa, tildada en el picker, no
+  // "nada" — distinto de agenda/nuevo, que nunca defaultea.
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
@@ -118,7 +122,7 @@ export default function HistoriaPreciosPage() {
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
-      ) : activeProfesionales.length === 0 ? (
+      ) : !effectiveProfesionalId ? (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: colors.subtext, fontSize: 15 }}>{t('noProfessional')}</p>
         </div>
@@ -127,13 +131,12 @@ export default function HistoriaPreciosPage() {
           paddingTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center',
           width: canvasWidth || '100%', margin: '0 auto',
         }}>
-          {/* Selector de profesional — invisible con ≤1 profesional activa
-              (mismo criterio que agenda/nuevo). SIEMPRE visible cuando hay
-              más de una, incluso ANTES de elegir — ya no cae en la jefa por
-              default (bug reportado 2026-08-19: aparecía "tildada" sin que
-              nadie la hubiera elegido). Renderizado ARRIBA del resto del
-              contenido a propósito: el resto queda gateado más abajo hasta
-              que haya un pick explícito. */}
+          {/* Selector de profesional — invisible con ≤1 profesional activa,
+              mismo patrón que agenda/historia (ver useHistoriaPrecios:
+              selectedProfesionalId/effectiveProfesionalId). Permite que cada
+              profesional promocione sus propios precios/promos, no solo la
+              jefa (que es el default con el que arranca, ver
+              effectiveProfesionalId). */}
           {mostrarSelectorProfesional && (
             <div style={{ width: '100%', marginBottom: 14 }}>
               <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
@@ -141,7 +144,7 @@ export default function HistoriaPreciosPage() {
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {activeProfesionales.map(p => {
-                  const selected = selectedProfesionalId === p.id;
+                  const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
                   const color    = p.color || colors.primary;
                   return (
                     <button
@@ -167,12 +170,6 @@ export default function HistoriaPreciosPage() {
             </div>
           )}
 
-          {!effectiveProfesionalId ? (
-            <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', margin: '20px 0' }}>
-              {t('chooseProfessionalPrompt')}
-            </p>
-          ) : (
-          <>
           {/* Mode toggle — Precios/Promociones, separa servicios fijos
               (es_promo:false) de promociones (es_promo:true) en 2 imágenes
               distintas (ver useHistoriaPrecios.serviciosActivos). */}
@@ -408,8 +405,6 @@ export default function HistoriaPreciosPage() {
               <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('share')}</span>
             </button>
           </div>
-          </>
-          )}
         </div>
       )}
     </div>
