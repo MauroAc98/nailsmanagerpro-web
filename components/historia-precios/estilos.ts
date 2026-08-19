@@ -42,6 +42,13 @@
 // disponible. `fullbleed` mantiene su implementación intacta (ya arreglada
 // hoy: sin blur, foto nítida, paleta propia).
 //
+// 2026-08-19: opacidad de las tarjetas CLARAS (feature/split/grid: 0.88,
+// collage/catalog/listphoto: 0.85) bajada a 0.68/0.65 — a pedido del
+// usuario, para que el trabajo de fondo se note más a través de la tarjeta.
+// `fullbleed` y `beforeafter` (tarjetas oscuras) no se tocaron: fullbleed ya
+// tiene su propia razón documentada abajo para sostener 0.72 (sin blur, la
+// tarjeta sola sostiene la legibilidad).
+//
 // Tokens son valores string/number planos, nunca CSS custom properties
 // (`var(--...)`). html-to-image serializa el nodo capturado a un SVG
 // foreignObject y lo rasteriza a través de su propio <img> off-DOM —
@@ -75,7 +82,7 @@ const AG_STRONG = '#2b2226';
 // "respire" arriba, coherente con el nombre: el trabajo es el protagonista,
 // la tarjeta de precios queda como pie de página.
 export const estiloFeature: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.88)',
+  cardBackground:   'rgba(255,255,255,0.68)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -119,7 +126,7 @@ export const estiloFullBleed: EstiloTokens = {
 // Doble mirada — 2 fotos apiladas (ver LayoutSplit2), mood "surface",
 // tarjeta centrada (align: 'center').
 export const estiloSplit: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.88)',
+  cardBackground:   'rgba(255,255,255,0.68)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -149,7 +156,7 @@ export const estiloBeforeAfter: EstiloTokens = {
 // Editorial — 3 fotos (ver LayoutCollage), mood "surface-2" (tarjeta hueso
 // cálido), tarjeta centrada.
 export const estiloCollage: EstiloTokens = {
-  cardBackground:   'rgba(246,241,239,0.85)',
+  cardBackground:   'rgba(246,241,239,0.65)',
   cardBorder:       'rgba(43,34,38,0.08)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -163,7 +170,7 @@ export const estiloCollage: EstiloTokens = {
 // Portafolio — 4 fotos en grilla pareja (ver LayoutGrid4), mood "surface",
 // tarjeta centrada.
 export const estiloGrid: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.88)',
+  cardBackground:   'rgba(255,255,255,0.68)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -180,7 +187,7 @@ export const estiloGrid: EstiloTokens = {
 // vez de centrada), no por layout. Mismo criterio que el mock v0 (grid/
 // catalog comparten composición de fotos ahí también).
 export const estiloCatalog: EstiloTokens = {
-  cardBackground:   'rgba(243,228,230,0.85)',
+  cardBackground:   'rgba(243,228,230,0.65)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -197,7 +204,7 @@ export const estiloCatalog: EstiloTokens = {
 // catálogo (peso 800) — la nota del picker ("Precios primero") se refleja
 // en que el precio es lo que más grita tipográficamente acá.
 export const estiloListPhoto: EstiloTokens = {
-  cardBackground:   'rgba(246,241,239,0.85)',
+  cardBackground:   'rgba(246,241,239,0.65)',
   cardBorder:       'rgba(43,34,38,0.08)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',

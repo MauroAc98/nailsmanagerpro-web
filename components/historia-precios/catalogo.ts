@@ -56,13 +56,19 @@ export interface TemplateEntry {
 // Orden = orden de presentación en el carrusel del picker. El fallback
 // reactivo de SelectorPlantilla busca la PRIMERA entrada de este array cuyo
 // minFotos entre en la cantidad de fotos actual.
+//
+// align: 'center' en TODAS — antes feature/catalog/listphoto anclaban la
+// tarjeta abajo/arriba (align: 'end'/'start') a propósito, como parte de la
+// variedad visual del catálogo (ver estilos.ts, comentario "octava
+// actualización"). El usuario pidió centrar todas explícitamente (2026-08-19)
+// — la variedad ahora sale solo de la composición de fotos y el mood/paleta.
 export const TEMPLATES: TemplateEntry[] = [
-  { id: 'feature',     minFotos: 1, Component: LayoutSingle,      tokens: estiloFeature,     cardVariant: 'flotante', align: 'end' },
+  { id: 'feature',     minFotos: 1, Component: LayoutSingle,      tokens: estiloFeature,     cardVariant: 'flotante', align: 'center' },
   { id: 'fullbleed',   minFotos: 1, Component: LayoutFullBleed,   tokens: estiloFullBleed,   cardVariant: 'panel',    align: 'center' },
   { id: 'split',       minFotos: 2, Component: LayoutSplit2,      tokens: estiloSplit,       cardVariant: 'flotante', align: 'center' },
   { id: 'beforeafter', minFotos: 2, Component: LayoutBeforeAfter, tokens: estiloBeforeAfter, cardVariant: 'flotante', align: 'center' },
   { id: 'collage',     minFotos: 3, Component: LayoutCollage,     tokens: estiloCollage,     cardVariant: 'flotante', align: 'center' },
   { id: 'grid',        minFotos: 4, Component: LayoutGrid4,       tokens: estiloGrid,        cardVariant: 'flotante', align: 'center' },
-  { id: 'catalog',     minFotos: 4, Component: LayoutGrid4,       tokens: estiloCatalog,     cardVariant: 'flotante', align: 'start' },
-  { id: 'listphoto',   minFotos: 1, Component: LayoutSingle,      tokens: estiloListPhoto,   cardVariant: 'flotante', align: 'start' },
+  { id: 'catalog',     minFotos: 4, Component: LayoutGrid4,       tokens: estiloCatalog,     cardVariant: 'flotante', align: 'center' },
+  { id: 'listphoto',   minFotos: 1, Component: LayoutSingle,      tokens: estiloListPhoto,   cardVariant: 'flotante', align: 'center' },
 ];
