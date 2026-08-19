@@ -114,23 +114,29 @@ export default function ClientesPage() {
     cargarPrimeraPagina, cargarSiguientePagina, toggleCliente,
   } = useClientesStore();
   const [buscarInput, setBuscarInput] = useState('');
-  // Evita que la carga inicial se dispare dos veces: sin este flag, el
-  // efecto de debounce de abajo también corre una vez al montar (todo
-  // efecto corre en el mount, sin importar sus deps) y agenda un segundo
-  // fetch 500ms después del inmediato, ambos con buscarInput=''.
-  const montado = useRef(false);
 
   useEffect(() => {
     cargarPrimeraPagina('');
-    montado.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Búsqueda server-side con debounce — cada tipeo reinicia el timer, así
-  // no se dispara un fetch por tecla. Se salta el primer render (ver
-  // `montado`), la carga inicial ya la maneja el efecto de arriba.
+  // no se dispara un fetch por tecla. Se salta la PRIMERA corrida de ESTE
+  // efecto (la carga inicial ya la maneja el efecto de arriba) con un flag
+  // propio, no compartido con el otro efecto — un ref puesto en `true` por
+  // el efecto de montaje (versión anterior: `montado`) YA está en `true`
+  // cuando este efecto corre por primera vez, porque React corre todos los
+  // efectos de un componente en el mismo commit, en orden, sin ceder el
+  // control entre uno y otro: el guard nunca frenaba nada, siempre
+  // agendaba un segundo fetch a los 500ms (bug real, confirmado con
+  // performance.getEntriesByType('resource') en producción — 2 GETs a
+  // /api/clientes, ~500ms exactos de diferencia).
+  const primeraCorridaBusqueda = useRef(true);
   useEffect(() => {
-    if (!montado.current) return;
+    if (primeraCorridaBusqueda.current) {
+      primeraCorridaBusqueda.current = false;
+      return;
+    }
     const timer = setTimeout(() => cargarPrimeraPagina(buscarInput.trim()), 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
