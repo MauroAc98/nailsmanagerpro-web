@@ -9,7 +9,6 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
-import { PRICE_STORY_NUDGE_KEY } from '@/lib/priceStoryNudge';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -65,7 +64,6 @@ export default function NuevoServicioPage() {
     setSaving(false);
 
     if (result.success) {
-      sessionStorage.setItem(PRICE_STORY_NUDGE_KEY, '1');
       router.push('/configuracion/servicios');
     } else {
       await alertDialog(result.message ?? t('saveError'));
