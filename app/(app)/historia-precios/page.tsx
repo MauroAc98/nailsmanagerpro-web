@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Eye, ImagePlus } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Eye, ImagePlus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import PillToggle from '@/components/PillToggle';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useHistoriaPrecios } from '@/hooks/useHistoriaPrecios';
@@ -73,11 +74,18 @@ export default function HistoriaPreciosPage() {
     nombreNegocio, telefono,
     templateId, handleTemplateChange,
     modo, handleModoChange,
+    notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
+    notaActiva, setNotaActiva,
+    notaAlineacion, setNotaAlineacion,
     fotos, fotosUrls, puedeCapturar,
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
 
   const titulo = modo === 'promociones' ? tCard('headerPromociones') : tCard('header');
+  // Lo que se renderiza en la tarjeta: vacío si el usuario desactivó la nota
+  // (PillToggle más abajo), aunque el texto siga guardado — desactivar no
+  // borra, así se puede reactivar sin volver a escribir.
+  const notaParaMostrar = notaActiva ? notaAdicional : undefined;
 
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
@@ -214,6 +222,8 @@ export default function HistoriaPreciosPage() {
                       nombreNegocio={nombreNegocio}
                       telefono={telefono}
                       profesionalNombre={profesionalSeleccionada?.nombre}
+                      nota={notaParaMostrar}
+                      notaAlineacion={notaAlineacion}
                     />
                   </div>
                 </div>
@@ -237,9 +247,85 @@ export default function HistoriaPreciosPage() {
                   nombreNegocio={nombreNegocio}
                   telefono={telefono}
                   profesionalNombre={profesionalSeleccionada?.nombre}
+                  nota={notaParaMostrar}
+                  notaAlineacion={notaAlineacion}
                   templateId={templateId}
                   onTemplateChange={handleTemplateChange}
                 />
+              </div>
+
+              {/* Texto adicional — aclaración libre y corta (seña, retiro
+                  aparte, etc.) que se renderiza al pie de la tarjeta. Mismo
+                  patrón visual que la sección "Fotos" de más abajo (tarjeta
+                  con borde), agregado a pedido del mock v0 actualizado
+                  (price-story.tsx, `footerNote`). El PillToggle apaga/prende
+                  SIN borrar el texto (ver notaActiva en useHistoriaPrecios)
+                  — reactivar no obliga a tipearlo de nuevo. Persiste por
+                  profesional en el backend (Profesional.historia_precios_nota,
+                  autosave debounced — ver useHistoriaPrecios), a pedido
+                  explícito del usuario: una versión anterior usaba
+                  localStorage y se perdía al cambiar de dispositivo. */}
+              <div style={{
+                width: '100%', marginTop: 20, padding: '14px', borderRadius: 14,
+                border: `1px solid ${colors.border}`, background: colors.surface,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: colors.textStrong }}>
+                      {t('notaAdicionalTitle')}
+                    </p>
+                    <p style={{ margin: '4px 0 0', fontSize: 11, color: colors.subtext }}>
+                      {t('notaAdicionalHint')}
+                    </p>
+                  </div>
+                  <PillToggle value={notaActiva} onChange={setNotaActiva} />
+                </div>
+                <div style={{ marginTop: 10, opacity: notaActiva ? 1 : 0.5 }}>
+                <textarea
+                  value={notaAdicional}
+                  onChange={e => setNotaAdicional(e.target.value)}
+                  maxLength={NOTA_MAX_LENGTH}
+                  rows={3}
+                  placeholder={modo === 'promociones' ? t('notaAdicionalPlaceholderPromo') : t('notaAdicionalPlaceholder')}
+                  style={{
+                    width: '100%', resize: 'none', boxSizing: 'border-box',
+                    padding: '10px 12px', borderRadius: 12, border: `1px solid ${colors.border}`,
+                    background: colors.surfaceSubtle, color: colors.textStrong,
+                    fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none',
+                  }}
+                />
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: 3, borderRadius: 8, background: colors.surfaceSubtle }}>
+                    <span style={{ padding: '0 4px', fontSize: 9, color: colors.subtext }}>{t('notaAdicionalAlignLabel')}</span>
+                    {([
+                      ['left', AlignLeft, t('notaAdicionalAlignLeft')],
+                      ['center', AlignCenter, t('notaAdicionalAlignCenter')],
+                      ['right', AlignRight, t('notaAdicionalAlignRight')],
+                      ['justify', AlignJustify, t('notaAdicionalAlignJustify')],
+                    ] as const).map(([value, Icon, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={label}
+                        title={label}
+                        onClick={() => setNotaAlineacion(value)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 26, height: 26, borderRadius: 6, border: 'none', cursor: 'pointer',
+                          background: notaAlineacion === value ? colors.surface : 'transparent',
+                          boxShadow: notaAlineacion === value ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                          color: notaAlineacion === value ? colors.textStrong : colors.subtext,
+                        }}
+                      >
+                        <Icon size={13} />
+                      </button>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 10, color: colors.subtext }}>
+                    {notaAdicional.length}/{NOTA_MAX_LENGTH}
+                  </span>
+                </div>
+                </div>
               </div>
             </>
           )}

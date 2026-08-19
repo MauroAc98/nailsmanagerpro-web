@@ -33,6 +33,15 @@ interface Props {
   // owner's. undefined (no explicit pick) keeps the existing nombreNegocio-only
   // behavior for single-profesional accounts.
   profesionalNombre?: string;
+  // Aclaración breve del negocio (seña, retiro aparte, etc.), escrita en el
+  // textarea "Texto adicional" de page.tsx (useHistoriaPrecios.notaAdicional)
+  // — se renderiza al pie de la tarjeta, arriba de "Reservá tu turno". Mismo
+  // origen que el mock v0 actualizado (price-story.tsx, `footerNote`).
+  nota?: string;
+  // Alineación del texto de `nota` (mock v0 actualizado: segmented control
+  // izquierda/centro/derecha/justificado junto al textarea). 'center' por
+  // default — mismo default que el mock.
+  notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
   // Chrome de la tarjeta: 'flotante' (default) es la tarjeta redondeada con
   // sombra y borde que usan todas las plantillas salvo `fullbleed`. 'panel'
   // (solo `fullbleed`) achica la sombra/borde. Ambas variantes ocupan el
@@ -60,7 +69,7 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, variante = 'flotante', align = 'center' }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center' }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
@@ -114,7 +123,11 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
         <span
           style={{
             fontFamily: agendaFontSerif,
-            fontSize: 31, fontWeight: 400, letterSpacing: 0.3, lineHeight: 1.05,
+            // letterSpacing negativo + lineHeight 1 (mock v0 actualizado,
+            // 2026-08-18: tracking-[-0.03em] + leading-none) — serif grande
+            // más ajustado/editorial, reemplaza el tracking positivo suelto
+            // de la versión anterior.
+            fontSize: 31, fontWeight: 400, letterSpacing: -0.9, lineHeight: 1,
             color: tokens.headerColor, textAlign: 'left',
           }}
         >
@@ -169,19 +182,44 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
           ))}
         </div>
 
-        {/* Footer CTA — solo reservar+teléfono (el nombre ya se muestra
-            arriba como eyebrow, ver encabezado editorial); mismo lenguaje
-            visual que el footer de StoryCanvas (label mayúscula wide-tracked
-            + fila de ícono/teléfono), adaptado a los tokens por plantilla en
-            vez de blanco hardcodeado: la tarjeta opaca clara necesita texto
-            oscuro. See StoryCanvas.tsx lines ~238-257 for the reference. */}
-        {nombreFooter && telefono && (
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        {/* Pie de tarjeta — nota adicional (aclaración libre, ver prop
+            `nota`) y/o CTA reservar+teléfono, separados de la lista de
+            precios por un divisor. El nombre ya se muestra arriba como
+            eyebrow (ver encabezado editorial), así que este bloque no lo
+            repite. CTA: mismo lenguaje visual que el footer de StoryCanvas
+            (label mayúscula wide-tracked + fila de ícono/teléfono),
+            adaptado a los tokens por plantilla en vez de blanco
+            hardcodeado: la tarjeta opaca clara necesita texto oscuro. See
+            StoryCanvas.tsx lines ~238-257 for the reference. */}
+        {(nota || (nombreFooter && telefono)) && (
+          <div
+            style={{
+              marginTop: 20, paddingTop: 14, borderTop: `1px solid ${tokens.dividerColor}`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+            }}
+          >
+            {nota && (
+              <p
+                style={{
+                  width: '100%', boxSizing: 'border-box', margin: '0 0 8px',
+                  whiteSpace: 'pre-line', textAlign: notaAlineacion,
+                  fontSize: 8, fontWeight: 400, lineHeight: 1.6,
+                  color: tokens.nombreColor, opacity: 0.65,
+                }}
+              >
+                {nota}
+              </p>
+            )}
+            {nombreFooter && telefono && (
+              <>
                 <span
                   style={{
-                    // Peso/tamaño/opacidad subidos (300->500, 8->9, 0.65->0.9)
-                    // — quedaba casi ilegible ("muy clarito").
-                    fontSize: 9, fontWeight: 500, letterSpacing: 3, textTransform: 'uppercase',
+                    // Serif itálica (mock v0 actualizado: font-serif italic,
+                    // sin mayúsculas ni tracking) — reemplaza la versalita
+                    // wide-tracked anterior, que copiaba el lenguaje del
+                    // footer de StoryCanvas en vez del de esta tarjeta.
+                    fontFamily: agendaFontSerif, fontStyle: 'italic',
+                    fontSize: 12, fontWeight: 400,
                     color: tokens.nombreColor, opacity: 0.9,
                   }}
                 >
@@ -200,7 +238,9 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
                     {telefono}
                   </span>
                 </div>
-              </div>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

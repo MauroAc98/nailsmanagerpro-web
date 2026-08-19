@@ -17,6 +17,8 @@ interface Props {
   nombreNegocio: string;
   telefono:      string | null;
   profesionalNombre?: string;
+  nota?: string;
+  notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
 }
 
 // HistoriaPreciosCanvas — always renders at the intrinsic BASE_WIDTH /
@@ -29,7 +31,7 @@ interface Props {
 // matches export" guarantee (spec: price-story-templates). See design
 // decision D3 in sdd/dynamic-price-story.
 export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function HistoriaPreciosCanvas(
-  { templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre },
+  { templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion },
   ref
 ) {
   const template = TEMPLATES.find(t => t.id === templateId) ?? TEMPLATES[0];
@@ -54,6 +56,8 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             nombreNegocio={nombreNegocio}
             telefono={telefono}
             profesionalNombre={profesionalNombre}
+            nota={nota}
+            notaAlineacion={notaAlineacion}
             variante={template.cardVariant}
             align={template.align}
           />

@@ -33,6 +33,8 @@ interface Props {
   nombreNegocio:  string;
   telefono:       string | null;
   profesionalNombre?: string;
+  nota?:          string;
+  notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
   templateId:       TemplateId;
   onTemplateChange: (id: TemplateId) => void;
 }
@@ -44,7 +46,7 @@ interface Props {
 // de quien llama — nunca contenido placeholder (spec: "Picker previews with
 // real data").
 export function SelectorPlantilla({
-  fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, templateId, onTemplateChange,
+  fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, templateId, onTemplateChange,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
 
@@ -96,6 +98,8 @@ export function SelectorPlantilla({
               nombreNegocio={nombreNegocio}
               telefono={telefono}
               profesionalNombre={profesionalNombre}
+              nota={nota}
+              notaAlineacion={notaAlineacion}
               width={THUMB_WIDTH}
             />
             <span style={{ fontFamily: agendaFontSerif, fontSize: 11, fontWeight: 600, color: colors.textStrong, whiteSpace: 'nowrap' }}>

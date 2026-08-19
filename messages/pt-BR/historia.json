@@ -64,10 +64,6 @@
       "listphoto": { "name": "Lista + foto", "note": "Preços primeiro" }
     }
   },
-  "LayoutBeforeAfter": {
-    "antes": "Antes",
-    "despues": "Depois"
-  },
   "GestorFotos": {
     "deleteConfirm": "Remover esta foto do story de preços?",
     "deleteConfirmButton": "Remover",
@@ -91,6 +87,16 @@
     "modePromociones": "Promoções",
     "emptyPromoState": "Você ainda não tem serviços marcados como promoção.",
     "templateSectionTitle": "Escolha seu design",
+    "notaAdicionalTitle": "Texto adicional",
+    "notaAdicionalHint": "Você pode acrescentar uma observação breve ao final do story.",
+    "notaAdicionalPlaceholder": "Ex.: O horário é confirmado com um sinal de 50%. A remoção tem custo adicional.",
+    "notaAdicionalPlaceholderPromo": "Ex.: Promoção válida até 31 de agosto ou enquanto durarem as vagas.",
+    "notaAdicionalAlignLabel": "Alinhamento",
+    "notaAdicionalAlignLeft": "Alinhar à esquerda",
+    "notaAdicionalAlignCenter": "Centralizar",
+    "notaAdicionalAlignRight": "Alinhar à direita",
+    "notaAdicionalAlignJustify": "Justificar",
+    "notaSaveError": "Não foi possível salvar o texto adicional. Verifique sua conexão.",
     "photosSectionTitle": "Fotos",
     "photosSectionHint": "Envie fotos dedicadas ao seu story de preços.",
     "emptyPhotosState": "Envie ao menos uma foto para gerar seu story de preços.",

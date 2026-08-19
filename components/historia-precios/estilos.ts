@@ -130,10 +130,10 @@ export const estiloSplit: EstiloTokens = {
   overlayOpacity:   0.28,
 };
 
-// Antes / después — 2 fotos apiladas con etiquetas (ver LayoutBeforeAfter),
-// mood "strong" (oscuro, dramático — coherente con mostrar un proceso/
-// transformación), tarjeta centrada. Tracking del header más amplio (3,
-// como el modern anterior) para reforzar el tono editorial.
+// Antes / después — 2 fotos apiladas (ver LayoutBeforeAfter), mood "strong"
+// (oscuro, dramático — coherente con mostrar un proceso/transformación),
+// tarjeta centrada. Tracking del header más amplio (3, como el modern
+// anterior) para reforzar el tono editorial.
 export const estiloBeforeAfter: EstiloTokens = {
   cardBackground:   'rgba(43,34,38,0.58)',
   cardBorder:       'rgba(255,255,255,0.2)',

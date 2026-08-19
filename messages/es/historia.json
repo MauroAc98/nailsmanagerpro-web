@@ -64,10 +64,6 @@
       "listphoto": { "name": "Lista + foto", "note": "Precios primero" }
     }
   },
-  "LayoutBeforeAfter": {
-    "antes": "Antes",
-    "despues": "Después"
-  },
   "GestorFotos": {
     "deleteConfirm": "¿Eliminar esta foto de la historia de precios?",
     "deleteConfirmButton": "Eliminar",
@@ -91,6 +87,16 @@
     "modePromociones": "Promociones",
     "emptyPromoState": "No tenés servicios marcados como promoción todavía.",
     "templateSectionTitle": "Elegí tu diseño",
+    "notaAdicionalTitle": "Texto adicional",
+    "notaAdicionalHint": "Podés sumar una aclaración breve al cierre de la historia.",
+    "notaAdicionalPlaceholder": "Ej.: El turno se confirma con una seña del 50%. El retiro tiene costo adicional.",
+    "notaAdicionalPlaceholderPromo": "Ej.: Promoción válida hasta el 31 de agosto o hasta agotar cupos.",
+    "notaAdicionalAlignLabel": "Alineación",
+    "notaAdicionalAlignLeft": "Alinear a la izquierda",
+    "notaAdicionalAlignCenter": "Centrar",
+    "notaAdicionalAlignRight": "Alinear a la derecha",
+    "notaAdicionalAlignJustify": "Justificar",
+    "notaSaveError": "No se pudo guardar el texto adicional. Revisá tu conexión.",
     "photosSectionTitle": "Fotos",
     "photosSectionHint": "Subí fotos dedicadas a tu historia de precios.",
     "emptyPhotosState": "Subí al menos una foto para generar tu historia de precios.",

@@ -24,6 +24,23 @@ export interface FotoHistoria {
   orden: number;
 }
 
+// Alineación del texto adicional de la historia de precios — 'left' |
+// 'center' | 'right' | 'justify', ver components/historia-precios/TarjetaPrecios.tsx.
+export type AlineacionNota = 'left' | 'center' | 'right' | 'justify';
+
+export interface NotaHistoriaPreciosModo {
+  texto: string | null;
+  activa: boolean;
+  alineacion: AlineacionNota;
+}
+
+// Nota adicional del pie de la tarjeta, guardada POR MODO (precios/promociones
+// tienen aclaraciones distintas — seña/retiro vs. vigencia de la promo, ver
+// useHistoriaPrecios). `texto` puede llegar `null` desde el backend: Laravel
+// normaliza '' a null antes de guardar (ConvertEmptyStringsToNull), el
+// frontend lo trata como string vacío al hidratar.
+export type NotaHistoriaPrecios = Partial<Record<'precios' | 'promociones', NotaHistoriaPreciosModo>>;
+
 export interface Profesional {
   id: number;
   user_id: number;
@@ -45,6 +62,10 @@ export interface Profesional {
   // en orden de subida. Se modifica vía los endpoints multipart de abajo,
   // nunca directamente por PUT /profesionales/{id}.
   historia_precios_fotos: FotoHistoria[];
+  // Texto adicional del pie de la tarjeta — null si esta profesional
+  // todavía no guardó ninguno. Patcheado por el mismo PUT que
+  // historia_precios_template_id (ver UpdateProfesionalDto).
+  historia_precios_nota: NotaHistoriaPrecios | null;
 }
 
 // La profesional "jefa": la primera en crearse (id más chico) entre las
@@ -74,6 +95,9 @@ export interface UpdateProfesionalDto {
   // `color`, patched through the main PUT. Photos go through the dedicated
   // multipart sub-resource below instead (see `subirFotoHistoriaPrecios`).
   historia_precios_template_id?: TemplateId | null;
+  // Mismo precedente que `color` — patcheado por el PUT principal, no un
+  // sub-recurso propio (a diferencia de las fotos).
+  historia_precios_nota?: NotaHistoriaPrecios | null;
 }
 
 // ─────────────────────────────────────────────

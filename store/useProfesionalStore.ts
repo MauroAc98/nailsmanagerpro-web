@@ -4,12 +4,14 @@ import {
   Profesional,
   CreateProfesionalDto,
   UpdateProfesionalDto,
+  NotaHistoriaPrecios,
   extraerMensajeError,
 } from '@/services/profesionalService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { reordenarEnSitio } from '@/lib/reordenarEnSitio';
 import { alertDialog } from '@/store/useConfirmStore';
 import { tStatic } from '@/store/useLocaleStore';
+import { showToast } from '@/store/useToastStore';
 
 interface OperacionResult {
   success: boolean;
@@ -30,6 +32,7 @@ interface ProfesionalesState {
   subirFotoHistoriaPrecios: (id: number, archivo: File) => Promise<OperacionResult>;
   borrarFotoHistoriaPrecios: (id: number, fotoId: number) => Promise<OperacionResult>;
   reordenarFotosHistoriaPrecios: (id: number, ids: number[]) => Promise<void>;
+  guardarNotaHistoriaPrecios: (id: number, nota: NotaHistoriaPrecios) => Promise<void>;
 }
 
 export const useProfesionalStore = create<ProfesionalesState>((set, get) => ({
@@ -173,6 +176,27 @@ export const useProfesionalStore = create<ProfesionalesState>((set, get) => ({
       console.error('reordenarFotosHistoriaPrecios:', e);
       set({ profesionales: anterior });
       await alertDialog(tStatic('historia.GestorFotos.reorderError'));
+    }
+  },
+
+  // Autosave del texto adicional de la historia de precios — se dispara
+  // debounced mientras el usuario tipea (ver useHistoriaPrecios), así que
+  // NO usa withGlobalLoader (interrumpiría con un spinner de pantalla
+  // completa cada vez que el usuario hace una pausa al escribir) ni
+  // alertDialog en el catch (bloquearía la edición en curso) — un fallo
+  // silencioso con toast, mismo criterio no bloqueante que
+  // reordenarFotosHistoriaPrecios pero sin rollback: el texto local sigue
+  // viviendo en el estado del hook, no en este store, así que no hay nada
+  // visible que revertir.
+  guardarNotaHistoriaPrecios: async (id, nota) => {
+    try {
+      const actualizado = await profesionalService.update(id, { historia_precios_nota: nota });
+      set(state => ({
+        profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+      }));
+    } catch (e) {
+      console.error('guardarNotaHistoriaPrecios:', e);
+      showToast(tStatic('historia.HistoriaPreciosPage.notaSaveError'));
     }
   },
 }));
