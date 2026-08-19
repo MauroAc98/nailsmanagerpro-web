@@ -6,7 +6,7 @@ import { fetchAsDataUrl, prepararImagenesParaCaptura } from '@/lib/historia/capt
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
+import { TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
 const FILENAME = 'historia-precios.png';
@@ -34,18 +34,22 @@ const proxiedUrl = (url: string) => `/api/historia-fondo?url=${encodeURIComponen
 export function useHistoriaPrecios() {
   // ─────────────────────────────────────────────
   // Professional context — same multi-profesional picker pattern as
-  // useGenerarHistoria: `selectedProfesionalId` is an explicit override
-  // (null = no selection), `effectiveProfesionalId` falls back to the jefa
-  // when nothing's selected. Layout/estilo/fotos stay scoped to whichever
-  // professional is "effective" so each one can promote her own promos/
-  // servicios, not just the jefa's.
+  // agenda/nuevo (spec de referencia, 2026-08-19): `selectedProfesionalId`
+  // es un override explícito (null = sin elegir), `effectiveProfesionalId`
+  // NO cae en la jefa por default cuando hay más de una activa — antes sí lo
+  // hacía, y la jefa aparecía "tildada" en el picker sin que nadie la
+  // hubiera elegido (bug reportado por el usuario). Con exactamente 1
+  // profesional activa no hay ambigüedad real: se usa implícita, sin
+  // selector ni tilde visible, igual que agenda/nuevo esconde su selector
+  // con activeProfesionales.length <= 1.
   // ─────────────────────────────────────────────
   const { profesionales, guardarNotaHistoriaPrecios } = useProfesionalStore();
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
-    return profesionalJefa(profesionales)?.id ?? null;
-  }, [selectedProfesionalId, profesionales]);
+    return activeProfesionales.length === 1 ? activeProfesionales[0].id : null;
+  }, [selectedProfesionalId, activeProfesionales]);
   const profesionalActual = useMemo(
     () => profesionales.find(p => p.id === effectiveProfesionalId) ?? null,
     [profesionales, effectiveProfesionalId]

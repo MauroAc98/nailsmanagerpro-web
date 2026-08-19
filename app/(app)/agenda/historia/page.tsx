@@ -78,7 +78,7 @@ function HistoriaContent() {
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight,
-    selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
+    selectedProfesionalId, setSelectedProfesionalId,
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
@@ -187,7 +187,13 @@ function HistoriaContent() {
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {activeProfesionales.map(p => {
-                const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
+                // Solo el pick EXPLÍCITO tilda el pill — antes usaba
+                // effectiveProfesionalId como fallback acá y la jefa
+                // aparecía tildada por default sin elegirla (bug reportado
+                // 2026-08-19), aunque la agenda mostrada en ese momento ya
+                // era la combinada de todas (ver useGenerarHistoria: el
+                // fetch usa selectedProfesionalId directo, sin fallback).
+                const selected = selectedProfesionalId === p.id;
                 const color    = p.color || colors.primary;
                 return (
                   <button

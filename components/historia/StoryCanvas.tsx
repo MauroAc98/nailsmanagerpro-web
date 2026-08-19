@@ -324,15 +324,18 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             {/* Footer — CTA "Reservá tu turno" + WhatsApp con el teléfono,
                 tal cual la referencia. Blanco liso (no primaryRaw): probado
                 en rosa de marca primero pero no convencía sobre la foto.
-                agendaFontSerif recta, no itálica — unificación del serif de
-                toda la app a uno solo. El ícono (no la palabra "WhatsApp"
-                escrita) para quedar consistente con cómo se representa esa
-                acción en el resto de la app (Recordatorios, botón de turno).
-                Sin teléfono cargado, el CTA solo alcanza — no hace falta un
-                mensaje genérico aparte. */}
+                agendaFontSerif en itálica (2026-08-19: unificado con el
+                mismo CTA de TarjetaPrecios en historia-precios, que ya usa
+                itálica — antes este quedaba recto y las dos historias
+                generadas por la app se veían inconsistentes entre sí). El
+                ícono (no la palabra "WhatsApp" escrita) para quedar
+                consistente con cómo se representa esa acción en el resto de
+                la app (Recordatorios, botón de turno). Sin teléfono
+                cargado, el CTA solo alcanza — no hace falta un mensaje
+                genérico aparte. */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <span style={{
-                fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 16,
+                fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 16,
                 color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
               }}>
                 {t('reserveCta')}

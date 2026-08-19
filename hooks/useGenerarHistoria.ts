@@ -5,7 +5,6 @@ import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
 import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
@@ -103,9 +102,12 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // ─────────────────────────────────────────────
   // Fondo fijo por profesional — el hook sí lee useProfesionalStore acá
   // (además de por id, como arriba) porque necesita el fondo_historia_url
-  // guardado, no solo el nombre. Sin selección explícita, "efectiva" cae en
-  // la profesional "jefa" (primera en crearse) — mismo default que el resto
-  // de la app, no la primera del array (que viene ordenado por nombre).
+  // guardado, no solo el nombre. Sin selección explícita, "efectiva" YA NO
+  // cae en la profesional "jefa" (2026-08-19: aparecía tildada por default
+  // sin que nadie la eligiera, mismo bug que historia-precios) — con más de
+  // una profesional activa, hay que elegir explícito (mismo criterio que
+  // agenda/nuevo). Con exactamente 1 activa no hay ambigüedad, se usa
+  // implícita.
   // ─────────────────────────────────────────────
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
@@ -113,8 +115,8 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
-    return profesionalJefa(profesionales)?.id ?? null;
-  }, [selectedProfesionalId, profesionales]);
+    return activeProfesionales.length === 1 ? activeProfesionales[0].id : null;
+  }, [selectedProfesionalId, activeProfesionales]);
   const fondoFijoGuardado = useMemo(
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]
@@ -511,7 +513,8 @@ export function useGenerarHistoria(fechaInicial?: string) {
       // genuino sin identificar.
       if (!profesionalId) {
         await useProfesionalStore.getState().fetchProfesionales();
-        profesionalId = selectedProfesionalId ?? profesionalJefa(useProfesionalStore.getState().profesionales)?.id ?? null;
+        const activasRefetch = useProfesionalStore.getState().profesionales.filter(p => p.activo);
+        profesionalId = selectedProfesionalId ?? (activasRefetch.length === 1 ? activasRefetch[0].id : null);
       }
 
       if (!profesionalId) {

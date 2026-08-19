@@ -79,6 +79,7 @@
     "title": "Historia de precios",
     "loading": "Cargando...",
     "noProfessional": "No se pudo identificar tu perfil profesional.",
+    "chooseProfessionalPrompt": "Elegí una profesional para continuar.",
     "previewTitle": "Vista previa",
     "previewFormat": "Formato historia · 9:16",
     "previewBadge": "Actualización instantánea",

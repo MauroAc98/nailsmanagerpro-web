@@ -118,7 +118,7 @@ export default function HistoriaPreciosPage() {
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
         </div>
-      ) : !effectiveProfesionalId ? (
+      ) : activeProfesionales.length === 0 ? (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: colors.subtext, fontSize: 15 }}>{t('noProfessional')}</p>
         </div>
@@ -127,22 +127,13 @@ export default function HistoriaPreciosPage() {
           paddingTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center',
           width: canvasWidth || '100%', margin: '0 auto',
         }}>
-          {/* Mode toggle — Precios/Promociones, separa servicios fijos
-              (es_promo:false) de promociones (es_promo:true) en 2 imágenes
-              distintas (ver useHistoriaPrecios.serviciosActivos). */}
-          <div style={{ ...tabContainerStyle, width: '100%' }}>
-            {(['precios', 'promociones'] as const).map(m => (
-              <button key={m} onClick={() => handleModoChange(m)} style={tabStyle(modo === m)}>
-                {m === 'precios' ? t('modePrecios') : t('modePromociones')}
-              </button>
-            ))}
-          </div>
-
-          {/* Selector de profesional — invisible con ≤1 profesional activa,
-              mismo patrón que agenda/historia (ver useHistoriaPrecios:
-              selectedProfesionalId/effectiveProfesionalId). Permite que cada
-              profesional promocione sus propios precios/promos, no solo la
-              jefa. */}
+          {/* Selector de profesional — invisible con ≤1 profesional activa
+              (mismo criterio que agenda/nuevo). SIEMPRE visible cuando hay
+              más de una, incluso ANTES de elegir — ya no cae en la jefa por
+              default (bug reportado 2026-08-19: aparecía "tildada" sin que
+              nadie la hubiera elegido). Renderizado ARRIBA del resto del
+              contenido a propósito: el resto queda gateado más abajo hasta
+              que haya un pick explícito. */}
           {mostrarSelectorProfesional && (
             <div style={{ width: '100%', marginBottom: 14 }}>
               <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
@@ -150,7 +141,7 @@ export default function HistoriaPreciosPage() {
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {activeProfesionales.map(p => {
-                  const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
+                  const selected = selectedProfesionalId === p.id;
                   const color    = p.color || colors.primary;
                   return (
                     <button
@@ -175,6 +166,23 @@ export default function HistoriaPreciosPage() {
               </div>
             </div>
           )}
+
+          {!effectiveProfesionalId ? (
+            <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', margin: '20px 0' }}>
+              {t('chooseProfessionalPrompt')}
+            </p>
+          ) : (
+          <>
+          {/* Mode toggle — Precios/Promociones, separa servicios fijos
+              (es_promo:false) de promociones (es_promo:true) en 2 imágenes
+              distintas (ver useHistoriaPrecios.serviciosActivos). */}
+          <div style={{ ...tabContainerStyle, width: '100%' }}>
+            {(['precios', 'promociones'] as const).map(m => (
+              <button key={m} onClick={() => handleModoChange(m)} style={tabStyle(modo === m)}>
+                {m === 'precios' ? t('modePrecios') : t('modePromociones')}
+              </button>
+            ))}
+          </div>
 
           {/* Preview + picker solo con al menos 1 foto subida — ninguna de
               las 8 plantillas actuales tiene minFotos:0 (a diferencia del
@@ -400,6 +408,8 @@ export default function HistoriaPreciosPage() {
               <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('share')}</span>
             </button>
           </div>
+          </>
+          )}
         </div>
       )}
     </div>
