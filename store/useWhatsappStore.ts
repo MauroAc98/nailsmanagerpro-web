@@ -23,9 +23,18 @@ interface WhatsappState {
 }
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
-let qrRefreshInterval: ReturnType<typeof setInterval> | null = null;
+let qrRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
 let pollingIniciadoEn: number | null = null;
-const QR_REFRESH_MS   = 25_000;
+let qrRefreshDelay = 0;
+
+// Cada refresh de QR pega instance/connect en Evolution, que reinicia el
+// socket de Baileys. A ritmo fijo (antes: cada 25s siempre) esto genera un
+// patrón de reconexión metronómico que WhatsApp puede leer como
+// automatización. El backoff progresivo espacia los reintentos en vez de
+// martillar Evolution al mismo ritmo mientras la profesional no escanea.
+const QR_REFRESH_MS_INICIAL = 25_000;
+const QR_REFRESH_MS_MAX     = 60_000;
+const QR_REFRESH_BACKOFF    = 1.5;
 const MAX_POLLING_MS  = 3 * 60_000; // 3 minutos sin escanear = corta el polling
 
 export const useWhatsappStore = create<WhatsappState>((set, get) => ({
@@ -90,21 +99,29 @@ export const useWhatsappStore = create<WhatsappState>((set, get) => ({
       get().consultarEstado();
     }, 3_000);
 
-    qrRefreshInterval = setInterval(async () => {
-      if (get().estado === 'conectado') return;
-      try {
-        const { qr_base64 } = await whatsappService.conectar();
-        set({ qrBase64: qr_base64 });
-      } catch {
-        // se mantiene el QR visible, reintenta el próximo ciclo
+    const refrescarQr = async () => {
+      if (get().estado !== 'conectado') {
+        try {
+          const { qr_base64 } = await whatsappService.conectar();
+          set({ qrBase64: qr_base64 });
+        } catch {
+          // se mantiene el QR visible, reintenta con el próximo delay
+        }
       }
-    }, QR_REFRESH_MS);
+
+      qrRefreshDelay = Math.min(qrRefreshDelay * QR_REFRESH_BACKOFF, QR_REFRESH_MS_MAX);
+      qrRefreshTimeout = setTimeout(refrescarQr, qrRefreshDelay);
+    };
+
+    qrRefreshDelay = QR_REFRESH_MS_INICIAL;
+    qrRefreshTimeout = setTimeout(refrescarQr, qrRefreshDelay);
   },
 
   detenerPolling: () => {
-    if (pollingInterval)   { clearInterval(pollingInterval);   pollingInterval = null; }
-    if (qrRefreshInterval) { clearInterval(qrRefreshInterval); qrRefreshInterval = null; }
+    if (pollingInterval)  { clearInterval(pollingInterval);  pollingInterval = null; }
+    if (qrRefreshTimeout) { clearTimeout(qrRefreshTimeout);  qrRefreshTimeout = null; }
     pollingIniciadoEn = null;
+    qrRefreshDelay = 0;
     set({ polling: false });
   },
 
