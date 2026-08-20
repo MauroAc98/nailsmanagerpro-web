@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { colors } from '@/theme/colors';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 export default function SubscriptionExpiredPage() {
   const router = useRouter();
@@ -40,8 +41,10 @@ export default function SubscriptionExpiredPage() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    router.push('/login');
+    if (await confirmDialog(t('logoutConfirm'), { confirmText: t('logoutConfirmButton'), danger: true })) {
+      await logout();
+      router.push('/login');
+    }
   };
 
   return (

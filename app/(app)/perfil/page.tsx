@@ -210,7 +210,7 @@ export default function PerfilPage() {
   };
 
   const handleLogout = async () => {
-    if (await confirmDialog(t('logoutConfirm'), { confirmText: t('logoutConfirmButton') })) {
+    if (await confirmDialog(t('logoutConfirm'), { confirmText: t('logoutConfirmButton'), danger: true })) {
       await logout();
       router.push('/login');
     }

@@ -10,7 +10,9 @@
     "renewWhatsapp": "Renovar pelo WhatsApp",
     "emailSubject": "Renovar assinatura Nailsmanagerpro",
     "sendEmail": "Enviar um e-mail",
-    "logout": "Sair"
+    "logout": "Sair",
+    "logoutConfirm": "Tem certeza que quer sair?",
+    "logoutConfirmButton": "Sair"
   },
   "SubscriptionWarningBanner": {
     "renewWhatsappMessage": "Olá! Quero renovar minha assinatura do Nailsmanagerpro.",
