@@ -234,11 +234,11 @@
       },
       "whatsappLink": {
         "title": "WhatsApp automático",
-        "text": "Los mensajes de confirmación y recordatorio se mandan solos por WhatsApp — no hay nada que vincular ni ningún código QR que escanear, funciona desde el primer turno que cargues.\n\nLo único que conviene completar es tu número de contacto en Perfil: aparece al final de cada mensaje para que la clienta pueda escribirte si tiene alguna duda."
+        "text": "Los mensajes de confirmación y recordatorio se mandan solos por WhatsApp — no hay nada que vincular ni ningún código QR que escanear, funciona desde el primer turno que cargues.\n\nLo único que conviene completar es tu número de contacto en Perfil: aparece al final de cada mensaje para que el cliente pueda escribirte si tiene alguna duda."
       },
       "whatsappMessages": {
         "title": "Mensajes de WhatsApp",
-        "text": "\"Confirmación\" es automática: se manda sola apenas cargás un turno nuevo.\n\n\"Recordatorio\" tiene dos caminos: si activaste \"Recordatorio automático\" en Perfil, la app lo manda sola un día antes, a la hora que elegiste, a cada clienta con turno confirmado; y además lo podés mandar vos a mano en cualquier momento tocando el ícono de WhatsApp en una tarjeta de turno.\n\nEl texto de los mensajes es fijo (no se puede editar) — incluye el nombre de la clienta, tu salón, la fecha, la hora, el servicio y tu teléfono de contacto.\n\nSi un envío automático no puede salir por algún motivo (por ejemplo, el teléfono de la clienta está mal cargado), el turno va a aparecer en \"Recordatorios pendientes\" para que lo mandes vos a mano."
+        "text": "\"Confirmación\" es automática: se manda sola apenas cargás un turno nuevo.\n\n\"Recordatorio\" tiene dos caminos: si activaste \"Recordatorio automático\" en Perfil, la app lo manda sola un día antes, a la hora que elegiste, a cada cliente con turno confirmado; y además lo podés mandar vos a mano en cualquier momento tocando el ícono de WhatsApp en una tarjeta de turno.\n\nEl texto de los mensajes es fijo (no se puede editar) — incluye el nombre del cliente, tu salón, la fecha, la hora, el servicio y tu teléfono de contacto.\n\nSi un envío automático no puede salir por algún motivo (por ejemplo, el teléfono del cliente está mal cargado), el turno va a aparecer en \"Recordatorios pendientes\" para que lo mandes vos a mano."
       },
       "myProfile": {
         "title": "Mi Perfil",

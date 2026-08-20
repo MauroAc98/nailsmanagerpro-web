@@ -59,7 +59,7 @@ function FitText({
 interface Props {
   titulo:         string;
   // Nombre del estudio (User.name / "Nombre del estudio" en perfil) — línea
-  // de marca del header. Pedido de vuelta por feedback de clientas
+  // de marca del header. Pedido de vuelta por feedback de clientes
   // (2026-08-17): les gustaba ver el nombre ahí.
   nombreEstudio?: string | null;
   // Teléfono del estudio (User.telefono, mismo dato que Perfil → Datos
@@ -109,7 +109,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 
   // Zonas de blur local detrás de título y footer — alto aproximado, no
   // medido en vivo. Header vuelve a tener chip+nombre+caption+fecha (pedido
-  // de vuelta por feedback de clientas 2026-08-17: "les gustó"), así que la
+  // de vuelta por feedback de clientes 2026-08-17: "les gustó"), así que la
   // zona de blur creció con él respecto a la versión de solo dos líneas.
   const tituloZonaAlto = Math.round(canvasHeight * 0.15);
   const footerZonaAlto = Math.round(canvasHeight * 0.095);
@@ -194,7 +194,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           }}>
             {/* Header — chip de fecha + nombre en serif + caption ("TURNOS
                 DISPONIBLES") + fecha/rango, vuelto a como estaba (feedback
-                de clientas 2026-08-17: les gustaba este estilo). Colores
+                de clientes 2026-08-17: les gustaba este estilo). Colores
                 fijos (no colors.* / var(--ag-*)): esta imagen es un export
                 fijo que no debe cambiar según el tema claro/oscuro activo
                 del editor al momento de generarla, y html-to-image además

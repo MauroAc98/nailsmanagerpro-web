@@ -17,7 +17,7 @@
     "subtitle": "Turnos finalizados a los que todavía les falta cargar el precio",
     "loading": "Cargando...",
     "emptyState": "No tenés turnos pendientes de cobro",
-    "searchPlaceholder": "Buscar por nombre de clienta...",
+    "searchPlaceholder": "Buscar por nombre de cliente...",
     "noResults": "No se encontraron turnos",
     "resultCount": "{count, plural, one {# turno} other {# turnos}}",
     "loadPriceButton": "Cargar precio",
@@ -113,7 +113,7 @@
     "statsOfMonth": "Estadísticas de {mes}",
     "appointmentsCompleted": "{count, plural, one {# turno completado} other {# turnos completados}}",
     "topServiceLabel": "servicio top",
-    "newClientsThisMonth": "{count, plural, one {# clienta nueva este mes} other {# clientas nuevas este mes}}"
+    "newClientsThisMonth": "{count, plural, one {# cliente nuevo este mes} other {# clientes nuevos este mes}}"
   },
   "RecordatoriosPendientesPage": {
     "back": "Volver",
