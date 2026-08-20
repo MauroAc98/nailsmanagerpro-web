@@ -10,6 +10,8 @@ const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 interface Props {
   senaMonto: string;
   setSenaMonto: (v: string) => void;
+  confirmacionAutomatica: boolean;
+  setConfirmacionAutomatica: (v: boolean) => void;
   recordatorioAutomatico: boolean;
   setRecordatorioAutomatico: (v: boolean) => void;
   horaRecordatorio: string;
@@ -38,7 +40,8 @@ function IconMoney() {
 }
 
 export function SheetNegocio({
-  senaMonto, setSenaMonto, recordatorioAutomatico, setRecordatorioAutomatico,
+  senaMonto, setSenaMonto, confirmacionAutomatica, setConfirmacionAutomatica,
+  recordatorioAutomatico, setRecordatorioAutomatico,
   horaRecordatorio, setHoraRecordatorio, onGuardar, guardando, error, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
@@ -64,6 +67,19 @@ export function SheetNegocio({
       {error && (
         <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
       )}
+
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+      }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('autoConfirmation')}</p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
+            {t('autoConfirmationSubtitle')}
+          </p>
+        </div>
+        <PillToggle value={confirmacionAutomatica} onChange={setConfirmacionAutomatica} />
+      </div>
 
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,

@@ -6,6 +6,8 @@
   "SheetNegocio": {
     "title": "Mi negocio",
     "depositAmount": "Monto de seña ($)",
+    "autoConfirmation": "Confirmación automática",
+    "autoConfirmationSubtitle": "Enviá un WhatsApp apenas se agenda el turno",
     "autoReminder": "Recordatorio automático",
     "autoReminderSubtitle": "Enviá un WhatsApp la noche anterior a tus clientes",
     "saving": "Guardando...",
@@ -36,6 +38,7 @@
     "address": "Dirección",
     "sectionBusiness": "Mi negocio",
     "depositAmount": "Monto de seña",
+    "autoConfirmation": "Confirmación automática",
     "autoReminder": "Recordatorio automático",
     "yes": "Sí",
     "no": "No",

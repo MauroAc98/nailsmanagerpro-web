@@ -12,6 +12,7 @@ export interface User {
   telefono: string | null;
   direccion: string | null;
   is_exempt: boolean;
+  confirmacion_automatica: boolean;
   recordatorio_automatico: boolean;
   hora_recordatorio: string;
   sena_monto: number | null;

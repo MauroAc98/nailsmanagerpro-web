@@ -6,6 +6,8 @@
   "SheetNegocio": {
     "title": "Meu negócio",
     "depositAmount": "Valor do sinal ($)",
+    "autoConfirmation": "Confirmação automática",
+    "autoConfirmationSubtitle": "Envie um WhatsApp assim que o agendamento for criado",
     "autoReminder": "Lembrete automático",
     "autoReminderSubtitle": "Envie um WhatsApp na noite anterior para suas clientes",
     "saving": "Salvando...",
@@ -36,6 +38,7 @@
     "address": "Endereço",
     "sectionBusiness": "Meu negócio",
     "depositAmount": "Valor do sinal",
+    "autoConfirmation": "Confirmação automática",
     "autoReminder": "Lembrete automático",
     "yes": "Sim",
     "no": "Não",

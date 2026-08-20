@@ -112,6 +112,7 @@ export default function PerfilPage() {
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
   const [senaMonto, setSenaMonto] = useState('');
+  const [confirmacionAutomatica, setConfirmacionAutomatica] = useState(true);
   const [recordatorioAutomatico, setRecordatorioAutomatico] = useState(false);
   const [horaRecordatorio, setHoraRecordatorio] = useState('20:00');
   const [password, setPassword] = useState('');
@@ -132,6 +133,7 @@ export default function PerfilPage() {
     setTelefono(user.telefono ?? '');
     setDireccion(user.direccion ?? '');
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
+    setConfirmacionAutomatica(user.confirmacion_automatica ?? true);
     setRecordatorioAutomatico(user.recordatorio_automatico ?? false);
     setHoraRecordatorio(user.hora_recordatorio ?? '20:00');
     setPassword('');
@@ -179,6 +181,7 @@ export default function PerfilPage() {
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
           sena_monto: senaMontoParseada,
+          confirmacion_automatica: confirmacionAutomatica,
           recordatorio_automatico: recordatorioAutomatico,
           hora_recordatorio: horaRecordatorio,
         });
@@ -234,6 +237,8 @@ export default function PerfilPage() {
           <SheetNegocio
             senaMonto={senaMonto}
             setSenaMonto={setSenaMonto}
+            confirmacionAutomatica={confirmacionAutomatica}
+            setConfirmacionAutomatica={setConfirmacionAutomatica}
             recordatorioAutomatico={recordatorioAutomatico}
             setRecordatorioAutomatico={setRecordatorioAutomatico}
             horaRecordatorio={horaRecordatorio}
@@ -279,6 +284,7 @@ export default function PerfilPage() {
 
         <CardSeccion titulo={t('sectionBusiness')} icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>
           <FilaDato label={t('depositAmount')} valor={user.sena_monto != null ? `$${user.sena_monto}` : null} />
+          <FilaDato label={t('autoConfirmation')} valor={user.confirmacion_automatica ? t('yes') : t('no')} />
           <FilaDato label={t('autoReminder')} valor={user.recordatorio_automatico ? t('yes') : t('no')} />
           {user.recordatorio_automatico && (
             <FilaDato label={t('reminderTime')} valor={user.hora_recordatorio} />
