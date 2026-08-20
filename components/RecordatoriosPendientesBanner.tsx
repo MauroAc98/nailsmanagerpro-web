@@ -9,9 +9,12 @@ import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendien
 // Solo se renderiza dentro de app/(app)/agenda/page.tsx, que ya envuelve el
 // árbol en className="agenda-dark"/"agenda-light" — mismo criterio que
 // PendientesDeCobroBanner (ver ese archivo). Oculto salvo que haya turnos
-// de mañana sin recordatorio automático. No dispara su propio fetch: lee el
-// mismo store que ya alimenta el ciclo de vida de la app
-// (app/(app)/layout.tsx), que fetchea al montar y al volver a primer plano.
+// que requieran atención manual: confirmación o recordatorio automático
+// fallido, o (en cuentas de envío manual) recordatorio de mañana todavía
+// sin gestionar — ver TurnoController::recordatoriosPendientes. No dispara
+// su propio fetch: lee el mismo store que ya alimenta el ciclo de vida de
+// la app (app/(app)/layout.tsx), que fetchea al montar y al volver a
+// primer plano.
 export function RecordatoriosPendientesBanner() {
   const t = useTranslations('common.RecordatoriosPendientesBanner');
   const router = useRouter();

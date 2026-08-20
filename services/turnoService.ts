@@ -25,6 +25,19 @@ export interface Turno {
   // eager-load de esa relación (a diferencia de `cliente`/`servicios`). Para
   // mostrar nombre/color hay que resolverlo contra useProfesionalStore.
   profesional_id?: number | null;
+  // Status del último mensaje de WhatsApp tipo 'confirmacion' para este
+  // turno (ver TurnoController::index/show) — null cuando todavía no existe
+  // ninguno (ej. WhatsApp auto-send está apagado para la cuenta). No confundir
+  // con los recordatorios, que son un flujo aparte (useRecordatoriosPendientesStore).
+  // 'manual' significa que la profesional lo mandó a mano por wa.me después
+  // de que el envío automático falló (ver marcarConfirmacionManual).
+  confirmacion_whatsapp_status?: 'pending' | 'delivered' | 'read' | 'failed' | 'manual' | null;
+  // Status del mensaje de WhatsApp tipo 'recordatorio' para este turno —
+  // solo viene poblado en la respuesta de /turnos/recordatorios-pendientes
+  // (ver TurnoController::recordatoriosPendientes), null cuando todavía no
+  // existe ninguno. 'manual' significa que la profesional lo mandó a mano
+  // por wa.me (ver marcarRecordatorioManual/marcarConfirmacionManual).
+  recordatorio_whatsapp_status?: 'pending' | 'delivered' | 'read' | 'failed' | 'manual' | null;
 }
 
 export interface TurnoMes {
@@ -134,6 +147,10 @@ export const turnoService = {
 
   marcarRecordatorioManual: async (turnoId: number): Promise<void> => {
     await api.post(`/turnos/${turnoId}/recordatorio-manual`);
+  },
+
+  marcarConfirmacionManual: async (turnoId: number): Promise<void> => {
+    await api.post(`/turnos/${turnoId}/confirmacion-manual`);
   },
 
   actualizarPrecios: async (

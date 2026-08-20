@@ -117,14 +117,17 @@
   },
   "RecordatoriosPendientesPage": {
     "back": "Volver",
-    "title": "Recordatorios pendientes",
-    "subtitle": "TURNOS DE MAÑANA",
-    "loading": "Cargando turnos de mañana...",
-    "loadError": "No se pudieron cargar los turnos de mañana. Volvé a intentar más tarde.",
-    "bannerCount": "{count, plural, one {# turno de mañana sin aviso enviado} other {# turnos de mañana sin aviso enviado}}",
-    "empty": "No tenés turnos confirmados para mañana.",
+    "title": "Mensajes pendientes",
+    "subtitle": "REQUIEREN ATENCIÓN",
+    "loading": "Cargando mensajes pendientes...",
+    "loadError": "No se pudieron cargar los mensajes pendientes. Volvé a intentar más tarde.",
+    "bannerCount": "{count, plural, one {# turno requiere atención} other {# turnos requieren atención}}",
+    "empty": "No hay confirmaciones ni recordatorios pendientes de gestionar.",
     "emptyTitle": "¡Todo enviado!",
     "sendButton": "Enviar recordatorio",
+    "sendConfirmacionButton": "Reenviar confirmación",
+    "tipoConfirmacion": "Confirmación",
+    "tipoRecordatorio": "Recordatorio",
     "marcarEnviadoError": "No se pudo guardar. Volvé a marcarlo como enviado en un rato."
   }
 }

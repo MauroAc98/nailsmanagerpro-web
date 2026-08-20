@@ -62,10 +62,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { checkSubscription } = useAuth();
 
   useEffect(() => {
-    // checkSubscription reconcilia whatsapp_requiere_envio_manual contra el
-    // backend (puede haber cambiado por un cron mientras la sesión seguía
-    // abierta) — hay que esperarlo antes de fetchRecordatoriosPendientes,
-    // que decide si pedir algo leyendo ese mismo flag desde el store.
+    // fetchRecordatoriosPendientes ya no depende de whatsapp_requiere_envio_manual
+    // (el endpoint cubre cualquier cuenta — ver useRecordatoriosPendientesStore),
+    // pero se mantiene después de checkSubscription para no adelantar el
+    // fetch a una sesión cuya suscripción todavía no se terminó de validar.
     const refrescar = async () => {
       fetchPendientes();
       await checkSubscription();
