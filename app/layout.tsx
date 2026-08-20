@@ -32,7 +32,7 @@ const agendaSerif = Playfair_Display({
 // nada observable todavía — se hace cuando pt-BR/en se habiliten de verdad.
 export const metadata: Metadata = {
   title: "Nailsmanagerpro",
-  description: "Gestión de turnos para profesionales de uñas",
+  description: "Gestión de turnos, clientes y recordatorios para salones de belleza y estética",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
