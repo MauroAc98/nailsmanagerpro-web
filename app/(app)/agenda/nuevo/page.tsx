@@ -19,8 +19,7 @@ import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
 import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
 import { useAuth } from '@/hooks/useAuth';
-import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
-import { whatsappHelper } from '@/lib/whatsappHelper';
+import { whatsappHelper, PLANTILLA_CONFIRMACION_DEFAULT } from '@/lib/whatsappHelper';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -68,7 +67,6 @@ function NuevoTurnoContent() {
   const { slots, fetchSlots }                = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { requiereEnvioManualWhatsapp }      = useAuth();
-  const { obtenerContenido }                 = useWhatsappTemplates();
 
   const [selectedCliente,      setSelectedCliente]      = useState<Cliente | null>(null);
   const [selectedServicioIds,  setSelectedServicioIds]  = useState<number[]>([]);
@@ -240,7 +238,7 @@ function NuevoTurnoContent() {
               servicio:        turnoCreado.servicios,
               fecha,
               hora:            `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`,
-              plantilla:       obtenerContenido('confirmacion'),
+              plantilla:       PLANTILLA_CONFIRMACION_DEFAULT,
               profesional:     turnoCreado.profesional,
             })}
             target="_blank"

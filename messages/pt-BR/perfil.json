@@ -28,24 +28,6 @@
     "saving": "Salvando...",
     "save": "Salvar alterações"
   },
-  "SheetMensajeWhatsapp": {
-    "title": "Mensagens de WhatsApp",
-    "reminder": "Lembrete",
-    "confirmation": "Confirmação",
-    "reminderLower": "lembrete",
-    "confirmationLower": "confirmação",
-    "availableVariables": "Variáveis disponíveis",
-    "preview": "Pré-visualização",
-    "reset": "Redefinir",
-    "saving": "Salvando...",
-    "save": "Salvar",
-    "resetConfirm": "Redefinir a mensagem de {label} para o padrão?",
-    "resetConfirmButton": "Redefinir",
-    "emptyMessage": "A mensagem não pode estar vazia.",
-    "saved": "Mensagem salva",
-    "saveError": "Não foi possível salvar a mensagem.",
-    "retry": "Tentar novamente"
-  },
   "PerfilPage": {
     "title": "Perfil",
     "sectionPersonalData": "Dados pessoais",
@@ -65,7 +47,6 @@
     "active": "Ativa",
     "expiresOn": "Vence em",
     "daysLeft": "Dias restantes",
-    "whatsappMessages": "Mensagens de WhatsApp",
     "changePassword": "Alterar senha",
     "logout": "Sair",
     "logoutConfirm": "Tem certeza que quer sair?",

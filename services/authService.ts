@@ -16,12 +16,9 @@ export interface User {
   hora_recordatorio: string;
   sena_monto: number | null;
   debe_cambiar_password?: boolean;
-  evolution_instance_name: string | null;
-  whatsapp_estado: 'conectado' | 'desconectado';
-  // true por cualquiera de estas razones: (a) no hay instancia de WhatsApp
-  // vinculada, (b) hay instancia pero con desconexión terminal reciente sin
-  // reconexión posterior, o (c) el ratio de mensajes fallidos es alto —
-  // aunque whatsapp_estado diga 'conectado'.
+  // true por cualquiera de estas razones: (a) la profesional no tiene
+  // teléfono de contacto cargado, o (b) el ratio de mensajes de Cloud API
+  // fallidos es alto en los últimos 30 días.
   whatsapp_requiere_envio_manual: boolean;
   // null = sin preferencia guardada en el backend (usuarios creados antes
   // de la Fase 0, o campo todavía no desplegado) → resolveLocale() cae a
@@ -54,20 +51,6 @@ export interface SupportInfo {
   whatsapp: string;
   email: string;
   subscription_warning_days: number;
-}
-
-// ─────────────────────────────────────────────
-// Plantillas de WhatsApp
-// ─────────────────────────────────────────────
-export type TipoPlantilla = 'recordatorio' | 'confirmacion';
-
-export interface WhatsappTemplate {
-  id: number;
-  user_id: number;
-  tipo: TipoPlantilla;
-  contenido: string;
-  created_at: string;
-  updated_at: string;
 }
 
 // ─────────────────────────────────────────────
@@ -205,21 +188,6 @@ export const authService = {
     } catch {
       return null;
     }
-  },
-
-  whatsappTemplates: {
-    obtener: async (): Promise<WhatsappTemplate[]> => {
-      const response = await api.get<WhatsappTemplate[]>('/whatsapp-templates');
-      return response.data;
-    },
-    actualizar: async (tipo: TipoPlantilla, contenido: string): Promise<WhatsappTemplate> => {
-      const response = await api.put<WhatsappTemplate>(`/whatsapp-templates/${tipo}`, { contenido });
-      return response.data;
-    },
-    resetear: async (tipo: TipoPlantilla): Promise<WhatsappTemplate> => {
-      const response = await api.post<WhatsappTemplate>(`/whatsapp-templates/${tipo}/resetear`);
-      return response.data;
-    },
   },
 
   // ─────────────────────────────────────────────

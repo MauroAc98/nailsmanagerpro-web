@@ -1,5 +1,13 @@
 import { phoneUtils } from '@/lib/phoneUtils';
 
+// Texto para el fallback manual (wa.me) — WhatsApp Cloud API manda un texto
+// fijo aprobado por Meta, no personalizable por profesional; este es el
+// mismo texto que se usaba como default antes de sacar la edición.
+export const PLANTILLA_RECORDATORIO_DEFAULT =
+  'Hola {nombre} 💅 Te recuerdo tu turno el {fecha} a las {hora} para {servicios}. ¡Te espero!';
+export const PLANTILLA_CONFIRMACION_DEFAULT =
+  'Hola {nombre} 💅 Tu turno de {servicios} está confirmado para el {fecha} a las {hora}. ¡Te espero!';
+
 interface MessageData {
   clienteNombre:   string;
   clienteApellido: string;

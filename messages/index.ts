@@ -7,7 +7,6 @@ import esAgenda from './es/agenda.json';
 import esClientes from './es/clientes.json';
 import esConfiguracion from './es/configuracion.json';
 import esPerfil from './es/perfil.json';
-import esWhatsapp from './es/whatsapp.json';
 import esHistoria from './es/historia.json';
 import esEstadisticas from './es/estadisticas.json';
 import esLegal from './es/legal.json';
@@ -24,7 +23,6 @@ export const es = {
   clientes: esClientes,
   configuracion: esConfiguracion,
   perfil: esPerfil,
-  whatsapp: esWhatsapp,
   historia: esHistoria,
   estadisticas: esEstadisticas,
   legal: esLegal,

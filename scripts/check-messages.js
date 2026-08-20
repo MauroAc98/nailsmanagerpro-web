@@ -28,7 +28,6 @@ const NAMESPACES = [
   "clientes",
   "configuracion",
   "perfil",
-  "whatsapp",
   "historia",
   "estadisticas",
   "legal",

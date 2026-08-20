@@ -13,8 +13,7 @@ import { turnoService, Turno, TurnoMes } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
-import { useWhatsappTemplates } from '@/hooks/useWhatsappTemplates';
-import { whatsappHelper } from '@/lib/whatsappHelper';
+import { whatsappHelper, PLANTILLA_RECORDATORIO_DEFAULT } from '@/lib/whatsappHelper';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
 import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner } from '@/components/RecordatoriosPendientesBanner';
@@ -1065,7 +1064,6 @@ export default function AgendaPage() {
 
   const { servicios, fetchServicios } = useServiciosStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
-  const { obtenerContenido } = useWhatsappTemplates();
 
   const [textoBusqueda,   setTextoBusqueda]   = useState('');
   const [servicioFiltro,  setServicioFiltro]  = useState<number | null>(null);
@@ -1407,7 +1405,7 @@ export default function AgendaPage() {
                   onCancel={() => handleCancelar(turno.id)}
                   onFinalizar={cursando ? () => handleFinalizar(turno) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
-                  plantillaWhatsapp={obtenerContenido('recordatorio')}
+                  plantillaWhatsapp={PLANTILLA_RECORDATORIO_DEFAULT}
                   profesionalLabel={profesionalLabel}
                   profesionalNombreWhatsapp={profesionalNombreWhatsapp}
                 />

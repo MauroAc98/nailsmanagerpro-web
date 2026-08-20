@@ -7,7 +7,6 @@
     "servicios": "Servicios",
     "slots": "Horarios Disponibles",
     "profesionales": "Profesionales",
-    "whatsapp": "Vincular WhatsApp",
     "gastos": "Gastos",
     "estadisticas": "Estadísticas",
     "apariencia": "Apariencia",
@@ -234,12 +233,12 @@
         "text": "Se abre desde el botón COMPARTIR, arriba a la derecha en Agenda.\n\n- Período: elegí Día, Semana o Mes. En Mes además elegís primera quincena (1 al 15) o segunda (16 al fin).\n- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — su nombre queda visible en la imagen generada (salvo que sea la dueña y coincida con el nombre del estudio, ya visible arriba: ahí no se repite).\n- Fondo: botón \"Fondo\" para subir una foto de fondo para la imagen. Al elegirla, te pregunta si la querés guardar como fondo fijo (se reusa sola la próxima vez que generes una historia) o usarla solo por esta vez. Si guardaste una, aparece un link \"Quitar fondo fijo guardado\" para sacarla cuando quieras.\n- Texto libre: escribí un texto y tocá + para agregarlo a la imagen. Podés ponerle emojis, arrastrarlo a la posición que quieras dentro de la imagen, y agrandarlo o achicarlo con los botones A- / A+ (o el tirador en la esquina, tocando y arrastrando).\n- Editar qué se muestra: tocá un horario suelto en la lista de abajo para sacarlo de la imagen, o el ícono del ojo en un día para ocultarlo completo.\n- Al final: \"Guardar\" descarga la imagen a tu dispositivo, \"Compartir\" abre el menú para mandarla directo (por ejemplo a Instagram o WhatsApp)."
       },
       "whatsappLink": {
-        "title": "Vincular WhatsApp",
-        "text": "Configuración → Vincular WhatsApp.\n\nEscaneá el código QR con el WhatsApp del teléfono que uses para el negocio: en ese teléfono, Configuración de WhatsApp → Dispositivos vinculados → Vincular un dispositivo, y apuntá la cámara al código.\n\nUna vez conectado, los mensajes de confirmación se mandan solos cada vez que cargás un turno nuevo, sin que tengas que escribir nada. Podés desvincularlo en cualquier momento desde la misma pantalla.\n\nSi se desconecta solo (por ejemplo, cerraste sesión de WhatsApp Web en el teléfono, o pasó mucho tiempo sin uso), esta pantalla te vuelve a mostrar el código QR — repetí el mismo paso para reconectarlo."
+        "title": "WhatsApp automático",
+        "text": "Los mensajes de confirmación y recordatorio se mandan solos por WhatsApp — no hay nada que vincular ni ningún código QR que escanear, funciona desde el primer turno que cargues.\n\nLo único que conviene completar es tu número de contacto en Perfil: aparece al final de cada mensaje para que la clienta pueda escribirte si tiene alguna duda."
       },
       "whatsappMessages": {
         "title": "Mensajes de WhatsApp",
-        "text": "Perfil → Mensajes de WhatsApp.\n\nHay dos plantillas editables: \"Recordatorio\" y \"Confirmación\". Cada una se manda de una forma distinta:\n\n- \"Confirmación\" es automática: se manda sola apenas cargás un turno nuevo, si tenés WhatsApp vinculado.\n- \"Recordatorio\" tiene dos caminos: lo podés mandar vos a mano en cualquier momento, tocando el ícono de WhatsApp en una tarjeta de turno; y además, si activaste \"Recordatorio automático\" en Perfil, la app lo manda sola todos los días a la hora que elegiste, a cada cliente con turno confirmado para el día siguiente — sin que tengas que hacer nada.\n\nEscribí el texto que quieras y usá las variables que te ofrece el editor (como '{nombre}', '{servicios}', '{fecha}', '{hora}') — se completan solas con los datos de cada turno al mandarse el mensaje."
+        "text": "\"Confirmación\" es automática: se manda sola apenas cargás un turno nuevo.\n\n\"Recordatorio\" tiene dos caminos: si activaste \"Recordatorio automático\" en Perfil, la app lo manda sola un día antes, a la hora que elegiste, a cada clienta con turno confirmado; y además lo podés mandar vos a mano en cualquier momento tocando el ícono de WhatsApp en una tarjeta de turno.\n\nEl texto de los mensajes es fijo (no se puede editar) — incluye el nombre de la clienta, tu salón, la fecha, la hora, el servicio y tu teléfono de contacto.\n\nSi un envío automático no puede salir por algún motivo (por ejemplo, el teléfono de la clienta está mal cargado), el turno va a aparecer en \"Recordatorios pendientes\" para que lo mandes vos a mano."
       },
       "myProfile": {
         "title": "Mi Perfil",

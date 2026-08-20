@@ -7,7 +7,6 @@
     "servicios": "Serviços",
     "slots": "Horários Disponíveis",
     "profesionales": "Profissionais",
-    "whatsapp": "Vincular WhatsApp",
     "gastos": "Despesas",
     "estadisticas": "Estatísticas",
     "apariencia": "Aparência",
@@ -234,12 +233,12 @@
         "text": "Abre a partir do botão COMPARTILHAR, no canto superior direito da Agenda.\n\n- Período: escolha Dia, Semana ou Mês. Em Mês você também escolhe a primeira quinzena (1 a 15) ou a segunda (16 ao fim).\n- Profissional: se você trabalha com mais de uma, escolha de quem mostrar a disponibilidade — o nome dela fica visível na imagem gerada (a menos que seja a dona e coincida com o nome do salão, já visível acima: nesse caso não se repete).\n- Fundo: botão \"Fundo\" para enviar uma foto de fundo para a imagem. Ao escolhê-la, o app pergunta se você quer salvá-la como fundo fixo (é reutilizada sozinha na próxima vez que você gerar um story) ou usá-la só desta vez. Se você salvou uma, aparece um link \"Remover fundo fixo salvo\" para tirá-la quando quiser.\n- Texto livre: escreva um texto e toque em + para adicioná-lo à imagem. Você pode colocar emojis, arrastá-lo para a posição que quiser dentro da imagem, e aumentar ou diminuir com os botões A- / A+ (ou a alça no canto, tocando e arrastando).\n- Editar o que é mostrado: toque em um horário avulso na lista abaixo para tirá-lo da imagem, ou no ícone do olho em um dia para ocultá-lo por completo.\n- No final: \"Salvar\" baixa a imagem no seu dispositivo, \"Compartilhar\" abre o menu para enviá-la direto (por exemplo para o Instagram ou WhatsApp)."
       },
       "whatsappLink": {
-        "title": "Vincular WhatsApp",
-        "text": "Configurações → Vincular WhatsApp.\n\nEscaneie o código QR com o WhatsApp do celular que você usa para o negócio: nesse celular, vá em Configurações do WhatsApp → Aparelhos conectados → Conectar um aparelho, e aponte a câmera para o código.\n\nDepois de conectado, as mensagens de confirmação são enviadas sozinhas toda vez que você cria um novo agendamento, sem precisar escrever nada. Você pode desvincular a qualquer momento na mesma tela.\n\nSe ele se desconectar sozinho (por exemplo, você saiu do WhatsApp Web no celular, ou ficou muito tempo sem uso), esta tela volta a mostrar o código QR — repita o mesmo passo para reconectar."
+        "title": "WhatsApp automático",
+        "text": "As mensagens de confirmação e lembrete são enviadas sozinhas por WhatsApp — não há nada para vincular nem nenhum código QR para escanear, funciona desde o primeiro agendamento que você criar.\n\nO único que vale a pena preencher é o seu número de contato em Perfil: ele aparece no final de cada mensagem para que a cliente possa te escrever se tiver alguma dúvida."
       },
       "whatsappMessages": {
         "title": "Mensagens de WhatsApp",
-        "text": "Perfil → Mensagens de WhatsApp.\n\nHá dois modelos editáveis: \"Lembrete\" e \"Confirmação\". Cada um é enviado de um jeito diferente:\n\n- \"Confirmação\" é automática: é enviada sozinha assim que você cria um novo agendamento, se você tiver o WhatsApp vinculado.\n- \"Lembrete\" tem dois caminhos: você pode enviá-lo manualmente a qualquer momento, tocando no ícone do WhatsApp em um cartão de agendamento; e além disso, se você ativou \"Lembrete automático\" no Perfil, o app o envia sozinho todos os dias no horário que você escolheu, para cada cliente com agendamento confirmado para o dia seguinte — sem que você precise fazer nada.\n\nEscreva o texto que quiser e use as variáveis que o editor oferece (como '{nombre}', '{servicios}', '{fecha}', '{hora}') — elas são preenchidas sozinhas com os dados de cada agendamento ao enviar a mensagem."
+        "text": "\"Confirmação\" é automática: é enviada sozinha assim que você cria um novo agendamento.\n\n\"Lembrete\" tem dois caminhos: se você ativou \"Lembrete automático\" no Perfil, o app o envia sozinho um dia antes, no horário que você escolheu, para cada cliente com agendamento confirmado; e além disso você pode enviá-lo manualmente a qualquer momento, tocando no ícone do WhatsApp em um cartão de agendamento.\n\nO texto das mensagens é fixo (não pode ser editado) — inclui o nome da cliente, o seu salão, a data, o horário, o serviço e o seu telefone de contato.\n\nSe um envio automático não puder ser feito por algum motivo (por exemplo, o telefone da cliente está cadastrado errado), o agendamento vai aparecer em \"Lembretes pendentes\" para você enviar manualmente."
       },
       "myProfile": {
         "title": "Meu Perfil",
