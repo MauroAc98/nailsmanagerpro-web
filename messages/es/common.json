@@ -26,10 +26,10 @@
     "retry": "Reintentar"
   },
   "RecordatoriosPendientesBanner": {
-    "title": "Mensajes pendientes",
-    "message": "{count, plural, one {# turno requiere atención} other {# turnos requieren atención}}",
+    "title": "Recordatorios pendientes",
+    "message": "{count, plural, one {# turno de mañana sin aviso enviado} other {# turnos de mañana sin aviso enviado}}",
     "view": "Mandar",
-    "checkError": "No pudimos verificar los mensajes pendientes",
+    "checkError": "No pudimos verificar los recordatorios pendientes",
     "retry": "Reintentar"
   },
   "WelcomeScreen": {

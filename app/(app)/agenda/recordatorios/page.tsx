@@ -8,8 +8,7 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { Turno } from '@/services/turnoService';
-import { whatsappHelper, PLANTILLA_RECORDATORIO_DEFAULT, PLANTILLA_CONFIRMACION_DEFAULT } from '@/lib/whatsappHelper';
+import { whatsappHelper, PLANTILLA_RECORDATORIO_DEFAULT } from '@/lib/whatsappHelper';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -22,20 +21,10 @@ function horaDeHora(fechaHora: string): string {
   return fechaHora.slice(11, 16); // "HH:MM"
 }
 
-// Un turno puede aparecer acá por dos motivos distintos (ver
-// TurnoController::recordatoriosPendientes): la confirmación automática
-// falló, o el recordatorio no está gestionado (falló, o todavía no existe
-// en una cuenta de envío manual). confirmacion_whatsapp_status='failed' es
-// la única señal inequívoca de "esto es un caso de confirmación" — todo lo
-// demás es el caso de recordatorio de siempre.
-function esCasoConfirmacion(turno: Turno): boolean {
-  return turno.confirmacion_whatsapp_status === 'failed';
-}
-
 export default function RecordatoriosPendientesPage() {
   const t = useTranslations('agenda.RecordatoriosPendientesPage');
 
-  const { turnos: turnosParaRecordar, loading, error, fetchRecordatoriosPendientes, marcarEnviado, marcarConfirmacionManual } = useRecordatoriosPendientesStore();
+  const { turnos: turnosParaRecordar, loading, error, fetchRecordatoriosPendientes, marcarEnviado } = useRecordatoriosPendientesStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   useEffect(() => {
@@ -130,12 +119,6 @@ export default function RecordatoriosPendientesPage() {
                 .map(s => s.nombre)
                 .join(' + ');
 
-              // Confirmación fallida → reenviar confirmación a mano.
-              // Cualquier otro caso (recordatorio fallido, o cuenta de
-              // envío manual sin recordatorio todavía) → flujo de
-              // recordatorio de siempre.
-              const esConfirmacion = esCasoConfirmacion(turno);
-
               return (
                 <article
                   key={turno.id}
@@ -153,12 +136,6 @@ export default function RecordatoriosPendientesPage() {
                         {horaDeHora(turno.fecha_hora)} · {nombresServicios}
                       </p>
                     </div>
-                    <span style={{
-                      flexShrink: 0, fontSize: 10, fontWeight: 700, color: colors.subtext,
-                      textTransform: 'uppercase', letterSpacing: 0.3, whiteSpace: 'nowrap',
-                    }}>
-                      {esConfirmacion ? t('tipoConfirmacion') : t('tipoRecordatorio')}
-                    </span>
                     {mostrarEtiquetaProfesional && profesional && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, maxWidth: 90 }}>
                         <span style={{
@@ -184,12 +161,12 @@ export default function RecordatoriosPendientesPage() {
                       servicio:        nombresServicios,
                       fecha:           fechaDeHora(turno.fecha_hora),
                       hora:            horaDeHora(turno.fecha_hora),
-                      plantilla:       esConfirmacion ? PLANTILLA_CONFIRMACION_DEFAULT : PLANTILLA_RECORDATORIO_DEFAULT,
+                      plantilla:       PLANTILLA_RECORDATORIO_DEFAULT,
                       profesional:     profesional?.nombre,
                     })}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => esConfirmacion ? marcarConfirmacionManual(turno.id) : marcarEnviado(turno.id)}
+                    onClick={() => marcarEnviado(turno.id)}
                     style={{
                       marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                       width: '100%', padding: '11px 0', borderRadius: 12,
@@ -198,7 +175,7 @@ export default function RecordatoriosPendientesPage() {
                     }}
                   >
                     <WhatsappGlyph size={16} />
-                    {esConfirmacion ? t('sendConfirmacionButton') : t('sendButton')}
+                    {t('sendButton')}
                   </a>
                 </article>
               );

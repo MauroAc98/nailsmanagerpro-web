@@ -117,17 +117,14 @@
   },
   "RecordatoriosPendientesPage": {
     "back": "Voltar",
-    "title": "Mensagens pendentes",
-    "subtitle": "PRECISAM DE ATENÇÃO",
-    "loading": "Carregando mensagens pendentes...",
-    "loadError": "Não foi possível carregar as mensagens pendentes. Tente novamente mais tarde.",
-    "bannerCount": "{count, plural, one {# agendamento precisa de atenção} other {# agendamentos precisam de atenção}}",
-    "empty": "Não há confirmações nem lembretes pendentes de gerenciar.",
+    "title": "Lembretes pendentes",
+    "subtitle": "AGENDAMENTOS DE AMANHÃ",
+    "loading": "Carregando agendamentos de amanhã...",
+    "loadError": "Não foi possível carregar os agendamentos de amanhã. Tente novamente mais tarde.",
+    "bannerCount": "{count, plural, one {# agendamento amanhã sem lembrete enviado} other {# agendamentos amanhã sem lembrete enviado}}",
+    "empty": "Você não tem agendamentos confirmados para amanhã.",
     "emptyTitle": "Tudo enviado!",
     "sendButton": "Enviar lembrete",
-    "sendConfirmacionButton": "Reenviar confirmação",
-    "tipoConfirmacion": "Confirmação",
-    "tipoRecordatorio": "Lembrete",
     "marcarEnviadoError": "Não foi possível salvar. Marque como enviado novamente daqui a pouco."
   }
 }

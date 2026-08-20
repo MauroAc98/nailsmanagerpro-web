@@ -26,10 +26,10 @@
     "retry": "Tentar novamente"
   },
   "RecordatoriosPendientesBanner": {
-    "title": "Mensagens pendentes",
-    "message": "{count, plural, one {# agendamento precisa de atenção} other {# agendamentos precisam de atenção}}",
+    "title": "Lembretes pendentes",
+    "message": "{count, plural, one {# agendamento amanhã sem lembrete automático} other {# agendamentos amanhã sem lembrete automático}}",
     "view": "Enviar",
-    "checkError": "Não foi possível verificar as mensagens pendentes",
+    "checkError": "Não foi possível verificar os lembretes pendentes",
     "retry": "Tentar novamente"
   },
   "WelcomeScreen": {
