@@ -54,6 +54,24 @@ export default function LegalPage() {
           </p>
         </section>
 
+        <section style={{ marginBottom: 28 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
+            {t('privacyTitle')}
+          </h2>
+          <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7, marginBottom: 12 }}>
+            {t('privacyCollectedText')}
+          </p>
+          <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7, marginBottom: 12 }}>
+            {t('privacyPurposeText')}
+          </p>
+          <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7, marginBottom: 12 }}>
+            {t('privacyThirdPartiesText')}
+          </p>
+          <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7 }}>
+            {t('privacyRetentionText')}
+          </p>
+        </section>
+
         <section>
           <h2 style={{ fontSize: 17, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
             {t('contactTitle')}
