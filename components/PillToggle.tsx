@@ -21,10 +21,14 @@ export default function PillToggle({ value, onChange, stopPropagation = false }:
         onChange(!value);
       }}
       style={{
-        width: 44, height: 26, borderRadius: 13,
+        width: 44, height: 26, borderRadius: 13, boxSizing: 'border-box',
         backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
+        // El track apagado usa el mismo color que el fondo de las filas que
+        // lo contienen (colors.surfaceSubtle) — sin este borde queda
+        // invisible en modo claro, solo se ve el puntito flotando.
+        border: `1px solid ${value ? withAlpha(colors.primary, '99') : colors.border}`,
         position: 'relative', cursor: 'pointer',
-        transition: 'background 0.2s', flexShrink: 0,
+        transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
       }}
     >
       <div style={{
