@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { colors } from '@/theme/colors';
 import { SheetInput } from './SheetInput';
 import PillToggle from '@/components/PillToggle';
+import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
+
+type TipoPreview = 'confirmacion' | 'recordatorio';
 
 interface Props {
   senaMonto: string;
@@ -16,10 +20,40 @@ interface Props {
   setRecordatorioAutomatico: (v: boolean) => void;
   horaRecordatorio: string;
   setHoraRecordatorio: (v: string) => void;
+  nombreNegocio: string;
+  telefonoContacto: string;
   onGuardar: () => void;
   guardando: boolean;
   error: string | null;
   onClose: () => void;
+}
+
+// Renderiza *texto* en negrita, igual que WhatsApp interpreta los asteriscos
+// — para que la vista previa se vea tal cual llega al chat real, no como
+// texto plano con asteriscos sueltos.
+function renderConNegritas(texto: string) {
+  return texto.split(/(\*[^*]+\*)/g).map((parte, i) =>
+    parte.startsWith('*') && parte.endsWith('*')
+      ? <strong key={i}>{parte.slice(1, -1)}</strong>
+      : <span key={i}>{parte}</span>
+  );
+}
+
+// Mismo texto fijo que arma WhatsappTemplate::mensajeLegible() en el backend
+// (NailsManagerProApi) — si ese texto cambia ahí, hay que actualizarlo acá
+// también, no hay una fuente única compartida entre frontend y backend.
+function textoPreview(tipo: TipoPreview, negocio: string, telefono: string): string {
+  const nombreCliente = 'Martina';
+  const fecha = '20/08';
+  const hora = '15:30';
+  const servicio = 'Manicura semipermanente';
+  const tel = telefono.trim() || '(agregá tu teléfono en Datos personales)';
+
+  const linea2 = tipo === 'confirmacion'
+    ? `✅ Turno confirmado en ${negocio}`
+    : `⏰ Recordatorio: tu turno es *mañana* en ${negocio}`;
+
+  return `Hola ${nombreCliente} ✨\n\n${linea2}\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n\n*¡Te esperamos!*\n\n📞 Ante cualquier duda, escribí al ${tel}. ¡Gracias!`;
 }
 
 function IconClose() {
@@ -42,9 +76,13 @@ function IconMoney() {
 export function SheetNegocio({
   senaMonto, setSenaMonto, confirmacionAutomatica, setConfirmacionAutomatica,
   recordatorioAutomatico, setRecordatorioAutomatico,
-  horaRecordatorio, setHoraRecordatorio, onGuardar, guardando, error, onClose,
+  horaRecordatorio, setHoraRecordatorio, nombreNegocio, telefonoContacto,
+  onGuardar, guardando, error, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
+  const [previewAbierto, setPreviewAbierto] = useState(false);
+  const [tipoPreview, setTipoPreview] = useState<TipoPreview>('confirmacion');
+
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -109,6 +147,54 @@ export function SheetNegocio({
               {h}
             </button>
           ))}
+        </div>
+      )}
+
+      <button
+        onClick={() => setPreviewAbierto(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: 'transparent', border: `1px solid ${colors.border}`, borderRadius: 12,
+          padding: '12px 16px', color: colors.text, fontSize: 14, fontWeight: 600,
+          cursor: 'pointer', marginBottom: previewAbierto ? 12 : 16,
+        }}
+      >
+        <WhatsappGlyph size={16} color={colors.success} />
+        {previewAbierto ? t('previewHide') : t('previewShow')}
+      </button>
+
+      {previewAbierto && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            {(['confirmacion', 'recordatorio'] as const).map(tipo => (
+              <button
+                key={tipo}
+                onClick={() => setTipoPreview(tipo)}
+                style={{
+                  flex: 1, borderRadius: 20, padding: '8px 12px', fontSize: 13, fontWeight: 600,
+                  border: 'none', cursor: 'pointer',
+                  backgroundColor: tipoPreview === tipo ? colors.primary : colors.border,
+                  color: tipoPreview === tipo ? '#fff' : colors.subtext,
+                }}
+              >
+                {tipo === 'confirmacion' ? t('previewTabConfirmacion') : t('previewTabRecordatorio')}
+              </button>
+            ))}
+          </div>
+
+          <div style={{
+            backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`,
+            borderRadius: 12, padding: '14px 16px',
+          }}>
+            <p style={{
+              margin: 0, fontSize: 13.5, lineHeight: 1.6, color: colors.text, whiteSpace: 'pre-line',
+            }}>
+              {renderConNegritas(textoPreview(tipoPreview, nombreNegocio || t('previewSampleNegocio'), telefonoContacto))}
+            </p>
+          </div>
+          <p style={{ margin: '8px 2px 0', fontSize: 11.5, color: colors.subtext }}>
+            {t('previewDisclaimer')}
+          </p>
         </div>
       )}
 

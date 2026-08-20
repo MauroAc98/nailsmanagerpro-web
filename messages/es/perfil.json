@@ -10,6 +10,12 @@
     "autoConfirmationSubtitle": "Enviá un WhatsApp apenas se agenda el turno",
     "autoReminder": "Recordatorio automático",
     "autoReminderSubtitle": "Enviá un WhatsApp la noche anterior a tus clientes",
+    "previewShow": "Ver ejemplo de mensaje",
+    "previewHide": "Ocultar ejemplo de mensaje",
+    "previewTabConfirmacion": "Confirmación",
+    "previewTabRecordatorio": "Recordatorio",
+    "previewSampleNegocio": "Tu salón",
+    "previewDisclaimer": "El texto es fijo, no se puede editar — así lo va a recibir tu clienta.",
     "saving": "Guardando...",
     "save": "Guardar cambios"
   },

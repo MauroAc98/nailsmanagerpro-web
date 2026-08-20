@@ -10,6 +10,12 @@
     "autoConfirmationSubtitle": "Envie um WhatsApp assim que o agendamento for criado",
     "autoReminder": "Lembrete automático",
     "autoReminderSubtitle": "Envie um WhatsApp na noite anterior para suas clientes",
+    "previewShow": "Ver exemplo de mensagem",
+    "previewHide": "Ocultar exemplo de mensagem",
+    "previewTabConfirmacion": "Confirmação",
+    "previewTabRecordatorio": "Lembrete",
+    "previewSampleNegocio": "Seu salão",
+    "previewDisclaimer": "O texto é fixo, não pode ser editado — atualmente só existe em espanhol (ainda não há um modelo aprovado em português).",
     "saving": "Salvando...",
     "save": "Salvar alterações"
   },

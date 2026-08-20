@@ -243,6 +243,8 @@ export default function PerfilPage() {
             setRecordatorioAutomatico={setRecordatorioAutomatico}
             horaRecordatorio={horaRecordatorio}
             setHoraRecordatorio={setHoraRecordatorio}
+            nombreNegocio={user.name ?? ''}
+            telefonoContacto={user.telefono ?? ''}
             onGuardar={handleGuardar}
             guardando={guardando}
             error={senaMontoError}
