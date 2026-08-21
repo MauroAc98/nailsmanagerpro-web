@@ -1,13 +1,17 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { colors } from '@/theme/colors';
+import { colors, shadows } from '@/theme/colors';
+import { PAISES } from '@/lib/phoneUtils';
 
 interface Props {
   nombreEstudio: string;
   setNombreEstudio: (v: string) => void;
+  codigoPais: string;
+  setCodigoPais: (v: string) => void;
   telefono: string;
   setTelefono: (v: string) => void;
+  onPasteTelefono: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   direccion: string;
   setDireccion: (v: string) => void;
   onGuardar: () => void;
@@ -53,8 +57,15 @@ function IconClose() {
   );
 }
 
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
+  textTransform: 'uppercase', marginBottom: 8,
+};
+
 export function SheetDatosPersonales({
-  nombreEstudio, setNombreEstudio, telefono, setTelefono, direccion, setDireccion,
+  nombreEstudio, setNombreEstudio,
+  codigoPais, setCodigoPais, telefono, setTelefono, onPasteTelefono,
+  direccion, setDireccion,
   onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetDatosPersonales');
@@ -68,8 +79,63 @@ export function SheetDatosPersonales({
       </div>
 
       <SheetInput label={t('studioName')} icon={<IconStore />} value={nombreEstudio} onChange={setNombreEstudio} placeholder={t('studioName')} />
-      <SheetInput label={t('phone')} icon={<IconPhone />} value={telefono} onChange={setTelefono} placeholder={t('phone')} type="tel" inputMode="tel" />
-      <SheetInput label={t('address')} icon={<IconMapPin />} value={direccion} onChange={setDireccion} placeholder={t('address')} />
+
+      <div style={{ marginBottom: 16 }}>
+        <p style={sectionLabelStyle}>{t('phone')}</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select
+            value={codigoPais}
+            onChange={e => setCodigoPais(e.target.value)}
+            style={{
+              backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
+              boxShadow: shadows.card, borderRadius: 12,
+              padding: '12px 10px', fontSize: 14, color: colors.text,
+              outline: 'none', cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            {PAISES.map(p => (
+              <option key={p.codigo} value={p.codigo}>{p.label}</option>
+            ))}
+          </select>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, flex: 1,
+            backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
+            padding: '12px 14px',
+          }}>
+            <IconPhone />
+            <input
+              value={telefono}
+              onChange={e => setTelefono(e.target.value)}
+              onPaste={onPasteTelefono}
+              placeholder={t('phone')}
+              type="tel"
+              inputMode="tel"
+              style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: 15, color: colors.text, minWidth: 0 }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <p style={sectionLabelStyle}>{t('address')}</p>
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
+          padding: '12px 14px',
+        }}>
+          <div style={{ marginTop: 2 }}><IconMapPin /></div>
+          <textarea
+            value={direccion}
+            onChange={e => setDireccion(e.target.value)}
+            placeholder={t('address')}
+            rows={2}
+            style={{
+              flex: 1, border: 'none', background: 'none', outline: 'none', resize: 'vertical',
+              fontSize: 15, color: colors.text, minWidth: 0, minHeight: 44, fontFamily: 'inherit',
+            }}
+          />
+        </div>
+      </div>
 
       <button
         onClick={onGuardar}

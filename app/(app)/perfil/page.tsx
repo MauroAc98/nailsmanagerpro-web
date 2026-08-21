@@ -16,6 +16,7 @@ import { SheetPassword } from '@/components/perfil/SheetPassword';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_HEIGHT } from '@/constants/layout';
+import { phoneUtils } from '@/lib/phoneUtils';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -109,6 +110,7 @@ export default function PerfilPage() {
   const [guardando, setGuardando] = useState(false);
 
   const [nombreEstudio, setNombreEstudio] = useState('');
+  const [codigoPais, setCodigoPais] = useState('54');
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
   const [senaMonto, setSenaMonto] = useState('');
@@ -130,7 +132,9 @@ export default function PerfilPage() {
 
   const abrirSheet = (sheet: Exclude<Sheet, null>) => {
     setNombreEstudio(user.name ?? '');
-    setTelefono(user.telefono ?? '');
+    const { codigo, numero } = phoneUtils.splitCodigoPais(user.telefono ?? '');
+    setCodigoPais(codigo);
+    setTelefono(numero);
     setDireccion(user.direccion ?? '');
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
     setConfirmacionAutomatica(user.confirmacion_automatica ?? true);
@@ -152,6 +156,22 @@ export default function PerfilPage() {
       setSheetActivo(null);
       setPassword('');
       setPasswordConfirmation('');
+    }
+  };
+
+  const handlePasteTelefono = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pegado = e.clipboardData.getData('text');
+    const soloDigitos = phoneUtils.clean(pegado);
+    if (!soloDigitos) return;
+    e.preventDefault();
+
+    const traeCodigoPais = pegado.trim().startsWith('+') || soloDigitos.length > 11;
+    if (traeCodigoPais) {
+      const { codigo, numero } = phoneUtils.splitCodigoPais(soloDigitos);
+      setCodigoPais(codigo);
+      setTelefono(numero);
+    } else {
+      setTelefono(soloDigitos);
     }
   };
 
@@ -177,7 +197,11 @@ export default function PerfilPage() {
     setGuardando(true);
     try {
       if (sheetActivo === 'personal') {
-        await updatePerfil({ name: nombreEstudio, telefono, direccion });
+        await updatePerfil({
+          name: nombreEstudio,
+          telefono: telefono.trim() ? `+${codigoPais}${telefono.trim()}` : '',
+          direccion,
+        });
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
           sena_monto: senaMontoParseada,
@@ -223,8 +247,11 @@ export default function PerfilPage() {
           <SheetDatosPersonales
             nombreEstudio={nombreEstudio}
             setNombreEstudio={setNombreEstudio}
+            codigoPais={codigoPais}
+            setCodigoPais={setCodigoPais}
             telefono={telefono}
             setTelefono={setTelefono}
+            onPasteTelefono={handlePasteTelefono}
             direccion={direccion}
             setDireccion={setDireccion}
             onGuardar={handleGuardar}

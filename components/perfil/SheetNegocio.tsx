@@ -6,6 +6,7 @@ import { colors } from '@/theme/colors';
 import { SheetInput } from './SheetInput';
 import PillToggle from '@/components/PillToggle';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
+import { phoneUtils } from '@/lib/phoneUtils';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 
@@ -55,7 +56,7 @@ function textoPreview(tipo: TipoPreview, negocio: string, telefono: string, dire
   const hora = '15:30';
   const servicio = 'Manicura semipermanente';
   const nombreProfesionalEjemplo = 'Fernanda';
-  const tel = telefono.trim() || '(agregá tu teléfono en Datos personales)';
+  const tel = telefono.trim() ? phoneUtils.formatDisplay(telefono) : '(agregá tu teléfono en Datos personales)';
   const dir = direccion.trim() || '(agregá tu dirección en Datos personales)';
 
   const linea2 = tipo === 'confirmacion'
