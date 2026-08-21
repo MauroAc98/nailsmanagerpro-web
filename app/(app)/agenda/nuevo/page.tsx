@@ -29,6 +29,12 @@ function formatFechaLarga(fecha: string): string {
   return formatFecha(d, 'diaSemanaFechaMes');
 }
 
+// Ignora acentos al comparar ("jose" matchea "José") — sin esto una
+// búsqueda sin tilde no encontraba clientes con nombres acentuados.
+function normalizarTexto(texto: string): string {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
 function formatHora12(hora24: string): string {
   const parts = hora24.split(':').map(Number);
   const h     = parts[0];
@@ -63,7 +69,7 @@ function NuevoTurnoContent() {
 
   const { crearTurno, turnos, fetchTurnos }  = useTurnoStore();
   const { servicios, fetchServicios }        = useServiciosStore();
-  const { clientes, fetchClientes }          = useClientesStore();
+  const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots }                = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { requiereEnvioManualWhatsapp }      = useAuth();
@@ -193,7 +199,7 @@ function NuevoTurnoContent() {
   };
 
   const clientesFiltrados = clientes.filter(c =>
-    c.activo && `${c.nombre} ${c.apellido}`.toLowerCase().includes(clienteBuscar.toLowerCase())
+    c.activo && normalizarTexto(`${c.nombre} ${c.apellido}`).includes(normalizarTexto(clienteBuscar))
   );
 
   return (
@@ -307,6 +313,30 @@ function NuevoTurnoContent() {
                   backgroundColor: 'transparent', color: colors.text,
                 }}
               />
+              {clientesLoading && clientes.length === 0 && (
+                <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
+                  {t('loadingClients')}
+                </p>
+              )}
+              {!clientesLoading && clientesError && clientes.length === 0 && (
+                <div style={{ padding: '14px', textAlign: 'center' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: 14, color: colors.dangerBorder }}>{clientesError}</p>
+                  <button
+                    onClick={() => fetchClientes()}
+                    style={{
+                      border: `1px solid ${colors.border}`, borderRadius: 10, padding: '6px 14px',
+                      background: 'transparent', color: colors.text, fontSize: 13, cursor: 'pointer',
+                    }}
+                  >
+                    {t('retry')}
+                  </button>
+                </div>
+              )}
+              {!clientesLoading && !clientesError && clientes.length > 0 && clientesFiltrados.length === 0 && (
+                <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
+                  {t('noClientsFound')}
+                </p>
+              )}
               {clientesFiltrados.map(c => (
                 <div
                   key={c.id}
