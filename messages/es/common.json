@@ -2,20 +2,20 @@
   "cargando": "Cargando...",
   "SubscriptionExpiredPage": {
     "title": "Tu suscripción venció",
-    "subtitle": "Para continuar usando Nailsmanagerpro necesitás renovar tu suscripción. Contactanos y te ayudamos.",
+    "subtitle": "Para continuar usando Turnetto necesitás renovar tu suscripción. Contactanos y te ayudamos.",
     "checking": "Verificando…",
     "recheck": "Volver a verificar",
     "stillExpired": "Tu suscripción sigue inactiva. Si ya la renovaste, escribinos y lo resolvemos.",
-    "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Nailsmanagerpro.",
+    "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Turnetto.",
     "renewWhatsapp": "Renovar por WhatsApp",
-    "emailSubject": "Renovar suscripción Nailsmanagerpro",
+    "emailSubject": "Renovar suscripción Turnetto",
     "sendEmail": "Enviar un email",
     "logout": "Cerrar sesión",
     "logoutConfirm": "¿Seguro que querés salir?",
     "logoutConfirmButton": "Salir"
   },
   "SubscriptionWarningBanner": {
-    "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Nailsmanagerpro.",
+    "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Turnetto.",
     "expiresToday": "Tu suscripción vence hoy",
     "expiresInDays": "Tu suscripción vence en {days, plural, one {# día} other {# días}}",
     "renew": "Renovar"

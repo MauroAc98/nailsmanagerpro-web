@@ -31,13 +31,13 @@ const agendaSerif = Playfair_Display({
 // Como SUPPORTED solo tiene 'es' hasta la Fase 11, ese trabajo no cambiaría
 // nada observable todavía — se hace cuando pt-BR/en se habiliten de verdad.
 export const metadata: Metadata = {
-  title: "Nailsmanagerpro",
+  title: "Turnetto",
   description: "Gestión de turnos, clientes y recordatorios para salones de belleza y estética",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Nailsmanagerpro",
+    title: "Turnetto",
   },
 };
 
@@ -129,7 +129,7 @@ export default function RootLayout({
         }}>
           <Image src="/icon-192.png" alt="" width={72} height={72} priority style={{ borderRadius: 18 }} />
           <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-strong)', margin: 0 }}>
-            Nailsmanagerpro es para celular
+            Turnetto es para celular
           </h1>
           {/* Gatea por ANCHO, no por dispositivo (ver globals.css) — un
               celular rotado a horizontal también dispara este aviso, porque

@@ -12,7 +12,7 @@ CURRENT_LINK="/var/www/pwa/current"
 SHARED_ENV="/var/www/pwa/shared/.env.production"
 PM2_APP="pwa"
 KEEP_RELEASES=2
-HEALTH_URL="https://app.nailsmanagerpro.com/"
+HEALTH_URL="https://app.turnetto.com/"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"

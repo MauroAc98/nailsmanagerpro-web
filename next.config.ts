@@ -10,7 +10,7 @@ const defaultRuntimeCaching = require("next-pwa/cache");
 // otro subdominio no desalinea silenciosamente esta regla ni la de
 // images.remotePatterns de abajo.
 const apiHostname = new URL(
-  process.env.NEXT_PUBLIC_API_URL ?? "https://api.nailsmanagerpro.com"
+  process.env.NEXT_PUBLIC_API_URL ?? "https://api.turnetto.com"
 ).hostname;
 
 const withPWA = require("next-pwa")({
@@ -20,7 +20,7 @@ const withPWA = require("next-pwa")({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     // El resto de next-pwa/cache trata cualquier GET cross-origin (o sea,
-    // cualquier llamada a la API en api.nailsmanagerpro.com, otro
+    // cualquier llamada a la API en api.turnetto.com, otro
     // subdominio) como "cross-origin": NetworkFirst con hasta 1h de caché
     // si la red está inestable. Para /auth/* y /support-info eso puede
     // dejar a alguien con la sesión/suscripción vencida viendo el estado

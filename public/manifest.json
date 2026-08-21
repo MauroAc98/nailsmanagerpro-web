@@ -1,6 +1,6 @@
 {
-  "name": "Nailsmanagerpro",
-  "short_name": "Nailsmanagerpro",
+  "name": "Turnetto",
+  "short_name": "Turnetto",
   "description": "Gestión de turnos, clientes y recordatorios para salones de belleza y estética",
   "start_url": "/agenda",
   "scope": "/",
