@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Bell, CalendarDays, ChevronRight, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import type { NotificacionMensaje } from '@/services/turnoService';
+
+const PANEL_WIDTH_MAX = 300;
+const MARGEN_PANTALLA = 20;
 
 // Solo se renderiza dentro de app/(app)/agenda/page.tsx (mismo criterio que
 // RecordatoriosPendientesBanner) — no dispara su propio fetch, lee el store
@@ -17,20 +20,50 @@ import type { NotificacionMensaje } from '@/services/turnoService';
 export function NotificacionesBell() {
   const t = useTranslations('common.NotificacionesBell');
   const router = useRouter();
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [abierto, setAbierto] = useState(false);
+  // Offset horizontal del panel relativo a este wrapper (no al viewport) —
+  // se recalcula cada vez que se abre, midiendo dónde está la campanita en
+  // pantalla en ESE momento. Antes probamos anclar el panel directo con
+  // right:0 al wrapper chico (se salía por la izquierda, la campanita no
+  // está pegada al borde derecho) y después al header entero (quedaba
+  // "lejos" del ícono, porque el header es más alto que el botón — el
+  // título de dos líneas empuja el punto de anclaje hacia abajo). Medir la
+  // posición real evita las dos fallas: vertical queda pegado al botón
+  // (top:100% de ESTE wrapper, no del header) y horizontal nunca se sale.
+  const [panelLeft, setPanelLeft] = useState(0);
+  // El ancho también se recalcula al abrir — en un viewport angosto (visto
+  // en la práctica: bastante más angosto que el ancho "de ventana", por lo
+  // que sea que reporte el dispositivo/navegador) ni PANEL_WIDTH_MAX +
+  // los dos márgenes entran; sin achicar el ancho el clamp de panelLeft
+  // se rompe (el máximo permitido queda por debajo del mínimo).
+  const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH_MAX);
+
   const { data, loading, error, fetchNotificaciones, marcarVistas } = useNotificacionesStore();
 
   const mensajes = data?.mensajes ?? [];
   const turnosManana = data?.turnos_manana ?? 0;
   const badgeCount = data?.no_vistos ?? 0;
 
+  const toggleAbierto = () => {
+    if (!abierto && wrapperRef.current) {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const anchoDisponible = Math.max(window.innerWidth - MARGEN_PANTALLA * 2, 200);
+      const ancho = Math.min(PANEL_WIDTH_MAX, anchoDisponible);
+      const idealLeftEnPantalla = rect.right - ancho; // pegado al borde derecho de la campanita
+      const maxLeftEnPantalla = window.innerWidth - ancho - MARGEN_PANTALLA;
+      const leftEnPantalla = Math.min(Math.max(idealLeftEnPantalla, MARGEN_PANTALLA), maxLeftEnPantalla);
+      setPanelWidth(ancho);
+      setPanelLeft(leftEnPantalla - rect.left);
+    }
+    setAbierto(v => !v);
+    marcarVistas();
+  };
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
       <button
-        onClick={() => {
-          setAbierto(v => !v);
-          marcarVistas();
-        }}
+        onClick={toggleAbierto}
         aria-label={t('title')}
         style={{
           position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -58,13 +91,12 @@ export function NotificacionesBell() {
             onClick={() => setAbierto(false)}
             style={{ position: 'fixed', inset: 0, zIndex: 40 }}
           />
-          {/* Fixed en vez de absolute anclado a la campanita: el ícono no
-              está pegado al borde derecho de la pantalla (el botón
-              "Compartir" va después), así que un panel ancho anclado con
-              right:0 relativo al wrapper se salía por la izquierda. Mismo
-              margen de 20px que usa el resto de la app (headers, sheets). */}
+          {/* Absolute (no fixed): scrollea junto con la página en vez de
+              quedar pegado al viewport mientras la campanita se mueve —
+              necesitábamos que siguiera al ícono, no al scroll. */}
           <div style={{
-            position: 'fixed', top: 64, left: 20, right: 20, maxHeight: '60vh', overflowY: 'auto',
+            position: 'absolute', top: '100%', marginTop: 8, left: panelLeft, width: panelWidth,
+            maxHeight: '60vh', overflowY: 'auto',
             backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 16,
             boxShadow: '0 8px 24px rgba(0,0,0,0.18)', zIndex: 41,
           }}>
@@ -117,7 +149,7 @@ export function NotificacionesBell() {
             )}
 
             {mensajes.map(m => (
-              <NotificacionRow key={m.id} mensaje={m} />
+              <NotificacionRow key={m.id} mensaje={m} onClick={() => { setAbierto(false); router.push(`/agenda/notificaciones/${m.id}`); }} />
             ))}
           </div>
         </>
@@ -134,7 +166,7 @@ function formatTiempoRelativo(iso: string, tHaceUnMomento: string, tMin: (n: num
   return tHoras(horas);
 }
 
-function NotificacionRow({ mensaje }: { mensaje: NotificacionMensaje }) {
+function NotificacionRow({ mensaje, onClick }: { mensaje: NotificacionMensaje; onClick: () => void }) {
   const t = useTranslations('common.NotificacionesBell');
   const cliente = [mensaje.cliente_nombre, mensaje.cliente_apellido].filter(Boolean).join(' ') || t('clienteDesconocido');
 
@@ -154,10 +186,14 @@ function NotificacionRow({ mensaje }: { mensaje: NotificacionMensaje }) {
   );
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 16px',
-      borderBottom: `1px solid ${colors.hairline}`,
-    }}>
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '12px 16px',
+        border: 'none', borderBottom: `1px solid ${colors.hairline}`,
+        backgroundColor: 'transparent', cursor: 'pointer', textAlign: 'left',
+      }}
+    >
       <Icono size={16} color={colorIcono} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13, color: colors.text, lineHeight: 1.4 }}>
@@ -168,6 +204,7 @@ function NotificacionRow({ mensaje }: { mensaje: NotificacionMensaje }) {
           {tiempo}
         </p>
       </div>
-    </div>
+      <ChevronRight size={14} color={colors.subtext} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
+    </button>
   );
 }

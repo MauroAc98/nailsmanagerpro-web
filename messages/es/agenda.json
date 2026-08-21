@@ -142,5 +142,18 @@
     "recordatorioPendiente": "Aún no enviado",
     "recordatorioEnviado": "Enviado",
     "recordatorioFallido": "Falló el envío"
+  },
+  "DetalleNotificacionPage": {
+    "title": "Mensaje enviado",
+    "subtitleConfirmacion": "CONFIRMACIÓN DE TURNO",
+    "subtitleRecordatorio": "RECORDATORIO DE TURNO",
+    "loading": "Cargando...",
+    "notFound": "No encontramos este mensaje — puede ser de un día anterior.",
+    "clienteDesconocido": "Cliente",
+    "estadoEnviado": "Enviado",
+    "estadoManual": "Enviado a mano",
+    "estadoFallido": "Falló el envío",
+    "mensajeEnviado": "Así lo recibió",
+    "mensajeFallido": "Esto fue lo que se intentó mandar"
   }
 }

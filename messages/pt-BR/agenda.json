@@ -142,5 +142,18 @@
     "recordatorioPendiente": "Ainda não enviado",
     "recordatorioEnviado": "Enviado",
     "recordatorioFallido": "Falha no envio"
+  },
+  "DetalleNotificacionPage": {
+    "title": "Mensagem enviada",
+    "subtitleConfirmacion": "CONFIRMAÇÃO DE AGENDAMENTO",
+    "subtitleRecordatorio": "LEMBRETE DE AGENDAMENTO",
+    "loading": "Carregando...",
+    "notFound": "Não encontramos essa mensagem — pode ser de um dia anterior.",
+    "clienteDesconocido": "Cliente",
+    "estadoEnviado": "Enviado",
+    "estadoManual": "Enviado manualmente",
+    "estadoFallido": "Falha no envio",
+    "mensajeEnviado": "Foi isso que ela recebeu",
+    "mensajeFallido": "Foi isso que tentamos enviar"
   }
 }

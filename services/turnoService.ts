@@ -39,6 +39,9 @@ export interface NotificacionMensaje {
   cliente_nombre: string | null;
   cliente_apellido: string | null;
   created_at: string;
+  // Texto real armado por WhatsappTemplate::mensajeLegible() al momento
+  // del envío (backend) — se guarda tal cual, no es una reconstrucción.
+  mensaje: string;
 }
 
 export interface Notificaciones {
