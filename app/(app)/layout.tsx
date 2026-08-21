@@ -7,6 +7,7 @@ import { colors } from '@/theme/colors';
 import { NAV_HEIGHT } from '@/constants/layout';
 import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
 import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
+import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import { useAuth } from '@/hooks/useAuth';
 
 const TAB_DEFS = [
@@ -59,6 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('nav.AppLayout');
   const { pendientes, fetchPendientes } = usePendientesDeCobroStore();
   const { fetchRecordatoriosPendientes } = useRecordatoriosPendientesStore();
+  const { fetchNotificaciones } = useNotificacionesStore();
   const { checkSubscription } = useAuth();
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       fetchPendientes();
       await checkSubscription();
       fetchRecordatoriosPendientes();
+      fetchNotificaciones();
     };
     refrescar();
     // El cron que autocompleta turnos corre server-side sin avisar al cliente —
@@ -80,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [checkSubscription, fetchPendientes, fetchRecordatoriosPendientes]);
+  }, [checkSubscription, fetchPendientes, fetchRecordatoriosPendientes, fetchNotificaciones]);
 
   const TABS = TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
 

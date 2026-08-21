@@ -34,6 +34,21 @@
     "checkError": "No pudimos verificar los recordatorios pendientes",
     "retry": "Reintentar"
   },
+  "NotificacionesBell": {
+    "title": "Notificaciones",
+    "turnosManana": "{count, plural, one {Tenés # turno para mañana} other {Tenés # turnos para mañana}}",
+    "loading": "Cargando...",
+    "retry": "Reintentar",
+    "empty": "No hay novedades por hoy.",
+    "clienteDesconocido": "un cliente",
+    "confirmacionEnviada": "Confirmación enviada a {cliente}",
+    "confirmacionFallida": "Falló el envío de la confirmación a {cliente}",
+    "recordatorioEnviado": "Recordatorio enviado a {cliente}",
+    "recordatorioFallido": "Falló el envío del recordatorio a {cliente}",
+    "haceUnMomento": "hace un momento",
+    "haceMinutos": "{count, plural, one {hace # minuto} other {hace # minutos}}",
+    "haceHoras": "{count, plural, one {hace # hora} other {hace # horas}}"
+  },
   "WelcomeScreen": {
     "greetingMorning": "Buenos días",
     "greetingAfternoon": "Buenas tardes",

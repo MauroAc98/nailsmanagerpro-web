@@ -1,0 +1,162 @@
+'use client';
+
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { Bell, CalendarDays, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
+import { agendaColors as colors } from '@/theme/agendaColors';
+import { useNotificacionesStore } from '@/store/useNotificacionesStore';
+import type { NotificacionMensaje } from '@/services/turnoService';
+
+// Solo se renderiza dentro de app/(app)/agenda/page.tsx (mismo criterio que
+// RecordatoriosPendientesBanner) — no dispara su propio fetch, lee el store
+// que ya alimenta app/(app)/layout.tsx (fetchea al montar y al volver a
+// primer plano). Sin tracking de leído/no-leído: el badge es simplemente la
+// cantidad de eventos de HOY que devolvió el backend.
+export function NotificacionesBell() {
+  const t = useTranslations('common.NotificacionesBell');
+  const [abierto, setAbierto] = useState(false);
+  const { data, loading, error, fetchNotificaciones } = useNotificacionesStore();
+
+  const mensajes = data?.mensajes ?? [];
+  const turnosManana = data?.turnos_manana ?? 0;
+  const badgeCount = mensajes.length;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setAbierto(v => !v)}
+        aria-label={t('title')}
+        style={{
+          position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 38, height: 38, borderRadius: 19,
+          border: `1px solid ${colors.border}`, backgroundColor: colors.surface, cursor: 'pointer',
+        }}
+      >
+        <Bell size={18} color={colors.text} strokeWidth={1.8} />
+        {badgeCount > 0 && (
+          <span style={{
+            position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 8,
+            backgroundColor: colors.danger, color: '#fff', fontSize: 10, fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+          }}>
+            {badgeCount > 9 ? '9+' : badgeCount}
+          </span>
+        )}
+      </button>
+
+      {abierto && (
+        <>
+          {/* Backdrop invisible para cerrar al tocar afuera — mismo patrón
+              que los dropdowns de selector de cliente en agenda/nuevo. */}
+          <div
+            onClick={() => setAbierto(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+          />
+          {/* Fixed en vez de absolute anclado a la campanita: el ícono no
+              está pegado al borde derecho de la pantalla (el botón
+              "Compartir" va después), así que un panel ancho anclado con
+              right:0 relativo al wrapper se salía por la izquierda. Mismo
+              margen de 20px que usa el resto de la app (headers, sheets). */}
+          <div style={{
+            position: 'fixed', top: 64, left: 20, right: 20, maxHeight: '60vh', overflowY: 'auto',
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 16,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.18)', zIndex: 41,
+          }}>
+            <p style={{ margin: 0, padding: '14px 16px 10px', fontSize: 13, fontWeight: 700, color: colors.textStrong }}>
+              {t('title')}
+            </p>
+
+            {turnosManana > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
+                borderTop: `1px solid ${colors.hairline}`, borderBottom: `1px solid ${colors.hairline}`,
+              }}>
+                <CalendarDays size={16} color={colors.primary} strokeWidth={2} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: colors.text }}>
+                  {t('turnosManana', { count: turnosManana })}
+                </span>
+              </div>
+            )}
+
+            {loading && !data && (
+              <p style={{ padding: 16, margin: 0, fontSize: 13, color: colors.subtext, textAlign: 'center' }}>
+                {t('loading')}
+              </p>
+            )}
+
+            {!loading && error && !data && (
+              <div style={{ padding: 16, textAlign: 'center' }}>
+                <p style={{ margin: '0 0 8px', fontSize: 13, color: colors.dangerBorder }}>{error}</p>
+                <button
+                  onClick={() => fetchNotificaciones()}
+                  style={{
+                    border: `1px solid ${colors.border}`, borderRadius: 10, padding: '6px 14px',
+                    background: 'transparent', color: colors.text, fontSize: 12, cursor: 'pointer',
+                  }}
+                >
+                  {t('retry')}
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && mensajes.length === 0 && turnosManana === 0 && (
+              <p style={{ padding: 16, margin: 0, fontSize: 13, color: colors.subtext, textAlign: 'center' }}>
+                {t('empty')}
+              </p>
+            )}
+
+            {mensajes.map(m => (
+              <NotificacionRow key={m.id} mensaje={m} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function formatTiempoRelativo(iso: string, tHaceUnMomento: string, tMin: (n: number) => string, tHoras: (n: number) => string): string {
+  const minutos = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutos < 1) return tHaceUnMomento;
+  if (minutos < 60) return tMin(minutos);
+  const horas = Math.floor(minutos / 60);
+  return tHoras(horas);
+}
+
+function NotificacionRow({ mensaje }: { mensaje: NotificacionMensaje }) {
+  const t = useTranslations('common.NotificacionesBell');
+  const cliente = [mensaje.cliente_nombre, mensaje.cliente_apellido].filter(Boolean).join(' ') || t('clienteDesconocido');
+
+  const esFallido = mensaje.status === 'failed';
+  const Icono = esFallido ? XCircle : mensaje.status === 'manual' ? Send : CheckCircle2;
+  const colorIcono = esFallido ? colors.danger : colors.success;
+
+  const textoKey = esFallido
+    ? (mensaje.tipo === 'confirmacion' ? 'confirmacionFallida' : 'recordatorioFallido')
+    : (mensaje.tipo === 'confirmacion' ? 'confirmacionEnviada' : 'recordatorioEnviado');
+
+  const tiempo = formatTiempoRelativo(
+    mensaje.created_at,
+    t('haceUnMomento'),
+    n => t('haceMinutos', { count: n }),
+    n => t('haceHoras', { count: n }),
+  );
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 16px',
+      borderBottom: `1px solid ${colors.hairline}`,
+    }}>
+      <Icono size={16} color={colorIcono} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, color: colors.text, lineHeight: 1.4 }}>
+          {t(textoKey, { cliente })}
+        </p>
+        <p style={{ margin: '2px 0 0', fontSize: 11, color: colors.subtext, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Clock size={11} strokeWidth={2} />
+          {tiempo}
+        </p>
+      </div>
+    </div>
+  );
+}

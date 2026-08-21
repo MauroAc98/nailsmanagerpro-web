@@ -27,6 +27,25 @@ export interface Turno {
   profesional_id?: number | null;
 }
 
+// Un evento real de WhatsApp automático de hoy (confirmación al agendar,
+// recordatorio a la hora configurada) — ver TurnoController::notificaciones.
+// 'pending'/'delivered'/'read' llegan del webhook de Meta a medida que el
+// mensaje avanza; 'failed' es error de envío; 'manual' es un recordatorio
+// marcado a mano (ver marcarRecordatorioManual).
+export interface NotificacionMensaje {
+  id: number;
+  tipo: 'confirmacion' | 'recordatorio';
+  status: 'pending' | 'delivered' | 'read' | 'failed' | 'manual';
+  cliente_nombre: string | null;
+  cliente_apellido: string | null;
+  created_at: string;
+}
+
+export interface Notificaciones {
+  turnos_manana: number;
+  mensajes: NotificacionMensaje[];
+}
+
 export interface TurnoMes {
   fecha: string;   // "YYYY-MM-DD"
   cantidad: number;
@@ -134,6 +153,11 @@ export const turnoService = {
 
   marcarRecordatorioManual: async (turnoId: number): Promise<void> => {
     await api.post(`/turnos/${turnoId}/recordatorio-manual`);
+  },
+
+  notificaciones: async (): Promise<Notificaciones> => {
+    const { data } = await api.get<Notificaciones>('/turnos/notificaciones');
+    return data;
   },
 
   actualizarPrecios: async (

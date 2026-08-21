@@ -17,6 +17,7 @@ import { whatsappHelper, PLANTILLA_RECORDATORIO_DEFAULT } from '@/lib/whatsappHe
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
 import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner } from '@/components/RecordatoriosPendientesBanner';
+import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
@@ -1294,17 +1295,20 @@ export default function AgendaPage() {
             {t('title')}
           </h1>
         </div>
-        <button
-          onClick={() => router.push(`/agenda/historia?fecha=${fechaSeleccionada}`)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            fontSize: 11, fontWeight: 600, color: colors.text, letterSpacing: 1, textTransform: 'uppercase',
-            border: `1px solid ${colors.border}`, borderRadius: 20, padding: '8px 14px',
-            backgroundColor: colors.surface, cursor: 'pointer',
-          }}>
-          <Camera size={16} color={colors.text} strokeWidth={1.8} />
-          {t('share')}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificacionesBell />
+          <button
+            onClick={() => router.push(`/agenda/historia?fecha=${fechaSeleccionada}`)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 11, fontWeight: 600, color: colors.text, letterSpacing: 1, textTransform: 'uppercase',
+              border: `1px solid ${colors.border}`, borderRadius: 20, padding: '8px 14px',
+              backgroundColor: colors.surface, cursor: 'pointer',
+            }}>
+            <Camera size={16} color={colors.text} strokeWidth={1.8} />
+            {t('share')}
+          </button>
+        </div>
       </div>
 
       <SubscriptionWarningBanner />

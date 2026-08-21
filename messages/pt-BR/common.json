@@ -34,6 +34,21 @@
     "checkError": "Não foi possível verificar os lembretes pendentes",
     "retry": "Tentar novamente"
   },
+  "NotificacionesBell": {
+    "title": "Notificações",
+    "turnosManana": "{count, plural, one {Você tem # agendamento amanhã} other {Você tem # agendamentos amanhã}}",
+    "loading": "Carregando...",
+    "retry": "Tentar novamente",
+    "empty": "Nenhuma novidade por hoje.",
+    "clienteDesconocido": "um cliente",
+    "confirmacionEnviada": "Confirmação enviada a {cliente}",
+    "confirmacionFallida": "Falha ao enviar a confirmação a {cliente}",
+    "recordatorioEnviado": "Lembrete enviado a {cliente}",
+    "recordatorioFallido": "Falha ao enviar o lembrete a {cliente}",
+    "haceUnMomento": "agora mesmo",
+    "haceMinutos": "{count, plural, one {há # minuto} other {há # minutos}}",
+    "haceHoras": "{count, plural, one {há # hora} other {há # horas}}"
+  },
   "WelcomeScreen": {
     "greetingMorning": "Bom dia",
     "greetingAfternoon": "Boa tarde",
