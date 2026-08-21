@@ -22,6 +22,7 @@ interface Props {
   setHoraRecordatorio: (v: string) => void;
   nombreNegocio: string;
   telefonoContacto: string;
+  direccionNegocio: string;
   onGuardar: () => void;
   guardando: boolean;
   error: string | null;
@@ -42,18 +43,26 @@ function renderConNegritas(texto: string) {
 // Mismo texto fijo que arma WhatsappTemplate::mensajeLegible() en el backend
 // (NailsManagerProApi) — si ese texto cambia ahí, hay que actualizarlo acá
 // también, no hay una fuente única compartida entre frontend y backend.
-function textoPreview(tipo: TipoPreview, negocio: string, telefono: string): string {
+//
+// El nombre de la profesional ({{7}} en el backend, sale de
+// turno.profesional.nombre) es un dato de ejemplo fijo acá — este preview
+// no tiene un turno real de referencia, así que no hay una profesional
+// puntual para mostrar. nombreNegocio, telefono y direccion sí son reales
+// (vienen de la cuenta) porque son los que el cliente va a ver tal cual.
+function textoPreview(tipo: TipoPreview, negocio: string, telefono: string, direccion: string): string {
   const nombreCliente = 'Martina';
   const fecha = '20/08';
   const hora = '15:30';
   const servicio = 'Manicura semipermanente';
+  const nombreProfesionalEjemplo = 'Fernanda';
   const tel = telefono.trim() || '(agregá tu teléfono en Datos personales)';
+  const dir = direccion.trim() || '(agregá tu dirección en Datos personales)';
 
   const linea2 = tipo === 'confirmacion'
     ? `✅ Turno confirmado en ${negocio}`
     : `⏰ Recordatorio: tu turno es *mañana* en ${negocio}`;
 
-  return `Hola ${nombreCliente} ✨\n\n${linea2}\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n\n*¡Te esperamos!*\n\n📞 Ante cualquier duda, escribí al ${tel}. ¡Gracias!`;
+  return `Hola ${nombreCliente} ✨\n\n${linea2}\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\n*¡Te esperamos!*\n\n📞 ¿Consultas o cambios de turno? Si ya hablaste con ${nombreProfesionalEjemplo} previamente, comunicate por ahí. Si no, este es su número: 💬 ${tel}.\nPor favor, avisar con 24hs de anticipación. ¡Gracias!\n\nEste es un mensaje automático, no hace falta responder.`;
 }
 
 function IconClose() {
@@ -77,11 +86,12 @@ export function SheetNegocio({
   senaMonto, setSenaMonto, confirmacionAutomatica, setConfirmacionAutomatica,
   recordatorioAutomatico, setRecordatorioAutomatico,
   horaRecordatorio, setHoraRecordatorio, nombreNegocio, telefonoContacto,
-  onGuardar, guardando, error, onClose,
+  direccionNegocio, onGuardar, guardando, error, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
   const [previewAbierto, setPreviewAbierto] = useState(false);
   const [tipoPreview, setTipoPreview] = useState<TipoPreview>('confirmacion');
+  const faltaDireccion = !direccionNegocio.trim();
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
@@ -106,6 +116,12 @@ export function SheetNegocio({
         <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
       )}
 
+      {faltaDireccion && (
+        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
+          {t('addressRequiredWarning')}
+        </p>
+      )}
+
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
@@ -116,7 +132,11 @@ export function SheetNegocio({
             {t('autoConfirmationSubtitle')}
           </p>
         </div>
-        <PillToggle value={confirmacionAutomatica} onChange={setConfirmacionAutomatica} />
+        <PillToggle
+          value={confirmacionAutomatica}
+          onChange={setConfirmacionAutomatica}
+          disabled={faltaDireccion && !confirmacionAutomatica}
+        />
       </div>
 
       <div style={{
@@ -129,7 +149,11 @@ export function SheetNegocio({
             {t('autoReminderSubtitle')}
           </p>
         </div>
-        <PillToggle value={recordatorioAutomatico} onChange={setRecordatorioAutomatico} />
+        <PillToggle
+          value={recordatorioAutomatico}
+          onChange={setRecordatorioAutomatico}
+          disabled={faltaDireccion && !recordatorioAutomatico}
+        />
       </div>
 
       {recordatorioAutomatico && (
@@ -189,7 +213,7 @@ export function SheetNegocio({
             <p style={{
               margin: 0, fontSize: 13.5, lineHeight: 1.6, color: colors.text, whiteSpace: 'pre-line',
             }}>
-              {renderConNegritas(textoPreview(tipoPreview, nombreNegocio || t('previewSampleNegocio'), telefonoContacto))}
+              {renderConNegritas(textoPreview(tipoPreview, nombreNegocio || t('previewSampleNegocio'), telefonoContacto, direccionNegocio))}
             </p>
           </div>
           <p style={{ margin: '8px 2px 0', fontSize: 11.5, color: colors.subtext }}>

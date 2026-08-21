@@ -44,7 +44,14 @@ export type NotaHistoriaPrecios = Partial<Record<'precios' | 'promociones', Nota
 export interface Profesional {
   id: number;
   user_id: number;
+  // Nombre de pila — es el dato que usan las plantillas de WhatsApp
+  // automáticas y los badges compactos de la app. `apellido` es opcional
+  // (cuentas viejas no lo tienen cargado); `nombre_completo` (appended por
+  // el backend) es "nombre apellido" trimeado, listo para mostrar en
+  // vistas de gestión donde interesa la identidad completa.
   nombre: string;
+  apellido: string | null;
+  nombre_completo: string;
   color: string | null;
   activo: boolean;
   // Presente cuando el backend hace ->load('servicios') / ->with('servicios')
@@ -82,12 +89,14 @@ export function profesionalJefa(profesionales: Profesional[]): Profesional | nul
 
 export interface CreateProfesionalDto {
   nombre: string;
+  apellido?: string;
   color?: string;
   servicio_ids?: number[];
 }
 
 export interface UpdateProfesionalDto {
   nombre?: string;
+  apellido?: string | null;
   color?: string | null;
   activo?: boolean;
   servicio_ids?: number[];

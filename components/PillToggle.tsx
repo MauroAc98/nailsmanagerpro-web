@@ -6,6 +6,7 @@ interface Props {
   value:            boolean;
   onChange:         (v: boolean) => void;
   stopPropagation?: boolean;
+  disabled?:        boolean;
 }
 
 // ─────────────────────────────────────────────
@@ -13,10 +14,11 @@ interface Props {
 // opt in from list rows nested inside a clickable card so the toggle click
 // doesn't also trigger the card's own onClick.
 // ─────────────────────────────────────────────
-export default function PillToggle({ value, onChange, stopPropagation = false }: Props) {
+export default function PillToggle({ value, onChange, stopPropagation = false, disabled = false }: Props) {
   return (
     <div
       onClick={e => {
+        if (disabled) return;
         if (stopPropagation) e.stopPropagation();
         onChange(!value);
       }}
@@ -27,7 +29,8 @@ export default function PillToggle({ value, onChange, stopPropagation = false }:
         // lo contienen (colors.surfaceSubtle) — sin este borde queda
         // invisible en modo claro, solo se ve el puntito flotando.
         border: `1px solid ${value ? withAlpha(colors.primary, '99') : colors.border}`,
-        position: 'relative', cursor: 'pointer',
+        position: 'relative', cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
         transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
       }}
     >

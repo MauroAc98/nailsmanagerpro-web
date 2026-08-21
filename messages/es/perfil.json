@@ -10,6 +10,7 @@
     "autoConfirmationSubtitle": "Enviá un WhatsApp apenas se agenda el turno",
     "autoReminder": "Recordatorio automático",
     "autoReminderSubtitle": "Enviá un WhatsApp la noche anterior a tus clientes",
+    "addressRequiredWarning": "Cargá tu dirección en Datos personales para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.",
     "previewShow": "Ver ejemplo de mensaje",
     "previewHide": "Ocultar ejemplo de mensaje",
     "previewTabConfirmacion": "Confirmación",

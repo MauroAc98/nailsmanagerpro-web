@@ -51,7 +51,7 @@ function ProfesionalCard({
           color: profesional.activo ? colors.text : colors.placeholder,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {profesional.nombre}
+          {profesional.nombre_completo}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
           {cantidadServicios === 0

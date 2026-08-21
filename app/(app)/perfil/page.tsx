@@ -245,6 +245,7 @@ export default function PerfilPage() {
             setHoraRecordatorio={setHoraRecordatorio}
             nombreNegocio={user.name ?? ''}
             telefonoContacto={user.telefono ?? ''}
+            direccionNegocio={user.direccion ?? ''}
             onGuardar={handleGuardar}
             guardando={guardando}
             error={senaMontoError}

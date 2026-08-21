@@ -50,6 +50,7 @@ export default function EditarProfesionalPage() {
   const { servicios, fetchServicios } = useServiciosStore();
 
   const [nombre,      setNombre]      = useState('');
+  const [apellido,    setApellido]    = useState('');
   const [color,       setColor]       = useState<string>(profesionalPalette[0]);
   const [activo,      setActivo]      = useState(true);
   const [servicioIds, setServicioIds] = useState<number[]>([]);
@@ -74,6 +75,7 @@ export default function EditarProfesionalPage() {
       }
 
       setNombre(p.nombre);
+      setApellido(p.apellido ?? '');
       setColor(p.color || profesionalPalette[0]);
       setActivo(p.activo);
       setServicioIds(p.servicios.map(s => s.id));
@@ -92,8 +94,10 @@ export default function EditarProfesionalPage() {
       return;
     }
 
-    const nombreNormalizado = nombre.trim().toLowerCase();
-    const duplicado = profesionales.find(p => p.nombre.toLowerCase() === nombreNormalizado && p.id !== id);
+    // Nombre completo (no solo 'nombre') — mismo criterio que la pantalla
+    // de alta, ver Profesional::nombreCompleto en el backend.
+    const nombreCompletoNormalizado = `${nombre.trim()} ${apellido.trim()}`.trim().toLowerCase();
+    const duplicado = profesionales.find(p => p.nombre_completo.toLowerCase() === nombreCompletoNormalizado && p.id !== id);
     if (duplicado) {
       const msg = duplicado.activo
         ? t('duplicateActive')
@@ -105,6 +109,7 @@ export default function EditarProfesionalPage() {
     setSaving(true);
     const result = await actualizarProfesional(id, {
       nombre: nombre.trim(),
+      apellido: apellido.trim() || null,
       color,
       activo,
       servicio_ids: servicioIds,
@@ -149,6 +154,18 @@ export default function EditarProfesionalPage() {
             style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
           />
           {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
+        </div>
+
+        {/* Apellido */}
+        <div>
+          <label style={labelStyle}>{t('lastNameLabel')}</label>
+          <input
+            type="text"
+            placeholder={t('lastNamePlaceholder')}
+            value={apellido}
+            onChange={e => setApellido(e.target.value)}
+            style={inputStyle}
+          />
         </div>
 
         {/* Color */}

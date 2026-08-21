@@ -10,6 +10,7 @@
     "autoConfirmationSubtitle": "Envie um WhatsApp assim que o agendamento for criado",
     "autoReminder": "Lembrete automático",
     "autoReminderSubtitle": "Envie um WhatsApp na noite anterior para suas clientes",
+    "addressRequiredWarning": "Preencha seu endereço em Dados pessoais para ativar os envios automáticos — o modelo de WhatsApp inclui esse dado.",
     "previewShow": "Ver exemplo de mensagem",
     "previewHide": "Ocultar exemplo de mensagem",
     "previewTabConfirmacion": "Confirmação",
