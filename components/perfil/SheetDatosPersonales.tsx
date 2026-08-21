@@ -80,17 +80,18 @@ export function SheetDatosPersonales({
 
       <SheetInput label={t('studioName')} icon={<IconStore />} value={nombreEstudio} onChange={setNombreEstudio} placeholder={t('studioName')} />
 
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16, width: '100%', boxSizing: 'border-box' }}>
         <p style={sectionLabelStyle}>{t('phone')}</p>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, width: '100%', boxSizing: 'border-box' }}>
           <select
             value={codigoPais}
             onChange={e => setCodigoPais(e.target.value)}
             style={{
               backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
               boxShadow: shadows.card, borderRadius: 12,
-              padding: '12px 10px', fontSize: 14, color: colors.text,
+              padding: '12px 8px', fontSize: 14, color: colors.text,
               outline: 'none', cursor: 'pointer', flexShrink: 0,
+              width: 90, maxWidth: 90, boxSizing: 'border-box',
             }}
           >
             {PAISES.map(p => (
@@ -98,9 +99,9 @@ export function SheetDatosPersonales({
             ))}
           </select>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, flex: 1,
+            display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0,
             backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
-            padding: '12px 14px',
+            padding: '12px 14px', boxSizing: 'border-box',
           }}>
             <IconPhone />
             <input
@@ -110,7 +111,7 @@ export function SheetDatosPersonales({
               placeholder={t('phone')}
               type="tel"
               inputMode="tel"
-              style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: 15, color: colors.text, minWidth: 0 }}
+              style={{ flex: 1, minWidth: 0, border: 'none', background: 'none', outline: 'none', fontSize: 15, color: colors.text }}
             />
           </div>
         </div>
