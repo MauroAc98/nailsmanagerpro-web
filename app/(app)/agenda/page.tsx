@@ -1289,7 +1289,7 @@ export default function AgendaPage() {
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 340 }}>
 
       {/* Header */}
-      <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
             {t('title')}

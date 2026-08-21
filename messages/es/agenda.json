@@ -132,5 +132,15 @@
     "emptyTitle": "¡Todo enviado!",
     "sendButton": "Enviar recordatorio",
     "marcarEnviadoError": "No se pudo guardar. Volvé a marcarlo como enviado en un rato."
+  },
+  "TurnosMananaPage": {
+    "title": "Turnos de mañana",
+    "subtitle": "A QUIÉN ATENDÉS MAÑANA",
+    "loading": "Cargando turnos de mañana...",
+    "empty": "No tenés turnos confirmados para mañana.",
+    "emptyTitle": "Nada agendado",
+    "recordatorioPendiente": "Aún no enviado",
+    "recordatorioEnviado": "Enviado",
+    "recordatorioFallido": "Falló el envío"
   }
 }

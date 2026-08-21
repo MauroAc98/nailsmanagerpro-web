@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Bell, CalendarDays, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
+import { Bell, CalendarDays, ChevronRight, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import type { NotificacionMensaje } from '@/services/turnoService';
@@ -10,21 +11,26 @@ import type { NotificacionMensaje } from '@/services/turnoService';
 // Solo se renderiza dentro de app/(app)/agenda/page.tsx (mismo criterio que
 // RecordatoriosPendientesBanner) — no dispara su propio fetch, lee el store
 // que ya alimenta app/(app)/layout.tsx (fetchea al montar y al volver a
-// primer plano). Sin tracking de leído/no-leído: el badge es simplemente la
-// cantidad de eventos de HOY que devolvió el backend.
+// primer plano). El badge es `no_vistos` (persistido server-side vía
+// notificaciones_vistas_at, ver marcarVistas) — abrir el panel lo baja a 0,
+// un mensaje nuevo posterior vuelve a sumar.
 export function NotificacionesBell() {
   const t = useTranslations('common.NotificacionesBell');
+  const router = useRouter();
   const [abierto, setAbierto] = useState(false);
-  const { data, loading, error, fetchNotificaciones } = useNotificacionesStore();
+  const { data, loading, error, fetchNotificaciones, marcarVistas } = useNotificacionesStore();
 
   const mensajes = data?.mensajes ?? [];
   const turnosManana = data?.turnos_manana ?? 0;
-  const badgeCount = mensajes.length;
+  const badgeCount = data?.no_vistos ?? 0;
 
   return (
     <div style={{ position: 'relative' }}>
       <button
-        onClick={() => setAbierto(v => !v)}
+        onClick={() => {
+          setAbierto(v => !v);
+          marcarVistas();
+        }}
         aria-label={t('title')}
         style={{
           position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -67,15 +73,20 @@ export function NotificacionesBell() {
             </p>
 
             {turnosManana > 0 && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
-                borderTop: `1px solid ${colors.hairline}`, borderBottom: `1px solid ${colors.hairline}`,
-              }}>
+              <button
+                onClick={() => { setAbierto(false); router.push('/agenda/manana'); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 16px',
+                  border: 'none', borderTop: `1px solid ${colors.hairline}`, borderBottom: `1px solid ${colors.hairline}`,
+                  backgroundColor: 'transparent', cursor: 'pointer', textAlign: 'left',
+                }}
+              >
                 <CalendarDays size={16} color={colors.primary} strokeWidth={2} style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: colors.text }}>
+                <span style={{ flex: 1, fontSize: 13, color: colors.text }}>
                   {t('turnosManana', { count: turnosManana })}
                 </span>
-              </div>
+                <ChevronRight size={14} color={colors.subtext} strokeWidth={2} style={{ flexShrink: 0 }} />
+              </button>
             )}
 
             {loading && !data && (

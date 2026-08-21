@@ -8,9 +8,10 @@ interface NotificacionesState {
   error: string | null;
 
   fetchNotificaciones: () => Promise<void>;
+  marcarVistas: () => Promise<void>;
 }
 
-export const useNotificacionesStore = create<NotificacionesState>((set) => ({
+export const useNotificacionesStore = create<NotificacionesState>((set, get) => ({
   data: null,
   loading: false,
   error: null,
@@ -27,6 +28,21 @@ export const useNotificacionesStore = create<NotificacionesState>((set) => ({
       set({ error: extraerMensajeError(e) });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  // Optimista: el badge baja a 0 apenas se abre el panel, sin esperar la
+  // respuesta — un fallo puntual acá no es grave (el próximo fetch de
+  // notificaciones vuelve a traer el no_vistos real del backend).
+  marcarVistas: async () => {
+    const { data } = get();
+    if (!data || data.no_vistos === 0) return;
+
+    set({ data: { ...data, no_vistos: 0 } });
+    try {
+      await turnoService.marcarNotificacionesVistas();
+    } catch (e) {
+      console.error('marcarNotificacionesVistas:', e);
     }
   },
 }));

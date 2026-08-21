@@ -29,7 +29,7 @@ export function RecordatoriosPendientesBanner() {
       onClick={() => esError ? fetchRecordatoriosPendientes() : router.push('/agenda/recordatorios')}
       style={{
         display: 'flex', alignItems: 'center', gap: 12, width: 'calc(100% - 40px)',
-        margin: '0 20px 10px', padding: '12px 16px', textAlign: 'left', cursor: 'pointer',
+        margin: '0 20px 14px', padding: '12px 16px', textAlign: 'left', cursor: 'pointer',
         borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.amberBg,
       }}
     >

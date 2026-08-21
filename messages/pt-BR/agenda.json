@@ -132,5 +132,15 @@
     "emptyTitle": "Tudo enviado!",
     "sendButton": "Enviar lembrete",
     "marcarEnviadoError": "Não foi possível salvar. Marque como enviado novamente daqui a pouco."
+  },
+  "TurnosMananaPage": {
+    "title": "Agendamentos de amanhã",
+    "subtitle": "QUEM VOCÊ ATENDE AMANHÃ",
+    "loading": "Carregando agendamentos de amanhã...",
+    "empty": "Você não tem agendamentos confirmados para amanhã.",
+    "emptyTitle": "Nada agendado",
+    "recordatorioPendiente": "Ainda não enviado",
+    "recordatorioEnviado": "Enviado",
+    "recordatorioFallido": "Falha no envio"
   }
 }

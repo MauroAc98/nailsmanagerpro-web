@@ -43,7 +43,19 @@ export interface NotificacionMensaje {
 
 export interface Notificaciones {
   turnos_manana: number;
+  // Mensajes posteriores a users.notificaciones_vistas_at — para el número
+  // del badge de la campanita. `mensajes` de abajo trae SIEMPRE la lista
+  // completa de hoy (vistos o no), esto es solo el contador.
+  no_vistos: number;
   mensajes: NotificacionMensaje[];
+}
+
+// Turno de referencia para /agenda/manana — mismo shape que Turno más el
+// estado del recordatorio de ESE turno puntual (null = todavía no se
+// mandó). A diferencia de recordatoriosPendientes(), esta lista incluye
+// TODOS los turnos confirmados de mañana, ya tengan recordatorio o no.
+export interface TurnoManana extends Turno {
+  recordatorio_status: 'pending' | 'delivered' | 'read' | 'failed' | 'manual' | null;
 }
 
 export interface TurnoMes {
@@ -151,6 +163,11 @@ export const turnoService = {
     return data;
   },
 
+  turnosManana: async (): Promise<TurnoManana[]> => {
+    const { data } = await api.get<TurnoManana[]>('/turnos/manana');
+    return data;
+  },
+
   marcarRecordatorioManual: async (turnoId: number): Promise<void> => {
     await api.post(`/turnos/${turnoId}/recordatorio-manual`);
   },
@@ -158,6 +175,10 @@ export const turnoService = {
   notificaciones: async (): Promise<Notificaciones> => {
     const { data } = await api.get<Notificaciones>('/turnos/notificaciones');
     return data;
+  },
+
+  marcarNotificacionesVistas: async (): Promise<void> => {
+    await api.post('/turnos/notificaciones/marcar-vistas');
   },
 
   actualizarPrecios: async (
