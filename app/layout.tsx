@@ -32,7 +32,7 @@ const agendaSerif = Playfair_Display({
 // nada observable todavía — se hace cuando pt-BR/en se habiliten de verdad.
 export const metadata: Metadata = {
   title: "Turnetto",
-  description: "Gestión de turnos, clientes y recordatorios para salones de belleza y estética",
+  description: "La forma más simple de gestionar turnos, clientes y recordatorios de tu negocio",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

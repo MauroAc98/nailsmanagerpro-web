@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     {
       name: 'Turnetto',
       short_name: 'Turnetto',
-      description: 'Gestión de turnos, clientes y recordatorios para salones de belleza y estética',
+      description: 'La forma más simple de gestionar turnos, clientes y recordatorios de tu negocio',
       start_url: `/login/${slug}`,
       // Sin esto, el scope por defecto se calcula como el directorio del
       // start_url (o sea "/login/") en vez de toda la app — en cuanto se

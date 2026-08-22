@@ -1,7 +1,7 @@
 {
   "name": "Turnetto",
   "short_name": "Turnetto",
-  "description": "Gestión de turnos, clientes y recordatorios para salones de belleza y estética",
+  "description": "La forma más simple de gestionar turnos, clientes y recordatorios de tu negocio",
   "start_url": "/agenda",
   "scope": "/",
   "display": "standalone",
