@@ -79,7 +79,7 @@ export default function LegalPage() {
           <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7 }}>
             {t.rich('contactText', {
               email: (chunks) => (
-                <a key="email" href="mailto:nailsmanagerpro.app@gmail.com" style={{ color: colors.primaryDeep, fontWeight: 600 }}>
+                <a key="email" href="mailto:turnetto.app@gmail.com" style={{ color: colors.primaryDeep, fontWeight: 600 }}>
                   {chunks}
                 </a>
               ),
