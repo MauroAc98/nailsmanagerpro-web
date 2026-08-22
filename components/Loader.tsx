@@ -19,7 +19,7 @@ export function Loader({ visible }: { visible: boolean }) {
         style={{
           width: 40, height: 40, borderRadius: 20,
           border: `4px solid ${colors.border}`,
-          borderTopColor: colors.primary,
+          borderTopColor: colors.primaryDeep,
         }}
       />
     </div>

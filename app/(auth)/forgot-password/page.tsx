@@ -73,8 +73,8 @@ export default function ForgotPasswordPage() {
           justifyContent: 'center',
           margin: '0 auto 16px',
         }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 17a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill={colors.primary}/>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 17a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill={colors.primaryDeep}/>
             <path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"/>
             <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
             <path d="M19.5 4.5 17 7h3V4.5"/>
@@ -145,7 +145,7 @@ export default function ForgotPasswordPage() {
             style={{
               height: 52,
               borderRadius: 14,
-              backgroundColor: loading || !email ? colors.primaryDisabled : colors.primary,
+              backgroundColor: loading || !email ? colors.primaryDisabled : colors.primarySolid,
               color: '#fff',
               fontSize: 16,
               fontWeight: 600,
@@ -162,7 +162,7 @@ export default function ForgotPasswordPage() {
             style={{
               height: 52,
               borderRadius: 14,
-              backgroundColor: colors.primary,
+              backgroundColor: colors.primarySolid,
               color: '#fff',
               fontSize: 16,
               fontWeight: 600,

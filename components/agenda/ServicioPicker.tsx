@@ -136,7 +136,7 @@ export function ServicioPicker({
                     {countInGroup > 0 && (
                       <span style={{
                         borderRadius: 10, padding: '1px 6px', fontSize: 10, fontWeight: 700,
-                        backgroundColor: colors.primary, color: colors.primaryFg,
+                        backgroundColor: colors.primarySolid, color: colors.primaryFg,
                       }}>
                         {countInGroup}
                       </span>
@@ -161,8 +161,8 @@ export function ServicioPicker({
                           <span style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                             width: 20, height: 20, borderRadius: 6,
-                            border: `1px solid ${checked ? colors.primary : colors.border}`,
-                            backgroundColor: checked ? colors.primary : 'transparent',
+                            border: `1px solid ${checked ? colors.primarySolid : colors.border}`,
+                            backgroundColor: checked ? colors.primarySolid : 'transparent',
                             color: colors.primaryFg,
                           }}>
                             {checked && <Check size={14} strokeWidth={3} />}

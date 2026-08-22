@@ -27,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       scope: '/',
       display: 'standalone',
       background_color: '#ffffff',
-      theme_color: '#d79ea4',
+      theme_color: '#6b8f6a',
       orientation: 'portrait',
       icons: [
         { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },

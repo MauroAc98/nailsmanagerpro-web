@@ -140,7 +140,7 @@ function MiniBarChart({
                 display: 'block', width: '100%', height: `${pct}%`,
                 backgroundColor: p.monto > 0 ? colors.success : colors.surfaceSubtle,
                 opacity: esParcial ? 0.5 : (seleccionado === null || esSeleccionado ? 1 : 0.4),
-                outline: esSeleccionado ? `2px solid ${colors.primary}` : 'none',
+                outline: esSeleccionado ? `2px solid ${colors.primaryDeep}` : 'none',
                 outlineOffset: -1,
                 borderRadius: '3px 3px 0 0',
               }} />
@@ -206,7 +206,7 @@ function RitmoTurnosChart({
                 width: '100%', height: `${alturaPct}%`, borderRadius: '6px 6px 0 0', overflow: 'hidden',
                 display: 'flex', flexDirection: 'column', backgroundColor: colors.surfaceSubtle,
                 opacity: seleccionado === null || esSeleccionado ? 1 : 0.4,
-                outline: esSeleccionado ? `2px solid ${colors.primary}` : 'none', outlineOffset: -1,
+                outline: esSeleccionado ? `2px solid ${colors.primaryDeep}` : 'none', outlineOffset: -1,
               }}>
                 {total > 0 && (
                   <>
@@ -527,7 +527,7 @@ function EstadisticasContent() {
               style={{
                 border: 'none', borderRadius: 11, padding: '8px 14px', fontSize: 11, fontWeight: 700,
                 cursor: 'pointer',
-                backgroundColor: modoRango === m ? colors.primary : 'transparent',
+                backgroundColor: modoRango === m ? colors.primarySolid : 'transparent',
                 color: modoRango === m ? colors.primaryFg : colors.subtext,
                 boxShadow: modoRango === m ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
               }}
@@ -611,8 +611,8 @@ function EstadisticasContent() {
               onClick={() => setProfesionalFiltro(null)}
               style={{
                 borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                border: `1px solid ${profesionalFiltro === null ? colors.primary : colors.border}`,
-                backgroundColor: profesionalFiltro === null ? colors.primary : colors.surface,
+                border: `1px solid ${profesionalFiltro === null ? colors.primarySolid : colors.border}`,
+                backgroundColor: profesionalFiltro === null ? colors.primarySolid : colors.surface,
                 color: profesionalFiltro === null ? colors.primaryFg : colors.text,
               }}
             >
@@ -881,7 +881,7 @@ function EstadisticasContent() {
                               style={{
                                 aspectRatio: '1 / 1', borderRadius: 6, backgroundColor: colorCeldaOcupacion(cantidad),
                                 border: 'none', padding: 0, cursor: 'pointer',
-                                outline: seleccionada ? `1.5px solid ${colors.primary}` : 'none',
+                                outline: seleccionada ? `1.5px solid ${colors.primaryDeep}` : 'none',
                                 outlineOffset: 1,
                               }}
                             />

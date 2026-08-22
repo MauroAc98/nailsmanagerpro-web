@@ -149,7 +149,7 @@ export default function ServiciosPage() {
               width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '25'),
               borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="9" cy="9" r="2" />
                 <path d="m21 15-5-5L5 21" />
@@ -176,7 +176,7 @@ export default function ServiciosPage() {
         style={{
           position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, border: 'none',
+          backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 12px rgba(215,158,164,0.5)', zIndex: 10,
         }}

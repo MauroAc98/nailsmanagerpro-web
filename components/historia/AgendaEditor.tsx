@@ -49,9 +49,9 @@ export function AgendaEditor({ agenda, diasOcultos, slotsOcultos, onToggleSlot, 
                   type="button"
                   onClick={() => onToggleHoraEnTodos(hora)}
                   style={{
-                    padding: '6px 10px', borderRadius: 8, border: `1px solid ${algunaVisible ? colors.primary : colors.border}`,
+                    padding: '6px 10px', borderRadius: 8, border: `1px solid ${algunaVisible ? colors.primaryDeep : colors.border}`,
                     background: algunaVisible ? 'transparent' : colors.surfaceSubtle,
-                    color: algunaVisible ? colors.primary : colors.placeholder,
+                    color: algunaVisible ? colors.primaryDeep : colors.placeholder,
                     fontSize: 11, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
@@ -104,7 +104,7 @@ export function AgendaEditor({ agenda, diasOcultos, slotsOcultos, onToggleSlot, 
                         <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
                       </svg>
                     ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
@@ -134,7 +134,7 @@ export function AgendaEditor({ agenda, diasOcultos, slotsOcultos, onToggleSlot, 
                           // colors.placeholder, y texto placeholder sobre fondo border
                           // se volvía ilegible (gris sobre gris). surfaceSubtle es el
                           // token correcto para "fondo apagado con texto encima".
-                          background: off ? colors.surfaceSubtle : colors.primary,
+                          background: off ? colors.surfaceSubtle : colors.primarySolid,
                           color: off ? colors.placeholder : colors.primaryFg,
                           fontSize: 10, fontWeight: 700,
                           cursor: clickeable ? 'pointer' : 'default',

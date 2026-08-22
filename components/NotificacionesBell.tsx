@@ -113,7 +113,7 @@ export function NotificacionesBell() {
                   backgroundColor: 'transparent', cursor: 'pointer', textAlign: 'left',
                 }}
               >
-                <CalendarDays size={16} color={colors.primary} strokeWidth={2} style={{ flexShrink: 0 }} />
+                <CalendarDays size={16} color={colors.primaryDeep} strokeWidth={2} style={{ flexShrink: 0 }} />
                 <span style={{ flex: 1, fontSize: 13, color: colors.text }}>
                   {t('turnosManana', { count: turnosManana })}
                 </span>

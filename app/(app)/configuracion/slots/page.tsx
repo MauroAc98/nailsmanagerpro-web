@@ -87,7 +87,7 @@ function SlotCard({
           borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={slot.activo ? colors.primary : colors.placeholder} strokeWidth="2">
+            stroke={slot.activo ? colors.primaryDeep : colors.placeholder} strokeWidth="2">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
           </svg>
@@ -100,7 +100,7 @@ function SlotCard({
           onClick={onDelete}
           style={{
             position: 'absolute', right: 0, top: 0, bottom: 0,
-            width: SWIPE_REVEAL, backgroundColor: colors.dangerAccent,
+            width: SWIPE_REVEAL, backgroundColor: colors.dangerBg,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
             cursor: 'pointer',
           }}
@@ -225,7 +225,7 @@ export default function SlotsPage() {
         style={{
           position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, border: 'none',
+          backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 12px rgba(215,158,164,0.5)', zIndex: 10,
@@ -337,7 +337,7 @@ export default function SlotsPage() {
               onClick={handleAgregarSlot}
               style={{
                 width: '100%', height: 52, borderRadius: 14,
-                backgroundColor: colors.primary, color: '#fff',
+                backgroundColor: colors.primarySolid, color: '#fff',
                 fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer',
               }}
             >

@@ -31,7 +31,7 @@ function formatLabel(t: ReturnType<typeof useTranslations>, total: number, h: nu
 const btnStyle: React.CSSProperties = {
   width: 32, height: 32, borderRadius: 8,
   backgroundColor: withAlpha(colors.primary, '12'), border: 'none',
-  cursor: 'pointer', fontSize: 20, color: colors.primary,
+  cursor: 'pointer', fontSize: 20, color: colors.primaryDeep,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   fontWeight: 300, lineHeight: 1,
 };
@@ -99,11 +99,11 @@ export default function DuracionPicker({ value, onChange }: Props) {
       {/* Summary pill */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
-        backgroundColor: withAlpha(colors.primary, '12'), border: `1px solid ${colors.primary}`,
+        backgroundColor: withAlpha(colors.primary, '12'), border: `1px solid ${colors.primaryDeep}`,
         borderRadius: 20, padding: '6px 14px', marginTop: 10,
       }}>
         <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
-        <span style={{ fontSize: 13, color: colors.primary, fontWeight: 600 }}>
+        <span style={{ fontSize: 13, color: colors.primaryDeep, fontWeight: 600 }}>
           {formatLabel(t, total, h, mins)}
         </span>
       </div>

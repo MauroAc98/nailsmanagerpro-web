@@ -28,8 +28,8 @@ function Checkbox({ checked }: { checked: boolean }) {
   return (
     <div style={{
       width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-      border: `2px solid ${checked ? colors.primary : colors.divider}`,
-      backgroundColor: checked ? colors.primary : colors.surface,
+      border: `2px solid ${checked ? colors.primarySolid : colors.divider}`,
+      backgroundColor: checked ? colors.primarySolid : colors.surface,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       {checked && (
@@ -222,7 +222,7 @@ export default function EditarProfesionalPage() {
           disabled={saving}
           style={{
             marginTop: 20, height: 52, borderRadius: 14,
-            backgroundColor: saving ? colors.primaryDisabled : colors.primary,
+            backgroundColor: saving ? colors.primaryDisabled : colors.primarySolid,
             color: '#fff', fontSize: 16, fontWeight: 600,
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}

@@ -90,7 +90,7 @@ export function MotivoCancelacionSheetHost() {
                 textAlign: 'left',
                 padding: '12px 14px',
                 borderRadius: 12,
-                border: `1px solid ${seleccion === motivo ? colors.primary : colors.border}`,
+                border: `1px solid ${seleccion === motivo ? colors.primaryDeep : colors.border}`,
                 backgroundColor: seleccion === motivo ? colors.surfaceSubtle : colors.surface,
                 fontSize: 14,
                 fontWeight: seleccion === motivo ? 600 : 400,

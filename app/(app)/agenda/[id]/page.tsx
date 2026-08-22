@@ -230,8 +230,8 @@ export default function EditarTurnoPage() {
         <button
           onClick={() => router.back()}
           style={{
-            marginTop: 16, fontSize: 14, fontWeight: 700, color: colors.primary,
-            border: `1px solid ${colors.primary}`, borderRadius: 20,
+            marginTop: 16, fontSize: 14, fontWeight: 700, color: colors.primaryDeep,
+            border: `1px solid ${colors.primaryDeep}`, borderRadius: 20,
             padding: '8px 16px', backgroundColor: 'transparent', cursor: 'pointer',
           }}
         >
@@ -272,7 +272,7 @@ export default function EditarTurnoPage() {
               ...inputStyle,
               display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
               borderRadius: showClienteDropdown ? '12px 12px 0 0' : 12,
-              borderColor: showClienteDropdown ? colors.primary : colors.border,
+              borderColor: showClienteDropdown ? colors.primaryDeep : colors.border,
             }}
           >
             <User size={18} strokeWidth={1.8} color={colors.muted} />
@@ -398,7 +398,7 @@ export default function EditarTurnoPage() {
           }
           style={{
             width: '100%', height: 52, borderRadius: 14,
-            backgroundColor: colors.primary, color: colors.primaryFg,
+            backgroundColor: colors.primarySolid, color: colors.primaryFg,
             fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
             opacity: (
               !selectedCliente || selectedServicioIds.length === 0 ||
@@ -439,7 +439,7 @@ export default function EditarTurnoPage() {
               onClick={() => { setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
               style={{
                 marginTop: 24, width: '100%', height: 52, borderRadius: 14,
-                backgroundColor: colors.primary, color: colors.primaryFg,
+                backgroundColor: colors.primarySolid, color: colors.primaryFg,
                 fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
               }}
             >

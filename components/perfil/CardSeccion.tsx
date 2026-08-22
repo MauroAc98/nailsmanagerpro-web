@@ -28,7 +28,7 @@ export function CardSeccion({ titulo, icono, onEditar, children }: Props) {
             onClick={onEditar}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: 500, color: colors.primary,
+              fontSize: 13, fontWeight: 500, color: colors.primaryDeep,
             }}
           >
             Editar

@@ -6,7 +6,7 @@ set -euo pipefail
 
 REMOTE_HOST="${DEPLOY_HOST:-138.219.41.253}"
 REMOTE_USER="${DEPLOY_USER:-root}"
-SSH_KEY="${DEPLOY_SSH_KEY:-$HOME/.ssh/nailsmanager_vps}"
+SSH_KEY="${DEPLOY_SSH_KEY:-$HOME/.ssh/turnetto_vps}"
 RELEASES_DIR="/var/www/pwa/releases"
 CURRENT_LINK="/var/www/pwa/current"
 SHARED_ENV="/var/www/pwa/shared/.env.production"

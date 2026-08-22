@@ -147,7 +147,7 @@ export default function NuevoGastoPage() {
                 key={cat}
                 type="button"
                 onClick={() => setCategoria(cat)}
-                style={chipStyle(categoria === cat, colors.primary)}
+                style={chipStyle(categoria === cat, colors.primarySolid)}
               >
                 {tCat(`category_${cat}`)}
               </button>
@@ -202,7 +202,7 @@ export default function NuevoGastoPage() {
           disabled={saving}
           style={{
             marginTop: 20, height: 52, borderRadius: 14,
-            backgroundColor: saving ? colors.primaryDisabled : colors.primary,
+            backgroundColor: saving ? colors.primaryDisabled : colors.primarySolid,
             color: '#fff', fontSize: 16, fontWeight: 600,
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}

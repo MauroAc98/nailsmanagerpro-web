@@ -160,7 +160,7 @@ export function PrecioServiciosSheetHost() {
               padding: '14px 0',
               borderRadius: 14,
               border: 'none',
-              backgroundColor: puedeConfirmar ? colors.primary : colors.primaryDisabled,
+              backgroundColor: puedeConfirmar ? colors.primarySolid : colors.primaryDisabled,
               fontSize: 15,
               fontWeight: 600,
               color: '#FFF',

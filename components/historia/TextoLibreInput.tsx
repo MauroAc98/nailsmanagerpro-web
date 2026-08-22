@@ -38,7 +38,7 @@ export function TextoLibreInput({
             maxLength={60}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: colors.surface, border: `1px solid ${editandoId ? colors.primary : colors.border}`, borderRadius: 12,
+              background: colors.surface, border: `1px solid ${editandoId ? colors.primaryDeep : colors.border}`, borderRadius: 12,
               padding: '10px 44px 10px 14px', fontSize: 14, color: colors.text,
             }}
           />
@@ -74,7 +74,7 @@ export function TextoLibreInput({
           onClick={onAgregarTexto}
           disabled={!textoInput.trim()}
           style={{
-            background: colors.primary, borderRadius: 12, border: 'none',
+            background: colors.primarySolid, borderRadius: 12, border: 'none',
             padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', opacity: !textoInput.trim() ? 0.4 : 1,
           }}

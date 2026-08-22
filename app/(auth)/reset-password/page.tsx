@@ -91,7 +91,7 @@ function ResetPasswordForm() {
           justifyContent: 'center',
           margin: '0 auto 16px',
         }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
             <polyline points="7,13 10,16 16,10"/>
@@ -238,7 +238,7 @@ function ResetPasswordForm() {
           style={{
             height: 52,
             borderRadius: 14,
-            backgroundColor: loading || !valido ? colors.primaryDisabled : colors.primary,
+            backgroundColor: loading || !valido ? colors.primaryDisabled : colors.primarySolid,
             color: '#fff',
             fontSize: 16,
             fontWeight: 600,
@@ -264,7 +264,7 @@ function ResetPasswordForm() {
         >
           <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
             {t('didntReceiveCode')}{' '}
-            <span style={{ color: colors.primary, fontWeight: 700 }}>{t('resend')}</span>
+            <span style={{ color: colors.primaryDeep, fontWeight: 700 }}>{t('resend')}</span>
           </p>
         </button>
       </div>

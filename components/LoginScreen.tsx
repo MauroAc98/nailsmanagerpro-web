@@ -81,7 +81,7 @@ export function LoginScreen({ slug }: LoginScreenProps) {
     alignItems: 'center',
     height: 54,
     backgroundColor: agendaColors.surface,
-    border: `1px solid ${focusedField === field ? colors.primary : agendaColors.border}`,
+    border: `1px solid ${focusedField === field ? colors.primaryDeep : agendaColors.border}`,
     boxShadow: focusedField === field ? `0 0 0 3px ${withAlpha(colors.primary, '33')}` : agendaShadows.card,
     borderRadius: 16,
     paddingLeft: 16,
@@ -123,7 +123,7 @@ export function LoginScreen({ slug }: LoginScreenProps) {
         </div>
       ) : (
         <div style={{ height: 220, width: '100%', flexShrink: 0, backgroundColor: agendaColors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Store size={40} color={colors.primary} strokeWidth={1.5} />
+          <Store size={40} color={colors.primaryDeep} strokeWidth={1.5} />
         </div>
       )}
 
@@ -199,7 +199,7 @@ export function LoginScreen({ slug }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={() => router.push('/forgot-password')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primary, fontSize: 13, fontWeight: 600, padding: 0 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.primaryDeep, fontSize: 13, fontWeight: 600, padding: 0 }}
               >
                 {t('forgotPassword')}
               </button>
@@ -214,13 +214,13 @@ export function LoginScreen({ slug }: LoginScreenProps) {
               style={{
                 height: 54,
                 borderRadius: 16,
-                backgroundColor: loading || !email || !password ? colors.primaryDisabled : colors.primary,
+                backgroundColor: loading || !email || !password ? colors.primaryDisabled : colors.primarySolid,
                 color: '#fff',
                 fontSize: 16,
                 fontWeight: 600,
                 border: 'none',
                 cursor: loading || !email || !password ? 'not-allowed' : 'pointer',
-                boxShadow: loading || !email || !password ? 'none' : `0 10px 24px ${withAlpha(colors.primaryDeep, '3d')}`,
+                boxShadow: loading || !email || !password ? 'none' : `0 10px 24px ${withAlpha(colors.primarySolid, '3d')}`,
                 transition: 'background-color 0.2s, box-shadow 0.2s',
               }}
             >

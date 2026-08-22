@@ -69,7 +69,7 @@ export function WelcomeScreen() {
         transition: 'opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1)',
       }}>
         <p style={{
-          fontSize: 13, fontWeight: 600, color: colors.primary,
+          fontSize: 13, fontWeight: 600, color: colors.primaryDeep,
           letterSpacing: 3, textTransform: 'uppercase', margin: '0 0 12px',
         }}>
           {saludo}

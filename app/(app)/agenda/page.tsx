@@ -277,7 +277,7 @@ function SwipeableTurnoCard({
                 style={{
                   fontSize: 11, fontWeight: 600, color: colors.primaryFg,
                   border: 'none', borderRadius: 20,
-                  padding: '6px 14px', backgroundColor: colors.primary, cursor: 'pointer',
+                  padding: '6px 14px', backgroundColor: colors.primarySolid, cursor: 'pointer',
                 }}
               >
                 {t('finishNow')}
@@ -366,11 +366,11 @@ function SwipeableTurnoCard({
         >
           <div style={{
             width: SWIPE_REVEAL, height: '100%',
-            // Mismo patrón que ServicioCard/GastoCard (fondo dangerAccent claro +
-            // ícono/texto en danger) en vez del rojo sólido del mockup — agenda
-            // sale sola a producción por ahora, así que este swipe-to-delete
-            // se mantiene visualmente unificado con el resto de la app.
-            backgroundColor: colors.dangerAccent,
+            // Mismo patrón que ServicioCard/GastoCard (fondo dangerBg + ícono/
+            // texto en danger) en vez del rojo sólido del mockup — agenda sale
+            // sola a producción por ahora, así que este swipe-to-delete se
+            // mantiene visualmente unificado con el resto de la app.
+            backgroundColor: colors.dangerBg,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             cursor: 'pointer',
           }}>
@@ -515,7 +515,7 @@ function AgendaListHeader({
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '7px 14px', borderRadius: 20,
             border: `1px solid ${hayFiltroActivo ? 'transparent' : colors.border}`,
-            backgroundColor: hayFiltroActivo ? colors.primary : colors.surface,
+            backgroundColor: hayFiltroActivo ? colors.primarySolid : colors.surface,
             cursor: 'pointer',
           }}
         >
@@ -530,7 +530,7 @@ function AgendaListHeader({
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
           <div
             className="loader-spinner"
-            style={{ width: 20, height: 20, borderRadius: 10, border: `2px solid ${colors.border}`, borderTopColor: colors.primary }}
+            style={{ width: 20, height: 20, borderRadius: 10, border: `2px solid ${colors.border}`, borderTopColor: colors.primaryDeep }}
           />
         </div>
       )}
@@ -664,7 +664,7 @@ function FiltroSheetContent({
               setTextoFecha('');
               setFechaError(false);
             }}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: colors.primary }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: colors.primaryDeep }}
           >
             {t('clearAll')}
           </button>
@@ -679,7 +679,7 @@ function FiltroSheetContent({
         display: 'flex', alignItems: 'center', backgroundColor: colors.surfaceSubtle, borderRadius: 12,
         padding: '0 12px', height: 45, marginBottom: 16,
       }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
@@ -707,7 +707,7 @@ function FiltroSheetContent({
         backgroundColor: fechaError ? colors.dangerBg : fechaFiltro ? withAlpha(colors.primary, '12') : colors.surfaceSubtle,
         borderColor: fechaError ? withAlpha(colors.dangerBorder, '44') : fechaFiltro ? withAlpha(colors.primary, '44') : 'transparent',
       }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : fechaFiltro ? colors.primary : colors.muted} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : fechaFiltro ? colors.primaryDeep : colors.muted} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
           <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
         <input
@@ -720,7 +720,7 @@ function FiltroSheetContent({
         />
         {textoFecha !== '' && (
           <button onClick={handleLimpiarFecha} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : colors.primary} strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : colors.primaryDeep} strokeWidth="2">
               <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </button>
@@ -793,8 +793,8 @@ function FiltroSheetContent({
                         <span style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                           width: 20, height: 20, borderRadius: 6,
-                          border: `1px solid ${checked ? colors.primary : colors.border}`,
-                          backgroundColor: checked ? colors.primary : 'transparent',
+                          border: `1px solid ${checked ? colors.primarySolid : colors.border}`,
+                          backgroundColor: checked ? colors.primarySolid : 'transparent',
                           color: colors.primaryFg,
                         }}>
                           {checked && <Check size={14} strokeWidth={3} />}
@@ -820,7 +820,7 @@ function FiltroSheetContent({
         disabled={btnDeshabilitado}
         style={{
           width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-          backgroundColor: btnDeshabilitado ? colors.divider : colors.primary,
+          backgroundColor: btnDeshabilitado ? colors.divider : colors.primarySolid,
           color: colors.primaryFg, fontSize: 15, fontWeight: 600,
           cursor: btnDeshabilitado ? 'default' : 'pointer',
         }}
@@ -934,7 +934,7 @@ function CalendarioMensual({
               <div style={{
                 width: 40, height: 40, borderRadius: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: isSelected ? colors.primary : 'transparent',
+                backgroundColor: isSelected ? colors.primarySolid : 'transparent',
                 boxShadow: isSelected ? `0 2px 4px ${withAlpha(colors.primary, '4D')}` : 'none',
                 position: 'relative',
               }}>
@@ -1008,8 +1008,8 @@ function SelectorProfesionalDia({
         onClick={() => onSeleccionar(null)}
         style={{
           flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-          border: `1px solid ${filtroActivo === null ? colors.primary : colors.divider}`,
-          backgroundColor: filtroActivo === null ? colors.primary : colors.surface,
+          border: `1px solid ${filtroActivo === null ? colors.primarySolid : colors.divider}`,
+          backgroundColor: filtroActivo === null ? colors.primarySolid : colors.surface,
           color: filtroActivo === null ? colors.primaryFg : colors.text,
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}
@@ -1455,7 +1455,7 @@ export default function AgendaPage() {
             // tapado por el nav en iPhones con home indicator (inset ≠ 0).
             position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
             width: 56, height: 56, borderRadius: 28,
-            backgroundColor: colors.primary, border: 'none',
+            backgroundColor: colors.primarySolid, border: 'none',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: `0 8px 20px ${withAlpha(colors.primary, '80')}`, zIndex: 45,
           }}

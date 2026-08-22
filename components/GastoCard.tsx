@@ -102,7 +102,7 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
       >
         <div style={{
           width: SWIPE_REVEAL, height: '100%',
-          backgroundColor: colors.dangerAccent,
+          backgroundColor: colors.dangerBg,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
           cursor: 'pointer',
         }}>
@@ -134,7 +134,7 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
       >
         <div style={{
           width: 36, height: 36,
-          backgroundColor: colors.dangerAccent,
+          backgroundColor: colors.dangerBg,
           borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>

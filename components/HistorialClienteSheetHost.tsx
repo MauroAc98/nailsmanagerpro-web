@@ -161,8 +161,8 @@ function FiltroEstadoChips({ value, onChange, t }: { value: FiltroEstado; onChan
             onClick={() => onChange(opcion.value)}
             style={{
               borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-              border: `1px solid ${selected ? colors.primary : colors.divider}`,
-              backgroundColor: selected ? colors.primary : colors.surface,
+              border: `1px solid ${selected ? colors.primarySolid : colors.divider}`,
+              backgroundColor: selected ? colors.primarySolid : colors.surface,
               color: selected ? '#FFF' : colors.text,
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}

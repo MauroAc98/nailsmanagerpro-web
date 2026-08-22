@@ -283,7 +283,7 @@ function NuevoTurnoContent() {
               ...inputStyle,
               display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
               borderRadius: showClienteDropdown ? '12px 12px 0 0' : 12,
-              borderColor: showClienteDropdown ? colors.primary : colors.border,
+              borderColor: showClienteDropdown ? colors.primaryDeep : colors.border,
             }}
           >
             <User size={18} strokeWidth={1.8} color={colors.muted} />
@@ -410,7 +410,7 @@ function NuevoTurnoContent() {
           }
           style={{
             width: '100%', height: 52, borderRadius: 14,
-            backgroundColor: colors.primary, color: colors.primaryFg,
+            backgroundColor: colors.primarySolid, color: colors.primaryFg,
             fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
             opacity: (
               !selectedCliente || selectedServicioIds.length === 0 ||
@@ -452,7 +452,7 @@ function NuevoTurnoContent() {
               onClick={() => { setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
               style={{
                 marginTop: 24, width: '100%', height: 52, borderRadius: 14,
-                backgroundColor: colors.primary, color: colors.primaryFg,
+                backgroundColor: colors.primarySolid, color: colors.primaryFg,
                 fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
               }}
             >

@@ -159,7 +159,7 @@ export default function ClientesPage() {
         style={{
           position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, border: 'none',
+          backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 12px rgba(215, 158, 164, 0.5)', zIndex: 10,
         }}
@@ -210,7 +210,7 @@ export default function ClientesPage() {
           <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
             <div
               className="loader-spinner"
-              style={{ width: 32, height: 32, borderRadius: 16, border: `3px solid ${colors.border}`, borderTopColor: colors.primary }}
+              style={{ width: 32, height: 32, borderRadius: 16, border: `3px solid ${colors.border}`, borderTopColor: colors.primaryDeep }}
             />
           </div>
         ) : clientesPagina.length === 0 ? (

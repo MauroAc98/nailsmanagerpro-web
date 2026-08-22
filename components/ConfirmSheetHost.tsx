@@ -71,7 +71,7 @@ export function ConfirmSheetHost() {
                   onClick={() => resolveDialog(true)}
                   style={{
                     flex: 1, padding: '14px 0', borderRadius: 14, border: 'none',
-                    backgroundColor: dialog.danger ? colors.danger : colors.primary,
+                    backgroundColor: dialog.danger ? colors.danger : colors.primarySolid,
                     fontSize: 15, fontWeight: 600, color: '#FFF', cursor: 'pointer',
                   }}
                 >
@@ -83,7 +83,7 @@ export function ConfirmSheetHost() {
                 onClick={() => resolveDialog(true)}
                 style={{
                   width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
-                  backgroundColor: colors.primary,
+                  backgroundColor: colors.primarySolid,
                   fontSize: 15, fontWeight: 600, color: '#FFF', cursor: 'pointer',
                 }}
               >

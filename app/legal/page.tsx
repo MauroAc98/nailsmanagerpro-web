@@ -13,7 +13,7 @@ export default function LegalPage() {
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <Link
           href="/login"
-          style={{ fontSize: 13, color: colors.primary, fontWeight: 600, textDecoration: 'none' }}
+          style={{ fontSize: 13, color: colors.primaryDeep, fontWeight: 600, textDecoration: 'none' }}
         >
           {t('back')}
         </Link>
@@ -79,7 +79,7 @@ export default function LegalPage() {
           <p style={{ fontSize: 14, color: colors.subtext, lineHeight: 1.7 }}>
             {t.rich('contactText', {
               email: (chunks) => (
-                <a key="email" href="mailto:nailsmanagerpro.app@gmail.com" style={{ color: colors.primary, fontWeight: 600 }}>
+                <a key="email" href="mailto:nailsmanagerpro.app@gmail.com" style={{ color: colors.primaryDeep, fontWeight: 600 }}>
                   {chunks}
                 </a>
               ),

@@ -37,7 +37,7 @@ export default function AparienciaPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 15,
                 backgroundColor: selected ? withAlpha(colors.primary, '12') : colors.surface,
-                border: `1px solid ${selected ? colors.primary : colors.border}`,
+                border: `1px solid ${selected ? colors.primaryDeep : colors.border}`,
                 boxShadow: shadows.card, borderRadius: 14,
                 padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
               }}
@@ -47,7 +47,7 @@ export default function AparienciaPage() {
                 <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.subtext }}>{op.subtitle}</p>
               </div>
               {selected && (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               )}

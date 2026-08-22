@@ -90,7 +90,7 @@ export default function ProfesionalesPage() {
         style={{
           position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, border: 'none',
+          backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 12px rgba(215,158,164,0.5)', zIndex: 10,
         }}

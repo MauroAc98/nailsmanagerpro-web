@@ -3,7 +3,7 @@
 :root {
   color-scheme: light;
 
-  --color-primary: #d79ea4;
+  --color-primary: #6b8f6a;
   /* Antes idéntico a --color-surface (#ffffff) — una card blanca sobre una
      página blanca dependía 100% del borde para notarse, y ese borde
      (#eeeeee sobre blanco) da un contraste de apenas 1.17:1, casi
@@ -24,9 +24,14 @@
      que no tiene sombra suficiente por sí sola). */
   --color-border: #b9b9bc;
   --color-success: #4caf50;
-  --color-danger: #c62828;
-  --color-danger-bg: #fdecea;
-  --color-danger-border: #e57373;
+  /* Bajado de saturación (#c62828 → esto), mismo motivo que --color-amber:
+     era un rojo "de sistema" muy saturado, mientras el resto de la paleta
+     (sage, ámbar) es apagada/considerada — junto al primary se sentía
+     ajeno al diseño. Mismo hue, menos intensidad. bg/border derivados con
+     color-mix así no pueden volver a desincronizarse del rojo real. */
+  --color-danger: #b83a3a;
+  --color-danger-bg: color-mix(in srgb, var(--color-danger) 12%, white);
+  --color-danger-border: color-mix(in srgb, var(--color-danger) 55%, white);
 
   --color-surface: #ffffff;
   --color-surface-subtle: #eeeeef;
@@ -34,21 +39,38 @@
   --color-muted: #999999;
   --color-placeholder: #bbbbbb;
   --color-divider: #a8a8ac;
-  --color-primary-disabled: #e0c4c7;
+  --color-primary-disabled: #b5c7b4;
   /* Variante más saturada/oscura de --color-primary, solo para texto que
      necesita contraste real sobre fondo claro (ej. el wordmark del login) —
-     el rosa pastel de --color-primary no alcanza para texto grande. */
-  --color-primary-deep: #a85568;
+     el salvia base da apenas 3.6:1 con blanco (pasa para íconos/UI grande
+     pero no para texto de cuerpo), este tono más profundo sube a ~5.9:1. */
+  --color-primary-deep: #4e6b4d;
+  /* A diferencia de --color-primary-deep (que se aclara en modo oscuro para
+     que el texto siga resaltando sobre el fondo casi negro), este NO cambia
+     entre temas. Es para rellenos sólidos de botones/pills con texto o
+     ícono blanco encima (el FAB "+", el chip de filtro activo) — si ese
+     relleno usara la versión clara de --color-primary-deep en oscuro, dos
+     problemas a la vez: el blanco pierde contraste contra un fondo ya claro,
+     y una forma grande en ese tono "brilla" contra el resto de la UI oscura
+     (encontrado en el rediseño del beige, 2026-08-22 — mismo motivo por el
+     que el beige se descartó del todo después: al oscurecer un tono cálido
+     bajando los tres canales por igual, se desatura y lee "marrón apagado"
+     en vez del color de marca). */
+  --color-primary-solid: #4e6b4d;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.09);
   --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.15);
 
   --color-warning-bg: #fff3cd;
   --color-warning-fg: #856404;
-  --color-amber: #e6a020;
+  /* Bajado de saturación (#e6a020 → esto) — con el primary en un cálido
+     rosa/beige el ámbar vívido convivía bien, pero al pasar el primary a un
+     teal frío, dos colores muy saturados casi opuestos en la rueda cromática
+     (~39° vs ~173°) chocan en vez de convivir. Mismo hue, menos saturación,
+     para que siga leyendo "atención/pendiente" sin pelearse con el teal. */
+  --color-amber: #cd9838;
   --color-amber-bg: #fffbf5;
   --color-success-bg: #f0fff4;
   --color-success-border: #dcfce7;
-  --color-danger-accent: #ffadad;
 
   /* Par categórico para el dashboard de métricas — el rosa de marca no pasa
      el validador de paleta (croma/lightness), así que estos dos son un par
@@ -60,15 +82,17 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --color-primary: #d79ea4;
+  --color-primary: #6b8f6a;
   --color-background: #16161a;
   --color-text: #ededed;
   --color-subtext: #a0a0a5;
   --color-border: #55555c;
   --color-success: #66bb6a;
-  --color-danger: #ef5350;
-  --color-danger-bg: #3a1f1f;
-  --color-danger-border: #a84343;
+  /* Mismo motivo que en claro — ver el comentario junto a --color-danger ahí
+     arriba. */
+  --color-danger: #c24a48;
+  --color-danger-bg: color-mix(in srgb, var(--color-danger) 18%, black);
+  --color-danger-border: color-mix(in srgb, var(--color-danger) 55%, black);
 
   --color-surface: #1e1e22;
   --color-surface-subtle: #242428;
@@ -76,23 +100,27 @@
   --color-muted: #8a8a90;
   --color-placeholder: #5c5c62;
   --color-divider: #45454c;
-  --color-primary-disabled: #4a3639;
+  --color-primary-disabled: #253225;
   /* Reusar --color-primary acá hacía que el título y el subtítulo del login
      quedaran del mismo color, sin jerarquía. Este es más saturado/vibrante
      que el primary pastel, para que el wordmark se distinga del subtítulo
-     sin perder la identidad rosa (un tono más oscuro como en modo claro se
+     sin perder la identidad salvia (un tono más oscuro como en modo claro se
      ve turbio contra el fondo casi negro, probado antes de elegir este). */
-  --color-primary-deep: #e8879a;
+  --color-primary-deep: #8fb08d;
+  /* Mismo valor fijo que en modo claro — ver el comentario largo junto a
+     --color-primary-solid ahí arriba. */
+  --color-primary-solid: #4e6b4d;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.45);
 
   --color-warning-bg: #3d3319;
   --color-warning-fg: #e0b64d;
-  --color-amber: #e6a020;
+  /* Mismo motivo que en claro — ver el comentario junto a --color-amber ahí
+     arriba. */
+  --color-amber: #cd9838;
   --color-amber-bg: #2e2418;
   --color-success-bg: #16281c;
   --color-success-border: #1f3d2a;
-  --color-danger-accent: #ffadad;
 
   --color-chart-1: #3987e5;
   --color-chart-2: #d95926;
@@ -140,7 +168,11 @@ body {
 /* Agenda redesign palette — scoped to .agenda-light/.agenda-dark (applied on
    the Agenda screen root) instead of overwriting the app-wide --color-*
    tokens above, so this visual refresh stays contained to Agenda until the
-   rest of the app is migrated to it deliberately. */
+   rest of the app is migrated to it deliberately. The primary brand color
+   (--ag-primary / --ag-primary-deep) is the exception: it aliases the
+   global --color-primary* tokens instead of duplicating the hex, so a
+   brand color change can't update the rest of the app while leaving Agenda
+   on the old color (happened once — see the 2026-08-22 teal rebrand). */
 .agenda-light {
   color-scheme: light;
   --ag-bg: #efe9e7;
@@ -152,11 +184,18 @@ body {
   --ag-muted: #b3a7aa;
   --ag-border: #e7dcde;
   --ag-hairline: #efe6e7;
-  --ag-primary: #c07d89;
-  --ag-primary-deep: #9c5566;
-  --ag-primary-soft: #f3e4e6;
+  --ag-primary: var(--color-primary);
+  --ag-primary-deep: var(--color-primary-deep);
+  --ag-primary-solid: var(--color-primary-solid);
+  /* Derivado (no hex fijo) por el mismo motivo que el alias de arriba: un
+     hex propio quedó pegado en verde cuando el primary pasó de teal a
+     beige, porque nada lo forzaba a seguir al cambio de marca. */
+  --ag-primary-soft: color-mix(in srgb, var(--color-primary) 22%, white);
   --ag-primary-fg: #ffffff;
-  --ag-amber: #c9871f;
+  /* Alias directo al ámbar global (ver --color-amber ahí arriba) por el
+     mismo motivo que --ag-primary: evita que Agenda quede con un tono
+     propio que se desincroniza la próxima vez que se ajuste la paleta. */
+  --ag-amber: var(--color-amber);
   --ag-amber-bg: #fbf1de;
   --ag-amber-fg: #855d0e;
   --ag-success: #4a9d6a;
@@ -179,19 +218,19 @@ body {
   --ag-muted: #776b70;
   --ag-border: #352d38;
   --ag-hairline: #2a232e;
-  --ag-primary: #d79ea4;
-  --ag-primary-deep: #e8879a;
-  --ag-primary-soft: #3a2b30;
-  /* Blanco, no oscuro: --ag-primary en modo oscuro (#d79ea4) coincide exacto
-     con --color-primary del theme viejo (mismo valor en los dos temas, ver
-     theme/colors.ts) — que siempre usa texto/ícono blanco encima. Un
-     primary-fg oscuro acá (más "correcto" en aislamiento por contraste)
-     hacía que el mismo circulo rosa mostrara un "+" negro en Agenda y uno
-     blanco en Servicios/Clientes/etc. en modo oscuro — dos módulos con el
-     mismo color de fondo y el ícono invertido, lee como bug aunque cada uno
-     por separado esté bien. */
+  --ag-primary: var(--color-primary);
+  --ag-primary-deep: var(--color-primary-deep);
+  --ag-primary-solid: var(--color-primary-solid);
+  --ag-primary-soft: color-mix(in srgb, var(--color-primary) 18%, black);
+  /* Blanco, no oscuro: --ag-primary en modo oscuro ahora es un alias directo
+     de --color-primary (mismo valor siempre, ver theme/colors.ts) — que
+     siempre usa texto/ícono blanco encima. Un primary-fg oscuro acá (más
+     "correcto" en aislamiento por contraste) hacía que el mismo círculo
+     mostrara un "+" negro en Agenda y uno blanco en Servicios/Clientes/etc.
+     en modo oscuro — dos módulos con el mismo color de fondo y el ícono
+     invertido, lee como bug aunque cada uno por separado esté bien. */
   --ag-primary-fg: #ffffff;
-  --ag-amber: #e6a020;
+  --ag-amber: var(--color-amber);
   --ag-amber-bg: #2e2418;
   --ag-amber-fg: #e0b64d;
   --ag-success: #66bb6a;

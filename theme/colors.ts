@@ -6,7 +6,7 @@
 // tanto no pueden resolver var(...) — ej. el <meta name="theme-color"> del
 // viewport de Next.js. Mismo valor en ambos temas (colors.primary no cambia
 // entre claro/oscuro), así que no hace falta una versión "oscura".
-export const primaryRaw = '#d79ea4';
+export const primaryRaw = '#6b8f6a';
 
 // Mismo criterio que primaryRaw: versión cruda de --color-primary-deep para
 // consumidores que no resuelven var(...) (acá, estilos.ts — html-to-image
@@ -16,11 +16,12 @@ export const primaryRaw = '#d79ea4';
 // (app/globals.css) — se fija el valor de modo claro porque la exportación
 // de la historia de precios es una imagen fija, no debe variar según el
 // tema activo del usuario al momento de generarla.
-export const primaryDeepRaw = '#a85568';
+export const primaryDeepRaw = '#4e6b4d';
 
 export const colors = {
   primary: 'var(--color-primary)',
   primaryDeep: 'var(--color-primary-deep)',
+  primarySolid: 'var(--color-primary-solid)',
   background: 'var(--color-background)',
   text: 'var(--color-text)',
   subtext: 'var(--color-subtext)',
@@ -42,7 +43,6 @@ export const colors = {
   amberBg: 'var(--color-amber-bg)',
   successBg: 'var(--color-success-bg)',
   successBorder: 'var(--color-success-border)',
-  dangerAccent: 'var(--color-danger-accent)',
   chart1: 'var(--color-chart-1)',
   chart2: 'var(--color-chart-2)',
 };
@@ -67,7 +67,7 @@ export function withAlpha(color: string, alphaHex: string): string {
 // (chips, badges, nombre en las cards). Colores separados entre sí en tono
 // para que sean identificables incluso en textos chicos de 9-10px.
 export const profesionalPalette = [
-  '#d79ea4', // rosa (primary)
+  '#6b8f6a', // salvia (primary)
   '#8ecae6', // celeste
   '#ffb703', // ámbar
   '#06d6a0', // verde agua

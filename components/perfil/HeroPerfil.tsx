@@ -76,7 +76,7 @@ export function HeroPerfil({ user }: Props) {
           {user.logo_url ? (
             <Image src={user.logo_url} alt="" fill sizes="54px" style={{ objectFit: 'cover' }} />
           ) : (
-            <span style={{ fontSize: 22, fontWeight: 700, color: colors.primary }}>
+            <span style={{ fontSize: 22, fontWeight: 700, color: colors.primaryDeep }}>
               {user.name.charAt(0).toUpperCase()}
             </span>
           )}
@@ -101,7 +101,7 @@ export function HeroPerfil({ user }: Props) {
             aria-hidden
             style={{
               position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: '50%',
-              backgroundColor: colors.primary, border: `2px solid ${colors.surface}`,
+              backgroundColor: colors.primarySolid, border: `2px solid ${colors.surface}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >

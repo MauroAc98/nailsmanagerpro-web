@@ -54,7 +54,7 @@ function PendienteCard({ turno, onCargarPrecio }: { turno: Turno; onCargarPrecio
           padding: '8px 14px',
           borderRadius: 10,
           border: 'none',
-          backgroundColor: colors.primary,
+          backgroundColor: colors.primarySolid,
           color: '#FFF',
           fontSize: 13,
           fontWeight: 600,

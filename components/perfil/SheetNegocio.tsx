@@ -165,7 +165,7 @@ export function SheetNegocio({
               onClick={() => setHoraRecordatorio(h)}
               style={{
                 borderRadius: 20, padding: '8px 16px', fontSize: 14, border: 'none', cursor: 'pointer',
-                backgroundColor: horaRecordatorio === h ? colors.primary : colors.border,
+                backgroundColor: horaRecordatorio === h ? colors.primarySolid : colors.border,
                 color: horaRecordatorio === h ? '#fff' : colors.subtext,
               }}
             >
@@ -198,7 +198,7 @@ export function SheetNegocio({
                 style={{
                   flex: 1, borderRadius: 20, padding: '8px 12px', fontSize: 13, fontWeight: 600,
                   border: 'none', cursor: 'pointer',
-                  backgroundColor: tipoPreview === tipo ? colors.primary : colors.border,
+                  backgroundColor: tipoPreview === tipo ? colors.primarySolid : colors.border,
                   color: tipoPreview === tipo ? '#fff' : colors.subtext,
                 }}
               >
@@ -227,7 +227,7 @@ export function SheetNegocio({
         onClick={onGuardar}
         disabled={guardando}
         style={{
-          width: '100%', background: colors.primary, borderRadius: 14, padding: 16,
+          width: '100%', background: colors.primarySolid, borderRadius: 14, padding: 16,
           border: 'none', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer',
           opacity: guardando ? 0.6 : 1,
         }}

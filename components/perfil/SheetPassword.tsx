@@ -99,7 +99,7 @@ export function SheetPassword({
         onClick={onGuardar}
         disabled={guardando}
         style={{
-          width: '100%', background: colors.primary, borderRadius: 14, padding: 16,
+          width: '100%', background: colors.primarySolid, borderRadius: 14, padding: 16,
           border: 'none', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer',
           opacity: guardando ? 0.6 : 1,
         }}

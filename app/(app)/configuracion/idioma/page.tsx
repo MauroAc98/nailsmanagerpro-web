@@ -65,7 +65,7 @@ export default function IdiomaPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 15,
                 backgroundColor: selected ? withAlpha(colors.primary, '12') : colors.surface,
-                border: `1px solid ${selected ? colors.primary : colors.border}`,
+                border: `1px solid ${selected ? colors.primaryDeep : colors.border}`,
                 boxShadow: shadows.card, borderRadius: 14,
                 padding: '14px 16px', cursor: guardando !== null ? 'not-allowed' : 'pointer', textAlign: 'left',
                 opacity: guardando !== null && guardando !== opcion ? 0.6 : 1,
@@ -75,7 +75,7 @@ export default function IdiomaPage() {
                 <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: colors.text }}>{LOCALE_LABELS[opcion]}</p>
               </div>
               {selected && (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               )}

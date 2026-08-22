@@ -16,6 +16,7 @@ export const agendaColors = {
   hairline: 'var(--ag-hairline)',
   primary: 'var(--ag-primary)',
   primaryDeep: 'var(--ag-primary-deep)',
+  primarySolid: 'var(--ag-primary-solid)',
   primarySoft: 'var(--ag-primary-soft)',
   primaryFg: 'var(--ag-primary-fg)',
   amber: 'var(--ag-amber)',
@@ -44,17 +45,18 @@ export const agendaColors = {
   warningBg: 'var(--ag-amber-bg)',
   warningFg: 'var(--ag-amber-fg)',
   successBorder: withAlpha('var(--ag-success)', '73'),
-  dangerBg: withAlpha('var(--ag-danger)', '1F'),
-  dangerBorder: withAlpha('var(--ag-danger)', '73'),
-  // Global directo (no --ag-*): el mismo rosa clarito que usa ServicioCard/
-  // GastoCard para el fondo del swipe-to-delete. Antes apuntaba a
-  // --ag-danger (igual que `danger`), dejando el ícono/texto del mismo
-  // color que su propio fondo — invisibles.
-  dangerAccent: 'var(--color-danger-accent)',
+  // Antes se calculaban con withAlpha sobre --ag-danger en vez de apuntar
+  // directo a los mismos hex planos que usa el resto de la app (ServicioCard/
+  // GastoCard, el botón de "Cerrar sesión", el badge "cancelado") — dos
+  // fórmulas distintas para el mismo "rojo suave" que podían verse
+  // ligeramente distintas según qué había detrás del alpha. Alias directo,
+  // mismo criterio que --ag-primary.
+  dangerBg: 'var(--color-danger-bg)',
+  dangerBorder: 'var(--color-danger-border)',
   primaryDisabled: withAlpha('var(--ag-primary)', '59'),
-  // Mismo criterio que dangerAccent: los dos colores de la comparación
-  // nuevas/recurrentes en Estadísticas no tienen equivalente --ag-*
-  // (no son parte de la paleta rosa), así que apuntan directo al global.
+  // Los dos colores de la comparación nuevas/recurrentes en Estadísticas no
+  // tienen equivalente --ag-* (no son parte de la paleta de Agenda), así que
+  // apuntan directo al global.
   chart1: 'var(--color-chart-1)',
   chart2: 'var(--color-chart-2)',
 };

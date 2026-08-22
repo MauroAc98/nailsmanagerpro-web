@@ -86,7 +86,7 @@ export function SelectorPlantilla({
               flexShrink: 0, scrollSnapAlign: 'start',
               padding: 5, borderRadius: 16, cursor: bloqueado ? 'not-allowed' : 'pointer',
               background: seleccionado ? withAlpha(colors.primary, '1F') : 'transparent',
-              border: `1.5px solid ${seleccionado ? colors.primary : colors.border}`,
+              border: `1.5px solid ${seleccionado ? colors.primaryDeep : colors.border}`,
               opacity: bloqueado ? 0.45 : 1,
             }}
           >

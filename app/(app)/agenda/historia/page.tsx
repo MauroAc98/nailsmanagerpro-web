@@ -30,7 +30,7 @@ function tabStyle(active: boolean): React.CSSProperties {
   return {
     flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
     cursor: 'pointer',
-    background:  active ? colors.primary : 'transparent',
+    background:  active ? colors.primarySolid : 'transparent',
     color:       active ? colors.primaryFg : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
     boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
@@ -44,7 +44,7 @@ const sectionTabContainerStyle: React.CSSProperties = {
 function sectionTabStyle(active: boolean): React.CSSProperties {
   return {
     flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 17, border: 'none', cursor: 'pointer',
-    background: active ? colors.primary : 'transparent',
+    background: active ? colors.primarySolid : 'transparent',
     color:      active ? colors.primaryFg : colors.subtext,
     fontWeight: 700, fontSize: 12,
     boxShadow:  active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
@@ -151,7 +151,7 @@ function HistoriaContent() {
             elegir otro. Nunca deben quedar atrapados detrás del estado
             vacío de más abajo. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginBottom: 12 }}>
-          <CalendarDays size={16} color={colors.primary} />
+          <CalendarDays size={16} color={colors.primaryDeep} />
           <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
             {t('whatToShow')}
           </span>
@@ -328,7 +328,7 @@ function HistoriaContent() {
               {seccion === 'texto' && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <Type size={16} color={colors.primary} />
+                    <Type size={16} color={colors.primaryDeep} />
                     <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
                       {t('sectionText')}
                     </span>
@@ -352,7 +352,7 @@ function HistoriaContent() {
               {seccion === 'fondo' && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <ImagePlus size={16} color={colors.primary} />
+                    <ImagePlus size={16} color={colors.primaryDeep} />
                     <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
                       {t('sectionBackground')}
                     </span>
@@ -361,7 +361,7 @@ function HistoriaContent() {
                     onClick={() => fileInputRef.current?.click()}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
-                      padding: '16px 0', borderRadius: 16, border: `1.5px dashed ${colors.primary}`,
+                      padding: '16px 0', borderRadius: 16, border: `1.5px dashed ${colors.primaryDeep}`,
                       backgroundColor: colors.primarySoft, color: colors.primaryDeep,
                       fontSize: 13, fontWeight: 700, cursor: 'pointer',
                     }}
@@ -398,7 +398,7 @@ function HistoriaContent() {
                 <Download size={18} strokeWidth={2} color={colors.text} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{t('save')}</span>
               </button>
-              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.primary, border: 'none' }}>
+              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.primarySolid, border: 'none' }}>
                 <Share2 size={18} strokeWidth={2} color={colors.primaryFg} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.primaryFg }}>{t('share')}</span>
               </button>

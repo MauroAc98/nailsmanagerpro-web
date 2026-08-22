@@ -59,7 +59,7 @@ export default function CambiarPasswordPage() {
           justifyContent: 'center',
           margin: '0 auto 16px',
         }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             <path d="M9 12l2 2 4-4"/>
           </svg>
@@ -233,7 +233,7 @@ export default function CambiarPasswordPage() {
           style={{
             height: 52,
             borderRadius: 14,
-            backgroundColor: loading || !valido ? colors.primaryDisabled : colors.primary,
+            backgroundColor: loading || !valido ? colors.primaryDisabled : colors.primarySolid,
             color: '#fff',
             fontSize: 16,
             fontWeight: 600,

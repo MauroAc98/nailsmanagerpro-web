@@ -38,7 +38,7 @@ function tabStyle(active: boolean): React.CSSProperties {
   return {
     flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
     cursor: 'pointer',
-    background:  active ? colors.primary : 'transparent',
+    background:  active ? colors.primarySolid : 'transparent',
     color:       active ? colors.primaryFg : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
     boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '4D')}` : 'none',
@@ -352,7 +352,7 @@ export default function HistoriaPreciosPage() {
                 width: 36, height: 36, borderRadius: 12, flexShrink: 0,
                 background: withAlpha(colors.primary, '20'), display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <ImagePlus size={18} color={colors.primary} strokeWidth={2} />
+                <ImagePlus size={18} color={colors.primaryDeep} strokeWidth={2} />
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: colors.textStrong }}>
@@ -383,11 +383,11 @@ export default function HistoriaPreciosPage() {
                 cursor: puedeCapturar ? 'pointer' : 'not-allowed', opacity: puedeCapturar ? 1 : 0.5,
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('save')}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('save')}</span>
             </button>
             <button
               onClick={compartirImagen}
@@ -398,11 +398,11 @@ export default function HistoriaPreciosPage() {
                 cursor: puedeCapturar ? 'pointer' : 'not-allowed', opacity: puedeCapturar ? 1 : 0.5,
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                 <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primary }}>{t('share')}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('share')}</span>
             </button>
           </div>
         </div>

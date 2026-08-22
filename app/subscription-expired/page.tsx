@@ -54,7 +54,7 @@ export default function SubscriptionExpiredPage() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
         
         {/* Ícono */}
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" style={{ marginBottom: 20 }}>
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" style={{ marginBottom: 20 }}>
           <rect x="3" y="11" width="18" height="11" rx="2"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
@@ -77,7 +77,7 @@ export default function SubscriptionExpiredPage() {
             background: 'none',
             border: 'none',
             cursor: checking ? 'not-allowed' : 'pointer',
-            color: colors.primary,
+            color: colors.primaryDeep,
             fontSize: 14,
             fontWeight: '600',
             padding: 8,
@@ -127,7 +127,7 @@ export default function SubscriptionExpiredPage() {
             disabled={!supportInfo?.email}
             style={{
               borderWidth: 1.5,
-              borderColor: colors.primary,
+              borderColor: colors.primaryDeep,
               borderStyle: 'solid',
               display: 'flex',
               alignItems: 'center',
@@ -139,14 +139,14 @@ export default function SubscriptionExpiredPage() {
               cursor: supportInfo?.email ? 'pointer' : 'not-allowed',
               gap: 10,
               opacity: supportInfo?.email ? 1 : 0.6,
-              border: `1.5px solid ${colors.primary}`,
+              border: `1.5px solid ${colors.primaryDeep}`,
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
               <polyline points="22,6 12,13 2,6"/>
             </svg>
-            <span style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>{t('sendEmail')}</span>
+            <span style={{ color: colors.primaryDeep, fontSize: 15, fontWeight: '600' }}>{t('sendEmail')}</span>
           </button>
         </div>
       </div>

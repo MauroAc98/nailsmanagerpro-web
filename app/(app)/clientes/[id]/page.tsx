@@ -178,7 +178,7 @@ export default function EditarClientePage() {
           disabled={saving}
           style={{
             marginTop: 20, height: 52, borderRadius: 14,
-            backgroundColor: saving ? colors.primaryDisabled : colors.primary,
+            backgroundColor: saving ? colors.primaryDisabled : colors.primarySolid,
             color: '#fff', fontSize: 16, fontWeight: 600,
             border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
           }}
