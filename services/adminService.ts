@@ -37,6 +37,10 @@ export interface CrearNegocioPayload {
   email: string;
   profesional_nombre: string;
   profesional_apellido: string;
+  // Opcional: cuando true, el backend no crea suscripción/período de prueba
+  // para este negocio (ver AdminController::crearNegocio). Omitido = flujo
+  // normal con período de prueba, igual que antes de este campo existir.
+  is_exempt?: boolean;
 }
 
 export interface CrearNegocioResponse {

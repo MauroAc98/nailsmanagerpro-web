@@ -7,7 +7,9 @@ import { ArrowLeft, Building2, Mail, User, KeyRound, Copy, Check, CircleCheck } 
 import { adminService, CrearNegocioPayload, CrearNegocioResponse } from '@/services/adminService';
 import { colors, shadows, withAlpha } from '@/theme/colors';
 
-type Campo = keyof CrearNegocioPayload;
+// Excluye is_exempt: no es un campo de texto con label/validación como los
+// demás, se maneja aparte via el checkbox y el estado esExento.
+type Campo = keyof Omit<CrearNegocioPayload, 'is_exempt'>;
 
 const CAMPOS_VACIOS: CrearNegocioPayload = {
   name: '',
@@ -59,6 +61,7 @@ export default function NuevoNegocioPage() {
   const [resultado, setResultado] = useState<CrearNegocioResponse | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [focusedField, setFocusedField] = useState<Campo | null>(null);
+  const [esExento, setEsExento] = useState(false);
 
   const handleChange = (campo: Campo) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setValores((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -87,6 +90,7 @@ export default function NuevoNegocioPage() {
         email: valores.email.trim().toLowerCase(),
         profesional_nombre: valores.profesional_nombre.trim(),
         profesional_apellido: valores.profesional_apellido.trim(),
+        ...(esExento ? { is_exempt: true } : {}),
       };
       const response = await adminService.crearNegocio(payload);
       setResultado(response);
@@ -112,6 +116,7 @@ export default function NuevoNegocioPage() {
     setErroresDeCampo({});
     setErrorGeneral(null);
     setCopiado(false);
+    setEsExento(false);
   };
 
   const handleCopiarPassword = async () => {
@@ -308,6 +313,22 @@ export default function NuevoNegocioPage() {
             </div>
             {erroresDeCampo.profesional_apellido && <p style={{ fontSize: 12, color: colors.danger, margin: 0 }}>{erroresDeCampo.profesional_apellido}</p>}
           </div>
+
+          <label
+            htmlFor="negocio-exento"
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 14, backgroundColor: colors.surfaceSubtle, cursor: 'pointer' }}
+          >
+            <input
+              id="negocio-exento"
+              type="checkbox"
+              checked={esExento}
+              onChange={(e) => setEsExento(e.target.checked)}
+              style={{ flexShrink: 0, width: 18, height: 18, cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 13, color: colors.text }}>
+              Cuenta exenta de suscripción (sin período de prueba)
+            </span>
+          </label>
 
           <button
             type="submit"

@@ -247,6 +247,8 @@ export default function SuscripcionesPage() {
                   <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>
                     {negocio.subscription ? (
                       <>{negocio.subscription.status} · vence {formatFechaCorta(negocio.subscription.ends_at)}</>
+                    ) : negocio.is_exempt ? (
+                      <span style={{ fontStyle: 'italic' }}>Exento</span>
                     ) : (
                       <span style={{ fontStyle: 'italic' }}>Sin suscripción</span>
                     )}
@@ -279,13 +281,27 @@ export default function SuscripcionesPage() {
                   <p style={{ fontSize: 15, color: colors.textStrong, fontWeight: 600, margin: 0 }}>
                     {seleccionado.subscription.status} · vence {formatFechaCorta(seleccionado.subscription.ends_at)}
                   </p>
+                ) : seleccionado.is_exempt ? (
+                  <p style={{ fontSize: 15, color: colors.subtext, fontStyle: 'italic', margin: 0 }}>Cuenta exenta</p>
                 ) : (
                   <p style={{ fontSize: 15, color: colors.subtext, fontStyle: 'italic', margin: 0 }}>Sin suscripción</p>
                 )}
               </div>
             </div>
 
-            {renovado ? (
+            {!seleccionado.subscription ? (
+              // Negocio sin suscripción: renewSubscription en el backend
+              // 404-ea con "El usuario no tiene suscripción" para estas
+              // cuentas (ver AGENTS de la task), así que no mostramos el
+              // flujo de renovación — no aplica, sea por is_exempt o por
+              // cualquier otro motivo de datos sin suscripción.
+              <div style={{ padding: '14px 16px', borderRadius: 12, backgroundColor: colors.surfaceSubtle }}>
+                <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
+                  Esta cuenta no tiene suscripción — no aplica renovación.
+                  {seleccionado.is_exempt && ' Exento.'}
+                </p>
+              </div>
+            ) : renovado ? (
               <div style={{ backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`, borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', textAlign: 'center' }}>
                 <CircleCheck size={26} color={colors.success} strokeWidth={1.5} />
                 <p style={{ fontSize: 15, fontWeight: 700, color: colors.textStrong, margin: 0 }}>Suscripción renovada</p>
