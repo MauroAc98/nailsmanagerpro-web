@@ -1,0 +1,23 @@
+{
+  "name": "Turnetto Admin",
+  "short_name": "T. Admin",
+  "description": "Panel de administración de Turnetto",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6b8f6a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
