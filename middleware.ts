@@ -24,15 +24,22 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // request.nextUrl.protocol refleja X-Forwarded-Proto (https, seteado por
+  // nginx) — pero el proxy interno de Next para un rewrite hace un fetch
+  // real a ese origin, y el proceso Node solo escucha HTTP plano en :3000
+  // (nginx termina TLS). Sin forzar 'http:' acá, ese fetch interno intenta
+  // TLS contra un puerto HTTP y tira EPROTO/"wrong version number".
   const assetPath = ADMIN_ASSET_MAP[pathname];
   if (assetPath) {
     const url = request.nextUrl.clone();
+    url.protocol = 'http:';
     url.pathname = assetPath;
     return NextResponse.rewrite(url);
   }
 
   if (!pathname.startsWith('/admin')) {
     const url = request.nextUrl.clone();
+    url.protocol = 'http:';
     url.pathname = '/admin';
     return NextResponse.rewrite(url);
   }
