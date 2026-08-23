@@ -33,13 +33,22 @@ function esRutaPublica(pathname: string): boolean {
 // Panel de administración — identidad, guard y store completamente
 // separados del tenant (ver design admin-panel decisión #7 y
 // app/(admin)/admin/layout.tsx, que tiene su propio guard). Este guard
-// NUNCA debe evaluar ni redirigir /admin/*: sin este corte, alguien sin
-// sesión tenant que entra directo a /admin/login sería expulsado a
+// NUNCA debe evaluar ni redirigir nada en admin.turnetto.com: sin este
+// corte, alguien sin sesión tenant que entra ahí sería expulsado a
 // /login?redirect=... antes de poder loguearse como admin.
-const ADMIN_PREFIX = '/admin';
+//
+// Detecta por HOST, no por prefijo de pathname — hasta hace poco esto
+// era pathname.startsWith('/admin'), pero admin.turnetto.com ahora sirve
+// URLs limpias (/, /login, /suscripciones...) sin ese prefijo (ver
+// middleware.ts), así que ese chequeo dejó de matchear nada ahí. Bug
+// real visto en prod: loguearse en admin quedaba en bucle infinito
+// entre "/" y "/login" — este guard (tenant) empujaba a /login por no
+// reconocer "/" como admin, y el guard admin (que sí sabe de las rutas
+// limpias) empujaba de vuelta a "/".
+const ADMIN_HOST = 'admin.turnetto.com';
 
-function esRutaAdmin(pathname: string): boolean {
-  return pathname === ADMIN_PREFIX || pathname.startsWith(`${ADMIN_PREFIX}/`);
+function esRutaAdmin(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === ADMIN_HOST;
 }
 
 // `redirect` es un query param controlado por la URL — no confiar ciegamente
@@ -142,7 +151,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted || !inicializado) return;
-    if (esRutaAdmin(pathname)) return; // el guard admin vive en su propio layout — ver app/(admin)/admin/layout.tsx
+    if (esRutaAdmin()) return; // el guard admin vive en su propio layout — ver app/(admin)/admin/layout.tsx
 
     if (!token) {
       // Sin token pero con cambio de password pendiente → el usuario está en el flujo de primer login
@@ -180,7 +189,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // (arriba), tampoco debe esperar a mounted/inicializado/mensajesListos
   // del tenant para renderizar sus hijos — el guard propio de
   // app/(admin)/admin/layout.tsx decide su propia visibilidad.
-  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname) || esRutaAdmin(pathname);
+  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname) || esRutaAdmin();
 
   let puedeMostrarContenido: boolean;
   if (esRutaNeutral) {
