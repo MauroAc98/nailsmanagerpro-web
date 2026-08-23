@@ -124,6 +124,17 @@ export const adminService = {
     return response.data;
   },
 
+  // Usado por app/(admin)/admin/suscripciones/page.tsx — GET admin/negocios
+  // devuelve TODOS los negocios sin paginar (mismo shape por item que
+  // buscarNegocio(), ordenados por vencimiento más próximo primero). Ver
+  // AdminController::listarNegocios en el backend. Distinto de
+  // buscarNegocio(): ese es búsqueda puntual por query, este es el listado
+  // completo que la pantalla filtra client-side.
+  listarNegocios: async (): Promise<NegocioLookupResult[]> => {
+    const response = await adminApi.get<NegocioLookupResult[]>('/admin/negocios');
+    return response.data;
+  },
+
   // Usado por app/(admin)/admin/suscripciones/page.tsx (Phase 5).
   renovarSuscripcion: async (userId: number, force = false): Promise<RenewSubscriptionResponse> => {
     const response = await adminApi.post<RenewSubscriptionResponse>(
