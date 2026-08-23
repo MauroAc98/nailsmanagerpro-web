@@ -55,6 +55,12 @@ export interface RenewSubscriptionResponse {
   ends_at: string;
 }
 
+// GET/PUT admin/settings — shape pensado para sumar más claves a futuro sin
+// romper el contrato (ver AdminController::obtenerSettings/actualizarSettings).
+export interface AdminSettings {
+  dias_prueba_default: number;
+}
+
 // ─────────────────────────────────────────────
 // Keys de localStorage — deliberadamente distintas de KEYS en
 // services/authService.ts (auth_token/auth_user), ver design admin-panel
@@ -146,6 +152,16 @@ export const adminService = {
       null,
       force ? { params: { force: true } } : undefined
     );
+    return response.data;
+  },
+
+  obtenerSettings: async (): Promise<AdminSettings> => {
+    const response = await adminApi.get<AdminSettings>('/admin/settings');
+    return response.data;
+  },
+
+  actualizarSettings: async (data: AdminSettings): Promise<AdminSettings> => {
+    const response = await adminApi.put<AdminSettings>('/admin/settings', data);
     return response.data;
   },
 
