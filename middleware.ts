@@ -55,10 +55,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  // URL visible en admin.turnetto.com sin el prefijo /admin (ej. /login,
+  // no /admin/login) — la ruta real en disco sigue bajo app/(admin)/admin/*
+  // (necesario para no chocar con el /login del tenant en app.turnetto.com,
+  // mismo código fuente). El rewrite mapea /login → /admin/login puertas
+  // adentro; usePathname() en los componentes admin sigue viendo el path
+  // LIMPIO (Next no expone el rewrite al cliente), por eso layout.tsx y los
+  // Link/router.push del panel usan las rutas limpias, no /admin/*.
   if (!esRutaAdmin(pathname)) {
     const url = request.nextUrl.clone();
     url.protocol = 'http:';
-    url.pathname = '/admin';
+    url.pathname = pathname === '/' ? '/admin' : `/admin${pathname}`;
     return NextResponse.rewrite(url);
   }
 

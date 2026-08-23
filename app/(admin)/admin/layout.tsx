@@ -5,10 +5,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { colors } from '@/theme/colors';
 
-// El route group (admin) no agrega segmento a la URL — el segmento
-// literal "admin" es lo que hace que todo esto viva bajo /admin/*. Ver
-// design admin-panel, tabla "File Changes".
-const ADMIN_PUBLIC_PATHS = ['/admin/login'];
+// pathname acá es el que ve el navegador — middleware.ts reescribe
+// /login → /admin/login puertas adentro para admin.turnetto.com, pero
+// usePathname() no ve rewrites, reporta el path LIMPIO. Por eso estas
+// constantes y los router.push de abajo usan rutas sin /admin.
+const ADMIN_PUBLIC_PATHS = ['/login'];
 
 function esRutaAdminPublica(pathname: string): boolean {
   return ADMIN_PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
@@ -45,11 +46,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!mounted || !inicializado) return;
 
     if (!token) {
-      if (!esRutaAdminPublica(pathname)) router.push('/admin/login');
+      if (!esRutaAdminPublica(pathname)) router.push('/login');
       return;
     }
 
-    if (esRutaAdminPublica(pathname)) router.push('/admin');
+    if (esRutaAdminPublica(pathname)) router.push('/');
   }, [mounted, inicializado, token, pathname, router]);
 
   // Mismo criterio de cálculo-en-render que app/providers.tsx: decide con
