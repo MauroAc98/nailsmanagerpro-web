@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generados por next-pwa en cada build (npm run build --webpack) — no
+    // son código fuente, no tiene sentido lintearlos.
+    "public/sw.js",
+    "public/workbox-*.js",
   ]),
 ]);
 
