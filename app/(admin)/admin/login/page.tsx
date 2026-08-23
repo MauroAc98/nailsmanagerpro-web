@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
     if (!email.trim() || !password) return;
     clearError();
     const ok = await login(email.trim().toLowerCase(), password);
-    if (ok) router.push('/admin');
+    if (ok) router.push('/');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

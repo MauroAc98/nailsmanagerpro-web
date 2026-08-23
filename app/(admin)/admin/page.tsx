@@ -17,7 +17,7 @@ export default function AdminHomePage() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/admin/login');
+    router.push('/login');
   };
 
   return (
@@ -28,7 +28,7 @@ export default function AdminHomePage() {
       </p>
 
       <Link
-        href="/admin/negocios/nuevo"
+        href="/negocios/nuevo"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -50,7 +50,7 @@ export default function AdminHomePage() {
       </Link>
 
       <Link
-        href="/admin/suscripciones"
+        href="/suscripciones"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -72,7 +72,7 @@ export default function AdminHomePage() {
       </Link>
 
       <Link
-        href="/admin/configuracion"
+        href="/configuracion"
         style={{
           display: 'flex',
           alignItems: 'center',
