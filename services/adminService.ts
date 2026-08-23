@@ -124,8 +124,7 @@ export const adminService = {
     return response.data;
   },
 
-  // Usado por la UI de renovación (fuera de alcance en esta fase — ver
-  // Phase 5 de tasks).
+  // Usado por app/(admin)/admin/suscripciones/page.tsx (Phase 5).
   renovarSuscripcion: async (userId: number, force = false): Promise<RenewSubscriptionResponse> => {
     const response = await adminApi.post<RenewSubscriptionResponse>(
       `/admin/subscriptions/${userId}/renew`,

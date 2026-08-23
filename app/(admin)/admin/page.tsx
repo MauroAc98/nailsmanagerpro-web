@@ -2,14 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
+import { Building2, RefreshCw } from 'lucide-react';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { colors, shadows } from '@/theme/colors';
 
 // Landing mínima del shell admin — no está en la lista literal de tasks
 // 3.1-3.9, pero sin una página bajo /admin el guard de layout.tsx no tiene
-// a dónde redirigir tras un login exitoso. Phase 4 agrega el primer link
-// real (creación de negocio); Phase 5 sumará el de renovación de
+// a dónde redirigir tras un login exitoso. Phase 4 agregó el link de
+// creación de negocio; Phase 5 suma el de búsqueda/renovación de
 // suscripciones acá mismo.
 export default function AdminHomePage() {
   const router = useRouter();
@@ -46,6 +46,28 @@ export default function AdminHomePage() {
         <div>
           <p style={{ fontSize: 14, fontWeight: 600, color: colors.textStrong, margin: 0 }}>Crear negocio</p>
           <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>Dar de alta un nuevo negocio y su profesional</p>
+        </div>
+      </Link>
+
+      <Link
+        href="/admin/suscripciones"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '16px 18px',
+          borderRadius: 16,
+          backgroundColor: colors.surface,
+          boxShadow: shadows.card,
+          border: `1px solid ${colors.border}`,
+          textDecoration: 'none',
+          maxWidth: 320,
+        }}
+      >
+        <RefreshCw size={20} color={colors.primaryDeep} strokeWidth={1.5} />
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: colors.textStrong, margin: 0 }}>Suscripciones</p>
+          <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>Buscar un negocio y renovar su suscripción</p>
         </div>
       </Link>
 
