@@ -113,9 +113,7 @@ export const adminService = {
     return response.data;
   },
 
-  // Usado por la UI de creación de negocio (fuera de alcance en esta
-  // fase — ver Phase 4 de tasks). Se define acá junto al resto de la capa
-  // de datos admin porque la tarea 3.3 la incluye explícitamente.
+  // Usado por app/(admin)/admin/negocios/nuevo/page.tsx (Phase 4).
   crearNegocio: async (data: CrearNegocioPayload): Promise<CrearNegocioResponse> => {
     const response = await adminApi.post<CrearNegocioResponse>('/admin/negocios', data);
     return response.data;
