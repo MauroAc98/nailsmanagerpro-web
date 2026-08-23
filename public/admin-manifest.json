@@ -2,7 +2,7 @@
   "name": "Turnetto Admin",
   "short_name": "T. Admin",
   "description": "Panel de administración de Turnetto",
-  "start_url": "/admin",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
