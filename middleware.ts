@@ -18,6 +18,17 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
   '/icon-512.png': '/admin-icon-512.png',
 };
 
+// pathname === '/admin' o pathname empieza con '/admin/' — NO
+// pathname.startsWith('/admin') a secas, que matchea por texto y agarra
+// también /admin-manifest.json, /admin-icon-192.png, etc. (que no son
+// rutas bajo /admin, son archivos hermanos con ese prefijo). Ese bug real
+// tumbaba el rewrite del manifest: el fetch interno de Next para resolver
+// ADMIN_ASSET_MAP pasa DE NUEVO por este middleware, y con el chequeo
+// suelto terminaba bloqueado por la regla de host de abajo.
+function esRutaAdmin(pathname: string): boolean {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const { pathname } = request.nextUrl;
@@ -25,7 +36,7 @@ export function middleware(request: NextRequest) {
   // El panel admin vive SOLO en admin.turnetto.com — en cualquier otro
   // host (app.turnetto.com incluido) /admin/* no debe responder más.
   if (host !== ADMIN_HOST) {
-    if (pathname.startsWith('/admin')) {
+    if (esRutaAdmin(pathname)) {
       return new NextResponse(null, { status: 404 });
     }
     return NextResponse.next();
@@ -44,7 +55,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  if (!pathname.startsWith('/admin')) {
+  if (!esRutaAdmin(pathname)) {
     const url = request.nextUrl.clone();
     url.protocol = 'http:';
     url.pathname = '/admin';
