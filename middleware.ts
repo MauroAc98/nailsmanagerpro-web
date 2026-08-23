@@ -69,6 +69,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  // sw.js/workbox-*.js (next-pwa, nombre con hash que cambia en cada
+  // build) también son archivos estáticos en public/, mismo problema que
+  // ADMIN_ASSET_MAP arriba pero sin poder hardcodear el nombre exacto.
+  // El service worker no necesita contenido distinto por dominio — cada
+  // origin lo registra por separado igual, el navegador ya lo aísla.
+  if (pathname === '/sw.js' || /^\/workbox-[^/]+\.js$/.test(pathname)) {
+    return NextResponse.next();
+  }
+
   // URL visible en admin.turnetto.com sin el prefijo /admin (ej. /login,
   // no /admin/login) — la ruta real en disco sigue bajo app/(admin)/admin/*
   // (necesario para no chocar con el /login del tenant en app.turnetto.com,
