@@ -83,7 +83,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  return NextResponse.next();
+  // Alguien pidió la ruta vieja con el prefijo (admin.turnetto.com/admin,
+  // /admin/login) directo, sin pasar por el rewrite de arriba — no debe
+  // responder, solo existe la versión limpia (/, /login). Esto NO afecta
+  // el fetch interno de Next para resolver ese rewrite: ese llega con
+  // Host: localhost:3000, no ADMIN_HOST, así que nunca llega hasta acá
+  // (vuelve en el branch de la línea 52).
+  return new NextResponse(null, { status: 404 });
 }
 
 export const config = {
