@@ -15,7 +15,11 @@ const apiHostname = new URL(
 
 const withPWA = require("next-pwa")({
   dest: "public",
-  register: true,
+  // El auto-registro de next-pwa inyecta en el entry 'main.js' de webpack
+  // (Pages Router) — esta app es App Router (entry 'main-app'), así que esa
+  // inyección nunca corría (confirmado: cero requests a /sw.js al cargar,
+  // en ningún dominio). Registro manual en app/providers.tsx en su lugar.
+  register: false,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
