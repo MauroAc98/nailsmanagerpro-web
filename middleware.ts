@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 //    (pierde el prerenderizado estático de cada ruta). Reescribir acá
 //    mantiene el HTML 100% estático y solo cambia qué archivo responde.
 const ADMIN_HOST = 'admin.turnetto.com';
+const APP_HOST = 'app.turnetto.com';
 
 const ADMIN_ASSET_MAP: Record<string, string> = {
   '/manifest.json': '/admin-manifest.json',
@@ -33,12 +34,25 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const { pathname } = request.nextUrl;
 
-  // El panel admin vive SOLO en admin.turnetto.com — en cualquier otro
-  // host (app.turnetto.com incluido) /admin/* no debe responder más.
-  if (host !== ADMIN_HOST) {
+  // El panel admin vive SOLO en admin.turnetto.com — en app.turnetto.com
+  // (el tenant) /admin/* no debe responder más. Ojo: esto compara contra
+  // APP_HOST puntual, NO "cualquier host que no sea ADMIN_HOST" — el
+  // rewrite de abajo hace que Next resuelva /login internamente con un
+  // fetch a http://localhost:3000/admin/login, y ESE fetch interno vuelve
+  // a pasar por este middleware con Host: localhost:3000. Bloquear ahí
+  // también tumbaba el rewrite entero (bug real, visto en prod: admin.
+  // turnetto.com/login daba 404 hasta este fix).
+  if (host === APP_HOST) {
     if (esRutaAdmin(pathname)) {
       return new NextResponse(null, { status: 404 });
     }
+    return NextResponse.next();
+  }
+
+  if (host !== ADMIN_HOST) {
+    // Ni admin.turnetto.com ni app.turnetto.com — incluye el fetch interno
+    // de Next resolviendo su propio rewrite (Host: localhost:3000). Dejar
+    // pasar sin tocar.
     return NextResponse.next();
   }
 
