@@ -127,6 +127,20 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+    // next-pwa (register: true) inyecta su script de auto-registro en el
+    // entry 'main.js' de webpack — eso es Pages Router. Esta app es App
+    // Router (entry 'main-app'), así que esa inyección nunca corrió: cero
+    // requests a /sw.js al cargar la página, en ningún dominio, nunca (
+    // confirmado con DevTools). Sin esto ningún navegador ve un service
+    // worker activo, así que Chrome/Android jamás ofrece "Instalar app"
+    // completo — solo el fallback de "Añadir a inicio" que no lo necesita.
+    // Registro manual acá, único lugar de la app que ya maneja el ciclo
+    // de vida del SW (controllerchange/update de abajo).
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Sin service worker la app sigue funcionando online-only — no es
+      // fatal, no bloqueamos nada por esto.
+    });
+
     const hadController = !!navigator.serviceWorker.controller;
     const onControllerChange = () => {
       if (hadController) window.location.reload();
