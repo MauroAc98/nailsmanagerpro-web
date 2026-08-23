@@ -22,15 +22,30 @@ const withPWA = require("next-pwa")({
     // El resto de next-pwa/cache trata cualquier GET cross-origin (o sea,
     // cualquier llamada a la API en api.turnetto.com, otro
     // subdominio) como "cross-origin": NetworkFirst con hasta 1h de caché
-    // si la red está inestable. Para /auth/* y /support-info eso puede
-    // dejar a alguien con la sesión/suscripción vencida viendo el estado
-    // viejo (ej. subscriptionExpired: false) hasta una hora — van
+    // si la red está inestable. Para /auth/*, /support-info y /admin/* eso
+    // puede dejar a alguien con la sesión/suscripción vencida viendo el
+    // estado viejo (ej. subscriptionExpired: false) hasta una hora, o peor
+    // — para /admin/negocios/buscar y /admin/whatsapp/uso-por-salon,
+    // dejaría emails/nombres de negocios ajenos en Cache Storage,
+    // legibles sin token y repetibles incluso después de un logout. Van
     // primero acá, sin caché, porque workbox matchea en orden y la
     // primera regla que matchea gana.
+    //
+    // Gotcha confirmado (ver design admin-panel, sección PWA): en
+    // producción NEXT_PUBLIC_API_URL termina en "/api"
+    // (https://api.turnetto.com/api), así que Laravel sirve estas rutas
+    // bajo /api/auth/..., no /auth/... — el matcher original solo
+    // chequeaba url.pathname.startsWith("/auth/"), que nunca matcheaba en
+    // el deploy real (no-op silencioso: /auth/* y /support-info se
+    // cacheaban 1h igual). El prefijo "/api/" opcional lo corrige acá para
+    // ambas familias de rutas, tolerante a cualquier valor futuro de
+    // NEXT_PUBLIC_API_URL con o sin ese prefijo.
     {
       urlPattern: ({ url }: { url: URL }) =>
         url.hostname === apiHostname &&
-        (url.pathname.startsWith("/auth/") || url.pathname === "/support-info"),
+        (/^\/(api\/)?auth\//.test(url.pathname) ||
+          /^\/(api\/)?support-info$/.test(url.pathname) ||
+          /^\/(api\/)?admin\//.test(url.pathname)),
       handler: "NetworkOnly",
     },
     ...defaultRuntimeCaching,
