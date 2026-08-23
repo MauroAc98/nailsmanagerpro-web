@@ -20,9 +20,16 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
-  if (host !== ADMIN_HOST) return NextResponse.next();
-
   const { pathname } = request.nextUrl;
+
+  // El panel admin vive SOLO en admin.turnetto.com — en cualquier otro
+  // host (app.turnetto.com incluido) /admin/* no debe responder más.
+  if (host !== ADMIN_HOST) {
+    if (pathname.startsWith('/admin')) {
+      return new NextResponse(null, { status: 404 });
+    }
+    return NextResponse.next();
+  }
 
   // request.nextUrl.protocol refleja X-Forwarded-Proto (https, seteado por
   // nginx) — pero el proxy interno de Next para un rewrite hace un fetch
