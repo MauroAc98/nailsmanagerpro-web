@@ -2,14 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // admin.turnetto.com es el mismo build que app.turnetto.com (mismo proceso
 // PM2, mismo puerto en nginx — ver nginx sites-available/admin-turnetto),
-// separado solo por Host. Dos cosas distintas acá:
-// 1. Cualquier ruta que no sea /admin cae en /admin (si no, entrar a "/"
-//    termina en app/page.tsx → redirect a /login, el login de tenant).
-// 2. manifest/ícono se reescriben a los archivos propios de admin — a
-//    nivel de red, no en app/layout.tsx, a propósito: leer el Host ahí
-//    (generateMetadata con next/headers) vuelve TODA la app dinámica
-//    (pierde el prerenderizado estático de cada ruta). Reescribir acá
-//    mantiene el HTML 100% estático y solo cambia qué archivo responde.
+// separado solo por Host. Acá se resuelven tres cosas:
+// 1. Las páginas del panel (rutas limpias, sin /admin) se reescriben a su
+//    archivo real bajo app/(admin)/admin/* — necesario para no chocar con
+//    el /login del tenant en app.turnetto.com, mismo código fuente.
+// 2. manifest/ícono se reescriben a los archivos propios de admin.
+// 3. Todo lo demás (assets estáticos de public/: splash/*, *.svg, etc.)
+//    pasa SIN TOCAR. Bug real que costó ratos de debugging esta noche:
+//    hasta esta versión, un catch-all reescribía CUALQUIER pathname no
+//    reconocido con el prefijo /admin — incluidos archivos estáticos como
+//    /splash/apple-splash-*.png o /admin-icon-192.png (pedido por su
+//    nombre real, no vía ADMIN_ASSET_MAP). Eso los rompía con 404. El
+//    service worker precachea TODOS los assets de public/ al instalar —
+//    33 de 146 URLs 404eaban, y workbox aborta el install completo si
+//    una sola falla, así que el service worker nunca terminaba de
+//    instalar en admin.turnetto.com (quedaba en estado "redundant" en
+//    silencio) aunque el registro en sí resolviera bien. Por eso ahora
+//    el rewrite de páginas usa una lista explícita en vez de un
+//    catch-all: solo las 5 páginas reales del panel se reescriben,
+//    cualquier otra cosa (activo estático o no) se sirve tal cual.
 const ADMIN_HOST = 'admin.turnetto.com';
 const APP_HOST = 'app.turnetto.com';
 
@@ -19,14 +30,21 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
   '/icon-512.png': '/admin-icon-512.png',
 };
 
+// Único lugar que define qué URLs limpias existen en el panel — si se
+// agrega una página nueva bajo app/(admin)/admin/, sumarla acá también.
+const ADMIN_PAGES = new Set([
+  '/',
+  '/login',
+  '/negocios/nuevo',
+  '/suscripciones',
+  '/configuracion',
+]);
+
 // pathname === '/admin' o pathname empieza con '/admin/' — NO
 // pathname.startsWith('/admin') a secas, que matchea por texto y agarra
 // también /admin-manifest.json, /admin-icon-192.png, etc. (que no son
-// rutas bajo /admin, son archivos hermanos con ese prefijo). Ese bug real
-// tumbaba el rewrite del manifest: el fetch interno de Next para resolver
-// ADMIN_ASSET_MAP pasa DE NUEVO por este middleware, y con el chequeo
-// suelto terminaba bloqueado por la regla de host de abajo.
-function esRutaAdmin(pathname: string): boolean {
+// rutas bajo /admin, son archivos hermanos con ese prefijo).
+function esRutaAdminVieja(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 
@@ -41,9 +59,9 @@ export function middleware(request: NextRequest) {
   // fetch a http://localhost:3000/admin/login, y ESE fetch interno vuelve
   // a pasar por este middleware con Host: localhost:3000. Bloquear ahí
   // también tumbaba el rewrite entero (bug real, visto en prod: admin.
-  // turnetto.com/login daba 404 hasta este fix).
+  // turnetto.com/login daba 404 hasta ese fix).
   if (host === APP_HOST) {
-    if (esRutaAdmin(pathname)) {
+    if (esRutaAdminVieja(pathname)) {
       return new NextResponse(null, { status: 404 });
     }
     return NextResponse.next();
@@ -69,36 +87,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  // sw.js/workbox-*.js (next-pwa, nombre con hash que cambia en cada
-  // build) también son archivos estáticos en public/, mismo problema que
-  // ADMIN_ASSET_MAP arriba pero sin poder hardcodear el nombre exacto.
-  // El service worker no necesita contenido distinto por dominio — cada
-  // origin lo registra por separado igual, el navegador ya lo aísla.
-  if (pathname === '/sw.js' || /^\/workbox-[^/]+\.js$/.test(pathname)) {
-    return NextResponse.next();
-  }
-
-  // URL visible en admin.turnetto.com sin el prefijo /admin (ej. /login,
-  // no /admin/login) — la ruta real en disco sigue bajo app/(admin)/admin/*
-  // (necesario para no chocar con el /login del tenant en app.turnetto.com,
-  // mismo código fuente). El rewrite mapea /login → /admin/login puertas
-  // adentro; usePathname() en los componentes admin sigue viendo el path
-  // LIMPIO (Next no expone el rewrite al cliente), por eso layout.tsx y los
-  // Link/router.push del panel usan las rutas limpias, no /admin/*.
-  if (!esRutaAdmin(pathname)) {
+  if (ADMIN_PAGES.has(pathname)) {
     const url = request.nextUrl.clone();
     url.protocol = 'http:';
     url.pathname = pathname === '/' ? '/admin' : `/admin${pathname}`;
     return NextResponse.rewrite(url);
   }
 
-  // Alguien pidió la ruta vieja con el prefijo (admin.turnetto.com/admin,
-  // /admin/login) directo, sin pasar por el rewrite de arriba — no debe
-  // responder, solo existe la versión limpia (/, /login). Esto NO afecta
-  // el fetch interno de Next para resolver ese rewrite: ese llega con
-  // Host: localhost:3000, no ADMIN_HOST, así que nunca llega hasta acá
-  // (vuelve en el branch de la línea 52).
-  return new NextResponse(null, { status: 404 });
+  // Ruta vieja con el prefijo directo (admin.turnetto.com/admin,
+  // /admin/login) — no debe responder, solo existe la versión limpia.
+  if (esRutaAdminVieja(pathname)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  // Cualquier otra cosa — assets de public/ (splash/*, sw.js, workbox-*,
+  // *.svg, etc.), rutas de Next que no son del panel, lo que sea — se
+  // sirve tal cual, sin prefijo. Ver comentario largo arriba del porqué.
+  return NextResponse.next();
 }
 
 export const config = {
