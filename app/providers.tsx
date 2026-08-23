@@ -30,6 +30,18 @@ function esRutaPublica(pathname: string): boolean {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+// Panel de administración — identidad, guard y store completamente
+// separados del tenant (ver design admin-panel decisión #7 y
+// app/(admin)/admin/layout.tsx, que tiene su propio guard). Este guard
+// NUNCA debe evaluar ni redirigir /admin/*: sin este corte, alguien sin
+// sesión tenant que entra directo a /admin/login sería expulsado a
+// /login?redirect=... antes de poder loguearse como admin.
+const ADMIN_PREFIX = '/admin';
+
+function esRutaAdmin(pathname: string): boolean {
+  return pathname === ADMIN_PREFIX || pathname.startsWith(`${ADMIN_PREFIX}/`);
+}
+
 // `redirect` es un query param controlado por la URL — no confiar ciegamente
 // en él para no habilitar un open redirect. Enumerar prefijos peligrosos a
 // mano (protocol-relative "//evil.com", etc.) no alcanza: "/\evil.com"
@@ -130,6 +142,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted || !inicializado) return;
+    if (esRutaAdmin(pathname)) return; // el guard admin vive en su propio layout — ver app/(admin)/admin/layout.tsx
 
     if (!token) {
       // Sin token pero con cambio de password pendiente → el usuario está en el flujo de primer login
@@ -163,7 +176,11 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // válida para el estado de auth actual; si no, mostramos blanco mientras
   // el efecto hace la redirección real.
   const rutaEsPublica = esRutaPublica(pathname);
-  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname);
+  // /admin/* se trata como neutral acá también: además de nunca redirigir
+  // (arriba), tampoco debe esperar a mounted/inicializado/mensajesListos
+  // del tenant para renderizar sus hijos — el guard propio de
+  // app/(admin)/admin/layout.tsx decide su propia visibilidad.
+  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname) || esRutaAdmin(pathname);
 
   let puedeMostrarContenido: boolean;
   if (esRutaNeutral) {
