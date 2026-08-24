@@ -1,7 +1,11 @@
 {
   "HeroPerfil": {
     "changeLogo": "Alterar logo do negócio",
-    "logoTooLarge": "A imagem não pode ter mais de 5MB."
+    "logoTooLarge": "A imagem não pode ter mais de 5MB.",
+    "cropInstructions": "Ajuste o logo dentro do quadro — arraste para mover, deslize para aproximar ou afastar.",
+    "cropCancel": "Cancelar",
+    "cropConfirm": "Pronto",
+    "cropSaving": "Salvando..."
   },
   "SheetNegocio": {
     "title": "Meu negócio",

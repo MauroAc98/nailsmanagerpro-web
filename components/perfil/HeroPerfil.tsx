@@ -9,7 +9,7 @@ import { User } from '@/services/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
-import { ajustarLogoAProporcion } from '@/lib/logo';
+import { LogoCropModal } from '@/components/perfil/LogoCropModal';
 
 interface Props {
   user: User;
@@ -25,6 +25,11 @@ export function HeroPerfil({ user }: Props) {
   const { subirLogo } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
+  // Archivo recién elegido, pendiente de recorte — separado de `subiendo`
+  // porque entre elegir el archivo y confirmar el recorte no hay ningún
+  // upload en curso todavía (el modal de recorte se muestra en base a esto,
+  // subiendo recién arranca cuando el recorte se confirma).
+  const [archivoParaRecortar, setArchivoParaRecortar] = useState<File | null>(null);
 
   const handleSeleccionar = () => {
     if (subiendo) return;
@@ -41,10 +46,14 @@ export function HeroPerfil({ user }: Props) {
       return;
     }
 
+    setArchivoParaRecortar(archivo);
+  };
+
+  const handleRecorteConfirmado = async (archivoRecortado: File) => {
+    setArchivoParaRecortar(null);
     setSubiendo(true);
     try {
-      const archivoAjustado = await ajustarLogoAProporcion(archivo);
-      await subirLogo(archivoAjustado);
+      await subirLogo(archivoRecortado);
     } catch (err) {
       await alertDialog(extraerMensajeError(err));
     } finally {
@@ -114,6 +123,14 @@ export function HeroPerfil({ user }: Props) {
         <p style={{ fontSize: 16, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{user.name}</p>
         <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>{user.email}</p>
       </div>
+
+      {archivoParaRecortar && (
+        <LogoCropModal
+          archivo={archivoParaRecortar}
+          onCancelar={() => setArchivoParaRecortar(null)}
+          onConfirmar={handleRecorteConfirmado}
+        />
+      )}
     </div>
   );
 }
