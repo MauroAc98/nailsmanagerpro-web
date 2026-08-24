@@ -27,6 +27,8 @@
     "earnings": "Ingresos",
     "expenses": "Gastos",
     "netProfit": "Ganancia neta",
+    "hideAmount": "Ocultar monto",
+    "showAmount": "Mostrar monto",
     "earningsByService": "Por servicio",
     "earningsTrendLabel_dia": "Por día",
     "earningsTrendLabel_semana": "Por semana",

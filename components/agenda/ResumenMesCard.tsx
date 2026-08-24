@@ -8,23 +8,13 @@ import { agendaColors, agendaShadows, agendaFontSerif } from '@/theme/agendaColo
 import { statsService, DashboardStats } from '@/services/statsService';
 import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
+import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 
 // Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
 // corre la fecha un día para atrás en husos negativos como ART/BRT (UTC-3)
 // cuando `d` no es medianoche local.
 function formatFecha(d: Date): string {
   return formatoYMD(d);
-}
-
-// Preferencia de "ocultar monto" tipo fintech (ojo/ojo tachado) — persiste
-// en localStorage para no tener que re-taparlo cada vez que se abre la app,
-// pero es puramente local/de este dispositivo, no pasa por el backend: no
-// hace falta sincronizarlo entre sesiones ni justifica una key en un store.
-const OCULTAR_MONTO_KEY = 'agenda:ocultarMontoResumen';
-
-function leerOcultarMonto(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(OCULTAR_MONTO_KEY) === '1';
 }
 
 interface Props {
@@ -45,23 +35,7 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   const router = useRouter();
   const t = useTranslations('agenda.ResumenMesCard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  // Arranca en false (SSR/primer render) y se corrige a la preferencia real
-  // en el effect de abajo — leer localStorage directo en el useState
-  // desalinearía el HTML del server con el del cliente (hydration mismatch).
-  const [ocultarMonto, setOcultarMonto] = useState(false);
-
-  useEffect(() => {
-    setOcultarMonto(leerOcultarMonto());
-  }, []);
-
-  const toggleOcultarMonto = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOcultarMonto(prev => {
-      const next = !prev;
-      localStorage.setItem(OCULTAR_MONTO_KEY, next ? '1' : '0');
-      return next;
-    });
-  };
+  const [ocultarMonto, toggleOcultarMonto] = useOcultarMonto();
 
   const esMesActual = viewDate.getFullYear() === new Date().getFullYear()
     && viewDate.getMonth() === new Date().getMonth();

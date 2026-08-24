@@ -27,6 +27,8 @@
     "earnings": "Receita",
     "expenses": "Despesas",
     "netProfit": "Lucro líquido",
+    "hideAmount": "Ocultar valor",
+    "showAmount": "Mostrar valor",
     "earningsByService": "Por serviço",
     "earningsTrendLabel_dia": "Por dia",
     "earningsTrendLabel_semana": "Por semana",

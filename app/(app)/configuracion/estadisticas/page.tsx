@@ -3,7 +3,8 @@
 import { Fragment, Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, TrendingDown, TrendingUp } from 'lucide-react';
+import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
@@ -331,6 +332,7 @@ function EstadisticasContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryTick, setRetryTick] = useState(0);
+  const [ocultarMonto, toggleOcultarMonto] = useOcultarMonto();
 
   // Alternativa al navegador de mes: elegir un "desde"/"hasta" a mano en vez
   // de un mes calendario completo (ej. "ganancias del 8 al 14 de junio").
@@ -714,9 +716,26 @@ function EstadisticasContent() {
 
             {/* Ganancias */}
             <div>
-              <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 10px' }}>
-                {t('earnings')}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 10px' }}>
+                <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: 0 }}>
+                  {t('earnings')}
+                </h2>
+                {/* Mismo ojo/ojo tachado y misma preferencia (localStorage
+                    compartido vía useOcultarMonto) que ResumenMesCard en
+                    Agenda — es privacidad situacional (alguien mirando la
+                    pantalla), no algo que tenga sentido taparlo acá y no
+                    allá según en qué pantalla se esté parado. */}
+                <span
+                  onClick={toggleOcultarMonto}
+                  role="button"
+                  aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
+                  style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4 }}
+                >
+                  {ocultarMonto
+                    ? <EyeOff size={16} color={colors.subtext} strokeWidth={2} />
+                    : <Eye size={16} color={colors.subtext} strokeWidth={2} />}
+                </span>
+              </div>
               {/* Ganancia neta es el número que importa (ganancias por sí
                   solas no dicen si el período fue rentable) — extiende el
                   mismo tratamiento tipográfico del hero figure de arriba
@@ -728,23 +747,25 @@ function EstadisticasContent() {
                     fontSize: 36, fontWeight: 700, lineHeight: 1, wordBreak: 'break-word',
                     color: gananciaNeta >= 0 ? colors.success : colors.danger,
                   }}>
-                    {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
+                    {ocultarMonto
+                      ? <>${' '}<span style={{ fontSize: 26, fontWeight: 400, letterSpacing: 3 }}>●●●●●</span></>
+                      : gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
                   </span>
-                  {gananciaNeta >= 0
+                  {!ocultarMonto && (gananciaNeta >= 0
                     ? <TrendingUp size={20} color={colors.success} strokeWidth={2} />
-                    : <TrendingDown size={20} color={colors.danger} strokeWidth={2} />}
+                    : <TrendingDown size={20} color={colors.danger} strokeWidth={2} />)}
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <StatTile
                   label={t('earnings')}
-                  value={`$${formatMonto(stats?.ganancias ?? 0)}`}
+                  value={ocultarMonto ? '••••••' : `$${formatMonto(stats?.ganancias ?? 0)}`}
                   color={colors.success}
                 />
                 <StatTile
                   label={t('expenses')}
-                  value={`$${formatMonto(stats?.gastos ?? 0)}`}
+                  value={ocultarMonto ? '••••••' : `$${formatMonto(stats?.gastos ?? 0)}`}
                   color={colors.danger}
                 />
               </div>

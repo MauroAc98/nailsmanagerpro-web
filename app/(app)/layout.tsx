@@ -112,13 +112,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         bottom: 0,
         left: 0,
         right: 0,
-        // Safe area va como padding (no como parte de bottom) — mismo
-        // motivo que el comment viejo de NAV_HEIGHT: con box-sizing:
-        // border-box, sumarla directo a bottom le come alto al contenido
-        // en vez de agregarse debajo.
+        // Sin height fija acá: con box-sizing: border-box (Tailwind preflight)
+        // un height:78 + paddingBottom:env(...) hace que el safe area le robe
+        // alto al contenido en vez de sumarse. Bug real visto en Safari/iOS
+        // (2026-08-24): forzar boxSizing: 'content-box' acá para poder fijar
+        // height igual funcionaba en Chrome pero en Safari el nav terminaba
+        // más alto de lo esperado — el contenido (íconos+label) quedaba
+        // corrido hacia arriba, con un hueco de más antes del home indicator.
+        // Volver al patrón anterior (altura fija en cada BOTÓN, no acá) evita
+        // depender de ese override, que es justo el tipo de propiedad con
+        // soporte más inconsistente entre motores de render.
         paddingBottom: 'env(safe-area-inset-bottom)',
-        height: NAV_HEIGHT,
-        boxSizing: 'content-box',
         // Solo arriba — pegada al borde de pantalla (NAV_MARGIN=0), no una
         // pill flotante. Ver el comment de NAV_MARGIN en constants/layout.ts:
         // esto es lo que hace que el nav y cualquier BottomSheet/FAB debajo
@@ -153,7 +157,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => router.push(tab.path)}
               style={{
                 flex: 1,
-                height: '100%',
+                height: NAV_HEIGHT,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
