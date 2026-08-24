@@ -68,7 +68,7 @@
   "HistorialClienteSheetHost": {
     "title": "Histórico de agendamentos",
     "titleWithName": "Histórico de agendamentos — {nombre} {apellido}",
-    "noTurnos": "Esta cliente ainda não tem agendamentos.",
+    "noTurnos": "Este cliente ainda não tem agendamentos.",
     "loadError": "Não foi possível carregar o histórico. Tente novamente.",
     "noResultsForFilter": "Nenhum agendamento com esse filtro.",
     "filterAll": "Todos",

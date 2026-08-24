@@ -10,6 +10,7 @@ import { initLocale, useLocaleStore } from '@/store/useLocaleStore';
 import { Loader } from '@/components/Loader';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
+import { useConfirmStore, resolveDialog } from '@/store/useConfirmStore';
 import { MotivoCancelacionSheetHost } from '@/components/MotivoCancelacionSheetHost';
 import { PrecioServiciosSheetHost } from '@/components/PrecioServiciosSheetHost';
 import { HistorialClienteSheetHost } from '@/components/HistorialClienteSheetHost';
@@ -101,6 +102,18 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     initLocale();
     setMounted(true);
   }, []);
+
+  // Un confirm/alert (ConfirmSheetHost) vive en este layout raíz, no en la
+  // pantalla que lo abrió — nunca se desmonta con la navegación. Sin este
+  // efecto, si el usuario navega mientras el diálogo sigue abierto (back del
+  // celular, redirect del guard de arriba, etc.), quedaba flotando sobre la
+  // pantalla nueva y, si lo confirmaba ahí, disparaba la acción original
+  // (ej. "desactivar cliente") atada a un contexto que el usuario ya
+  // abandonó. Se cancela solo (como si tocara "cancelar") en cuanto cambia
+  // la ruta — no dispara nada, cierra sin ejecutar la acción pendiente.
+  useEffect(() => {
+    if (useConfirmStore.getState().dialog) resolveDialog(false);
+  }, [pathname]);
 
   // Escucha eventos del interceptor de Axios (evita dependencia circular api ↔ store)
   useEffect(() => {
