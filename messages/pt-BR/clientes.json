@@ -22,6 +22,7 @@
     "lastNameRequired": "O sobrenome é obrigatório",
     "phoneLabel": "Telefone",
     "phonePlaceholder": "Número sem código do país",
+    "phoneRequired": "O telefone é obrigatório",
     "saving": "Salvando...",
     "submit": "Cadastrar Cliente",
     "saveError": "Não foi possível salvar o cliente."
@@ -37,6 +38,7 @@
     "lastNameRequired": "O sobrenome é obrigatório",
     "phoneLabel": "Telefone",
     "phonePlaceholder": "Número sem código do país",
+    "phoneRequired": "O telefone é obrigatório",
     "saving": "Salvando...",
     "submit": "Atualizar Dados",
     "saveError": "Não foi possível salvar o cliente.",

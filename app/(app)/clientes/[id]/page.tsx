@@ -34,7 +34,7 @@ export default function EditarClientePage() {
   const [apellido, setApellido] = useState('');
   const [codigoPais, setCodigoPais] = useState('54');
   const [telefono, setTelefono] = useState('');
-  const [errors, setErrors] = useState<{ nombre?: string; apellido?: string }>({});
+  const [errors, setErrors] = useState<{ nombre?: string; apellido?: string; telefono?: string }>({});
   const [loadingCliente, setLoadingCliente] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -58,9 +58,10 @@ export default function EditarClientePage() {
   }, [id]);
 
   const validate = () => {
-    const e: { nombre?: string; apellido?: string } = {};
+    const e: { nombre?: string; apellido?: string; telefono?: string } = {};
     if (!nombre.trim()) e.nombre = t('nameRequired');
     if (!apellido.trim()) e.apellido = t('lastNameRequired');
+    if (!telefono.trim()) e.telefono = t('phoneRequired');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -165,11 +166,12 @@ export default function EditarClientePage() {
               type="tel"
               placeholder={t('phonePlaceholder')}
               value={telefono}
-              onChange={e => setTelefono(e.target.value)}
+              onChange={e => { setTelefono(e.target.value); setErrors(prev => ({ ...prev, telefono: undefined })); }}
               onPaste={handlePasteTelefono}
-              style={{ ...inputStyle, flex: 1 }}
+              style={{ ...inputStyle, flex: 1, borderColor: errors.telefono ? colors.dangerBorder : colors.border }}
             />
           </div>
+          {errors.telefono && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errors.telefono}</p>}
         </div>
 
         {/* Botón */}

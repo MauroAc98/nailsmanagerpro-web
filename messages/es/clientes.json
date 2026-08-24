@@ -22,6 +22,7 @@
     "lastNameRequired": "El apellido es obligatorio",
     "phoneLabel": "Teléfono",
     "phonePlaceholder": "Número sin código de país",
+    "phoneRequired": "El teléfono es obligatorio",
     "saving": "Guardando...",
     "submit": "Registrar Cliente",
     "saveError": "No se pudo guardar el cliente."
@@ -37,6 +38,7 @@
     "lastNameRequired": "El apellido es obligatorio",
     "phoneLabel": "Teléfono",
     "phonePlaceholder": "Número sin código de país",
+    "phoneRequired": "El teléfono es obligatorio",
     "saving": "Guardando...",
     "submit": "Actualizar Datos",
     "saveError": "No se pudo guardar el cliente.",
