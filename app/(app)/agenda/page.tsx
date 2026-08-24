@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Camera, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
@@ -23,7 +24,7 @@ import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE, NAV_MARGIN } from '@/constants/layout';
 import { nombreDia, nombreMes, fechaDeHoy, formatoYMD } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
@@ -1288,13 +1289,18 @@ export default function AgendaPage() {
     // resumen, en viewports chicos (iPhone SE). Ver components/BottomSheet.tsx.
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 340 }}>
 
-      {/* Header */}
+      {/* Header — logo en vez del título de texto, pedido puntual para el
+          home (agenda). El resto de las pantallas conserva su título de
+          texto normal, esto no es un cambio de convención general. */}
       <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
-            {t('title')}
-          </h1>
-        </div>
+        {/* marginLeft 13: no alinea el borde del recorte (el PNG incluye la
+            "t" MÁS el swoosh decorativo a su derecha, así que el borde
+            izquierdo del archivo no es el centro visual de nada) — alinea
+            el centro real de la "t" (medido en píxeles: la letra sola, sin
+            el swoosh, ocupa x:[138,410] de 635px de ancho → centro al
+            43.15% del ancho del logo) con el centro del ícono circular del
+            banner de Pendientes de cobro. */}
+        <Image src="/logo-turnetto.png" alt="Turnetto" width={635} height={499} priority style={{ width: 'auto', height: 40, marginLeft: 13 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <NotificacionesBell />
           <button
@@ -1350,7 +1356,17 @@ export default function AgendaPage() {
         />
       </div>
 
-      {/* Main list sheet — draggable across 30/50/80% of viewport height */}
+      {/* Main list sheet — draggable across 30/50/80% of viewport height.
+          Sin bottomOffset a propósito — mismo patrón que
+          HistorialClienteSheetHost: el sheet llega hasta el borde real de
+          pantalla, por DETRÁS del nav (que tiene NAV_Z_INDEX más alto y
+          flota encima), en vez de parar arriba de la barra dejando un
+          margen/costura visible ahí. sideInset={NAV_MARGIN}: a diferencia de
+          HistorialCliente (que solo se ve al abrirlo por acción del
+          usuario), este sheet siempre está visible en reposo (peek) —
+          full-width por defecto asomaba más ancho que el nav (14px inset a
+          los costados) y se leía como un segundo contenedor aparte en vez
+          de fundirse en uno solo. */}
       <BottomSheet
         ref={bottomSheetRef}
         snapPoints={[0.3, 0.5, 0.8]}
@@ -1358,7 +1374,7 @@ export default function AgendaPage() {
         enablePanDownToClose={false}
         handleColor={colors.border}
         backgroundColor={colors.surface}
-        bottomOffset={NAV_HEIGHT}
+        sideInset={NAV_MARGIN}
       >
         <div style={{ padding: '0 20px' }}>
           <AgendaListHeader
@@ -1428,7 +1444,7 @@ export default function AgendaPage() {
         onChange={handleFiltroSheetChange}
         handleColor={colors.border}
         backgroundColor={colors.surface}
-        bottomOffset={NAV_HEIGHT}
+        bottomOffset={NAV_CLEARANCE}
       >
         <FiltroSheetContent
           textoBusqueda={textoBusqueda}
@@ -1453,7 +1469,7 @@ export default function AgendaPage() {
             // calc() en vez de un número fijo: suma env(safe-area-inset-bottom)
             // igual que el nav (app/(app)/layout.tsx) — sin esto el FAB queda
             // tapado por el nav en iPhones con home indicator (inset ≠ 0).
-            position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
+            position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
             width: 56, height: 56, borderRadius: 28,
             backgroundColor: colors.primarySolid, border: 'none',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

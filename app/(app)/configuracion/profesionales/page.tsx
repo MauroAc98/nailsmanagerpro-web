@@ -7,7 +7,7 @@ import BackButton from '@/components/BackButton';
 import { colors, shadows } from '@/theme/colors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Profesional } from '@/services/profesionalService';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
 
 function ProfesionalCard({
@@ -88,7 +88,7 @@ export default function ProfesionalesPage() {
       <button
         onClick={() => router.push('/configuracion/profesionales/nuevo')}
         style={{
-          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

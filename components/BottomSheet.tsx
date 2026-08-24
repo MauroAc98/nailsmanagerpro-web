@@ -40,6 +40,12 @@ interface BottomSheetProps {
   // sheet sits above it instead of covering it, and snapPoints are fractions
   // of the space ABOVE that reserved area, not the full viewport.
   bottomOffset?: number;
+  // Margen a los costados (px) — para un sheet que se ve en reposo (peek,
+  // no solo abierto por acción del usuario) detrás de un nav flotante con
+  // su propio margen lateral: sin esto el sheet, full-width por defecto,
+  // asoma más ancho que el nav y se lee como un segundo contenedor aparte
+  // en vez de fundirse en uno solo.
+  sideInset?: number;
 }
 
 const Z_INDEX = 40;
@@ -82,6 +88,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       handleColor = colors.divider,
       backgroundColor = colors.surface,
       bottomOffset = 0,
+      sideInset = 0,
     },
     ref,
   ) {
@@ -274,8 +281,8 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       <div
         style={{
           position: 'fixed',
-          left: 0,
-          right: 0,
+          left: sideInset,
+          right: sideInset,
           bottom: effectiveBottomOffset,
           zIndex: Z_INDEX,
           height: maxHeight,

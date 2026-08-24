@@ -9,7 +9,7 @@ import { useClientesStore } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
 
 // Altura real de la tarjeta (~70px) + 10px de gap, horneado en la fila
@@ -144,7 +144,7 @@ export default function ClientesPage() {
 
   return (
     <div style={{
-      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+      height: `calc(100dvh - ${NAV_CLEARANCE}px - env(safe-area-inset-bottom))`,
       display: 'flex', flexDirection: 'column', backgroundColor: colors.background,
     }}>
 
@@ -157,7 +157,7 @@ export default function ClientesPage() {
       <button
         onClick={() => router.push('/clientes/nuevo')}
         style={{
-          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

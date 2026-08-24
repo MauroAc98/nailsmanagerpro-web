@@ -132,12 +132,50 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Nunca se había desactivado — Chrome/Android dibuja su rectángulo gris
+   semitransparente de "tap highlight" por defecto sobre cualquier botón/link
+   al tocarlo en pantalla táctil, ignorando el border-radius del elemento
+   (sale como un rectángulo recto encima de la forma redondeada real).
+   Reportado sobre el bottom nav — se ve "otro contenedor" adentro de la
+   barra redondeada — pero es global: cualquier <button>/<a> del PWA lo
+   dispara igual, solo que ahí es más notorio por estar sobre una forma
+   redondeada compuesta (bubble + barra). Los estados de feedback táctil
+   propios de la app (background al :active, etc.) ya cubren esa necesidad
+   donde existen, así que no se pierde nada quitando el highlight nativo. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 .loader-spinner {
   animation: spin 0.8s linear infinite;
+}
+
+/* Bottom nav — el bubble del tab activo se monta/desmonta en cada cambio de
+   ruta (branch condicional en app/(app)/layout.tsx, no una transform de un
+   elemento persistente), así que un transition normal no lo agarra: no hay
+   un "antes" en el DOM para interpolar. Una animation de entrada sí corre
+   sobre el elemento recién montado — más barato que rearmar el bubble como
+   un indicador compartido que desliza entre posiciones. */
+@keyframes nav-bubble-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.55); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+.nav-bubble-enter {
+  animation: nav-bubble-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes nav-icon-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.nav-icon-enter {
+  animation: nav-icon-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Gate mobile-only vía CSS puro, no JS — aplica desde el primer paint (sin

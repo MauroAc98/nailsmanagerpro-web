@@ -119,7 +119,9 @@
     "statsOfMonth": "Estatísticas de {mes}",
     "appointmentsCompleted": "{count, plural, one {# agendamento concluído} other {# agendamentos concluídos}}",
     "topServiceLabel": "serviço top",
-    "newClientsThisMonth": "{count, plural, one {# cliente nova este mês} other {# clientes novas este mês}}"
+    "newClientsThisMonth": "{count, plural, one {# cliente nova este mês} other {# clientes novas este mês}}",
+    "hideAmount": "Ocultar valor",
+    "showAmount": "Mostrar valor"
   },
   "RecordatoriosPendientesPage": {
     "back": "Voltar",

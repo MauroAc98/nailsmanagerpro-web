@@ -11,7 +11,7 @@ import GastoCard from '@/components/GastoCard';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
 
@@ -93,7 +93,7 @@ export default function GastosPage() {
       <button
         onClick={() => router.push('/configuracion/gastos/nuevo')}
         style={{
-          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

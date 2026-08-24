@@ -12,7 +12,7 @@ import BackButton from '@/components/BackButton';
 import { colors, withAlpha, shadows } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import ServicioCard from '@/components/ServicioCard';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalJefa } from '@/services/profesionalService';
@@ -174,7 +174,7 @@ export default function ServiciosPage() {
       <button
         onClick={() => router.push('/configuracion/servicios/nuevo')}
         style={{
-          position: 'fixed', bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
+          position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
           backgroundColor: colors.primarySolid, border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

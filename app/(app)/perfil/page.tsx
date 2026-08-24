@@ -15,7 +15,7 @@ import { SheetNegocio } from '@/components/perfil/SheetNegocio';
 import { SheetPassword } from '@/components/perfil/SheetPassword';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
@@ -377,7 +377,7 @@ export default function PerfilPage() {
         enablePanDownToClose
         onChange={handleSheetChange}
         handleColor={colors.primary}
-        bottomOffset={NAV_HEIGHT}
+        bottomOffset={NAV_CLEARANCE}
       >
         {renderSheetContent()}
       </BottomSheet>

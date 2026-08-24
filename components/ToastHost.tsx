@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { colors, shadows } from '@/theme/colors';
 import { useToastStore } from '@/store/useToastStore';
-import { NAV_HEIGHT } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 
 const Z_INDEX = 90; // below ConfirmSheetHost's 100 (a confirm outranks a passing toast), above BottomSheet's 40
 
@@ -26,10 +26,11 @@ export function ToastHost() {
         position: 'fixed',
         left: 0,
         right: 0,
-        // Suma env(safe-area-inset-bottom) además de NAV_HEIGHT — el nav ya
+        // Suma env(safe-area-inset-bottom) además de NAV_CLEARANCE — el nav ya
         // lo hace (app/(app)/layout.tsx), y sin esto el toast queda tapado
-        // por el nav en iPhones con home indicator (inset ≠ 0).
-        bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
+        // por el nav (o por el bubble del tab activo) en iPhones con home
+        // indicator (inset ≠ 0).
+        bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 16px)`,
         zIndex: Z_INDEX,
         display: 'flex',
         justifyContent: 'center',
