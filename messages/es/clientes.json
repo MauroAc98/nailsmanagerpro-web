@@ -10,6 +10,8 @@
     "resultCount": "{count, plural, one {# cliente} other {# clientes}}",
     "emptyState": "¡Cargá a tu primer cliente!",
     "toggleError": "No se pudo actualizar el cliente.",
+    "deactivateConfirm": "La clienta va a quedar inactiva: no va a aparecer al agendar nuevos turnos. Podés reactivarla cuando quieras.",
+    "deactivateConfirmButton": "Inactivar",
     "loadingMore": "Cargando más..."
   },
   "NuevoClientePage": {

@@ -31,6 +31,8 @@
     "delete": "EXCLUIR",
     "deleteConfirm": "Excluir o serviço {nombre}?",
     "deleteConfirmButton": "Excluir",
+    "deactivateConfirm": "{nombre} vai ficar inativo: você não vai poder selecioná-lo ao agendar novos horários. Você pode reativá-lo quando quiser.",
+    "deactivateConfirmButton": "Inativar",
     "deleted": "Serviço excluído",
     "deleteError": "Não foi possível excluir o serviço.",
     "reorderError": "Não foi possível salvar a nova ordem."
@@ -193,6 +195,8 @@
     "addError": "Não foi possível adicionar o horário.",
     "deleteConfirm": "Excluir o horário das {hora}?",
     "deleteConfirmButton": "Excluir",
+    "deactivateConfirm": "O horário das {hora} vai deixar de ficar disponível para agendamento. Você pode reativá-lo quando quiser.",
+    "deactivateConfirmButton": "Desativar",
     "deleted": "Horário excluído",
     "deleteError": "Não foi possível excluir o horário."
   },
