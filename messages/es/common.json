@@ -68,7 +68,7 @@
   "HistorialClienteSheetHost": {
     "title": "Historial de turnos",
     "titleWithName": "Historial de turnos — {nombre} {apellido}",
-    "noTurnos": "Esta cliente todavía no tiene turnos.",
+    "noTurnos": "Este cliente todavía no tiene turnos.",
     "loadError": "No se pudo cargar el historial. Volvé a intentarlo.",
     "noResultsForFilter": "Ningún turno con ese filtro.",
     "filterAll": "Todos",
