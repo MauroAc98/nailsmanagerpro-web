@@ -31,6 +31,8 @@
     "delete": "ELIMINAR",
     "deleteConfirm": "¿Eliminás el servicio {nombre}?",
     "deleteConfirmButton": "Eliminar",
+    "deactivateConfirm": "{nombre} va a quedar inactivo: no vas a poder seleccionarlo al agendar nuevos turnos. Podés reactivarlo cuando quieras.",
+    "deactivateConfirmButton": "Inactivar",
     "deleted": "Servicio eliminado",
     "deleteError": "No se pudo eliminar el servicio.",
     "reorderError": "No se pudo guardar el nuevo orden."
@@ -193,6 +195,8 @@
     "addError": "No se pudo agregar el horario.",
     "deleteConfirm": "¿Eliminás el slot de las {hora}?",
     "deleteConfirmButton": "Eliminar",
+    "deactivateConfirm": "El horario de las {hora} va a dejar de estar disponible para agendar. Podés reactivarlo cuando quieras.",
+    "deactivateConfirmButton": "Desactivar",
     "deleted": "Horario eliminado",
     "deleteError": "No se pudo eliminar el horario."
   },

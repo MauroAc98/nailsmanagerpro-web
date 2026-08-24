@@ -10,6 +10,8 @@
     "resultCount": "{count, plural, one {# cliente} other {# clientes}}",
     "emptyState": "Cadastre seu primeiro cliente!",
     "toggleError": "Não foi possível atualizar o cliente.",
+    "deactivateConfirm": "A cliente vai ficar inativa: não vai aparecer ao agendar novos horários. Você pode reativá-la quando quiser.",
+    "deactivateConfirmButton": "Inativar",
     "loadingMore": "Carregando mais..."
   },
   "NuevoClientePage": {

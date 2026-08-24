@@ -7,7 +7,7 @@ import { List, type RowComponentProps } from 'react-window';
 import { colors, shadows } from '@/theme/colors';
 import { useClientesStore } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
-import { alertDialog } from '@/store/useConfirmStore';
+import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
@@ -232,6 +232,13 @@ export default function ClientesPage() {
                 rowProps={{
                   clientesPagina, router, t,
                   onToggle: async (id: number, activo: boolean) => {
+                    if (!activo) {
+                      const confirmado = await confirmDialog(t('deactivateConfirm'), {
+                        confirmText: t('deactivateConfirmButton'),
+                        danger: true,
+                      });
+                      if (!confirmado) return;
+                    }
                     const result = await toggleCliente(id, activo);
                     if (!result.success) await alertDialog(result.message ?? t('toggleError'));
                   },

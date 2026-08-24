@@ -32,7 +32,7 @@ function ReorderableSection({
   servicios:  Servicio[];
   emptyLabel: string;
   onEdit:     (id: number) => void;
-  onToggle:   (id: number, activo: boolean) => void;
+  onToggle:   (servicio: Servicio, activo: boolean) => void;
   onDelete:   (servicio: Servicio) => void;
   onReorder:  (ids: number[]) => void;
 }) {
@@ -68,7 +68,7 @@ function ReorderableSection({
                   servicio={s}
                   draggable
                   onEdit={() => onEdit(s.id)}
-                  onToggle={activo => onToggle(s.id, activo)}
+                  onToggle={activo => onToggle(s, activo)}
                   onDelete={() => onDelete(s)}
                 />
               ))}
@@ -102,6 +102,17 @@ export default function ServiciosPage() {
     const result = await eliminarServicio(servicio.id);
     if (result.success) showToast(t('deleted'));
     else await alertDialog(result.message ?? t('deleteError'));
+  };
+
+  const handleToggle = async (servicio: Servicio, activo: boolean) => {
+    if (!activo) {
+      const confirmado = await confirmDialog(
+        t('deactivateConfirm', { nombre: servicio.nombre }),
+        { confirmText: t('deactivateConfirmButton'), danger: true }
+      );
+      if (!confirmado) return;
+    }
+    await toggleServicio(servicio.id, activo);
   };
 
   // Split en 2 grupos independientemente reordenables (regular vs. promo —
@@ -244,7 +255,7 @@ export default function ServiciosPage() {
                   key={s.id}
                   servicio={s}
                   onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
-                  onToggle={activo => toggleServicio(s.id, activo)}
+                  onToggle={activo => handleToggle(s, activo)}
                   onDelete={() => handleEliminar(s)}
                 />
               ))}
@@ -256,7 +267,7 @@ export default function ServiciosPage() {
                 servicios={serviciosRegulares}
                 emptyLabel={t('emptyState')}
                 onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                onToggle={(id, activo) => toggleServicio(id, activo)}
+                onToggle={handleToggle}
                 onDelete={handleEliminar}
                 onReorder={reordenarServicios}
               />
@@ -265,7 +276,7 @@ export default function ServiciosPage() {
                 servicios={serviciosPromo}
                 emptyLabel={t('emptyState')}
                 onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                onToggle={(id, activo) => toggleServicio(id, activo)}
+                onToggle={handleToggle}
                 onDelete={handleEliminar}
                 onReorder={reordenarServicios}
               />

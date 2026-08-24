@@ -211,6 +211,11 @@ export default function SlotsPage() {
     else await alertDialog(result.message ?? t('deleteError'));
   };
 
+  const handleToggle = async (id: number, hora: string, activo: boolean) => {
+    if (!activo && !(await confirmDialog(t('deactivateConfirm', { hora }), { confirmText: t('deactivateConfirmButton'), danger: true }))) return;
+    await toggleSlot(id, activo);
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       {/* Header */}
@@ -296,7 +301,7 @@ export default function SlotsPage() {
               <SlotCard
                 key={s.id}
                 slot={s}
-                onToggle={activo => toggleSlot(s.id, activo)}
+                onToggle={activo => handleToggle(s.id, s.hora, activo)}
                 onDelete={() => handleEliminar(s.id, s.hora)}
               />
             ))
