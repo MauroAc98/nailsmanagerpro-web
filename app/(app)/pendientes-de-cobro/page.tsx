@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { usePendientesDeCobroStore, usePendientesFiltrados } from '@/store/usePendientesDeCobroStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
@@ -99,12 +99,15 @@ export default function PendientesDeCobroPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
-      <div style={{ padding: '24px 20px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <BackButton />
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
-        </div>
-        <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0 48px' }}>{t('subtitle')}</p>
+      {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
+          patrón que el resto de las pantallas migradas), sin el indent de
+          48px que alineaba el subtítulo contra el BackButton inline. */}
+      <div style={{ padding: '20px 20px 4px' }}>
+        <BackButton />
+      </div>
+      <div style={{ padding: '4px 20px 12px' }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+        <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>{t('subtitle')}</p>
       </div>
 
       <div style={{ padding: '0 20px 16px' }}>

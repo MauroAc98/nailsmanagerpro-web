@@ -3,16 +3,18 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
-import { colors, withAlpha, shadows } from '@/theme/colors';
+import SelectorOpciones from '@/components/SelectorOpciones';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useLocaleStore, setLocale } from '@/store/useLocaleStore';
 import { SUPPORTED, LOCALE_LABELS, type Locale } from '@/lib/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { showToast } from '@/store/useToastStore';
 
-// Estructuralmente calcada de configuracion/apariencia/page.tsx (mismo
-// layout de lista de opciones seleccionables). A diferencia de Apariencia
-// (preferencia 100% local), acá cada elección se persiste en el backend
-// vía PUT /api/perfil — ver design.md "Switch (no reload)".
+// Estructuralmente calcada de configuracion/apariencia/page.tsx (ambas
+// comparten SelectorOpciones, ver components/SelectorOpciones.tsx). A
+// diferencia de Apariencia (preferencia 100% local), acá cada elección se
+// persiste en el backend vía PUT /api/perfil — ver design.md "Switch (no
+// reload)".
 export default function IdiomaPage() {
   const t = useTranslations('configuracion.IdiomaPage');
   const locale = useLocaleStore(state => state.locale);
@@ -42,47 +44,23 @@ export default function IdiomaPage() {
     }
   };
 
+  const OPCIONES = SUPPORTED.map(opcion => ({ value: opcion, title: LOCALE_LABELS[opcion] }));
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 100 }}>
-      {/* Header */}
-      <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Header — mismo patrón que apariencia/page.tsx */}
+      <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+      </div>
+      <div style={{ padding: '4px 20px 12px' }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
       <p style={{ margin: '0 20px 16px', fontSize: 14, color: colors.subtext, lineHeight: 1.5 }}>
         {t('subtitle')}
       </p>
 
-      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {SUPPORTED.map(opcion => {
-          const selected = locale === opcion;
-          return (
-            <button
-              key={opcion}
-              onClick={() => handleSelect(opcion)}
-              disabled={guardando !== null}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 15,
-                backgroundColor: selected ? withAlpha(colors.primary, '12') : colors.surface,
-                border: `1px solid ${selected ? colors.primaryDeep : colors.border}`,
-                boxShadow: shadows.card, borderRadius: 14,
-                padding: '14px 16px', cursor: guardando !== null ? 'not-allowed' : 'pointer', textAlign: 'left',
-                opacity: guardando !== null && guardando !== opcion ? 0.6 : 1,
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: colors.text }}>{LOCALE_LABELS[opcion]}</p>
-              </div>
-              {selected && (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <SelectorOpciones opciones={OPCIONES} selected={locale} onSelect={handleSelect} loadingValue={guardando} />
     </div>
   );
 }

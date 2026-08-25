@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { AgendaThemeScope } from '@/components/AgendaThemeScope';
 
 const OPCIONES = [
   {
@@ -116,57 +117,65 @@ export default function ConfiguracionPage() {
   const t = useTranslations('configuracion.ConfiguracionPage');
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
-      <div style={{ padding: '24px 20px 12px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
-      </div>
+    // AgendaThemeScope acá, no en un layout.tsx del segmento: /configuracion
+    // es un índice con hermanos (gastos, servicios, etc.) todavía sin migrar
+    // al sistema agendaColors — un layout.tsx en configuracion/ scopearía
+    // .agenda-light/.agenda-dark también a esas rutas hijas, que siguen
+    // leyendo theme/colors.ts. Scope acotado a este único componente hasta
+    // que el resto del módulo migre.
+    <AgendaThemeScope>
+      <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
+        <div style={{ padding: '24px 20px 12px' }}>
+          <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+        </div>
 
-      <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
-        {GRUPOS.map(grupo => {
-          const items = OPCIONES.filter(op => op.grupo === grupo);
-          return (
-            <div key={grupo}>
-              <p style={{
-                fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase',
-                color: colors.subtext, margin: '0 0 8px 4px',
-              }}>
-                {t(`group_${grupo}`)}
-              </p>
-              <div style={{
-                backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                boxShadow: shadows.card, borderRadius: 14, overflow: 'hidden',
-              }}>
-                {items.map((op, i) => (
-                  <button
-                    key={op.path}
-                    onClick={() => router.push(op.path)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-                      backgroundColor: 'transparent', border: 'none',
-                      borderBottom: i < items.length - 1 ? `1px solid ${colors.border}` : 'none',
-                      padding: '13px 16px', cursor: 'pointer', textAlign: 'left',
-                    }}
-                  >
-                    <div style={{
-                      width: 34, height: 34, backgroundColor: colors.surfaceSubtle,
-                      borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      {op.icon}
-                    </div>
-                    <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: colors.text }}>
-                      {t(op.titleKey)}
-                    </span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                ))}
+        <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+          {GRUPOS.map(grupo => {
+            const items = OPCIONES.filter(op => op.grupo === grupo);
+            return (
+              <div key={grupo}>
+                <p style={{
+                  fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase',
+                  color: colors.subtext, margin: '0 0 8px 4px',
+                }}>
+                  {t(`group_${grupo}`)}
+                </p>
+                <div style={{
+                  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                  boxShadow: shadows.card, borderRadius: 14, overflow: 'hidden',
+                }}>
+                  {items.map((op, i) => (
+                    <button
+                      key={op.path}
+                      onClick={() => router.push(op.path)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 14, width: '100%',
+                        backgroundColor: 'transparent', border: 'none',
+                        borderBottom: i < items.length - 1 ? `1px solid ${colors.border}` : 'none',
+                        padding: '13px 16px', cursor: 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      <div style={{
+                        width: 34, height: 34, backgroundColor: colors.surfaceSubtle,
+                        borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        {op.icon}
+                      </div>
+                      <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: colors.text }}>
+                        {t(op.titleKey)}
+                      </span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </AgendaThemeScope>
   );
 }
