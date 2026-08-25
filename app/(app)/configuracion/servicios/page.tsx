@@ -25,12 +25,16 @@ import { showToast } from '@/store/useToastStore';
 // (contrato de reordenarServicios / PATCH /servicios/reordenar). Reusa el
 // mensaje de `emptyState` existente cuando el grupo específico queda vacío
 // (ej. cuenta sin promociones cargadas todavía).
+// Nunca se renderiza con `servicios` vacío — el padre (ver más abajo) salta
+// directamente la sección entera cuando el grupo no tiene items, en vez de
+// mostrar un header "PROMOCIONES" seguido de un placeholder "sin
+// promociones": la mayoría de los negocios no carga promociones, así que ese
+// placeholder era peso muerto visible siempre, no un estado excepcional.
 function ReorderableSection({
-  title, servicios, emptyLabel, onEdit, onToggle, onDelete, onReorder,
+  title, servicios, onEdit, onToggle, onDelete, onReorder,
 }: {
   title:      string;
   servicios:  Servicio[];
-  emptyLabel: string;
   onEdit:     (id: number) => void;
   onToggle:   (servicio: Servicio, activo: boolean) => void;
   onDelete:   (servicio: Servicio) => void;
@@ -54,28 +58,22 @@ function ReorderableSection({
       }}>
         {title}
       </h2>
-      {servicios.length === 0 ? (
-        <p style={{ textAlign: 'center', margin: '12px 0', color: colors.subtext, fontSize: 14 }}>
-          {emptyLabel}
-        </p>
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {servicios.map(s => (
-                <ServicioCard
-                  key={s.id}
-                  servicio={s}
-                  draggable
-                  onEdit={() => onEdit(s.id)}
-                  onToggle={activo => onToggle(s, activo)}
-                  onDelete={() => onDelete(s)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {servicios.map(s => (
+              <ServicioCard
+                key={s.id}
+                servicio={s}
+                draggable
+                onEdit={() => onEdit(s.id)}
+                onToggle={activo => onToggle(s, activo)}
+                onDelete={() => onDelete(s)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
@@ -262,24 +260,26 @@ export default function ServiciosPage() {
             </div>
           ) : (
             <>
-              <ReorderableSection
-                title={t('sectionServicios')}
-                servicios={serviciosRegulares}
-                emptyLabel={t('emptyState')}
-                onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                onToggle={handleToggle}
-                onDelete={handleEliminar}
-                onReorder={reordenarServicios}
-              />
-              <ReorderableSection
-                title={t('sectionPromociones')}
-                servicios={serviciosPromo}
-                emptyLabel={t('emptyState')}
-                onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                onToggle={handleToggle}
-                onDelete={handleEliminar}
-                onReorder={reordenarServicios}
-              />
+              {serviciosRegulares.length > 0 && (
+                <ReorderableSection
+                  title={t('sectionServicios')}
+                  servicios={serviciosRegulares}
+                  onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                  onToggle={handleToggle}
+                  onDelete={handleEliminar}
+                  onReorder={reordenarServicios}
+                />
+              )}
+              {serviciosPromo.length > 0 && (
+                <ReorderableSection
+                  title={t('sectionPromociones')}
+                  servicios={serviciosPromo}
+                  onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                  onToggle={handleToggle}
+                  onDelete={handleEliminar}
+                  onReorder={reordenarServicios}
+                />
+              )}
             </>
           )}
         </div>
