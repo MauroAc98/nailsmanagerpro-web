@@ -137,15 +137,23 @@ export default function GastosPage() {
           </button>
         </div>
 
-        {/* Total del mes — suma client-side de lo cargado, ver nota arriba */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-          boxShadow: shadows.card, borderRadius: 14, padding: '14px 16px',
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: colors.subtext }}>{t('totalLabel')}</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: colors.textStrong }}>${formatMonto(totalMes)}</span>
-        </div>
+        {/* Total del mes — suma client-side de lo cargado (ver nota arriba).
+            Gateado por !loading && !error (mismo criterio que la lista de
+            abajo): el store no pisa `gastos` si el fetch del mes falla
+            (a propósito, para no "desaparecer" datos ya cargados), así que
+            sin este gate la tarjeta mostraba el total del mes ANTERIOR bajo
+            el mes que se está navegando ahora, contradiciendo en silencio
+            el banner de error que sí aparece debajo. */}
+        {!loading && !error && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14, padding: '14px 16px',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: colors.subtext }}>{t('totalLabel')}</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: colors.textStrong }}>${formatMonto(totalMes)}</span>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
