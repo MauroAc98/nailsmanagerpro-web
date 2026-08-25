@@ -67,7 +67,7 @@ export default function EditarTurnoPage() {
   const { actualizarTurno, fetchTurno, turnoActual, loadingTurno, errorTurno, turnos, fetchTurnos } = useTurnoStore();
   const { servicios, fetchServicios }   = useServiciosStore();
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
-  const { slots, fetchSlots }           = useSlotsStore();
+  const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   const [fecha,               setFecha]               = useState('');
@@ -173,9 +173,18 @@ export default function EditarTurnoPage() {
     ? turnos.filter(t => t.profesional_id === selectedProfesionalId)
     : turnos;
 
+  // Mismo criterio que agenda/nuevo — ver comentario ahí. `slots` es un
+  // store global compartido; si el usuario confirma antes de que resuelva
+  // el fetchSlots(selectedProfesionalId) disparado al cambiar de
+  // profesional, la validación de horario de atención correría contra los
+  // slots de la profesional anterior.
+  const slotsDesactualizados = mostrarSelectorProfesional && selectedProfesionalId != null
+    && (ultimoProfesionalIdSolicitado !== selectedProfesionalId || slotsLoading);
+
   const handleGuardar = async () => {
     if (!selectedCliente || selectedServicioIds.length === 0) return;
     if (mostrarSelectorProfesional && !selectedProfesionalId) return;
+    if (slotsDesactualizados) return;
 
     const hora = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
     const errorValidacion = validarTurno({
@@ -394,7 +403,7 @@ export default function EditarTurnoPage() {
           onClick={handleGuardar}
           disabled={
             saving || !selectedCliente || selectedServicioIds.length === 0 ||
-            (mostrarSelectorProfesional && !selectedProfesionalId)
+            (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
           }
           style={{
             width: '100%', height: 52, borderRadius: 14,
@@ -402,11 +411,11 @@ export default function EditarTurnoPage() {
             fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
             opacity: (
               !selectedCliente || selectedServicioIds.length === 0 ||
-              (mostrarSelectorProfesional && !selectedProfesionalId)
+              (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
             ) ? 0.5 : 1,
           }}
         >
-          {saving ? t('saving') : t('saveChanges')}
+          {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('saveChanges')}
         </button>
       </div>
 

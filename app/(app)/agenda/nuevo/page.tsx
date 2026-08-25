@@ -70,7 +70,7 @@ function NuevoTurnoContent() {
   const { crearTurno, turnos, fetchTurnos }  = useTurnoStore();
   const { servicios, fetchServicios }        = useServiciosStore();
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
-  const { slots, fetchSlots }                = useSlotsStore();
+  const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { requiereEnvioManualWhatsapp }      = useAuth();
 
@@ -148,9 +148,22 @@ function NuevoTurnoContent() {
     ? turnos.filter(t => t.profesional_id === selectedProfesionalId)
     : turnos;
 
+  // `slots` es un store global compartido — al elegir una profesional se
+  // dispara fetchSlots(selectedProfesionalId) (efecto de arriba), pero esa
+  // request es async. Si el usuario confirma ANTES de que resuelva, `slots`
+  // en el store todavía puede ser el de la profesional anterior (o estar
+  // vacío) y validarTurno terminaría chequeando el horario de atención
+  // equivocado, sin ningún aviso. `ultimoProfesionalIdSolicitado` (del
+  // store) es la última profesional que efectivamente se pidió — si no
+  // coincide con la seleccionada, o si el fetch todavía está en vuelo,
+  // `slots` no es confiable todavía.
+  const slotsDesactualizados = mostrarSelectorProfesional && selectedProfesionalId != null
+    && (ultimoProfesionalIdSolicitado !== selectedProfesionalId || slotsLoading);
+
   const handleConfirmar = async () => {
     if (!selectedCliente || selectedServicioIds.length === 0) return;
     if (mostrarSelectorProfesional && !selectedProfesionalId) return;
+    if (slotsDesactualizados) return;
 
     const hora = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
     const errorValidacion = validarTurno({
@@ -406,7 +419,7 @@ function NuevoTurnoContent() {
           onClick={handleConfirmar}
           disabled={
             saving || !selectedCliente || selectedServicioIds.length === 0 ||
-            (mostrarSelectorProfesional && !selectedProfesionalId)
+            (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
           }
           style={{
             width: '100%', height: 52, borderRadius: 14,
@@ -414,11 +427,11 @@ function NuevoTurnoContent() {
             fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
             opacity: (
               !selectedCliente || selectedServicioIds.length === 0 ||
-              (mostrarSelectorProfesional && !selectedProfesionalId)
+              (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
             ) ? 0.5 : 1,
           }}
         >
-          {saving ? t('saving') : t('confirmAppointment')}
+          {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('confirmAppointment')}
         </button>
       </div>
       )}
