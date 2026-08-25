@@ -572,11 +572,18 @@ function parsearFecha(input: string): string | null {
   if (anio < 2000 || anio > 2100) return null;
   if (anioStr.length !== 4)       return null;
 
-  const fecha = `${anioStr}-${mesStr.padStart(2, '0')}-${diaStr.padStart(2, '0')}`;
-  const d = new Date(fecha);
+  // Componentes locales (año, mes-1, día), NO new Date(fecha) sobre el
+  // string ISO: ese constructor parsea "YYYY-MM-DD" como UTC medianoche, y
+  // en husos negativos (ART/BRT, UTC-3) eso cae en el día anterior en hora
+  // local — el día 1 de cualquier mes se leía como el mes anterior y
+  // rechazaba fechas válidas ("Fecha inválida" para un 01/03/2026 real).
+  // Mismo patrón que formatFechaCorta (arriba, línea ~67), que ya lo hace
+  // bien.
+  const d = new Date(anio, mes - 1, dia);
   if (isNaN(d.getTime()))       return null;
   if (d.getMonth() + 1 !== mes) return null;
 
+  const fecha = `${anioStr}-${mesStr.padStart(2, '0')}-${diaStr.padStart(2, '0')}`;
   return fecha;
 }
 
