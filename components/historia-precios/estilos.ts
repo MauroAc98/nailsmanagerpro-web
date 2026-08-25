@@ -112,20 +112,24 @@ export const estiloFeature: EstiloTokens = {
 // desenfocada). Tarjeta sin bordes redondeados marcados ni sombra (ver
 // TarjetaPrecios variante 'panel' — solo cambia el chrome, no el alto/
 // posición). Paleta propia, deliberadamente fuera del sistema de 5 moods
-// compartidos del resto del catálogo — carbón, blanco cálido, y un único
-// acento terracota (no rosa), pensada para leer "profesional/universal" en
-// vez de "belleza/uñas". Texto claro sobre scrim oscuro (no tinta oscura
-// sobre tarjeta clara como el resto). cardBackground subido de 0.5 a 0.72
-// (2026-08-18, séptima actualización): al sacar el blur, la tarjeta sola
-// tiene que sostener la legibilidad contra una foto nítida, no puede seguir
-// tan traslúcida.
+// compartidos del resto del catálogo — carbón y blanco cálido, pensada para
+// leer "profesional/universal" en vez de "belleza/uñas". Texto claro sobre
+// scrim oscuro (no tinta oscura sobre tarjeta clara como el resto).
+// cardBackground subido de 0.5 a 0.72 (2026-08-18, séptima actualización):
+// al sacar el blur, la tarjeta sola tiene que sostener la legibilidad
+// contra una foto nítida, no puede seguir tan traslúcida.
+// 2026-08-24: precioColor pasado de un acento terracota propio ('#e0a483')
+// a blanco puro — a pedido del usuario, para estandarizar con el resto del
+// catálogo: grafito (AG_STRONG) en las 6 plantillas de tarjeta clara, blanco
+// puro en las 2 de tarjeta oscura (mismo valor que ya usaba estiloBeforeAfter,
+// la otra plantilla oscura).
 export const estiloFullBleed: EstiloTokens = {
   cardBackground:   'rgba(18,15,14,0.72)',
   cardBorder:       'rgba(255,255,255,0.14)',
   headerColor:      '#faf7f2',
   nombreColor:      'rgba(250,247,242,0.82)',
   dividerColor:     'rgba(255,255,255,0.16)',
-  precioColor:      '#e0a483',
+  precioColor:      '#ffffff',
   precioFontWeight: 700,
   letterSpacing:    1,
   // Bajado de 0.5 a 0.18: ese scrim cubre TODA la foto (LayoutFullBleed usa
