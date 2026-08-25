@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { Gasto } from '@/services/gastoService';
 import { formatMonto } from '@/lib/money';
 
