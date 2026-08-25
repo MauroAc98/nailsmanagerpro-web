@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { List, type RowComponentProps } from 'react-window';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useClientesStore } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
@@ -148,9 +148,10 @@ export default function ClientesPage() {
       display: 'flex', flexDirection: 'column', backgroundColor: colors.background,
     }}>
 
-      {/* Header */}
+      {/* Header — sin BackButton (raíz de tab), mismo patrón que
+          configuracion/page.tsx. */}
       <div style={{ padding: '24px 20px 12px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* FAB */}
