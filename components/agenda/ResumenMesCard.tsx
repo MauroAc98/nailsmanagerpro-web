@@ -35,26 +35,40 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   const router = useRouter();
   const t = useTranslations('agenda.ResumenMesCard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  // Clave del mes/profesional que generó el `stats` cargado — se compara
+  // contra `statsKey` (mes/profesional actuales) en el render. Sin esto, si
+  // el fetch de un mes nuevo fallaba (red, token por expirar), la tarjeta
+  // seguía mostrando la plata del mes VIEJO bajo el título del mes nuevo
+  // (que sí se recalcula síncrono desde viewDate), sin ningún aviso de
+  // error — plata mostrada con el período equivocado. `loadedKey` solo se
+  // actualiza en el callback del fetch (no síncrono en el efecto), así que
+  // un stats "stale" nunca pasa el chequeo del render aunque la request
+  // todavía no haya resuelto o haya fallado.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [ocultarMonto, toggleOcultarMonto] = useOcultarMonto();
 
   const esMesActual = viewDate.getFullYear() === new Date().getFullYear()
     && viewDate.getMonth() === new Date().getMonth();
 
+  const statsKey = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
+
   useEffect(() => {
     let cancelled = false;
     const desde = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     const hasta = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+    const key = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
 
     statsService.getDashboard(formatFecha(desde), formatFecha(hasta), profesionalId ?? undefined)
-      .then(data => { if (!cancelled) setStats(data); })
+      .then(data => { if (!cancelled) { setStats(data); setLoadedKey(key); } })
       .catch(e => console.error('ResumenMesCard:', e));
 
     return () => { cancelled = true; };
   }, [profesionalId, viewDate]);
 
-  // Sin datos todavía (cargando) o sin ningún turno este mes: no ocupar
-  // espacio en el home con una tarjeta vacía.
-  if (!stats || stats.total_turnos === 0) return null;
+  // Sin datos todavía (cargando), datos de un mes/profesional distinto al
+  // actual (fetch en vuelo o que falló), o sin ningún turno este mes: no
+  // ocupar espacio en el home con una tarjeta vacía o con un dato viejo.
+  if (!stats || loadedKey !== statsKey || stats.total_turnos === 0) return null;
 
   const topServicio = stats.servicios_mas_pedidos[0]?.nombre;
 
