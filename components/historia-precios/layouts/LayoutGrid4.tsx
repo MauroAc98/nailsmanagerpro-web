@@ -27,12 +27,13 @@ export function LayoutGrid4({ fotos, overlayOpacity, children }: Props) {
         }}
       >
         {[0, 1, 2, 3].map(idx => (
-          <img
-            key={idx}
-            src={fotos[idx]}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
+          <div key={idx} style={{ width: '100%', height: '100%', background: '#000', overflow: 'hidden' }}>
+            <img
+              src={fotos[idx]}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            />
+          </div>
         ))}
       </div>
       <div style={{ position: 'absolute', inset: 0, background: `rgba(0,0,0,${overlayOpacity})` }} />
