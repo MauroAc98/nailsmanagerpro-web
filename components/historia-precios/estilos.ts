@@ -75,6 +75,14 @@ export interface EstiloTokens {
   // Opacidad del scrim oscuro que dibujan los layouts sobre la(s) foto(s)
   // de fondo, 0-1.
   overlayOpacity:   number;
+  // true en las 6 plantillas de tarjeta clara/tinta oscura (feature/split/
+  // grid/collage/catalog/listphoto), false en las 2 de tarjeta oscura/tinta
+  // clara (fullbleed/beforeafter). TarjetaPrecios lo usa para elegir la
+  // variante clara u oscura del acento grafito fijo (ver ACCENT/
+  // ACCENT_INVERTIDO ahí) — un acento oscuro fijo quedaba invisible/"muy
+  // oscuro" sobre las 2 tarjetas oscuras, que ya usan texto blanco en todo
+  // lo demás (feedback real, con captura).
+  claro: boolean;
 }
 
 // Mood "surface" (--ag-surface, #ffffff) — tarjeta blanca translúcida,
@@ -96,6 +104,7 @@ export const estiloFeature: EstiloTokens = {
   precioFontWeight: 600,
   letterSpacing:    1,
   overlayOpacity:   0.32,
+  claro:            true,
 };
 
 // Full bleed — foto de fondo nítida, SIN blur (ver LayoutFullBleed — la
@@ -126,6 +135,7 @@ export const estiloFullBleed: EstiloTokens = {
   // publicidad. La legibilidad del texto la sostiene la opacidad de la
   // tarjeta (0.72), no el scrim general.
   overlayOpacity:   0.18,
+  claro:            false,
 };
 
 // Doble mirada — 2 fotos apiladas (ver LayoutSplit2), mood "surface",
@@ -140,14 +150,21 @@ export const estiloSplit: EstiloTokens = {
   precioFontWeight: 600,
   letterSpacing:    1,
   overlayOpacity:   0.28,
+  claro:            true,
 };
 
 // Antes / después — 2 fotos apiladas (ver LayoutBeforeAfter), mood "strong"
 // (oscuro, dramático — coherente con mostrar un proceso/transformación),
 // tarjeta centrada. Tracking del header más amplio (3, como el modern
 // anterior) para reforzar el tono editorial.
+// cardBackground subido de 0.58 a 0.74 (feedback real, con captura: "mucha
+// transparencia") — era la única del catálogo notablemente por debajo del
+// resto (fullbleed, la otra tarjeta oscura, ya estaba en 0.72; el resto
+// entre 0.73/0.76), dejaba el texto compitiendo demasiado contra las 2
+// fotos apiladas de fondo. Alineado al mismo nivel que fullbleed, no un
+// valor nuevo inventado.
 export const estiloBeforeAfter: EstiloTokens = {
-  cardBackground:   'rgba(43,34,38,0.58)',
+  cardBackground:   'rgba(43,34,38,0.74)',
   cardBorder:       'rgba(255,255,255,0.2)',
   headerColor:      '#ffffff',
   nombreColor:      'rgba(255,255,255,0.85)',
@@ -156,12 +173,20 @@ export const estiloBeforeAfter: EstiloTokens = {
   precioFontWeight: 700,
   letterSpacing:    3,
   overlayOpacity:   0.42,
+  claro:            false,
 };
 
 // Editorial — 3 fotos (ver LayoutCollage), mood "surface-2" (tarjeta hueso
 // cálido), tarjeta centrada.
+// cardBackground subido de 0.73 a 0.87 (feedback real, con captura: "el
+// estilo de mosaico de las fotos" se ve feo) — a diferencia de un fondo de 1
+// sola foto (LayoutSingle) al mismo 0.73, acá son 3 fotos distintas en
+// grilla ajustada (hero + 2 apiladas) compitiendo entre sí Y contra el
+// texto; la misma transparencia que funciona con una foto coherente se lee
+// "ocupada"/desprolija con un mosaico. Más opacidad, no blur (ya probado y
+// rechazado: desenfocar la foto entera la vuelve irreconocible).
 export const estiloCollage: EstiloTokens = {
-  cardBackground:   'rgba(246,241,239,0.73)',
+  cardBackground:   'rgba(246,241,239,0.87)',
   cardBorder:       'rgba(43,34,38,0.08)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -170,12 +195,18 @@ export const estiloCollage: EstiloTokens = {
   precioFontWeight: 700,
   letterSpacing:    2,
   overlayOpacity:   0.46,
+  claro:            true,
 };
 
 // Portafolio — 4 fotos en grilla pareja (ver LayoutGrid4), mood "surface",
 // tarjeta centrada.
+// cardBackground subido de 0.76 a 0.87 (feedback real, con captura: "muy
+// oscuras algunas letras") — mismo motivo que estiloCollage: grilla de 4
+// fotos distintas compitiendo entre sí y contra el texto hace que la misma
+// transparencia que funciona con 1 sola foto se lea desprolija/con
+// contraste irregular según qué haya debajo de cada línea.
 export const estiloGrid: EstiloTokens = {
-  cardBackground:   'rgba(255,255,255,0.76)',
+  cardBackground:   'rgba(255,255,255,0.87)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -184,6 +215,7 @@ export const estiloGrid: EstiloTokens = {
   precioFontWeight: 700,
   letterSpacing:    1.5,
   overlayOpacity:   0.4,
+  claro:            true,
 };
 
 // Catálogo — MISMA composición de 4 fotos que Portafolio (reusa
@@ -191,8 +223,11 @@ export const estiloGrid: EstiloTokens = {
 // rosa suave, en vez de blanco) y anclaje (align: 'start', tarjeta arriba en
 // vez de centrada), no por layout. Mismo criterio que el mock v0 (grid/
 // catalog comparten composición de fotos ahí también).
+// cardBackground subido de 0.73 a 0.87 — mismo motivo y mismo valor que
+// estiloGrid (feedback real: "se encuentra muy transparente"), comparten
+// exactamente la misma composición de 4 fotos (LayoutGrid4).
 export const estiloCatalog: EstiloTokens = {
-  cardBackground:   'rgba(243,228,230,0.73)',
+  cardBackground:   'rgba(243,228,230,0.87)',
   cardBorder:       'rgba(43,34,38,0.10)',
   headerColor:      AG_STRONG,
   nombreColor:      'rgba(43,34,38,0.75)',
@@ -201,6 +236,7 @@ export const estiloCatalog: EstiloTokens = {
   precioFontWeight: 600,
   letterSpacing:    1.5,
   overlayOpacity:   0.34,
+  claro:            true,
 };
 
 // Lista + foto — 1 foto (ver LayoutSingle, MISMO componente que Protagonista
@@ -218,4 +254,5 @@ export const estiloListPhoto: EstiloTokens = {
   precioFontWeight: 800,
   letterSpacing:    0.5,
   overlayOpacity:   0.3,
+  claro:            true,
 };

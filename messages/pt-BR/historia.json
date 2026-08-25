@@ -46,8 +46,9 @@
     "shareTitle": "Minha agenda"
   },
   "TarjetaPrecios": {
-    "header": "Serviços",
-    "headerPromociones": "Promos",
+    "header": "Preços",
+    "sectionServicios": "Serviços",
+    "sectionPromociones": "Promoções",
     "reservarLabel": "Reserve seu horário"
   },
   "SelectorPlantilla": {
@@ -83,14 +84,10 @@
     "previewFormat": "Formato story · 9:16",
     "previewBadge": "Atualização instantânea",
     "showPricesOf": "Mostrar preços de:",
-    "modePrecios": "Preços",
-    "modePromociones": "Promoções",
-    "emptyPromoState": "Você ainda não tem serviços marcados como promoção.",
     "templateSectionTitle": "Escolha seu design",
     "notaAdicionalTitle": "Texto adicional",
     "notaAdicionalHint": "Você pode acrescentar uma observação breve ao final do story.",
     "notaAdicionalPlaceholder": "Ex.: O horário é confirmado com um sinal de 50%. A remoção tem custo adicional.",
-    "notaAdicionalPlaceholderPromo": "Ex.: Promoção válida até 31 de agosto ou enquanto durarem as vagas.",
     "notaAdicionalAlignLabel": "Alinhamento",
     "notaAdicionalAlignLeft": "Alinhar à esquerda",
     "notaAdicionalAlignCenter": "Centralizar",

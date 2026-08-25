@@ -25,26 +25,6 @@ import { GestorFotos } from '@/components/historia-precios/GestorFotos';
 // are never the capture target"). The transform never touches the captured
 // DOM, so this stays byte-identical to the export, same guarantee D3
 // documents for the picker.
-// ─────────────────────────────────────────────
-// Mode tabs — same visual pattern as app/(app)/agenda/historia/page.tsx
-// (tabContainerStyle + tabStyle), reused here for the Precios/Promociones
-// toggle instead of inventing a new tab style.
-// ─────────────────────────────────────────────
-const tabContainerStyle: React.CSSProperties = {
-  display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 14,
-};
-
-function tabStyle(active: boolean): React.CSSProperties {
-  return {
-    flex: 1, textAlign: 'center', padding: '8px 18px', borderRadius: 17, border: 'none',
-    cursor: 'pointer',
-    background:  active ? colors.primarySolid : 'transparent',
-    color:       active ? colors.primaryFg : colors.subtext,
-    fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
-    boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '4D')}` : 'none',
-  };
-}
-
 function useCanvasScale() {
   const [width, setWidth] = useState(0);
   useEffect(() => {
@@ -73,7 +53,6 @@ export default function HistoriaPreciosPage() {
     selectedProfesionalId, setSelectedProfesionalId,
     nombreNegocio, telefono,
     templateId, handleTemplateChange,
-    modo, handleModoChange,
     notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
     notaActiva, setNotaActiva,
     notaAlineacion, setNotaAlineacion,
@@ -81,7 +60,10 @@ export default function HistoriaPreciosPage() {
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
 
-  const titulo = modo === 'promociones' ? tCard('headerPromociones') : tCard('header');
+  // Fijo — servicios y promociones ahora conviven en una sola tarjeta
+  // (TarjetaPrecios agrupa internamente por es_promo), ya no hay título por
+  // modo.
+  const titulo = tCard('header');
   // Lo que se renderiza en la tarjeta: vacío si el usuario desactivó la nota
   // (PillToggle más abajo), aunque el texto siga guardado — desactivar no
   // borra, así se puede reactivar sin volver a escribir.
@@ -170,17 +152,6 @@ export default function HistoriaPreciosPage() {
             </div>
           )}
 
-          {/* Mode toggle — Precios/Promociones, separa servicios fijos
-              (es_promo:false) de promociones (es_promo:true) en 2 imágenes
-              distintas (ver useHistoriaPrecios.serviciosActivos). */}
-          <div style={{ ...tabContainerStyle, width: '100%' }}>
-            {(['precios', 'promociones'] as const).map(m => (
-              <button key={m} onClick={() => handleModoChange(m)} style={tabStyle(modo === m)}>
-                {m === 'precios' ? t('modePrecios') : t('modePromociones')}
-              </button>
-            ))}
-          </div>
-
           {/* Preview + picker solo con al menos 1 foto subida — ninguna de
               las 8 plantillas actuales tiene minFotos:0 (a diferencia del
               catálogo anterior, que tenía un fallback sin foto). Sin esto,
@@ -234,12 +205,6 @@ export default function HistoriaPreciosPage() {
                 </div>
               </div>
 
-              {modo === 'promociones' && serviciosActivos.length === 0 && (
-                <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '10px 0 0' }}>
-                  {t('emptyPromoState')}
-                </p>
-              )}
-
               {/* Plantilla picker */}
               <div style={{ width: '100%', marginTop: 20 }}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: colors.textStrong, margin: '0 0 10px' }}>
@@ -291,7 +256,7 @@ export default function HistoriaPreciosPage() {
                   onChange={e => setNotaAdicional(e.target.value)}
                   maxLength={NOTA_MAX_LENGTH}
                   rows={3}
-                  placeholder={modo === 'promociones' ? t('notaAdicionalPlaceholderPromo') : t('notaAdicionalPlaceholder')}
+                  placeholder={t('notaAdicionalPlaceholder')}
                   style={{
                     width: '100%', resize: 'none', boxSizing: 'border-box',
                     padding: '10px 12px', borderRadius: 12, border: `1px solid ${colors.border}`,

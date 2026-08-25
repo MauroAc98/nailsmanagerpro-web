@@ -46,8 +46,9 @@
     "shareTitle": "Mi agenda"
   },
   "TarjetaPrecios": {
-    "header": "Servicios",
-    "headerPromociones": "Promos",
+    "header": "Precios",
+    "sectionServicios": "Servicios",
+    "sectionPromociones": "Promociones",
     "reservarLabel": "Reservá tu turno"
   },
   "SelectorPlantilla": {
@@ -83,14 +84,10 @@
     "previewFormat": "Formato historia · 9:16",
     "previewBadge": "Actualización instantánea",
     "showPricesOf": "Mostrar precios de:",
-    "modePrecios": "Precios",
-    "modePromociones": "Promociones",
-    "emptyPromoState": "No tenés servicios marcados como promoción todavía.",
     "templateSectionTitle": "Elegí tu diseño",
     "notaAdicionalTitle": "Texto adicional",
     "notaAdicionalHint": "Podés sumar una aclaración breve al cierre de la historia.",
     "notaAdicionalPlaceholder": "Ej.: El turno se confirma con una seña del 50%. El retiro tiene costo adicional.",
-    "notaAdicionalPlaceholderPromo": "Ej.: Promoción válida hasta el 31 de agosto o hasta agotar cupos.",
     "notaAdicionalAlignLabel": "Alineación",
     "notaAdicionalAlignLeft": "Alinear a la izquierda",
     "notaAdicionalAlignCenter": "Centrar",

@@ -12,14 +12,15 @@ const formatearPrecio = (precio: string | null): string =>
 
 interface Props {
   tokens:    EstiloTokens;
-  // Card title — resolved by the caller (page.tsx) from `modo`
-  // ('precios' | 'promociones', see useHistoriaPrecios), not looked up
-  // internally, since TarjetaPrecios has no notion of modo itself.
+  // Card title — fijo, resuelto por el caller (page.tsx) vía
+  // tCard('header'). Servicios y promociones se combinan en esta misma
+  // tarjeta (ver el split por es_promo más abajo), así que ya no hay un
+  // título por modo.
   titulo:    string;
-  // Already-filtered list (activo: true AND es_promo matching the active
-  // modo, see useHistoriaPrecios.serviciosActivos) — TarjetaPrecios does
-  // not filter or read the store itself, it's purely presentational (see
-  // architecture constraint for this phase).
+  // Servicios activos del profesional (es_promo:true y es_promo:false
+  // mezclados, ver useHistoriaPrecios.serviciosActivos) — TarjetaPrecios no
+  // filtra ni lee el store, solo agrupa por es_promo para el render (ver
+  // serviciosRegulares/serviciosPromo más abajo).
   servicios: Servicio[];
   // Account/business name (`User.name`, useAuthStore — NOT `Profesional`,
   // a different concept) and phone (`User.telefono`). Threaded down from
@@ -69,10 +70,61 @@ interface Props {
 // near-edge-to-edge (~91%) layout.
 const OUTER_PADDING_X = 54;
 
+// Acento fijo para el chrome nuevo de esta tarjeta (barra bajo el título,
+// pill de sección, nombre del negocio) — a pedido explícito del usuario: un
+// color estandarizado, sin relación con el verde salvia de base de la app
+// (theme/colors.ts, primaryRaw '#6b8f6a') ni con tokens.precioColor (que
+// varía por plantilla). Se probó dorado antes — rechazado ("tampoco este
+// dorado"), pedido explícito: "algo unisex y que no defina una marca".
+// Grafito neutro (ni cálido-femenino ni frío-corporativo, sin asociación de
+// marca/género).
+//
+// UN solo valor fijo (sin variante por plantilla) se probó primero y
+// rompió el contraste en fullbleed/beforeafter: esas 2 tarjetas son
+// oscuras con texto BLANCO en todo lo demás (headerColor/precioColor), y el
+// grafito oscuro fijo se leía "muy oscuro"/casi invisible ahí (feedback
+// real, con captura). Sigue siendo el MISMO acento conceptual (grafito
+// neutro), solo invertido en luminosidad para las 2 plantillas oscuras —
+// ver tokens.claro (estilos.ts), no es una variante por mood/marca como
+// tokens.precioColor.
+const ACCENT_OSCURO    = '#57534E';
+const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
+const ACCENT_CLARO     = '#E8E5E1';
+const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
+
 export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center' }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
+  const accent   = tokens.claro ? ACCENT_OSCURO    : ACCENT_CLARO;
+  const accentBg = tokens.claro ? ACCENT_OSCURO_BG : ACCENT_CLARO_BG;
+
+  // Servicios y promociones combinados en una sola tarjeta (antes eran 2
+  // imágenes separadas, ver useHistoriaPrecios). Los sub-headers solo se
+  // muestran cuando hay AMBOS grupos — con uno solo (el caso común: un
+  // negocio sin promociones cargadas) sería un header redundante repitiendo
+  // lo que ya dice `titulo`.
+  const serviciosRegulares = servicios.filter(s => !s.es_promo);
+  const serviciosPromo     = servicios.filter(s => s.es_promo);
+  const mostrarSubheaders  = serviciosRegulares.length > 0 && serviciosPromo.length > 0;
+
+  // Densidad — la tarjeta ocupa el alto COMPLETO del canvas a propósito (ver
+  // comment largo en estilos.ts, 2026-08-18 octava actualización: confinarla
+  // a una franja fija ya rompió dos veces con listas reales largas). Pero
+  // ese diseño asumía UNA lista (servicios O promociones); combinadas
+  // (es_promo unificado, ver useHistoriaPrecios) el total de filas casi se
+  // duplica para cualquier negocio con catálogo real, y con el espaciado
+  // "normal" la tarjeta terminaba comiéndose casi todo el canvas sin margen
+  // — se veía apretada/fea (reportado con captura real: 7 servicios + 4
+  // promos). Por debajo del umbral, el espaciado generoso original queda
+  // igual; por encima, se compacta (menos gap entre filas/grupos, header más
+  // corto) para recuperar el aire alrededor de la tarjeta sin truncar nada.
+  const totalItems = servicios.length;
+  const compacta    = totalItems > 7;
+  const rowGap      = compacta ? 8  : 14;
+  const groupGap     = compacta ? 12 : 20;
+  const rowPaddingY  = compacta ? 6  : 10;
+  const periodoMarginBottom = compacta ? 14 : 24;
   const justifyContent = align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : 'center';
   // "AGOSTO 2026" en el locale activo — mismo criterio editorial que el
   // mock v0 (subtítulo bajo el título, ver captura de referencia), generado
@@ -110,11 +162,17 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             recta (agendaFontSerif), no Cormorant Garamond itálica como
             antes — unificación del serif de toda la app a uno solo, ver
             design decision 2026-08-17. */}
+        {/* fontSize 9 + opacity 0.65 en tokens.nombreColor original casi no
+            se notaba (feedback real: "apenas se nota el nombre del salón") —
+            mismo problema que ya resolvimos en SectionPill: texto chico/
+            apagado se funde con el fondo. `accent` (no tokens.nombreColor) y
+            opacity casi plena para que el nombre del negocio, que es lo
+            primero que lee un cliente, realmente resalte. */}
         {nombreFooter && (
           <span
             style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase',
-              color: tokens.nombreColor, opacity: 0.65, marginBottom: 6,
+              fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase',
+              color: accent, opacity: 0.95, marginBottom: 6,
             }}
           >
             {nombreFooter}
@@ -133,10 +191,15 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
         >
           {titulo}
         </span>
+        {/* Barra de acento bajo el título — referencia visual real que mandó
+            el usuario (ejemplo.png). `accent` (ver comment arriba), no
+            tokens.precioColor: probado antes, en la mayoría de plantillas es
+            negro/blanco puro y no se leía como "color" real. */}
+        <div style={{ width: 32, height: 3, borderRadius: 2, background: accent, marginTop: 10 }} />
         <span
           style={{
             fontSize: 9, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase',
-            color: tokens.nombreColor, opacity: 0.65, marginTop: 8, marginBottom: 24,
+            color: tokens.nombreColor, opacity: 0.65, marginTop: 8, marginBottom: periodoMarginBottom,
           }}
         >
           {periodo}
@@ -148,38 +211,23 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             jerarquía es puramente posicional (izq/der), no tipográfica.
             Línea divisoria bajo cada fila (tokens.dividerColor, ver mock v0)
             — reemplaza el espaciado puro sin bordes de la versión anterior. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {servicios.map(servicio => (
-            <div
-              key={servicio.id}
-              style={{
-                display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
-                paddingBottom: 10, borderBottom: `1px solid ${tokens.dividerColor}`,
-              }}
-            >
-              <span
-                style={{
-                  flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 400, letterSpacing: 0.2,
-                  color: tokens.nombreColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}
-              >
-                {servicio.nombre}
-              </span>
-              <span
-                style={{
-                  // tokens.precioFontWeight (no un valor fijo): varía por
-                  // plantilla (ver estilos.ts) — la variación entre estilos
-                  // se mantiene, solo que ninguno "grita" tanto como antes
-                  // (17px -> 13px).
-                  fontSize: 13, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
-                  letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {formatearPrecio(servicio.precio)}
-              </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: groupGap }}>
+          {serviciosRegulares.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+              {mostrarSubheaders && <SectionPill texto={t('sectionServicios')} accent={accent} accentBg={accentBg} />}
+              {serviciosRegulares.map(servicio => (
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} />
+              ))}
             </div>
-          ))}
+          )}
+          {serviciosPromo.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+              {mostrarSubheaders && <SectionPill texto={t('sectionPromociones')} accent={accent} accentBg={accentBg} />}
+              {serviciosPromo.map(servicio => (
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pie de tarjeta — nota adicional (aclaración libre, ver prop
@@ -243,6 +291,63 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// SectionPill — header de sección ("SERVICIOS"/"PROMOCIONES"): label en
+// negrita dentro de un pill + regla horizontal que llena el resto del ancho.
+// Reemplaza el span de 9px/opacidad 0.55 de antes, que se fundía con el
+// fondo (feedback real: "no resaltan los subtítulos/categorías"). Sin ícono
+// — versión anterior lo tenía (mano/regalo), feedback real: "no me convence,
+// quitarlos". `accent`/`accentBg` llegan resueltos desde TarjetaPrecios (ya
+// eligió la variante clara/oscura según tokens.claro) — este componente no
+// decide el color, solo lo aplica.
+function SectionPill({ texto, accent, accentBg }: { texto: string; accent: string; accentBg: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ backgroundColor: accentBg, borderRadius: 999, padding: '5px 14px' }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: accent }}>
+          {texto}
+        </span>
+      </div>
+      <div style={{ flex: 1, height: 1, backgroundColor: accentBg }} />
+    </div>
+  );
+}
+
+// Fila individual — extraída para no duplicar el markup entre el grupo de
+// servicios y el de promociones (ver split por es_promo en TarjetaPrecios).
+// `paddingY` llega desde TarjetaPrecios (ver `compacta`) — mismo criterio de
+// densidad que el resto de la tarjeta, no un valor propio.
+function FilaServicio({ servicio, tokens, paddingY }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number }) {
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
+        paddingBottom: paddingY, borderBottom: `1px solid ${tokens.dividerColor}`,
+      }}
+    >
+      <span
+        style={{
+          flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 400, letterSpacing: 0.2,
+          color: tokens.nombreColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}
+      >
+        {servicio.nombre}
+      </span>
+      <span
+        style={{
+          // tokens.precioFontWeight (no un valor fijo): varía por plantilla
+          // (ver estilos.ts) — la variación entre estilos se mantiene, solo
+          // que ninguno "grita" tanto como antes (17px -> 13px).
+          fontSize: 13, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
+          letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {formatearPrecio(servicio.precio)}
+      </span>
     </div>
   );
 }

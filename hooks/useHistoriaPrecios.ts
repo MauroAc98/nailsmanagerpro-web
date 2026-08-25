@@ -65,15 +65,8 @@ export function useHistoriaPrecios() {
   const nombreNegocio = user?.name ?? '';
   const telefono = user?.telefono ?? null;
 
-  // Modo — separa "Precios" (servicios fijos, es_promo:false) de
-  // "Promociones" (es_promo:true) en 2 imágenes distintas, cada una con su
-  // propio título de card (ver page.tsx) y su propia lista filtrada acá.
-  // Reemplaza el comportamiento anterior donde ambos se mezclaban en una
-  // sola lista sin distinción visual.
-  const [modo, setModo] = useState<'precios' | 'promociones'>('precios');
-  const handleModoChange = useCallback((id: 'precios' | 'promociones') => setModo(id), []);
-
-  // Servicios activos — filtrados por `modo` (es_promo según corresponda) Y
+  // Servicios activos — servicios Y promociones juntos en una sola lista
+  // (TarjetaPrecios agrupa internamente por es_promo, ver ese archivo),
   // restringidos a los servicios de profesionalActual (mismo criterio que
   // agenda/nuevo cuando hay más de una profesional:
   // `profesionalSeleccionado.servicios.some(...)`) — la historia de precios
@@ -86,11 +79,10 @@ export function useHistoriaPrecios() {
     () => profesionalActual
       ? servicios.filter(s =>
           s.activo &&
-          s.es_promo === (modo === 'promociones') &&
           profesionalActual.servicios.some(ps => ps.id === s.id)
         )
       : [],
-    [servicios, profesionalActual, modo]
+    [servicios, profesionalActual]
   );
 
   // ─────────────────────────────────────────────
@@ -109,11 +101,12 @@ export function useHistoriaPrecios() {
   // el mock v0 (price-story.tsx), pensado para una aclaración breve, no un
   // párrafo.
   //
-  // Guardada POR MODO (precios/promociones, no un único string) — la
-  // aclaración típica de cada uno es distinta (seña/retiro en precios,
-  // vigencia de la promo en promociones), mismo criterio que
-  // serviciosActivos ya filtra por `modo`. Cambiar de tab conserva lo
-  // escrito en el otro modo en vez de pisarlo.
+  // Un único valor (ya no por modo: precios/promociones se combinaron en
+  // una sola tarjeta, ver serviciosActivos arriba). Sigue viajando al
+  // backend bajo la key `precios` del objeto NotaHistoriaPrecios existente
+  // (services/profesionalService.ts) para no requerir un cambio de contrato
+  // — `promociones` queda sin escribirse desde acá en adelante, cuentas
+  // viejas con algo guardado ahí simplemente dejan de leerse.
   //
   // Persiste en el backend (Profesional.historia_precios_nota, columna JSON
   // — ver NailsManagerProApi) desde 2026-08-19: una primera versión usaba
@@ -123,9 +116,9 @@ export function useHistoriaPrecios() {
   // cuenta), la nota queda POR PROFESIONAL: cambiar de profesional en el
   // picker multi-profesional muestra la nota de esa profesional, no la que
   // se estaba editando antes — a diferencia de la versión con localStorage,
-  // que era global a la cuenta sin querer. `activa` (por modo, default
-  // true) deja ocultarla de la tarjeta sin borrar el texto — togglear no
-  // pierde lo escrito, no hace falta tipearlo de nuevo al reactivar.
+  // que era global a la cuenta sin querer. `activa` (default true) deja
+  // ocultarla de la tarjeta sin borrar el texto — togglear no pierde lo
+  // escrito, no hace falta tipearlo de nuevo al reactivar.
   // ─────────────────────────────────────────────
   const NOTA_MAX_LENGTH = 180;
   // Autosave debounced mientras el usuario tipea — no hay botón "Guardar"
@@ -133,20 +126,15 @@ export function useHistoriaPrecios() {
   // pausa para no competir con el ritmo de tipeo normal, corto para no
   // sentirse "no guardado" si el usuario navega apenas termina de escribir.
   const NOTA_SAVE_DEBOUNCE_MS = 700;
-  type NotaState = Record<typeof modo, NotaHistoriaPreciosModo>;
-  const NOTA_DEFAULT: NotaState = {
-    precios:     { texto: '', activa: true, alineacion: 'center' },
-    promociones: { texto: '', activa: true, alineacion: 'center' },
-  };
+  const NOTA_DEFAULT: NotaHistoriaPreciosModo = { texto: '', activa: true, alineacion: 'center' };
   // El backend puede devolver `texto: null` (Laravel normaliza '' -> null
   // antes de guardar, ver ConvertEmptyStringsToNull) — se coerciona acá,
   // no en cada call site.
-  const notaDesdeServidor = (servidor: NotaHistoriaPrecios | null | undefined): NotaState => ({
-    precios:     { ...NOTA_DEFAULT.precios,     ...servidor?.precios,     texto: servidor?.precios?.texto ?? '' },
-    promociones: { ...NOTA_DEFAULT.promociones, ...servidor?.promociones, texto: servidor?.promociones?.texto ?? '' },
+  const notaDesdeServidor = (servidor: NotaHistoriaPrecios | null | undefined): NotaHistoriaPreciosModo => ({
+    ...NOTA_DEFAULT, ...servidor?.precios, texto: servidor?.precios?.texto ?? '',
   });
 
-  const [notaState, setNotaState] = useState<NotaState>(NOTA_DEFAULT);
+  const [notaState, setNotaState] = useState<NotaHistoriaPreciosModo>(NOTA_DEFAULT);
 
   // Caché en memoria (dura la sesión, se pierde al recargar la página) del
   // notaState de CADA profesional ya vista — clave del fix de una condición
@@ -162,7 +150,7 @@ export function useHistoriaPrecios() {
   // verdad para la UI pasa a ser "lo último que el usuario tipeó en esta
   // sesión para esa profesional", el servidor solo importa la PRIMERA vez
   // que se la ve.
-  const notaCache = useRef<Map<number, NotaState>>(new Map());
+  const notaCache = useRef<Map<number, NotaHistoriaPreciosModo>>(new Map());
 
   // Guardado pendiente — guarda junto con el timer QUÉ profesional y QUÉ
   // valor corresponden, no solo el timer suelto (versión anterior): así
@@ -171,14 +159,14 @@ export function useHistoriaPrecios() {
   // cuando `scheduleNotaSave` de la profesional B cancelaba el timer
   // compartido que en realidad era de A (bug real, encontrado en revisión
   // — el timer no sabía de quién era, cualquier edición nueva lo pisaba).
-  const notaPendiente = useRef<{ timer: ReturnType<typeof setTimeout>; profesionalId: number; next: NotaState } | null>(null);
+  const notaPendiente = useRef<{ timer: ReturnType<typeof setTimeout>; profesionalId: number; next: NotaHistoriaPreciosModo } | null>(null);
 
   const flushNotaSave = useCallback(() => {
     const pendiente = notaPendiente.current;
     if (!pendiente) return;
     clearTimeout(pendiente.timer);
     notaPendiente.current = null;
-    guardarNotaHistoriaPrecios(pendiente.profesionalId, pendiente.next);
+    guardarNotaHistoriaPrecios(pendiente.profesionalId, { precios: pendiente.next });
   }, [guardarNotaHistoriaPrecios]);
 
   // Sync desde el servidor/caché — SOLO cuando cambia effectiveProfesionalId
@@ -224,13 +212,13 @@ export function useHistoriaPrecios() {
   // edición todavía no confirmada al salir de la pantalla.
   useEffect(() => () => { flushNotaSave(); }, [flushNotaSave]);
 
-  const scheduleNotaSave = useCallback((next: NotaState) => {
+  const scheduleNotaSave = useCallback((next: NotaHistoriaPreciosModo) => {
     if (!effectiveProfesionalId) return;
     if (notaPendiente.current) clearTimeout(notaPendiente.current.timer);
     const profesionalId = effectiveProfesionalId;
     const timer = setTimeout(() => {
       notaPendiente.current = null;
-      guardarNotaHistoriaPrecios(profesionalId, next);
+      guardarNotaHistoriaPrecios(profesionalId, { precios: next });
     }, NOTA_SAVE_DEBOUNCE_MS);
     notaPendiente.current = { timer, profesionalId, next };
   }, [effectiveProfesionalId, guardarNotaHistoriaPrecios]);
@@ -241,35 +229,32 @@ export function useHistoriaPrecios() {
   // mb_strlen (codepoints).
   const cortarATope = (value: string) => Array.from(value).slice(0, NOTA_MAX_LENGTH).join('');
 
-  const notaAdicional = notaState[modo].texto ?? '';
+  const notaAdicional = notaState.texto ?? '';
   const setNotaAdicional = useCallback((value: string) => {
     if (!effectiveProfesionalId) return;
-    const next: NotaState = {
-      ...notaState,
-      [modo]: { ...notaState[modo], texto: cortarATope(value) },
-    };
+    const next: NotaHistoriaPreciosModo = { ...notaState, texto: cortarATope(value) };
     notaCache.current.set(effectiveProfesionalId, next);
     setNotaState(next);
     scheduleNotaSave(next);
-  }, [notaState, modo, effectiveProfesionalId, scheduleNotaSave]);
+  }, [notaState, effectiveProfesionalId, scheduleNotaSave]);
 
-  const notaActiva = notaState[modo].activa;
+  const notaActiva = notaState.activa;
   const setNotaActiva = useCallback((value: boolean) => {
     if (!effectiveProfesionalId) return;
-    const next: NotaState = { ...notaState, [modo]: { ...notaState[modo], activa: value } };
+    const next: NotaHistoriaPreciosModo = { ...notaState, activa: value };
     notaCache.current.set(effectiveProfesionalId, next);
     setNotaState(next);
     scheduleNotaSave(next);
-  }, [notaState, modo, effectiveProfesionalId, scheduleNotaSave]);
+  }, [notaState, effectiveProfesionalId, scheduleNotaSave]);
 
-  const notaAlineacion = notaState[modo].alineacion;
+  const notaAlineacion = notaState.alineacion;
   const setNotaAlineacion = useCallback((value: AlineacionNota) => {
     if (!effectiveProfesionalId) return;
-    const next: NotaState = { ...notaState, [modo]: { ...notaState[modo], alineacion: value } };
+    const next: NotaHistoriaPreciosModo = { ...notaState, alineacion: value };
     notaCache.current.set(effectiveProfesionalId, next);
     setNotaState(next);
     scheduleNotaSave(next);
-  }, [notaState, modo, effectiveProfesionalId, scheduleNotaSave]);
+  }, [notaState, effectiveProfesionalId, scheduleNotaSave]);
 
   // ─────────────────────────────────────────────
   // Fotos — fuente de verdad cruda (FotoHistoria[], para GestorFotos) +
@@ -449,7 +434,6 @@ export function useHistoriaPrecios() {
 
     // template selection
     templateId, handleTemplateChange,
-    modo, handleModoChange,
 
     // additional footer note
     notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
