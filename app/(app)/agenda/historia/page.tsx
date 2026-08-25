@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   ChevronLeft, ChevronRight, ImagePlus, Download, Share2, ImageOff,
-  CalendarDays, Type, Eye,
+  CalendarDays, Type,
 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import SelectorProfesional from '@/components/SelectorProfesional';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
@@ -101,8 +102,6 @@ function HistoriaContent() {
   // ya excluye días/slots ocultados manualmente (diasAMostrar), solo para el
   // resumen arriba del canvas.
   const horariosVisibles = diasAMostrar.reduce((acc, dia) => acc + dia.slots.filter(s => s.libre).length, 0);
-  const periodoLabel = modo === 'dia' ? t('tabDay') : modo === 'semana' ? t('tabWeek') : t('tabMonth');
-  const nombreParaResumen = profesionalSeleccionada?.nombre || nombreEstudio;
 
   // Tocar un texto libre directo en el canvas es posible desde cualquier
   // tab (el canvas se ve siempre) pero el editor de texto solo está montado
@@ -180,44 +179,23 @@ function HistoriaContent() {
         )}
 
         {/* Selector de profesional — invisible con ≤1 profesional activa */}
+        {/* El pill cae en effectiveProfesionalId (jefa por default) cuando no
+            hay pick explícito — confirmado con el usuario (2026-08-19): tiene
+            que coincidir con lo que el fetch realmente trae (ver
+            useGenerarHistoria, ya corregido para filtrar por
+            effectiveProfesionalId con >1 profesional activa), no mostrar
+            "nada" mientras los datos sí muestran a alguien. */}
         {mostrarSelectorProfesional && (
-          <div style={{ width: '100%', marginBottom: 14 }}>
-            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              {t('showScheduleOf')}
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {activeProfesionales.map(p => {
-                // El pill cae en effectiveProfesionalId (jefa por default)
-                // cuando no hay pick explícito — confirmado con el usuario
-                // (2026-08-19): tiene que coincidir con lo que el fetch
-                // realmente trae (ver useGenerarHistoria, ya corregido para
-                // filtrar por effectiveProfesionalId con >1 profesional
-                // activa), no mostrar "nada" mientras los datos sí muestran
-                // a alguien.
-                const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
-                const color    = p.color || colors.primary;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                      border: `1px solid ${selected ? color : colors.border}`,
-                      backgroundColor: selected ? color : colors.surface,
-                      color: selected ? colors.primaryFg : colors.text,
-                    }}
-                  >
-                    <span style={{
-                      width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                      backgroundColor: selected ? colors.primaryFg : color,
-                    }} />
-                    {p.nombre}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <SelectorProfesional
+            label={t('showScheduleOf')}
+            labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
+            profesionales={activeProfesionales}
+            selectedId={selectedProfesionalId ?? effectiveProfesionalId}
+            onSelect={setSelectedProfesionalId}
+            selectedFg={colors.primaryFg}
+            unselectedBorderColor={colors.border}
+            pillFontWeight={600}
+          />
         )}
 
         {/* Date nav */}
@@ -241,22 +219,17 @@ function HistoriaContent() {
 
         {hayContenido ? (
           <>
-            {/* Resumen + vista previa */}
-            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('readyToEdit')}</p>
-                <p style={{ fontSize: 11, color: colors.subtext, margin: '2px 0 0' }}>
-                  {periodoLabel} · {nombreParaResumen} · {t('visibleSlotsCount', { count: horariosVisibles })}
-                </p>
-              </div>
-              <span style={{
-                display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-                borderRadius: 20, padding: '5px 10px', fontSize: 10, fontWeight: 700,
-                backgroundColor: colors.successBg, color: colors.success,
-              }}>
-                <Eye size={12} strokeWidth={2.5} />
-                {t('previewBadge')}
-              </span>
+            {/* Caption "Vista previa" — estandarizado con
+                historia-precios/page.tsx (título a la izquierda, dato de
+                contexto a la derecha, sin badge). Se sacaron
+                readyToEdit/periodoLabel/nombreParaResumen: la fecha ya está
+                arriba en el date nav (tituloNav) y el nombre ya está adentro
+                del canvas (StoryCanvas.tituloPrincipal) — repetirlos acá era
+                puro ruido. horariosVisibles queda porque es el único dato
+                que no se ve de un vistazo en ningún otro lado. */}
+            <div style={{ width: '100%', marginBottom: 12, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('previewTitle')}</p>
+              <p style={{ fontSize: 11, color: colors.subtext, margin: 0 }}>{t('visibleSlotsCount', { count: horariosVisibles })}</p>
             </div>
 
             <StoryCanvas

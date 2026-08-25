@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Eye, ImagePlus } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ImagePlus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PillToggle from '@/components/PillToggle';
+import SelectorProfesional from '@/components/SelectorProfesional';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useHistoriaPrecios } from '@/hooks/useHistoriaPrecios';
@@ -120,36 +121,12 @@ export default function HistoriaPreciosPage() {
               jefa (que es el default con el que arranca, ver
               effectiveProfesionalId). */}
           {mostrarSelectorProfesional && (
-            <div style={{ width: '100%', marginBottom: 14 }}>
-              <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
-                {t('showPricesOf')}
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {activeProfesionales.map(p => {
-                  const selected = (selectedProfesionalId ?? effectiveProfesionalId) === p.id;
-                  const color    = p.color || colors.primary;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedProfesionalId(selected ? null : p.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        borderRadius: 20, padding: '8px 16px', fontSize: 13, cursor: 'pointer',
-                        border: `1px solid ${selected ? color : colors.divider}`,
-                        backgroundColor: selected ? color : colors.surface,
-                        color: selected ? '#FFF' : colors.text,
-                      }}
-                    >
-                      <span style={{
-                        width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                        backgroundColor: selected ? '#FFF' : color,
-                      }} />
-                      {p.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <SelectorProfesional
+              label={t('showPricesOf')}
+              profesionales={activeProfesionales}
+              selectedId={selectedProfesionalId ?? effectiveProfesionalId}
+              onSelect={setSelectedProfesionalId}
+            />
           )}
 
           {/* Preview + picker solo con al menos 1 foto subida — ninguna de
@@ -165,22 +142,14 @@ export default function HistoriaPreciosPage() {
             </p>
           ) : (
             <>
-              {/* Caption "Vista previa" — mismo patrón que agenda/historia/page.tsx
-                  (título + subtítulo a la izquierda, badge a la derecha), no
-                  existía antes de este rediseño. */}
-              <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('previewTitle')}</p>
-                  <p style={{ fontSize: 11, color: colors.subtext, margin: '2px 0 0' }}>{t('previewFormat')}</p>
-                </div>
-                <span style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  fontSize: 10, fontWeight: 700, color: colors.success,
-                  background: withAlpha(colors.success, '1F'), padding: '4px 8px', borderRadius: 20,
-                }}>
-                  <Eye size={12} strokeWidth={2.5} />
-                  {t('previewBadge')}
-                </span>
+              {/* Caption "Vista previa" a la izquierda — mismo alineado que
+                  el título "Elegí tu diseño" de más abajo (templateSectionTitle),
+                  no centrada. "Formato historia · 9:16" pasa al lado derecho
+                  de la misma fila (antes iba debajo, apilada) ahora que ya
+                  no comparte esa fila con el badge que se sacó. */}
+              <div style={{ width: '100%', marginBottom: 12, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{t('previewTitle')}</p>
+                <p style={{ fontSize: 11, color: colors.subtext, margin: 0 }}>{t('previewFormat')}</p>
               </div>
 
               {/* Canvas preview — marco tipo celular alrededor del MISMO nodo
