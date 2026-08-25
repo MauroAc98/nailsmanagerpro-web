@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { colors } from '@/theme/colors';
+import { agendaColors as colors } from '@/theme/agendaColors';
 import { SheetInput } from './SheetInput';
 
 interface Props {

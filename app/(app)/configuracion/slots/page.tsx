@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
-import { colors, withAlpha, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Slot } from '@/services/slotService';
@@ -218,10 +219,13 @@ export default function SlotsPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
-      {/* Header */}
-      <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
+          patrón que el resto de las pantallas migradas). */}
+      <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+      </div>
+      <div style={{ padding: '4px 20px 12px' }}>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
       {/* FAB */}

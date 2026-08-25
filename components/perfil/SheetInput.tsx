@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { colors } from '@/theme/colors';
+import { agendaColors as colors } from '@/theme/agendaColors';
 
 const sectionLabelStyle: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,

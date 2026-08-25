@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
@@ -298,9 +298,12 @@ export default function PerfilPage() {
   };
 
   return (
+    // Sin BackButton (raíz de tab), mismo patrón que clientes/page.tsx.
+    // AgendaThemeScope viene del layout.tsx propio del segmento (perfil no
+    // tiene rutas hijas), no envuelto acá.
     <div style={{ minHeight: '100vh', backgroundColor: colors.surfaceSubtle, paddingBottom: 24 }}>
       <div style={{ padding: '24px 20px 12px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0 }}>{t('title')}</h1>
+        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
       <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>

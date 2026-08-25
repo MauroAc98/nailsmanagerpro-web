@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { colors } from '@/theme/colors';
+import { agendaColors as colors } from '@/theme/agendaColors';
 
 interface Props {
   titulo: string;

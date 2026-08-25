@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { PAISES } from '@/lib/phoneUtils';
 
 interface Props {

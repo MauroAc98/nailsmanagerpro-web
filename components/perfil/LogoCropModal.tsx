@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Cropper, { Area } from 'react-easy-crop';
 import { useTranslations } from 'next-intl';
-import { colors, shadows } from '@/theme/colors';
+import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { LOGO_ASPECT_RATIO, recortarLogo } from '@/lib/logo';
 
 interface Props {
