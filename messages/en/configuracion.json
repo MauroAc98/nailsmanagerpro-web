@@ -4,7 +4,8 @@
   },
   "ServiciosPage": {
     "sectionServicios": "Services",
-    "sectionPromociones": "Promotions"
+    "sectionPromociones": "Promotions",
+    "sectionSinCategoria": "No category"
   },
   "CategoriasPage": {
     "title": "Categories",

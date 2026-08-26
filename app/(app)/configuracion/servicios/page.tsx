@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -19,6 +19,8 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { CategoriaServicio } from '@/services/categoriaServicioService';
 
 // ReorderableSection — un grupo (regular o promo) con su propio DndContext
 // / SortableContext, así arrastrar nunca mezcla ids entre grupos: cada
@@ -34,7 +36,7 @@ import { showToast } from '@/store/useToastStore';
 function ReorderableSection({
   title, servicios, onEdit, onToggle, onDelete, onReorder,
 }: {
-  title:      string;
+  title?:     string;
   servicios:  Servicio[];
   onEdit:     (id: number) => void;
   onToggle:   (servicio: Servicio, activo: boolean) => void;
@@ -53,12 +55,14 @@ function ReorderableSection({
 
   return (
     <div>
-      <h2 style={{
-        margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: colors.subtext,
-        textTransform: 'uppercase', letterSpacing: 0.5,
-      }}>
-        {title}
-      </h2>
+      {title && (
+        <h2 style={{
+          margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: colors.subtext,
+          textTransform: 'uppercase', letterSpacing: 0.5,
+        }}>
+          {title}
+        </h2>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -79,6 +83,48 @@ function ReorderableSection({
   );
 }
 
+interface GrupoCategoria {
+  // null = "Sin categoria" — siempre al final (ver `agruparPorCategoria`),
+  // nunca aparece si no hay servicios sin categorizar.
+  id:         number | null;
+  nombre:     string;
+  regulares:  Servicio[];
+  promos:     Servicio[];
+}
+
+// Partición externa por categoria_id (orden = orden de `categorias`, ya
+// alfabético desde el backend — ver useCategoriasServicioStore), sub-partición
+// interna por es_promo (mismo criterio que el flat regular/promo de siempre).
+// "Sin categoria" se agrega al final solo si tiene servicios; una categoría
+// sin servicios asignados no genera sección (mismo "no dead-weight" que
+// ReorderableSection ya aplica a promos vacías).
+function agruparPorCategoria(servicios: Servicio[], categorias: CategoriaServicio[]): GrupoCategoria[] {
+  const grupos: GrupoCategoria[] = [];
+
+  for (const categoria of categorias) {
+    const deLaCategoria = servicios.filter(s => s.categoria_id === categoria.id);
+    if (deLaCategoria.length === 0) continue;
+    grupos.push({
+      id: categoria.id,
+      nombre: categoria.nombre,
+      regulares: deLaCategoria.filter(s => !s.es_promo),
+      promos: deLaCategoria.filter(s => s.es_promo),
+    });
+  }
+
+  const sinCategoria = servicios.filter(s => s.categoria_id === null);
+  if (sinCategoria.length > 0) {
+    grupos.push({
+      id: null,
+      nombre: '', // resuelto en el render vía t('sectionSinCategoria')
+      regulares: sinCategoria.filter(s => !s.es_promo),
+      promos: sinCategoria.filter(s => s.es_promo),
+    });
+  }
+
+  return grupos;
+}
+
 export default function ServiciosPage() {
   const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
@@ -86,6 +132,18 @@ export default function ServiciosPage() {
   const serviciosFiltrados = useServiciosFiltrados();
 
   useEffect(() => { fetchServicios(); }, []);
+
+  // `categoriasReady` distingue "todavía no cargó" de "cargó y no hay
+  // categorías" (`categorias: []` es el estado inicial del store ANTES del
+  // fetch, no equivale a "el usuario no tiene categorías"). Sin este flag,
+  // el primer render mostraría todos los servicios bajo "Sin categoria" por
+  // un instante — el flash que el spec prohíbe explícitamente. `finally`
+  // cubre éxito y error por igual: fetchCategorias ya atrapa sus propios
+  // errores (ver useCategoriasServicioStore), así que acá solo importa que
+  // la promesa haya asentado.
+  const { categorias, fetchCategorias } = useCategoriasServicioStore();
+  const [categoriasReady, setCategoriasReady] = useState(false);
+  useEffect(() => { fetchCategorias().finally(() => setCategoriasReady(true)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Eliminar — el backend bloquea el borrado (409) si el servicio tiene
   // turnos asociados; `result.message` ya trae ese texto explicando por qué
@@ -120,6 +178,16 @@ export default function ServiciosPage() {
   // estable que tenga sentido para drag-and-drop (ver render abajo).
   const serviciosRegulares = serviciosFiltrados.filter(s => !s.es_promo);
   const serviciosPromo = serviciosFiltrados.filter(s => s.es_promo);
+
+  // Anti-regresión (spec: "zero services categorized"): si ninguna cuenta
+  // usó categorías todavía, la vista queda IDÉNTICA a la de siempre —
+  // regular/promo plano, sin headers de categoría. El cambio es invisible
+  // hasta que el usuario efectivamente categoriza algo.
+  const hayServicioCategorizado = serviciosFiltrados.some(s => s.categoria_id !== null);
+  const gruposPorCategoria = useMemo(
+    () => agruparPorCategoria(serviciosFiltrados, categorias),
+    [serviciosFiltrados, categorias]
+  );
 
   // Entry point a "historia de precios" (spec: price-story) — gateado en que
   // el campo NUEVO exista en la respuesta del backend (no en que tenga un
@@ -264,7 +332,9 @@ export default function ServiciosPage() {
                 />
               ))}
             </div>
-          ) : (
+          ) : !hayServicioCategorizado ? (
+            // Anti-regresión: ningún servicio tiene categoria_id todavía —
+            // vista idéntica a la de siempre, sin headers de categoría.
             <>
               {serviciosRegulares.length > 0 && (
                 <ReorderableSection
@@ -287,6 +357,51 @@ export default function ServiciosPage() {
                 />
               )}
             </>
+          ) : !categoriasReady ? (
+            // Categorías todavía no asentaron (ver efecto de fetchCategorias
+            // arriba) — evita el flash de todo bajo "Sin categoria".
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+            </div>
+          ) : (
+            gruposPorCategoria.map(grupo => (
+              <div key={grupo.id ?? 'sin-categoria'} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h2 style={{
+                  margin: 0, fontSize: 13, fontWeight: 700, color: colors.subtext,
+                  textTransform: 'uppercase', letterSpacing: 0.5,
+                }}>
+                  {grupo.id === null ? t('sectionSinCategoria') : grupo.nombre}
+                </h2>
+                {grupo.regulares.length > 0 && grupo.promos.length > 0 ? (
+                  <>
+                    <ReorderableSection
+                      title={t('sectionServicios')}
+                      servicios={grupo.regulares}
+                      onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                      onToggle={handleToggle}
+                      onDelete={handleEliminar}
+                      onReorder={reordenarServicios}
+                    />
+                    <ReorderableSection
+                      title={t('sectionPromociones')}
+                      servicios={grupo.promos}
+                      onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                      onToggle={handleToggle}
+                      onDelete={handleEliminar}
+                      onReorder={reordenarServicios}
+                    />
+                  </>
+                ) : (
+                  <ReorderableSection
+                    servicios={grupo.regulares.length > 0 ? grupo.regulares : grupo.promos}
+                    onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                    onToggle={handleToggle}
+                    onDelete={handleEliminar}
+                    onReorder={reordenarServicios}
+                  />
+                )}
+              </div>
+            ))
           )}
         </div>
       )}
