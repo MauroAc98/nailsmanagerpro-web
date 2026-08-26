@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
@@ -22,17 +23,40 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
 
+// Mismo patrón que el chip de categoría en gastos/nuevo/page.tsx (color
+// fijo, sin punto de color por-item como el selector de profesional —
+// las categorías de servicio no tienen color propio).
+function chipStyle(selected: boolean): React.CSSProperties {
+  return {
+    display: 'flex', alignItems: 'center', gap: 6,
+    borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
+    border: `1px solid ${selected ? colors.primarySolid : colors.divider}`,
+    backgroundColor: selected ? colors.primarySolid : colors.surface,
+    color: selected ? '#FFF' : colors.text,
+  };
+}
+
 export default function NuevoServicioPage() {
   const t = useTranslations('configuracion.NuevoServicioPage');
   const router = useRouter();
   const { servicios, agregarServicio } = useServiciosStore();
+  const { categorias, fetchCategorias } = useCategoriasServicioStore();
 
   const [nombre,  setNombre]  = useState('');
   const [duracion, setDuracion] = useState(30);
   const [precio,  setPrecio]  = useState('');
   const [esPromo, setEsPromo] = useState(false);
+  const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [errorNombre, setErrorNombre] = useState('');
   const [saving,  setSaving]  = useState(false);
+
+  useEffect(() => {
+    if (categorias.length === 0) fetchCategorias();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSeleccionarCategoria = (id: number) => {
+    setCategoriaId(prev => prev === id ? null : id);
+  };
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
@@ -60,6 +84,7 @@ export default function NuevoServicioPage() {
       duracion_minutos: duracion,
       precio: precio ? parseFloat(precio) : undefined,
       es_promo: esPromo,
+      categoria_id: categoriaId,
     });
     setSaving(false);
 
@@ -116,6 +141,38 @@ export default function NuevoServicioPage() {
             inputMode="decimal"
           />
         </div>
+
+        {/* Categoría — opcional, invisible sin categorías cargadas (spec:
+            no forzar al usuario a crear una para poder seguir usando
+            servicios como antes). Tap en la misma chip deselecciona → null,
+            mismo patrón que el selector de profesional en gastos/nuevo. */}
+        {categorias.length > 0 && (
+          <div>
+            <label style={labelStyle}>{t('categoryLabel')}</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {/* "Sin categoría" explícito — más claro que depender solo de
+                  tap-en-la-misma-chip para deseleccionar, sobre todo al
+                  editar un servicio que ya tiene una categoría asignada. */}
+              <button
+                type="button"
+                onClick={() => setCategoriaId(null)}
+                style={chipStyle(categoriaId === null)}
+              >
+                {t('categoryNone')}
+              </button>
+              {categorias.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleSeleccionarCategoria(cat.id)}
+                  style={chipStyle(categoriaId === cat.id)}
+                >
+                  {cat.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Promo */}
         <div style={{
