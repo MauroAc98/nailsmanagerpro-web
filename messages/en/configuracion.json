@@ -50,5 +50,11 @@
     "categoryLabel": "Category (optional)",
     "categoryNone": "No category",
     "categoriesLoadError": "Could not load the categories."
+  },
+  "SelectorServiciosPorCategoria": {
+    "filterPlaceholder": "Search service...",
+    "sinCategoria": "No category",
+    "noActiveServices": "No active services yet. Add them first in Settings → Services.",
+    "noResults": "No services found."
   }
 }

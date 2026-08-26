@@ -211,6 +211,12 @@
     "submit": "Salvar alterações",
     "saveError": "Não foi possível salvar a profissional."
   },
+  "SelectorServiciosPorCategoria": {
+    "filterPlaceholder": "Buscar serviço...",
+    "sinCategoria": "Sem categoria",
+    "noActiveServices": "Ainda não há serviços ativos. Cadastre-os primeiro em Configurações → Serviços.",
+    "noResults": "Nenhum serviço encontrado."
+  },
   "AparienciaPage": {
     "title": "Aparência",
     "subtitle": "Escolha como o app aparece. \"Sistema\" segue o modo claro ou escuro configurado no seu dispositivo.",
