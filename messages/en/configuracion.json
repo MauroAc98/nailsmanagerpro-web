@@ -1,6 +1,51 @@
 {
+  "ConfiguracionPage": {
+    "categorias": "Categories"
+  },
   "ServiciosPage": {
     "sectionServicios": "Services",
     "sectionPromociones": "Promotions"
+  },
+  "CategoriasPage": {
+    "title": "Categories",
+    "empty": "Add your first category!",
+    "add": "Add category",
+    "deleteConfirm": "Delete category {nombre}?",
+    "deleteConfirmButton": "Delete",
+    "deleted": "Category deleted",
+    "loadError": "Could not load categories.",
+    "inUseError": "This category has services assigned to it and can't be deleted."
+  },
+  "NuevaCategoriaPage": {
+    "title": "New category",
+    "nameLabel": "Name *",
+    "namePlaceholder": "E.g: Manicure",
+    "nameRequired": "Name is required",
+    "duplicate": "A category with that name already exists.",
+    "submit": "Add category",
+    "saving": "Saving...",
+    "saveError": "Could not save the category.",
+    "loading": "Loading...",
+    "loadError": "Could not load the category."
+  },
+  "EditarCategoriaPage": {
+    "title": "Edit category",
+    "nameLabel": "Name *",
+    "namePlaceholder": "E.g: Manicure",
+    "nameRequired": "Name is required",
+    "duplicate": "A category with that name already exists.",
+    "submit": "Save changes",
+    "saving": "Saving...",
+    "saveError": "Could not save the category.",
+    "loading": "Loading...",
+    "loadError": "Could not load the category."
+  },
+  "NuevoServicioPage": {
+    "categoryLabel": "Category (optional)",
+    "categoryNone": "No category"
+  },
+  "EditarServicioPage": {
+    "categoryLabel": "Category (optional)",
+    "categoryNone": "No category"
   }
 }
