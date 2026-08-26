@@ -42,10 +42,12 @@
   },
   "NuevoServicioPage": {
     "categoryLabel": "Category (optional)",
-    "categoryNone": "No category"
+    "categoryNone": "No category",
+    "categoriesLoadError": "Could not load the categories."
   },
   "EditarServicioPage": {
     "categoryLabel": "Category (optional)",
-    "categoryNone": "No category"
+    "categoryNone": "No category",
+    "categoriesLoadError": "Could not load the categories."
   }
 }

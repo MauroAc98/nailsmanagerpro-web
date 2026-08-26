@@ -40,7 +40,7 @@ export default function NuevoServicioPage() {
   const t = useTranslations('configuracion.NuevoServicioPage');
   const router = useRouter();
   const { servicios, agregarServicio } = useServiciosStore();
-  const { categorias, fetchCategorias } = useCategoriasServicioStore();
+  const { categorias, fetchCategorias, loading: categoriasLoading, error: categoriasError } = useCategoriasServicioStore();
 
   const [nombre,  setNombre]  = useState('');
   const [duracion, setDuracion] = useState(30);
@@ -173,6 +173,12 @@ export default function NuevoServicioPage() {
             </div>
           </div>
         )}
+        {/* Sin esto, un fetch de categorías fallido es indistinguible de
+            "esta cuenta no tiene categorías" — el selector simplemente no
+            aparece y no queda ninguna señal de que algo rompió. */}
+        {categoriasError && categorias.length === 0 && (
+          <p style={{ margin: 0, fontSize: 12, color: colors.subtext }}>{t('categoriesLoadError')}</p>
+        )}
 
         {/* Promo */}
         <div style={{
@@ -189,14 +195,22 @@ export default function NuevoServicioPage() {
         </div>
 
         {/* Button */}
+        {/* categoriasLoading también deshabilita: fetchCategorias() y
+            agregarServicio() comparten el mismo withGlobalLoader booleano
+            (no contador, ver comentario en useServicioStore.ts) — si el
+            submit dispara mientras la categoría todavía está en vuelo, el
+            finally que termine primero apaga el spinner con la otra
+            operación todavía en curso. Bloquear el submit hasta que
+            categorías resuelva evita el solape en vez de intentar arreglar
+            el contador compartido. */}
         <button
           onClick={handleGuardar}
-          disabled={saving}
+          disabled={saving || categoriasLoading}
           style={{
             marginTop: 20, height: 52, borderRadius: 14,
-            backgroundColor: saving ? colors.primaryDisabled : colors.primarySolid,
+            backgroundColor: (saving || categoriasLoading) ? colors.primaryDisabled : colors.primarySolid,
             color: '#fff', fontSize: 16, fontWeight: 600,
-            border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+            border: 'none', cursor: (saving || categoriasLoading) ? 'not-allowed' : 'pointer',
           }}
         >
           {saving ? t('saving') : t('submit')}
