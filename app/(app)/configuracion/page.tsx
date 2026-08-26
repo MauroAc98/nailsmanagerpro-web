@@ -17,6 +17,18 @@ const OPCIONES = [
     ),
   },
   {
+    path: '/configuracion/categorias',
+    titleKey: 'categorias',
+    grupo: 'negocio' as const,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.59 13.41 11 3.83 3.83 11l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83z"/>
+        <path d="M11 3.83 3.83 11"/>
+        <circle cx="7.5" cy="7.5" r="1.5"/>
+      </svg>
+    ),
+  },
+  {
     path: '/configuracion/slots',
     titleKey: 'slots',
     grupo: 'negocio' as const,
