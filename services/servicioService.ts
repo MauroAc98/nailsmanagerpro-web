@@ -17,6 +17,10 @@ export interface Servicio {
   // campo — el frontend nunca lo recalcula, solo lo reordena vía
   // `reordenar` (PATCH /servicios/reordenar).
   orden: number;
+  // Categoría opcional (ver services/categoriaServicioService.ts). null =
+  // "Sin categoría", nunca undefined — el backend siempre devuelve la
+  // clave, con valor null cuando no hay categoría asignada.
+  categoria_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +30,7 @@ export interface CreateServicioDto {
   duracion_minutos: number;
   precio?: number;
   es_promo?: boolean;
+  categoria_id?: number | null;
 }
 
 export interface UpdateServicioDto {
@@ -38,6 +43,9 @@ export interface UpdateServicioDto {
   precio?: number | null;
   activo?: boolean;
   es_promo?: boolean;
+  // Mismo criterio que `precio`: null limpia la categoría, undefined deja
+  // la clave afuera del PUT y el backend no la toca.
+  categoria_id?: number | null;
 }
 
 export const servicioService = {
