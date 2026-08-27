@@ -10,6 +10,7 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
 import { alertDialog } from '@/store/useConfirmStore';
+import { SelectorServiciosPorCategoria } from '@/components/configuracion/SelectorServiciosPorCategoria';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -22,23 +23,6 @@ const labelStyle: React.CSSProperties = {
   fontSize: 13, fontWeight: 600, color: colors.textStrong,
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
-
-function Checkbox({ checked }: { checked: boolean }) {
-  return (
-    <div style={{
-      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-      border: `2px solid ${checked ? colors.primarySolid : colors.divider}`,
-      backgroundColor: checked ? colors.primarySolid : colors.surface,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      {checked && (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth="3">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      )}
-    </div>
-  );
-}
 
 export default function NuevoProfesionalPage() {
   const t = useTranslations('configuracion.NuevoProfesionalPage');
@@ -56,10 +40,6 @@ export default function NuevoProfesionalPage() {
   useEffect(() => {
     if (servicios.length === 0) fetchServicios();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const toggleServicio = (id: number) => {
-    setServicioIds(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-  };
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
@@ -95,8 +75,6 @@ export default function NuevoProfesionalPage() {
       await alertDialog(result.message ?? t('saveError'));
     }
   };
-
-  const serviciosActivos = servicios.filter(s => s.activo);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
@@ -145,29 +123,11 @@ export default function NuevoProfesionalPage() {
         {/* Servicios */}
         <div>
           <label style={labelStyle}>{t('servicesLabel')}</label>
-          {serviciosActivos.length === 0 ? (
-            <p style={{ fontSize: 13, color: colors.subtext, margin: '4px 0 0 2px' }}>
-              {t('noActiveServices')}
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {serviciosActivos.map(s => (
-                <div
-                  key={s.id}
-                  onClick={() => toggleServicio(s.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                    borderRadius: 12, padding: '12px 14px', cursor: 'pointer',
-                  }}
-                >
-                  <Checkbox checked={servicioIds.includes(s.id)} />
-                  <span style={{ flex: 1, fontSize: 14, color: colors.text }}>{s.nombre}</span>
-                  <span style={{ fontSize: 12, color: colors.subtext }}>{s.duracion_minutos} min</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <SelectorServiciosPorCategoria
+            servicios={servicios}
+            servicioIds={servicioIds}
+            onChange={setServicioIds}
+          />
         </div>
 
         {/* Button */}
