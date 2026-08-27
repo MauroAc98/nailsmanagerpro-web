@@ -21,6 +21,7 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { CategoriaServicio } from '@/services/categoriaServicioService';
+import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 
 // ReorderableSection — un grupo (regular o promo) con su propio DndContext
 // / SortableContext, así arrastrar nunca mezcla ids entre grupos: cada
@@ -92,37 +93,17 @@ interface GrupoCategoria {
   promos:     Servicio[];
 }
 
-// Partición externa por categoria_id (orden = orden de `categorias`, ya
-// alfabético desde el backend — ver useCategoriasServicioStore), sub-partición
-// interna por es_promo (mismo criterio que el flat regular/promo de siempre).
-// "Sin categoria" se agrega al final solo si tiene servicios; una categoría
-// sin servicios asignados no genera sección (mismo "no dead-weight" que
-// ReorderableSection ya aplica a promos vacías).
+// Sub-partición por es_promo (mismo criterio que el flat regular/promo de
+// siempre) sobre el agrupamiento compartido `agruparServiciosPorCategoria`
+// (orden/skip-empty/"Sin categoria"-al-final ahora vive ahí, reusado también
+// por el picker de servicios de profesionales — ver lib/agruparServiciosPorCategoria.ts).
 function agruparPorCategoria(servicios: Servicio[], categorias: CategoriaServicio[]): GrupoCategoria[] {
-  const grupos: GrupoCategoria[] = [];
-
-  for (const categoria of categorias) {
-    const deLaCategoria = servicios.filter(s => s.categoria_id === categoria.id);
-    if (deLaCategoria.length === 0) continue;
-    grupos.push({
-      id: categoria.id,
-      nombre: categoria.nombre,
-      regulares: deLaCategoria.filter(s => !s.es_promo),
-      promos: deLaCategoria.filter(s => s.es_promo),
-    });
-  }
-
-  const sinCategoria = servicios.filter(s => s.categoria_id === null);
-  if (sinCategoria.length > 0) {
-    grupos.push({
-      id: null,
-      nombre: '', // resuelto en el render vía t('sectionSinCategoria')
-      regulares: sinCategoria.filter(s => !s.es_promo),
-      promos: sinCategoria.filter(s => s.es_promo),
-    });
-  }
-
-  return grupos;
+  return agruparServiciosPorCategoria(servicios, categorias).map(grupo => ({
+    id: grupo.id,
+    nombre: grupo.nombre,
+    regulares: grupo.servicios.filter(s => !s.es_promo),
+    promos: grupo.servicios.filter(s => s.es_promo),
+  }));
 }
 
 export default function ServiciosPage() {
