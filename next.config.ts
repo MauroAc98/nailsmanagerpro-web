@@ -65,6 +65,19 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: apiHostname },
     ],
   },
+  // Páginas legales servidas como HTML estático desde public/legal/*.html
+  // (fuera del árbol de React), para que Meta/Google y sus crawlers puedan
+  // leerlas sin JS y a cualquier viewport — la app en sí está detrás del
+  // gate CSS de 600px (globals.css) y del i18n client-side, que dejarían a
+  // un revisor en desktop viendo solo "Turnetto es para celular". El rewrite
+  // solo expone URLs limpias; el archivo real vive en public/.
+  async rewrites() {
+    return [
+      { source: "/privacy", destination: "/legal/privacy.html" },
+      { source: "/terms", destination: "/legal/terms.html" },
+      { source: "/data-deletion", destination: "/legal/data-deletion.html" },
+    ];
+  },
 };
 
 module.exports = withPWA(nextConfig);
