@@ -44,12 +44,25 @@ const withPWA = require("next-pwa")({
     // cacheaban 1h igual). El prefijo "/api/" opcional lo corrige acá para
     // ambas familias de rutas, tolerante a cualquier valor futuro de
     // NEXT_PUBLIC_API_URL con o sin ese prefijo.
+    //
+    // El SDK de Facebook (connect.facebook.net/en_US/sdk.js), que solo se
+    // carga dentro de app/(admin)/admin/whatsapp para Embedded Signup, es JS
+    // cross-origin que NUNCA debe servirse rancio desde la caché del service
+    // worker. Va como disyunción top-level PROPIA (un OR aparte), no como un
+    // && extra sobre el predicado de la API — ese predicado chequea
+    // url.hostname === apiHostname y jamás matchearía un host facebook.net.
+    // Este override explícito vuelve irrelevante qué regla default de
+    // next-pwa/workbox aplicaría si no (workbox-routing rechaza matches
+    // cross-origin en un RegExpRoute que no esté en índice 0, así que
+    // /\.js$/i no atrapa sdk.js de forma confiable igual). El matcher de la
+    // API queda intacto.
     {
       urlPattern: ({ url }: { url: URL }) =>
-        url.hostname === apiHostname &&
-        (/^\/(api\/)?auth\//.test(url.pathname) ||
-          /^\/(api\/)?support-info$/.test(url.pathname) ||
-          /^\/(api\/)?admin\//.test(url.pathname)),
+        url.hostname === "connect.facebook.net" ||
+        (url.hostname === apiHostname &&
+          (/^\/(api\/)?auth\//.test(url.pathname) ||
+            /^\/(api\/)?support-info$/.test(url.pathname) ||
+            /^\/(api\/)?admin\//.test(url.pathname))),
       handler: "NetworkOnly",
     },
     ...defaultRuntimeCaching,

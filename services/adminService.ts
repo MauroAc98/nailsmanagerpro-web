@@ -62,6 +62,66 @@ export interface AdminSettings {
 }
 
 // ─────────────────────────────────────────────
+// WhatsApp Embedded Signup — conexiones por salón
+// GET/POST admin/whatsapp/connections (WhatsappConnectionAdminController).
+// El GET nunca está gateado (la pantalla tiene que verse aunque el
+// onboarding esté deshabilitado); el POST sí. app_id/config_id/graph_version
+// vienen del backend, NO como NEXT_PUBLIC_* (ver design §6: rotar el config
+// de ES no debe forzar un rebuild del front).
+// ─────────────────────────────────────────────
+export type WhatsappConexionEstado = 'sin_conexion' | 'conectada' | 'por_vencer' | 'expirada';
+
+export interface WhatsappEsConfig {
+  enabled: boolean;
+  app_id: string | null;
+  config_id: string | null;
+  graph_version: string;
+}
+
+export interface WhatsappSalonConexion {
+  user_id: number;
+  nombre: string;
+  estado: WhatsappConexionEstado;
+  display_phone_number: string | null;
+  verified_name: string | null;
+  // Epoch Unix en segundos, o null cuando el token no vence (ver design §Q4).
+  token_expires_at: number | null;
+}
+
+export interface WhatsappConexionesResponse {
+  es: WhatsappEsConfig;
+  salones: WhatsappSalonConexion[];
+}
+
+export interface ConectarWhatsappPayload {
+  user_id: number;
+  code: string;
+  waba_id: string;
+  // Opcional: si el evento FINISH no lo trajo, el backend lo resuelve vía
+  // GET /{waba_id}/phone_numbers (ver design §3 step 2).
+  phone_number_id?: string;
+}
+
+export interface WhatsappConexionCreada {
+  id: number;
+  user_id: number;
+  waba_id: string;
+  phone_number_id: string;
+  display_phone_number: string | null;
+  verified_name: string | null;
+  estado: WhatsappConexionEstado;
+  token_expires_at: number | null;
+}
+
+// Cuerpo del 409 cuando el phone_number_id ya pertenece a otro salón
+// (ver design §Q7 / apply-progress #389).
+export interface WhatsappConexionConflicto {
+  message: string;
+  phone_number_id: string;
+  salon_dueno: { id: number; name: string } | null;
+}
+
+// ─────────────────────────────────────────────
 // Keys de localStorage — deliberadamente distintas de KEYS en
 // services/authService.ts (auth_token/auth_user), ver design admin-panel
 // decisión #7.
@@ -162,6 +222,27 @@ export const adminService = {
 
   actualizarSettings: async (data: AdminSettings): Promise<AdminSettings> => {
     const response = await adminApi.put<AdminSettings>('/admin/settings', data);
+    return response.data;
+  },
+
+  // Usado por app/(admin)/admin/whatsapp/page.tsx. Una fila por salón,
+  // conectado o no (estado 'sin_conexion' para los que no tienen conexión).
+  obtenerConexionesWhatsapp: async (): Promise<WhatsappConexionesResponse> => {
+    const response = await adminApi.get<WhatsappConexionesResponse>('/admin/whatsapp/connections');
+    return response.data;
+  },
+
+  // POST del intercambio de código de Embedded Signup. timeout explícito de
+  // 45s: el backend hace 3 llamadas sincrónicas a Graph server-side (budget
+  // ~39s, ver design §3), muy por encima de lo razonable para el default de
+  // axios. El front además corre su propio timeout de operación (~60s) sobre
+  // el handshake con Meta antes de este POST (ver hooks/useEmbeddedSignup.ts).
+  conectarWhatsapp: async (payload: ConectarWhatsappPayload): Promise<WhatsappConexionCreada> => {
+    const response = await adminApi.post<WhatsappConexionCreada>(
+      '/admin/whatsapp/connections',
+      payload,
+      { timeout: 45000 },
+    );
     return response.data;
   },
 
