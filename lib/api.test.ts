@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/lib/logAuthEvent', () => ({ logAuthEvent: vi.fn() }));
+
 import api from './api';
+import { logAuthEvent } from '@/lib/logAuthEvent';
+
+const mockedLog = vi.mocked(logAuthEvent);
 
 // Reach the registered axios v1 response-interceptor rejection handler so we
 // can drive it with synthetic errors without a real network round-trip.
@@ -11,8 +16,8 @@ const rejectResponse = (
   api.interceptors.response as unknown as { handlers: { rejected: RejectHandler }[] }
 ).handlers[0].rejected;
 
-function httpError(status: number, data?: unknown) {
-  return { response: { status, data } };
+function httpError(status: number, data?: unknown, config?: unknown) {
+  return { response: { status, data }, config };
 }
 
 type CallLog = { mock: { calls: unknown[][] } };
@@ -28,6 +33,7 @@ beforeEach(() => {
   localStorage.setItem('auth_token', 'tok');
   localStorage.setItem('auth_user', '{"id":1}');
   dispatchSpy = vi.spyOn(window, 'dispatchEvent') as unknown as CallLog;
+  mockedLog.mockClear();
 });
 
 afterEach(() => {
@@ -86,6 +92,19 @@ describe('lib/api — response interceptor on 403', () => {
   it('emits auth:subscription-suspect for a 403 with no code at all', async () => {
     await expect(rejectResponse(httpError(403))).rejects.toBeDefined();
     expect(dispatchedEventTypes(dispatchSpy)).toContain('auth:subscription-suspect');
+  });
+
+  it('logs the backend code and request url before dispatching the recheck intent (task 6.8)', async () => {
+    await expect(
+      rejectResponse(
+        httpError(403, { code: 'SUBSCRIPTION_SUSPENDED' }, { url: '/agenda/turnos' }),
+      ),
+    ).rejects.toBeDefined();
+
+    expect(mockedLog).toHaveBeenCalledWith('interceptor.subscription-suspect', {
+      code: 'SUBSCRIPTION_SUSPENDED',
+      url: '/agenda/turnos',
+    });
   });
 
   it('does not clear auth storage on 403', async () => {

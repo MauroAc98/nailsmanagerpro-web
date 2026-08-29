@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logAuthEvent } from '@/lib/logAuthEvent';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -59,6 +60,14 @@ api.interceptors.response.use(
     // `/auth/subscription-status` (single-flighted) and that result is
     // authoritative; a spurious permission 403 just triggers a no-op recheck.
     if (status === 403) {
+      // Slice 6 payoff (task 6.8): surface the backend discriminator
+      // (`NO_SUBSCRIPTION` / `SUBSCRIPTION_SUSPENDED` / `SUBSCRIPTION_EXPIRED`)
+      // for observability. The store still keys blocking off
+      // `/auth/subscription-status`, never off this code.
+      logAuthEvent('interceptor.subscription-suspect', {
+        code: error.response?.data?.code,
+        url: error.config?.url,
+      });
       window.dispatchEvent(new CustomEvent('auth:subscription-suspect'));
     }
 
