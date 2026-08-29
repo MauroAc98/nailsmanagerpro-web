@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
+import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute';
+import { classifyTenant } from '@/lib/authRouteClasses';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
@@ -18,19 +20,11 @@ import { HistorialClienteSheetHost } from '@/components/HistorialClienteSheetHos
 import { ToastHost } from '@/components/ToastHost';
 import { colors } from '@/theme/colors';
 
-// Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token.
-// '/login' matchea también '/login/{slug}' (login personalizado por
-// negocio) — antes esto era un array de igualdad exacta y no reconocía la
-// variante con slug, así que el guard de abajo trataba /login/{slug} como
-// ruta protegida: sacaba al usuario antes de que pudiera loguearse (perdiendo
-// el logo del negocio) y arrastraba un ?redirect= que rompía el flujo.
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
-// Rutas accesibles sin sesión que nunca fuerzan redirect (independientes del estado de auth)
-const NEUTRAL_PATHS = ['/legal'];
-
-function esRutaPublica(pathname: string): boolean {
-  return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
-}
+// Route classification (public / neutral / change-pw / blocked / protected)
+// and the allow/redirect/blank decision now live in the pure, tested
+// `resolveAuthRoute` + `classifyTenant` (design D2). `'/login'` still matches
+// `/login/{slug}` (custom per-business login) — `classifyTenant` uses the same
+// prefix rule the old inline `esRutaPublica` did.
 
 // Panel de administración — identidad, guard y store completamente
 // separados del tenant (ver design admin-panel decisión #7 y
@@ -57,6 +51,11 @@ function esRutaAdmin(): boolean {
 // testeado). Se re-exporta acá para no romper imports existentes.
 export { esRedirectSeguro };
 
+// Revocation still routes through here for now (Slice 4 replaces it with the
+// coalesced `SESSION_REVOKED` + graceful modal). `authStatus: 'unauthenticated'`
+// is what makes the guard react — the resolver reads `authStatus`, not the raw
+// `token` field, so clearing the token alone would leave protected content
+// mounted.
 const CLEARED_AUTH_STATE = {
   user: null,
   token: null,
@@ -70,13 +69,15 @@ const CLEARED_AUTH_STATE = {
   inicializado: true,
   mostrarBienvenida: false,
   esPrimerLogin: false,
+  authStatus: 'unauthenticated' as const,
+  subscriptionChecked: true,
 };
 
 function ProvidersInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { token, inicializado, debeCambiarPassword, subscriptionExpired, mostrarBienvenida } = useAuthStore();
+  const { authStatus, mostrarBienvenida } = useAuthStore();
   const isLoading = useLoadingStore(state => state.isLoading);
   const { locale, messages, mensajesListos } = useLocaleStore();
   const [mounted, setMounted] = useState(false);
@@ -100,10 +101,16 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     if (useConfirmStore.getState().dialog) resolveDialog(false);
   }, [pathname]);
 
-  // Escucha eventos del interceptor de Axios (evita dependencia circular api ↔ store)
+  // Escucha eventos del interceptor de Axios (evita dependencia circular api ↔ store).
+  // Slice 4 makes the interceptor intent-only (emit a recheck instead of
+  // latching) and swaps `session-expired` for the graceful modal; for now both
+  // events just route the transition through `authStatus` so the resolver reacts.
   useEffect(() => {
     const onSessionExpired      = () => useAuthStore.setState(CLEARED_AUTH_STATE);
-    const onSubscriptionExpired = () => useAuthStore.getState().setSubscriptionExpired(true);
+    const onSubscriptionExpired = () => {
+      useAuthStore.getState().setSubscriptionExpired(true);
+      useAuthStore.getState().dispatchAuth({ type: 'SUBSCRIPTION_CHECKED', blocked: true });
+    };
 
     window.addEventListener('session-expired',      onSessionExpired);
     window.addEventListener('subscription-expired', onSubscriptionExpired);
@@ -161,66 +168,37 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // ── Route decision: the single pure resolver (design D2) ──────────────
+  // The old dual logic (a redirect `useEffect` chain + a parallel
+  // `puedeMostrarContenido` if/else that had to be kept byte-for-byte in sync)
+  // is gone. `resolveAuthRoute` decides allow/redirect/blank once; the effect
+  // only navigates, the render only gates. They can never disagree.
+  const isAdmin = esRutaAdmin(); // window read — stays outside the pure fn
+  const qs = searchParams.toString();
+  const snapshot: AuthRouteSnapshot = {
+    status: authStatus,
+    // `mensajesListos` avoids the flash of Spanish on a pt-BR user's first
+    // paint: the `es` catalog is synchronous but pt-BR loads via `await
+    // import()`, so there is a tick where it is not ready yet.
+    i18nReady: Boolean(mounted && mensajesListos),
+  };
+  const route = resolveAuthRoute(
+    snapshot,
+    // `searchParams.toString()` drops the leading `?`; the resolver
+    // concatenates `pathname + search` verbatim, so prepend it when non-empty.
+    { pathname, search: qs ? `?${qs}` : '' },
+    classifyTenant,
+  );
+  const redirectTo = route.type === 'redirect' ? route.to : null;
+
+  // The admin panel guards itself (app/(admin)/admin/layout.tsx) — this tenant
+  // guard never redirects there and never blanks its children.
   useEffect(() => {
-    if (!mounted || !inicializado) return;
-    if (esRutaAdmin()) return; // el guard admin vive en su propio layout — ver app/(admin)/admin/layout.tsx
+    if (isAdmin) return;
+    if (redirectTo) router.push(redirectTo);
+  }, [isAdmin, redirectTo, router]);
 
-    if (!token) {
-      // Sin token pero con cambio de password pendiente → el usuario está en el flujo de primer login
-      if (debeCambiarPassword) {
-        if (pathname !== '/cambiar-password') router.push('/cambiar-password');
-        return;
-      }
-      if (!esRutaPublica(pathname) && !NEUTRAL_PATHS.includes(pathname)) {
-        const query = searchParams.toString();
-        const destino = query ? `${pathname}?${query}` : pathname;
-        router.push(`/login?redirect=${encodeURIComponent(destino)}`);
-      }
-      return;
-    }
-
-    if (subscriptionExpired) {
-      if (pathname !== '/subscription-expired') router.push('/subscription-expired');
-      return;
-    }
-
-    if (esRutaPublica(pathname)) {
-      const redirect = searchParams.get('redirect');
-      router.push(esRedirectSeguro(redirect) ? redirect : '/agenda');
-    }
-  }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, searchParams, router]);
-
-  // Calculado en el render, no en el efecto: si dejáramos que {children} se
-  // muestre siempre, la página protegida (ej. agenda) alcanza a pintarse un
-  // instante antes de que el efecto de arriba corra y redirija — el flash
-  // que se veía. Acá decidimos, con lo que YA sabemos, si esta ruta es
-  // válida para el estado de auth actual; si no, mostramos blanco mientras
-  // el efecto hace la redirección real.
-  const rutaEsPublica = esRutaPublica(pathname);
-  // /admin/* se trata como neutral acá también: además de nunca redirigir
-  // (arriba), tampoco debe esperar a mounted/inicializado/mensajesListos
-  // del tenant para renderizar sus hijos — el guard propio de
-  // app/(admin)/admin/layout.tsx decide su propia visibilidad.
-  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname) || esRutaAdmin();
-
-  let puedeMostrarContenido: boolean;
-  if (esRutaNeutral) {
-    puedeMostrarContenido = true;
-  } else if (!mounted || !inicializado || !mensajesListos) {
-    // mensajesListos evita el flash de español en el primer paint de un
-    // usuario pt-BR: el catálogo `es` es estático (síncrono) pero
-    // pt-BR/en se cargan con `await import()`, así que hay un tick donde
-    // todavía no están listos.
-    puedeMostrarContenido = false;
-  } else if (!token) {
-    puedeMostrarContenido = debeCambiarPassword
-      ? pathname === '/cambiar-password'
-      : rutaEsPublica;
-  } else if (subscriptionExpired) {
-    puedeMostrarContenido = pathname === '/subscription-expired';
-  } else {
-    puedeMostrarContenido = !rutaEsPublica;
-  }
+  const puedeMostrarContenido = isAdmin || route.type === 'allow';
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">

@@ -2,24 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { resolveAuthRoute, type AuthStatus } from '@/lib/resolveAuthRoute';
+import { classifyAdmin } from '@/lib/authRouteClasses';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { colors } from '@/theme/colors';
 
 // pathname acá es el que ve el navegador — middleware.ts reescribe
 // /login → /admin/login puertas adentro para admin.turnetto.com, pero
-// usePathname() no ve rewrites, reporta el path LIMPIO. Por eso estas
-// constantes y los router.push de abajo usan rutas sin /admin.
-const ADMIN_PUBLIC_PATHS = ['/login'];
-
-function esRutaAdminPublica(pathname: string): boolean {
-  return ADMIN_PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
-}
+// usePathname() no ve rewrites, reporta el path LIMPIO. Por eso classifyAdmin
+// y el `home: '/'` de abajo usan rutas sin /admin.
 
 // Guard propio del panel admin — deliberadamente NO vive en
 // app/providers.tsx (ver esRutaAdmin() ahí, que se limita a no interferir
-// con esta ruta). Usa su propio store (useAdminAuthStore) y su propia
-// clave de sesión (admin_token vía adminService), aislados de la sesión
-// tenant. Ver design admin-panel decisión #7.
+// con esta ruta). Comparte la MISMA decisión pura que el guard tenant
+// (resolveAuthRoute, design D2) pero con su propio store (useAdminAuthStore),
+// su propia clave de sesión (admin_token vía adminService) y su propio mapa
+// de rutas (classifyAdmin). Ver design admin-panel decisión #7.
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -42,34 +40,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('admin-session-expired', onAdminSessionExpired);
   }, []);
 
+  // Admin has no `booting` subscription check — status maps straight off the
+  // store: not initialized yet -> booting (blank); no token -> unauthenticated;
+  // token present -> authenticated. `i18nReady` is always true here (admin i18n
+  // is not gated the way the tenant's pt-BR catalog is).
+  const status: AuthStatus = !mounted || !inicializado
+    ? 'booting'
+    : !token
+      ? 'unauthenticated'
+      : 'authenticated';
+
+  const route = resolveAuthRoute(
+    { status, i18nReady: true },
+    { pathname, search: '' },
+    classifyAdmin,
+    // Admin has no `/agenda` — an authenticated admin landing on `/login`
+    // goes to `/` (task 5.3, reconciles the D2 deviation from Slice 2).
+    { home: '/' },
+  );
+  const redirectTo = route.type === 'redirect' ? route.to : null;
+
   useEffect(() => {
-    if (!mounted || !inicializado) return;
-
-    if (!token) {
-      if (!esRutaAdminPublica(pathname)) router.push('/login');
-      return;
-    }
-
-    if (esRutaAdminPublica(pathname)) router.push('/');
-  }, [mounted, inicializado, token, pathname, router]);
-
-  // Mismo criterio de cálculo-en-render que app/providers.tsx: decide con
-  // lo que YA sabemos si esta ruta es válida para el estado de sesión
-  // admin actual, para no dejar parpadear contenido protegido un instante
-  // antes de que el efecto de arriba redirija.
-  const rutaEsPublica = esRutaAdminPublica(pathname);
-  let puedeMostrarContenido: boolean;
-  if (!mounted || !inicializado) {
-    puedeMostrarContenido = false;
-  } else if (!token) {
-    puedeMostrarContenido = rutaEsPublica;
-  } else {
-    puedeMostrarContenido = !rutaEsPublica;
-  }
+    if (redirectTo) router.push(redirectTo);
+  }, [redirectTo, router]);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background }}>
-      {puedeMostrarContenido ? children : null}
+      {route.type === 'allow' ? children : null}
     </div>
   );
 }
