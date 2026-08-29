@@ -3,6 +3,9 @@
 import { Suspense, useEffect, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute';
+import { classifyTenant } from '@/lib/authRouteClasses';
+import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
@@ -12,24 +15,17 @@ import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
 import { useConfirmStore, resolveDialog } from '@/store/useConfirmStore';
 import { MotivoCancelacionSheetHost } from '@/components/MotivoCancelacionSheetHost';
+import { SessionEndedModal } from '@/components/SessionEndedModal';
 import { PrecioServiciosSheetHost } from '@/components/PrecioServiciosSheetHost';
 import { HistorialClienteSheetHost } from '@/components/HistorialClienteSheetHost';
 import { ToastHost } from '@/components/ToastHost';
 import { colors } from '@/theme/colors';
 
-// Rutas accesibles sin sesión que además redirigen a /agenda si ya hay token.
-// '/login' matchea también '/login/{slug}' (login personalizado por
-// negocio) — antes esto era un array de igualdad exacta y no reconocía la
-// variante con slug, así que el guard de abajo trataba /login/{slug} como
-// ruta protegida: sacaba al usuario antes de que pudiera loguearse (perdiendo
-// el logo del negocio) y arrastraba un ?redirect= que rompía el flujo.
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
-// Rutas accesibles sin sesión que nunca fuerzan redirect (independientes del estado de auth)
-const NEUTRAL_PATHS = ['/legal'];
-
-function esRutaPublica(pathname: string): boolean {
-  return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
-}
+// Route classification (public / neutral / change-pw / blocked / protected)
+// and the allow/redirect/blank decision now live in the pure, tested
+// `resolveAuthRoute` + `classifyTenant` (design D2). `'/login'` still matches
+// `/login/{slug}` (custom per-business login) — `classifyTenant` uses the same
+// prefix rule the old inline `esRutaPublica` did.
 
 // Panel de administración — identidad, guard y store completamente
 // separados del tenant (ver design admin-panel decisión #7 y
@@ -52,46 +48,12 @@ function esRutaAdmin(): boolean {
   return typeof window !== 'undefined' && window.location.hostname === ADMIN_HOST;
 }
 
-// `redirect` es un query param controlado por la URL — no confiar ciegamente
-// en él para no habilitar un open redirect. Enumerar prefijos peligrosos a
-// mano (protocol-relative "//evil.com", etc.) no alcanza: "/\evil.com"
-// (barra invertida) pasa cualquier chequeo de string, pero el parser WHATWG
-// URL que usa el router de Next internamente la normaliza igual que
-// "//evil.com" y termina resolviendo a un origen externo real. En vez de
-// perseguir variantes, delegamos la normalización al mismo parser que las
-// explota: si resolver `path` contra un origen fijo arbitrario cambia el
-// origin, es una URL externa (protocol-relative, con host, o con backslash),
-// no un path interno.
-export function esRedirectSeguro(path: string | null): path is string {
-  if (!path) return false;
-  try {
-    const base = 'http://localhost';
-    return new URL(path, base).origin === base;
-  } catch {
-    return false;
-  }
-}
-
-const CLEARED_AUTH_STATE = {
-  user: null,
-  token: null,
-  loading: false,
-  error: null,
-  debeCambiarPassword: false,
-  emailPendiente: null,
-  subscriptionExpired: false,
-  supportInfo: null,
-  daysLeft: null,
-  inicializado: true,
-  mostrarBienvenida: false,
-  esPrimerLogin: false,
-};
-
 function ProvidersInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { token, inicializado, debeCambiarPassword, subscriptionExpired, mostrarBienvenida } = useAuthStore();
+  const { authStatus, mostrarBienvenida } = useAuthStore();
+  const subscriptionBlockedOrigin = useAuthStore(s => s.subscriptionBlockedOrigin);
   const isLoading = useLoadingStore(state => state.isLoading);
   const { locale, messages, mensajesListos } = useLocaleStore();
   const [mounted, setMounted] = useState(false);
@@ -115,16 +77,20 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     if (useConfirmStore.getState().dialog) resolveDialog(false);
   }, [pathname]);
 
-  // Escucha eventos del interceptor de Axios (evita dependencia circular api ↔ store)
+  // Escucha los eventos-intención del interceptor de Axios (evita la
+  // dependencia circular api ↔ store). El interceptor NUNCA muta el store:
+  // solo emite estas señales y el store corre la transición autoritativa.
+  //   `auth:session-revoked`     (401) -> revocación grácil coalescida + modal
+  //   `auth:subscription-suspect` (403) -> recheck single-flight de la suscripción
   useEffect(() => {
-    const onSessionExpired      = () => useAuthStore.setState(CLEARED_AUTH_STATE);
-    const onSubscriptionExpired = () => useAuthStore.getState().setSubscriptionExpired(true);
+    const onSessionRevoked      = () => useAuthStore.getState().handleSessionRevoked();
+    const onSubscriptionSuspect = () => { void useAuthStore.getState().recheckSubscription(); };
 
-    window.addEventListener('session-expired',      onSessionExpired);
-    window.addEventListener('subscription-expired', onSubscriptionExpired);
+    window.addEventListener('auth:session-revoked',      onSessionRevoked);
+    window.addEventListener('auth:subscription-suspect', onSubscriptionSuspect);
     return () => {
-      window.removeEventListener('session-expired',      onSessionExpired);
-      window.removeEventListener('subscription-expired', onSubscriptionExpired);
+      window.removeEventListener('auth:session-revoked',      onSessionRevoked);
+      window.removeEventListener('auth:subscription-suspect', onSubscriptionSuspect);
     };
   }, []);
 
@@ -176,66 +142,80 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // ── Route decision: the single pure resolver (design D2) ──────────────
+  // The old dual logic (a redirect `useEffect` chain + a parallel
+  // `puedeMostrarContenido` if/else that had to be kept byte-for-byte in sync)
+  // is gone. `resolveAuthRoute` decides allow/redirect/blank once; the effect
+  // only navigates, the render only gates. They can never disagree.
+  const isAdmin = esRutaAdmin(); // window read — stays outside the pure fn
+  const qs = searchParams.toString();
+  const snapshot: AuthRouteSnapshot = {
+    status: authStatus,
+    // `mensajesListos` avoids the flash of Spanish on a pt-BR user's first
+    // paint: the `es` catalog is synchronous but pt-BR loads via `await
+    // import()`, so there is a tick where it is not ready yet.
+    i18nReady: Boolean(mounted && mensajesListos),
+  };
+  // `searchParams.toString()` drops the leading `?`; the resolver concatenates
+  // `pathname + search` verbatim, so prepend it when non-empty.
+  const search = qs ? `?${qs}` : '';
+  // Rider #14 / verify CRITICAL-2: when the machine flips back to
+  // `authenticated` while the user is still on `/subscription-expired` (class
+  // `blocked`), the resolver sends them `home`. Inject the captured deep route
+  // as `home` so a post-renew user returns exactly where the guard bounced them
+  // from, instead of a hardcoded `/agenda`. The resolver stays pure — `home` is
+  // an injected option. `subscription-expired` page no longer navigates itself.
+  const home =
+    esRedirectSeguro(subscriptionBlockedOrigin) ? subscriptionBlockedOrigin : '/agenda';
+  const route = resolveAuthRoute(snapshot, { pathname, search }, classifyTenant, { home });
+  const redirectTo = route.type === 'redirect' ? route.to : null;
+
+  // The admin panel guards itself (app/(admin)/admin/layout.tsx) — this tenant
+  // guard never redirects there and never blanks its children.
   useEffect(() => {
-    if (!mounted || !inicializado) return;
-    if (esRutaAdmin()) return; // el guard admin vive en su propio layout — ver app/(admin)/admin/layout.tsx
+    if (isAdmin) return;
+    if (!redirectTo) return;
 
-    if (!token) {
-      // Sin token pero con cambio de password pendiente → el usuario está en el flujo de primer login
-      if (debeCambiarPassword) {
-        if (pathname !== '/cambiar-password') router.push('/cambiar-password');
-        return;
+    // Rider #14: before bouncing a subscription-blocked user to
+    // `/subscription-expired`, remember which protected route they were on so
+    // a successful renew returns them there instead of a hardcoded `/agenda`.
+    // Only real protected routes (`classifyTenant` === 'protected') and only a
+    // safe internal path — never `/login`, `/cambiar-password`, etc. The
+    // resolver stays pure; this capture is a providers-side side effect.
+    if (
+      redirectTo === '/subscription-expired' &&
+      classifyTenant({ pathname, search }) === 'protected'
+    ) {
+      const full = pathname + search;
+      if (esRedirectSeguro(full) && useAuthStore.getState().subscriptionBlockedOrigin !== full) {
+        useAuthStore.setState({ subscriptionBlockedOrigin: full });
       }
-      if (!esRutaPublica(pathname) && !NEUTRAL_PATHS.includes(pathname)) {
-        const query = searchParams.toString();
-        const destino = query ? `${pathname}?${query}` : pathname;
-        router.push(`/login?redirect=${encodeURIComponent(destino)}`);
-      }
-      return;
     }
 
-    if (subscriptionExpired) {
-      if (pathname !== '/subscription-expired') router.push('/subscription-expired');
-      return;
+    router.push(redirectTo);
+  }, [isAdmin, redirectTo, router, pathname, search]);
+
+  // Verify CRITICAL-2: clear the captured origin only once the post-renew
+  // navigation has actually COMMITTED (pathname left `/subscription-expired`
+  // while authenticated). Clearing it in the redirect effect the moment
+  // `router.push` is called re-introduces the race the fix exists to close: a
+  // dynamic route (`/clientes/[id]`) does not commit its pathname in the same
+  // tick, so the next render would still be on `/subscription-expired` but with
+  // the origin gone — `home` falls back to `/agenda` and the guard pushes there
+  // instead. Keeping the origin populated through the whole transition holds the
+  // resolver on `redirect(<deep route>)` until the navigation lands.
+  useEffect(() => {
+    if (
+      !isAdmin &&
+      authStatus === 'authenticated' &&
+      pathname !== '/subscription-expired' &&
+      subscriptionBlockedOrigin
+    ) {
+      useAuthStore.setState({ subscriptionBlockedOrigin: '' });
     }
+  }, [isAdmin, authStatus, pathname, subscriptionBlockedOrigin]);
 
-    if (esRutaPublica(pathname)) {
-      const redirect = searchParams.get('redirect');
-      router.push(esRedirectSeguro(redirect) ? redirect : '/agenda');
-    }
-  }, [mounted, inicializado, token, debeCambiarPassword, subscriptionExpired, pathname, searchParams, router]);
-
-  // Calculado en el render, no en el efecto: si dejáramos que {children} se
-  // muestre siempre, la página protegida (ej. agenda) alcanza a pintarse un
-  // instante antes de que el efecto de arriba corra y redirija — el flash
-  // que se veía. Acá decidimos, con lo que YA sabemos, si esta ruta es
-  // válida para el estado de auth actual; si no, mostramos blanco mientras
-  // el efecto hace la redirección real.
-  const rutaEsPublica = esRutaPublica(pathname);
-  // /admin/* se trata como neutral acá también: además de nunca redirigir
-  // (arriba), tampoco debe esperar a mounted/inicializado/mensajesListos
-  // del tenant para renderizar sus hijos — el guard propio de
-  // app/(admin)/admin/layout.tsx decide su propia visibilidad.
-  const esRutaNeutral = NEUTRAL_PATHS.includes(pathname) || esRutaAdmin();
-
-  let puedeMostrarContenido: boolean;
-  if (esRutaNeutral) {
-    puedeMostrarContenido = true;
-  } else if (!mounted || !inicializado || !mensajesListos) {
-    // mensajesListos evita el flash de español en el primer paint de un
-    // usuario pt-BR: el catálogo `es` es estático (síncrono) pero
-    // pt-BR/en se cargan con `await import()`, así que hay un tick donde
-    // todavía no están listos.
-    puedeMostrarContenido = false;
-  } else if (!token) {
-    puedeMostrarContenido = debeCambiarPassword
-      ? pathname === '/cambiar-password'
-      : rutaEsPublica;
-  } else if (subscriptionExpired) {
-    puedeMostrarContenido = pathname === '/subscription-expired';
-  } else {
-    puedeMostrarContenido = !rutaEsPublica;
-  }
+  const puedeMostrarContenido = isAdmin || route.type === 'allow';
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">
@@ -243,6 +223,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
       <ConfirmSheetHost />
+      <SessionEndedModal />
       <MotivoCancelacionSheetHost />
       <PrecioServiciosSheetHost />
       <HistorialClienteSheetHost />

@@ -146,6 +146,9 @@ export const profesionalService = {
     form.append('imagen', archivo);
     const { data } = await api.post<Profesional>(`/profesionales/${id}/fondo-historia`, form, {
       headers: { 'Content-Type': undefined },
+      // La instancia `api` tiene un timeout default de 15s (lib/api.ts) — corto
+      // para una subida de imagen de varios MB desde un celular con mala señal.
+      timeout: 60_000,
     });
     return data;
   },
@@ -167,7 +170,9 @@ export const profesionalService = {
     const { data } = await api.post<Profesional>(
       `/profesionales/${id}/historia-precios-fotos`,
       form,
-      { headers: { 'Content-Type': undefined } },
+      // timeout: ver subirFondoHistoria — la subida de imagen puede exceder el
+      // default de 15s de la instancia `api`.
+      { headers: { 'Content-Type': undefined }, timeout: 60_000 },
     );
     return data;
   },

@@ -1,7 +1,15 @@
 import axios from 'axios';
+import { logAuthEvent } from '@/lib/logAuthEvent';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  // Bound every request so a hung connection can never wedge the caller
+  // forever — most critically the boot `subscription-status` call, which
+  // gates the whole app behind a blank screen until it settles. 15s is long
+  // enough for the slowest normal endpoint yet short enough to fail fast.
+  // Calls that legitimately need longer (e.g. the WhatsApp Embedded Signup
+  // connect on `adminApi`) pass their own `timeout` override.
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -26,11 +34,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Intent-only (design D3): the interceptor NEVER mutates the auth store or
+// latches subscription state. It clears the stored token synchronously on 401
+// (so a reload cannot re-auth) and emits a single `window` CustomEvent asking
+// the store to run the authoritative transition. `app/providers.tsx` listens
+// and delegates to `handleSessionRevoked()` / `recheckSubscription()`.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const code   = error.response?.data?.code;
 
     if (status === 401) {
       try {
@@ -39,11 +51,24 @@ api.interceptors.response.use(
       } catch {
         // sin acceso a localStorage — igual avisamos del logout vía el evento
       }
-      window.dispatchEvent(new CustomEvent('session-expired'));
+      window.dispatchEvent(new CustomEvent('auth:session-revoked'));
     }
 
-    if (status === 403 && code === 'SUBSCRIPTION_EXPIRED') {
-      window.dispatchEvent(new CustomEvent('subscription-expired'));
+    // Any 403 on a gated endpoint — a known `SUBSCRIPTION_*` / `NO_SUBSCRIPTION`
+    // code, an unrecognized future code, or no code at all — is treated as a
+    // "recheck" hint, never a direct block. The store calls
+    // `/auth/subscription-status` (single-flighted) and that result is
+    // authoritative; a spurious permission 403 just triggers a no-op recheck.
+    if (status === 403) {
+      // Slice 6 payoff (task 6.8): surface the backend discriminator
+      // (`NO_SUBSCRIPTION` / `SUBSCRIPTION_SUSPENDED` / `SUBSCRIPTION_EXPIRED`)
+      // for observability. The store still keys blocking off
+      // `/auth/subscription-status`, never off this code.
+      logAuthEvent('interceptor.subscription-suspect', {
+        code: error.response?.data?.code,
+        url: error.config?.url,
+      });
+      window.dispatchEvent(new CustomEvent('auth:subscription-suspect'));
     }
 
     return Promise.reject(error);
