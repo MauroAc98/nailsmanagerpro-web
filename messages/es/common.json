@@ -12,7 +12,13 @@
     "sendEmail": "Enviar un email",
     "logout": "Cerrar sesión",
     "logoutConfirm": "¿Seguro que querés salir?",
-    "logoutConfirmButton": "Salir"
+    "logoutConfirmButton": "Salir",
+    "verifyFailed": "No pudimos verificar tu suscripción. Revisá tu conexión y probá de nuevo."
+  },
+  "SessionEndedModal": {
+    "title": "Tu sesión se cerró",
+    "body": "Por seguridad cerramos tu sesión. Volvé a iniciar sesión para continuar.",
+    "confirm": "Entendido"
   },
   "SubscriptionWarningBanner": {
     "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Turnetto.",

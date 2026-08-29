@@ -5,12 +5,25 @@ import { authTransition, type AuthEvent, type AuthStatus } from '@/lib/authMachi
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { resolveLocale } from '@/lib/locale';
 import { useLocaleStore, setLocale, tStatic } from '@/store/useLocaleStore';
+import { logAuthEvent } from '@/lib/logAuthEvent';
+import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 
 // sessionStorage (no localStorage): sobrevive a un refresh accidental dentro
 // de la misma pestaña, pero se limpia al cerrarla — evita repetir la
 // bienvenida en cada pull-to-refresh táctil sin dejar de mostrarla al abrir
 // la app de nuevo.
 const BIENVENIDA_KEY = 'bienvenida_mostrada';
+
+// Boot-gate backstop (design D4 + PR3 verify WARNING-2): the axios 15s
+// `timeout` bounds each individual request, but the boot `checkSubscription()`
+// fans out to three calls — this shorter race keeps the blank boot gate from
+// lingering if any one of them hangs mid-response. On timeout we fail open.
+const BOOT_CHECK_TIMEOUT_MS = 8000;
+
+// Module-scoped single-flight latch for `recheckSubscription` (design D3): N
+// parallel 403-driven recheck intents collapse into ONE `/auth/subscription-status`
+// request and ONE state transition.
+let recheckInFlight: Promise<void> | null = null;
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -24,6 +37,11 @@ interface AuthState {
   debeCambiarPassword: boolean;
   emailPendiente: string | null;
   subscriptionExpired: boolean;
+  // True when the last `checkSubscription()` could not reach
+  // `/auth/subscription-status` at all (offline, timeout). Lets
+  // `/subscription-expired` show a distinct "no pudimos verificar" message
+  // instead of a false "sigue vencida". Reset on every successful status read.
+  subscriptionCheckFailed: boolean;
   supportInfo: SupportInfo | null;
   daysLeft: number | null;
   subscriptionEndsAt: string | null;
@@ -49,6 +67,17 @@ interface AuthState {
   setSubscriptionExpired: (value: boolean) => void;
   setMostrarBienvenida: (value: boolean) => void;
   checkSubscription: (isRecheck?: boolean) => Promise<void>;
+  // Single-flight authoritative recheck triggered by the interceptor's
+  // `auth:subscription-suspect` intent event. Concurrent calls share one promise.
+  recheckSubscription: () => Promise<void>;
+  // Graceful, coalesced 401 handling (design D5). Transitions to
+  // `session-ending` (modal owns the screen), keeps `user` for the dimmed
+  // view, nulls `token`, captures the origin route for `?redirect=`.
+  handleSessionRevoked: () => void;
+  // Called by `SessionEndedModal` after the countdown / "Entendido": clears the
+  // remaining auth state + storage, LOGOUT-transitions the machine, and returns
+  // the post-logout destination (`/login?redirect=<origin>` or `/login`).
+  finalizeSessionEnd: () => string;
   login: (email: string, password: string) => Promise<boolean>;
   cambiarPasswordObligatorio: (data: {
     password_actual: string;
@@ -81,6 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   debeCambiarPassword: false,
   emailPendiente: null,
   subscriptionExpired: false,
+  subscriptionCheckFailed: false,
   supportInfo: null,
   daysLeft: null,
   subscriptionEndsAt: null,
@@ -102,53 +132,73 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   checkSubscription: async (isRecheck = false) => {
     try {
-      const [statusResponse, supportResponse, meResponse] = await Promise.all([
+      // Design D4: each sub-call settles independently. A `me()` or
+      // `getSupportInfo()` rejection MUST NOT stop `subscription-status` from
+      // updating `subscriptionExpired` / the machine state.
+      const [statusResult, supportResult, meResult] = await Promise.allSettled([
         api.get('/auth/subscription-status'),
         authService.getSupportInfo(),
         authService.me(),
       ]);
-      set({
-        subscriptionExpired: statusResponse.data.status === 'VENCIDO',
-        daysLeft: statusResponse.data.days_left,
-        subscriptionEndsAt: statusResponse.data.ends_at,
-        isExempt: statusResponse.data.is_exempt,
-        supportInfo: supportResponse,
-      });
 
-      // Reconcile de idioma cross-device (ver spec "Cross-device
-      // persistence" y design.md "Cross-device reconcile via existing
-      // bootstrap call"): si el idioma cambió en otro dispositivo, lo
-      // aplicamos acá sin round-trip extra. No pisamos `user` completo
-      // con meResponse — solo el idioma, para no introducir cambios de
-      // comportamiento fuera del alcance de esta fase.
-      const localeRemoto = resolveLocale(meResponse.locale);
-      if (localeRemoto !== useLocaleStore.getState().locale) {
-        await setLocale(localeRemoto);
+      if (statusResult.status === 'fulfilled') {
+        const statusData = statusResult.value.data;
+        set({
+          // `blocked` keys off `status !== 'ACTIVO'` — no dependence on the
+          // additive backend `code` (design D4 / D7).
+          subscriptionExpired: statusData.status !== 'ACTIVO',
+          daysLeft: statusData.days_left,
+          subscriptionEndsAt: statusData.ends_at,
+          isExempt: statusData.is_exempt,
+          subscriptionCheckFailed: false,
+        });
+      } else {
+        set({ subscriptionCheckFailed: true });
+        logAuthEvent('checkSubscription.status-failed', { err: statusResult.reason });
       }
 
-      // whatsapp_requiere_envio_manual puede cambiar server-side en
-      // cualquier momento (ej. el ratio de fallos de Cloud API sube) sin
-      // que el cliente se entere — a diferencia del resto de `user`, que es
-      // estable durante la sesión, este campo sí necesita refrescarse acá
-      // para que el banner de recordatorios pendientes aparezca sin
-      // depender de un logout/login.
-      const userActual = get().user;
-      if (userActual) {
-        const userActualizado = {
-          ...userActual,
-          whatsapp_requiere_envio_manual: meResponse.whatsapp_requiere_envio_manual,
-        };
-        set({ user: userActualizado });
-        localStorage.setItem('auth_user', JSON.stringify(userActualizado));
+      if (supportResult.status === 'fulfilled') {
+        set({ supportInfo: supportResult.value });
+      } else {
+        logAuthEvent('checkSubscription.support-failed', { err: supportResult.reason });
       }
-    } catch {
-      // Si falla no bloqueamos
+
+      if (meResult.status === 'fulfilled') {
+        const meResponse = meResult.value;
+        // Reconcile de idioma cross-device (ver spec "Cross-device
+        // persistence"): si el idioma cambió en otro dispositivo, lo
+        // aplicamos acá sin round-trip extra. No pisamos `user` completo con
+        // meResponse — solo el idioma.
+        const localeRemoto = resolveLocale(meResponse.locale);
+        if (localeRemoto !== useLocaleStore.getState().locale) {
+          await setLocale(localeRemoto);
+        }
+
+        // whatsapp_requiere_envio_manual puede cambiar server-side en
+        // cualquier momento (ej. el ratio de fallos de Cloud API sube) sin
+        // que el cliente se entere — este campo sí necesita refrescarse acá
+        // para que el banner de recordatorios pendientes aparezca sin
+        // depender de un logout/login.
+        const userActual = get().user;
+        if (userActual) {
+          const userActualizado = {
+            ...userActual,
+            whatsapp_requiere_envio_manual: meResponse.whatsapp_requiere_envio_manual,
+          };
+          set({ user: userActualizado });
+          try {
+            localStorage.setItem('auth_user', JSON.stringify(userActualizado));
+          } catch {
+            // sin acceso a localStorage — no bloqueamos
+          }
+        }
+      } else {
+        logAuthEvent('checkSubscription.me-failed', { err: meResult.reason });
+      }
     } finally {
-      // Route the result through the machine. On total failure
-      // `subscriptionExpired` keeps its prior value — at boot that is `false`,
-      // so the machine leaves `booting` fail-open and is never wedged.
-      // (The `Promise.allSettled` rework so a `me()` failure can't hide a real
-      // block is Slice 4 — here we only add the dispatch.)
+      // Route the result through the machine. On a `subscription-status`
+      // failure `subscriptionExpired` keeps its prior value — at boot that is
+      // `false`, so the machine leaves `booting` fail-open and is never wedged.
       const blocked = get().subscriptionExpired;
       get().dispatchAuth({
         type: isRecheck ? 'RECHECK_RESULT' : 'SUBSCRIPTION_CHECKED',
@@ -156,6 +206,65 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       set({ subscriptionChecked: true });
     }
+  },
+
+  // Design D3 — single-flight. `recheckInFlight` is module-scoped so every
+  // caller in the same tab shares the one promise; it self-clears on settle.
+  recheckSubscription: () =>
+    (recheckInFlight ??= get()
+      .checkSubscription(true)
+      .finally(() => {
+        recheckInFlight = null;
+      })),
+
+  // Design D5 — graceful, coalesced 401 handling.
+  handleSessionRevoked: () => {
+    // Coalesce parallel 401s: once we are ending the session, ignore the rest.
+    if (get().authStatus === 'session-ending') return;
+
+    const raw = window.location.pathname + window.location.search;
+    const origin = esRedirectSeguro(raw) ? raw : '';
+
+    // Keep `user` — the dimmed last screen still reads it under the modal.
+    set({ token: null, sessionEndOrigin: origin });
+    try {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    } catch {
+      // sin acceso a localStorage — igual seguimos con la transición
+    }
+    get().dispatchAuth({ type: 'SESSION_REVOKED' });
+  },
+
+  finalizeSessionEnd: () => {
+    const origin = get().sessionEndOrigin;
+    try {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    } catch {
+      // sin acceso a localStorage
+    }
+    set({
+      user: null,
+      token: null,
+      loading: false,
+      error: null,
+      debeCambiarPassword: false,
+      // `emailPendiente` sessionStorage persistence is Slice 7 — here we only
+      // clear the in-memory field.
+      emailPendiente: null,
+      subscriptionExpired: false,
+      subscriptionCheckFailed: false,
+      supportInfo: null,
+      daysLeft: null,
+      subscriptionEndsAt: null,
+      isExempt: false,
+      mostrarBienvenida: false,
+      esPrimerLogin: false,
+      sessionEndOrigin: '',
+    });
+    get().dispatchAuth({ type: 'LOGOUT' });
+    return origin ? `/login?redirect=${encodeURIComponent(origin)}` : '/login';
   },
 
   // ─────────────────────────────────────────────
@@ -173,12 +282,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (!yaSeMostro) sessionStorage.setItem(BIENVENIDA_KEY, '1');
         set({ token, user, inicializado: true, mostrarBienvenida: !yaSeMostro, esPrimerLogin: false });
         get().dispatchAuth({ type: 'BOOT_HAS_TOKEN' });
-        // Boot gate: the machine stays `booting` until this settles. The
-        // `finally` guarantees we always leave `booting` even on total network
-        // failure (checkSubscription also self-dispatches; both are idempotent).
-        get().checkSubscription().finally(() => {
-          get().dispatchAuth({ type: 'SUBSCRIPTION_CHECKED', blocked: get().subscriptionExpired });
-          set({ subscriptionChecked: true });
+        // Boot gate: the machine stays `booting` until `checkSubscription`
+        // settles (it self-dispatches `SUBSCRIPTION_CHECKED` + sets
+        // `subscriptionChecked` in its own `finally`, even on total failure).
+        // The race below is a hard backstop: if any sub-call hangs mid-response
+        // past `BOOT_CHECK_TIMEOUT_MS`, force the gate open fail-open so the
+        // app never blanks forever (PR3 verify WARNING-2).
+        let timer: ReturnType<typeof setTimeout>;
+        const timeout = new Promise<'timeout'>((resolve) => {
+          timer = setTimeout(() => resolve('timeout'), BOOT_CHECK_TIMEOUT_MS);
+        });
+        Promise.race([get().checkSubscription(), timeout]).then((result) => {
+          clearTimeout(timer);
+          if (result === 'timeout' && !get().subscriptionChecked) {
+            logAuthEvent('checkSubscription.boot-timeout');
+            get().dispatchAuth({ type: 'SUBSCRIPTION_CHECKED', blocked: false });
+            set({ subscriptionChecked: true });
+          }
         });
       } else {
         set({ token, user, inicializado: true });

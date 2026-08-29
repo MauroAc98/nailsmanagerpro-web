@@ -34,6 +34,8 @@ beforeEach(() => {
     authStatus: 'booting',
     subscriptionChecked: false,
     subscriptionExpired: false,
+    subscriptionCheckFailed: false,
+    sessionEndOrigin: '',
     mostrarBienvenida: false,
   });
   useLocaleStore.setState({ mensajesListos: false });
@@ -93,6 +95,58 @@ describe('Providers — boot gate', () => {
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/subscription-expired'));
     expect(screen.queryByText('PROTECTED CONTENT')).toBeNull();
     expect(routerMock.push).not.toHaveBeenCalledWith('/agenda');
+  });
+});
+
+describe('Providers — graceful session revocation', () => {
+  function mockActiveChecks() {
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+  }
+
+  it('auth:session-revoked -> modal appears and the current screen is NOT blanked', async () => {
+    localStorage.setItem('auth_token', 'tok');
+    mockActiveChecks();
+    setMockLocation('/agenda');
+
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+    expect(await screen.findByText('PROTECTED CONTENT')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('auth:session-revoked'));
+    });
+
+    expect(await screen.findByText('Tu sesión se cerró')).toBeInTheDocument();
+    expect(screen.getByText('PROTECTED CONTENT')).toBeInTheDocument();
+    expect(useAuthStore.getState().authStatus).toBe('session-ending');
+  });
+
+  it('auth:subscription-suspect -> runs an authoritative recheck against /auth/subscription-status', async () => {
+    localStorage.setItem('auth_token', 'tok');
+    mockActiveChecks();
+    setMockLocation('/agenda');
+
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+    await screen.findByText('PROTECTED CONTENT');
+
+    const before = mockedGet.mock.calls.filter(c => c[0] === '/auth/subscription-status').length;
+    act(() => {
+      window.dispatchEvent(new CustomEvent('auth:subscription-suspect'));
+    });
+
+    await waitFor(() =>
+      expect(
+        mockedGet.mock.calls.filter(c => c[0] === '/auth/subscription-status').length,
+      ).toBe(before + 1),
+    );
   });
 });
 

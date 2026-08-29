@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute';
 import { classifyTenant } from '@/lib/authRouteClasses';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -15,6 +14,7 @@ import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
 import { useConfirmStore, resolveDialog } from '@/store/useConfirmStore';
 import { MotivoCancelacionSheetHost } from '@/components/MotivoCancelacionSheetHost';
+import { SessionEndedModal } from '@/components/SessionEndedModal';
 import { PrecioServiciosSheetHost } from '@/components/PrecioServiciosSheetHost';
 import { HistorialClienteSheetHost } from '@/components/HistorialClienteSheetHost';
 import { ToastHost } from '@/components/ToastHost';
@@ -47,32 +47,6 @@ function esRutaAdmin(): boolean {
   return typeof window !== 'undefined' && window.location.hostname === ADMIN_HOST;
 }
 
-// `esRedirectSeguro` vive ahora en `@/lib/esRedirectSeguro` (módulo puro,
-// testeado). Se re-exporta acá para no romper imports existentes.
-export { esRedirectSeguro };
-
-// Revocation still routes through here for now (Slice 4 replaces it with the
-// coalesced `SESSION_REVOKED` + graceful modal). `authStatus: 'unauthenticated'`
-// is what makes the guard react — the resolver reads `authStatus`, not the raw
-// `token` field, so clearing the token alone would leave protected content
-// mounted.
-const CLEARED_AUTH_STATE = {
-  user: null,
-  token: null,
-  loading: false,
-  error: null,
-  debeCambiarPassword: false,
-  emailPendiente: null,
-  subscriptionExpired: false,
-  supportInfo: null,
-  daysLeft: null,
-  inicializado: true,
-  mostrarBienvenida: false,
-  esPrimerLogin: false,
-  authStatus: 'unauthenticated' as const,
-  subscriptionChecked: true,
-};
-
 function ProvidersInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -101,22 +75,20 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     if (useConfirmStore.getState().dialog) resolveDialog(false);
   }, [pathname]);
 
-  // Escucha eventos del interceptor de Axios (evita dependencia circular api ↔ store).
-  // Slice 4 makes the interceptor intent-only (emit a recheck instead of
-  // latching) and swaps `session-expired` for the graceful modal; for now both
-  // events just route the transition through `authStatus` so the resolver reacts.
+  // Escucha los eventos-intención del interceptor de Axios (evita la
+  // dependencia circular api ↔ store). El interceptor NUNCA muta el store:
+  // solo emite estas señales y el store corre la transición autoritativa.
+  //   `auth:session-revoked`     (401) -> revocación grácil coalescida + modal
+  //   `auth:subscription-suspect` (403) -> recheck single-flight de la suscripción
   useEffect(() => {
-    const onSessionExpired      = () => useAuthStore.setState(CLEARED_AUTH_STATE);
-    const onSubscriptionExpired = () => {
-      useAuthStore.getState().setSubscriptionExpired(true);
-      useAuthStore.getState().dispatchAuth({ type: 'SUBSCRIPTION_CHECKED', blocked: true });
-    };
+    const onSessionRevoked      = () => useAuthStore.getState().handleSessionRevoked();
+    const onSubscriptionSuspect = () => { void useAuthStore.getState().recheckSubscription(); };
 
-    window.addEventListener('session-expired',      onSessionExpired);
-    window.addEventListener('subscription-expired', onSubscriptionExpired);
+    window.addEventListener('auth:session-revoked',      onSessionRevoked);
+    window.addEventListener('auth:subscription-suspect', onSubscriptionSuspect);
     return () => {
-      window.removeEventListener('session-expired',      onSessionExpired);
-      window.removeEventListener('subscription-expired', onSubscriptionExpired);
+      window.removeEventListener('auth:session-revoked',      onSessionRevoked);
+      window.removeEventListener('auth:subscription-suspect', onSubscriptionSuspect);
     };
   }, []);
 
@@ -206,6 +178,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
       <Loader visible={isLoading} />
       {mostrarBienvenida && <WelcomeScreen />}
       <ConfirmSheetHost />
+      <SessionEndedModal />
       <MotivoCancelacionSheetHost />
       <PrecioServiciosSheetHost />
       <HistorialClienteSheetHost />

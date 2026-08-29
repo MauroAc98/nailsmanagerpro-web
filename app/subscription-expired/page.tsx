@@ -11,17 +11,25 @@ import { confirmDialog } from '@/store/useConfirmStore';
 export default function SubscriptionExpiredPage() {
   const router = useRouter();
   const t = useTranslations('common.SubscriptionExpiredPage');
-  const { supportInfo, logout, checkSubscription } = useAuth();
+  const { supportInfo, logout } = useAuth();
   const [checking, setChecking] = useState(false);
   const [stillExpired, setStillExpired] = useState(false);
+  const [verifyFailed, setVerifyFailed] = useState(false);
 
   const handleRecheck = async () => {
     setChecking(true);
     setStillExpired(false);
-    await checkSubscription();
-    const expired = useAuthStore.getState().subscriptionExpired;
+    setVerifyFailed(false);
+    // Single-flight authoritative recheck (design D3): parallel taps + any
+    // in-flight 403-driven recheck collapse into one `/auth/subscription-status`.
+    await useAuthStore.getState().recheckSubscription();
+    const { subscriptionExpired: expired, subscriptionCheckFailed: failed } = useAuthStore.getState();
     setChecking(false);
-    if (expired) {
+    if (failed) {
+      // Distinct from `stillExpired`: we could not reach the server, so we make
+      // no claim about whether the subscription is still vencida.
+      setVerifyFailed(true);
+    } else if (expired) {
       setStillExpired(true);
     } else {
       router.replace('/agenda');
@@ -91,6 +99,12 @@ export default function SubscriptionExpiredPage() {
         {stillExpired && (
           <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', lineHeight: 1.5, margin: 0, marginTop: 8, maxWidth: 320 }}>
             {t('stillExpired')}
+          </p>
+        )}
+
+        {verifyFailed && (
+          <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', lineHeight: 1.5, margin: 0, marginTop: 8, maxWidth: 320 }}>
+            {t('verifyFailed')}
           </p>
         )}
 
