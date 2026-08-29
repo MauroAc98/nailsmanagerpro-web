@@ -3,7 +3,7 @@ import { authTransition, type AuthEvent, type AuthStatus } from './authMachine';
 
 // Design D1 transition table (empty cell = no-op / stay):
 // | from \ event          | BOOT_NO_TOKEN   | BOOT_HAS_TOKEN | SUBSCRIPTION_CHECKED{b} / RECHECK_RESULT{b} | LOGIN_OK{b}                       | MUST_CHANGE_PW       | SESSION_REVOKED         | LOGOUT          |
-// | booting               | unauthenticated | booting        | b ? subscription-blocked : authenticated   | -                                | -                   | -                       | unauthenticated |
+// | booting               | unauthenticated | booting        | b ? subscription-blocked : authenticated   | -                                | -                   | unauthenticated         | unauthenticated |
 // | unauthenticated       | -               | -              | -                                          | b ? subscription-blocked : authed | must-change-password | -                      | unauthenticated |
 // | must-change-password  | -               | -              | -                                          | b ? subscription-blocked : authed | must-change-password | -                      | unauthenticated |
 // | authenticated         | -               | -              | b ? subscription-blocked : authenticated   | -                                | -                   | session-ending          | unauthenticated |
@@ -57,8 +57,8 @@ describe('authTransition — transition table', () => {
       expect(authTransition('booting', { type: 'LOGOUT' })).toBe('unauthenticated');
     });
 
-    it('SESSION_REVOKED -> booting (no-op, not authenticated yet)', () => {
-      expect(authTransition('booting', { type: 'SESSION_REVOKED' })).toBe('booting');
+    it('SESSION_REVOKED -> unauthenticated (server-revoked token at boot; never got in, silent bounce to /login)', () => {
+      expect(authTransition('booting', { type: 'SESSION_REVOKED' })).toBe('unauthenticated');
     });
 
     it('LOGIN_OK -> booting (no-op)', () => {

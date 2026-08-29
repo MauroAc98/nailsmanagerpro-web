@@ -9,7 +9,7 @@
 // The transition table below is authoritative (empty cell = stay / no-op):
 //
 // | from \ event         | BOOT_NO_TOKEN   | BOOT_HAS_TOKEN | SUBSCRIPTION_CHECKED{b} / RECHECK_RESULT{b} | LOGIN_OK{b}                        | MUST_CHANGE_PW       | SESSION_REVOKED           | LOGOUT          |
-// | booting              | unauthenticated | booting        | b ? subscription-blocked : authenticated   | -                                 | -                    | -                        | unauthenticated |
+// | booting              | unauthenticated | booting        | b ? subscription-blocked : authenticated   | -                                 | -                    | unauthenticated          | unauthenticated |
 // | unauthenticated      | -               | -              | -                                          | b ? subscription-blocked : authed | must-change-password | -                        | unauthenticated |
 // | must-change-password | -               | -              | -                                          | b ? subscription-blocked : authed | must-change-password | -                        | unauthenticated |
 // | authenticated        | -               | -              | b ? subscription-blocked : authenticated   | -                                 | -                    | session-ending           | unauthenticated |
@@ -52,6 +52,12 @@ export function authTransition(status: AuthStatus, event: AuthEvent): AuthStatus
         case 'SUBSCRIPTION_CHECKED':
         case 'RECHECK_RESULT':
           return afterSubscriptionResult(event.blocked);
+        case 'SESSION_REVOKED':
+          // A stored token that the server has already revoked (logged out
+          // elsewhere, password changed, tokens pruned). The user never got
+          // into the app — there is no dimmed screen to keep and no modal.
+          // Bounce silently to `/login?redirect=<origin>`, matching legacy.
+          return 'unauthenticated';
         default:
           return status;
       }

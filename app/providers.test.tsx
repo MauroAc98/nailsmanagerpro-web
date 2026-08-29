@@ -116,6 +116,40 @@ describe('Providers — boot gate', () => {
     expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('');
   });
 
+  it('server-revoked token at boot: all boot requests 401 -> lands unauthenticated on /login, never paints protected content, no modal', async () => {
+    localStorage.setItem('auth_token', 'stale-revoked');
+    // Every boot request 401s. The real axios interceptor clears storage and
+    // emits `auth:session-revoked` from its async rejection handler; `@/lib/api`
+    // is mocked here so mirror that side effect on a macrotask (by which point
+    // the providers listener effect has run).
+    mockedGet.mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('auth:session-revoked'));
+            reject({ response: { status: 401 } });
+          }, 0);
+        }),
+    );
+
+    setMockLocation('/agenda');
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(useAuthStore.getState().authStatus).toBe('unauthenticated'));
+    expect(useAuthStore.getState().token).toBeNull();
+    expect(useAuthStore.getState().subscriptionChecked).toBe(true);
+    expect(screen.queryByText('PROTECTED CONTENT')).toBeNull();
+    // Silent bounce to /login with the origin preserved — no session-ended modal
+    // (the user never got in, there is no dimmed screen to keep).
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(
+        `/login?redirect=${encodeURIComponent('/agenda')}`,
+      ),
+    );
+    expect(screen.queryByText('Tu sesión se cerró')).toBeNull();
+  });
+
   it('false-expiry-flash regression: genuinely-expired user never renders protected children, goes to /subscription-expired', async () => {
     localStorage.setItem('auth_token', 'tok');
     mockedGet.mockImplementation((url: string) => {

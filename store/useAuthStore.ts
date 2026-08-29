@@ -235,17 +235,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Coalesce parallel 401s: once we are ending the session, ignore the rest.
     if (get().authStatus === 'session-ending') return;
 
-    const raw = window.location.pathname + window.location.search;
-    const origin = esRedirectSeguro(raw) ? raw : '';
-
-    // Keep `user` — the dimmed last screen still reads it under the modal.
-    set({ token: null, sessionEndOrigin: origin });
     try {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
     } catch {
       // sin acceso a localStorage — igual seguimos con la transición
     }
+
+    // Boot-time revocation (verify CRITICAL-1): the stored token was already
+    // revoked server-side, so the boot `checkSubscription()` 401s. The user
+    // never got into the app — there is no dimmed screen to preserve and no
+    // modal to show. Null the token, OPEN the boot gate (`subscriptionChecked`)
+    // so the guard can act, and let the machine bounce silently to
+    // `/login?redirect=<origin>`. The late `SUBSCRIPTION_CHECKED` from the boot
+    // race then no-ops from `unauthenticated`.
+    if (get().authStatus === 'booting') {
+      set({ token: null, subscriptionChecked: true });
+      get().dispatchAuth({ type: 'SESSION_REVOKED' });
+      return;
+    }
+
+    const raw = window.location.pathname + window.location.search;
+    const origin = esRedirectSeguro(raw) ? raw : '';
+
+    // Keep `user` — the dimmed last screen still reads it under the modal.
+    set({ token: null, sessionEndOrigin: origin });
     get().dispatchAuth({ type: 'SESSION_REVOKED' });
   },
 
