@@ -113,6 +113,28 @@ describe('SubscriptionExpiredPage — post-renew navigation is owned by the guar
     expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('');
   });
 
+  it('deep origin that does NOT commit synchronously (dynamic route RSC fetch) -> still no /agenda bounce', async () => {
+    // Real Next does not commit a dynamic route's pathname in the same tick.
+    // Reproduce that: `push` records the call but does NOT update the mock
+    // location, so every follow-up render still sees `/subscription-expired`.
+    // The captured origin must stay populated so `home` keeps resolving to the
+    // deep route — never falling back to `/agenda` (verify CRITICAL-2).
+    routerMock.push.mockImplementation(() => {});
+    useAuthStore.setState({ subscriptionBlockedOrigin: '/clientes/5?tab=historia' });
+    mockStatus('ACTIVO');
+
+    renderInGuard();
+    fireEvent.click(await screen.findByText('Volver a verificar'));
+
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith('/clientes/5?tab=historia'),
+    );
+    expect(routerMock.push).not.toHaveBeenCalledWith('/agenda');
+    // Origin not cleared yet — the navigation has not committed. That is
+    // correct: it is what holds `home` on the deep route through the limbo.
+    expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('/clientes/5?tab=historia');
+  });
+
   it('no captured origin -> recheck ACTIVO -> guard navigates to /agenda', async () => {
     mockStatus('ACTIVO');
 

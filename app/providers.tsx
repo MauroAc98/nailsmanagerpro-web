@@ -193,14 +193,27 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     }
 
     router.push(redirectTo);
+  }, [isAdmin, redirectTo, router, pathname, search]);
 
-    // Verify CRITICAL-2: once the post-renew redirect to the captured origin
-    // has fired, clear it so a later unrelated block cannot reuse a stale
-    // origin. (When `redirectTo` is the `/agenda` fallback this is a no-op.)
-    if (redirectTo === subscriptionBlockedOrigin && subscriptionBlockedOrigin) {
+  // Verify CRITICAL-2: clear the captured origin only once the post-renew
+  // navigation has actually COMMITTED (pathname left `/subscription-expired`
+  // while authenticated). Clearing it in the redirect effect the moment
+  // `router.push` is called re-introduces the race the fix exists to close: a
+  // dynamic route (`/clientes/[id]`) does not commit its pathname in the same
+  // tick, so the next render would still be on `/subscription-expired` but with
+  // the origin gone — `home` falls back to `/agenda` and the guard pushes there
+  // instead. Keeping the origin populated through the whole transition holds the
+  // resolver on `redirect(<deep route>)` until the navigation lands.
+  useEffect(() => {
+    if (
+      !isAdmin &&
+      authStatus === 'authenticated' &&
+      pathname !== '/subscription-expired' &&
+      subscriptionBlockedOrigin
+    ) {
       useAuthStore.setState({ subscriptionBlockedOrigin: '' });
     }
-  }, [isAdmin, redirectTo, router, pathname, search, subscriptionBlockedOrigin]);
+  }, [isAdmin, authStatus, pathname, subscriptionBlockedOrigin]);
 
   const puedeMostrarContenido = isAdmin || route.type === 'allow';
 
