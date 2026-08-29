@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authService, SupportInfo, User } from '@/services/authService';
 import api from '@/lib/api';
+import { authTransition, type AuthEvent, type AuthStatus } from '@/lib/authMachine';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { resolveLocale } from '@/lib/locale';
 import { useLocaleStore, setLocale, tStatic } from '@/store/useLocaleStore';
@@ -30,9 +31,24 @@ interface AuthState {
   mostrarBienvenida: boolean;
   esPrimerLogin: boolean;
 
+  // Auth state machine (design D1). `authStatus` is the single source of truth
+  // the route guard reads; `dispatchAuth` is the ONLY way to mutate it — it has
+  // no side effects, navigation/storage/api all live in the actions below.
+  authStatus: AuthStatus;
+  // False until the boot `checkSubscription()` settles (success OR total
+  // failure). While false the machine is still `booting` and the guard blanks
+  // every protected route — no false `/login` or `/subscription-expired` flash.
+  subscriptionChecked: boolean;
+  // Route (pathname + query) the user was on when the session was revoked, for
+  // `?redirect=` preservation. Populated in Slice 4; kept here so the field
+  // exists for the machine wiring.
+  sessionEndOrigin: string;
+
+  dispatchAuth: (event: AuthEvent) => void;
+
   setSubscriptionExpired: (value: boolean) => void;
   setMostrarBienvenida: (value: boolean) => void;
-  checkSubscription: () => Promise<void>;
+  checkSubscription: (isRecheck?: boolean) => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   cambiarPasswordObligatorio: (data: {
     password_actual: string;
@@ -71,6 +87,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isExempt: false,
   mostrarBienvenida: false,
   esPrimerLogin: false,
+  authStatus: 'booting',
+  subscriptionChecked: false,
+  sessionEndOrigin: '',
+
+  dispatchAuth: (event) => set({ authStatus: authTransition(get().authStatus, event) }),
 
   setSubscriptionExpired: (value) => set({ subscriptionExpired: value }),
   setMostrarBienvenida: (value) => set({ mostrarBienvenida: value }),
@@ -79,7 +100,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ─────────────────────────────────────────────
   // checkSubscription
   // ─────────────────────────────────────────────
-  checkSubscription: async () => {
+  checkSubscription: async (isRecheck = false) => {
     try {
       const [statusResponse, supportResponse, meResponse] = await Promise.all([
         api.get('/auth/subscription-status'),
@@ -122,6 +143,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch {
       // Si falla no bloqueamos
+    } finally {
+      // Route the result through the machine. On total failure
+      // `subscriptionExpired` keeps its prior value — at boot that is `false`,
+      // so the machine leaves `booting` fail-open and is never wedged.
+      // (The `Promise.allSettled` rework so a `me()` failure can't hide a real
+      // block is Slice 4 — here we only add the dispatch.)
+      const blocked = get().subscriptionExpired;
+      get().dispatchAuth({
+        type: isRecheck ? 'RECHECK_RESULT' : 'SUBSCRIPTION_CHECKED',
+        blocked,
+      });
+      set({ subscriptionChecked: true });
     }
   },
 
@@ -139,12 +172,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const yaSeMostro = sessionStorage.getItem(BIENVENIDA_KEY) === '1';
         if (!yaSeMostro) sessionStorage.setItem(BIENVENIDA_KEY, '1');
         set({ token, user, inicializado: true, mostrarBienvenida: !yaSeMostro, esPrimerLogin: false });
-        get().checkSubscription();
+        get().dispatchAuth({ type: 'BOOT_HAS_TOKEN' });
+        // Boot gate: the machine stays `booting` until this settles. The
+        // `finally` guarantees we always leave `booting` even on total network
+        // failure (checkSubscription also self-dispatches; both are idempotent).
+        get().checkSubscription().finally(() => {
+          get().dispatchAuth({ type: 'SUBSCRIPTION_CHECKED', blocked: get().subscriptionExpired });
+          set({ subscriptionChecked: true });
+        });
       } else {
         set({ token, user, inicializado: true });
+        get().dispatchAuth({ type: 'BOOT_NO_TOKEN' });
       }
     } catch {
       set({ inicializado: true });
+      get().dispatchAuth({ type: 'BOOT_NO_TOKEN' });
     }
   },
 
@@ -159,6 +201,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if ('debe_cambiar_password' in result) {
           set({ loading: false, debeCambiarPassword: true, emailPendiente: result.email });
+          get().dispatchAuth({ type: 'MUST_CHANGE_PW' });
           return true;
         }
 
@@ -173,6 +216,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           mostrarBienvenida: true, esPrimerLogin: true,
         });
         await get().checkSubscription();
+        get().dispatchAuth({ type: 'LOGIN_OK', blocked: get().subscriptionExpired });
         return true;
       } catch (e: any) {
         const message =
@@ -210,6 +254,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           esPrimerLogin: true,
         });
         await get().checkSubscription();
+        get().dispatchAuth({ type: 'LOGIN_OK', blocked: get().subscriptionExpired });
         return true;
       } catch (e: any) {
         const message =
@@ -246,6 +291,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           mostrarBienvenida: false,
           esPrimerLogin: false,
         });
+        // The clear-first + bounded-POST rework is Slice 7; here we only route
+        // the transition through the machine so the guard reacts to `authStatus`.
+        get().dispatchAuth({ type: 'LOGOUT' });
       }
     });
   },

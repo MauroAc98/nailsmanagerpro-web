@@ -26,11 +26,20 @@ export type RouteClass = 'public' | 'neutral' | 'change-pw' | 'blocked' | 'prote
 
 export type AuthRoute = { type: 'allow' } | { type: 'redirect'; to: string } | { type: 'blank' };
 
+// Per-consumer options. `home` is where an authenticated user is sent when
+// they land on a route they no longer belong on (a public/change-pw/blocked
+// route). The tenant app defaults to `/agenda`; the admin panel injects `/`
+// because it has no `/agenda` route (task 5.3 — reconciles the D2 deviation
+// flagged in Slice 2).
+export interface ResolveAuthRouteOptions {
+  home?: string;
+}
+
 const ALLOW: AuthRoute = { type: 'allow' };
 const BLANK: AuthRoute = { type: 'blank' };
 const redirect = (to: string): AuthRoute => ({ type: 'redirect', to });
 
-const HOME = '/agenda';
+const DEFAULT_HOME = '/agenda';
 const CHANGE_PW = '/cambiar-password';
 const BLOCKED = '/subscription-expired';
 
@@ -47,18 +56,20 @@ function loginWithOrigin(loc: RouteLocation): string {
 
 // Authenticated user landing on a public route: honor a safe `?redirect=`
 // target if present, otherwise go home. Mirrors the legacy providers logic.
-function postLoginTarget(loc: RouteLocation): string {
+function postLoginTarget(loc: RouteLocation, home: string): string {
   const query = loc.search.startsWith('?') ? loc.search.slice(1) : loc.search;
   const requested = new URLSearchParams(query).get('redirect');
-  return esRedirectSeguro(requested) ? requested : HOME;
+  return esRedirectSeguro(requested) ? requested : home;
 }
 
 export function resolveAuthRoute(
   s: AuthRouteSnapshot,
   loc: RouteLocation,
   classify: (loc: RouteLocation) => RouteClass,
+  opts?: ResolveAuthRouteOptions,
 ): AuthRoute {
   const routeClass = classify(loc);
+  const home = opts?.home ?? DEFAULT_HOME;
 
   // Precedence 1: neutral routes are always allowed, even while booting.
   if (routeClass === 'neutral') return ALLOW;
@@ -92,10 +103,10 @@ export function resolveAuthRoute(
         case 'protected':
           return ALLOW;
         case 'public':
-          return redirect(postLoginTarget(loc));
+          return redirect(postLoginTarget(loc, home));
         case 'change-pw':
         case 'blocked':
-          return redirect(HOME);
+          return redirect(home);
         default:
           return BLANK;
       }

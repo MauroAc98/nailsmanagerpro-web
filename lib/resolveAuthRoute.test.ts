@@ -167,6 +167,50 @@ describe('resolveAuthRoute — origin preservation', () => {
   });
 });
 
+describe('resolveAuthRoute — home override (task 5.3, admin consumer)', () => {
+  it('authenticated on a public route with no ?redirect= uses the injected home', () => {
+    expect(
+      resolveAuthRoute(ready('authenticated'), loc('/login'), always('public'), { home: '/' }),
+    ).toEqual(redirect('/'));
+  });
+
+  it('authenticated on change-pw / blocked classes uses the injected home', () => {
+    expect(
+      resolveAuthRoute(ready('authenticated'), loc('/cambiar-password'), always('change-pw'), {
+        home: '/',
+      }),
+    ).toEqual(redirect('/'));
+    expect(
+      resolveAuthRoute(ready('authenticated'), loc('/subscription-expired'), always('blocked'), {
+        home: '/',
+      }),
+    ).toEqual(redirect('/'));
+  });
+
+  it('defaults home to /agenda when no override is passed (tenant consumer unchanged)', () => {
+    expect(resolveAuthRoute(ready('authenticated'), loc('/login'), always('public'))).toEqual(
+      redirect('/agenda'),
+    );
+  });
+
+  it('a safe ?redirect= param still wins over the injected home', () => {
+    expect(
+      resolveAuthRoute(
+        ready('authenticated'),
+        loc('/login', `?redirect=${encodeURIComponent('/suscripciones')}`),
+        always('public'),
+        { home: '/' },
+      ),
+    ).toEqual(redirect('/suscripciones'));
+  });
+
+  it('classifyAdmin: authenticated on /login with { home: "/" } -> redirect /', () => {
+    expect(
+      resolveAuthRoute(ready('authenticated'), loc('/login'), classifyAdmin, { home: '/' }),
+    ).toEqual(redirect('/'));
+  });
+});
+
 describe('resolveAuthRoute — with real classifiers', () => {
   it('classifyTenant: unauthenticated on /agenda -> redirect to /login with origin', () => {
     expect(
