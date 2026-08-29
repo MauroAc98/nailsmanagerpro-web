@@ -53,6 +53,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { authStatus, mostrarBienvenida } = useAuthStore();
+  const subscriptionBlockedOrigin = useAuthStore(s => s.subscriptionBlockedOrigin);
   const isLoading = useLoadingStore(state => state.isLoading);
   const { locale, messages, mensajesListos } = useLocaleStore();
   const [mounted, setMounted] = useState(false);
@@ -158,7 +159,15 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // `searchParams.toString()` drops the leading `?`; the resolver concatenates
   // `pathname + search` verbatim, so prepend it when non-empty.
   const search = qs ? `?${qs}` : '';
-  const route = resolveAuthRoute(snapshot, { pathname, search }, classifyTenant);
+  // Rider #14 / verify CRITICAL-2: when the machine flips back to
+  // `authenticated` while the user is still on `/subscription-expired` (class
+  // `blocked`), the resolver sends them `home`. Inject the captured deep route
+  // as `home` so a post-renew user returns exactly where the guard bounced them
+  // from, instead of a hardcoded `/agenda`. The resolver stays pure — `home` is
+  // an injected option. `subscription-expired` page no longer navigates itself.
+  const home =
+    esRedirectSeguro(subscriptionBlockedOrigin) ? subscriptionBlockedOrigin : '/agenda';
+  const route = resolveAuthRoute(snapshot, { pathname, search }, classifyTenant, { home });
   const redirectTo = route.type === 'redirect' ? route.to : null;
 
   // The admin panel guards itself (app/(admin)/admin/layout.tsx) — this tenant
@@ -178,13 +187,20 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
       classifyTenant({ pathname, search }) === 'protected'
     ) {
       const full = pathname + search;
-      if (esRedirectSeguro(full)) {
+      if (esRedirectSeguro(full) && useAuthStore.getState().subscriptionBlockedOrigin !== full) {
         useAuthStore.setState({ subscriptionBlockedOrigin: full });
       }
     }
 
     router.push(redirectTo);
-  }, [isAdmin, redirectTo, router, pathname, search]);
+
+    // Verify CRITICAL-2: once the post-renew redirect to the captured origin
+    // has fired, clear it so a later unrelated block cannot reuse a stale
+    // origin. (When `redirectTo` is the `/agenda` fallback this is a no-op.)
+    if (redirectTo === subscriptionBlockedOrigin && subscriptionBlockedOrigin) {
+      useAuthStore.setState({ subscriptionBlockedOrigin: '' });
+    }
+  }, [isAdmin, redirectTo, router, pathname, search, subscriptionBlockedOrigin]);
 
   const puedeMostrarContenido = isAdmin || route.type === 'allow';
 

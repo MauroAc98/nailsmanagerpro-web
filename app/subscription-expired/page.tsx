@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
-import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { colors } from '@/theme/colors';
 import { confirmDialog } from '@/store/useConfirmStore';
 
@@ -32,16 +31,13 @@ export default function SubscriptionExpiredPage() {
       setVerifyFailed(true);
     } else if (expired) {
       setStillExpired(true);
-    } else {
-      // Rider #14: return to the exact route the guard blocked, not a
-      // hardcoded `/agenda`. `providers.tsx` captured it (already
-      // `esRedirectSeguro`-validated); re-validate defensively and clear it.
-      const { subscriptionBlockedOrigin } = useAuthStore.getState();
-      useAuthStore.setState({ subscriptionBlockedOrigin: '' });
-      router.replace(
-        esRedirectSeguro(subscriptionBlockedOrigin) ? subscriptionBlockedOrigin : '/agenda',
-      );
     }
+    // Recheck came back ACTIVO: the store already flipped to `authenticated`
+    // via RECHECK_RESULT. The auth guard in `providers.tsx` is the SINGLE
+    // navigation owner — it sees `authenticated` on a `blocked` route and
+    // redirects to the captured `subscriptionBlockedOrigin` (rider #14) or
+    // `/agenda`. This page must NOT navigate here: a second owner races the
+    // guard and the guard's `/agenda` fallback would win (verify CRITICAL-2).
   };
 
   const handleWhatsApp = () => {
