@@ -15,9 +15,15 @@ export interface AdminLoginResponse {
   expires_at: string;
 }
 
+// Enum de subscriptions.status en el backend (AdminController, migración
+// 2026_08_29_..._widen_subscriptions_status_add_suspendido). SUSPENDIDO es
+// el único valor que NO se deriva de ends_at: lo setea/limpia un admin con
+// suspend/reactivate. ACTIVO/VENCIDO siguen siendo derivados de ends_at.
+export type SubscriptionStatus = 'ACTIVO' | 'SUSPENDIDO' | 'VENCIDO';
+
 export interface NegocioSubscription {
   ends_at: string;
-  status: string;
+  status: SubscriptionStatus;
   renewed_at: string | null;
 }
 
@@ -52,6 +58,16 @@ export interface CrearNegocioResponse {
 export interface RenewSubscriptionResponse {
   message: string;
   user_id: number;
+  ends_at: string;
+}
+
+// Shape 200 compartido por suspend / reactivate / adjust-expiry
+// (AdminController). Igual que RenewSubscriptionResponse pero además trae el
+// status resultante ya calculado por el backend.
+export interface SubscriptionActionResponse {
+  message: string;
+  user_id: number;
+  status: SubscriptionStatus;
   ends_at: string;
 }
 
@@ -211,6 +227,38 @@ export const adminService = {
       `/admin/subscriptions/${userId}/renew`,
       null,
       force ? { params: { force: true } } : undefined
+    );
+    return response.data;
+  },
+
+  // Suspende la suscripción de un negocio de inmediato, sin período de
+  // gracia (POST /admin/subscriptions/{user}/suspend). 404 si el negocio no
+  // tiene suscripción; 409 si ya está suspendida (mensaje en response.data.error).
+  suspenderSuscripcion: async (userId: number): Promise<SubscriptionActionResponse> => {
+    const response = await adminApi.post<SubscriptionActionResponse>(
+      `/admin/subscriptions/${userId}/suspend`
+    );
+    return response.data;
+  },
+
+  // Levanta la suspensión (POST /admin/subscriptions/{user}/reactivate). El
+  // status resultante lo decide el backend según ends_at: ACTIVO si está en
+  // el futuro, VENCIDO si ya pasó. 409 si la suscripción no está suspendida.
+  reactivarSuscripcion: async (userId: number): Promise<SubscriptionActionResponse> => {
+    const response = await adminApi.post<SubscriptionActionResponse>(
+      `/admin/subscriptions/${userId}/reactivate`
+    );
+    return response.data;
+  },
+
+  // Ajusta la fecha de vencimiento (POST /admin/subscriptions/{user}/adjust-expiry).
+  // endsAt es una fecha 'YYYY-MM-DD'; el backend la interpreta como fin de ese
+  // día en horario de Argentina. 422 con errores de validación de Laravel si
+  // falta o es inválida. No limpia SUSPENDIDO: solo edita la fecha.
+  ajustarVencimiento: async (userId: number, endsAt: string): Promise<SubscriptionActionResponse> => {
+    const response = await adminApi.post<SubscriptionActionResponse>(
+      `/admin/subscriptions/${userId}/adjust-expiry`,
+      { ends_at: endsAt }
     );
     return response.data;
   },
