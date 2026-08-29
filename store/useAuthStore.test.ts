@@ -335,6 +335,74 @@ describe('finalizeSessionEnd', () => {
   });
 });
 
+describe('emailPendiente persistence across refresh (rider #10)', () => {
+  it('login debe_cambiar_password branch writes email_pendiente to sessionStorage', async () => {
+    mockedPost.mockResolvedValue({
+      data: { debe_cambiar_password: true, email: 'jefa@salon.com', message: 'x' },
+    });
+
+    useAuthStore.getState().inicializar();
+    await useAuthStore.getState().login('jefa@salon.com', 'pw');
+
+    expect(sessionStorage.getItem('email_pendiente')).toBe('jefa@salon.com');
+  });
+
+  it('inicializar with no token but email_pendiente set -> restores emailPendiente and lands must-change-password', () => {
+    sessionStorage.setItem('email_pendiente', 'jefa@salon.com');
+
+    useAuthStore.getState().inicializar();
+
+    expect(useAuthStore.getState().authStatus).toBe('must-change-password');
+    expect(useAuthStore.getState().emailPendiente).toBe('jefa@salon.com');
+    expect(useAuthStore.getState().debeCambiarPassword).toBe(true);
+  });
+
+  it('inicializar with no token and no email_pendiente -> plain unauthenticated', () => {
+    useAuthStore.getState().inicializar();
+
+    expect(useAuthStore.getState().authStatus).toBe('unauthenticated');
+    expect(useAuthStore.getState().emailPendiente).toBeNull();
+  });
+
+  it('cambiarPasswordObligatorio success clears email_pendiente', async () => {
+    sessionStorage.setItem('email_pendiente', 'jefa@salon.com');
+    useAuthStore.setState({
+      emailPendiente: 'jefa@salon.com',
+      debeCambiarPassword: true,
+      authStatus: 'must-change-password',
+    });
+    mockedPost.mockResolvedValue({ data: { user: { id: 1, slug: 's', locale: 'es' }, token: 'tok' } });
+    mockHealthyChecks();
+
+    await useAuthStore.getState().cambiarPasswordObligatorio({
+      password_actual: 'a',
+      password: 'b',
+      password_confirmation: 'b',
+    });
+
+    expect(sessionStorage.getItem('email_pendiente')).toBeNull();
+  });
+
+  it('logout clears email_pendiente', async () => {
+    sessionStorage.setItem('email_pendiente', 'jefa@salon.com');
+    useAuthStore.setState({ authStatus: 'must-change-password', emailPendiente: 'jefa@salon.com' });
+    mockedPost.mockResolvedValue({ data: {} });
+
+    await useAuthStore.getState().logout();
+
+    expect(sessionStorage.getItem('email_pendiente')).toBeNull();
+  });
+
+  it('finalizeSessionEnd clears email_pendiente', () => {
+    sessionStorage.setItem('email_pendiente', 'jefa@salon.com');
+    useAuthStore.setState({ authStatus: 'session-ending', emailPendiente: 'jefa@salon.com' });
+
+    useAuthStore.getState().finalizeSessionEnd();
+
+    expect(sessionStorage.getItem('email_pendiente')).toBeNull();
+  });
+});
+
 describe('inicializar — boot check timeout backstop', () => {
   beforeEach(() => {
     vi.useFakeTimers();

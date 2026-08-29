@@ -244,14 +244,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // sin acceso a localStorage
     }
+    // Rider #10 — clear the persisted email alongside the in-memory field.
+    authService.limpiarEmailPendiente();
     set({
       user: null,
       token: null,
       loading: false,
       error: null,
       debeCambiarPassword: false,
-      // `emailPendiente` sessionStorage persistence is Slice 7 — here we only
-      // clear the in-memory field.
       emailPendiente: null,
       subscriptionExpired: false,
       subscriptionCheckFailed: false,
@@ -303,6 +303,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ token, user, inicializado: true });
         get().dispatchAuth({ type: 'BOOT_NO_TOKEN' });
+
+        // Rider #10 — must-change-password survives a refresh. There is no
+        // token yet (the user has not completed the mandatory change), but if
+        // `email_pendiente` is in sessionStorage we were mid-flow: restore the
+        // email and land the machine back in `must-change-password` so the
+        // guard allows `/cambiar-password` instead of bouncing to `/login`.
+        const emailPendienteGuardado = authService.getEmailPendienteGuardado();
+        if (emailPendienteGuardado) {
+          set({ emailPendiente: emailPendienteGuardado, debeCambiarPassword: true });
+          get().dispatchAuth({ type: 'MUST_CHANGE_PW' });
+        }
       }
     } catch {
       set({ inicializado: true });
@@ -321,6 +332,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if ('debe_cambiar_password' in result) {
           set({ loading: false, debeCambiarPassword: true, emailPendiente: result.email });
+          // Persistir el email en sessionStorage (rider #10): sin esto, un
+          // refresh accidental en /cambiar-password perdía `emailPendiente` en
+          // memoria y el guard rebotaba al usuario a /login. `inicializar()`
+          // lo restaura y vuelve a poner la máquina en `must-change-password`.
+          authService.guardarEmailPendiente(result.email);
           get().dispatchAuth({ type: 'MUST_CHANGE_PW' });
           return true;
         }
@@ -364,6 +380,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const { user, token } = await authService.cambiarPasswordObligatorio({ email, ...data });
         sessionStorage.setItem(BIENVENIDA_KEY, '1');
+        // Flujo completado — el email pendiente ya no hace falta (rider #10).
+        authService.limpiarEmailPendiente();
         set({
           user,
           token,
@@ -396,6 +414,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         await authService.logout();
       } finally {
+        authService.limpiarEmailPendiente();
         set({
           user: null,
           token: null,

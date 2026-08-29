@@ -67,6 +67,13 @@ const KEYS = {
   negocioSlug: 'negocio_slug',
 };
 
+// El email del flujo "debe cambiar contraseña" vive en sessionStorage (no
+// localStorage): así sobrevive a un refresh accidental en /cambiar-password
+// pero se limpia al cerrar la pestaña — no queremos dejar un email colgado
+// para siempre si el usuario abandona el flujo. Mismo criterio que
+// BIENVENIDA_KEY en useAuthStore.
+const EMAIL_PENDIENTE_KEY = 'email_pendiente';
+
 // ─────────────────────────────────────────────
 // Wrappers seguros de localStorage — puede tirar en modo privado de iOS
 // Safari (setItem con QuotaExceededError) o si el storage está deshabilitado.
@@ -96,6 +103,32 @@ function safeRemoveItem(key: string): void {
     localStorage.removeItem(key);
   } catch {
     // sin acceso a localStorage
+  }
+}
+
+// Wrappers seguros de sessionStorage — mismo motivo que los de localStorage
+// (modo privado de iOS Safari, storage deshabilitado).
+function safeSessionGet(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSessionSet(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // sin acceso a sessionStorage — el flujo no sobrevive un refresh, no bloqueamos
+  }
+}
+
+function safeSessionRemove(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // sin acceso a sessionStorage
   }
 }
 
@@ -212,4 +245,17 @@ export const authService = {
   },
 
   getSlugNegocioGuardado: (): string | null => safeGetItem(KEYS.negocioSlug),
+
+  // Flujo "debe cambiar contraseña" — ver EMAIL_PENDIENTE_KEY. Se persiste al
+  // recibir `debe_cambiar_password` en el login y se limpia al completar el
+  // cambio, al hacer logout o al finalizar una sesión revocada.
+  guardarEmailPendiente: (email: string): void => {
+    safeSessionSet(EMAIL_PENDIENTE_KEY, email);
+  },
+
+  getEmailPendienteGuardado: (): string | null => safeSessionGet(EMAIL_PENDIENTE_KEY),
+
+  limpiarEmailPendiente: (): void => {
+    safeSessionRemove(EMAIL_PENDIENTE_KEY);
+  },
 };
