@@ -15,6 +15,15 @@ import { colors } from '@/theme/colors';
 // "Entendido" — it calls `finalizeSessionEnd()` (clears the rest of the auth
 // state + storage, LOGOUT-transitions the machine) and navigates to the
 // returned `/login?redirect=<origin>` target.
+//
+// ACCEPTED DUPLICATION (verify WARNING-2): `finalizeSessionEnd()` flips the
+// machine to `unauthenticated` synchronously, so the auth guard in
+// `providers.tsx` re-resolves the still-stale protected pathname and ALSO fires
+// one `router.push('/login?redirect=<origin>')`. Both navigations target the
+// same `/login?redirect=<origin>` URL, so the only cost is one extra history
+// entry. Coalescing (one modal, one machine transition) works correctly. Not
+// worth a second navigation-owner refactor for a benign extra history entry;
+// re-open if the double entry ever causes a real Back-button problem.
 const AUTO_DISMISS_MS = 3000;
 // Above ConfirmSheetHost (100) so a confirm opened mid-action can't sit on top.
 const Z_INDEX = 150;
