@@ -153,6 +153,9 @@ export const authService = {
     form.append('imagen', archivo);
     const response = await api.post<User>('/perfil/logo', form, {
       headers: { 'Content-Type': undefined },
+      // La instancia `api` tiene un timeout default de 15s (lib/api.ts) —
+      // corto para subir un logo de varios MB desde un celular con mala señal.
+      timeout: 60_000,
     });
     safeSetItem(KEYS.user, JSON.stringify(response.data));
     return response.data;
