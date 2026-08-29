@@ -10,14 +10,24 @@ vi.mock('@/lib/logAuthEvent', () => ({
   logAuthEvent: vi.fn(),
 }));
 
+// Locale store is mocked so the `me` reconcile inside `checkSubscription` can
+// be driven (and forced to reject) without a real message-catalog load.
+vi.mock('@/store/useLocaleStore', () => ({
+  useLocaleStore: { getState: () => ({ locale: 'es' }) },
+  setLocale: vi.fn(),
+  tStatic: (key: string) => key,
+}));
+
 import api from '@/lib/api';
 import { logAuthEvent } from '@/lib/logAuthEvent';
+import { setLocale } from '@/store/useLocaleStore';
 import { useAuthStore } from './useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 
 const mockedGet = vi.mocked(api.get);
 const mockedPost = vi.mocked(api.post);
 const mockedLog = vi.mocked(logAuthEvent);
+const mockedSetLocale = vi.mocked(setLocale);
 
 const INITIAL = useAuthStore.getState();
 
@@ -58,6 +68,7 @@ beforeEach(() => {
   mockedGet.mockReset();
   mockedPost.mockReset();
   mockedLog.mockReset();
+  mockedSetLocale.mockReset();
   localStorage.clear();
   sessionStorage.clear();
 });
@@ -246,6 +257,25 @@ describe('checkSubscription — per-call resilience (Promise.allSettled)', () =>
     expect(useAuthStore.getState().subscriptionExpired).toBe(false);
     expect(useAuthStore.getState().subscriptionCheckFailed).toBe(true);
     expect(mockedLog).toHaveBeenCalledWith('checkSubscription.status-failed', expect.anything());
+  });
+
+  it('a setLocale rejection during the me-reconcile does not fail checkSubscription (SUGGESTION-1)', async () => {
+    mockedSetLocale.mockRejectedValueOnce(new Error('locale sink down'));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 10, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'pt-BR', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+    useAuthStore.setState({ authStatus: 'unauthenticated', subscriptionExpired: false, user: { id: 1 } as never });
+
+    await expect(useAuthStore.getState().checkSubscription()).resolves.toBeUndefined();
+
+    expect(useAuthStore.getState().subscriptionChecked).toBe(true);
+    expect(useAuthStore.getState().subscriptionExpired).toBe(false);
+    expect(mockedLog).toHaveBeenCalledWith('checkSubscription.me-reconcile-failed', expect.anything());
   });
 
   it('recheck path dispatches RECHECK_RESULT (blocked flips subscription-blocked -> authenticated)', async () => {

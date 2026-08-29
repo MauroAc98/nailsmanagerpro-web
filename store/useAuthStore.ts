@@ -177,33 +177,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (meResult.status === 'fulfilled') {
-        const meResponse = meResult.value;
-        // Reconcile de idioma cross-device (ver spec "Cross-device
-        // persistence"): si el idioma cambió en otro dispositivo, lo
-        // aplicamos acá sin round-trip extra. No pisamos `user` completo con
-        // meResponse — solo el idioma.
-        const localeRemoto = resolveLocale(meResponse.locale);
-        if (localeRemoto !== useLocaleStore.getState().locale) {
-          await setLocale(localeRemoto);
-        }
-
-        // whatsapp_requiere_envio_manual puede cambiar server-side en
-        // cualquier momento (ej. el ratio de fallos de Cloud API sube) sin
-        // que el cliente se entere — este campo sí necesita refrescarse acá
-        // para que el banner de recordatorios pendientes aparezca sin
-        // depender de un logout/login.
-        const userActual = get().user;
-        if (userActual) {
-          const userActualizado = {
-            ...userActual,
-            whatsapp_requiere_envio_manual: meResponse.whatsapp_requiere_envio_manual,
-          };
-          set({ user: userActualizado });
-          try {
-            localStorage.setItem('auth_user', JSON.stringify(userActualizado));
-          } catch {
-            // sin acceso a localStorage — no bloqueamos
+        // SUGGESTION-1: isolate the `me` reconcile. `await setLocale(...)` can
+        // reject (message-catalog fetch fails); without this catch that turned
+        // a *successful* `login()` into the error path (LOGIN_OK never
+        // dispatched, machine wedged at `unauthenticated`) and an unhandled
+        // rejection inside `inicializar()`'s un-`.catch`ed `Promise.race`.
+        try {
+          const meResponse = meResult.value;
+          // Reconcile de idioma cross-device (ver spec "Cross-device
+          // persistence"): si el idioma cambió en otro dispositivo, lo
+          // aplicamos acá sin round-trip extra. No pisamos `user` completo con
+          // meResponse — solo el idioma.
+          const localeRemoto = resolveLocale(meResponse.locale);
+          if (localeRemoto !== useLocaleStore.getState().locale) {
+            await setLocale(localeRemoto);
           }
+
+          // whatsapp_requiere_envio_manual puede cambiar server-side en
+          // cualquier momento (ej. el ratio de fallos de Cloud API sube) sin
+          // que el cliente se entere — este campo sí necesita refrescarse acá
+          // para que el banner de recordatorios pendientes aparezca sin
+          // depender de un logout/login.
+          const userActual = get().user;
+          if (userActual) {
+            const userActualizado = {
+              ...userActual,
+              whatsapp_requiere_envio_manual: meResponse.whatsapp_requiere_envio_manual,
+            };
+            set({ user: userActualizado });
+            try {
+              localStorage.setItem('auth_user', JSON.stringify(userActualizado));
+            } catch {
+              // sin acceso a localStorage — no bloqueamos
+            }
+          }
+        } catch (err) {
+          logAuthEvent('checkSubscription.me-reconcile-failed', { err });
         }
       } else {
         logAuthEvent('checkSubscription.me-failed', { err: meResult.reason });
