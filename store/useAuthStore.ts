@@ -20,6 +20,12 @@ const BIENVENIDA_KEY = 'bienvenida_mostrada';
 // lingering if any one of them hangs mid-response. On timeout we fail open.
 const BOOT_CHECK_TIMEOUT_MS = 8000;
 
+// `logout()` clears local state instantly and fires `POST /auth/logout`
+// best-effort (rider #13). This bounds that server call: past this the request
+// is abandoned and logged, never blocking navigation. 3s — a logout POST that
+// slow is already a lost cause and the axios 15s default is far too long here.
+const LOGOUT_SERVER_TIMEOUT_MS = 3000;
+
 // Module-scoped single-flight latch for `recheckSubscription` (design D3): N
 // parallel 403-driven recheck intents collapse into ONE `/auth/subscription-status`
 // request and ONE state transition.
@@ -406,34 +412,50 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // ─────────────────────────────────────────────
-  // logout
+  // logout — clear-first + bounded server call (rider #13)
   // ─────────────────────────────────────────────
   logout: async () => {
-    set({ loading: true });
-    return withGlobalLoader(async () => {
-      try {
-        await authService.logout();
-      } finally {
-        authService.limpiarEmailPendiente();
-        set({
-          user: null,
-          token: null,
-          loading: false,
-          error: null,
-          debeCambiarPassword: false,
-          emailPendiente: null,
-          subscriptionExpired: false,
-          supportInfo: null,
-          daysLeft: null,
-          subscriptionEndsAt: null,
-          isExempt: false,
-          mostrarBienvenida: false,
-          esPrimerLogin: false,
-        });
-        // The clear-first + bounded-POST rework is Slice 7; here we only route
-        // the transition through the machine so the guard reacts to `authStatus`.
-        get().dispatchAuth({ type: 'LOGOUT' });
-      }
+    // 1. Clear ALL local auth state + storage + move the machine NOW,
+    //    synchronously. The UI navigates immediately — a dead network must
+    //    never hold the user on the current screen or leave a global loader
+    //    spinning forever (the old code awaited `POST /auth/logout` unbounded).
+    authService.limpiarEmailPendiente();
+    try {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    } catch {
+      // sin acceso a localStorage — igual seguimos con la transición
+    }
+    set({
+      user: null,
+      token: null,
+      loading: false,
+      error: null,
+      debeCambiarPassword: false,
+      emailPendiente: null,
+      subscriptionExpired: false,
+      subscriptionCheckFailed: false,
+      supportInfo: null,
+      daysLeft: null,
+      subscriptionEndsAt: null,
+      isExempt: false,
+      mostrarBienvenida: false,
+      esPrimerLogin: false,
+      sessionEndOrigin: '',
+    });
+    get().dispatchAuth({ type: 'LOGOUT' });
+
+    // 2. Best-effort server logout, fire-and-forget with a hard 3s bound. We
+    //    are already logged out locally, so the caller does NOT await this and
+    //    it stays OUT of `withGlobalLoader`. A hung or failed request is just
+    //    logged — never resurfaced to the user.
+    void Promise.race([
+      authService.logout(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('logout-timeout')), LOGOUT_SERVER_TIMEOUT_MS);
+      }),
+    ]).catch((err) => {
+      logAuthEvent('logout.server-failed', { err });
     });
   },
 

@@ -13,6 +13,7 @@ vi.mock('@/lib/logAuthEvent', () => ({
 import api from '@/lib/api';
 import { logAuthEvent } from '@/lib/logAuthEvent';
 import { useAuthStore } from './useAuthStore';
+import { useLoadingStore } from '@/store/useLoadingStore';
 
 const mockedGet = vi.mocked(api.get);
 const mockedPost = vi.mocked(api.post);
@@ -151,6 +152,50 @@ describe('logout', () => {
     await useAuthStore.getState().logout();
 
     expect(useAuthStore.getState().authStatus).toBe('unauthenticated');
+  });
+
+  it('clears local auth state synchronously, before the server POST settles', () => {
+    useAuthStore.setState({
+      authStatus: 'authenticated',
+      token: 'tok',
+      user: { id: 1 } as never,
+    });
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', '{"id":1}');
+    mockedPost.mockReturnValue(new Promise(() => {})); // server hangs forever
+
+    void useAuthStore.getState().logout();
+
+    // No await — the local clear must already be done.
+    expect(useAuthStore.getState().authStatus).toBe('unauthenticated');
+    expect(useAuthStore.getState().token).toBeNull();
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(localStorage.getItem('auth_token')).toBeNull();
+  });
+
+  it('resolves ~immediately and never leaves the global loader up even if the POST hangs', async () => {
+    useAuthStore.setState({ authStatus: 'authenticated', token: 'tok' });
+    mockedPost.mockReturnValue(new Promise(() => {}));
+
+    await expect(useAuthStore.getState().logout()).resolves.toBeUndefined();
+    expect(useLoadingStore.getState().isLoading).toBe(false);
+  });
+
+  describe('with fake timers', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('a hung POST is abandoned after ~3s and logged, without surfacing an error', async () => {
+      useAuthStore.setState({ authStatus: 'authenticated', token: 'tok' });
+      mockedPost.mockReturnValue(new Promise(() => {}));
+
+      await useAuthStore.getState().logout();
+      expect(useAuthStore.getState().authStatus).toBe('unauthenticated');
+
+      await vi.advanceTimersByTimeAsync(3000);
+
+      expect(mockedLog).toHaveBeenCalledWith('logout.server-failed', expect.anything());
+    });
   });
 });
 
