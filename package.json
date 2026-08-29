@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "postbuild": "node scripts/copy-standalone.js",
     "start": "node .next/standalone/server.js",
-    "lint": "node scripts/check-messages.js && eslint && vitest run",
+    "lint": "node scripts/check-messages.js && vitest run && eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "deploy": "bash scripts/deploy.sh"
