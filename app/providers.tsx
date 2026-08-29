@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
@@ -52,25 +53,9 @@ function esRutaAdmin(): boolean {
   return typeof window !== 'undefined' && window.location.hostname === ADMIN_HOST;
 }
 
-// `redirect` es un query param controlado por la URL — no confiar ciegamente
-// en él para no habilitar un open redirect. Enumerar prefijos peligrosos a
-// mano (protocol-relative "//evil.com", etc.) no alcanza: "/\evil.com"
-// (barra invertida) pasa cualquier chequeo de string, pero el parser WHATWG
-// URL que usa el router de Next internamente la normaliza igual que
-// "//evil.com" y termina resolviendo a un origen externo real. En vez de
-// perseguir variantes, delegamos la normalización al mismo parser que las
-// explota: si resolver `path` contra un origen fijo arbitrario cambia el
-// origin, es una URL externa (protocol-relative, con host, o con backslash),
-// no un path interno.
-export function esRedirectSeguro(path: string | null): path is string {
-  if (!path) return false;
-  try {
-    const base = 'http://localhost';
-    return new URL(path, base).origin === base;
-  } catch {
-    return false;
-  }
-}
+// `esRedirectSeguro` vive ahora en `@/lib/esRedirectSeguro` (módulo puro,
+// testeado). Se re-exporta acá para no romper imports existentes.
+export { esRedirectSeguro };
 
 const CLEARED_AUTH_STATE = {
   user: null,
