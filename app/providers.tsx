@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute';
 import { classifyTenant } from '@/lib/authRouteClasses';
+import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
@@ -154,21 +155,36 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     // import()`, so there is a tick where it is not ready yet.
     i18nReady: Boolean(mounted && mensajesListos),
   };
-  const route = resolveAuthRoute(
-    snapshot,
-    // `searchParams.toString()` drops the leading `?`; the resolver
-    // concatenates `pathname + search` verbatim, so prepend it when non-empty.
-    { pathname, search: qs ? `?${qs}` : '' },
-    classifyTenant,
-  );
+  // `searchParams.toString()` drops the leading `?`; the resolver concatenates
+  // `pathname + search` verbatim, so prepend it when non-empty.
+  const search = qs ? `?${qs}` : '';
+  const route = resolveAuthRoute(snapshot, { pathname, search }, classifyTenant);
   const redirectTo = route.type === 'redirect' ? route.to : null;
 
   // The admin panel guards itself (app/(admin)/admin/layout.tsx) — this tenant
   // guard never redirects there and never blanks its children.
   useEffect(() => {
     if (isAdmin) return;
-    if (redirectTo) router.push(redirectTo);
-  }, [isAdmin, redirectTo, router]);
+    if (!redirectTo) return;
+
+    // Rider #14: before bouncing a subscription-blocked user to
+    // `/subscription-expired`, remember which protected route they were on so
+    // a successful renew returns them there instead of a hardcoded `/agenda`.
+    // Only real protected routes (`classifyTenant` === 'protected') and only a
+    // safe internal path — never `/login`, `/cambiar-password`, etc. The
+    // resolver stays pure; this capture is a providers-side side effect.
+    if (
+      redirectTo === '/subscription-expired' &&
+      classifyTenant({ pathname, search }) === 'protected'
+    ) {
+      const full = pathname + search;
+      if (esRedirectSeguro(full)) {
+        useAuthStore.setState({ subscriptionBlockedOrigin: full });
+      }
+    }
+
+    router.push(redirectTo);
+  }, [isAdmin, redirectTo, router, pathname, search]);
 
   const puedeMostrarContenido = isAdmin || route.type === 'allow';
 

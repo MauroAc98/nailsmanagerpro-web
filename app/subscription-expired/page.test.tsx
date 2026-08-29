@@ -60,7 +60,38 @@ describe('SubscriptionExpiredPage — recheck', () => {
     expect(screen.queryByText(/no pudimos verificar/i)).toBeNull();
   });
 
-  it('recheck that comes back ACTIVO navigates to /agenda', async () => {
+  it('recheck that comes back ACTIVO with no captured origin navigates to /agenda', async () => {
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 20, ends_at: null, is_exempt: false } });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    renderWithProviders(<SubscriptionExpiredPage />);
+    fireEvent.click(screen.getByText('Volver a verificar'));
+
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith('/agenda'));
+  });
+
+  it('recheck ACTIVO with a captured origin returns to that exact route and clears it', async () => {
+    useAuthStore.setState({ subscriptionBlockedOrigin: '/clientes/5?tab=historia' });
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 20, ends_at: null, is_exempt: false } });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    renderWithProviders(<SubscriptionExpiredPage />);
+    fireEvent.click(screen.getByText('Volver a verificar'));
+
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith('/clientes/5?tab=historia'));
+    expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('');
+  });
+
+  it('recheck ACTIVO with an unsafe captured origin falls back to /agenda', async () => {
+    useAuthStore.setState({ subscriptionBlockedOrigin: '//evil.example/phish' });
     mockedGet.mockImplementation((url: string) => {
       if (url === '/auth/subscription-status') {
         return Promise.resolve({ data: { status: 'ACTIVO', days_left: 20, ends_at: null, is_exempt: false } });

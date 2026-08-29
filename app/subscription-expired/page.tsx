@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { colors } from '@/theme/colors';
 import { confirmDialog } from '@/store/useConfirmStore';
 
@@ -32,7 +33,14 @@ export default function SubscriptionExpiredPage() {
     } else if (expired) {
       setStillExpired(true);
     } else {
-      router.replace('/agenda');
+      // Rider #14: return to the exact route the guard blocked, not a
+      // hardcoded `/agenda`. `providers.tsx` captured it (already
+      // `esRedirectSeguro`-validated); re-validate defensively and clear it.
+      const { subscriptionBlockedOrigin } = useAuthStore.getState();
+      useAuthStore.setState({ subscriptionBlockedOrigin: '' });
+      router.replace(
+        esRedirectSeguro(subscriptionBlockedOrigin) ? subscriptionBlockedOrigin : '/agenda',
+      );
     }
   };
 

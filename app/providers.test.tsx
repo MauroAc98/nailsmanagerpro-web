@@ -36,6 +36,7 @@ beforeEach(() => {
     subscriptionExpired: false,
     subscriptionCheckFailed: false,
     sessionEndOrigin: '',
+    subscriptionBlockedOrigin: '',
     mostrarBienvenida: false,
   });
   useLocaleStore.setState({ mensajesListos: false });
@@ -75,6 +76,44 @@ describe('Providers — boot gate', () => {
     markI18nReady();
 
     expect(await screen.findByText('PROTECTED CONTENT')).toBeInTheDocument();
+  });
+
+  it('capturing the blocked-from route: expired user on a deep protected route -> subscriptionBlockedOrigin set before the redirect', async () => {
+    localStorage.setItem('auth_token', 'tok');
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'VENCIDO', days_left: -3, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+
+    setMockLocation('/clientes/5', '?tab=historia');
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/subscription-expired'));
+    expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('/clientes/5?tab=historia');
+  });
+
+  it('does not capture a non-protected route (already on /subscription-expired stays empty)', async () => {
+    localStorage.setItem('auth_token', 'tok');
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'VENCIDO', days_left: -3, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+
+    setMockLocation('/subscription-expired');
+    render(<Providers><div>BLOCKED PAGE</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(useAuthStore.getState().authStatus).toBe('subscription-blocked'));
+    expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('');
   });
 
   it('false-expiry-flash regression: genuinely-expired user never renders protected children, goes to /subscription-expired', async () => {

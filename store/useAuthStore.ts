@@ -67,6 +67,12 @@ interface AuthState {
   // `?redirect=` preservation. Populated in Slice 4; kept here so the field
   // exists for the machine wiring.
   sessionEndOrigin: string;
+  // Route (pathname + query) the subscription guard bounced the user off when
+  // it redirected them to `/subscription-expired` (rider #14). A successful
+  // renew returns them there instead of a hardcoded `/agenda`. Captured in
+  // `providers.tsx` before the redirect fires, `esRedirectSeguro`-validated;
+  // cleared once consumed by the `/subscription-expired` page.
+  subscriptionBlockedOrigin: string;
 
   dispatchAuth: (event: AuthEvent) => void;
 
@@ -126,6 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   authStatus: 'booting',
   subscriptionChecked: false,
   sessionEndOrigin: '',
+  subscriptionBlockedOrigin: '',
 
   dispatchAuth: (event) => set({ authStatus: authTransition(get().authStatus, event) }),
 
@@ -268,6 +275,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       mostrarBienvenida: false,
       esPrimerLogin: false,
       sessionEndOrigin: '',
+      subscriptionBlockedOrigin: '',
     });
     get().dispatchAuth({ type: 'LOGOUT' });
     return origin ? `/login?redirect=${encodeURIComponent(origin)}` : '/login';
@@ -442,6 +450,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       mostrarBienvenida: false,
       esPrimerLogin: false,
       sessionEndOrigin: '',
+      subscriptionBlockedOrigin: '',
     });
     get().dispatchAuth({ type: 'LOGOUT' });
 
