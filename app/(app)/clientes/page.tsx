@@ -84,10 +84,20 @@ function FilaCliente({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: cliente.activo ? colors.text : colors.placeholder }}>
+          {/* Filas de alto fijo (lista virtualizada): un nombre largo tiene
+              que truncar en una línea, si no se envuelve y desborda la fila
+              tapando el teléfono / la fila de abajo. */}
+          <p style={{
+            margin: 0, fontSize: 16, fontWeight: 700,
+            color: cliente.activo ? colors.text : colors.placeholder,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
             {cliente.nombre} {cliente.apellido}
           </p>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
+          <p style={{
+            margin: '4px 0 0', fontSize: 13, color: colors.subtext,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
             {cliente.telefono || t('noContactInfo')}
           </p>
         </div>
