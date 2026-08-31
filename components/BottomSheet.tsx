@@ -99,10 +99,15 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     const dragStartHeight = useRef(0);
     // Only pointerdowns that originate on the content wrapper go through this
     // gate (the handle always drags) — set at pointerdown based on whether
-    // the sheet is collapsed/half (always drags) or fully expanded with the
-    // list already scrolled to top (drag only then, otherwise let the list
-    // scroll natively).
+    // the list can scroll and where it's scrolled: a non-scrollable (or
+    // scrolled-to-top) list hands the gesture to the sheet drag, otherwise
+    // the list scrolls natively. This is snap-independent now — a long list
+    // in a half-open sheet still scrolls instead of being clipped.
     const contentDragCandidate = useRef(false);
+    // True when, at pointerdown, the content list was both scrollable and at
+    // its top — the one case where a sheet drag starts from a scrollable
+    // list. An upward move from here is re-handed to native scroll.
+    const contentScrollableAtTop = useRef(false);
     // Smoothed drag velocity in px/ms (dragging up = positive), used at
     // release to distinguish a fast flick (go to the next snap point in that
     // direction) from a slow drag (snap to nearest by distance).
@@ -249,25 +254,36 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       goToIndex(closest.index, true);
     };
 
-    const isExpanded = currentIndex === snapPoints.length - 1;
-
-    // The content wrapper only ever originates a sheet-drag in two cases:
-    // the sheet isn't fully expanded yet (its "peek" content isn't meant to
-    // scroll independently), or it IS expanded but the list is already
-    // scrolled to the top (the standard pull-at-top-to-collapse handoff).
-    // Any other touch on the content area is left alone for native scrolling.
+    // The content wrapper originates a sheet-drag when the list can't scroll
+    // (nothing to scroll — drag the sheet) or when it's scrolled to the top
+    // (the pull-at-top-to-collapse handoff). Any other touch is left to
+    // native scrolling. Independent of the snap point, so a long list in a
+    // half-open sheet scrolls instead of being clipped.
     const handleContentPointerDown = (e: React.PointerEvent) => {
-      const atTop = (contentRef.current?.scrollTop ?? 0) <= 0;
-      if (!isExpanded || atTop) {
+      const el = contentRef.current;
+      const canScroll = el ? el.scrollHeight - el.clientHeight > 1 : false;
+      const atTop = (el?.scrollTop ?? 0) <= 0;
+      if (!canScroll || atTop) {
         contentDragCandidate.current = true;
+        contentScrollableAtTop.current = canScroll && atTop;
         handlePointerDown(e);
       } else {
         contentDragCandidate.current = false;
+        contentScrollableAtTop.current = false;
       }
     };
 
     const handleContentPointerMove = (e: React.PointerEvent) => {
       if (!contentDragCandidate.current) return;
+      // Started a sheet-drag from the top of a scrollable list and the user
+      // is now pulling up (into the list): abandon the sheet-drag and let
+      // the browser scroll the list. Pulling down still collapses the sheet.
+      if (contentScrollableAtTop.current && dragStartY.current - e.clientY > 0) {
+        contentDragCandidate.current = false;
+        contentScrollableAtTop.current = false;
+        draggingRef.current = false;
+        return;
+      }
       handlePointerMove(e);
     };
 
@@ -335,9 +351,13 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             onPointerUp={handleContentPointerUp}
             style={{
               flex: 1,
-              overflowY: isExpanded ? 'auto' : 'hidden',
+              overflowY: 'auto',
               minHeight: 0,
-              touchAction: isExpanded ? 'auto' : 'none',
+              // pan-y: the browser scrolls the list vertically; horizontal
+              // gestures (e.g. SwipeableTurnoCard) stay with JS handlers.
+              // The sheet-drag vs scroll decision is made in
+              // handleContentPointerDown, not by touch-action.
+              touchAction: 'pan-y',
             }}
           >
             {children}
