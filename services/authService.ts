@@ -16,6 +16,19 @@ export interface User {
   recordatorio_automatico: boolean;
   hora_recordatorio: string;
   sena_monto: number | null;
+  // Opt-in por salón para pedir seña en la confirmación de WhatsApp
+  // (plantilla `reserva_turno_sena`). Cuando es `true`, el backend exige
+  // `sena_monto > 0`, `direccion`, `whatsapp_sena_titular` y (alias o CBU).
+  // Apagarlo siempre se acepta y conserva los datos bancarios guardados.
+  whatsapp_pide_sena: boolean;
+  // Datos de la cuenta donde el cliente transfiere la seña. Se mandan a Meta
+  // en una sola línea ({{8}}): el backend rechaza `\r\n\t` y colapsa los
+  // espacios interiores; el front sanea igual antes de enviar. `entidad` y
+  // `cbu` son opcionales por separado (alcanza con alias o CBU).
+  whatsapp_sena_titular: string | null;
+  whatsapp_sena_entidad: string | null;
+  whatsapp_sena_alias: string | null;
+  whatsapp_sena_cbu: string | null;
   debe_cambiar_password?: boolean;
   // true por cualquiera de estas razones: (a) la profesional no tiene
   // teléfono de contacto cargado, o (b) el ratio de mensajes de Cloud API
