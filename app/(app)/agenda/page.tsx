@@ -1405,7 +1405,14 @@ export default function AgendaPage() {
             </p>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 40 }}>
+          {/* Este sheet NO usa bottomOffset — se extiende por detrás del nav
+              (que se pinta encima, NAV_Z_INDEX). Sin este padding, los
+              últimos turnos de una lista larga quedan tapados por la barra
+              aunque scrollees hasta el final. */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 10,
+            paddingBottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 24px)`,
+          }}>
             {datosAMostrar.map(turno => {
               const pasado   = turno.estado_visual === 'completado';
               const cursando = turno.estado_visual === 'en_curso';
