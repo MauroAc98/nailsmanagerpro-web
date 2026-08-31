@@ -167,7 +167,10 @@ export function ServicioPicker({
                           }}>
                             {checked && <Check size={14} strokeWidth={3} />}
                           </span>
-                          <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: colors.textStrong }}>
+                          <span style={{
+                            flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: colors.textStrong,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          }}>
                             {s.nombre}
                           </span>
                           <span style={{ fontSize: 12, color: colors.muted, flexShrink: 0 }}>
