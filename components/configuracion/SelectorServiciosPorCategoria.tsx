@@ -140,7 +140,10 @@ export function SelectorServiciosPorCategoria({ servicios, servicioIds, onChange
       }}
     >
       <ServicioCheckbox checked={servicioIds.includes(s.id)} />
-      <span style={{ flex: 1, fontSize: 14, color: colors.text }}>{s.nombre}</span>
+      <span style={{
+        flex: 1, minWidth: 0, fontSize: 14, color: colors.text,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>{s.nombre}</span>
       <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0 }}>{s.duracion_minutos} min</span>
     </div>
   );

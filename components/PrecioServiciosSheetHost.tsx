@@ -107,7 +107,10 @@ export function PrecioServiciosSheetHost() {
               key={s.servicio_id}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
             >
-              <span style={{ fontSize: 14, color: colors.text, flex: 1 }}>{s.nombre}</span>
+              <span style={{
+                fontSize: 14, color: colors.text, flex: 1, minWidth: 0,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>{s.nombre}</span>
               <input
                 type="number"
                 inputMode="decimal"

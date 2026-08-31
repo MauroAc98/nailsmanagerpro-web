@@ -299,13 +299,16 @@ function NuevoTurnoContent() {
               borderColor: showClienteDropdown ? colors.primaryDeep : colors.border,
             }}
           >
-            <User size={18} strokeWidth={1.8} color={colors.muted} />
-            <span style={{ flex: 1, color: selectedCliente ? colors.text : colors.placeholder, fontSize: 15 }}>
+            <User size={18} strokeWidth={1.8} color={colors.muted} style={{ flexShrink: 0 }} />
+            <span style={{
+              flex: 1, minWidth: 0, color: selectedCliente ? colors.text : colors.placeholder, fontSize: 15,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
               {selectedCliente ? `${selectedCliente.nombre} ${selectedCliente.apellido}` : t('select')}
             </span>
             <ChevronDown
               size={16} strokeWidth={2} color={colors.muted}
-              style={{ transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+              style={{ flexShrink: 0, transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
             />
           </div>
 
