@@ -85,7 +85,7 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
         background: `linear-gradient(135deg, ${agendaColors.primarySoft}, ${agendaColors.surface})`,
         border: `1px solid color-mix(in srgb, ${agendaColors.primary} 25%, transparent)`,
         boxShadow: agendaShadows.card, borderRadius: 24, cursor: 'pointer', textAlign: 'left',
-        boxSizing: 'border-box',
+        boxSizing: 'border-box', overflow: 'hidden',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -99,7 +99,9 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
       </div>
 
       <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-        <div>
+        {/* El monto es el dato principal — nunca se comprime; el nombre del
+            servicio top (largo, cargado por el usuario) es el que cede. */}
+        <div style={{ flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <p style={{ margin: 0, fontSize: 28, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong }}>
               {ocultarMonto
@@ -128,8 +130,14 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
           </p>
         </div>
         {topServicio && (
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: agendaColors.text }}>{topServicio}</p>
+          <div style={{ textAlign: 'right', minWidth: 0, maxWidth: '55%' }}>
+            <p style={{
+              margin: 0, fontSize: 13, fontWeight: 600, color: agendaColors.text, lineHeight: 1.3,
+              // Un nombre largo baja a 2 líneas con "…" en vez de desbordar
+              // la tarjeta (antes: flexShrink:0 sin límite de ancho).
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+              overflow: 'hidden', overflowWrap: 'anywhere',
+            }}>{topServicio}</p>
             <p style={{ margin: '2px 0 0', fontSize: 11, color: agendaColors.sub }}>{t('topServiceLabel')}</p>
           </div>
         )}
