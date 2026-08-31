@@ -69,6 +69,44 @@ describe('SheetNegocio — seña opt-in toggle', () => {
   });
 });
 
+describe('SheetNegocio — message preview', () => {
+  const openPreview = () => fireEvent.click(screen.getByRole('button', { name: 'Ver ejemplo de mensaje' }));
+
+  const previewText = (match: RegExp) => screen.getByText(match).closest('p')?.textContent ?? '';
+
+  it('shows the system-tone confirmation body, not the old warm one', () => {
+    setup({ whatsappPideSena: false });
+    openPreview();
+    const text = previewText(/quedó confirmado/);
+    expect(text).toContain('Desde este número solo se envían avisos');
+    expect(text).not.toContain('¡Te esperamos!');
+    expect(text).not.toContain('no hace falta responder');
+  });
+
+  it('shows the reserva_turno_sena body with formatted amount and account line when seña is on', () => {
+    setup({
+      whatsappPideSena: true,
+      senaMonto: '5000',
+      senaTitular: 'Ana Pérez',
+      senaAlias: 'ana.mp',
+      senaCbu: '2850001040094993682358',
+    });
+    openPreview();
+    const text = previewText(/quedó reservado/);
+    expect(text).toContain('una seña de $5.000,00');
+    expect(text).toContain('Ana Pérez · Alias: ana.mp · CBU: 2850 0010 4009 4993 6823 58');
+    expect(text).toContain('enviar el comprobante de la seña');
+  });
+
+  it('renders the reminder body on the recordatorio tab', () => {
+    setup();
+    openPreview();
+    fireEvent.click(screen.getByRole('button', { name: 'Recordatorio' }));
+    expect(previewText(/te recordamos tu turno de mañana/))
+      .toContain('Desde este número solo se envían avisos');
+  });
+});
+
 describe('SheetNegocio — client validation when seña is ON', () => {
   const onCompleto = {
     whatsappPideSena: true,

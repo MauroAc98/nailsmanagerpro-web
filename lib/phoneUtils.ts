@@ -55,4 +55,23 @@ export const phoneUtils = {
     const grupos = resto.match(/.{1,3}/g) ?? [resto];
     return `${grupos.join(' ')}-${ultimo}`;
   },
+
+  // Formato internacional AR para el CUERPO de las plantillas de WhatsApp
+  // (confirmacion / recordatorio / reserva_sena). Espeja
+  // WhatsappTemplate::formatearTelefono() del backend (NailsManagerProApi):
+  // normaliza cualquier forma de carga a "+54 9 AAA NNN-NNNN" para que
+  // WhatsApp lo haga tappable en el chat. Si no puede derivar un nacional de
+  // 10 dígitos, devuelve el input crudo (no tappable pero no roto).
+  formatArWhatsapp: (raw: string): string => {
+    let d = phoneUtils.clean(raw);
+    if (d.startsWith('54')) d = d.slice(2);
+    if (d.length === 11 && d.startsWith('9')) d = d.slice(1);
+    if (d.length !== 10) return raw;
+    // AMBA usa código de área "11" (2 dígitos) + abonado de 8; el resto del
+    // país usa área de 3 + abonado de 7.
+    const [area, central, final] = d.startsWith('11')
+      ? [d.slice(0, 2), d.slice(2, 6), d.slice(6, 10)]
+      : [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10)];
+    return `+54 9 ${area} ${central}-${final}`;
+  },
 };
