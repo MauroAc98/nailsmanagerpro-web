@@ -89,6 +89,10 @@ const nextConfig: NextConfig = {
       { source: "/privacy", destination: "/legal/privacy.html" },
       { source: "/terms", destination: "/legal/terms.html" },
       { source: "/data-deletion", destination: "/legal/data-deletion.html" },
+      // Página pública de servicio (para revisión de Meta como proveedor de
+      // tecnología / crawlers) — mismo motivo que las legales: HTML estático
+      // fuera del árbol de React, legible sin JS y en desktop.
+      { source: "/servicio", destination: "/servicio.html" },
     ];
   },
 };

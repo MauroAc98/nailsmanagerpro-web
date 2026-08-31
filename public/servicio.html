@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+  <title>Turnetto — Gestión de turnos y recordatorios por WhatsApp para salones de belleza</title>
+  <meta name="description" content="Turnetto es una plataforma de gestión de turnos, clientes y servicios para salones y profesionales de la belleza, con confirmaciones y recordatorios automáticos por WhatsApp desde el número propio de cada salón.">
+  <style>
+    :root {
+      --primary: #6b8f6a;
+      --primary-deep: #4e6b4d;
+      --text: #2b2b2b;
+      --subtext: #565656;
+      --bg: #ffffff;
+      --surface: #f4f7f3;
+      --border: #e6e6e6;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+    header { border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 36px; }
+    .brand { font-weight: 700; color: var(--primary-deep); letter-spacing: 0.02em; text-transform: uppercase; font-size: 13px; }
+    h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 30px; line-height: 1.35; margin: 14px 0 10px; }
+    .lede { color: var(--subtext); font-size: 16px; margin: 0; }
+    h2 { font-size: 19px; margin: 40px 0 8px; }
+    h3 { font-size: 15px; margin: 22px 0 4px; }
+    p, li { color: var(--subtext); font-size: 15px; }
+    ul { padding-left: 20px; }
+    a { color: var(--primary-deep); font-weight: 600; }
+    strong { color: var(--text); }
+    .card { background: var(--surface); border: 1px solid #dfe8dc; border-radius: 12px; padding: 18px 20px; margin-top: 16px; }
+    .card p:first-child { margin-top: 0; }
+    .card p:last-child { margin-bottom: 0; }
+    .contact { margin-top: 8px; }
+    .contact li { margin-bottom: 2px; }
+    footer { margin-top: 52px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--subtext); }
+    @media (prefers-color-scheme: dark) {
+      :root { --text: #ececec; --subtext: #b9b9b9; --bg: #161616; --surface: #1d241c; --border: #2e2e2e; --primary-deep: #9bc09a; }
+      .card { background: #1d241c; border-color: #33402f; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">Turnetto</div>
+      <h1>Gestión de turnos y recordatorios por WhatsApp para salones de belleza</h1>
+      <p class="lede">
+        Turnetto es una plataforma de software que ayuda a los salones y a los
+        profesionales de la industria de la belleza a organizar su agenda, sus
+        clientes y sus servicios, y a avisar cada turno por WhatsApp de forma
+        automática.
+      </p>
+    </header>
+
+    <h2>Qué es Turnetto</h2>
+    <p>
+      Turnetto es una aplicación web de gestión de turnos (agenda de citas) pensada
+      para negocios chicos de estética y belleza: manicuras, peluquerías, centros de
+      estética, barberías y profesionales independientes. Cada negocio se registra,
+      accede con una suscripción y administra desde un único lugar:
+    </p>
+    <ul>
+      <li>la agenda diaria de turnos y los profesionales que atienden;</li>
+      <li>la ficha de cada cliente, con su historial de turnos y servicios;</li>
+      <li>el catálogo de servicios, sus precios y el historial de cambios de precio;</li>
+      <li>los gastos del negocio y estadísticas básicas de actividad;</li>
+      <li>las confirmaciones y recordatorios de turno que se envían por WhatsApp.</li>
+    </ul>
+
+    <h2>Para quién es</h2>
+    <p>
+      Nuestros clientes son los salones y profesionales de la belleza que usan
+      Turnetto para gestionar su propio negocio. Los destinatarios finales de los
+      mensajes de WhatsApp son los clientes de cada uno de esos salones, que reciben
+      el aviso del turno que ellos mismos reservaron.
+    </p>
+
+    <h2>Cómo funciona</h2>
+    <ul>
+      <li>
+        La persona que administra el salón crea su cuenta y carga su agenda, sus
+        servicios y sus clientes.
+      </li>
+      <li>
+        Al agendar un turno, Turnetto envía al cliente una confirmación por WhatsApp,
+        y más cerca de la fecha le envía un recordatorio.
+      </li>
+      <li>
+        El salón ve en todo momento el estado de sus turnos y de los mensajes
+        enviados.
+      </li>
+    </ul>
+
+    <h2>Recordatorios por WhatsApp y número propio del salón</h2>
+    <p>
+      Turnetto envía las confirmaciones y los recordatorios a través de la API oficial
+      de WhatsApp Business de Meta. Cada salón puede conectar su propio número de
+      WhatsApp Business mediante el proceso de alta guiado (Embedded Signup) en modo
+      de coexistencia, para que sus clientes reciban los avisos desde el número que ya
+      conocen del salón.
+    </p>
+    <div class="card">
+      <p>
+        <strong>Turnetto como proveedor de tecnología.</strong> Turnetto opera como
+        proveedor de tecnología (Tech Provider) frente a Meta: cada salón mantiene la
+        titularidad de su propia cuenta de WhatsApp Business, y Turnetto la utiliza en
+        su nombre, con su autorización, únicamente para enviar las confirmaciones y los
+        recordatorios de turno.
+      </p>
+      <p>
+        Los datos de la plataforma que obtenemos de Meta —identificadores de la cuenta
+        de WhatsApp Business y del número, estado de calidad del número, estado de las
+        plantillas de mensaje y estados de entrega— se usan solo para dirigir cada
+        mensaje al número correcto del salón, mostrarle al salón el estado de su número
+        y registrar la entrega de los recordatorios. No se comparten con terceros ni se
+        usan con fines publicitarios.
+      </p>
+    </div>
+
+    <h2>Sobre el negocio</h2>
+    <p>
+      <strong>Turnetto</strong> es el nombre comercial bajo el cual
+      <strong>Mauro Hernán Acosta</strong>, monotributista registrado ante ARCA (ex
+      AFIP), República Argentina, ofrece este servicio.
+    </p>
+    <ul class="contact">
+      <li><strong>Nombre legal:</strong> Mauro Hernán Acosta</li>
+      <li><strong>Marca comercial:</strong> Turnetto</li>
+      <li><strong>Condición fiscal:</strong> Monotributista (ARCA), Argentina</li>
+      <li><strong>Aplicación:</strong> <a href="https://app.turnetto.com">app.turnetto.com</a></li>
+      <li><strong>Contacto:</strong> <a href="mailto:turnetto.app@gmail.com">turnetto.app@gmail.com</a></li>
+    </ul>
+
+    <footer>
+      Turnetto — Mauro Hernán Acosta ·
+      <a href="/privacy">Política de Privacidad</a> ·
+      <a href="/terms">Términos y Condiciones</a> ·
+      <a href="/data-deletion">Eliminación de datos</a>
+    </footer>
+  </div>
+</body>
+</html>
