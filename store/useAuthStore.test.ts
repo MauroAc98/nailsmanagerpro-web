@@ -478,6 +478,57 @@ describe('emailPendiente persistence across refresh (rider #10)', () => {
   });
 });
 
+describe('updatePerfil — seña / WhatsApp deposit fields', () => {
+  const mockedPut = vi.mocked(api.put);
+
+  it('forwards the 5 seña fields to PUT /perfil and stores the returned user', async () => {
+    const usuarioActualizado = {
+      id: 1,
+      name: 'Ana',
+      whatsapp_pide_sena: true,
+      whatsapp_sena_titular: 'Ana Gomez',
+      whatsapp_sena_entidad: 'Banco Nacion',
+      whatsapp_sena_alias: 'ana.gomez.mp',
+      whatsapp_sena_cbu: null,
+      sena_monto: 5000,
+    };
+    mockedPut.mockResolvedValue({ data: usuarioActualizado });
+    useAuthStore.setState({ authStatus: 'authenticated', user: { id: 1, name: 'Ana' } as never });
+
+    await useAuthStore.getState().updatePerfil({
+      whatsapp_pide_sena: true,
+      whatsapp_sena_titular: 'Ana Gomez',
+      whatsapp_sena_entidad: 'Banco Nacion',
+      whatsapp_sena_alias: 'ana.gomez.mp',
+      whatsapp_sena_cbu: null,
+      sena_monto: 5000,
+    });
+
+    expect(mockedPut).toHaveBeenCalledWith('/perfil', expect.objectContaining({
+      whatsapp_pide_sena: true,
+      whatsapp_sena_titular: 'Ana Gomez',
+      whatsapp_sena_entidad: 'Banco Nacion',
+      whatsapp_sena_alias: 'ana.gomez.mp',
+      whatsapp_sena_cbu: null,
+    }));
+    expect(useAuthStore.getState().user).toMatchObject({
+      whatsapp_pide_sena: true,
+      whatsapp_sena_titular: 'Ana Gomez',
+      whatsapp_sena_alias: 'ana.gomez.mp',
+    });
+  });
+
+  it('re-throws the error and surfaces a message when PUT /perfil rejects', async () => {
+    mockedPut.mockRejectedValue({ response: { data: { message: 'Cargá tu dirección antes de pedir la seña.' } } });
+    useAuthStore.setState({ authStatus: 'authenticated', user: { id: 1 } as never });
+
+    await expect(
+      useAuthStore.getState().updatePerfil({ whatsapp_pide_sena: true }),
+    ).rejects.toBeDefined();
+    expect(useAuthStore.getState().error).toBe('Cargá tu dirección antes de pedir la seña.');
+  });
+});
+
 describe('inicializar — boot check timeout backstop', () => {
   beforeEach(() => {
     vi.useFakeTimers();

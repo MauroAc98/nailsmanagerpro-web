@@ -17,6 +17,7 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
+import { sanitizarLineaSimple, type SenaCampo } from '@/lib/senaConfig';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -114,6 +115,11 @@ export default function PerfilPage() {
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
   const [senaMonto, setSenaMonto] = useState('');
+  const [whatsappPideSena, setWhatsappPideSena] = useState(false);
+  const [senaTitular, setSenaTitular] = useState('');
+  const [senaEntidad, setSenaEntidad] = useState('');
+  const [senaAlias, setSenaAlias] = useState('');
+  const [senaCbu, setSenaCbu] = useState('');
   const [confirmacionAutomatica, setConfirmacionAutomatica] = useState(true);
   const [recordatorioAutomatico, setRecordatorioAutomatico] = useState(false);
   const [horaRecordatorio, setHoraRecordatorio] = useState('20:00');
@@ -121,6 +127,10 @@ export default function PerfilPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [senaMontoError, setSenaMontoError] = useState<string | null>(null);
+  // Errores 422 del backend para la seña, mapeados por campo. El guard de
+  // `PUT /perfil` valida el estado final: monto > 0 + direccion + titular +
+  // (alias o CBU) cuando `whatsapp_pide_sena` queda en true.
+  const [erroresNegocio, setErroresNegocio] = useState<Partial<Record<SenaCampo, string>>>({});
 
   useEffect(() => {
     if (sheetActivo) {
@@ -137,6 +147,11 @@ export default function PerfilPage() {
     setTelefono(numero);
     setDireccion(user.direccion ?? '');
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
+    setWhatsappPideSena(user.whatsapp_pide_sena ?? false);
+    setSenaTitular(user.whatsapp_sena_titular ?? '');
+    setSenaEntidad(user.whatsapp_sena_entidad ?? '');
+    setSenaAlias(user.whatsapp_sena_alias ?? '');
+    setSenaCbu(user.whatsapp_sena_cbu ?? '');
     setConfirmacionAutomatica(user.confirmacion_automatica ?? true);
     setRecordatorioAutomatico(user.recordatorio_automatico ?? false);
     setHoraRecordatorio(user.hora_recordatorio ?? '20:00');
@@ -144,6 +159,7 @@ export default function PerfilPage() {
     setPasswordConfirmation('');
     setPasswordError(null);
     setSenaMontoError(null);
+    setErroresNegocio({});
     setSheetActivo(sheet);
   };
 
@@ -191,6 +207,7 @@ export default function PerfilPage() {
         return;
       }
       setSenaMontoError(null);
+      setErroresNegocio({});
       senaMontoParseada = resultado.valor;
     }
 
@@ -205,6 +222,14 @@ export default function PerfilPage() {
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
           sena_monto: senaMontoParseada,
+          whatsapp_pide_sena: whatsappPideSena,
+          // Espeja `WhatsappTemplate::unaLinea` del backend: sin `\r\n\t` ni
+          // espacios interiores repetidos. String vacío -> null para no
+          // guardar datos en blanco.
+          whatsapp_sena_titular: sanitizarLineaSimple(senaTitular) || null,
+          whatsapp_sena_entidad: sanitizarLineaSimple(senaEntidad) || null,
+          whatsapp_sena_alias: sanitizarLineaSimple(senaAlias) || null,
+          whatsapp_sena_cbu: sanitizarLineaSimple(senaCbu) || null,
           confirmacion_automatica: confirmacionAutomatica,
           recordatorio_automatico: recordatorioAutomatico,
           hora_recordatorio: horaRecordatorio,
@@ -225,6 +250,23 @@ export default function PerfilPage() {
       const mensaje = extraerMensajeError(e);
       if (sheetActivo === 'password') {
         setPasswordError(mensaje);
+      } else if (sheetActivo === 'negocio') {
+        // Mapea el 422 del guard de seña a errores por campo, que el sheet
+        // muestra al lado del input correspondiente. Si el 422 no trae
+        // ninguno de estos campos, cae al diálogo genérico.
+        const errores = (e as { response?: { data?: { errors?: Record<string, string[]> } } })
+          .response?.data?.errors ?? {};
+        const campos: SenaCampo[] = ['sena_monto', 'direccion', 'whatsapp_sena_titular', 'whatsapp_sena_alias'];
+        const mapa: Partial<Record<SenaCampo, string>> = {};
+        for (const campo of campos) {
+          const primero = errores[campo]?.[0];
+          if (primero) mapa[campo] = primero;
+        }
+        if (Object.keys(mapa).length > 0) {
+          setErroresNegocio(mapa);
+        } else {
+          await alertDialog(mensaje);
+        }
       } else {
         await alertDialog(mensaje);
       }
@@ -264,6 +306,17 @@ export default function PerfilPage() {
           <SheetNegocio
             senaMonto={senaMonto}
             setSenaMonto={setSenaMonto}
+            whatsappPideSena={whatsappPideSena}
+            setWhatsappPideSena={setWhatsappPideSena}
+            senaTitular={senaTitular}
+            setSenaTitular={setSenaTitular}
+            senaEntidad={senaEntidad}
+            setSenaEntidad={setSenaEntidad}
+            senaAlias={senaAlias}
+            setSenaAlias={setSenaAlias}
+            senaCbu={senaCbu}
+            setSenaCbu={setSenaCbu}
+            erroresServidor={erroresNegocio}
             confirmacionAutomatica={confirmacionAutomatica}
             setConfirmacionAutomatica={setConfirmacionAutomatica}
             recordatorioAutomatico={recordatorioAutomatico}
@@ -317,6 +370,14 @@ export default function PerfilPage() {
 
         <CardSeccion titulo={t('sectionBusiness')} icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>
           <FilaDato label={t('depositAmount')} valor={user.sena_monto != null ? `$${user.sena_monto}` : null} />
+          <FilaDato label={t('depositRequest')} valor={user.whatsapp_pide_sena ? t('yes') : t('no')} />
+          {user.whatsapp_pide_sena && (
+            <>
+              <FilaDato label={t('depositHolder')} valor={user.whatsapp_sena_titular} />
+              <FilaDato label={t('depositAlias')} valor={user.whatsapp_sena_alias} />
+              <FilaDato label={t('depositCbu')} valor={user.whatsapp_sena_cbu} />
+            </>
+          )}
           <FilaDato label={t('autoConfirmation')} valor={user.confirmacion_automatica ? t('yes') : t('no')} />
           <FilaDato label={t('autoReminder')} valor={user.recordatorio_automatico ? t('yes') : t('no')} />
           {user.recordatorio_automatico && (

@@ -7,6 +7,7 @@ import { SheetInput } from './SheetInput';
 import PillToggle from '@/components/PillToggle';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
+import { sanitizarLineaSimple, validarSenaConfig, type SenaCampo } from '@/lib/senaConfig';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 
@@ -15,6 +16,19 @@ type TipoPreview = 'confirmacion' | 'recordatorio';
 interface Props {
   senaMonto: string;
   setSenaMonto: (v: string) => void;
+  // Opt-in "pedir seña" + datos bancarios que viajan en la confirmación de
+  // WhatsApp. El estado vive en el padre (perfil/page.tsx) igual que el resto
+  // del sheet; acá solo se editan y se validan antes de guardar.
+  whatsappPideSena: boolean;
+  setWhatsappPideSena: (v: boolean) => void;
+  senaTitular: string;
+  setSenaTitular: (v: string) => void;
+  senaEntidad: string;
+  setSenaEntidad: (v: string) => void;
+  senaAlias: string;
+  setSenaAlias: (v: string) => void;
+  senaCbu: string;
+  setSenaCbu: (v: string) => void;
   confirmacionAutomatica: boolean;
   setConfirmacionAutomatica: (v: boolean) => void;
   recordatorioAutomatico: boolean;
@@ -24,6 +38,10 @@ interface Props {
   nombreNegocio: string;
   telefonoContacto: string;
   direccionNegocio: string;
+  // Errores 422 del backend ya mapeados por campo (mensaje completo en
+  // castellano). Se muestran junto al input correspondiente, combinados con
+  // la validación local.
+  erroresServidor?: Partial<Record<SenaCampo, string>>;
   onGuardar: () => void;
   guardando: boolean;
   error: string | null;
@@ -66,6 +84,16 @@ function textoPreview(tipo: TipoPreview, negocio: string, telefono: string, dire
   return `Hola ${nombreCliente} ✨\n\n${linea2}\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\n*¡Te esperamos!*\n\n📞 ¿Consultas o cambios de turno? Si ya hablaste con ${nombreProfesionalEjemplo} previamente, comunicate por ahí. Si no, este es su número: 💬 ${tel}.\nPor favor, avisar con 24hs de anticipación. ¡Gracias!\n\nEste es un mensaje automático, no hace falta responder.`;
 }
 
+// Parsea el monto (string editable) a número para la regla de negocio.
+// `undefined` = vacío/ilegible; el guardado del padre hace la validación de
+// formato fina (parsearSenaMonto) — acá solo interesa si es > 0.
+function montoComoNumero(texto: string): number | undefined {
+  const limpio = texto.trim().replace(',', '.');
+  if (limpio === '') return undefined;
+  const n = Number(limpio);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 function IconClose() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -83,16 +111,77 @@ function IconMoney() {
   );
 }
 
+function IconBank() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21h18M4 10h16M5 10V7l7-4 7 4v3M6 21v-8M10 21v-8M14 21v-8M18 21v-8" />
+    </svg>
+  );
+}
+
 export function SheetNegocio({
-  senaMonto, setSenaMonto, confirmacionAutomatica, setConfirmacionAutomatica,
+  senaMonto, setSenaMonto,
+  whatsappPideSena, setWhatsappPideSena,
+  senaTitular, setSenaTitular, senaEntidad, setSenaEntidad,
+  senaAlias, setSenaAlias, senaCbu, setSenaCbu,
+  confirmacionAutomatica, setConfirmacionAutomatica,
   recordatorioAutomatico, setRecordatorioAutomatico,
   horaRecordatorio, setHoraRecordatorio, nombreNegocio, telefonoContacto,
-  direccionNegocio, onGuardar, guardando, error, onClose,
+  direccionNegocio, erroresServidor, onGuardar, guardando, error, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
   const [previewAbierto, setPreviewAbierto] = useState(false);
   const [tipoPreview, setTipoPreview] = useState<TipoPreview>('confirmacion');
+  const [erroresLocales, setErroresLocales] = useState<Partial<Record<SenaCampo, string>>>({});
   const faltaDireccion = !direccionNegocio.trim();
+
+  // Código de validación local -> mensaje traducido. Los errores del backend
+  // ya llegan como string completo, así que el fallback (`?? v`) los deja pasar.
+  const MENSAJES_ERROR: Record<string, string> = {
+    montoRequerido: t('senaMontoRequired'),
+    direccionRequerida: t('senaAddressRequired'),
+    titularRequerido: t('senaTitularRequired'),
+    aliasOCbuRequerido: t('senaAliasOrCbuRequired'),
+  };
+  const errores: Partial<Record<SenaCampo, string>> = { ...erroresServidor, ...erroresLocales };
+  const textoError = (campo: SenaCampo): string | null => {
+    const v = errores[campo];
+    if (!v) return null;
+    return MENSAJES_ERROR[v] ?? v;
+  };
+
+  const handleGuardar = () => {
+    if (whatsappPideSena) {
+      const errs = validarSenaConfig({
+        monto: montoComoNumero(senaMonto),
+        direccion: direccionNegocio,
+        titular: senaTitular,
+        alias: senaAlias,
+        cbu: senaCbu,
+      });
+      if (Object.keys(errs).length > 0) {
+        setErroresLocales(errs);
+        return;
+      }
+    }
+    setErroresLocales({});
+
+    // Espeja el saneo del backend (rechaza \r\n\t y colapsa espacios en los
+    // datos bancarios antes de mandarlos a Meta). El padre vuelve a sanear al
+    // armar el payload — esto mantiene el estado del sheet consistente.
+    const pares: [string, (v: string) => void][] = [
+      [senaTitular, setSenaTitular],
+      [senaEntidad, setSenaEntidad],
+      [senaAlias, setSenaAlias],
+      [senaCbu, setSenaCbu],
+    ];
+    for (const [valor, setter] of pares) {
+      const limpio = sanitizarLineaSimple(valor);
+      if (limpio !== valor) setter(limpio);
+    }
+
+    onGuardar();
+  };
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
@@ -117,6 +206,76 @@ export function SheetNegocio({
         <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
       )}
 
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+      }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('depositRequest')}</p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
+            {t('depositRequestSubtitle')}
+          </p>
+        </div>
+        <PillToggle
+          value={whatsappPideSena}
+          onChange={setWhatsappPideSena}
+          ariaLabel={t('depositRequest')}
+        />
+      </div>
+
+      {whatsappPideSena && (
+        <div style={{ marginBottom: 16 }}>
+          {textoError('sena_monto') && (
+            <p style={{ fontSize: 12, color: colors.danger, margin: '0 0 12px', lineHeight: 1.4 }}>{textoError('sena_monto')}</p>
+          )}
+          {textoError('direccion') && (
+            <p style={{ fontSize: 12, color: colors.danger, margin: '0 0 12px', lineHeight: 1.4 }}>{textoError('direccion')}</p>
+          )}
+
+          <SheetInput
+            label={t('depositHolder')}
+            icon={<IconBank />}
+            value={senaTitular}
+            onChange={setSenaTitular}
+            placeholder={t('depositHolderPlaceholder')}
+          />
+          {textoError('whatsapp_sena_titular') && (
+            <p style={{ fontSize: 12, color: colors.danger, margin: '-8px 0 12px', lineHeight: 1.4 }}>{textoError('whatsapp_sena_titular')}</p>
+          )}
+
+          <SheetInput
+            label={t('depositBank')}
+            icon={<IconBank />}
+            value={senaEntidad}
+            onChange={setSenaEntidad}
+            placeholder={t('depositBankPlaceholder')}
+          />
+
+          <SheetInput
+            label={t('depositAlias')}
+            icon={<IconBank />}
+            value={senaAlias}
+            onChange={setSenaAlias}
+            placeholder={t('depositAliasPlaceholder')}
+          />
+
+          <SheetInput
+            label={t('depositCbu')}
+            icon={<IconBank />}
+            value={senaCbu}
+            onChange={setSenaCbu}
+            placeholder={t('depositCbuPlaceholder')}
+            inputMode="numeric"
+          />
+          {textoError('whatsapp_sena_alias') && (
+            <p style={{ fontSize: 12, color: colors.danger, margin: '-8px 0 8px', lineHeight: 1.4 }}>{textoError('whatsapp_sena_alias')}</p>
+          )}
+          <p style={{ fontSize: 12, color: colors.subtext, margin: '0 2px', lineHeight: 1.4 }}>
+            {t('depositAliasOrCbuHelp')}
+          </p>
+        </div>
+      )}
+
       {faltaDireccion && (
         <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
           {t('addressRequiredWarning')}
@@ -137,6 +296,7 @@ export function SheetNegocio({
           value={confirmacionAutomatica}
           onChange={setConfirmacionAutomatica}
           disabled={faltaDireccion && !confirmacionAutomatica}
+          ariaLabel={t('autoConfirmation')}
         />
       </div>
 
@@ -154,6 +314,7 @@ export function SheetNegocio({
           value={recordatorioAutomatico}
           onChange={setRecordatorioAutomatico}
           disabled={faltaDireccion && !recordatorioAutomatico}
+          ariaLabel={t('autoReminder')}
         />
       </div>
 
@@ -224,7 +385,7 @@ export function SheetNegocio({
       )}
 
       <button
-        onClick={onGuardar}
+        onClick={handleGuardar}
         disabled={guardando}
         style={{
           width: '100%', background: colors.primarySolid, borderRadius: 14, padding: 16,

@@ -7,6 +7,7 @@ interface Props {
   onChange:         (v: boolean) => void;
   stopPropagation?: boolean;
   disabled?:        boolean;
+  ariaLabel?:       string;
 }
 
 // ─────────────────────────────────────────────
@@ -14,9 +15,13 @@ interface Props {
 // opt in from list rows nested inside a clickable card so the toggle click
 // doesn't also trigger the card's own onClick.
 // ─────────────────────────────────────────────
-export default function PillToggle({ value, onChange, stopPropagation = false, disabled = false }: Props) {
+export default function PillToggle({ value, onChange, stopPropagation = false, disabled = false, ariaLabel }: Props) {
   return (
     <div
+      role="switch"
+      aria-checked={value}
+      aria-label={ariaLabel}
+      aria-disabled={disabled || undefined}
       onClick={e => {
         if (disabled) return;
         if (stopPropagation) e.stopPropagation();
