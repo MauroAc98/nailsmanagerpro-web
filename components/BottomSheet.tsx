@@ -97,17 +97,15 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     const draggingRef = useRef(false);
     const dragStartY = useRef(0);
     const dragStartHeight = useRef(0);
-    // Only pointerdowns that originate on the content wrapper go through this
-    // gate (the handle always drags) — set at pointerdown based on whether
-    // the list can scroll and where it's scrolled: a non-scrollable (or
-    // scrolled-to-top) list hands the gesture to the sheet drag, otherwise
-    // the list scrolls natively. This is snap-independent now — a long list
-    // in a half-open sheet still scrolls instead of being clipped.
+    // Only pointerdowns on the content wrapper go through this gate (the
+    // handle always drags). When the list can't scroll, a drag there moves
+    // the sheet (peek behaviour). When it CAN scroll, the content is left to
+    // native scrolling and the sheet is dragged from the handle instead —
+    // snap-independent, so a long list in a half-open sheet still scrolls.
+    // We must not start a speculative sheet-drag on a scrollable list:
+    // handlePointerDown captures the pointer, and once captured the browser
+    // won't scroll that gesture even if we bail out later.
     const contentDragCandidate = useRef(false);
-    // True when, at pointerdown, the content list was both scrollable and at
-    // its top — the one case where a sheet drag starts from a scrollable
-    // list. An upward move from here is re-handed to native scroll.
-    const contentScrollableAtTop = useRef(false);
     // Smoothed drag velocity in px/ms (dragging up = positive), used at
     // release to distinguish a fast flick (go to the next snap point in that
     // direction) from a slow drag (snap to nearest by distance).
@@ -254,36 +252,23 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       goToIndex(closest.index, true);
     };
 
-    // The content wrapper originates a sheet-drag when the list can't scroll
-    // (nothing to scroll — drag the sheet) or when it's scrolled to the top
-    // (the pull-at-top-to-collapse handoff). Any other touch is left to
-    // native scrolling. Independent of the snap point, so a long list in a
-    // half-open sheet scrolls instead of being clipped.
+    // Content drag only moves the sheet when the list has nothing to scroll.
+    // A scrollable list is left entirely to native scrolling (the sheet is
+    // dragged from the handle) — starting a sheet-drag here would capture
+    // the pointer and kill the browser scroll for that gesture.
     const handleContentPointerDown = (e: React.PointerEvent) => {
       const el = contentRef.current;
       const canScroll = el ? el.scrollHeight - el.clientHeight > 1 : false;
-      const atTop = (el?.scrollTop ?? 0) <= 0;
-      if (!canScroll || atTop) {
-        contentDragCandidate.current = true;
-        contentScrollableAtTop.current = canScroll && atTop;
-        handlePointerDown(e);
-      } else {
+      if (canScroll) {
         contentDragCandidate.current = false;
-        contentScrollableAtTop.current = false;
+        return;
       }
+      contentDragCandidate.current = true;
+      handlePointerDown(e);
     };
 
     const handleContentPointerMove = (e: React.PointerEvent) => {
       if (!contentDragCandidate.current) return;
-      // Started a sheet-drag from the top of a scrollable list and the user
-      // is now pulling up (into the list): abandon the sheet-drag and let
-      // the browser scroll the list. Pulling down still collapses the sheet.
-      if (contentScrollableAtTop.current && dragStartY.current - e.clientY > 0) {
-        contentDragCandidate.current = false;
-        contentScrollableAtTop.current = false;
-        draggingRef.current = false;
-        return;
-      }
       handlePointerMove(e);
     };
 
