@@ -30,6 +30,7 @@ export function SheetInput({ label, icon, value, onChange, placeholder, type = '
       }}>
         {icon}
         <input
+          aria-label={label}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
