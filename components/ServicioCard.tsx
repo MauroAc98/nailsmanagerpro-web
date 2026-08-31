@@ -156,11 +156,20 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
           </svg>
         </div>
 
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: servicio.activo ? colors.text : colors.placeholder }}>
+        {/* minWidth:0 — sin esto un nombre largo no se comprime y empuja el
+            toggle / el handle / el chevron fuera de la card. */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            margin: 0, fontSize: 16, fontWeight: 700,
+            color: servicio.activo ? colors.text : colors.placeholder,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
             {servicio.nombre}
           </p>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+          <p style={{
+            margin: '2px 0 0', fontSize: 12, color: colors.subtext,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
             {servicio.duracion_minutos} min{precioLabel}
           </p>
         </div>
@@ -197,7 +206,7 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
           </div>
         )}
 
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
           <polyline points="9 18 15 12 9 6"/>
         </svg>
       </div>
