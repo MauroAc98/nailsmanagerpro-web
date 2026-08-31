@@ -7,7 +7,13 @@ import { SheetInput } from './SheetInput';
 import PillToggle from '@/components/PillToggle';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
-import { sanitizarLineaSimple, validarSenaConfig, type SenaCampo } from '@/lib/senaConfig';
+import {
+  sanitizarLineaSimple,
+  validarSenaConfig,
+  formatearMontoSena,
+  armarDatosCuentaSena,
+  type SenaCampo,
+} from '@/lib/senaConfig';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 
@@ -59,29 +65,64 @@ function renderConNegritas(texto: string) {
   );
 }
 
+interface DatosPreview {
+  tipo: TipoPreview;
+  negocio: string;
+  telefono: string;
+  direccion: string;
+  // Cuando el salón activó "pedir seña", la confirmación real es la
+  // plantilla reserva_turno_sena — el preview la muestra con estos datos.
+  pideSena: boolean;
+  senaMonto: string;
+  senaTitular: string;
+  senaEntidad: string;
+  senaAlias: string;
+  senaCbu: string;
+}
+
 // Mismo texto fijo que arma WhatsappTemplate::mensajeLegible() en el backend
-// (NailsManagerProApi) — si ese texto cambia ahí, hay que actualizarlo acá
-// también, no hay una fuente única compartida entre frontend y backend.
+// (NailsManagerProApi) — 3 plantillas aprobadas en Meta (2026-08-30, tono
+// "sistema"): confirmacion_turno, recordatorio_turno, reserva_turno_sena. Si
+// ese texto cambia ahí, hay que actualizarlo acá también: no hay una fuente
+// única compartida entre frontend y backend.
 //
-// El nombre de la profesional ({{7}} en el backend, sale de
-// turno.profesional.nombre) es un dato de ejemplo fijo acá — este preview
-// no tiene un turno real de referencia, así que no hay una profesional
-// puntual para mostrar. nombreNegocio, telefono y direccion sí son reales
-// (vienen de la cuenta) porque son los que el cliente va a ver tal cual.
-function textoPreview(tipo: TipoPreview, negocio: string, telefono: string, direccion: string): string {
+// El nombre de la profesional ({{7}}/{{9}} en el backend, sale de
+// turno.profesional.nombre) es un dato de ejemplo fijo acá — este preview no
+// tiene un turno real. nombreNegocio, telefono, direccion y los datos de
+// seña sí son reales (vienen de la cuenta / del formulario) porque son los
+// que el cliente va a ver tal cual.
+function textoPreview(d: DatosPreview): string {
   const nombreCliente = 'Martina';
   const fecha = '20/08';
   const hora = '15:30';
   const servicio = 'Manicura semipermanente';
-  const nombreProfesionalEjemplo = 'Fernanda';
-  const tel = telefono.trim() ? phoneUtils.formatDisplay(telefono) : '(agregá tu teléfono en Datos personales)';
-  const dir = direccion.trim() || '(agregá tu dirección en Datos personales)';
+  const profesional = 'Fernanda';
+  const tel = d.telefono.trim()
+    ? phoneUtils.formatArWhatsapp(d.telefono)
+    : '(agregá tu teléfono en Datos personales)';
+  const dir = d.direccion.trim() || '(agregá tu dirección en Datos personales)';
 
-  const linea2 = tipo === 'confirmacion'
-    ? `✅ Turno confirmado en ${negocio}`
-    : `⏰ Recordatorio: tu turno es *mañana* en ${negocio}`;
+  const aviso = `⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *${profesional} no lo recibe y no puede contestarte.*`;
+  const contacto = `Para consultas o cambios de turno, comunicate al ${tel} con al menos 24 hs de anticipación.`;
 
-  return `Hola ${nombreCliente} ✨\n\n${linea2}\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\n*¡Te esperamos!*\n\n📞 ¿Consultas o cambios de turno? Si ya hablaste con ${nombreProfesionalEjemplo} previamente, comunicate por ahí. Si no, este es su número: 💬 ${tel}.\nPor favor, avisar con 24hs de anticipación. ¡Gracias!\n\nEste es un mensaje automático, no hace falta responder.`;
+  if (d.tipo === 'recordatorio') {
+    // recordatorio_turno: 🕒 sin "hs" y el punto DENTRO de la negrita del
+    // negocio — así quedó aprobado en Meta.
+    return `Hola ${nombreCliente}, te recordamos tu turno de mañana en *${d.negocio}.*\n\n🗓️ ${fecha} · 🕒 ${hora}\n✨ ${servicio}\n📍 ${dir}\n\n${aviso}\n\n${contacto}`;
+  }
+
+  if (d.pideSena) {
+    // reserva_turno_sena
+    const montoN = montoComoNumero(d.senaMonto);
+    const monto = montoN != null && montoN > 0 ? formatearMontoSena(montoN) : '(cargá el monto de la seña)';
+    const cuenta = armarDatosCuentaSena({
+      titular: d.senaTitular, entidad: d.senaEntidad, alias: d.senaAlias, cbu: d.senaCbu,
+    }) || '(cargá los datos de la cuenta)';
+    return `Hola ${nombreCliente}, tu turno en *${d.negocio}* quedó reservado.\n\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\nPara confirmar tu turno se debe abonar una seña de ${monto}.\n\n*Datos para el pago:*\n${cuenta}\n\n${aviso}\n\nComunicate al ${tel} para enviar el comprobante de la seña o por consultas y cambios de turno. Los cambios deben avisarse con al menos 24 hs de anticipación.`;
+  }
+
+  // confirmacion_turno
+  return `Hola ${nombreCliente}, tu turno en *${d.negocio}* quedó confirmado.\n\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\n${aviso}\n\n${contacto}`;
 }
 
 // Parsea el monto (string editable) a número para la regla de negocio.
@@ -363,7 +404,11 @@ export function SheetNegocio({
                   color: tipoPreview === tipo ? '#fff' : colors.subtext,
                 }}
               >
-                {tipo === 'confirmacion' ? t('previewTabConfirmacion') : t('previewTabRecordatorio')}
+                {tipo === 'recordatorio'
+                  ? t('previewTabRecordatorio')
+                  : whatsappPideSena
+                    ? t('previewTabReserva')
+                    : t('previewTabConfirmacion')}
               </button>
             ))}
           </div>
@@ -375,7 +420,14 @@ export function SheetNegocio({
             <p style={{
               margin: 0, fontSize: 13.5, lineHeight: 1.6, color: colors.text, whiteSpace: 'pre-line',
             }}>
-              {renderConNegritas(textoPreview(tipoPreview, nombreNegocio || t('previewSampleNegocio'), telefonoContacto, direccionNegocio))}
+              {renderConNegritas(textoPreview({
+                tipo: tipoPreview,
+                negocio: nombreNegocio || t('previewSampleNegocio'),
+                telefono: telefonoContacto,
+                direccion: direccionNegocio,
+                pideSena: whatsappPideSena,
+                senaMonto, senaTitular, senaEntidad, senaAlias, senaCbu,
+              }))}
             </p>
           </div>
           <p style={{ margin: '8px 2px 0', fontSize: 11.5, color: colors.subtext }}>

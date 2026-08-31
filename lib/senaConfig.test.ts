@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizarLineaSimple, validarSenaConfig } from './senaConfig';
+import {
+  sanitizarLineaSimple,
+  validarSenaConfig,
+  formatearMontoSena,
+  formatearCbuSena,
+  armarDatosCuentaSena,
+} from './senaConfig';
 
 // Mirrors the backend seña guard (`AuthController::updatePerfil`) and the
 // `WhatsappTemplate::unaLinea` whitespace handling. Frontend must reject the
@@ -24,6 +30,43 @@ describe('sanitizarLineaSimple', () => {
 
   it('leaves an already-clean value untouched', () => {
     expect(sanitizarLineaSimple('ana.gomez.mp')).toBe('ana.gomez.mp');
+  });
+});
+
+describe('formatearMontoSena', () => {
+  it('formats es-AR with a $ sign, dot thousands and comma decimals', () => {
+    expect(formatearMontoSena(5000)).toBe('$5.000,00');
+    expect(formatearMontoSena(3500.5)).toBe('$3.500,50');
+    expect(formatearMontoSena(12)).toBe('$12,00');
+  });
+});
+
+describe('formatearCbuSena', () => {
+  it('groups the digits in fours', () => {
+    expect(formatearCbuSena('2850001040094993682358')).toBe('2850 0010 4009 4993 6823 58');
+  });
+
+  it('strips non-digits before grouping', () => {
+    expect(formatearCbuSena('2850-0010 4009')).toBe('2850 0010 4009');
+  });
+});
+
+describe('armarDatosCuentaSena', () => {
+  it('joins the filled fields in one line, labelling alias and CBU', () => {
+    expect(armarDatosCuentaSena({
+      titular: 'Ana Pérez', entidad: 'Banco Macro SA',
+      alias: 'ana.mp', cbu: '2850001040094993682358',
+    })).toBe('Ana Pérez · Banco Macro SA · Alias: ana.mp · CBU: 2850 0010 4009 4993 6823 58');
+  });
+
+  it('omits empty fields without leaving dangling separators', () => {
+    expect(armarDatosCuentaSena({ titular: 'Ana Pérez', entidad: '', alias: 'ana.mp', cbu: '' }))
+      .toBe('Ana Pérez · Alias: ana.mp');
+  });
+
+  it('collapses interior whitespace in each part', () => {
+    expect(armarDatosCuentaSena({ titular: 'Ana\n\tPérez', entidad: '', alias: '', cbu: '' }))
+      .toBe('Ana Pérez');
   });
 });
 

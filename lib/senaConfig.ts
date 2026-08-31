@@ -24,6 +24,47 @@ export function sanitizarLineaSimple(valor: string): string {
   return valor.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Monto de la seña en formato es-AR con símbolo: `$5.000,00` (punto de
+ * miles, coma decimal, 2 decimales). Espeja `'$'.number_format($monto, 2,
+ * ',', '.')` del backend en `WhatsappTemplate::parametrosCloudApi`.
+ */
+export function formatearMontoSena(monto: number): string {
+  return '$' + new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(monto);
+}
+
+/** Un espacio cada 4 dígitos. Espeja `WhatsappTemplate::formatearCbu`. */
+export function formatearCbuSena(cbu: string): string {
+  const d = cbu.replace(/\D/g, '');
+  return d === '' ? cbu.trim() : (d.match(/.{1,4}/g) ?? [d]).join(' ');
+}
+
+/**
+ * Arma el parámetro `{{8}}` de `reserva_turno_sena`: una sola línea, campos
+ * no vacíos unidos con ` · `, titular y entidad crudos, alias y CBU con su
+ * etiqueta. Espeja `WhatsappTemplate::datosCuentaSena` del backend.
+ */
+export function armarDatosCuentaSena(f: {
+  titular: string;
+  entidad: string;
+  alias: string;
+  cbu: string;
+}): string {
+  const partes: string[] = [];
+  const titular = sanitizarLineaSimple(f.titular);
+  if (titular) partes.push(titular);
+  const entidad = sanitizarLineaSimple(f.entidad);
+  if (entidad) partes.push(entidad);
+  const alias = sanitizarLineaSimple(f.alias);
+  if (alias) partes.push(`Alias: ${alias}`);
+  const cbu = sanitizarLineaSimple(f.cbu);
+  if (cbu) partes.push(`CBU: ${formatearCbuSena(cbu)}`);
+  return partes.join(' · ');
+}
+
 export interface SenaConfigInput {
   /** Monto de seña ya parseado: `undefined` = vacío, número = formato válido. */
   monto: number | undefined;
