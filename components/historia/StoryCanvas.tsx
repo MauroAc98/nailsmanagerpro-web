@@ -124,7 +124,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // Ahora arrancan/terminan en el borde del canvas pero llegan hasta pasado
   // el header/footer ya corridos hacia adentro por la safe area — el blur
   // extra cae detrás del chrome de la plataforma, así que no se ve de más.
-  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.13);
+  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10);
   const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
 
   return (
