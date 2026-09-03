@@ -15,7 +15,10 @@ import { safeAreaInsets } from '@/lib/historia/safeArea';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
-  return `${nombreDiaIntl(d, 'short', 'mayusculas')} ${d.getDate()}`;
+  // Intl da la abreviatura de es-* con punto final ("jue.", "mié.") — se
+  // saca acá para que en la imagen quede "JUE 3", no "JUE. 3".
+  const abrev = nombreDiaIntl(d, 'short', 'mayusculas').replace(/\.+$/, '');
+  return `${abrev} ${d.getDate()}`;
 }
 
 // ─────────────────────────────────────────────
@@ -298,13 +301,18 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        {/* flexShrink:0 + whiteSpace:nowrap — sin esto, una
+                            fila con muchas horas ("09hs · 17hs · 19hs") le
+                            comía ancho a esta columna y al divisor, y los
+                            divisores de cada fila quedaban desalineados
+                            (ver pattern_flex_minwidth_long_names). */}
                         <span style={{
-                          width: 52, color: '#fff', fontSize: 10, fontWeight: 700,
-                          letterSpacing: 0.5, textTransform: 'uppercase',
+                          width: 52, flexShrink: 0, color: '#fff', fontSize: 10, fontWeight: 700,
+                          letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap',
                         }}>
                           {nombreDia(dia.fecha)}
                         </span>
-                        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
+                        <div style={{ width: 1, height: 14, flexShrink: 0, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
                         {estaCompleto ? (
                           <span style={{
                             color: primaryRaw, fontSize: 9, fontWeight: 600,
