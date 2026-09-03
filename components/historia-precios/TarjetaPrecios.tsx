@@ -3,6 +3,7 @@ import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { nombreMes } from '@/lib/dateFormat';
+import type { SafeAreaInsets } from '@/lib/historia/safeArea';
 
 const formatoPrecio = new Intl.NumberFormat('es-AR');
 // Espacio entre "$" y el número (antes pegados) — separa el signo del
@@ -55,6 +56,12 @@ interface Props {
   // abajo) o 'end' (tarjeta abajo, foto respira arriba). Nunca cambia la
   // altura disponible, solo dónde se ancla dentro del alto completo.
   align?: 'center' | 'start' | 'end';
+  // Márgenes de seguridad (arriba/abajo, en px del canvas) para que el
+  // contenido de la tarjeta no quede tapado por el chrome de Instagram/
+  // WhatsApp ni recortado en celus más altos que 9:16. Los resuelve el
+  // caller (HistoriaPreciosCanvas) desde BASE_HEIGHT — ver
+  // lib/historia/safeArea.ts. La foto de fondo sigue full-bleed.
+  safeArea?: SafeAreaInsets;
 }
 
 // TarjetaPrecios — price list panel, rendered as the foreground `children`
@@ -92,7 +99,7 @@ const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
 const ACCENT_CLARO     = '#E8E5E1';
 const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center' }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', safeArea }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
@@ -119,8 +126,12 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   // promos). Por debajo del umbral, el espaciado generoso original queda
   // igual; por encima, se compacta (menos gap entre filas/grupos, header más
   // corto) para recuperar el aire alrededor de la tarjeta sin truncar nada.
+  // Umbral bajado de 7 a 6: la safe area (ver prop `safeArea`) le quita a la
+  // tarjeta ~27% del alto del canvas, así que el modo compacto tiene que
+  // entrar antes para que las listas medianas no queden apretadas contra
+  // los márgenes.
   const totalItems = servicios.length;
-  const compacta    = totalItems > 7;
+  const compacta    = totalItems > 6;
   const rowGap      = compacta ? 8  : 14;
   const groupGap     = compacta ? 12 : 20;
   const rowPaddingY  = compacta ? 6  : 10;
@@ -136,7 +147,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
     <div
       style={{
         position: 'absolute', inset: 0,
-        padding: `20px ${OUTER_PADDING_X}px 16px`,
+        padding: `${safeArea?.top ?? 20}px ${OUTER_PADDING_X}px ${safeArea?.bottom ?? 16}px`,
         display: 'flex', flexDirection: 'column', justifyContent,
       }}
     >

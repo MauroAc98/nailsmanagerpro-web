@@ -11,6 +11,7 @@ import { primaryRaw } from '@/theme/colors';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
+import { safeAreaInsets } from '@/lib/historia/safeArea';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -104,15 +105,27 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // es el nombre personal de la dueña, quedaba dos veces literal.
   const tituloPrincipal = profesionalNombre || nombreEstudio;
 
-  const alturaUtil = canvasHeight * 0.75;
+  // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
+  // historia con su propio chrome y, en celus más altos que 9:16, recortan
+  // la imagen al "llenar". El contenido (header, lista, footer) se mete
+  // dentro de estos márgenes; la foto de fondo sigue full-bleed (ver
+  // lib/historia/safeArea.ts).
+  const safe = safeAreaInsets(canvasHeight);
+
+  // Alto realmente disponible para el contenido, ya descontada la safe area
+  // — antes era un 0.75 fijo que no reflejaba el chrome de las plataformas.
+  const alturaUtil = Math.max(0, canvasHeight - safe.top - safe.bottom);
   const gap        = Math.max(4, Math.min(20, (alturaUtil - dias.length * 20) / (dias.length + 1)));
 
   // Zonas de blur local detrás de título y footer — alto aproximado, no
   // medido en vivo. Header vuelve a tener chip+nombre+caption+fecha (pedido
   // de vuelta por feedback de clientes 2026-08-17: "les gustó"), así que la
   // zona de blur creció con él respecto a la versión de solo dos líneas.
-  const tituloZonaAlto = Math.round(canvasHeight * 0.15);
-  const footerZonaAlto = Math.round(canvasHeight * 0.095);
+  // Ahora arrancan/terminan en el borde del canvas pero llegan hasta pasado
+  // el header/footer ya corridos hacia adentro por la safe area — el blur
+  // extra cae detrás del chrome de la plataforma, así que no se ve de más.
+  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.13);
+  const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -185,7 +198,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
         <div
           style={{
             position: 'absolute', inset: 0,
-            padding: '20px 18px 16px',
+            padding: `${safe.top}px 18px ${safe.bottom}px`,
             display: 'flex', flexDirection: 'column',
           }}
         >

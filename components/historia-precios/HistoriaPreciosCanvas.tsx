@@ -5,9 +5,14 @@ import { TemplateId } from '@/services/profesionalService';
 import { Servicio } from '@/services/servicioService';
 import { TEMPLATES } from './catalogo';
 import { TarjetaPrecios } from './TarjetaPrecios';
+import { safeAreaInsets } from '@/lib/historia/safeArea';
 
 export const BASE_WIDTH  = 420;
 export const BASE_HEIGHT = (BASE_WIDTH * 16) / 9;
+
+// Márgenes de seguridad (Instagram/WhatsApp) para el contenido de la
+// tarjeta — la foto de fondo sigue full-bleed. Ver lib/historia/safeArea.ts.
+const SAFE_AREA = safeAreaInsets(BASE_HEIGHT);
 
 interface Props {
   templateId:    TemplateId;
@@ -60,6 +65,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             notaAlineacion={notaAlineacion}
             variante={template.cardVariant}
             align={template.align}
+            safeArea={SAFE_AREA}
           />
         </Layout>
       </div>
