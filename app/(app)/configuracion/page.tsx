@@ -65,6 +65,17 @@ const OPCIONES = [
     ),
   },
   {
+    path: '/configuracion/ingresos',
+    titleKey: 'ingresos',
+    grupo: 'negocio' as const,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="19" x2="12" y2="5" />
+        <polyline points="5 12 12 5 19 12" />
+      </svg>
+    ),
+  },
+  {
     path: '/configuracion/estadisticas',
     titleKey: 'estadisticas',
     grupo: 'cuenta' as const,
