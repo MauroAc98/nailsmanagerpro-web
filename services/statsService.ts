@@ -37,6 +37,16 @@ export interface DashboardStats {
   // stats?.ganancias ?? 0` en vez de asumirlas siempre presentes.
   gastos: number;
   ganancia_neta: number;
+  // Desglose de ingresos servido por `StatsController::dashboard()` a partir
+  // de PR1 del módulo de Ingresos — opcionales por el mismo motivo que
+  // `gastos`/`ganancia_neta`: un build de frontend desplegado antes de que
+  // la API los sirva recibe la respuesta sin estas claves. Los consumidores
+  // deben usar `stats?.ingresos_agenda ?? 0`, etc. `ingresos_agenda` es lo
+  // facturado por turnos; `ingresos_otros` es la suma de los ingresos
+  // cargados a mano en Configuración → Ingresos.
+  ingresos_agenda?: number;
+  ingresos_otros?: number;
+  ingresos_otros_por_categoria?: { categoria: string; monto: number }[];
   ganancias_por_servicio: GananciaPorServicio[];
   ganancias_por_dia: GananciaPorDia[];
   // dia_semana en formato ISO (1 = lunes ... 7 = domingo) — siempre 7
