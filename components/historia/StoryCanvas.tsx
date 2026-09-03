@@ -7,7 +7,6 @@ import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
-import { primaryRaw } from '@/theme/colors';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
@@ -329,8 +328,16 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                         </span>
                         <div style={{ width: 1, height: 14, flexShrink: 0, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
                         {estaCompleto ? (
+                          // Blanco atenuado, no primaryRaw (verde salvia de
+                          // marca del sistema): esta imagen la comparten los
+                          // negocios que alquilan la app y el color del
+                          // sistema no los representa — mismo criterio que el
+                          // footer y que el acento de TarjetaPrecios. Además
+                          // "COMPLETO" es el estado SIN turnos, tiene que
+                          // recederse frente a las horas disponibles en
+                          // blanco pleno, no gritar con un color.
                           <span style={{
-                            color: primaryRaw, fontSize: 9, fontWeight: 600,
+                            color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: 600,
                             fontStyle: 'italic', letterSpacing: 0.5,
                           }}>
                             {t('complete')}
