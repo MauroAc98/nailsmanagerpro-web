@@ -13,6 +13,38 @@ const apiHostname = new URL(
   process.env.NEXT_PUBLIC_API_URL ?? "https://api.turnetto.com"
 ).hostname;
 
+// workbox serializa `urlPattern` (via Function/RegExp .toString()) e lo
+// inyecta tal cual en sw.js. Una FUNCIÓN que cierre sobre `apiHostname`
+// —variable de este módulo Node— queda con ese identificador SUELTO en el
+// service worker → "ReferenceError: apiHostname is not defined" en cada
+// request, tirado por workbox-routing.findMatchingRoute (y con él, todo el
+// routing del SW deja de andar). Un RegExp se serializa como literal
+// autocontenido y no cierra sobre nada, así que el hostname se hornea acá
+// dentro del patrón.
+//
+// Escapa metacaracteres de regex del hostname (los `.`, sobre todo) antes
+// de interpolarlo.
+const apiHostEscapado = apiHostname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// GETs que NUNCA deben servirse rancios desde la caché del SW (NetworkOnly).
+// El resto de next-pwa/cache trata cualquier GET cross-origin como
+// NetworkFirst con hasta 1h de caché si la red está inestable; para estas
+// rutas eso sería un bug:
+//   - connect.facebook.net/* — SDK de Embedded Signup (solo /admin/whatsapp),
+//     JS cross-origin que no puede quedar viejo.
+//   - {apiHost}/(api/)?auth/*  — sesión/suscripción: un `subscriptionExpired:
+//     false` cacheado dejaría a alguien vencido usando la app hasta 1h.
+//   - {apiHost}/(api/)?support-info
+//   - {apiHost}/(api/)?admin/* — /admin/negocios/buscar y
+//     /admin/whatsapp/uso-por-salon dejarían emails/nombres de negocios
+//     ajenos en Cache Storage, legibles sin token incluso tras un logout.
+// El prefijo `/api/` es opcional: en prod NEXT_PUBLIC_API_URL termina en
+// "/api" (Laravel sirve /api/auth/..., no /auth/...); en local puede no
+// tenerlo. Va primero en el array porque workbox matchea en orden.
+const rutasSensiblesSinCache = new RegExp(
+  `^https://(connect\\.facebook\\.net/|${apiHostEscapado}/(api/)?(auth/|support-info($|\\?)|admin/))`
+);
+
 const withPWA = require("next-pwa")({
   dest: "public",
   // El auto-registro de next-pwa inyecta en el entry 'main.js' de webpack
@@ -23,48 +55,7 @@ const withPWA = require("next-pwa")({
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
-    // El resto de next-pwa/cache trata cualquier GET cross-origin (o sea,
-    // cualquier llamada a la API en api.turnetto.com, otro
-    // subdominio) como "cross-origin": NetworkFirst con hasta 1h de caché
-    // si la red está inestable. Para /auth/*, /support-info y /admin/* eso
-    // puede dejar a alguien con la sesión/suscripción vencida viendo el
-    // estado viejo (ej. subscriptionExpired: false) hasta una hora, o peor
-    // — para /admin/negocios/buscar y /admin/whatsapp/uso-por-salon,
-    // dejaría emails/nombres de negocios ajenos en Cache Storage,
-    // legibles sin token y repetibles incluso después de un logout. Van
-    // primero acá, sin caché, porque workbox matchea en orden y la
-    // primera regla que matchea gana.
-    //
-    // Gotcha confirmado (ver design admin-panel, sección PWA): en
-    // producción NEXT_PUBLIC_API_URL termina en "/api"
-    // (https://api.turnetto.com/api), así que Laravel sirve estas rutas
-    // bajo /api/auth/..., no /auth/... — el matcher original solo
-    // chequeaba url.pathname.startsWith("/auth/"), que nunca matcheaba en
-    // el deploy real (no-op silencioso: /auth/* y /support-info se
-    // cacheaban 1h igual). El prefijo "/api/" opcional lo corrige acá para
-    // ambas familias de rutas, tolerante a cualquier valor futuro de
-    // NEXT_PUBLIC_API_URL con o sin ese prefijo.
-    //
-    // El SDK de Facebook (connect.facebook.net/en_US/sdk.js), que solo se
-    // carga dentro de app/(admin)/admin/whatsapp para Embedded Signup, es JS
-    // cross-origin que NUNCA debe servirse rancio desde la caché del service
-    // worker. Va como disyunción top-level PROPIA (un OR aparte), no como un
-    // && extra sobre el predicado de la API — ese predicado chequea
-    // url.hostname === apiHostname y jamás matchearía un host facebook.net.
-    // Este override explícito vuelve irrelevante qué regla default de
-    // next-pwa/workbox aplicaría si no (workbox-routing rechaza matches
-    // cross-origin en un RegExpRoute que no esté en índice 0, así que
-    // /\.js$/i no atrapa sdk.js de forma confiable igual). El matcher de la
-    // API queda intacto.
-    {
-      urlPattern: ({ url }: { url: URL }) =>
-        url.hostname === "connect.facebook.net" ||
-        (url.hostname === apiHostname &&
-          (/^\/(api\/)?auth\//.test(url.pathname) ||
-            /^\/(api\/)?support-info$/.test(url.pathname) ||
-            /^\/(api\/)?admin\//.test(url.pathname))),
-      handler: "NetworkOnly",
-    },
+    { urlPattern: rutasSensiblesSinCache, handler: "NetworkOnly" },
     ...defaultRuntimeCaching,
   ],
 });
