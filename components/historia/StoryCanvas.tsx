@@ -142,6 +142,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const fondoTop   = -fondoShift;
   const fondoAlto  = canvasHeight + fondoShift;
 
+  // Separación entre el header y la primera fila de horarios — proporcional
+  // al canvas, no un 14px fijo que quedaba pegado al degradado del header
+  // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
+  // divisor + footer ya tienen su propio margen.
+  const bodyMargenTop = Math.round(canvasHeight * 0.06);
+
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
     // capturado por html-to-image es el de más adentro (el que tiene `ref`)
@@ -287,7 +293,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             </div>
 
             {/* Body */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', margin: '14px 0' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
