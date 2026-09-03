@@ -108,6 +108,12 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   const serviciosPromo     = servicios.filter(s => s.es_promo);
   const mostrarSubheaders  = serviciosRegulares.length > 0 && serviciosPromo.length > 0;
 
+  // Última fila visible de la lista — no lleva línea divisoria: justo abajo
+  // ya está el divisor del pie (nota / CTA), y las dos juntas se leían como
+  // ruido. Los divisores entre filas quedan; solo se saca el que colgaba al
+  // final de la lista.
+  const ultimoServicioId = (serviciosPromo.length > 0 ? serviciosPromo : serviciosRegulares).at(-1)?.id;
+
   // Densidad — la tarjeta ocupa el alto COMPLETO del canvas a propósito (ver
   // comment largo en estilos.ts, 2026-08-18 octava actualización: confinarla
   // a una franja fija ya rompió dos veces con listas reales largas). Pero
@@ -216,7 +222,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
               {mostrarSubheaders && <SectionPill texto={t('sectionServicios')} accent={accent} accentBg={accentBg} />}
               {serviciosRegulares.map(servicio => (
-                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} />
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} sinBorde={servicio.id === ultimoServicioId} />
               ))}
             </div>
           )}
@@ -224,7 +230,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
               {mostrarSubheaders && <SectionPill texto={t('sectionPromociones')} accent={accent} accentBg={accentBg} />}
               {serviciosPromo.map(servicio => (
-                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} />
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} sinBorde={servicio.id === ultimoServicioId} />
               ))}
             </div>
           )}
@@ -247,16 +253,26 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             }}
           >
             {nota && (
-              <p
+              // Recuadro con el tinte grafito (accentBg, mismo que
+              // SectionPill) — la nota pasó de letra chica al pie a "leé
+              // esto": el cliente tiene que verla (seña, retiro aparte,
+              // etc.). Texto en `accent`, no en nombreColor apagado, para
+              // que se lea de verdad sin gritar más que la lista de precios.
+              <div
                 style={{
-                  width: '100%', boxSizing: 'border-box', margin: '0 0 8px',
-                  whiteSpace: 'pre-line', textAlign: notaAlineacion,
-                  fontSize: 8, fontWeight: 400, lineHeight: 1.6,
-                  color: tokens.nombreColor, opacity: 0.65,
+                  width: '100%', boxSizing: 'border-box', margin: '0 0 10px',
+                  backgroundColor: accentBg, borderRadius: 10, padding: '8px 12px',
                 }}
               >
-                {nota}
-              </p>
+                <p
+                  style={{
+                    margin: 0, whiteSpace: 'pre-line', textAlign: notaAlineacion,
+                    fontSize: 9, fontWeight: 400, lineHeight: 1.55, color: accent,
+                  }}
+                >
+                  {nota}
+                </p>
+              </div>
             )}
             {nombreFooter && telefono && (
               <>
@@ -320,12 +336,13 @@ function SectionPill({ texto, accent, accentBg }: { texto: string; accent: strin
 // servicios y el de promociones (ver split por es_promo en TarjetaPrecios).
 // `paddingY` llega desde TarjetaPrecios (ver `compacta`) — mismo criterio de
 // densidad que el resto de la tarjeta, no un valor propio.
-function FilaServicio({ servicio, tokens, paddingY }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number }) {
+function FilaServicio({ servicio, tokens, paddingY, sinBorde = false }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number; sinBorde?: boolean }) {
   return (
     <div
       style={{
         display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
-        paddingBottom: paddingY, borderBottom: `1px solid ${tokens.dividerColor}`,
+        paddingBottom: sinBorde ? 0 : paddingY,
+        borderBottom: sinBorde ? undefined : `1px solid ${tokens.dividerColor}`,
       }}
     >
       <span
