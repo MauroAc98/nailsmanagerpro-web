@@ -6,7 +6,9 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useIngresosStore } from '@/store/useIngresoStore';
-import { CATEGORIAS_INGRESO, CategoriaIngreso } from '@/services/ingresoService';
+import { CATEGORIAS_INGRESO } from '@/services/ingresoService';
+import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
+import { useAuth } from '@/hooks/useAuth';
 import { alertDialog } from '@/store/useConfirmStore';
 import { fechaDeHoy } from '@/lib/dateFormat';
 
@@ -43,11 +45,15 @@ export default function NuevoIngresoPage() {
   // acá en vez de duplicarlas bajo NuevoIngresoPage.
   const tCat = useTranslations('configuracion.IngresosPage');
   const router = useRouter();
+  const { user } = useAuth();
   const { agregarIngreso } = useIngresosStore();
+
+  // Lista de chips: la del salón si está cargada, si no el set de fábrica.
+  const categorias: readonly string[] = user?.categorias_ingreso ?? CATEGORIAS_INGRESO;
 
   const [fecha, setFecha] = useState(fechaHoy());
   const [monto, setMonto] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaIngreso | null>(null);
+  const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [errorMonto, setErrorMonto] = useState('');
   const [saving, setSaving] = useState(false);
@@ -126,14 +132,14 @@ export default function NuevoIngresoPage() {
         <div>
           <label style={labelStyle}>{t('categoryLabel')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {CATEGORIAS_INGRESO.map(cat => (
+            {categorias.map(cat => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoria(cat)}
                 style={chipStyle(categoria === cat, colors.primarySolid)}
               >
-                {tCat(`category_${cat}`)}
+                {labelCategoriaIngreso(cat, tCat)}
               </button>
             ))}
           </div>

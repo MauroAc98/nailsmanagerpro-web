@@ -7,7 +7,9 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useGastosStore } from '@/store/useGastoStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { CATEGORIAS_GASTO, CategoriaGasto } from '@/services/gastoService';
+import { CATEGORIAS_GASTO } from '@/services/gastoService';
+import { labelCategoriaGasto } from '@/lib/categoriaLabel';
+import { useAuth } from '@/hooks/useAuth';
 import { alertDialog } from '@/store/useConfirmStore';
 import { fechaDeHoy } from '@/lib/dateFormat';
 
@@ -39,17 +41,22 @@ function fechaHoy(): string {
 
 export default function NuevoGastoPage() {
   const t    = useTranslations('configuracion.NuevoGastoPage');
-  // Las labels de categoría (`category_insumos`, etc.) ya existen en
-  // configuracion.GastosPage desde la pantalla de listado — se reusan acá
-  // en vez de duplicarlas bajo NuevoGastoPage.
+  // Las labels de las categorías de fábrica (`category_insumos`, etc.) ya
+  // existen en configuracion.GastosPage desde la pantalla de listado — se
+  // reusan acá vía `labelCategoriaGasto` (una categoría custom se muestra
+  // tal cual).
   const tCat = useTranslations('configuracion.GastosPage');
   const router = useRouter();
+  const { user } = useAuth();
   const { agregarGasto } = useGastosStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
+  // Lista de chips: la del salón si está cargada, si no el set de fábrica.
+  const categorias: readonly string[] = user?.categorias_gasto ?? CATEGORIAS_GASTO;
+
   const [fecha, setFecha] = useState(fechaHoy());
   const [monto, setMonto] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
+  const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [errorMonto, setErrorMonto] = useState('');
@@ -145,14 +152,14 @@ export default function NuevoGastoPage() {
         <div>
           <label style={labelStyle}>{t('categoryLabel')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {CATEGORIAS_GASTO.map(cat => (
+            {categorias.map(cat => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoria(cat)}
                 style={chipStyle(categoria === cat, colors.primarySolid)}
               >
-                {tCat(`category_${cat}`)}
+                {labelCategoriaGasto(cat, tCat)}
               </button>
             ))}
           </div>

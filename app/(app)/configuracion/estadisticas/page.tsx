@@ -12,6 +12,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/services/statsService';
 import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes, nombreDia, diasSemanaCortos, formatoYMD } from '@/lib/dateFormat';
+import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
 import { formatMonto } from '@/lib/money';
 
 // Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
@@ -814,7 +815,7 @@ function EstadisticasContent() {
                     {ingresosOtrosPorCategoria.map(c => (
                       <BarraRanking
                         key={c.categoria}
-                        nombre={tIngresos(`category_${c.categoria}`)}
+                        nombre={labelCategoriaIngreso(c.categoria, tIngresos)}
                         cantidad={c.monto}
                         maxCantidad={maxOrigenIngreso}
                         valorLabel={`$${formatMonto(c.monto)}`}

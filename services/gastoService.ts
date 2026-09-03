@@ -1,8 +1,11 @@
 import api from '@/lib/api';
 
-// Set fijo validado server-side (`Rule::in(Gasto::CATEGORIAS)` en
-// GastoController) — no hay enum backed ni tabla de lookup, ver
-// app/Models/Gasto.php::CATEGORIAS en el repo de la API.
+// Set de fábrica de categorías de gasto. Desde el PR "categorías
+// personalizadas" el salón puede definir su propia lista (User.categorias_gasto,
+// editable por `PUT /perfil`); esta const es el fallback cuando esa lista no
+// está cargada y la fuente de las labels traducidas (`category_<slug>`, ver
+// `lib/categoriaLabel.ts`). El backend ya NO valida `Rule::in(...)`:
+// `gasto.categoria` es texto libre (1..40 chars).
 export const CATEGORIAS_GASTO = [
   'insumos',
   'alquiler',
@@ -11,6 +14,9 @@ export const CATEGORIAS_GASTO = [
   'otros',
 ] as const;
 
+// Union de las categorías de fábrica. `Gasto.categoria` NO usa este tipo
+// (es `string`: puede ser una categoría custom del salón) — se conserva
+// solo para tipar el set de fábrica y sus labels.
 export type CategoriaGasto = (typeof CATEGORIAS_GASTO)[number];
 
 export interface Gasto {
@@ -21,7 +27,8 @@ export interface Gasto {
   // `decimal:2` cast en el modelo Laravel serializa a string en el JSON,
   // igual que Servicio.precio — nunca es number en la respuesta del backend.
   monto: string;
-  categoria: CategoriaGasto;
+  // Texto libre (1..40 chars) — categoría de fábrica o custom del salón.
+  categoria: string;
   descripcion: string | null;
   created_at: string;
   updated_at: string;
@@ -30,7 +37,7 @@ export interface Gasto {
 export interface CreateGastoDto {
   fecha: string;
   monto: number;
-  categoria: CategoriaGasto;
+  categoria: string;
   descripcion?: string | null;
   profesional_id?: number | null;
 }

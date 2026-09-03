@@ -7,6 +7,8 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useIngresosStore } from '@/store/useIngresoStore';
 import { CATEGORIAS_INGRESO, Ingreso } from '@/services/ingresoService';
+import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
+import { useAuth } from '@/hooks/useAuth';
 import IngresoCard from '@/components/IngresoCard';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
@@ -60,7 +62,13 @@ const dateInputStyle: React.CSSProperties = {
 export default function IngresosPage() {
   const router = useRouter();
   const t = useTranslations('configuracion.IngresosPage');
+  const { user } = useAuth();
   const { ingresos, loading, error, fetchIngresos, eliminarIngreso } = useIngresosStore();
+
+  // El filtro ofrece solo la lista del salón (o el set de fábrica si no
+  // está cargada). No hace falta el caso de "categoría vieja ya borrada"
+  // acá, a diferencia del form de edición.
+  const categoriasFiltro: readonly string[] = user?.categorias_ingreso ?? CATEGORIAS_INGRESO;
 
   const [viewDate, setViewDate] = useState(() => new Date());
   const [filtros, setFiltros] = useState<FiltrosIngreso>(FILTROS_INGRESO_VACIOS);
@@ -228,14 +236,14 @@ export default function IngresosPage() {
                   >
                     {t('filterAll')}
                   </button>
-                  {CATEGORIAS_INGRESO.map(cat => (
+                  {categoriasFiltro.map(cat => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setFiltros(f => ({ ...f, categoria: f.categoria === cat ? null : cat }))}
                       style={chipStyle(filtros.categoria === cat, colors.primarySolid)}
                     >
-                      {t(`category_${cat}`)}
+                      {labelCategoriaIngreso(cat, t)}
                     </button>
                   ))}
                 </div>

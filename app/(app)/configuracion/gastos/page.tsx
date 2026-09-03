@@ -7,6 +7,8 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useGastosStore } from '@/store/useGastoStore';
 import { CATEGORIAS_GASTO, Gasto } from '@/services/gastoService';
+import { labelCategoriaGasto } from '@/lib/categoriaLabel';
+import { useAuth } from '@/hooks/useAuth';
 import GastoCard from '@/components/GastoCard';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
@@ -62,8 +64,15 @@ const dateInputStyle: React.CSSProperties = {
 export default function GastosPage() {
   const router = useRouter();
   const t = useTranslations('configuracion.GastosPage');
+  const { user } = useAuth();
   const { gastos, loading, error, fetchGastos, eliminarGasto } = useGastosStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+
+  // El filtro ofrece solo la lista del salón (o el set de fábrica si no
+  // está cargada). No hace falta el caso de "categoría vieja ya borrada"
+  // acá: si no hay chip para filtrarla, no se puede filtrar por ella, y
+  // listo — a diferencia del form de edición, que sí necesita ese chip.
+  const categoriasFiltro: readonly string[] = user?.categorias_gasto ?? CATEGORIAS_GASTO;
 
   const [viewDate, setViewDate] = useState(() => new Date());
   const [filtros, setFiltros] = useState<FiltrosGasto>(FILTROS_GASTO_VACIOS);
@@ -248,14 +257,14 @@ export default function GastosPage() {
                   >
                     {t('filterAll')}
                   </button>
-                  {CATEGORIAS_GASTO.map(cat => (
+                  {categoriasFiltro.map(cat => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setFiltros(f => ({ ...f, categoria: f.categoria === cat ? null : cat }))}
                       style={chipStyle(filtros.categoria === cat, colors.primarySolid)}
                     >
-                      {t(`category_${cat}`)}
+                      {labelCategoriaGasto(cat, t)}
                     </button>
                   ))}
                 </div>

@@ -1,4 +1,4 @@
-import { Ingreso, CategoriaIngreso } from '@/services/ingresoService';
+import { Ingreso } from '@/services/ingresoService';
 
 // ─────────────────────────────────────────────
 // Filtrado client-side de la lista de ingresos que ya trajo el store para
@@ -10,7 +10,10 @@ import { Ingreso, CategoriaIngreso } from '@/services/ingresoService';
 // ─────────────────────────────────────────────
 
 export interface FiltrosIngreso {
-  categoria: CategoriaIngreso | null;
+  // `string` (no la union `CategoriaIngreso`): el salón puede filtrar por
+  // una de sus categorías custom, que es un nombre libre. La comparación
+  // de abajo sigue siendo por igualdad exacta contra `ingreso.categoria`.
+  categoria: string | null;
   texto: string;
   desde: string | null; // "YYYY-MM-DD" — inclusive
   hasta: string | null; // "YYYY-MM-DD" — inclusive

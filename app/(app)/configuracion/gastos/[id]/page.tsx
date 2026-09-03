@@ -6,7 +6,9 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useGastosStore } from '@/store/useGastoStore';
-import { gastoService, CATEGORIAS_GASTO, CategoriaGasto } from '@/services/gastoService';
+import { gastoService, CATEGORIAS_GASTO } from '@/services/gastoService';
+import { labelCategoriaGasto } from '@/lib/categoriaLabel';
+import { useAuth } from '@/hooks/useAuth';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
@@ -41,12 +43,13 @@ export default function EditarGastoPage() {
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
+  const { user } = useAuth();
   const { gastos, actualizarGasto, eliminarGasto } = useGastosStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   const [fecha, setFecha] = useState('');
   const [monto, setMonto] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
+  const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [errorMonto, setErrorMonto] = useState('');
@@ -89,6 +92,15 @@ export default function EditarGastoPage() {
   // opciones seleccionables.
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
+
+  // Lista del salón (o set de fábrica) + la categoría ya guardada del gasto
+  // si quedó fuera de esa lista (la borraron) — así el chip sigue visible y
+  // seleccionable y el guardado no obliga a cambiarla.
+  const listaCategorias: readonly string[] = user?.categorias_gasto ?? CATEGORIAS_GASTO;
+  const categoriasDisponibles: string[] = [
+    ...listaCategorias,
+    ...(categoria && !listaCategorias.includes(categoria) ? [categoria] : []),
+  ];
 
   const handleSeleccionarProfesional = (pid: number) => {
     setSelectedProfesionalId(prev => prev === pid ? null : pid);
@@ -199,18 +211,21 @@ export default function EditarGastoPage() {
           {errorMonto && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorMonto}</p>}
         </div>
 
-        {/* Categoría */}
+        {/* Categoría — chips de la lista del salón (o el set de fábrica si
+            no está cargada). Si el gasto que se edita quedó con una
+            categoría que la usuaria ya borró de su lista, se agrega igual al
+            final para que sea seleccionable y se pueda guardar sin cambiarla. */}
         <div>
           <label style={labelStyle}>{t('categoryLabel')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {CATEGORIAS_GASTO.map(cat => (
+            {categoriasDisponibles.map(cat => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoria(cat)}
                 style={chipStyle(categoria === cat, colors.primarySolid)}
               >
-                {tCat(`category_${cat}`)}
+                {labelCategoriaGasto(cat, tCat)}
               </button>
             ))}
           </div>

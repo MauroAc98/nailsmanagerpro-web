@@ -6,7 +6,9 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useIngresosStore } from '@/store/useIngresoStore';
-import { ingresoService, CATEGORIAS_INGRESO, CategoriaIngreso } from '@/services/ingresoService';
+import { ingresoService, CATEGORIAS_INGRESO } from '@/services/ingresoService';
+import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
+import { useAuth } from '@/hooks/useAuth';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 
@@ -40,11 +42,12 @@ export default function EditarIngresoPage() {
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
+  const { user } = useAuth();
   const { ingresos, actualizarIngreso, eliminarIngreso } = useIngresosStore();
 
   const [fecha, setFecha] = useState('');
   const [monto, setMonto] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaIngreso | null>(null);
+  const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [errorMonto, setErrorMonto] = useState('');
   const [loadingIngreso, setLoadingIngreso] = useState(true);
@@ -73,6 +76,15 @@ export default function EditarIngresoPage() {
     };
     if (id) cargar();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lista del salón (o set de fábrica) + la categoría ya guardada del
+  // ingreso si quedó fuera de esa lista (la borraron) — así el chip sigue
+  // visible y seleccionable y el guardado no obliga a cambiarla.
+  const listaCategorias: readonly string[] = user?.categorias_ingreso ?? CATEGORIAS_INGRESO;
+  const categoriasDisponibles: string[] = [
+    ...listaCategorias,
+    ...(categoria && !listaCategorias.includes(categoria) ? [categoria] : []),
+  ];
 
   const handleGuardar = async () => {
     if (!fecha) {
@@ -175,18 +187,21 @@ export default function EditarIngresoPage() {
           {errorMonto && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorMonto}</p>}
         </div>
 
-        {/* Categoría */}
+        {/* Categoría — chips de la lista del salón (o el set de fábrica si
+            no está cargada). Si el ingreso que se edita quedó con una
+            categoría que la usuaria ya borró de su lista, se agrega igual al
+            final para que sea seleccionable y se pueda guardar sin cambiarla. */}
         <div>
           <label style={labelStyle}>{t('categoryLabel')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {CATEGORIAS_INGRESO.map(cat => (
+            {categoriasDisponibles.map(cat => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoria(cat)}
                 style={chipStyle(categoria === cat, colors.primarySolid)}
               >
-                {tCat(`category_${cat}`)}
+                {labelCategoriaIngreso(cat, tCat)}
               </button>
             ))}
           </div>

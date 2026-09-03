@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { Gasto } from '@/services/gastoService';
+import { labelCategoriaGasto } from '@/lib/categoriaLabel';
 import { formatMonto } from '@/lib/money';
 
 // Mismos valores que ServicioCard/SwipeableTurnoCard — mismo gesto, mismo
@@ -153,7 +154,7 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
           <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text }}>
             ${formatMonto(Number(gasto.monto))}
             <span style={{ fontSize: 12, fontWeight: 400, color: colors.subtext }}>
-              {'  ·  '}{t(`category_${gasto.categoria}`)}
+              {'  ·  '}{labelCategoriaGasto(gasto.categoria, t)}
             </span>
           </p>
           <p style={{

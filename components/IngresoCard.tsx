@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { Ingreso } from '@/services/ingresoService';
+import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
 import { formatMonto } from '@/lib/money';
 
 // Mismos valores que ServicioCard/GastoCard/SwipeableTurnoCard — mismo gesto,
@@ -148,7 +149,7 @@ export default function IngresoCard({ ingreso, onEdit, onDelete }: Props) {
           <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text }}>
             ${formatMonto(Number(ingreso.monto))}
             <span style={{ fontSize: 12, fontWeight: 400, color: colors.subtext }}>
-              {'  ·  '}{t(`category_${ingreso.categoria}`)}
+              {'  ·  '}{labelCategoriaIngreso(ingreso.categoria, t)}
             </span>
           </p>
           <p style={{

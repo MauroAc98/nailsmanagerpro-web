@@ -1,4 +1,4 @@
-import { Gasto, CategoriaGasto } from '@/services/gastoService';
+import { Gasto } from '@/services/gastoService';
 
 // ─────────────────────────────────────────────
 // Filtrado client-side de la lista de gastos que ya trajo el store para el
@@ -8,7 +8,10 @@ import { Gasto, CategoriaGasto } from '@/services/gastoService';
 // ─────────────────────────────────────────────
 
 export interface FiltrosGasto {
-  categoria: CategoriaGasto | null;
+  // `string` (no la union `CategoriaGasto`): el salón puede filtrar por una
+  // de sus categorías custom, que es un nombre libre. La comparación de
+  // abajo sigue siendo por igualdad exacta contra `gasto.categoria`.
+  categoria: string | null;
   texto: string;
   profesionalId: number | null;
   desde: string | null; // "YYYY-MM-DD" — inclusive
