@@ -472,9 +472,12 @@ function EstadisticasContent() {
   // filtro activo en vez de mostrar un $0 permanente.
   const ingresosAgenda = stats?.ingresos_agenda ?? stats?.ganancias ?? 0;
   const ingresosOtros = stats?.ingresos_otros ?? 0;
+  const ingresosTotales = ingresosAgenda + ingresosOtros;
   const ingresosOtrosPorCategoria = (stats?.ingresos_otros_por_categoria ?? []).filter(c => c.monto > 0);
-  const maxIngresoOtroCat = ingresosOtrosPorCategoria.reduce((max, c) => Math.max(max, c.monto), 0);
   const desglosarIngresos = profesionalFiltro === null && ingresosOtros > 0;
+  // Escala común para las barras del desglose "por origen": la agenda vs.
+  // cada categoría de otros ingresos.
+  const maxOrigenIngreso = ingresosOtrosPorCategoria.reduce((max, c) => Math.max(max, c.monto), ingresosAgenda);
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
   const totalConCancelados = completados + confirmados + cancelados;
@@ -774,25 +777,16 @@ function EstadisticasContent() {
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
               </div>
-              {/* Con "otros ingresos" cargados y sin filtro de profesional,
-                  el tile de ingresos se parte en dos — "Por tu trabajo"
-                  (agenda) vs "Otros ingresos" — para que el número de lo
-                  que genera con SU trabajo quede aislado. Sin otros
-                  ingresos, o con el filtro de profesional activo, sigue
-                  siendo un solo tile "Ingresos". */}
+              {/* Siempre 2 tiles — 3 lado a lado (agenda / otros / gastos)
+                  se amontonan y los montos wrappean en pantallas angostas.
+                  El tile de Ingresos muestra el total (agenda + otros); de
+                  dónde sale ese total va en la lista "Por origen" de abajo. */}
               <div style={{ display: 'flex', gap: 10 }}>
                 <StatTile
-                  label={desglosarIngresos ? t('incomeFromWork') : t('earnings')}
-                  value={ocultarMonto ? '••••••' : `$${formatMonto(ingresosAgenda)}`}
+                  label={t('earnings')}
+                  value={ocultarMonto ? '••••••' : `$${formatMonto(ingresosTotales)}`}
                   color={colors.success}
                 />
-                {desglosarIngresos && (
-                  <StatTile
-                    label={t('otherIncome')}
-                    value={ocultarMonto ? '••••••' : `$${formatMonto(ingresosOtros)}`}
-                    color={colors.primary}
-                  />
-                )}
                 <StatTile
                   label={t('expenses')}
                   value={ocultarMonto ? '••••••' : `$${formatMonto(stats?.gastos ?? 0)}`}
@@ -800,23 +794,30 @@ function EstadisticasContent() {
                 />
               </div>
 
-              {desglosarIngresos && ingresosOtrosPorCategoria.length > 0 && (
+              {desglosarIngresos && (
                 <>
                   <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
-                    {t('otherIncomeByCategory')}
+                    {t('incomeByOrigin')}
                   </p>
                   <div style={{
                     backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
                     boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
                     flexDirection: 'column', gap: 14,
                   }}>
+                    <BarraRanking
+                      nombre={t('incomeFromWork')}
+                      cantidad={ingresosAgenda}
+                      maxCantidad={maxOrigenIngreso}
+                      valorLabel={`$${formatMonto(ingresosAgenda)}`}
+                      color={colors.success}
+                    />
                     {ingresosOtrosPorCategoria.map(c => (
                       <BarraRanking
                         key={c.categoria}
                         nombre={tIngresos(`category_${c.categoria}`)}
                         cantidad={c.monto}
-                        maxCantidad={maxIngresoOtroCat}
-                        valorLabel={ocultarMonto ? '••••••' : `$${formatMonto(c.monto)}`}
+                        maxCantidad={maxOrigenIngreso}
+                        valorLabel={`$${formatMonto(c.monto)}`}
                         color={colors.primary}
                       />
                     ))}
