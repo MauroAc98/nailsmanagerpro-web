@@ -41,6 +41,15 @@ export interface User {
   // null = todavía no subió un logo propio — el login (LoginScreen, por
   // slug) y el resto de la app caen al placeholder genérico.
   logo_url: string | null;
+  // Listas custom de categorías de movimientos del salón. El backend las
+  // manda SIEMPRE (nunca null): son la lista editada por la usuaria o el
+  // set de fábrica (CATEGORIAS_GASTO / CATEGORIAS_INGRESO) si nunca la
+  // tocó. Se editan por el mismo `PUT /perfil` que el resto del perfil
+  // (updatePerfil acepta `Partial<User>`): 1..30 ítems, cada string
+  // 1..40 chars, sin repetir — el backend normaliza trim + espacios
+  // interiores y rechaza duplicados con 422.
+  categorias_gasto: string[];
+  categorias_ingreso: string[];
 }
 
 export interface NegocioBranding {
