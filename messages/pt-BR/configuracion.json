@@ -10,6 +10,7 @@
     "profesionales": "Profissionais",
     "gastos": "Despesas",
     "ingresos": "Receitas",
+    "categoriasMovimientos": "Categorias de despesas e receitas",
     "estadisticas": "Estatísticas",
     "apariencia": "Aparência",
     "idioma": "Idioma",
@@ -194,6 +195,25 @@
     "submit": "Salvar alterações",
     "saveError": "Não foi possível salvar a receita.",
     "deleteButton": "Excluir receita"
+  },
+  "CategoriasMovimientoPage": {
+    "title": "Categorias de movimentações",
+    "subtitle": "Defina as categorias que aparecem ao registrar uma despesa ou uma receita.",
+    "loading": "Carregando...",
+    "tabGastos": "Despesas",
+    "tabIngresos": "Receitas",
+    "addPlaceholder": "Nova categoria",
+    "addButton": "Adicionar",
+    "deleteLabel": "Excluir",
+    "saveButton": "Salvar alterações",
+    "saving": "Salvando...",
+    "saved": "Categorias salvas",
+    "historyNote": "Renomear ou excluir uma categoria não altera as despesas nem as receitas que você já registrou com o nome anterior.",
+    "error_vacia": "Escreva um nome para a categoria.",
+    "error_duplicada": "Já existe uma categoria com esse nome.",
+    "error_muyLarga": "O nome não pode ter mais de 40 caracteres.",
+    "error_limite": "Você atingiu o máximo de 30 categorias.",
+    "error_minima": "Você precisa manter pelo menos uma categoria."
   },
   "NuevoServicioPage": {
     "title": "Novo serviço",

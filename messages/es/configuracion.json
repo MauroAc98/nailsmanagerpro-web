@@ -10,6 +10,7 @@
     "profesionales": "Profesionales",
     "gastos": "Gastos",
     "ingresos": "Ingresos",
+    "categoriasMovimientos": "Categorías de gastos e ingresos",
     "estadisticas": "Estadísticas",
     "apariencia": "Apariencia",
     "idioma": "Idioma",
@@ -194,6 +195,25 @@
     "submit": "Guardar cambios",
     "saveError": "No se pudo guardar el ingreso.",
     "deleteButton": "Eliminar ingreso"
+  },
+  "CategoriasMovimientoPage": {
+    "title": "Categorías de movimientos",
+    "subtitle": "Definí las categorías que aparecen al cargar un gasto o un ingreso.",
+    "loading": "Cargando...",
+    "tabGastos": "Gastos",
+    "tabIngresos": "Ingresos",
+    "addPlaceholder": "Nueva categoría",
+    "addButton": "Agregar",
+    "deleteLabel": "Eliminar",
+    "saveButton": "Guardar cambios",
+    "saving": "Guardando...",
+    "saved": "Categorías guardadas",
+    "historyNote": "Renombrar o borrar una categoría no cambia los gastos ni los ingresos que ya cargaste con el nombre anterior.",
+    "error_vacia": "Escribí un nombre para la categoría.",
+    "error_duplicada": "Ya existe una categoría con ese nombre.",
+    "error_muyLarga": "El nombre no puede tener más de 40 caracteres.",
+    "error_limite": "Llegaste al máximo de 30 categorías.",
+    "error_minima": "Tenés que dejar al menos una categoría."
   },
   "NuevoServicioPage": {
     "title": "Nuevo servicio",
