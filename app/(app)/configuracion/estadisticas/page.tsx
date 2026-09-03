@@ -320,6 +320,10 @@ function parseMesParam(mes: string | null): Date {
 
 function EstadisticasContent() {
   const t = useTranslations('estadisticas.EstadisticasPage');
+  // Las labels de categoría de "otros ingresos" son las del catálogo de
+  // Ingresos — se reusan acá en vez de duplicarlas bajo este namespace,
+  // mismo criterio que NuevoGastoPage con las de Gastos.
+  const tIngresos = useTranslations('configuracion.IngresosPage');
   const searchParams = useSearchParams();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
@@ -458,6 +462,19 @@ function EstadisticasContent() {
   // `ganancias` cuando el backend todavía no la sirve, no a 0, para no
   // mostrar "ganancia neta $0" con ganancias reales en pantalla.
   const gananciaNeta = stats?.ganancia_neta ?? stats?.ganancias ?? 0;
+
+  // Ingresos: lo que factura la agenda (turnos completados) vs. lo que la
+  // dueña carga a mano ajeno a su rubro. `ingresos_agenda` es el nombre
+  // nuevo de `ganancias` (mismo valor) — se cae a `ganancias` para builds
+  // servidos por un backend viejo. `ingresos_otros` y su desglose los
+  // devuelve el backend en 0 cuando se filtra por profesional (un ingreso
+  // del salón no tiene profesional), así que ese bloque se oculta con el
+  // filtro activo en vez de mostrar un $0 permanente.
+  const ingresosAgenda = stats?.ingresos_agenda ?? stats?.ganancias ?? 0;
+  const ingresosOtros = stats?.ingresos_otros ?? 0;
+  const ingresosOtrosPorCategoria = (stats?.ingresos_otros_por_categoria ?? []).filter(c => c.monto > 0);
+  const maxIngresoOtroCat = ingresosOtrosPorCategoria.reduce((max, c) => Math.max(max, c.monto), 0);
+  const desglosarIngresos = profesionalFiltro === null && ingresosOtros > 0;
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
   const totalConCancelados = completados + confirmados + cancelados;
@@ -757,18 +774,55 @@ function EstadisticasContent() {
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
               </div>
+              {/* Con "otros ingresos" cargados y sin filtro de profesional,
+                  el tile de ingresos se parte en dos — "Por tu trabajo"
+                  (agenda) vs "Otros ingresos" — para que el número de lo
+                  que genera con SU trabajo quede aislado. Sin otros
+                  ingresos, o con el filtro de profesional activo, sigue
+                  siendo un solo tile "Ingresos". */}
               <div style={{ display: 'flex', gap: 10 }}>
                 <StatTile
-                  label={t('earnings')}
-                  value={ocultarMonto ? '••••••' : `$${formatMonto(stats?.ganancias ?? 0)}`}
+                  label={desglosarIngresos ? t('incomeFromWork') : t('earnings')}
+                  value={ocultarMonto ? '••••••' : `$${formatMonto(ingresosAgenda)}`}
                   color={colors.success}
                 />
+                {desglosarIngresos && (
+                  <StatTile
+                    label={t('otherIncome')}
+                    value={ocultarMonto ? '••••••' : `$${formatMonto(ingresosOtros)}`}
+                    color={colors.primary}
+                  />
+                )}
                 <StatTile
                   label={t('expenses')}
                   value={ocultarMonto ? '••••••' : `$${formatMonto(stats?.gastos ?? 0)}`}
                   color={colors.danger}
                 />
               </div>
+
+              {desglosarIngresos && ingresosOtrosPorCategoria.length > 0 && (
+                <>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
+                    {t('otherIncomeByCategory')}
+                  </p>
+                  <div style={{
+                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                    boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
+                    flexDirection: 'column', gap: 14,
+                  }}>
+                    {ingresosOtrosPorCategoria.map(c => (
+                      <BarraRanking
+                        key={c.categoria}
+                        nombre={tIngresos(`category_${c.categoria}`)}
+                        cantidad={c.monto}
+                        maxCantidad={maxIngresoOtroCat}
+                        valorLabel={ocultarMonto ? '••••••' : `$${formatMonto(c.monto)}`}
+                        color={colors.primary}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
               {gananciasPorServicio.length > 0 && (
                 <>
                   <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
