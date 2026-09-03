@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe('Providers — boot gate', () => {
-  it('token present + checkSubscription pending -> renders blank, not the protected children', async () => {
+  it('token present + checkSubscription pending -> renders the neutral BootSplash, not the protected children', async () => {
     localStorage.setItem('auth_token', 'tok');
     mockedGet.mockReturnValue(new Promise(() => {})); // never settles
 
@@ -57,6 +57,11 @@ describe('Providers — boot gate', () => {
 
     await waitFor(() => expect(useAuthStore.getState().authStatus).toBe('booting'));
     expect(screen.queryByText('PROTECTED CONTENT')).toBeNull();
+    // Neutral splash while booting — never the personalized WelcomeScreen
+    // (bug #15: that one asserts an authenticated session before we've
+    // confirmed one).
+    expect(screen.getByTestId('boot-splash')).toBeInTheDocument();
+    expect(screen.queryByTestId('welcome-screen')).toBeNull();
     expect(routerMock.push).not.toHaveBeenCalledWith('/agenda');
   });
 
@@ -76,6 +81,29 @@ describe('Providers — boot gate', () => {
     markI18nReady();
 
     expect(await screen.findByText('PROTECTED CONTENT')).toBeInTheDocument();
+  });
+
+  it('checkSubscription resolves ACTIVO -> WelcomeScreen shows only AFTER the session is confirmed (bug #15)', async () => {
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+
+    setMockLocation('/agenda');
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByTestId('welcome-screen')).toBeInTheDocument();
+    expect(useAuthStore.getState().mostrarBienvenida).toBe(true);
+    // The flag was NOT set synchronously during inicializar() — only the
+    // deferred, post-check path turns it on.
+    expect(sessionStorage.getItem('bienvenida_mostrada')).toBe('1');
   });
 
   it('capturing the blocked-from route: expired user on a deep protected route -> subscriptionBlockedOrigin set before the redirect', async () => {
@@ -140,6 +168,10 @@ describe('Providers — boot gate', () => {
     expect(useAuthStore.getState().token).toBeNull();
     expect(useAuthStore.getState().subscriptionChecked).toBe(true);
     expect(screen.queryByText('PROTECTED CONTENT')).toBeNull();
+    // Bug #15: the "Buenos días" splash must never paint over the /login
+    // bounce when the stored token was already dead.
+    expect(useAuthStore.getState().mostrarBienvenida).toBe(false);
+    expect(screen.queryByTestId('welcome-screen')).toBeNull();
     // Silent bounce to /login with the origin preserved — no session-ended modal
     // (the user never got in, there is no dimmed screen to keep).
     await waitFor(() =>
@@ -168,6 +200,9 @@ describe('Providers — boot gate', () => {
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/subscription-expired'));
     expect(screen.queryByText('PROTECTED CONTENT')).toBeNull();
     expect(routerMock.push).not.toHaveBeenCalledWith('/agenda');
+    // Bug #15: an expired subscription lands in `subscription-blocked`, not
+    // `authenticated`, so the WelcomeScreen stays suppressed.
+    expect(screen.queryByTestId('welcome-screen')).toBeNull();
   });
 });
 

@@ -11,6 +11,7 @@ import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
 import { initLocale, useLocaleStore } from '@/store/useLocaleStore';
 import { Loader } from '@/components/Loader';
+import { BootSplash } from '@/components/BootSplash';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ConfirmSheetHost } from '@/components/ConfirmSheetHost';
 import { useConfirmStore, resolveDialog } from '@/store/useConfirmStore';
@@ -219,9 +220,20 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">
-      {puedeMostrarContenido ? children : <div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}
+      {puedeMostrarContenido
+        ? children
+        : authStatus === 'booting'
+          ? <BootSplash />
+          : <div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}
       <Loader visible={isLoading} />
-      {mostrarBienvenida && <WelcomeScreen />}
+      {/* WelcomeScreen es el splash PERSONALIZADO ("Buenos días, {nombre}").
+          Gateado en `authenticated` además del flag: si la sesión resultó
+          revocada o la suscripción vencida, la máquina queda en
+          `unauthenticated` / `subscription-blocked` y el welcome NUNCA se
+          pinta encima del redirect a /login o /subscription-expired (bug
+          #15 del flujo de auth). El flag ya se prende recién post-chequeo
+          en useAuthStore, este gate es el cinturón. */}
+      {mostrarBienvenida && authStatus === 'authenticated' && <WelcomeScreen />}
       <ConfirmSheetHost />
       <SessionEndedModal />
       <MotivoCancelacionSheetHost />

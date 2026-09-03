@@ -259,7 +259,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // `/login?redirect=<origin>`. The late `SUBSCRIPTION_CHECKED` from the boot
     // race then no-ops from `unauthenticated`.
     if (get().authStatus === 'booting') {
-      set({ token: null, subscriptionChecked: true });
+      // `mostrarBienvenida: false` — cinturón por si el flag se prendió por
+      // otra vía (bug #15): una sesión revocada al boot nunca debe mostrar
+      // el WelcomeScreen encima del rebote a /login.
+      set({ token: null, subscriptionChecked: true, mostrarBienvenida: false });
       get().dispatchAuth({ type: 'SESSION_REVOKED' });
       return;
     }
@@ -315,9 +318,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (token) {
         // Sesión ya existente al abrir la app — bienvenida con mensaje de
         // "regreso", pero solo una vez por pestaña (ver BIENVENIDA_KEY).
+        //
+        // El flag `mostrarBienvenida` NO se prende acá: en este punto solo
+        // sabemos que hay un token en localStorage, todavía no que el server
+        // lo siga aceptando. Prenderlo síncrono hacía que el WelcomeScreen
+        // ("Buenos días, {nombre viejo}") se pintara 2,5s encima del redirect
+        // a /login o /subscription-expired cuando la sesión estaba revocada o
+        // la suscripción vencida (bug #15 del flujo de auth). Se difiere al
+        // `.then()` del chequeo de abajo, gateado en `authStatus ===
+        // 'authenticated'`.
         const yaSeMostro = sessionStorage.getItem(BIENVENIDA_KEY) === '1';
-        if (!yaSeMostro) sessionStorage.setItem(BIENVENIDA_KEY, '1');
-        set({ token, user, inicializado: true, mostrarBienvenida: !yaSeMostro, esPrimerLogin: false });
+        set({ token, user, inicializado: true, esPrimerLogin: false });
         get().dispatchAuth({ type: 'BOOT_HAS_TOKEN' });
         // Boot gate: the machine stays `booting` until `checkSubscription`
         // settles (it self-dispatches `SUBSCRIPTION_CHECKED` + sets
@@ -335,6 +346,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             logAuthEvent('checkSubscription.boot-timeout');
             get().dispatchAuth({ type: 'SUBSCRIPTION_CHECKED', blocked: false });
             set({ subscriptionChecked: true });
+          }
+          // Sesión confirmada viva → recién ahora el saludo de "regreso",
+          // una sola vez por pestaña. `subscription-blocked` y
+          // `unauthenticated` (revocada, vía handleSessionRevoked) quedan
+          // fuera por el gate de `authStatus`. `providers.tsx` además
+          // re-chequea `authStatus === 'authenticated'` al renderizar.
+          if (!yaSeMostro && get().authStatus === 'authenticated') {
+            try {
+              sessionStorage.setItem(BIENVENIDA_KEY, '1');
+            } catch {
+              // sin sessionStorage — se mostrará de nuevo el próximo boot,
+              // no es fatal
+            }
+            set({ mostrarBienvenida: true });
           }
         });
       } else {

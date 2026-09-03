@@ -43,7 +43,7 @@ export function WelcomeScreen() {
   }, [setMostrarBienvenida]);
 
   return (
-    <div style={{
+    <div data-testid="welcome-screen" style={{
       position: 'fixed', inset: 0, zIndex: 200,
       backgroundColor: colors.surface,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
