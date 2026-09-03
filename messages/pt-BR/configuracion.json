@@ -87,7 +87,19 @@
     "category_alquiler": "Aluguel",
     "category_servicios_publicos": "Contas de serviços públicos",
     "category_marketing": "Marketing",
-    "category_otros": "Outros"
+    "category_otros": "Outros",
+    "filtersToggle": "Filtros",
+    "filtersClear": "Limpar filtros",
+    "filterCategoryLabel": "Categoria",
+    "filterAll": "Todas",
+    "filterTextLabel": "Descrição",
+    "filterTextPlaceholder": "Buscar na descrição",
+    "filterProfesionalLabel": "Profissional",
+    "filterDateLabel": "Data",
+    "filterDateFrom": "De",
+    "filterDateTo": "Até",
+    "totalFilteredLabel": "Total filtrado",
+    "emptyFiltered": "Nenhuma despesa corresponde aos filtros"
   },
   "NuevoGastoPage": {
     "title": "Nova despesa",

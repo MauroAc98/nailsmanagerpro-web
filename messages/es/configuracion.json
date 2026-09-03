@@ -87,7 +87,19 @@
     "category_alquiler": "Alquiler",
     "category_servicios_publicos": "Servicios públicos",
     "category_marketing": "Marketing",
-    "category_otros": "Otros"
+    "category_otros": "Otros",
+    "filtersToggle": "Filtros",
+    "filtersClear": "Limpiar filtros",
+    "filterCategoryLabel": "Categoría",
+    "filterAll": "Todas",
+    "filterTextLabel": "Descripción",
+    "filterTextPlaceholder": "Buscar en la descripción",
+    "filterProfesionalLabel": "Profesional",
+    "filterDateLabel": "Fecha",
+    "filterDateFrom": "Desde",
+    "filterDateTo": "Hasta",
+    "totalFilteredLabel": "Total filtrado",
+    "emptyFiltered": "Ningún gasto coincide con los filtros"
   },
   "NuevoGastoPage": {
     "title": "Nuevo gasto",
