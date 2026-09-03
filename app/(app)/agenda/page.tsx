@@ -14,7 +14,8 @@ import { turnoService, Turno, TurnoMes } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
-import { whatsappHelper, PLANTILLA_RECORDATORIO_DEFAULT } from '@/lib/whatsappHelper';
+import { whatsappHelper } from '@/lib/whatsappHelper';
+import { useAuthStore } from '@/store/useAuthStore';
 import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
 import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner } from '@/components/RecordatoriosPendientesBanner';
@@ -99,7 +100,6 @@ function SwipeableTurnoCard({
   onCancel,
   onFinalizar,
   onPress,
-  plantillaWhatsapp,
   profesionalLabel,
   profesionalNombreWhatsapp,
 }: {
@@ -107,7 +107,6 @@ function SwipeableTurnoCard({
   onCancel?:                   () => void;
   onFinalizar?:                () => void;
   onPress?:                    () => void;
-  plantillaWhatsapp:           string;
   profesionalLabel?:           ProfesionalLabel | null;
   // Nombre de la profesional a cargo del turno, para el placeholder
   // {profesional} del mensaje de WhatsApp. A diferencia de profesionalLabel
@@ -117,6 +116,7 @@ function SwipeableTurnoCard({
   profesionalNombreWhatsapp?:  string;
 }) {
   const t = useTranslations('agenda.SwipeableTurnoCard');
+  const user = useAuthStore(s => s.user);
   const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
   const initOffset = useRef(0);
@@ -291,12 +291,14 @@ function SwipeableTurnoCard({
               <a
                 href={whatsappHelper.buildUrl({
                   clienteNombre:   turno.cliente.nombre,
-                  clienteApellido: turno.cliente.apellido,
                   clienteTelefono: turno.cliente.telefono,
                   servicio:        turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + '),
                   fecha:           fechaDeHora(turno.fecha_hora),
                   hora:            horaDeHora(turno.fecha_hora),
-                  plantilla:       plantillaWhatsapp,
+                  tipo:            'recordatorio',
+                  negocio:         user?.name ?? '',
+                  direccion:       user?.direccion ?? null,
+                  telefonoNegocio: user?.telefono ?? null,
                   profesional:     profesionalNombreWhatsapp,
                 })}
                 target="_blank"
@@ -1442,7 +1444,6 @@ export default function AgendaPage() {
                   onCancel={() => handleCancelar(turno.id)}
                   onFinalizar={cursando ? () => handleFinalizar(turno) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
-                  plantillaWhatsapp={PLANTILLA_RECORDATORIO_DEFAULT}
                   profesionalLabel={profesionalLabel}
                   profesionalNombreWhatsapp={profesionalNombreWhatsapp}
                 />

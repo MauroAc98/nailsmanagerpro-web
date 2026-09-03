@@ -19,7 +19,8 @@ import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
 import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
 import { useAuth } from '@/hooks/useAuth';
-import { whatsappHelper, PLANTILLA_CONFIRMACION_DEFAULT } from '@/lib/whatsappHelper';
+import { whatsappHelper } from '@/lib/whatsappHelper';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -72,6 +73,7 @@ function NuevoTurnoContent() {
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const user = useAuthStore(s => s.user);
   const { requiereEnvioManualWhatsapp }      = useAuth();
 
   const [selectedCliente,      setSelectedCliente]      = useState<Cliente | null>(null);
@@ -252,12 +254,14 @@ function NuevoTurnoContent() {
           <a
             href={whatsappHelper.buildUrl({
               clienteNombre:   turnoCreado.cliente.nombre,
-              clienteApellido: turnoCreado.cliente.apellido,
               clienteTelefono: turnoCreado.cliente.telefono!,
               servicio:        turnoCreado.servicios,
               fecha,
               hora:            `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`,
-              plantilla:       PLANTILLA_CONFIRMACION_DEFAULT,
+              tipo:            'confirmacion',
+              negocio:         user?.name ?? '',
+              direccion:       user?.direccion ?? null,
+              telefonoNegocio: user?.telefono ?? null,
               profesional:     turnoCreado.profesional,
             })}
             target="_blank"

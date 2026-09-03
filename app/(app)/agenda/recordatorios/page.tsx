@@ -8,7 +8,8 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { whatsappHelper, PLANTILLA_RECORDATORIO_DEFAULT } from '@/lib/whatsappHelper';
+import { useAuthStore } from '@/store/useAuthStore';
+import { whatsappHelper } from '@/lib/whatsappHelper';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -26,6 +27,7 @@ export default function RecordatoriosPendientesPage() {
 
   const { turnos: turnosParaRecordar, loading, error, fetchRecordatoriosPendientes, marcarEnviado } = useRecordatoriosPendientesStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const user = useAuthStore(s => s.user);
 
   useEffect(() => {
     fetchRecordatoriosPendientes();
@@ -156,12 +158,14 @@ export default function RecordatoriosPendientesPage() {
                   <a
                     href={whatsappHelper.buildUrl({
                       clienteNombre:   turno.cliente.nombre,
-                      clienteApellido: turno.cliente.apellido,
                       clienteTelefono: turno.cliente.telefono!,
                       servicio:        nombresServicios,
                       fecha:           fechaDeHora(turno.fecha_hora),
                       hora:            horaDeHora(turno.fecha_hora),
-                      plantilla:       PLANTILLA_RECORDATORIO_DEFAULT,
+                      tipo:            'recordatorio',
+                      negocio:         user?.name ?? '',
+                      direccion:       user?.direccion ?? null,
+                      telefonoNegocio: user?.telefono ?? null,
                       profesional:     profesional?.nombre,
                     })}
                     target="_blank"

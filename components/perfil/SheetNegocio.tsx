@@ -7,6 +7,7 @@ import { SheetInput } from './SheetInput';
 import PillToggle from '@/components/PillToggle';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
+import { cuerpoPlantillaWhatsapp } from '@/lib/whatsappHelper';
 import {
   sanitizarLineaSimple,
   validarSenaConfig,
@@ -80,15 +81,15 @@ interface DatosPreview {
   senaCbu: string;
 }
 
-// Mismo texto fijo que arma WhatsappTemplate::mensajeLegible() en el backend
-// (NailsManagerProApi) — 3 plantillas aprobadas en Meta (2026-08-30, tono
-// "sistema"): confirmacion_turno, recordatorio_turno, reserva_turno_sena. Si
-// ese texto cambia ahí, hay que actualizarlo acá también: no hay una fuente
-// única compartida entre frontend y backend.
+// El texto de `confirmacion_turno` y `recordatorio_turno` sale de
+// cuerpoPlantillaWhatsapp() (lib/whatsappHelper) — misma fuente que usa el
+// envío manual por wa.me, así el preview y lo que realmente llega al chat no
+// pueden divergir. `reserva_turno_sena` se arma acá abajo porque nunca se
+// manda a mano. El backend (NailsManagerProApi) tiene su propia copia de los
+// tres: si el texto cambia en Meta hay que tocar los dos lados.
 //
-// El nombre de la profesional ({{7}}/{{9}} en el backend, sale de
-// turno.profesional.nombre) es un dato de ejemplo fijo acá — este preview no
-// tiene un turno real. nombreNegocio, telefono, direccion y los datos de
+// El nombre de la profesional es un dato de ejemplo fijo acá — este preview
+// no tiene un turno real. nombreNegocio, telefono, direccion y los datos de
 // seña sí son reales (vienen de la cuenta / del formulario) porque son los
 // que el cliente va a ver tal cual.
 function textoPreview(d: DatosPreview): string {
@@ -102,17 +103,16 @@ function textoPreview(d: DatosPreview): string {
     : '(agregá tu teléfono en Datos personales)';
   const dir = d.direccion.trim() || '(agregá tu dirección en Datos personales)';
 
-  const aviso = `⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *${profesional} no lo recibe y no puede contestarte.*`;
-  const contacto = `Para consultas o cambios de turno, comunicate al ${tel} con al menos 24 hs de anticipación.`;
-
   if (d.tipo === 'recordatorio') {
-    // recordatorio_turno: 🕒 sin "hs" y el punto DENTRO de la negrita del
-    // negocio — así quedó aprobado en Meta.
-    return `Hola ${nombreCliente}, te recordamos tu turno de mañana en *${d.negocio}.*\n\n🗓️ ${fecha} · 🕒 ${hora}\n✨ ${servicio}\n📍 ${dir}\n\n${aviso}\n\n${contacto}`;
+    return cuerpoPlantillaWhatsapp('recordatorio', {
+      nombreCliente, negocio: d.negocio, fecha, hora,
+      servicios: servicio, direccion: dir, profesional, telefono: tel,
+    });
   }
 
   if (d.pideSena) {
     // reserva_turno_sena
+    const aviso = `⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *${profesional} no lo recibe y no puede contestarte.*`;
     const montoN = montoComoNumero(d.senaMonto);
     const monto = montoN != null && montoN > 0 ? formatearMontoSena(montoN) : '(cargá el monto de la seña)';
     const cuenta = armarDatosCuentaSena({
@@ -122,7 +122,10 @@ function textoPreview(d: DatosPreview): string {
   }
 
   // confirmacion_turno
-  return `Hola ${nombreCliente}, tu turno en *${d.negocio}* quedó confirmado.\n\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\n${aviso}\n\n${contacto}`;
+  return cuerpoPlantillaWhatsapp('confirmacion', {
+    nombreCliente, negocio: d.negocio, fecha, hora,
+    servicios: servicio, direccion: dir, profesional, telefono: tel,
+  });
 }
 
 // Parsea el monto (string editable) a número para la regla de negocio.
