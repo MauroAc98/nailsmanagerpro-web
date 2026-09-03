@@ -130,6 +130,19 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10);
   const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
 
+  // La foto de fondo se sube un poco. La barra de responder/enviar de
+  // Instagram y WhatsApp tapa más abajo (safe.bottom) que la barra de
+  // perfil arriba (safe.top), así que el centro de lo que el que mira
+  // realmente ve queda por encima del centro geométrico del canvas. Se
+  // sobredimensiona la imagen (fondoAlto) y se la corre hacia arriba
+  // (fondoTop): con este shift el punto medio de la foto queda ubicado
+  // justo en ese centro visual (safe.top + (canvasHeight - safe.top -
+  // safe.bottom) / 2). Mismos valores en las 2 copias con blur para que
+  // sigan alineadas al píxel con la foto base.
+  const fondoShift = safe.bottom - safe.top;
+  const fondoTop   = -fondoShift;
+  const fondoAlto  = canvasHeight + fondoShift;
+
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
     // capturado por html-to-image es el de más adentro (el que tiene `ref`)
@@ -148,13 +161,15 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           overflow: 'hidden',
         }}
       >
-        {/* Background image */}
+        {/* Background image — corrida hacia arriba (fondoTop/fondoAlto) para
+            centrarla en el área visible real de la historia, no en el
+            canvas entero (ver comentario en fondoShift). */}
         <img
           src={fondoUri ?? '/default_bg.jpg'}
           alt=""
           style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
+            position: 'absolute', left: 0,
+            top: fondoTop, width: '100%', height: fondoAlto,
             objectFit: 'cover',
           }}
         />
@@ -174,14 +189,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
           <img
             src={fondoUri ?? '/default_bg.jpg'}
             alt=""
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: canvasHeight, objectFit: 'cover', filter: 'blur(16px)' }}
+            style={{ position: 'absolute', top: fondoTop, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
           />
         </div>
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerZonaAlto, overflow: 'hidden' }}>
           <img
             src={fondoUri ?? '/default_bg.jpg'}
             alt=""
-            style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: canvasHeight, objectFit: 'cover', filter: 'blur(16px)' }}
+            style={{ position: 'absolute', top: footerZonaAlto - fondoAlto, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
           />
         </div>
 
