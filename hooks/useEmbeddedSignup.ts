@@ -208,7 +208,17 @@ export function useEmbeddedSignup({
         fallar(MSG_ERROR_GENERICO);
       }, TIMEOUT_OPERACION_MS);
 
-      // 3. FB.login — v3 Coexistence option bag.
+      // 3. FB.login — v4 Coexistence option bag.
+      // v4 (current, replaces v2/v3 — both deprecated Oct 2026) drops
+      // `sessionInfoVersion` and `featureType`: which products the flow
+      // offers (WhatsApp Business App Onboarding / Coexistence) is now
+      // selected on the config_id's own Facebook Login for Business
+      // configuration in the Meta dashboard, not in this options bag.
+      // `extras.setup` is still sent per Meta's implementation guide for v4
+      // (developers.facebook.com/documentation/business-messaging/whatsapp/
+      // embedded-signup/implementation) even though the separate v4 versions
+      // page shows a bare `extras: {}` — kept here as the lower-risk choice
+      // since it was already present and does no known harm.
       fb.login(
         (response) => {
           const code = response?.authResponse?.code ?? null;
@@ -233,8 +243,6 @@ export function useEmbeddedSignup({
           override_default_response_type: true,
           extras: {
             setup: {},
-            featureType: 'whatsapp_business_app_onboarding',
-            sessionInfoVersion: '3',
           },
         },
       );
