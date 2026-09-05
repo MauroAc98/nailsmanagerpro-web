@@ -115,5 +115,17 @@
   },
   "Errors": {
     "unexpectedError": "Error inesperado"
+  },
+  "SelectorServicios": {
+    "filterPlaceholder": "Buscar servicio...",
+    "sinCategoria": "Sin categoría",
+    "noActiveServices": "No hay servicios activos todavía. Cargalos primero en Configuración → Servicios.",
+    "noResults": "No se encontraron servicios.",
+    "selectedCount": "{count, plural, one {# seleccionado} other {# seleccionados}}",
+    "filterAll": "Todos",
+    "collapseCategory": "Colapsar categoría",
+    "expandCategory": "Expandir categoría",
+    "selectCategory": "Seleccionar categoría",
+    "deselectCategory": "Deseleccionar categoría"
   }
 }

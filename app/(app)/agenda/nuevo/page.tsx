@@ -7,7 +7,7 @@ import { ChevronDown, User, CheckCircle2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
-import { ServicioPicker } from '@/components/agenda/ServicioPicker';
+import { SelectorServicios } from '@/components/SelectorServicios';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
@@ -120,12 +120,6 @@ function NuevoTurnoContent() {
       fetchSlots(selectedProfesionalId);
     }
   }, [mostrarSelectorProfesional, selectedProfesionalId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const toggleServicio = (id: number) => {
-    setSelectedServicioIds(prev =>
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
-  };
 
   const handleSeleccionarProfesional = (id: number) => {
     setSelectedProfesionalId(prev => prev === id ? null : id);
@@ -403,14 +397,25 @@ function NuevoTurnoContent() {
         )}
 
         {/* ─── SERVICIOS ─── */}
-        <ServicioPicker
-          t={t}
-          mostrarSelectorProfesional={mostrarSelectorProfesional}
-          hayProfesionalSeleccionada={!!profesionalSeleccionado}
-          serviciosDisponibles={serviciosDisponibles}
-          selectedServicioIds={selectedServicioIds}
-          onToggleServicio={toggleServicio}
-        />
+        <p style={sectionLabelStyle}>{t('services')}</p>
+        {mostrarSelectorProfesional && !profesionalSeleccionado ? (
+          <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
+            {t('chooseProfessionalFirst')}
+          </p>
+        ) : serviciosDisponibles.length === 0 ? (
+          <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
+            {t('noServicesAssigned')}
+          </p>
+        ) : (
+          <div style={{ marginBottom: 20 }}>
+            <SelectorServicios
+              servicios={serviciosDisponibles}
+              mode="multi"
+              selectedIds={selectedServicioIds}
+              onChange={setSelectedServicioIds}
+            />
+          </div>
+        )}
 
         {/* ─── HORA DEL TURNO ─── */}
         <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
