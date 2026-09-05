@@ -6,17 +6,27 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { useServiciosStore } from '@/store/useServicioStore';
 import { CategoriaServicio } from '@/services/categoriaServicioService';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
+import { categoriaVisual } from '@/lib/categoriaVisual';
 
 export default function CategoriasPage() {
   const t = useTranslations('configuracion.CategoriasPage');
   const router = useRouter();
   const { categorias, loading, error, fetchCategorias, eliminarCategoria } = useCategoriasServicioStore();
+  // Esta pantalla no cargaba servicios hasta ahora — hace falta para poder
+  // contar cuántos tiene cada categoría (activos + inactivos, ver A4.2).
+  const { servicios, fetchServicios } = useServiciosStore();
 
-  useEffect(() => { fetchCategorias(); }, []);
+  useEffect(() => { fetchCategorias(); fetchServicios(); }, []);
+
+  // Cuenta activos + inactivos (misma convención que la card de categoría en
+  // el listado de Servicios — spec: el conteo incluye inactivos).
+  const contarServicios = (categoriaId: number) =>
+    servicios.filter(s => s.categoria_id === categoriaId).length;
 
   // El backend bloquea el borrado (409) si la categoría tiene servicios
   // asignados; `result.message` ya trae ese texto (extraerMensajeError lee
@@ -85,7 +95,10 @@ export default function CategoriasPage() {
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {categorias.map(c => (
+              {categorias.map(c => {
+                const visual = categoriaVisual(c.id);
+                const count = contarServicios(c.id);
+                return (
                 <div
                   key={c.id}
                   style={{
@@ -97,12 +110,32 @@ export default function CategoriasPage() {
                   <button
                     onClick={() => router.push(`/configuracion/categorias/${c.id}`)}
                     style={{
-                      flex: 1, display: 'flex', alignItems: 'center', textAlign: 'left',
+                      flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontSize: 15, fontWeight: 600, color: colors.text,
                     }}
                   >
-                    {c.nombre}
+                    {/* Misma identidad visual (icono + color constante de marca)
+                        que el header de esta categoría en el listado de
+                        Servicios — spec: las filas del CRUD llevan la misma
+                        identidad que los headers. */}
+                    <div style={{
+                      width: 36, height: 36, flexShrink: 0,
+                      backgroundColor: visual.tint,
+                      borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <visual.icon size={18} strokeWidth={2} color={visual.tintStrong} />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{
+                        margin: 0, fontSize: 15, fontWeight: 600, color: colors.text,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {c.nombre}
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+                        {t('serviceCount', { count })}
+                      </p>
+                    </div>
                   </button>
                   <button
                     onClick={() => handleEliminar(c)}
@@ -116,7 +149,8 @@ export default function CategoriasPage() {
                     </svg>
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )
         )}
