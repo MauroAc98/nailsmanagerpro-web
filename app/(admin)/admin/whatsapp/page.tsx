@@ -12,6 +12,7 @@ import {
 } from '@/services/adminService';
 import FacebookSdkScript from '@/components/admin/FacebookSdkScript';
 import { useEmbeddedSignup, DatosEmbeddedSignup } from '@/hooks/useEmbeddedSignup';
+import { confirmDialog } from '@/store/useConfirmStore';
 import { colors, shadows, withAlpha } from '@/theme/colors';
 
 function extraerMensajeError(e: unknown, fallback: string): string {
@@ -33,6 +34,25 @@ function extraerMensajeError(e: unknown, fallback: string): string {
     return data?.message ?? fallback;
   }
   return fallback;
+}
+
+// Aviso de facturación previo a Embedded Signup (spec: whatsapp-billing-disclosure).
+// Panel admin sin namespace de next-intl propio (mismo criterio que
+// admin/negocios/nuevo/page.tsx) — texto en español neutro hardcodeado.
+// Las 4 obligaciones de la spec deben quedar explícitas en el mismo texto:
+// (1) nombra el negocio, (2) la facturación pasa a Meta directamente,
+// (3) el negocio debe cargar su propio método de pago en Meta Business
+// Manager o sus mensajes dejan de enviarse, (4) Turnetto deja de pagar los
+// mensajes de ese negocio desde ese momento.
+function mensajeAvisoFacturacion(nombre: string): string {
+  return (
+    `Vas a conectar el WhatsApp de ${nombre} directo con Meta: a partir de ahora, ` +
+    `los mensajes de este negocio se facturan a la cuenta de Meta Business Manager ` +
+    `de ${nombre}, no a Turnetto. El negocio tiene que cargar su propio método de ` +
+    `pago en Meta Business Manager — si no lo hace, sus mensajes de WhatsApp van a ` +
+    `dejar de enviarse. Turnetto deja de pagar los mensajes de este negocio desde ` +
+    `este momento.`
+  );
 }
 
 const ETIQUETA_ESTADO: Record<WhatsappConexionEstado, string> = {
@@ -131,7 +151,17 @@ export default function WhatsappConexionesPage() {
   const puedeConectar =
     !!es && es.enabled && !!appId && !!configId && sdkListo && !sdkError && !guardando;
 
-  const handleConectar = (userId: number) => {
+  // Gate de facturación (spec: whatsapp-billing-disclosure) — el aviso debe
+  // ser lo PRIMERO que corre, antes de mutar cualquier estado, y Embedded
+  // Signup (iniciar/FB.login) sólo se dispara si el operador confirma.
+  const handleConectar = async (userId: number, nombre: string) => {
+    const confirmado = await confirmDialog(mensajeAvisoFacturacion(nombre), {
+      confirmText: 'Entiendo, conectar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!confirmado) return;
+
     setErrorConexion(null);
     setExitoUserId(null);
     reset();
@@ -348,7 +378,7 @@ export default function WhatsappConexionesPage() {
                 puedeConectar={puedeConectar}
                 enCurso={salonEnCurso === salon.user_id && (guardando || estadoSignup === 'esperando')}
                 exito={exitoUserId === salon.user_id}
-                onConectar={() => handleConectar(salon.user_id)}
+                onConectar={() => handleConectar(salon.user_id, salon.nombre)}
               />
             ))}
           </div>
