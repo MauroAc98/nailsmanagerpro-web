@@ -47,6 +47,7 @@
   },
   "CategoriasPage": {
     "title": "Categorías",
+    "loading": "Cargando categorías...",
     "serviceCount": "{count, plural, one {# servicio} other {# servicios}}",
     "empty": "¡Cargá tu primera categoría!",
     "add": "Agregar categoría",

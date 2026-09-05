@@ -11,6 +11,7 @@
   },
   "CategoriasPage": {
     "title": "Categories",
+    "loading": "Loading categories...",
     "serviceCount": "{count, plural, one {# service} other {# services}}",
     "empty": "Add your first category!",
     "add": "Add category",
