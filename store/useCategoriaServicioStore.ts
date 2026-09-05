@@ -13,13 +13,23 @@ interface OperacionResult {
   message?: string;
 }
 
+// Additive: `categoria` solo se completa en el camino de éxito. Permite que
+// un caller (SelectorCategoriaServicio, ver design D5) auto-seleccione la
+// categoría recién creada sin tener que volver a buscarla en `categorias`
+// por nombre (frágil ante duplicados/mayúsculas). El único caller previo
+// (categorias/nuevo/page.tsx) solo lee `.success`/`.message`, así que el
+// campo nuevo no rompe nada.
+interface AgregarCategoriaResult extends OperacionResult {
+  categoria?: CategoriaServicio;
+}
+
 interface CategoriasServicioState {
   categorias: CategoriaServicio[];
   loading: boolean;
   error: string | null;
 
   fetchCategorias: () => Promise<void>;
-  agregarCategoria: (dto: CreateCategoriaServicioDto) => Promise<OperacionResult>;
+  agregarCategoria: (dto: CreateCategoriaServicioDto) => Promise<AgregarCategoriaResult>;
   actualizarCategoria: (id: number, dto: UpdateCategoriaServicioDto) => Promise<OperacionResult>;
   eliminarCategoria: (id: number) => Promise<OperacionResult>;
 }
@@ -51,10 +61,10 @@ export const useCategoriasServicioStore = create<CategoriasServicioState>((set) 
   agregarCategoria: async (dto) => {
     return withGlobalLoader(async () => {
       try {
-        await categoriaServicioService.create(dto);
+        const categoria = await categoriaServicioService.create(dto);
         const categorias = await categoriaServicioService.getAll();
         set({ categorias });
-        return { success: true };
+        return { success: true, categoria };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
       }

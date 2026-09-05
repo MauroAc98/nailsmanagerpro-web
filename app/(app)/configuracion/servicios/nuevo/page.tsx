@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
@@ -23,40 +24,36 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
 
-// Mismo patrón que el chip de categoría en gastos/nuevo/page.tsx (color
-// fijo, sin punto de color por-item como el selector de profesional —
-// las categorías de servicio no tienen color propio).
-function chipStyle(selected: boolean): React.CSSProperties {
-  return {
-    display: 'flex', alignItems: 'center', gap: 6,
-    borderRadius: 20, padding: '8px 16px', fontSize: 14, cursor: 'pointer',
-    border: `1px solid ${selected ? colors.primarySolid : colors.divider}`,
-    backgroundColor: selected ? colors.primarySolid : colors.surface,
-    color: selected ? '#FFF' : colors.text,
-  };
-}
-
-export default function NuevoServicioPage() {
+// ─────────────────────────────────────────────
+// Inner component (uses useSearchParams)
+// ─────────────────────────────────────────────
+function NuevoServicioContent() {
   const t = useTranslations('configuracion.NuevoServicioPage');
   const router = useRouter();
   const { servicios, agregarServicio } = useServiciosStore();
-  const { categorias, fetchCategorias, loading: categoriasLoading, error: categoriasError } = useCategoriasServicioStore();
+  // El selector (SelectorCategoriaServicio) es dueño de su propio fetch de
+  // categorías (design D4) — esta página solo sigue leyendo `loading` para
+  // el guard de submit compartido (ver comentario abajo, sin cambios de
+  // criterio respecto a la versión previa).
+  const { loading: categoriasLoading } = useCategoriasServicioStore();
+  const searchParams = useSearchParams();
+
+  // `?categoria={id}` es una SEED, no un binding (design D5): se lee una
+  // sola vez acá, en el inicializador de useState, nunca en un efecto — un
+  // efecto pisaría los taps posteriores del usuario en el selector. El
+  // quick-add por categoría (Slice B, CategoriaHeader) es el único origen
+  // que manda este param; el FAB global abre sin él.
+  const [categoriaId, setCategoriaId] = useState<number | null>(() => {
+    const raw = searchParams.get('categoria');
+    return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+  });
 
   const [nombre,  setNombre]  = useState('');
   const [duracion, setDuracion] = useState(30);
   const [precio,  setPrecio]  = useState('');
   const [esPromo, setEsPromo] = useState(false);
-  const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [errorNombre, setErrorNombre] = useState('');
   const [saving,  setSaving]  = useState(false);
-
-  useEffect(() => {
-    if (categorias.length === 0) fetchCategorias();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSeleccionarCategoria = (id: number) => {
-    setCategoriaId(prev => prev === id ? null : id);
-  };
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
@@ -110,6 +107,11 @@ export default function NuevoServicioPage() {
 
       {/* Form */}
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Categoría — primer campo (spec: service-category-assignment,
+            "MUST always be visible and be the first field"), siempre
+            visible incluso con cero categorías cargadas. */}
+        <SelectorCategoriaServicio value={categoriaId} onChange={setCategoriaId} />
+
         {/* Nombre */}
         <div>
           <label style={labelStyle}>{t('nameLabel')}</label>
@@ -142,44 +144,6 @@ export default function NuevoServicioPage() {
           />
         </div>
 
-        {/* Categoría — opcional, invisible sin categorías cargadas (spec:
-            no forzar al usuario a crear una para poder seguir usando
-            servicios como antes). Tap en la misma chip deselecciona → null,
-            mismo patrón que el selector de profesional en gastos/nuevo. */}
-        {categorias.length > 0 && (
-          <div>
-            <label style={labelStyle}>{t('categoryLabel')}</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {/* "Sin categoría" explícito — más claro que depender solo de
-                  tap-en-la-misma-chip para deseleccionar, sobre todo al
-                  editar un servicio que ya tiene una categoría asignada. */}
-              <button
-                type="button"
-                onClick={() => setCategoriaId(null)}
-                style={chipStyle(categoriaId === null)}
-              >
-                {t('categoryNone')}
-              </button>
-              {categorias.map(cat => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => handleSeleccionarCategoria(cat.id)}
-                  style={chipStyle(categoriaId === cat.id)}
-                >
-                  {cat.nombre}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Sin esto, un fetch de categorías fallido es indistinguible de
-            "esta cuenta no tiene categorías" — el selector simplemente no
-            aparece y no queda ninguna señal de que algo rompió. */}
-        {categoriasError && categorias.length === 0 && (
-          <p style={{ margin: 0, fontSize: 12, color: colors.subtext }}>{t('categoriesLoadError')}</p>
-        )}
-
         {/* Promo */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -195,7 +159,8 @@ export default function NuevoServicioPage() {
         </div>
 
         {/* Button */}
-        {/* categoriasLoading también deshabilita: fetchCategorias() y
+        {/* categoriasLoading también deshabilita: fetchCategorias() (ahora
+            disparado dentro de SelectorCategoriaServicio) y
             agregarServicio() comparten el mismo withGlobalLoader booleano
             (no contador, ver comentario en useServicioStore.ts) — si el
             submit dispara mientras la categoría todavía está en vuelo, el
@@ -217,5 +182,18 @@ export default function NuevoServicioPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Default export — wraps in Suspense for useSearchParams (mismo patrón que
+// app/(app)/agenda/nuevo/page.tsx)
+// ─────────────────────────────────────────────
+export default function NuevoServicioPage() {
+  const t = useTranslations('configuracion.NuevoServicioPage');
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
+      <NuevoServicioContent />
+    </Suspense>
   );
 }
