@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { useGastosStore } from '@/store/useGastoStore';
 import { CATEGORIAS_GASTO, Gasto } from '@/services/gastoService';
 import { labelCategoriaGasto } from '@/lib/categoriaLabel';
@@ -145,6 +146,48 @@ export default function GastosPage() {
       </div>
       <div style={{ padding: '4px 20px 12px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+      </div>
+
+      {/* Entry point: Gestionar categorías (mismo patrón que
+          servicios/page.tsx — único punto de entrada sancionado al editor
+          de categorías de gastos/ingresos, ahora que se sacó del menú raíz
+          de Configuración). Categorías de movimientos es una pantalla
+          compartida con Ingresos, así que ambas listas necesitan su propio
+          entry point acá. */}
+      <div style={{ padding: '0 20px 16px' }}>
+        <button
+          onClick={() => router.push('/configuracion/categorias-movimientos?tab=gasto')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+            backgroundColor: colors.surface,
+            border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14,
+            padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '15'),
+            borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
+              <rect x="3" y="4" width="7" height="7" rx="1.5" />
+              <rect x="14" y="4" width="7" height="7" rx="1.5" />
+              <rect x="3" y="13" width="7" height="7" rx="1.5" />
+              <rect x="14" y="13" width="7" height="7" rx="1.5" />
+            </svg>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.text }}>
+              {t('manageCategoriesButton')}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+              {t('manageCategoriesHint')}
+            </p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
       </div>
 
       {/* FAB */}

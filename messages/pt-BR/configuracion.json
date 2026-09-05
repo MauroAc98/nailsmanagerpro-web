@@ -9,7 +9,6 @@
     "profesionales": "Profissionais",
     "gastos": "Despesas",
     "ingresos": "Receitas",
-    "categoriasMovimientos": "Categorias de despesas e receitas",
     "estadisticas": "Estatísticas",
     "apariencia": "Aparência",
     "idioma": "Idioma",
@@ -107,7 +106,9 @@
     "filterDateFrom": "De",
     "filterDateTo": "Até",
     "totalFilteredLabel": "Total filtrado",
-    "emptyFiltered": "Nenhuma despesa corresponde aos filtros"
+    "emptyFiltered": "Nenhuma despesa corresponde aos filtros",
+    "manageCategoriesButton": "Gerenciar categorias",
+    "manageCategoriesHint": "Crie, edite ou exclua suas categorias de despesas"
   },
   "NuevoGastoPage": {
     "title": "Nova despesa",
@@ -167,7 +168,9 @@
     "filterDateFrom": "De",
     "filterDateTo": "Até",
     "totalFilteredLabel": "Total filtrado",
-    "emptyFiltered": "Nenhuma receita corresponde aos filtros"
+    "emptyFiltered": "Nenhuma receita corresponde aos filtros",
+    "manageCategoriesButton": "Gerenciar categorias",
+    "manageCategoriesHint": "Crie, edite ou exclua suas categorias de receitas"
   },
   "NuevoIngresoPage": {
     "title": "Nova receita",
@@ -211,7 +214,8 @@
     "addPlaceholder": "Nova categoria",
     "addButton": "Adicionar",
     "deleteLabel": "Excluir",
-    "saveButton": "Salvar alterações",
+    "saveButtonGasto": "Salvar alterações de despesas",
+    "saveButtonIngreso": "Salvar alterações de receitas",
     "saving": "Salvando...",
     "saved": "Categorias salvas",
     "historyNote": "Renomear ou excluir uma categoria não altera as despesas nem as receitas que você já registrou com o nome anterior.",

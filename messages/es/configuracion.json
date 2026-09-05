@@ -9,7 +9,6 @@
     "profesionales": "Profesionales",
     "gastos": "Gastos",
     "ingresos": "Ingresos",
-    "categoriasMovimientos": "Categorías de gastos e ingresos",
     "estadisticas": "Estadísticas",
     "apariencia": "Apariencia",
     "idioma": "Idioma",
@@ -107,7 +106,9 @@
     "filterDateFrom": "Desde",
     "filterDateTo": "Hasta",
     "totalFilteredLabel": "Total filtrado",
-    "emptyFiltered": "Ningún gasto coincide con los filtros"
+    "emptyFiltered": "Ningún gasto coincide con los filtros",
+    "manageCategoriesButton": "Gestionar categorías",
+    "manageCategoriesHint": "Creá, editá o eliminá tus categorías de gastos"
   },
   "NuevoGastoPage": {
     "title": "Nuevo gasto",
@@ -167,7 +168,9 @@
     "filterDateFrom": "Desde",
     "filterDateTo": "Hasta",
     "totalFilteredLabel": "Total filtrado",
-    "emptyFiltered": "Ningún ingreso coincide con los filtros"
+    "emptyFiltered": "Ningún ingreso coincide con los filtros",
+    "manageCategoriesButton": "Gestionar categorías",
+    "manageCategoriesHint": "Creá, editá o eliminá tus categorías de ingresos"
   },
   "NuevoIngresoPage": {
     "title": "Nuevo ingreso",
@@ -211,7 +214,8 @@
     "addPlaceholder": "Nueva categoría",
     "addButton": "Agregar",
     "deleteLabel": "Eliminar",
-    "saveButton": "Guardar cambios",
+    "saveButtonGasto": "Guardar cambios de gastos",
+    "saveButtonIngreso": "Guardar cambios de ingresos",
     "saving": "Guardando...",
     "saved": "Categorías guardadas",
     "historyNote": "Renombrar o borrar una categoría no cambia los gastos ni los ingresos que ya cargaste con el nombre anterior.",

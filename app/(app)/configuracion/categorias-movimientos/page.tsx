@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -26,11 +27,20 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 10, padding: '11px 13px', fontSize: 15, color: colors.text, outline: 'none',
 };
 
-export default function CategoriasMovimientosPage() {
+// ─────────────────────────────────────────────
+// Inner component (uses useSearchParams)
+// ─────────────────────────────────────────────
+function CategoriasMovimientosContent() {
   const t = useTranslations('configuracion.CategoriasMovimientoPage');
   const { user } = useAuth();
+  const searchParams = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>('gasto');
+  // `?tab={gasto|ingreso}` es una SEED, no un binding (mismo patrón que
+  // `?categoria={id}` en servicios/nuevo/page.tsx): se lee una sola vez acá,
+  // en el inicializador de useState, nunca en un efecto. Los entry points de
+  // Gastos e Ingresos son quienes mandan este param; sin él (o con un valor
+  // inesperado) arranca en 'gasto', el default histórico.
+  const [tab, setTab] = useState<Tab>(() => (searchParams.get('tab') === 'ingreso' ? 'ingreso' : 'gasto'));
 
   const listaGuardada = user
     ? (tab === 'gasto' ? user.categorias_gasto : user.categorias_ingreso)
@@ -80,6 +90,19 @@ export default function CategoriasMovimientosPage() {
           : <p style={{ margin: 0, fontSize: 14, color: colors.subtext }}>{t('loading')}</p>}
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Default export — wraps in Suspense for useSearchParams (mismo patrón que
+// app/(app)/configuracion/servicios/nuevo/page.tsx)
+// ─────────────────────────────────────────────
+export default function CategoriasMovimientosPage() {
+  const t = useTranslations('configuracion.CategoriasMovimientoPage');
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
+      <CategoriasMovimientosContent />
+    </Suspense>
   );
 }
 
@@ -251,7 +274,11 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
         {t('historyNote')}
       </p>
 
-      {/* Guardar */}
+      {/* Guardar — el texto nombra explícitamente la pestaña activa (gasto/
+          ingreso): un "Guardar cambios" genérico, en una pantalla con dos
+          listas independientes bajo un mismo toggle, sugiere que guarda
+          "todo" cuando en realidad `handleGuardar` solo persiste la lista de
+          `tipo` (ver arriba) — la otra pestaña ni se toca. */}
       <button
         type="button"
         onClick={handleGuardar}
@@ -263,7 +290,7 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
           cursor: (!hayCambios || guardando) ? 'not-allowed' : 'pointer',
         }}
       >
-        {guardando ? t('saving') : t('saveButton')}
+        {guardando ? t('saving') : t(tipo === 'gasto' ? 'saveButtonGasto' : 'saveButtonIngreso')}
       </button>
     </>
   );
