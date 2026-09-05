@@ -322,6 +322,8 @@ export default function ServiciosPage() {
                 <ServicioCard
                   key={s.id}
                   servicio={s}
+                  visual={categoriaVisual(s.categoria_id)}
+                  showPromoBadge={s.es_promo}
                   onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
                   onToggle={activo => handleToggle(s, activo)}
                   onDelete={() => handleEliminar(s)}
