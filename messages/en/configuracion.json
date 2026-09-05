@@ -9,6 +9,14 @@
     "collapseCategory": "Collapse category",
     "expandCategory": "Expand category"
   },
+  "GastosPage": {
+    "manageCategoriesButton": "Manage categories",
+    "manageCategoriesHint": "Create, edit, or delete your expense categories"
+  },
+  "IngresosPage": {
+    "manageCategoriesButton": "Manage categories",
+    "manageCategoriesHint": "Create, edit, or delete your income categories"
+  },
   "CategoriasPage": {
     "title": "Categories",
     "loading": "Loading categories...",

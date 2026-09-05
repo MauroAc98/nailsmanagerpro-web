@@ -54,8 +54,3 @@ export function eliminarCategoria(lista: readonly string[], index: number): Resu
   if (lista.length <= 1) return { ok: false, error: 'minima' };
   return { ok: true, categorias: lista.filter((_, i) => i !== index) };
 }
-
-// Igualdad de listas para el "hay cambios sin guardar" — orden incluido.
-export function categoriasIguales(a: readonly string[], b: readonly string[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
-}

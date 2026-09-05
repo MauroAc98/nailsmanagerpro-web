@@ -9,7 +9,6 @@
     "profesionales": "Profesionales",
     "gastos": "Gastos",
     "ingresos": "Ingresos",
-    "categoriasMovimientos": "Categorías de gastos e ingresos",
     "estadisticas": "Estadísticas",
     "apariencia": "Apariencia",
     "idioma": "Idioma",
@@ -107,7 +106,9 @@
     "filterDateFrom": "Desde",
     "filterDateTo": "Hasta",
     "totalFilteredLabel": "Total filtrado",
-    "emptyFiltered": "Ningún gasto coincide con los filtros"
+    "emptyFiltered": "Ningún gasto coincide con los filtros",
+    "manageCategoriesButton": "Gestionar categorías",
+    "manageCategoriesHint": "Creá, editá o eliminá tus categorías de gastos"
   },
   "NuevoGastoPage": {
     "title": "Nuevo gasto",
@@ -167,7 +168,9 @@
     "filterDateFrom": "Desde",
     "filterDateTo": "Hasta",
     "totalFilteredLabel": "Total filtrado",
-    "emptyFiltered": "Ningún ingreso coincide con los filtros"
+    "emptyFiltered": "Ningún ingreso coincide con los filtros",
+    "manageCategoriesButton": "Gestionar categorías",
+    "manageCategoriesHint": "Creá, editá o eliminá tus categorías de ingresos"
   },
   "NuevoIngresoPage": {
     "title": "Nuevo ingreso",
@@ -210,10 +213,11 @@
     "tabIngresos": "Ingresos",
     "addPlaceholder": "Nueva categoría",
     "addButton": "Agregar",
+    "editLabel": "Editar",
     "deleteLabel": "Eliminar",
-    "saveButton": "Guardar cambios",
-    "saving": "Guardando...",
-    "saved": "Categorías guardadas",
+    "deleteConfirm": "¿Eliminás la categoría \"{nombre}\"?",
+    "deleteConfirmButton": "Eliminar",
+    "saved": "Categoría guardada",
     "historyNote": "Renombrar o borrar una categoría no cambia los gastos ni los ingresos que ya cargaste con el nombre anterior.",
     "error_vacia": "Escribí un nombre para la categoría.",
     "error_duplicada": "Ya existe una categoría con ese nombre.",

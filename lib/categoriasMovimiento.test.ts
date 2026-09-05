@@ -4,7 +4,6 @@ import {
   agregarCategoria,
   renombrarCategoria,
   eliminarCategoria,
-  categoriasIguales,
   MAX_CATEGORIAS,
 } from './categoriasMovimiento';
 
@@ -64,13 +63,5 @@ describe('eliminarCategoria', () => {
 
   it('no deja borrar la última categoría', () => {
     expect(eliminarCategoria(['insumos'], 0)).toEqual({ ok: false, error: 'minima' });
-  });
-});
-
-describe('categoriasIguales', () => {
-  it('compara contenido y orden', () => {
-    expect(categoriasIguales(['a', 'b'], ['a', 'b'])).toBe(true);
-    expect(categoriasIguales(['a', 'b'], ['b', 'a'])).toBe(false);
-    expect(categoriasIguales(['a'], ['a', 'b'])).toBe(false);
   });
 });
