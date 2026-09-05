@@ -1,9 +1,13 @@
 {
   "ServiciosPage": {
-    "sectionServicios": "Services",
-    "sectionPromociones": "Promotions",
     "sectionSinCategoria": "No category",
-    "promoBadge": "PROMO"
+    "promoBadge": "PROMO",
+    "manageCategoriesButton": "Manage categories",
+    "manageCategoriesHint": "Create, edit, or delete your service categories",
+    "categoryServiceCount": "{count, plural, one {# service} other {# services}}",
+    "addServiceToCategory": "Add service to this category",
+    "collapseCategory": "Collapse category",
+    "expandCategory": "Expand category"
   },
   "CategoriasPage": {
     "title": "Categories",

@@ -9,6 +9,13 @@ export interface GrupoServiciosCategoria {
   servicios:  Servicio[];
 }
 
+// `orden` restarts at 0 per (categoria, es_promo) group on the backend, so
+// merging regulars and promos into one flat list (Slice B) makes those
+// cross-group ties visible as unstable first-render order; `id` is the
+// deterministic tiebreak (monotonic, never null, never reused) — see
+// design "lib/agruparServiciosPorCategoria.ts (modify)".
+const porOrdenEstable = (a: Servicio, b: Servicio) => a.orden - b.orden || a.id - b.id;
+
 // Regla de agrupamiento compartida (orden = orden de `categorias`, ya
 // alfabético desde el backend — ver useCategoriasServicioStore). "Sin
 // categoria" se agrega al final solo si tiene servicios; una categoría sin
@@ -30,7 +37,9 @@ export function agruparServiciosPorCategoria(
     grupos.push({
       id: categoria.id,
       nombre: categoria.nombre,
-      servicios: deLaCategoria,
+      // Copia antes de ordenar — `Array.prototype.sort` muta in-place y
+      // `servicios` es estado owned por el store, nunca debe mutarse acá.
+      servicios: [...deLaCategoria].sort(porOrdenEstable),
     });
   }
 
@@ -39,7 +48,7 @@ export function agruparServiciosPorCategoria(
     grupos.push({
       id: null,
       nombre: '', // resuelto en el render vía t('sinCategoria')
-      servicios: sinCategoria,
+      servicios: [...sinCategoria].sort(porOrdenEstable),
     });
   }
 
