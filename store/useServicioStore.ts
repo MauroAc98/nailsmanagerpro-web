@@ -131,8 +131,19 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
   reordenarServicios: async (ids) => {
     // Sin withGlobalLoader: el drag-and-drop debe sentirse instantáneo, no
     // dispara un spinner de pantalla completa igual que toggleServicio.
+    // reordenarEnSitio solo reacomoda las posiciones del array — el campo
+    // `orden` de cada servicio afectado hay que reasignarlo a su índice
+    // dentro de `ids` (mismo contrato que PATCH /servicios/reordenar:
+    // orden = index sobre el array recibido), si no el sort por `orden`
+    // de agruparServiciosPorCategoria deshace el drag en el próximo render
+    // (mismo bug ya resuelto para las fotos de historia de precios, ver
+    // useProfesionalStore.ts).
     const anterior = get().servicios;
-    set({ servicios: reordenarEnSitio(anterior, ids) });
+    const nuevoOrden = new Map(ids.map((id, index) => [id, index]));
+    const reordenado = reordenarEnSitio(anterior, ids).map(s =>
+      nuevoOrden.has(s.id) ? { ...s, orden: nuevoOrden.get(s.id)! } : s
+    );
+    set({ servicios: reordenado });
     try {
       await servicioService.reordenar(ids);
     } catch (e) {
