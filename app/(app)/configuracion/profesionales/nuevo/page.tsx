@@ -10,7 +10,7 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
 import { alertDialog } from '@/store/useConfirmStore';
-import { SelectorServiciosPorCategoria } from '@/components/configuracion/SelectorServiciosPorCategoria';
+import { SelectorServicios } from '@/components/SelectorServicios';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -123,9 +123,10 @@ export default function NuevoProfesionalPage() {
         {/* Servicios */}
         <div>
           <label style={labelStyle}>{t('servicesLabel')}</label>
-          <SelectorServiciosPorCategoria
+          <SelectorServicios
             servicios={servicios}
-            servicioIds={servicioIds}
+            mode="multi"
+            selectedIds={servicioIds}
             onChange={setServicioIds}
           />
         </div>

@@ -1,1 +1,14 @@
-{}
+{
+  "SelectorServicios": {
+    "filterPlaceholder": "Search service...",
+    "sinCategoria": "No category",
+    "noActiveServices": "No active services yet. Add them first in Settings → Services.",
+    "noResults": "No services found.",
+    "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+    "filterAll": "All",
+    "collapseCategory": "Collapse category",
+    "expandCategory": "Expand category",
+    "selectCategory": "Select category",
+    "deselectCategory": "Deselect category"
+  }
+}

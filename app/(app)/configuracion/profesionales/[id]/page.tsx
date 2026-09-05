@@ -11,7 +11,7 @@ import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
-import { SelectorServiciosPorCategoria } from '@/components/configuracion/SelectorServiciosPorCategoria';
+import { SelectorServicios } from '@/components/SelectorServicios';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -66,10 +66,10 @@ export default function EditarProfesionalPage() {
       // filtrar por `activo` (ver Profesional::servicios / ProfesionalController@index) —
       // incluye servicios inactivos ya asignados. Semillar acá con TODOS
       // los ids (no solo los activos) es lo que le permite a
-      // `SelectorServiciosPorCategoria` preservarlos aunque no los
-      // muestre: el componente filtra a activos solo para renderizar, pero
-      // cualquier id fuera de ese subconjunto pasa intacto por sus
-      // mutaciones (ver su prop `servicioIds`).
+      // `SelectorServicios` preservarlos aunque no los muestre: el
+      // componente filtra a activos solo para renderizar, pero cualquier id
+      // fuera de ese subconjunto pasa intacto por sus mutaciones (ver su
+      // prop `selectedIds`).
       setServicioIds(p.servicios.map(s => s.id));
       setLoadingProfesional(false);
     };
@@ -180,9 +180,10 @@ export default function EditarProfesionalPage() {
         {/* Servicios */}
         <div>
           <label style={labelStyle}>{t('servicesLabel')}</label>
-          <SelectorServiciosPorCategoria
+          <SelectorServicios
             servicios={servicios}
-            servicioIds={servicioIds}
+            mode="multi"
+            selectedIds={servicioIds}
             onChange={setServicioIds}
           />
         </div>

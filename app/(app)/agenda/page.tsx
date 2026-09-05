@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Camera, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useTurnoStore } from '@/store/useTurnoStore';
@@ -21,6 +21,7 @@ import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner } from '@/components/RecordatoriosPendientesBanner';
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
+import { SelectorServicios } from '@/components/SelectorServicios';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
@@ -600,7 +601,7 @@ function FiltroSheetContent({
   hayFiltroActivo,
   onChangeBusqueda,
   onLimpiarBusqueda,
-  onToggleServicio,
+  onChangeServicioFiltro,
   onCambiarFecha,
   onLimpiarTodo,
   onAplicar,
@@ -612,7 +613,7 @@ function FiltroSheetContent({
   hayFiltroActivo: boolean;
   onChangeBusqueda: (txt: string) => void;
   onLimpiarBusqueda: () => void;
-  onToggleServicio: (id: number) => void;
+  onChangeServicioFiltro: (ids: number[]) => void;
   onCambiarFecha: (fecha: string | null) => void;
   onLimpiarTodo: () => void;
   onAplicar: () => void;
@@ -622,19 +623,8 @@ function FiltroSheetContent({
     fechaFiltro ? fechaFiltro.split('-').reverse().join('/') : '',
   );
   const [fechaError, setFechaError] = useState(false);
-  // Acordeón Servicios/Promociones — mismo agrupado que ServicioPicker, para
-  // que la lista no quede infinita si hay muchos servicios cargados. Sin
-  // buscador acá: a diferencia de ServicioPicker (elegir servicios de UN
-  // turno), esta hoja ya tiene busqueda por nombre y por fecha arriba.
-  const [grupoAbierto, setGrupoAbierto] = useState<'regulares' | 'promos' | null>('regulares');
 
   const btnDeshabilitado = !hayFiltroActivo || fechaError;
-
-  const gruposServicios = [
-    { key: 'regulares' as const, nombre: t('groupServicios'), items: serviciosActivos.filter(s => !s.es_promo) },
-    { key: 'promos' as const, nombre: t('groupPromociones'), items: serviciosActivos.filter(s => s.es_promo) },
-  ].filter(g => g.items.length > 0);
-  const servicioSeleccionado = serviciosActivos.find(s => s.id === servicioFiltro) ?? null;
 
   const handleCambiarTextoFecha = (texto: string) => {
     const formateado = autoFormatearFecha(texto, textoFecha);
@@ -740,92 +730,20 @@ function FiltroSheetContent({
         <p style={{ fontSize: 11, color: colors.danger, marginTop: 5, marginLeft: 2 }}>{t('invalidDate')}</p>
       )}
 
-      {/* Filtrar por servicio — mismas filas con checkbox y el mismo
-          acordeón Servicios/Promociones que ServicioPicker (components/
-          agenda/ServicioPicker.tsx), pero sin buscador: acá alcanza con el
-          colapsado de grupos y sigue siendo selección única (servicioFiltro
-          es un solo id, no un array). */}
+      {/* Filtrar por servicio — mismo componente compartido que agenda/nuevo
+          y configuracion/profesionales, en `mode: 'single'` (radio
+          semantics: tocar el ya elegido lo limpia). Sin buscador propio acá
+          (el sheet ya tiene busqueda por nombre y por fecha arriba). */}
       <p style={{ ...sectionLabelStyle, marginTop: fechaError ? 12 : 16 }}>
         {t('filterByService')}
       </p>
-      <div style={{
-        marginBottom: 20, borderRadius: 16,
-        border: `1px solid ${colors.border}`, backgroundColor: colors.surface, overflow: 'hidden',
-      }}>
-        {/* Chip del seleccionado — visible siempre, sin importar qué grupo
-            esté colapsado. Sin esto, elegir un servicio y después cerrar (o
-            cambiar de) grupo lo dejaba sin ningún rastro visible. */}
-        {servicioSeleccionado && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 10, borderBottom: `1px solid ${colors.hairline}` }}>
-            <button
-              onClick={() => onToggleServicio(servicioSeleccionado.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, borderRadius: 20, padding: '6px 10px',
-                fontSize: 12, fontWeight: 600, color: colors.primaryDeep, backgroundColor: colors.primarySoft,
-                border: 'none', cursor: 'pointer',
-              }}
-            >
-              {servicioSeleccionado.nombre}
-              <X size={12} strokeWidth={2.5} />
-            </button>
-          </div>
-        )}
-        {gruposServicios.map((grupo, groupIndex) => {
-          const isOpen = grupoAbierto === grupo.key;
-          return (
-            <div key={grupo.key} style={{ borderTop: groupIndex > 0 ? `1px solid ${colors.hairline}` : 'none' }}>
-              <button
-                onClick={() => setGrupoAbierto(isOpen ? null : grupo.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-                  padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.subtext }}>
-                  {grupo.nombre}
-                </span>
-                {isOpen ? <ChevronUp size={16} color={colors.muted} /> : <ChevronDown size={16} color={colors.muted} />}
-              </button>
-              {isOpen && (
-                <div style={{ padding: '0 8px 8px' }}>
-                  {grupo.items.map(s => {
-                    const checked = servicioFiltro === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => onToggleServicio(s.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                          padding: '10px 8px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
-                          background: 'none', border: 'none',
-                        }}
-                      >
-                        <span style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                          width: 20, height: 20, borderRadius: 6,
-                          border: `1px solid ${checked ? colors.primarySolid : colors.border}`,
-                          backgroundColor: checked ? colors.primarySolid : 'transparent',
-                          color: colors.primaryFg,
-                        }}>
-                          {checked && <Check size={14} strokeWidth={3} />}
-                        </span>
-                        <span style={{
-                          flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: colors.textStrong,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                        }}>
-                          {s.nombre}
-                        </span>
-                        <span style={{ fontSize: 12, color: colors.muted, flexShrink: 0 }}>
-                          {s.duracion_minutos} min
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div style={{ marginBottom: 20 }}>
+        <SelectorServicios
+          servicios={serviciosActivos}
+          mode="single"
+          selectedIds={servicioFiltro !== null ? [servicioFiltro] : []}
+          onChange={onChangeServicioFiltro}
+        />
       </div>
 
       <button
@@ -1243,11 +1161,11 @@ export default function AgendaPage() {
     buscarPorNombre('');
   }, [buscarPorNombre]);
 
-  const handleToggleServicio = useCallback((id: number) => {
-    const nuevo = servicioFiltro === id ? null : id;
+  const handleChangeServicioFiltro = useCallback((ids: number[]) => {
+    const nuevo = ids[0] ?? null;
     setServicioFiltro(nuevo);
     buscarPorServicio(nuevo);
-  }, [servicioFiltro, buscarPorServicio]);
+  }, [buscarPorServicio]);
 
   const handleCambiarFecha = useCallback((fecha: string | null) => {
     setFechaFiltro(fecha);
@@ -1472,7 +1390,7 @@ export default function AgendaPage() {
           hayFiltroActivo={hayFiltroActivo}
           onChangeBusqueda={handleBuscarCliente}
           onLimpiarBusqueda={handleLimpiarBusqueda}
-          onToggleServicio={handleToggleServicio}
+          onChangeServicioFiltro={handleChangeServicioFiltro}
           onCambiarFecha={handleCambiarFecha}
           onLimpiarTodo={handleLimpiarTodo}
           onAplicar={() => filtroSheetRef.current?.close()}
