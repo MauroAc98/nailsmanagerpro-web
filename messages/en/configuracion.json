@@ -41,14 +41,21 @@
     "loadError": "Could not load the category."
   },
   "NuevoServicioPage": {
-    "categoryLabel": "Category (optional)",
-    "categoryNone": "No category",
-    "categoriesLoadError": "Could not load the categories."
+    "loading": "Loading..."
   },
-  "EditarServicioPage": {
-    "categoryLabel": "Category (optional)",
-    "categoryNone": "No category",
-    "categoriesLoadError": "Could not load the categories."
+  "EditarServicioPage": {},
+  "SelectorCategoriaServicio": {
+    "label": "Category",
+    "none": "No category",
+    "newCategory": "New category",
+    "namePlaceholder": "E.g: Manicure",
+    "nameRequired": "Name is required",
+    "duplicate": "A category with that name already exists.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveError": "Could not save the category.",
+    "loadError": "Could not load the categories."
   },
   "SelectorServiciosPorCategoria": {
     "filterPlaceholder": "Search service...",
