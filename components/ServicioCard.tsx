@@ -9,7 +9,6 @@ import { withAlpha } from '@/theme/colors';
 import { Servicio } from '@/services/servicioService';
 import { formatMonto } from '@/lib/money';
 import PillToggle from '@/components/PillToggle';
-import { CategoriaVisual } from '@/lib/categoriaVisual';
 
 // Mismos valores que agenda/page.tsx (SwipeableTurnoCard) — mismo gesto,
 // mismo feel. No se importa desde ahí a propósito: ese archivo es solo
@@ -25,18 +24,13 @@ interface Props {
   // Ausente cuando la card se renderiza sin drag-and-drop (resultados de
   // búsqueda: lista plana, reordenar no tiene sentido — ver page.tsx).
   draggable?: boolean;
-  // Identidad visual de la categoría del servicio (icono + color, D3: color
-  // es constante, solo el icono varía por categoría). Sin `visual`, la card
-  // sigue mostrando la estrella genérica de siempre — ningún caller actual
-  // la pasa todavía, eso arranca en la Slice B (agrupación por categoría).
-  visual?: CategoriaVisual;
   // Chip "PROMO" junto al nombre — reemplaza la sub-sección "Promociones"
   // que existía antes (Slice B aplana esa lista en un único listado por
   // categoría).
   showPromoBadge?: boolean;
 }
 
-export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, draggable = false, visual, showPromoBadge = false }: Props) {
+export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, draggable = false, showPromoBadge = false }: Props) {
   const t = useTranslations('configuracion.ServiciosPage');
   const precioLabel = servicio.precio ? `  ·  $${formatMonto(Number(servicio.precio))}` : '';
 
@@ -156,21 +150,14 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
       >
         <div style={{
           width: 36, height: 36,
-          backgroundColor: servicio.activo ? (visual?.tint ?? withAlpha(colors.primary, '15')) : colors.surfaceSubtle,
+          backgroundColor: servicio.activo ? withAlpha(colors.primary, '15') : colors.surfaceSubtle,
           borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          {visual ? (
-            <visual.icon size={18} strokeWidth={2} color={servicio.activo ? visual.tintStrong : colors.placeholder} />
-          ) : (
-            // Fallback sin identidad de categoría (`visual` ausente) — la
-            // estrella genérica de siempre, ningún caller actual pasa
-            // `visual` todavía (arranca en la Slice B).
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke={servicio.activo ? colors.primaryDeep : colors.placeholder} strokeWidth="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-          )}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke={servicio.activo ? colors.primaryDeep : colors.placeholder} strokeWidth="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
         </div>
 
         {/* minWidth:0 — sin esto un nombre largo no se comprime y empuja el
