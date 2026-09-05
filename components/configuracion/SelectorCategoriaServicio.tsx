@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { Plus, X } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
-import { categoriaVisual } from '@/lib/categoriaVisual';
 
 interface Props {
   value: number | null;
@@ -21,9 +20,8 @@ type Modo =
   | { tipo: 'creando'; nombre: string; error: string; saving: boolean };
 
 // Mismo patrón que el chip de categoría que reemplaza en nuevo/[id]/page.tsx
-// (color fijo, sin punto de color por-item) — acá además lleva el ícono
-// derivado de categoriaVisual (D3: misma marca en todas, el shape es lo que
-// varía).
+// (color fijo, sin punto de color por-item, solo texto — sin ícono por
+// categoría, ver refactor/quitar-iconos-categoria).
 function chipStyle(selected: boolean, dashed = false): React.CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 6,
@@ -147,8 +145,6 @@ export function SelectorCategoriaServicio({ value, onChange, disabled }: Props) 
             {t('none')}
           </button>
           {categorias.map(cat => {
-            const visual = categoriaVisual(cat.id);
-            const Icon = visual.icon;
             const selected = value === cat.id;
             return (
               <button
@@ -158,7 +154,6 @@ export function SelectorCategoriaServicio({ value, onChange, disabled }: Props) 
                 disabled={disabled}
                 style={chipStyle(selected)}
               >
-                <Icon size={16} strokeWidth={2} color={selected ? '#FFF' : visual.tintStrong} />
                 {cat.nombre}
               </button>
             );

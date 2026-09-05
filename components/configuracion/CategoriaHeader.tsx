@@ -2,7 +2,6 @@
 
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
-import { categoriaVisual } from '@/lib/categoriaVisual';
 
 interface Props {
   categoriaId:      number | null; // null → "Sin categoría"
@@ -23,10 +22,9 @@ interface Props {
 // todo el ancho disponible (flex:1); el "+" de quick-add es un botón aparte
 // al lado, no un hijo.
 export default function CategoriaHeader({
-  categoriaId, nombre, count, colapsada, onToggleColapsar, onQuickAdd, panelId,
+  nombre, count, colapsada, onToggleColapsar, onQuickAdd, panelId,
 }: Props) {
   const t = useTranslations('configuracion.ServiciosPage');
-  const visual = categoriaVisual(categoriaId);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -40,13 +38,15 @@ export default function CategoriaHeader({
           background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', textAlign: 'left',
         }}
       >
+        {/* Sin ícono (feedback de usuario: las formas no van, ver
+            refactor/quitar-iconos-categoria) — el propio estado
+            relleno/hueco del círculo es ahora la señal de
+            colapsado/expandido, además del chevron que ya rota. */}
         <div style={{
-          width: 36, height: 36, flexShrink: 0,
-          backgroundColor: visual.tint,
-          borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <visual.icon size={18} strokeWidth={2} color={visual.tintStrong} />
-        </div>
+          width: 14, height: 14, flexShrink: 0, borderRadius: 7,
+          backgroundColor: colapsada ? 'transparent' : colors.primaryDeep,
+          border: colapsada ? `2px solid ${colors.border}` : 'none',
+        }} />
 
         {/* minWidth:0 + ellipsis en el nombre, flexShrink:0 en el pill y el
             chevron — sin esto un nombre largo empuja los controles fuera de

@@ -21,7 +21,6 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
-import { categoriaVisual } from '@/lib/categoriaVisual';
 import CategoriaHeader from '@/components/configuracion/CategoriaHeader';
 
 // ReorderableSection — un grupo (una categoría, o "Sin categoría") con su
@@ -62,7 +61,6 @@ function ReorderableSection({
               key={s.id}
               servicio={s}
               draggable
-              visual={categoriaVisual(s.categoria_id)}
               showPromoBadge={s.es_promo}
               onEdit={() => onEdit(s.id)}
               onToggle={activo => onToggle(s, activo)}
@@ -322,7 +320,6 @@ export default function ServiciosPage() {
                 <ServicioCard
                   key={s.id}
                   servicio={s}
-                  visual={categoriaVisual(s.categoria_id)}
                   showPromoBadge={s.es_promo}
                   onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
                   onToggle={activo => handleToggle(s, activo)}

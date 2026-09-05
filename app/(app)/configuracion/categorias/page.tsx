@@ -11,7 +11,6 @@ import { CategoriaServicio } from '@/services/categoriaServicioService';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
-import { categoriaVisual } from '@/lib/categoriaVisual';
 
 export default function CategoriasPage() {
   const t = useTranslations('configuracion.CategoriasPage');
@@ -96,7 +95,6 @@ export default function CategoriasPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {categorias.map(c => {
-                const visual = categoriaVisual(c.id);
                 const count = contarServicios(c.id);
                 return (
                 <div
@@ -114,17 +112,6 @@ export default function CategoriasPage() {
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                     }}
                   >
-                    {/* Misma identidad visual (icono + color constante de marca)
-                        que el header de esta categoría en el listado de
-                        Servicios — spec: las filas del CRUD llevan la misma
-                        identidad que los headers. */}
-                    <div style={{
-                      width: 36, height: 36, flexShrink: 0,
-                      backgroundColor: visual.tint,
-                      borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <visual.icon size={18} strokeWidth={2} color={visual.tintStrong} />
-                    </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <p style={{
                         margin: 0, fontSize: 15, fontWeight: 600, color: colors.text,
