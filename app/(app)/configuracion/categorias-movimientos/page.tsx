@@ -8,12 +8,12 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { showToast } from '@/store/useToastStore';
+import { confirmDialog } from '@/store/useConfirmStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import {
   agregarCategoria,
   renombrarCategoria,
   eliminarCategoria,
-  categoriasIguales,
   normalizarCategoria,
   MAX_LARGO_CATEGORIA,
   type ErrorCategoria,
@@ -117,16 +117,32 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const hayCambios = !categoriasIguales(lista, listaGuardada);
-
   const mostrarError = (e: ErrorCategoria) => setErrorLocal(t(`error_${e}`));
 
-  const handleAgregar = () => {
+  // Persiste inmediatamente cada alta/edición/borrado — mismo estándar que
+  // servicios/gastos/ingresos (sin un botón "Guardar cambios" separado que
+  // dejaba la lista en un estado "borrador" ambiguo).
+  const persistir = async (categorias: string[]) => {
+    setGuardando(true);
+    setErrorLocal(null);
+    try {
+      await updatePerfil(
+        tipo === 'gasto' ? { categorias_gasto: categorias } : { categorias_ingreso: categorias },
+      );
+      setLista(categorias);
+      showToast(t('saved'));
+    } catch (e) {
+      setErrorLocal(extraerMensajeError(e));
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const handleAgregar = async () => {
     const r = agregarCategoria(lista, nuevoValor);
     if (!r.ok) return mostrarError(r.error);
-    setLista(r.categorias);
     setNuevoValor('');
-    setErrorLocal(null);
+    await persistir(r.categorias);
   };
 
   const empezarEdicion = (index: number) => {
@@ -135,41 +151,32 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
     setErrorLocal(null);
   };
 
-  const confirmarEdicion = () => {
+  const confirmarEdicion = async () => {
     if (editIndex === null) return;
     // Sin cambio real → cerrar sin validar (evita un falso "duplicada"
-    // contra sí misma).
+    // contra sí misma) ni un request de más.
     if (normalizarCategoria(editValor) === lista[editIndex]) {
       setEditIndex(null);
       return;
     }
     const r = renombrarCategoria(lista, editIndex, editValor);
     if (!r.ok) return mostrarError(r.error);
-    setLista(r.categorias);
     setEditIndex(null);
-    setErrorLocal(null);
+    await persistir(r.categorias);
   };
 
-  const handleEliminar = (index: number) => {
+  // Confirmación previa — mismo patrón que todo otro borrado en la app
+  // (servicios, categorías de servicio, gastos, ingresos).
+  const handleEliminar = async (index: number) => {
+    const confirmado = await confirmDialog(
+      t('deleteConfirm', { nombre: lista[index] }),
+      { confirmText: t('deleteConfirmButton'), danger: true },
+    );
+    if (!confirmado) return;
+
     const r = eliminarCategoria(lista, index);
     if (!r.ok) return mostrarError(r.error);
-    setLista(r.categorias);
-    setErrorLocal(null);
-  };
-
-  const handleGuardar = async () => {
-    setGuardando(true);
-    setErrorLocal(null);
-    try {
-      await updatePerfil(
-        tipo === 'gasto' ? { categorias_gasto: lista } : { categorias_ingreso: lista },
-      );
-      showToast(t('saved'));
-    } catch (e) {
-      setErrorLocal(extraerMensajeError(e));
-    } finally {
-      setGuardando(false);
-    }
+    await persistir(r.categorias);
   };
 
   return (
@@ -183,15 +190,17 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
           onKeyDown={e => { if (e.key === 'Enter') handleAgregar(); }}
           placeholder={t('addPlaceholder')}
           maxLength={MAX_LARGO_CATEGORIA}
+          disabled={guardando}
           style={{ ...inputStyle, flex: 1, minWidth: 0 }}
         />
         <button
           type="button"
           onClick={handleAgregar}
+          disabled={guardando}
           style={{
             flexShrink: 0, padding: '0 16px', borderRadius: 10, border: 'none',
-            backgroundColor: colors.primarySolid, color: '#fff', fontSize: 14, fontWeight: 600,
-            cursor: 'pointer',
+            backgroundColor: guardando ? colors.primaryDisabled : colors.primarySolid, color: '#fff', fontSize: 14, fontWeight: 600,
+            cursor: guardando ? 'not-allowed' : 'pointer',
           }}
         >
           {t('addButton')}
@@ -217,6 +226,7 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
                   type="text"
                   value={editValor}
                   autoFocus
+                  disabled={guardando}
                   onChange={e => setEditValor(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter') confirmarEdicion();
@@ -224,13 +234,14 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
                   }}
                   onBlur={confirmarEdicion}
                   maxLength={MAX_LARGO_CATEGORIA}
-                  style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                  style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '8px 11px' }}
                 />
                 <button
                   type="button"
                   onMouseDown={e => e.preventDefault()}
                   onClick={confirmarEdicion}
-                  style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
+                  disabled={guardando}
+                  style={{ flexShrink: 0, background: 'none', border: 'none', cursor: guardando ? 'not-allowed' : 'pointer', padding: 4, display: 'flex' }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="2.5">
                     <polyline points="20 6 9 17 4 12" />
@@ -239,22 +250,33 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
               </>
             ) : (
               <>
+                {/* Nombre — texto plano, ya no es el disparador de edición
+                    (nada indicaba que fuera tocable). Editar/borrar viven
+                    ahora en sus propios íconos, siempre visibles. */}
+                <p style={{
+                  flex: 1, minWidth: 0, margin: 0, fontSize: 15, fontWeight: 600, color: colors.text,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {cat}
+                </p>
                 <button
                   type="button"
                   onClick={() => empezarEdicion(index)}
-                  style={{
-                    flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none',
-                    cursor: 'pointer', padding: 0, fontSize: 15, fontWeight: 600, color: colors.text,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}
+                  disabled={guardando}
+                  aria-label={t('editLabel')}
+                  style={{ flexShrink: 0, background: 'none', border: 'none', cursor: guardando ? 'not-allowed' : 'pointer', padding: 4, display: 'flex' }}
                 >
-                  {cat}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.subtext} strokeWidth="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleEliminar(index)}
+                  disabled={guardando}
                   aria-label={t('deleteLabel')}
-                  style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
+                  style={{ flexShrink: 0, background: 'none', border: 'none', cursor: guardando ? 'not-allowed' : 'pointer', padding: 4, display: 'flex' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
                     <polyline points="3 6 5 6 21 6" />
@@ -273,25 +295,6 @@ function EditorCategorias({ tipo, listaGuardada }: { tipo: Tab; listaGuardada: s
       <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>
         {t('historyNote')}
       </p>
-
-      {/* Guardar — el texto nombra explícitamente la pestaña activa (gasto/
-          ingreso): un "Guardar cambios" genérico, en una pantalla con dos
-          listas independientes bajo un mismo toggle, sugiere que guarda
-          "todo" cuando en realidad `handleGuardar` solo persiste la lista de
-          `tipo` (ver arriba) — la otra pestaña ni se toca. */}
-      <button
-        type="button"
-        onClick={handleGuardar}
-        disabled={!hayCambios || guardando}
-        style={{
-          marginTop: 4, height: 50, borderRadius: 14, border: 'none',
-          backgroundColor: (!hayCambios || guardando) ? colors.primaryDisabled : colors.primarySolid,
-          color: '#fff', fontSize: 15, fontWeight: 600,
-          cursor: (!hayCambios || guardando) ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {guardando ? t('saving') : t(tipo === 'gasto' ? 'saveButtonGasto' : 'saveButtonIngreso')}
-      </button>
     </>
   );
 }
