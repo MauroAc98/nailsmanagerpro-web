@@ -20,24 +20,23 @@ import { profesionalJefa } from '@/services/profesionalService';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
-import { CategoriaServicio } from '@/services/categoriaServicioService';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
+import { categoriaVisual } from '@/lib/categoriaVisual';
+import CategoriaHeader from '@/components/configuracion/CategoriaHeader';
 
-// ReorderableSection — un grupo (regular o promo) con su propio DndContext
-// / SortableContext, así arrastrar nunca mezcla ids entre grupos: cada
-// drag-end llama a `onReorder` con el array COMPLETO del grupo afectado
-// (contrato de reordenarServicios / PATCH /servicios/reordenar). Reusa el
-// mensaje de `emptyState` existente cuando el grupo específico queda vacío
-// (ej. cuenta sin promociones cargadas todavía).
-// Nunca se renderiza con `servicios` vacío — el padre (ver más abajo) salta
-// directamente la sección entera cuando el grupo no tiene items, en vez de
-// mostrar un header "PROMOCIONES" seguido de un placeholder "sin
-// promociones": la mayoría de los negocios no carga promociones, así que ese
-// placeholder era peso muerto visible siempre, no un estado excepcional.
+// ReorderableSection — un grupo (una categoría, o "Sin categoría") con su
+// propio DndContext/SortableContext, así arrastrar nunca mezcla ids entre
+// grupos: cada drag-end llama a `onReorder` con el array COMPLETO del grupo
+// afectado (contrato de reordenarServicios / PATCH /servicios/reordenar).
+// Ya no sub-particiona por `es_promo` — un único listado plano y ordenado
+// por categoría, con el chip `PROMO` en la card reemplazando el sub-header
+// "Promociones" (Slice B, spec: service-category-grouping).
+// Nunca se renderiza con `servicios` vacío — el padre salta directamente el
+// grupo entero cuando no tiene items (ver `agruparServiciosPorCategoria`,
+// que ya omite categorías sin servicios asignados).
 function ReorderableSection({
-  title, servicios, onEdit, onToggle, onDelete, onReorder,
+  servicios, onEdit, onToggle, onDelete, onReorder,
 }: {
-  title?:     string;
   servicios:  Servicio[];
   onEdit:     (id: number) => void;
   onToggle:   (servicio: Servicio, activo: boolean) => void;
@@ -55,55 +54,25 @@ function ReorderableSection({
   }
 
   return (
-    <div>
-      {title && (
-        <h2 style={{
-          margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: colors.subtext,
-          textTransform: 'uppercase', letterSpacing: 0.5,
-        }}>
-          {title}
-        </h2>
-      )}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {servicios.map(s => (
-              <ServicioCard
-                key={s.id}
-                servicio={s}
-                draggable
-                onEdit={() => onEdit(s.id)}
-                onToggle={activo => onToggle(s, activo)}
-                onDelete={() => onDelete(s)}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    </div>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {servicios.map(s => (
+            <ServicioCard
+              key={s.id}
+              servicio={s}
+              draggable
+              visual={categoriaVisual(s.categoria_id)}
+              showPromoBadge={s.es_promo}
+              onEdit={() => onEdit(s.id)}
+              onToggle={activo => onToggle(s, activo)}
+              onDelete={() => onDelete(s)}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
-}
-
-interface GrupoCategoria {
-  // null = "Sin categoria" — siempre al final (ver `agruparPorCategoria`),
-  // nunca aparece si no hay servicios sin categorizar.
-  id:         number | null;
-  nombre:     string;
-  regulares:  Servicio[];
-  promos:     Servicio[];
-}
-
-// Sub-partición por es_promo (mismo criterio que el flat regular/promo de
-// siempre) sobre el agrupamiento compartido `agruparServiciosPorCategoria`
-// (orden/skip-empty/"Sin categoria"-al-final ahora vive ahí, reusado también
-// por el picker de servicios de profesionales — ver lib/agruparServiciosPorCategoria.ts).
-function agruparPorCategoria(servicios: Servicio[], categorias: CategoriaServicio[]): GrupoCategoria[] {
-  return agruparServiciosPorCategoria(servicios, categorias).map(grupo => ({
-    id: grupo.id,
-    nombre: grupo.nombre,
-    regulares: grupo.servicios.filter(s => !s.es_promo),
-    promos: grupo.servicios.filter(s => s.es_promo),
-  }));
 }
 
 export default function ServiciosPage() {
@@ -153,22 +122,28 @@ export default function ServiciosPage() {
     await toggleServicio(servicio.id, activo);
   };
 
-  // Split en 2 grupos independientemente reordenables (regular vs. promo —
-  // ver reordenarServicios). Solo se usa cuando `!buscar`: buscando, la
-  // lista plana filtrada de useServiciosFiltrados no tiene un agrupamiento
-  // estable que tenga sentido para drag-and-drop (ver render abajo).
-  const serviciosRegulares = serviciosFiltrados.filter(s => !s.es_promo);
-  const serviciosPromo = serviciosFiltrados.filter(s => s.es_promo);
-
-  // Anti-regresión (spec: "zero services categorized"): si ninguna cuenta
-  // usó categorías todavía, la vista queda IDÉNTICA a la de siempre —
-  // regular/promo plano, sin headers de categoría. El cambio es invisible
-  // hasta que el usuario efectivamente categoriza algo.
-  const hayServicioCategorizado = serviciosFiltrados.some(s => s.categoria_id !== null);
+  // Un flat, sorted `ReorderableSection` por categoría (spec:
+  // service-category-grouping) — ya no sub-particiona por `es_promo`, el
+  // chip `PROMO` en la card reemplaza el viejo sub-header. Esto aplica
+  // igual cuando NO hay servicios categorizados: todo cae en el grupo
+  // "Sin categoría" (id null) y se renderiza con el mismo flujo, sin un
+  // camino especial aparte (retira la garantía anti-regresión anterior,
+  // ver spec: "zero categorized services also drops the legacy split").
   const gruposPorCategoria = useMemo(
-    () => agruparPorCategoria(serviciosFiltrados, categorias),
+    () => agruparServiciosPorCategoria(serviciosFiltrados, categorias),
     [serviciosFiltrados, categorias]
   );
+
+  // Colapso en memoria, nunca persistido — cada carga de página arranca
+  // con el Set vacío (todo expandido), spec: "every visit starts expanded".
+  const [colapsadas, setColapsadas] = useState<Set<number | null>>(new Set());
+  const toggleColapsar = (id: number | null) => {
+    setColapsadas(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // Entry point a "historia de precios" (spec: price-story) — gateado en que
   // el campo NUEVO exista en la respuesta del backend (no en que tenga un
@@ -233,6 +208,46 @@ export default function ServiciosPage() {
           </button>
         </div>
       )}
+
+      {/* Entry point: Gestionar categorías (spec: service-category-navigation —
+          único punto de entrada sancionado al CRUD de categorías, ahora que
+          se sacó del menú raíz de Configuración en la Slice A). Reusa la
+          misma tarjeta que el botón de historia de precios de arriba. */}
+      <div style={{ padding: '0 20px 16px' }}>
+        <button
+          onClick={() => router.push('/configuracion/categorias')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+            backgroundColor: colors.surface,
+            border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14,
+            padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '15'),
+            borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
+              <rect x="3" y="4" width="7" height="7" rx="1.5" />
+              <rect x="14" y="4" width="7" height="7" rx="1.5" />
+              <rect x="3" y="13" width="7" height="7" rx="1.5" />
+              <rect x="14" y="13" width="7" height="7" rx="1.5" />
+            </svg>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.text }}>
+              {t('manageCategoriesButton')}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+              {t('manageCategoriesHint')}
+            </p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
 
       {/* FAB */}
       <button
@@ -307,37 +322,14 @@ export default function ServiciosPage() {
                 <ServicioCard
                   key={s.id}
                   servicio={s}
+                  visual={categoriaVisual(s.categoria_id)}
+                  showPromoBadge={s.es_promo}
                   onEdit={() => router.push(`/configuracion/servicios/${s.id}`)}
                   onToggle={activo => handleToggle(s, activo)}
                   onDelete={() => handleEliminar(s)}
                 />
               ))}
             </div>
-          ) : !hayServicioCategorizado ? (
-            // Anti-regresión: ningún servicio tiene categoria_id todavía —
-            // vista idéntica a la de siempre, sin headers de categoría.
-            <>
-              {serviciosRegulares.length > 0 && (
-                <ReorderableSection
-                  title={t('sectionServicios')}
-                  servicios={serviciosRegulares}
-                  onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                  onToggle={handleToggle}
-                  onDelete={handleEliminar}
-                  onReorder={reordenarServicios}
-                />
-              )}
-              {serviciosPromo.length > 0 && (
-                <ReorderableSection
-                  title={t('sectionPromociones')}
-                  servicios={serviciosPromo}
-                  onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                  onToggle={handleToggle}
-                  onDelete={handleEliminar}
-                  onReorder={reordenarServicios}
-                />
-              )}
-            </>
           ) : !categoriasReady ? (
             // Categorías todavía no asentaron (ver efecto de fetchCategorias
             // arriba) — evita el flash de todo bajo "Sin categoria".
@@ -345,44 +337,39 @@ export default function ServiciosPage() {
               <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
             </div>
           ) : (
-            gruposPorCategoria.map(grupo => (
-              <div key={grupo.id ?? 'sin-categoria'} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <h2 style={{
-                  margin: 0, fontSize: 13, fontWeight: 700, color: colors.subtext,
-                  textTransform: 'uppercase', letterSpacing: 0.5,
-                }}>
-                  {grupo.id === null ? t('sectionSinCategoria') : grupo.nombre}
-                </h2>
-                {grupo.regulares.length > 0 && grupo.promos.length > 0 ? (
-                  <>
-                    <ReorderableSection
-                      title={t('sectionServicios')}
-                      servicios={grupo.regulares}
-                      onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                      onToggle={handleToggle}
-                      onDelete={handleEliminar}
-                      onReorder={reordenarServicios}
-                    />
-                    <ReorderableSection
-                      title={t('sectionPromociones')}
-                      servicios={grupo.promos}
-                      onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                      onToggle={handleToggle}
-                      onDelete={handleEliminar}
-                      onReorder={reordenarServicios}
-                    />
-                  </>
-                ) : (
-                  <ReorderableSection
-                    servicios={grupo.regulares.length > 0 ? grupo.regulares : grupo.promos}
-                    onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                    onToggle={handleToggle}
-                    onDelete={handleEliminar}
-                    onReorder={reordenarServicios}
+            // Un flat, sorted `ReorderableSection` por categoría, sin
+            // camino especial para "cero servicios categorizados" — ese
+            // caso cae naturalmente en el único grupo "Sin categoría" (spec:
+            // retira la vieja garantía anti-regresión, ver
+            // service-category-grouping).
+            gruposPorCategoria.map(grupo => {
+              const panelId = `categoria-panel-${grupo.id ?? 'sin-categoria'}`;
+              const colapsada = colapsadas.has(grupo.id);
+              return (
+                <div key={grupo.id ?? 'sin-categoria'} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <CategoriaHeader
+                    categoriaId={grupo.id}
+                    nombre={grupo.id === null ? t('sectionSinCategoria') : grupo.nombre}
+                    count={grupo.servicios.length}
+                    colapsada={colapsada}
+                    onToggleColapsar={() => toggleColapsar(grupo.id)}
+                    onQuickAdd={grupo.id !== null ? () => router.push(`/configuracion/servicios/nuevo?categoria=${grupo.id}`) : undefined}
+                    panelId={panelId}
                   />
-                )}
-              </div>
-            ))
+                  {!colapsada && (
+                    <div id={panelId}>
+                      <ReorderableSection
+                        servicios={grupo.servicios}
+                        onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                        onToggle={handleToggle}
+                        onDelete={handleEliminar}
+                        onReorder={reordenarServicios}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
