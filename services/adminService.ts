@@ -94,7 +94,7 @@ export interface WhatsappEsConfig {
   graph_version: string;
 }
 
-export interface WhatsappSalonConexion {
+export interface WhatsappNegocioConexion {
   user_id: number;
   nombre: string;
   estado: WhatsappConexionEstado;
@@ -106,7 +106,10 @@ export interface WhatsappSalonConexion {
 
 export interface WhatsappConexionesResponse {
   es: WhatsappEsConfig;
-  salones: WhatsappSalonConexion[];
+  // `salones` es el nombre real de la clave JSON que devuelve el backend
+  // (AdminController/WhatsappConnectionAdminController) — no renombrar sin
+  // tocar también la API, ver WhatsappNegocioConexion para el tipo de cada item.
+  salones: WhatsappNegocioConexion[];
 }
 
 export interface ConectarWhatsappPayload {

@@ -7,7 +7,7 @@ import { ArrowLeft, MessageCircle, Link2, RefreshCw, CircleCheck, TriangleAlert 
 import {
   adminService,
   WhatsappConexionesResponse,
-  WhatsappSalonConexion,
+  WhatsappNegocioConexion,
   WhatsappConexionEstado,
 } from '@/services/adminService';
 import FacebookSdkScript from '@/components/admin/FacebookSdkScript';
@@ -25,11 +25,11 @@ function extraerMensajeError(e: unknown, fallback: string): string {
     if (status === 409) {
       const dueno = data?.salon_dueno?.name;
       return dueno
-        ? `Ese número de WhatsApp ya está vinculado a otro salón (${dueno}). Hay que desvincularlo antes de reasignarlo.`
-        : 'Ese número de WhatsApp ya está vinculado a otro salón.';
+        ? `Ese número de WhatsApp ya está vinculado a otro negocio (${dueno}). Hay que desvincularlo antes de reasignarlo.`
+        : 'Ese número de WhatsApp ya está vinculado a otro negocio.';
     }
     if (status === 403) {
-      return data?.message ?? 'El onboarding de WhatsApp todavía no está habilitado para este salón.';
+      return data?.message ?? 'El onboarding de WhatsApp todavía no está habilitado para este negocio.';
     }
     return data?.message ?? fallback;
   }
@@ -83,9 +83,9 @@ export default function WhatsappConexionesPage() {
   const [sdkListo, setSdkListo] = useState(false);
   const [sdkError, setSdkError] = useState(false);
 
-  // Salón cuyo botón se apretó — dispara el spinner de esa fila y define el
+  // Negocio cuyo botón se apretó — dispara el spinner de esa fila y define el
   // user_id que viaja en el POST.
-  const [salonEnCurso, setSalonEnCurso] = useState<number | null>(null);
+  const [negocioEnCurso, setNegocioEnCurso] = useState<number | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [errorConexion, setErrorConexion] = useState<string | null>(null);
   const [exitoUserId, setExitoUserId] = useState<number | null>(null);
@@ -138,7 +138,7 @@ export default function WhatsappConexionesPage() {
       setErrorConexion(extraerMensajeError(e, 'No se pudo conectar el número de WhatsApp.'));
     } finally {
       setGuardando(false);
-      setSalonEnCurso(null);
+      setNegocioEnCurso(null);
     }
   };
 
@@ -165,11 +165,11 @@ export default function WhatsappConexionesPage() {
     setErrorConexion(null);
     setExitoUserId(null);
     reset();
-    setSalonEnCurso(userId);
+    setNegocioEnCurso(userId);
     iniciar(userId);
   };
 
-  const salones = useMemo(() => datos?.salones ?? [], [datos]);
+  const negocios = useMemo(() => datos?.salones ?? [], [datos]);
 
   const mensajeSignup =
     estadoSignup === 'esperando'
@@ -220,10 +220,10 @@ export default function WhatsappConexionesPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.textStrong, margin: 0 }}>
-            WhatsApp por salón
+            WhatsApp por negocio
           </h1>
           <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>
-            Conectá el número propio de WhatsApp Business de cada salón mediante Embedded Signup.
+            Conectá el número propio de WhatsApp Business de cada negocio mediante Embedded Signup.
           </p>
         </div>
 
@@ -241,7 +241,7 @@ export default function WhatsappConexionesPage() {
           >
             <TriangleAlert size={18} color={colors.warningFg} style={{ flexShrink: 0, marginTop: 1 }} />
             <p style={{ fontSize: 13, color: colors.warningFg, margin: 0 }}>
-              El onboarding de WhatsApp está deshabilitado. Podés ver el estado de cada salón, pero
+              El onboarding de WhatsApp está deshabilitado. Podés ver el estado de cada negocio, pero
               todavía no se puede conectar un número nuevo.
             </p>
           </div>
@@ -363,22 +363,22 @@ export default function WhatsappConexionesPage() {
           </div>
         )}
 
-        {!cargando && !errorCarga && salones.length === 0 && (
+        {!cargando && !errorCarga && negocios.length === 0 && (
           <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', padding: '16px 0' }}>
-            No hay salones registrados.
+            No hay negocios registrados.
           </p>
         )}
 
-        {!cargando && !errorCarga && salones.length > 0 && (
+        {!cargando && !errorCarga && negocios.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {salones.map((salon) => (
-              <FilaSalon
-                key={salon.user_id}
-                salon={salon}
+            {negocios.map((negocio) => (
+              <FilaNegocio
+                key={negocio.user_id}
+                negocio={negocio}
                 puedeConectar={puedeConectar}
-                enCurso={salonEnCurso === salon.user_id && (guardando || estadoSignup === 'esperando')}
-                exito={exitoUserId === salon.user_id}
-                onConectar={() => handleConectar(salon.user_id, salon.nombre)}
+                enCurso={negocioEnCurso === negocio.user_id && (guardando || estadoSignup === 'esperando')}
+                exito={exitoUserId === negocio.user_id}
+                onConectar={() => handleConectar(negocio.user_id, negocio.nombre)}
               />
             ))}
           </div>
@@ -388,17 +388,17 @@ export default function WhatsappConexionesPage() {
   );
 }
 
-interface FilaSalonProps {
-  salon: WhatsappSalonConexion;
+interface FilaNegocioProps {
+  negocio: WhatsappNegocioConexion;
   puedeConectar: boolean;
   enCurso: boolean;
   exito: boolean;
   onConectar: () => void;
 }
 
-function FilaSalon({ salon, puedeConectar, enCurso, exito, onConectar }: FilaSalonProps) {
-  const chip = coloresChip(salon.estado);
-  const yaConectado = salon.estado !== 'sin_conexion';
+function FilaNegocio({ negocio, puedeConectar, enCurso, exito, onConectar }: FilaNegocioProps) {
+  const chip = coloresChip(negocio.estado);
+  const yaConectado = negocio.estado !== 'sin_conexion';
   const etiquetaBoton = yaConectado ? 'Reconectar' : 'Conectar';
   const deshabilitado = !puedeConectar || enCurso;
 
@@ -429,7 +429,7 @@ function FilaSalon({ salon, puedeConectar, enCurso, exito, onConectar }: FilaSal
             whiteSpace: 'nowrap',
           }}
         >
-          {salon.nombre}
+          {negocio.nombre}
         </p>
         <p
           style={{
@@ -441,9 +441,9 @@ function FilaSalon({ salon, puedeConectar, enCurso, exito, onConectar }: FilaSal
             whiteSpace: 'nowrap',
           }}
         >
-          {salon.verified_name
-            ? `${salon.verified_name}${salon.display_phone_number ? ` · ${salon.display_phone_number}` : ''}`
-            : salon.display_phone_number ?? 'Número no conectado'}
+          {negocio.verified_name
+            ? `${negocio.verified_name}${negocio.display_phone_number ? ` · ${negocio.display_phone_number}` : ''}`
+            : negocio.display_phone_number ?? 'Número no conectado'}
         </p>
         <span
           style={{
@@ -457,7 +457,7 @@ function FilaSalon({ salon, puedeConectar, enCurso, exito, onConectar }: FilaSal
             color: chip.fg,
           }}
         >
-          {ETIQUETA_ESTADO[salon.estado]}
+          {ETIQUETA_ESTADO[negocio.estado]}
         </span>
       </div>
 
