@@ -17,6 +17,7 @@ import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
 import { useAuth } from '@/hooks/useAuth';
 import { whatsappHelper } from '@/lib/whatsappHelper';
@@ -203,6 +204,7 @@ function NuevoTurnoContent() {
         profesional: mostrarSelectorProfesional ? (profesionalSeleccionado?.nombre ?? undefined) : undefined,
       });
     } else {
+      showToast(t('created'));
       router.back();
     }
   };

@@ -75,6 +75,7 @@
     "loadingSchedule": "Cargando horarios...",
     "saveChanges": "Guardar Cambios",
     "updateError": "No se pudo actualizar el turno.",
+    "updated": "Turno actualizado",
     "timeModalTitle": "Hora del turno",
     "confirm": "Confirmar"
   },
@@ -97,6 +98,7 @@
     "loadingSchedule": "Cargando horarios...",
     "confirmAppointment": "Confirmar Turno",
     "createError": "No se pudo crear el turno.",
+    "created": "Turno creado",
     "timeModalTitle": "Hora del turno",
     "confirm": "Confirmar",
     "appointmentCreatedTitle": "Turno agendado",

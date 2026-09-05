@@ -75,6 +75,7 @@
     "loadingSchedule": "Carregando horários...",
     "saveChanges": "Salvar Alterações",
     "updateError": "Não foi possível atualizar o agendamento.",
+    "updated": "Agendamento atualizado",
     "timeModalTitle": "Horário do agendamento",
     "confirm": "Confirmar"
   },
@@ -97,6 +98,7 @@
     "loadingSchedule": "Carregando horários...",
     "confirmAppointment": "Confirmar Agendamento",
     "createError": "Não foi possível criar o agendamento.",
+    "created": "Agendamento criado",
     "timeModalTitle": "Horário do agendamento",
     "confirm": "Confirmar",
     "appointmentCreatedTitle": "Agendamento criado",

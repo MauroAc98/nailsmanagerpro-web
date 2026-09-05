@@ -16,6 +16,7 @@ import { Cliente } from '@/services/clienteService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 import { formatFecha } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
@@ -210,8 +211,12 @@ export default function EditarTurnoPage() {
       ...(selectedProfesionalId ? { profesional_id: selectedProfesionalId } : {}),
     });
     setSaving(false);
-    if (result.success) router.back();
-    else await alertDialog(result.message ?? t('updateError'));
+    if (result.success) {
+      showToast(t('updated'));
+      router.back();
+    } else {
+      await alertDialog(result.message ?? t('updateError'));
+    }
   };
 
   const clientesFiltrados = clientes.filter(c =>
