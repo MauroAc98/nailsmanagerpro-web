@@ -5,7 +5,6 @@
     "group_cuenta": "Conta",
     "group_soporte": "Suporte",
     "servicios": "Serviços",
-    "categorias": "Categorias",
     "slots": "Horários Disponíveis",
     "profesionales": "Profissionais",
     "gastos": "Despesas",
@@ -30,6 +29,7 @@
     "sectionServicios": "Serviços",
     "sectionPromociones": "Promoções",
     "sectionSinCategoria": "Sem categoria",
+    "promoBadge": "PROMO",
     "priceStoryButton": "Story de preços",
     "priceStoryButtonHint": "Monte uma imagem com sua lista de preços para compartilhar",
     "delete": "EXCLUIR",
@@ -43,6 +43,7 @@
   },
   "CategoriasPage": {
     "title": "Categorias",
+    "serviceCount": "{count, plural, one {# serviço} other {# serviços}}",
     "empty": "Cadastre sua primeira categoria!",
     "add": "Adicionar categoria",
     "deleteConfirm": "Excluir a categoria {nombre}?",

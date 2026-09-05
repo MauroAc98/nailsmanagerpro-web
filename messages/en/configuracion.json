@@ -1,14 +1,13 @@
 {
-  "ConfiguracionPage": {
-    "categorias": "Categories"
-  },
   "ServiciosPage": {
     "sectionServicios": "Services",
     "sectionPromociones": "Promotions",
-    "sectionSinCategoria": "No category"
+    "sectionSinCategoria": "No category",
+    "promoBadge": "PROMO"
   },
   "CategoriasPage": {
     "title": "Categories",
+    "serviceCount": "{count, plural, one {# service} other {# services}}",
     "empty": "Add your first category!",
     "add": "Add category",
     "deleteConfirm": "Delete category {nombre}?",
