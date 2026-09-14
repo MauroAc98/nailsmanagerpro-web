@@ -5,12 +5,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CENTRO_FALLBACK, esUbicacionValida } from '@/lib/ubicacion';
 import { geocodeUbicacion } from '@/lib/geocodeUbicacion';
+import { obtenerGps } from '@/lib/obtenerGps';
 import { MapaBuscador } from './MapaBuscador';
 
 interface Props {
   latitud: number | null;
   longitud: number | null;
-  direccion: string;
   onPinMovido: (lat: number, lng: number) => void;
 }
 
@@ -39,7 +39,7 @@ const ATRIBUCION_LOCATIONIQ =
   '<a href="https://locationiq.com">Search by LocationIQ.com</a> ' +
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-export function MapaPicker({ latitud, longitud, direccion, onPinMovido }: Props) {
+export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
   const contenedorRef = useRef<HTMLDivElement>(null);
   const mapaRef = useRef<L.Map | null>(null);
   const marcadorRef = useRef<L.Marker | null>(null);
@@ -87,10 +87,14 @@ export function MapaPicker({ latitud, longitud, direccion, onPinMovido }: Props)
       onPinMovido(e.latlng.lat, e.latlng.lng);
     });
 
-    // Geocode best-effort SOLO si no hay coordenadas guardadas — nunca
-    // bloquea la creación del mapa ni el drop del pin (design D5).
-    if (!tieneGuardada && direccion.trim() !== '') {
-      geocodeUbicacion(direccion).then((resultado) => {
+    // GPS del dispositivo SOLO si no hay coordenadas guardadas — nunca
+    // bloquea la creación del mapa ni el drop del pin (design D5). Reemplaza
+    // al geocode de la dirección tipeada (feedback de producción: la
+    // dirección en texto libre geocodifica mal, "se va para cualquier
+    // lado" — el GPS es un punto de partida mucho más confiable, y el pin
+    // sigue siendo lo que el salón ajusta y confirma al final).
+    if (!tieneGuardada) {
+      obtenerGps().then((resultado) => {
         if (!resultado || pinTocadoRef.current || !mapaRef.current) return;
         mapaRef.current.setView([resultado.lat, resultado.lon], 16);
         marcadorRef.current?.setLatLng([resultado.lat, resultado.lon]);

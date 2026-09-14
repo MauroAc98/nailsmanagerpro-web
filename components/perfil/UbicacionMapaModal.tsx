@@ -19,7 +19,6 @@ const MapaPicker = dynamic(() => import('./MapaPicker').then(m => m.MapaPicker),
 interface Props {
   latitud: number | null;
   longitud: number | null;
-  direccion: string;
   onCancelar: () => void;
   onConfirmar: (lat: number, lng: number) => void;
 }
@@ -28,7 +27,7 @@ interface Props {
 // de otro overlay mientras está abierto.
 const Z_INDEX = 200;
 
-export function UbicacionMapaModal({ latitud, longitud, direccion, onCancelar, onConfirmar }: Props) {
+export function UbicacionMapaModal({ latitud, longitud, onCancelar, onConfirmar }: Props) {
   const t = useTranslations('perfil.SheetDatosPersonales');
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(
     latitud !== null && longitud !== null ? { lat: latitud, lng: longitud } : null,
@@ -98,7 +97,6 @@ export function UbicacionMapaModal({ latitud, longitud, direccion, onCancelar, o
           <MapaPicker
             latitud={latitud}
             longitud={longitud}
-            direccion={direccion}
             onPinMovido={(lat, lng) => setPin({ lat, lng })}
           />
         </MapaErrorBoundary>
