@@ -359,6 +359,8 @@ export default function PerfilPage() {
             nombreNegocio={user.name ?? ''}
             telefonoContacto={user.telefono ?? ''}
             direccionNegocio={user.direccion ?? ''}
+            latitudNegocio={user.latitud}
+            longitudNegocio={user.longitud}
             onGuardar={handleGuardar}
             guardando={guardando}
             error={senaMontoError}

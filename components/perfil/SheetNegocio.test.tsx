@@ -33,6 +33,8 @@ function setup(overrides: Partial<Props> = {}) {
     nombreNegocio: 'Salon Ana',
     telefonoContacto: '+543765000000',
     direccionNegocio: 'Av. Siempreviva 742',
+    latitudNegocio: -27.4692,
+    longitudNegocio: -58.8306,
     erroresServidor: undefined,
     onGuardar: vi.fn(),
     guardando: false,
@@ -46,6 +48,8 @@ function setup(overrides: Partial<Props> = {}) {
 
 const save = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 const senaToggle = () => screen.getByRole('switch', { name: 'Pedir seña para confirmar turnos' });
+const confirmacionToggle = () => screen.getByRole('switch', { name: 'Confirmación automática' });
+const recordatorioToggle = () => screen.getByRole('switch', { name: 'Recordatorio automático' });
 
 describe('SheetNegocio — seña opt-in toggle', () => {
   it('hides the bank inputs while the toggle is OFF', () => {
@@ -173,5 +177,88 @@ describe('SheetNegocio — seña OFF still saves', () => {
     const props = setup({ whatsappPideSena: false, senaMonto: '', senaTitular: '', senaAlias: '' });
     save();
     expect(props.onGuardar).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Missing location (decision #691): blocks all three automation toggles the
+// same way `faltaDireccion` already blocks the two automatic-messaging
+// toggles, but with a deliberate asymmetry for the seña toggle — see the
+// dedicated describe block below.
+describe('SheetNegocio — missing location gate (automation toggles)', () => {
+  it('disables confirmacionAutomatica when off and location is missing', () => {
+    setup({ confirmacionAutomatica: false, latitudNegocio: null, longitudNegocio: null });
+    expect(confirmacionToggle()).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('leaves an already-ON confirmacionAutomatica toggle enabled despite missing location', () => {
+    const props = setup({ confirmacionAutomatica: true, latitudNegocio: null, longitudNegocio: null });
+    expect(confirmacionToggle()).not.toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(confirmacionToggle());
+    expect(props.setConfirmacionAutomatica).toHaveBeenCalledWith(false);
+  });
+
+  it('disables recordatorioAutomatico when off and location is missing', () => {
+    setup({ recordatorioAutomatico: false, latitudNegocio: null, longitudNegocio: null });
+    expect(recordatorioToggle()).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does not disable the toggles when location is saved', () => {
+    setup({ confirmacionAutomatica: false, recordatorioAutomatico: false, latitudNegocio: -27.4692, longitudNegocio: -58.8306 });
+    expect(confirmacionToggle()).not.toHaveAttribute('aria-disabled', 'true');
+    expect(recordatorioToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('renders the missing-location warning when location is missing', () => {
+    setup({ latitudNegocio: null, longitudNegocio: null });
+    expect(screen.getByText('Cargá tu ubicación en Datos personales para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeInTheDocument();
+  });
+
+  it('does not render the missing-location warning when location is saved', () => {
+    setup({ latitudNegocio: -27.4692, longitudNegocio: -58.8306 });
+    expect(screen.queryByText('Cargá tu ubicación en Datos personales para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeNull();
+  });
+});
+
+// Decision #691 confirms all three toggles are blocked alike by missing
+// location — but the seña toggle is deliberately NOT gated by faltaDireccion
+// (unlike the two automation toggles above). Do not add faltaDireccion here.
+describe('SheetNegocio — missing location gate (seña toggle, decision #691)', () => {
+  it('disables the seña toggle when off and location is missing, even with an address on file', () => {
+    setup({ whatsappPideSena: false, direccionNegocio: 'Av. Siempreviva 742', latitudNegocio: null, longitudNegocio: null });
+    expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does NOT disable the seña toggle when only the address is missing (location present)', () => {
+    setup({ whatsappPideSena: false, direccionNegocio: '', latitudNegocio: -27.4692, longitudNegocio: -58.8306 });
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('leaves an already-ON seña toggle enabled despite missing location', () => {
+    const props = setup({ whatsappPideSena: true, latitudNegocio: null, longitudNegocio: null });
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(senaToggle());
+    expect(props.setWhatsappPideSena).toHaveBeenCalledWith(false);
+  });
+
+  it('renders a missing-location warning near the deposit section', () => {
+    setup({ latitudNegocio: null, longitudNegocio: null });
+    expect(screen.getByText('Cargá tu ubicación en Datos personales para poder pedir seña.')).toBeInTheDocument();
+  });
+});
+
+describe('SheetNegocio — preview map-header mock', () => {
+  const openPreview = () => fireEvent.click(screen.getByRole('button', { name: 'Ver ejemplo de mensaje' }));
+
+  it('shows the missing-location placeholder when location is missing', () => {
+    setup({ latitudNegocio: null, longitudNegocio: null });
+    openPreview();
+    expect(screen.getByText('(marcá tu ubicación en Datos personales)')).toBeInTheDocument();
+  });
+
+  it('shows the business address instead of the placeholder when location is saved', () => {
+    setup({ latitudNegocio: -27.4692, longitudNegocio: -58.8306, direccionNegocio: 'Av. Siempreviva 742' });
+    openPreview();
+    expect(screen.queryByText('(marcá tu ubicación en Datos personales)')).toBeNull();
+    expect(screen.getByText('Av. Siempreviva 742')).toBeInTheDocument();
   });
 });
