@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Locate } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { PAISES } from '@/lib/phoneUtils';
 import { esUbicacionValida } from '@/lib/ubicacion';
+import { obtenerGps } from '@/lib/obtenerGps';
 
 interface Props {
   nombreEstudio: string;
@@ -84,7 +86,30 @@ export function SheetDatosPersonales({
 }: Props) {
   const t = useTranslations('perfil.SheetDatosPersonales');
   const [mapaAbierto, setMapaAbierto] = useState(false);
+  const [buscandoGps, setBuscandoGps] = useState(false);
+  const [errorGps, setErrorGps] = useState(false);
   const ubicacionCargada = esUbicacionValida(latitud, longitud);
+
+  // Cargar por GPS sin necesitar abrir el mapa (feedback de usuario: quería
+  // "ubicarlo por GPS previamente, antes de abrir [el mapa]" — este botón
+  // hace exactamente eso; el mapa queda para cuando se quiere ajustar el pin
+  // a mano o el GPS no da una posición precisa). Mismo `obtenerGps()` que usa
+  // `MapaPicker`, misma disciplina de "nunca tira, nunca bloquea".
+  const usarGpsDirecto = async () => {
+    if (buscandoGps) return;
+    setBuscandoGps(true);
+    setErrorGps(false);
+    try {
+      const resultado = await obtenerGps();
+      if (!resultado) {
+        setErrorGps(true);
+        return;
+      }
+      setUbicacion(resultado.lat, resultado.lon);
+    } finally {
+      setBuscandoGps(false);
+    }
+  };
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
@@ -160,23 +185,43 @@ export function SheetDatosPersonales({
         gap: 10, backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
         borderRadius: 12, padding: '12px 14px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <IconMapPin />
           <span style={{ fontSize: 14, color: colors.text }}>
             {ubicacionCargada ? t('locationLoaded') : t('locationNotLoaded')}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setMapaAbierto(true)}
-          style={{
-            background: 'none', border: 'none', color: colors.primaryDeep,
-            fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: 0,
-          }}
-        >
-          {ubicacionCargada ? t('locationEdit') : t('locationSet')}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={usarGpsDirecto}
+            disabled={buscandoGps}
+            aria-label={t('mapUseGpsButton')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, borderRadius: 16, border: `1px solid ${colors.border}`,
+              backgroundColor: colors.surface, cursor: buscandoGps ? 'default' : 'pointer',
+              opacity: buscandoGps ? 0.6 : 1, flexShrink: 0,
+            }}
+          >
+            <Locate size={16} color={colors.primaryDeep} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMapaAbierto(true)}
+            style={{
+              background: 'none', border: 'none', color: colors.primaryDeep,
+              fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap',
+            }}
+          >
+            {ubicacionCargada ? t('locationEdit') : t('locationSet')}
+          </button>
+        </div>
       </div>
+
+      {errorGps && (
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{t('mapUseGpsFailed')}</p>
+      )}
 
       {errorUbicacion && (
         <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{errorUbicacion}</p>

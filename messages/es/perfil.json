@@ -66,6 +66,7 @@
     "mapSearchButton": "Buscar",
     "mapSearchNotFound": "No encontramos esa dirección. Probá con otra.",
     "mapUseGpsButton": "Usar mi ubicación",
+    "mapUseGpsFailed": "No pudimos obtener tu ubicación. Probá marcarla en el mapa.",
     "mapCancel": "Cancelar",
     "mapConfirm": "Listo",
     "mapCrashed": "No pudimos cargar el mapa. Cerrá e intentá de nuevo.",
