@@ -134,12 +134,33 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     };
     document.addEventListener('visibilitychange', checkForUpdate);
     window.addEventListener('focus', checkForUpdate);
+
+    // `pageshow` con `persisted: true` es la señal específica de Safari/iOS
+    // para "esta página volvió desde el back-forward cache" (el mecanismo
+    // real detrás de "resumir un standalone suspendido") — reportado en
+    // producción que `visibilitychange`/`focus` no siempre disparan ahí,
+    // dejando la PWA corriendo el JS viejo indefinidamente hasta que el
+    // usuario la reinstala a mano. `pageshow` sí es consistente en ese caso.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) checkForUpdate();
+    };
+    window.addEventListener('pageshow', onPageShow);
+
+    // Respaldo para la sesión larga que nunca se va a segundo plano ni pasa
+    // por bfcache (ninguno de los eventos de arriba dispara): un chequeo
+    // periódico mientras la pestaña está visible. Una vez por hora es lo que
+    // recomienda la propia documentación de Workbox para este patrón.
+    const HORA_MS = 60 * 60 * 1000;
+    const intervalo = setInterval(checkForUpdate, HORA_MS);
+
     checkForUpdate();
 
     return () => {
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
       document.removeEventListener('visibilitychange', checkForUpdate);
       window.removeEventListener('focus', checkForUpdate);
+      window.removeEventListener('pageshow', onPageShow);
+      clearInterval(intervalo);
     };
   }, []);
 
