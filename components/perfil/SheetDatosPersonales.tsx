@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { PAISES } from '@/lib/phoneUtils';
+import { esUbicacionValida } from '@/lib/ubicacion';
 
 interface Props {
   nombreEstudio: string;
@@ -14,12 +16,23 @@ interface Props {
   onPasteTelefono: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   direccion: string;
   setDireccion: (v: string) => void;
+  // Ubicación (Slice A) — el "Confirmar" del modal solo actualiza este
+  // estado local del sheet, igual que `direccion`: el "Guardar" de abajo
+  // sigue siendo el único disparador de `updatePerfil` (design D4).
+  latitud: number | null;
+  longitud: number | null;
+  setUbicacion: (lat: number, lng: number) => void;
+  // 422 del backend en `latitud` (todos los errores de coordenadas se
+  // devuelven bajo esa key, ver apply-progress de A1) — se muestra junto al
+  // campo, nunca como diálogo genérico.
+  errorUbicacion?: string | null;
   onGuardar: () => void;
   guardando: boolean;
   onClose: () => void;
 }
 
 import { SheetInput } from './SheetInput';
+import { UbicacionMapaModal } from './UbicacionMapaModal';
 
 function IconStore() {
   return (
@@ -66,9 +79,13 @@ export function SheetDatosPersonales({
   nombreEstudio, setNombreEstudio,
   codigoPais, setCodigoPais, telefono, setTelefono, onPasteTelefono,
   direccion, setDireccion,
+  latitud, longitud, setUbicacion, errorUbicacion,
   onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetDatosPersonales');
+  const [mapaAbierto, setMapaAbierto] = useState(false);
+  const ubicacionCargada = esUbicacionValida(latitud, longitud);
+
   return (
     <div style={{ padding: '4px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -138,6 +155,33 @@ export function SheetDatosPersonales({
         </div>
       </div>
 
+      <div style={{
+        marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 10, backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
+        borderRadius: 12, padding: '12px 14px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <IconMapPin />
+          <span style={{ fontSize: 14, color: colors.text }}>
+            {ubicacionCargada ? t('locationLoaded') : t('locationNotLoaded')}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMapaAbierto(true)}
+          style={{
+            background: 'none', border: 'none', color: colors.primaryDeep,
+            fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: 0,
+          }}
+        >
+          {ubicacionCargada ? t('locationEdit') : t('locationSet')}
+        </button>
+      </div>
+
+      {errorUbicacion && (
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{errorUbicacion}</p>
+      )}
+
       <button
         onClick={onGuardar}
         disabled={guardando}
@@ -149,6 +193,19 @@ export function SheetDatosPersonales({
       >
         {guardando ? t('saving') : t('save')}
       </button>
+
+      {mapaAbierto && (
+        <UbicacionMapaModal
+          latitud={latitud}
+          longitud={longitud}
+          direccion={direccion}
+          onCancelar={() => setMapaAbierto(false)}
+          onConfirmar={(lat, lng) => {
+            setUbicacion(lat, lng);
+            setMapaAbierto(false);
+          }}
+        />
+      )}
     </div>
   );
 }
