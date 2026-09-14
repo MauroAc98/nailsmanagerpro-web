@@ -7,6 +7,7 @@ import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agenda
 import { PAISES } from '@/lib/phoneUtils';
 import { esUbicacionValida } from '@/lib/ubicacion';
 import { obtenerGps } from '@/lib/obtenerGps';
+import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
 interface Props {
   nombreEstudio: string;
@@ -95,12 +96,16 @@ export function SheetDatosPersonales({
   // hace exactamente eso; el mapa queda para cuando se quiere ajustar el pin
   // a mano o el GPS no da una posición precisa). Mismo `obtenerGps()` que usa
   // `MapaPicker`, misma disciplina de "nunca tira, nunca bloquea".
+  // `withGlobalLoader` (mismo spinner de pantalla completa que login/guardar)
+  // porque el botón solo, sin bloquear nada, pasaba desapercibido — un GPS
+  // sin buena señal puede tardar varios segundos y el usuario no tenía
+  // ninguna señal de que algo estaba pasando.
   const usarGpsDirecto = async () => {
     if (buscandoGps) return;
     setBuscandoGps(true);
     setErrorGps(false);
     try {
-      const resultado = await obtenerGps();
+      const resultado = await withGlobalLoader(() => obtenerGps());
       if (!resultado) {
         setErrorGps(true);
         return;
