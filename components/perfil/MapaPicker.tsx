@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTranslations } from 'next-intl';
+import { Locate } from 'lucide-react';
+import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { CENTRO_FALLBACK, esUbicacionValida } from '@/lib/ubicacion';
 import { geocodeUbicacion } from '@/lib/geocodeUbicacion';
 import { obtenerGps } from '@/lib/obtenerGps';
@@ -40,6 +43,7 @@ const ATRIBUCION_LOCATIONIQ =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
+  const t = useTranslations('perfil.SheetDatosPersonales');
   const contenedorRef = useRef<HTMLDivElement>(null);
   const mapaRef = useRef<L.Map | null>(null);
   const marcadorRef = useRef<L.Marker | null>(null);
@@ -47,6 +51,7 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
   // geocode NUNCA debe re-centrar el mapa (design D5: prioridad
   // guardado -> geocode -> fallback, y solo si el pin sigue intacto).
   const pinTocadoRef = useRef(false);
+  const [buscandoGps, setBuscandoGps] = useState(false);
 
   useEffect(() => {
     if (!contenedorRef.current || mapaRef.current) return;
@@ -92,7 +97,7 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
     // al geocode de la dirección tipeada (feedback de producción: la
     // dirección en texto libre geocodifica mal, "se va para cualquier
     // lado" — el GPS es un punto de partida mucho más confiable, y el pin
-    // sigue siendo lo que el salón ajusta y confirma al final).
+    // sigue siendo lo que el negocio ajusta y confirma al final).
     if (!tieneGuardada) {
       obtenerGps().then((resultado) => {
         if (!resultado || pinTocadoRef.current || !mapaRef.current) return;
@@ -123,10 +128,45 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
     return true;
   };
 
+  // Botón "usar mi ubicación" (feedback post-lanzamiento): el GPS inicial
+  // arriba SOLO corre cuando no hay coordenadas guardadas — al editar una
+  // ubicación ya cargada no había forma de re-centrar por GPS, solo
+  // arrastrar el pin a mano. Este botón llama a `obtenerGps()` siempre,
+  // tenga o no ubicación guardada.
+  const usarMiUbicacion = async () => {
+    if (buscandoGps) return;
+    setBuscandoGps(true);
+    try {
+      const resultado = await obtenerGps();
+      if (!resultado || !mapaRef.current || !marcadorRef.current) return;
+      pinTocadoRef.current = true;
+      mapaRef.current.setView([resultado.lat, resultado.lon], 16);
+      marcadorRef.current.setLatLng([resultado.lat, resultado.lon]);
+      onPinMovido(resultado.lat, resultado.lon);
+    } finally {
+      setBuscandoGps(false);
+    }
+  };
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />
       <MapaBuscador onBuscar={buscar} />
+      <button
+        type="button"
+        onClick={usarMiUbicacion}
+        disabled={buscandoGps}
+        aria-label={t('mapUseGpsButton')}
+        style={{
+          position: 'absolute', bottom: 16, right: 16, zIndex: 10,
+          width: 44, height: 44, borderRadius: 22, border: 'none',
+          backgroundColor: colors.surface, boxShadow: shadows.card,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: buscandoGps ? 0.6 : 1, cursor: buscandoGps ? 'default' : 'pointer',
+        }}
+      >
+        <Locate size={20} color={colors.primarySolid} />
+      </button>
     </div>
   );
 }
