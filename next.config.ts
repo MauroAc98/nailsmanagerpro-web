@@ -67,6 +67,18 @@ const withPWA = require("next-pwa")({
   // en ningún dominio). Registro manual en app/providers.tsx en su lugar.
   register: false,
   skipWaiting: true,
+  // `skipWaiting` sin esto solo hace que el SW nuevo se ACTIVE apenas puede —
+  // no toma control de las pestañas/paneles ya abiertos hasta que navegan de
+  // nuevo. `clientsClaim` lo hace tomar control de inmediato, que es lo que
+  // dispara el "controllerchange" que `app/providers.tsx` escucha para
+  // recargar solo. Sin esto, una instancia de la PWA que nunca hace una
+  // navegación fresca (el caso típico de iOS: se suspende y resume, no
+  // recarga) puede quedar corriendo JS viejo indefinidamente aunque el SW
+  // nuevo ya esté instalado.
+  clientsClaim: true,
+  // Limpieza automática de precache viejo en cada activación — evita que
+  // Cache Storage acumule versiones de assets de deploys anteriores.
+  cleanupOutdatedCaches: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     { urlPattern: rutasSensiblesSinCache, handler: "NetworkOnly" },
