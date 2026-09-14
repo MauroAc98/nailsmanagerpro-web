@@ -42,8 +42,17 @@ export function UbicacionMapaModal({ latitud, longitud, direccion, onCancelar, o
     <div style={{
       position: 'fixed', inset: 0, zIndex: Z_INDEX,
       backgroundColor: '#000', display: 'flex', flexDirection: 'column',
+      // El pinch-zoom/drag sobre el mapa puede extenderse un pixel más allá
+      // del <div> de Leaflet (que ya trae su propio touch-action:none) hacia
+      // este contenedor — sin cortarlo acá también, el navegador lo lee como
+      // un gesto nativo (pull-to-refresh / swipe-back) y en PWA standalone
+      // eso recarga o navega la app entera, lo que se ve como "el modal se
+      // cierra solo". overscrollBehavior:'none' bloquea el rebote/navegación
+      // nativa; touchAction:'none' evita que el navegador interprete el
+      // gesto como scroll/zoom de página antes de que Leaflet lo capture.
+      overscrollBehavior: 'none', touchAction: 'none',
     }}>
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{ flex: 1, position: 'relative', overscrollBehavior: 'none', touchAction: 'none' }}>
         <MapaPicker
           latitud={latitud}
           longitud={longitud}
