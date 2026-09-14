@@ -8,6 +8,7 @@ import PillToggle from '@/components/PillToggle';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { cuerpoPlantillaWhatsapp } from '@/lib/whatsappHelper';
+import { esUbicacionValida } from '@/lib/ubicacion';
 import {
   sanitizarLineaSimple,
   validarSenaConfig,
@@ -45,6 +46,11 @@ interface Props {
   nombreNegocio: string;
   telefonoContacto: string;
   direccionNegocio: string;
+  // Ubicación del salón (Slice A/B del mapa de WhatsApp) — valores GUARDADOS
+  // (user.latitud/user.longitud), no el estado de edición en vivo del sheet
+  // de Datos personales, igual que direccionNegocio ya hace hoy.
+  latitudNegocio: number | null;
+  longitudNegocio: number | null;
   // Errores 422 del backend ya mapeados por campo (mensaje completo en
   // castellano). Se muestran junto al input correspondiente, combinados con
   // la validación local.
@@ -163,6 +169,17 @@ function IconBank() {
   );
 }
 
+// Mismo glyph de pin que SheetDatosPersonales.tsx (IconMapPin) — acá solo
+// decora el mock estático del header de mapa en el preview.
+function IconMapPin() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
 export function SheetNegocio({
   senaMonto, setSenaMonto,
   whatsappPideSena, setWhatsappPideSena,
@@ -171,13 +188,20 @@ export function SheetNegocio({
   confirmacionAutomatica, setConfirmacionAutomatica,
   recordatorioAutomatico, setRecordatorioAutomatico,
   horaRecordatorio, setHoraRecordatorio, nombreNegocio, telefonoContacto,
-  direccionNegocio, erroresServidor, onGuardar, guardando, error, onClose,
+  direccionNegocio, latitudNegocio, longitudNegocio,
+  erroresServidor, onGuardar, guardando, error, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
   const [previewAbierto, setPreviewAbierto] = useState(false);
   const [tipoPreview, setTipoPreview] = useState<TipoPreview>('confirmacion');
   const [erroresLocales, setErroresLocales] = useState<Partial<Record<SenaCampo, string>>>({});
   const faltaDireccion = !direccionNegocio.trim();
+  // Decision #691: falta de ubicación bloquea los 3 toggles por igual
+  // (confirmación/recordatorio automáticos Y seña) — a diferencia de
+  // faltaDireccion, que hoy solo gatea los dos toggles automáticos y
+  // deliberadamente NO el de seña. No sumar faltaDireccion al predicate del
+  // toggle de seña (:below) salvo que una decisión futura lo pida.
+  const faltaUbicacion = !esUbicacionValida(latitudNegocio, longitudNegocio);
 
   // Código de validación local -> mensaje traducido. Los errores del backend
   // ya llegan como string completo, así que el fallback (`?? v`) los deja pasar.
@@ -263,9 +287,16 @@ export function SheetNegocio({
         <PillToggle
           value={whatsappPideSena}
           onChange={setWhatsappPideSena}
+          disabled={faltaUbicacion && !whatsappPideSena}
           ariaLabel={t('depositRequest')}
         />
       </div>
+
+      {faltaUbicacion && (
+        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
+          {t('depositLocationRequiredWarning')}
+        </p>
+      )}
 
       {whatsappPideSena && (
         <div style={{ marginBottom: 16 }}>
@@ -325,6 +356,11 @@ export function SheetNegocio({
           {t('addressRequiredWarning')}
         </p>
       )}
+      {faltaUbicacion && (
+        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
+          {t('locationRequiredWarning')}
+        </p>
+      )}
 
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -339,7 +375,7 @@ export function SheetNegocio({
         <PillToggle
           value={confirmacionAutomatica}
           onChange={setConfirmacionAutomatica}
-          disabled={faltaDireccion && !confirmacionAutomatica}
+          disabled={(faltaDireccion || faltaUbicacion) && !confirmacionAutomatica}
           ariaLabel={t('autoConfirmation')}
         />
       </div>
@@ -357,7 +393,7 @@ export function SheetNegocio({
         <PillToggle
           value={recordatorioAutomatico}
           onChange={setRecordatorioAutomatico}
-          disabled={faltaDireccion && !recordatorioAutomatico}
+          disabled={(faltaDireccion || faltaUbicacion) && !recordatorioAutomatico}
           ariaLabel={t('autoReminder')}
         />
       </div>
@@ -416,9 +452,25 @@ export function SheetNegocio({
             ))}
           </div>
 
+          {/* Mock estático del header de ubicación — sin fetch de tiles real:
+              este sheet se abre seguido y una tile real consumiría cuota de
+              LocationIQ sin aportar información (design B4.1). Siempre
+              visible: el estado "falta ubicación" es justo lo que el salón
+              necesita ver acá. */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`,
+            borderBottom: 'none', borderRadius: '12px 12px 0 0', padding: '10px 16px',
+          }}>
+            <IconMapPin />
+            <p style={{ margin: 0, fontSize: 12.5, color: colors.text }}>
+              {faltaUbicacion ? t('previewLocationMissing') : (direccionNegocio || nombreNegocio)}
+            </p>
+          </div>
+
           <div style={{
             backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`,
-            borderRadius: 12, padding: '14px 16px',
+            borderRadius: '0 0 12px 12px', padding: '14px 16px',
           }}>
             <p style={{
               margin: 0, fontSize: 13.5, lineHeight: 1.6, color: colors.text, whiteSpace: 'pre-line',
