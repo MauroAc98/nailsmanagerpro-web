@@ -62,8 +62,12 @@
     "locationSet": "Marcar no mapa",
     "locationEdit": "Editar",
     "mapInstructions": "Arraste o pino ou toque no mapa para marcar a localização exata do seu salão.",
+    "mapSearchPlaceholder": "Buscar endereço...",
+    "mapSearchButton": "Buscar",
+    "mapSearchNotFound": "Não encontramos esse endereço. Tente outro.",
     "mapCancel": "Cancelar",
     "mapConfirm": "Pronto",
+    "mapCrashed": "Não conseguimos carregar o mapa. Feche e tente de novo.",
     "saving": "Salvando...",
     "save": "Salvar alterações"
   },

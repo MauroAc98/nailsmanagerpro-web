@@ -62,8 +62,12 @@
     "locationSet": "Marcar en el mapa",
     "locationEdit": "Editar",
     "mapInstructions": "Arrastrá el pin o tocá el mapa para marcar la ubicación exacta de tu salón.",
+    "mapSearchPlaceholder": "Buscar dirección...",
+    "mapSearchButton": "Buscar",
+    "mapSearchNotFound": "No encontramos esa dirección. Probá con otra.",
     "mapCancel": "Cancelar",
     "mapConfirm": "Listo",
+    "mapCrashed": "No pudimos cargar el mapa. Cerrá e intentá de nuevo.",
     "saving": "Guardando...",
     "save": "Guardar cambios"
   },
