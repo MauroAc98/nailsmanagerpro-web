@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
+import { MapaErrorBoundary } from './MapaErrorBoundary';
 
 // `MapaPicker` es lo único que toca `window`/Leaflet (design D3) — se carga
 // vía `dynamic(..., { ssr: false })` para que nunca se evalúe en SSR, y es
@@ -38,6 +39,28 @@ export function UbicacionMapaModal({ latitud, longitud, direccion, onCancelar, o
     onConfirmar(pin.lat, pin.lng);
   };
 
+  // `touch-action`/`overscroll-behavior` (abajo) son el mecanismo MODERNO
+  // para bloquear gestos del navegador, pero Safari/iOS tiene uno VIEJO y
+  // separado para el pellizco de 2 dedos: los eventos `gesturestart` /
+  // `gesturechange` / `gestureend` (no estándar, solo WebKit) — el CSS
+  // touch-action NO los bloquea, es un gap conocido de WebKit. Sin este
+  // preventDefault, un pellizco sobre el mapa dispara el zoom nativo de la
+  // página aunque `userScalable: false` esté seteado globalmente
+  // (app/layout.tsx), y en la PWA standalone eso se ve como si el modal
+  // "se cerrara" (el viewport entero se reacomoda). `{ passive: false }`
+  // es obligatorio: sin eso `preventDefault()` no tiene efecto.
+  useEffect(() => {
+    const bloquear = (e: Event) => e.preventDefault();
+    document.addEventListener('gesturestart', bloquear, { passive: false });
+    document.addEventListener('gesturechange', bloquear, { passive: false });
+    document.addEventListener('gestureend', bloquear, { passive: false });
+    return () => {
+      document.removeEventListener('gesturestart', bloquear);
+      document.removeEventListener('gesturechange', bloquear);
+      document.removeEventListener('gestureend', bloquear);
+    };
+  }, []);
+
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: Z_INDEX,
@@ -53,12 +76,14 @@ export function UbicacionMapaModal({ latitud, longitud, direccion, onCancelar, o
       overscrollBehavior: 'none', touchAction: 'none',
     }}>
       <div style={{ flex: 1, position: 'relative', overscrollBehavior: 'none', touchAction: 'none' }}>
-        <MapaPicker
-          latitud={latitud}
-          longitud={longitud}
-          direccion={direccion}
-          onPinMovido={(lat, lng) => setPin({ lat, lng })}
-        />
+        <MapaErrorBoundary>
+          <MapaPicker
+            latitud={latitud}
+            longitud={longitud}
+            direccion={direccion}
+            onPinMovido={(lat, lng) => setPin({ lat, lng })}
+          />
+        </MapaErrorBoundary>
       </div>
 
       <div style={{
