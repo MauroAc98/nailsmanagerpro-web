@@ -11,6 +11,13 @@ export interface User {
   email: string;
   telefono: string | null;
   direccion: string | null;
+  // Ubicación del salón para el header LOCATION de WhatsApp (Slice A/B del
+  // mapa). Cast del backend es `'float'` (no `'decimal:N'` como sena_monto),
+  // así que estos llegan como number|null genuinos — sin el envoltorio
+  // `String()` que sena_monto necesita en page.tsx:149. Ambas siempre viajan
+  // juntas: la validación del backend exige el par completo o ninguno.
+  latitud: number | null;
+  longitud: number | null;
   is_exempt: boolean;
   confirmacion_automatica: boolean;
   recordatorio_automatico: boolean;

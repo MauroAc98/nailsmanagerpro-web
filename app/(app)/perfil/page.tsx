@@ -18,6 +18,7 @@ import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { sanitizarLineaSimple, type SenaCampo } from '@/lib/senaConfig';
+import { esUbicacionValida } from '@/lib/ubicacion';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -114,6 +115,16 @@ export default function PerfilPage() {
   const [codigoPais, setCodigoPais] = useState('54');
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
+  // Ubicación (Slice A) — seed desde `user.latitud/longitud` al abrir el
+  // sheet, igual que `direccion`; `setUbicacion` es lo único que
+  // `UbicacionMapaModal` (vía SheetDatosPersonales) puede llamar al confirmar.
+  const [latitud, setLatitud] = useState<number | null>(null);
+  const [longitud, setLongitud] = useState<number | null>(null);
+  const [errorUbicacion, setErrorUbicacion] = useState<string | null>(null);
+  const setUbicacion = (lat: number, lng: number) => {
+    setLatitud(lat);
+    setLongitud(lng);
+  };
   const [senaMonto, setSenaMonto] = useState('');
   const [whatsappPideSena, setWhatsappPideSena] = useState(false);
   const [senaTitular, setSenaTitular] = useState('');
@@ -146,6 +157,9 @@ export default function PerfilPage() {
     setCodigoPais(codigo);
     setTelefono(numero);
     setDireccion(user.direccion ?? '');
+    setLatitud(user.latitud);
+    setLongitud(user.longitud);
+    setErrorUbicacion(null);
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
     setWhatsappPideSena(user.whatsapp_pide_sena ?? false);
     setSenaTitular(user.whatsapp_sena_titular ?? '');
@@ -214,10 +228,13 @@ export default function PerfilPage() {
     setGuardando(true);
     try {
       if (sheetActivo === 'personal') {
+        setErrorUbicacion(null);
         await updatePerfil({
           name: nombreEstudio,
           telefono: telefono.trim() ? `+${codigoPais}${telefono.trim()}` : '',
           direccion,
+          latitud,
+          longitud,
         });
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
@@ -250,6 +267,18 @@ export default function PerfilPage() {
       const mensaje = extraerMensajeError(e);
       if (sheetActivo === 'password') {
         setPasswordError(mensaje);
+      } else if (sheetActivo === 'personal') {
+        // El guard del backend devuelve cualquier error de coordenadas bajo
+        // la key `latitud` (ver apply-progress A1) — se mapea al lado del
+        // campo de ubicación, nunca como diálogo genérico.
+        const errores = (e as { response?: { data?: { errors?: Record<string, string[]> } } })
+          .response?.data?.errors ?? {};
+        const primero = errores.latitud?.[0];
+        if (primero) {
+          setErrorUbicacion(primero);
+        } else {
+          await alertDialog(mensaje);
+        }
       } else if (sheetActivo === 'negocio') {
         // Mapea el 422 del guard de seña a errores por campo, que el sheet
         // muestra al lado del input correspondiente. Si el 422 no trae
@@ -296,6 +325,10 @@ export default function PerfilPage() {
             onPasteTelefono={handlePasteTelefono}
             direccion={direccion}
             setDireccion={setDireccion}
+            latitud={latitud}
+            longitud={longitud}
+            setUbicacion={setUbicacion}
+            errorUbicacion={errorUbicacion}
             onGuardar={handleGuardar}
             guardando={guardando}
             onClose={cerrarSheet}
@@ -366,6 +399,7 @@ export default function PerfilPage() {
           <FilaDato label={t('studioName')} valor={user.name} />
           <FilaDato label={t('phone')} valor={user.telefono} />
           <FilaDato label={t('address')} valor={user.direccion} />
+          <FilaDato label={t('location')} valor={esUbicacionValida(user.latitud, user.longitud) ? t('locationLoaded') : null} />
         </CardSeccion>
 
         <CardSeccion titulo={t('sectionBusiness')} icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>

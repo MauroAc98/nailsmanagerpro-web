@@ -45,6 +45,20 @@ const rutasSensiblesSinCache = new RegExp(
   `^https://(connect\\.facebook\\.net/|${apiHostEscapado}/(api/)?(auth/|support-info($|\\?)|admin/))`
 );
 
+// LocationIQ (Slice A del mapa de ubicación) — dos hosts, dos políticas
+// opuestas. Ambos son RegExp LITERALES autocontenidos (mismo gotcha que
+// `rutasSensiblesSinCache` arriba: workbox serializa `urlPattern` con
+// `.toString()`, así que nada acá puede cerrar sobre una variable de este
+// módulo Node o queda un identificador suelto en sw.js).
+//
+// Geocoding: una respuesta rancia centraría el mapa en la dirección vieja —
+// NetworkOnly, nunca debe quedar en Cache Storage.
+const geocodingLocationIq = /^https:\/\/(us1|eu1)\.locationiq\.com\/v1\//;
+// Tiles: inmutables por z/x/y (mismo tile siempre pinta lo mismo) —
+// CacheFirst acotado (120 entradas / 7 días) para no llenar Cache Storage
+// sin límite en un uso intensivo del picker.
+const tilesLocationIq = /^https:\/\/[a-z]-tiles\.locationiq\.com\/v3\//;
+
 const withPWA = require("next-pwa")({
   dest: "public",
   // El auto-registro de next-pwa inyecta en el entry 'main.js' de webpack
@@ -56,6 +70,19 @@ const withPWA = require("next-pwa")({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     { urlPattern: rutasSensiblesSinCache, handler: "NetworkOnly" },
+    { urlPattern: geocodingLocationIq, handler: "NetworkOnly" },
+    {
+      urlPattern: tilesLocationIq,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "locationiq-tiles",
+        expiration: { maxEntries: 120, maxAgeSeconds: 7 * 24 * 60 * 60 },
+        cacheableResponse: { statuses: [0, 200] },
+      },
+    },
+    // Las dos reglas de arriba DEBEN ir antes de este spread — next-pwa/cache
+    // termina con un NetworkFirst catch-all para cualquier GET cross-origin,
+    // y workbox matchea en orden de array.
     ...defaultRuntimeCaching,
   ],
 });
