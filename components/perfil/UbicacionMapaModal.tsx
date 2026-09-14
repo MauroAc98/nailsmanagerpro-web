@@ -61,20 +61,38 @@ export function UbicacionMapaModal({ latitud, longitud, direccion, onCancelar, o
     };
   }, []);
 
+  // React burbujea los eventos de un portal por el árbol de COMPONENTES, no
+  // por el del DOM real (es un comportamiento documentado de React, no un
+  // bug) — aunque este modal se dibuja en `document.body`, para React sigue
+  // siendo hijo de `SheetDatosPersonales`, que vive dentro del `BottomSheet`.
+  // `BottomSheet.tsx:334-336` escucha pointerdown/move/up en su contenido y
+  // hace `setPointerCapture` en cuanto detecta uno — eso le roba el puntero
+  // a Leaflet A MITAD de un pellizco (de ahí "no carga bien y se cierra",
+  // reportado igual en Android y iOS: no es un gesto de sistema operativo,
+  // es este cruce de React). Cortar la propagación acá arriba es suficiente
+  // — Leaflet escucha touch/pointer nativos directo en su propio nodo del
+  // DOM, no vía burbujeo de React, así que esto no le afecta nada.
+  const detenerBurbujeo = (e: React.PointerEvent) => e.stopPropagation();
+
   return createPortal(
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: Z_INDEX,
-      backgroundColor: '#000', display: 'flex', flexDirection: 'column',
-      // El pinch-zoom/drag sobre el mapa puede extenderse un pixel más allá
-      // del <div> de Leaflet (que ya trae su propio touch-action:none) hacia
-      // este contenedor — sin cortarlo acá también, el navegador lo lee como
-      // un gesto nativo (pull-to-refresh / swipe-back) y en PWA standalone
-      // eso recarga o navega la app entera, lo que se ve como "el modal se
-      // cierra solo". overscrollBehavior:'none' bloquea el rebote/navegación
-      // nativa; touchAction:'none' evita que el navegador interprete el
-      // gesto como scroll/zoom de página antes de que Leaflet lo capture.
-      overscrollBehavior: 'none', touchAction: 'none',
-    }}>
+    <div
+      onPointerDown={detenerBurbujeo}
+      onPointerMove={detenerBurbujeo}
+      onPointerUp={detenerBurbujeo}
+      style={{
+        position: 'fixed', inset: 0, zIndex: Z_INDEX,
+        backgroundColor: '#000', display: 'flex', flexDirection: 'column',
+        // El pinch-zoom/drag sobre el mapa puede extenderse un pixel más allá
+        // del <div> de Leaflet (que ya trae su propio touch-action:none) hacia
+        // este contenedor — sin cortarlo acá también, el navegador lo lee como
+        // un gesto nativo (pull-to-refresh / swipe-back) y en PWA standalone
+        // eso recarga o navega la app entera, lo que se ve como "el modal se
+        // cierra solo". overscrollBehavior:'none' bloquea el rebote/navegación
+        // nativa; touchAction:'none' evita que el navegador interprete el
+        // gesto como scroll/zoom de página antes de que Leaflet lo capture.
+        overscrollBehavior: 'none', touchAction: 'none',
+      }}
+    >
       <div style={{ flex: 1, position: 'relative', overscrollBehavior: 'none', touchAction: 'none' }}>
         <MapaErrorBoundary>
           <MapaPicker
