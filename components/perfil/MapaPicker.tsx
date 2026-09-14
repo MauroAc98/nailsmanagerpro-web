@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CENTRO_FALLBACK, esUbicacionValida } from '@/lib/ubicacion';
 import { geocodeUbicacion } from '@/lib/geocodeUbicacion';
+import { MapaBuscador } from './MapaBuscador';
 
 interface Props {
   latitud: number | null;
@@ -104,5 +105,24 @@ export function MapaPicker({ latitud, longitud, direccion, onPinMovido }: Props)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- se inicializa una sola vez; cambios posteriores de props no deben recrear el mapa
   }, []);
 
-  return <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />;
+  // Buscador de texto (feedback post-lanzamiento): reusa el mismo
+  // `geocodeUbicacion` que centra el mapa al abrir, pero on-demand — a
+  // diferencia de ese geocode inicial, ESTE resultado si mueve el pin (el
+  // usuario buscó algo a propósito, no es un best-effort de fondo).
+  const buscar = async (query: string): Promise<boolean> => {
+    const resultado = await geocodeUbicacion(query);
+    if (!resultado || !mapaRef.current || !marcadorRef.current) return false;
+    pinTocadoRef.current = true;
+    mapaRef.current.setView([resultado.lat, resultado.lon], 16);
+    marcadorRef.current.setLatLng([resultado.lat, resultado.lon]);
+    onPinMovido(resultado.lat, resultado.lon);
+    return true;
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />
+      <MapaBuscador onBuscar={buscar} />
+    </div>
+  );
 }
