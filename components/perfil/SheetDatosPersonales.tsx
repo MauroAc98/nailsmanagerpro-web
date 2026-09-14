@@ -198,7 +198,6 @@ export function SheetDatosPersonales({
         <UbicacionMapaModal
           latitud={latitud}
           longitud={longitud}
-          direccion={direccion}
           onCancelar={() => setMapaAbierto(false)}
           onConfirmar={(lat, lng) => {
             setUbicacion(lat, lng);
