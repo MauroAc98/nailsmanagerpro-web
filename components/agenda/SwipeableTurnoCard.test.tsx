@@ -57,3 +57,55 @@ describe('SwipeableTurnoCard — en_curso layout (Change 5)', () => {
     expect(onFinalizar).toHaveBeenCalledTimes(1);
   });
 });
+
+// Cancelar no puede depender solo de un gesto táctil: en escritorio o con
+// teclado no hay swipe. El botón "⋯" abre un menú con las acciones visibles.
+describe('SwipeableTurnoCard — menú de acciones "⋯"', () => {
+  it('muestra el botón "Más acciones" cuando el turno se puede cancelar', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno()} onCancel={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Más acciones' })).toBeInTheDocument();
+  });
+
+  it('sin acciones disponibles no muestra el botón', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno()} />);
+    expect(screen.queryByRole('button', { name: 'Más acciones' })).toBeNull();
+  });
+
+  it('abre el menú con Editar y Cancelar turno, y Cancelar dispara onCancel y cierra', () => {
+    const onCancel = vi.fn();
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno()} onCancel={onCancel} onPress={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+  });
+
+  it('Editar abre el detalle (onPress)', () => {
+    const onPress = vi.fn();
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno()} onCancel={vi.fn()} onPress={onPress} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('ofrece Finalizar en el menú solo cuando hay onFinalizar', () => {
+    const onFinalizar = vi.fn();
+    renderWithProviders(
+      <SwipeableTurnoCard turno={buildTurno({ estado_visual: 'en_curso' })} onCancel={vi.fn()} onFinalizar={onFinalizar} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Finalizar' }));
+    expect(onFinalizar).toHaveBeenCalledTimes(1);
+  });
+
+  it('abrir el menú no dispara el onPress de la card', () => {
+    const onPress = vi.fn();
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno()} onCancel={vi.fn()} onPress={onPress} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(onPress).not.toHaveBeenCalled();
+  });
+});

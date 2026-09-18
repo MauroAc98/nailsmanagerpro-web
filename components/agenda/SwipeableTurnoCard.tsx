@@ -1,13 +1,14 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, EllipsisVertical } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Turno } from '@/services/turnoService';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
+import { TurnoAccionesSheet, type AccionTurno } from './TurnoAccionesSheet';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -59,6 +60,7 @@ export function SwipeableTurnoCard({
   // that branch never attaches cardRef or reads this ref.
   const liveOffset = useRef(-SWIPE_PEEK);
   const dragged    = useRef(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   const applyTransform = (offset: number, animate: boolean) => {
     if (!cardRef.current) return;
@@ -103,6 +105,31 @@ export function SwipeableTurnoCard({
   };
 
   const isEnCurso = turno.estado_visual === 'en_curso';
+
+  // Menú "⋯": cancelar no puede depender solo de un gesto táctil (en
+  // escritorio o con teclado no hay swipe). El swipe queda como atajo.
+  const acciones: AccionTurno[] = [
+    ...(onFinalizar ? [{ key: 'finalizar', label: t('finish'), icon: 'finalizar' as const, onSelect: onFinalizar }] : []),
+    ...(onPress ? [{ key: 'editar', label: t('edit'), icon: 'editar' as const, onSelect: onPress }] : []),
+    ...(onCancel ? [{ key: 'cancelar', label: t('cancelAppointment'), icon: 'cancelar' as const, onSelect: onCancel, danger: true }] : []),
+  ];
+  const hayAcciones = onCancel !== undefined || onFinalizar !== undefined;
+
+  const botonMas = (
+    <button
+      onClick={e => { e.stopPropagation(); setMenuAbierto(true); }}
+      onTouchStart={e => e.stopPropagation()}
+      onTouchMove={e => e.stopPropagation()}
+      onTouchEnd={e => e.stopPropagation()}
+      aria-label={t('moreActions')}
+      style={{
+        width: 40, height: 40, flexShrink: 0, border: 'none', background: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <EllipsisVertical size={20} color={colors.text} strokeWidth={2} />
+    </button>
+  );
   // El mockup no tiñe la card entera en_curso — el fondo siempre es
   // colors.surface, sólo el badge chiquito lleva el color de estado.
   const cardBg = colors.surface;
@@ -257,9 +284,12 @@ export function SwipeableTurnoCard({
                 </svg>
               </a>
             )}
-            <ChevronRight size={20} color={colors.border} strokeWidth={2} style={{ marginLeft: 4 }} />
+            {hayAcciones
+              ? botonMas
+              : <ChevronRight size={20} color={colors.border} strokeWidth={2} style={{ marginLeft: 4 }} />}
           </>
         )}
+        {isEnCurso && hayAcciones && botonMas}
       </div>
     </>
   );
@@ -281,6 +311,16 @@ export function SwipeableTurnoCard({
     paddingLeft: 16, // matches RN's CardContainer/globalStyles.card outer padding
   };
 
+  const nombreCliente = turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient');
+  const menu = menuAbierto && (
+    <TurnoAccionesSheet
+      titulo={nombreCliente}
+      acciones={acciones}
+      cerrarLabel={t('close')}
+      onClose={() => setMenuAbierto(false)}
+    />
+  );
+
   if (!onCancel) {
     return (
       <div style={outerStyle}>
@@ -288,12 +328,14 @@ export function SwipeableTurnoCard({
         <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
           {restBody}
         </div>
+        {menu}
       </div>
     );
   }
 
   return (
     <div style={outerStyle}>
+      {menu}
       {timeSection}
 
       {/* Región deslizable — un "viewport" (relative+overflow:hidden) con dos
