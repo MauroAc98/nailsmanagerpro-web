@@ -4,10 +4,10 @@ import React, { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { CSS } from '@dnd-kit/utilities';
 import { useSortable } from '@dnd-kit/sortable';
-import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { Servicio } from '@/services/servicioService';
-import { formatMonto } from '@/lib/money';
+import { formatMontoCorto } from '@/lib/money';
 import PillToggle from '@/components/PillToggle';
 
 // Mismos valores que agenda/page.tsx (SwipeableTurnoCard) — mismo gesto,
@@ -38,7 +38,7 @@ interface Props {
 
 export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, draggable = false, showPromoBadge = false }: Props) {
   const t = useTranslations('configuracion.ServiciosPage');
-  const precioLabel = servicio.precio ? `  ·  $${formatMonto(Number(servicio.precio))}` : '';
+  const precioLabel = servicio.precio ? `$${formatMontoCorto(Number(servicio.precio))}` : null;
 
   // useSortable siempre se llama (regla de hooks) pero `disabled` cuando
   // `draggable` es false lo deja inerte: sin listeners, sin transform.
@@ -151,20 +151,16 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
           position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
           display: 'flex', alignItems: 'center', gap: 12,
           backgroundColor: cardBg,
-          padding: `14px 16px 14px ${16 + SWIPE_PEEK}px`, cursor: 'pointer', userSelect: 'none',
+          padding: `14px 14px 14px ${16 + SWIPE_PEEK}px`, cursor: 'pointer', userSelect: 'none',
         }}
       >
+        {/* Barra lateral de estado: verde = activo, gris = pausado. Vive dentro
+            de la capa deslizable (left = SWIPE_PEEK) para que, con el
+            desplazamiento de -SWIPE_PEEK, quede pegada al borde de la card. */}
         <div style={{
-          width: 36, height: 36,
-          backgroundColor: servicio.activo ? withAlpha(colors.primary, '15') : colors.surfaceSubtle,
-          borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={servicio.activo ? colors.primaryDeep : colors.placeholder} strokeWidth="2">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-        </div>
+          position: 'absolute', left: SWIPE_PEEK, top: 0, bottom: 0, width: 4,
+          backgroundColor: servicio.activo ? colors.primary : colors.border,
+        }} />
 
         {/* minWidth:0 — sin esto un nombre largo no se comprime y empuja el
             toggle / el handle / el chevron fuera de la card. Mismo criterio
@@ -189,14 +185,32 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
                 {t('promoBadge')}
               </span>
             )}
+            {!servicio.activo && (
+              <span style={{
+                flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                color: colors.amberFg, backgroundColor: colors.amberBg,
+                borderRadius: 6, padding: '2px 6px',
+              }}>
+                {t('pausedBadge')}
+              </span>
+            )}
           </div>
           <p style={{
             margin: '2px 0 0', fontSize: 12, color: colors.subtext,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
-            {servicio.duracion_minutos} min{precioLabel}
+            {servicio.duracion_minutos} min
           </p>
         </div>
+
+        {precioLabel && (
+          <span style={{
+            flexShrink: 0, fontFamily: agendaFontSerif, fontSize: 19,
+            color: servicio.activo ? colors.textStrong : colors.placeholder,
+          }}>
+            {precioLabel}
+          </span>
+        )}
 
         <PillToggle value={servicio.activo} onChange={onToggle} stopPropagation />
 
@@ -230,9 +244,6 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
           </div>
         )}
 
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
       </div>
     </div>
   );

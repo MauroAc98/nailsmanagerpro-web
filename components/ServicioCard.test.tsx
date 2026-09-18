@@ -42,3 +42,27 @@ describe('ServicioCard — swipe-to-delete resting peek', () => {
     expect(sliding.style.paddingLeft).toBe('24px');
   });
 });
+
+describe('ServicioCard — jerarquía visual', () => {
+  it('muestra el precio como dato principal, sin decimales cuando es entero', () => {
+    const { getByText, queryByText } = renderWithProviders(
+      <ServicioCard servicio={buildServicio({ precio: '18000' })} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect(getByText('$18.000')).toBeInTheDocument();
+    expect(queryByText(/,00/)).toBeNull();
+  });
+
+  it('un servicio inactivo lleva la etiqueta PAUSADO', () => {
+    const { getByText } = renderWithProviders(
+      <ServicioCard servicio={buildServicio({ activo: false })} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect(getByText('PAUSADO')).toBeInTheDocument();
+  });
+
+  it('un servicio activo no lleva etiqueta PAUSADO', () => {
+    const { queryByText } = renderWithProviders(
+      <ServicioCard servicio={buildServicio()} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect(queryByText('PAUSADO')).toBeNull();
+  });
+});

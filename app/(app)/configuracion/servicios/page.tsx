@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -10,7 +10,6 @@ import {
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
 import { useServiciosStore, useServiciosFiltrados } from '@/store/useServicioStore';
 import { Servicio } from '@/services/servicioService';
 import { NAV_CLEARANCE } from '@/constants/layout';
@@ -22,6 +21,7 @@ import { showToast } from '@/store/useToastStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import CategoriaHeader from '@/components/configuracion/CategoriaHeader';
+import { contarPorEstado, filtrarPorEstado, type FiltroEstado } from '@/lib/serviciosPorEstado';
 
 // ReorderableSection — un grupo (una categoría, o "Sin categoría") con su
 // propio DndContext/SortableContext, así arrastrar nunca mezcla ids entre
@@ -76,8 +76,14 @@ function ReorderableSection({
 export default function ServiciosPage() {
   const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
-  const { loading, error, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar, eliminarServicio } = useServiciosStore();
-  const serviciosFiltrados = useServiciosFiltrados();
+  const { servicios, loading, error, buscar, fetchServicios, toggleServicio, reordenarServicios, setBuscar, eliminarServicio } = useServiciosStore();
+  const serviciosBuscados = useServiciosFiltrados();
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
+  const serviciosFiltrados = useMemo(
+    () => filtrarPorEstado(serviciosBuscados, filtroEstado),
+    [serviciosBuscados, filtroEstado]
+  );
+  const conteos = useMemo(() => contarPorEstado(servicios), [servicios]);
 
   useEffect(() => { fetchServicios(); }, []);
 
@@ -156,6 +162,12 @@ export default function ServiciosPage() {
   const jefa = profesionalJefa(profesionales);
   const mostrarHistoriaPreciosButton = jefa !== null && jefa.historia_precios_template_id !== undefined;
 
+  const chipStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 999,
+    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+    fontSize: 13, fontWeight: 600, color: colors.text, cursor: 'pointer',
+  };
+
   return (
     // AgendaThemeScope vive en app/(app)/configuracion/servicios/layout.tsx
     // (segmento completo migrado — listado + nuevo + [id]), no acá.
@@ -167,84 +179,44 @@ export default function ServiciosPage() {
       </div>
       <div style={{ padding: '4px 20px 12px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+        {servicios.length > 0 && (
+          <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>
+            {t('summaryCounts', { activos: conteos.activos, pausados: conteos.pausados })}
+          </p>
+        )}
       </div>
 
-      {/* Entry point: historia de precios (spec: price-story) */}
-      {mostrarHistoriaPreciosButton && (
-        <div style={{ padding: '0 20px 16px' }}>
-          <button
-            onClick={() => router.push('/historia-precios')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-              backgroundColor: withAlpha(colors.primary, '15'),
-              border: `1px solid ${withAlpha(colors.primary, '33')}`,
-              boxShadow: shadows.card, borderRadius: 14,
-              padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
-            }}
-          >
-            <div style={{
-              width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '25'),
-              borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="9" cy="9" r="2" />
-                <path d="m21 15-5-5L5 21" />
-              </svg>
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.text }}>
-                {t('priceStoryButton')}
-              </p>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-                {t('priceStoryButtonHint')}
-              </p>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Entry point: Gestionar categorías (spec: service-category-navigation —
-          único punto de entrada sancionado al CRUD de categorías, ahora que
-          se sacó del menú raíz de Configuración en la Slice A). Reusa la
-          misma tarjeta que el botón de historia de precios de arriba. */}
-      <div style={{ padding: '0 20px 16px' }}>
+      {/* Accesos secundarios como chips compactos (antes eran dos tarjetas
+          grandes que empujaban la lista casi a mitad de pantalla).
+          - Historia de precios (spec: price-story): gateado en que el campo
+            NUEVO exista en la respuesta del backend (no en que tenga valor
+            truthy: `historia_precios_template_id` es válidamente `null`
+            cuando la profesional todavía no eligió plantilla).
+          - Gestionar categorías (spec: service-category-navigation): único
+            punto de entrada sancionado al CRUD de categorías. */}
+      <div style={{ display: 'flex', gap: 8, padding: '0 20px 12px', flexWrap: 'wrap' }}>
         <button
           onClick={() => router.push('/configuracion/categorias')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-            backgroundColor: colors.surface,
-            border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14,
-            padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
-          }}
+          style={chipStyle}
         >
-          <div style={{
-            width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '15'),
-            borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
-              <rect x="3" y="4" width="7" height="7" rx="1.5" />
-              <rect x="14" y="4" width="7" height="7" rx="1.5" />
-              <rect x="3" y="13" width="7" height="7" rx="1.5" />
-              <rect x="14" y="13" width="7" height="7" rx="1.5" />
-            </svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.text }}>
-              {t('manageCategoriesButton')}
-            </p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              {t('manageCategoriesHint')}
-            </p>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
-            <polyline points="9 18 15 12 9 6"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
+            <rect x="3" y="4" width="7" height="7" rx="1.5" />
+            <rect x="14" y="4" width="7" height="7" rx="1.5" />
+            <rect x="3" y="13" width="7" height="7" rx="1.5" />
+            <rect x="14" y="13" width="7" height="7" rx="1.5" />
           </svg>
+          {t('categoriesChip')}
         </button>
+        {mostrarHistoriaPreciosButton && (
+          <button onClick={() => router.push('/historia-precios')} style={chipStyle}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="9" cy="9" r="2" />
+              <path d="m21 15-5-5L5 21" />
+            </svg>
+            {t('priceStoryButton')}
+          </button>
+        )}
       </div>
 
       {/* FAB */}
@@ -291,6 +263,34 @@ export default function ServiciosPage() {
         </div>
       </div>
 
+      {/* Filtro por estado */}
+      {servicios.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, padding: '0 20px 14px' }}>
+          {([
+            ['todos', t('filterAll', { count: conteos.todos })],
+            ['activos', t('filterActive', { count: conteos.activos })],
+            ['pausados', t('filterPaused', { count: conteos.pausados })],
+          ] as const).map(([valor, label]) => {
+            const activo = filtroEstado === valor;
+            return (
+              <button
+                key={valor}
+                onClick={() => setFiltroEstado(valor)}
+                aria-pressed={activo}
+                style={{
+                  padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${activo ? colors.primarySolid : colors.border}`,
+                  backgroundColor: activo ? colors.primarySolid : colors.surface,
+                  color: activo ? '#FFF' : colors.text,
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
@@ -310,7 +310,7 @@ export default function ServiciosPage() {
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
           {serviciosFiltrados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-              {buscar ? t('noResults') : t('emptyState')}
+              {buscar ? t('noResults') : filtroEstado !== 'todos' ? t('noResultsFilter') : t('emptyState')}
             </p>
           ) : buscar ? (
             // Buscando: lista plana sin agrupar ni drag-and-drop — reordenar

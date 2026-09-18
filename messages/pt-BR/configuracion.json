@@ -42,7 +42,14 @@
     "deactivateConfirmButton": "Inativar",
     "deleted": "Serviço excluído",
     "deleteError": "Não foi possível excluir o serviço.",
-    "reorderError": "Não foi possível salvar a nova ordem."
+    "reorderError": "Não foi possível salvar a nova ordem.",
+    "pausedBadge": "PAUSADO",
+    "summaryCounts": "{activos, plural, one {# ativo} other {# ativos}} · {pausados, plural, one {# pausado} other {# pausados}}",
+    "filterAll": "Todos · {count}",
+    "filterActive": "Ativos · {count}",
+    "filterPaused": "Pausados · {count}",
+    "categoriesChip": "Categorias",
+    "noResultsFilter": "Não há serviços neste filtro"
   },
   "CategoriasPage": {
     "title": "Categorias",
