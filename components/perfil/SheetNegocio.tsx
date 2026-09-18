@@ -356,7 +356,19 @@ export function SheetNegocio({
           {t('addressRequiredWarning')}
         </p>
       )}
-      {faltaUbicacion && (
+      {/* Sin ubicación hay dos situaciones: con los envíos automáticos
+          apagados no se pueden activar (aviso rojo); con alguno YA activo —
+          negocios previos al mapa — los mensajes siguen saliendo, pero con
+          la plantilla sin mapa. Ese caso se avisa aparte, no como error. */}
+      {faltaUbicacion && (confirmacionAutomatica || recordatorioAutomatico) && (
+        <p style={{
+          fontSize: 12, color: colors.warningFg, backgroundColor: colors.warningBg,
+          borderRadius: 10, padding: '10px 12px', marginBottom: 12, lineHeight: 1.4,
+        }}>
+          {t('locationMissingNotice')}
+        </p>
+      )}
+      {faltaUbicacion && !confirmacionAutomatica && !recordatorioAutomatico && (
         <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
           {t('locationRequiredWarning')}
         </p>

@@ -3,12 +3,7 @@ import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { nombreMes } from '@/lib/dateFormat';
-
-const formatoPrecio = new Intl.NumberFormat('es-AR');
-// Espacio entre "$" y el número (antes pegados) — separa el signo del
-// monto como en la referencia, en vez de leerse como un solo token.
-const formatearPrecio = (precio: string | null): string =>
-  precio ? `$ ${formatoPrecio.format(Number(precio))}` : '-';
+import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
 
 interface Props {
   tokens:    EstiloTokens;
@@ -363,7 +358,7 @@ function FilaServicio({ servicio, tokens, paddingY, sinBorde = false }: { servic
           whiteSpace: 'nowrap',
         }}
       >
-        {formatearPrecio(servicio.precio)}
+        {formatoPrecioTarjeta(servicio.precio)}
       </span>
     </div>
   );

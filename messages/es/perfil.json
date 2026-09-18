@@ -16,6 +16,7 @@
     "autoReminderSubtitle": "Enviá un WhatsApp la noche anterior a tus clientes",
     "addressRequiredWarning": "Cargá tu dirección en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.",
     "locationRequiredWarning": "Cargá tu ubicación en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.",
+    "locationMissingNotice": "Tus mensajes automáticos se envían sin el mapa de ubicación. Cargá tu ubicación en Datos del negocio para que lo incluyan.",
     "depositLocationRequiredWarning": "Cargá tu ubicación en Datos del negocio para poder pedir seña.",
     "previewLocationMissing": "(marcá tu ubicación en Datos del negocio)",
     "depositRequest": "Pedir seña para confirmar turnos",
