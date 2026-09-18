@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Sparkles, ArrowUpRight, Eye, EyeOff } from 'lucide-react';
-import { agendaColors, agendaShadows, agendaFontSerif } from '@/theme/agendaColors';
+import { ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { agendaColors, agendaShadows } from '@/theme/agendaColors';
 import { statsService, DashboardStats } from '@/services/statsService';
 import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
@@ -47,9 +47,6 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [ocultarMonto, toggleOcultarMonto] = useOcultarMonto();
 
-  const esMesActual = viewDate.getFullYear() === new Date().getFullYear()
-    && viewDate.getMonth() === new Date().getMonth();
-
   const statsKey = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
 
   useEffect(() => {
@@ -70,84 +67,54 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   // ocupar espacio en el home con una tarjeta vacía o con un dato viejo.
   if (!stats || loadedKey !== statsKey || stats.total_turnos === 0) return null;
 
-  const topServicio = stats.servicios_mas_pedidos[0]?.nombre;
+  const irAEstadisticas = () => {
+    const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
+    const params = new URLSearchParams({ mes });
+    if (profesionalId != null) params.set('profesional', String(profesionalId));
+    router.push(`/configuracion/estadisticas?${params.toString()}`);
+  };
 
+  // Una sola línea (rediseño de jerarquía del home): mes, cantidad y monto.
+  // El detalle (servicio top, clientas nuevas) vive en Estadísticas, a un
+  // toque. El ojo es un botón hermano, no anidado dentro del que navega.
   return (
-    <button
-      onClick={() => {
-        const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
-        const params = new URLSearchParams({ mes });
-        if (profesionalId != null) params.set('profesional', String(profesionalId));
-        router.push(`/configuracion/estadisticas?${params.toString()}`);
-      }}
-      style={{
-        display: 'block', width: '100%', margin: '0 0 12px', padding: '16px 18px',
-        background: `linear-gradient(135deg, ${agendaColors.primarySoft}, ${agendaColors.surface})`,
-        border: `1px solid color-mix(in srgb, ${agendaColors.primary} 25%, transparent)`,
-        boxShadow: agendaShadows.card, borderRadius: 24, cursor: 'pointer', textAlign: 'left',
-        boxSizing: 'border-box', overflow: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <Sparkles size={14} color={agendaColors.primaryDeep} strokeWidth={2.5} />
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: agendaColors.primaryDeep, textTransform: 'uppercase' }}>
-            {esMesActual ? t('statsThisMonth') : t('statsOfMonth', { mes: nombreMes(viewDate, 'long', 'ninguna') })}
-          </p>
-        </div>
-        <ArrowUpRight size={18} color={agendaColors.primaryDeep} strokeWidth={2} style={{ flexShrink: 0 }} />
-      </div>
-
-      <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-        {/* El monto es el dato principal — nunca se comprime; el nombre del
-            servicio top (largo, cargado por el usuario) es el que cede. */}
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <p style={{ margin: 0, fontSize: 28, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong }}>
-              {ocultarMonto
-                // Fila de puntos de ancho fijo (no un input type=password
-                // ni un blur) — el patrón que usan Mercado Pago/Ualá para
-                // tapar saldo. El "$" queda al tamaño real (28, mismo que
-                // con el monto visible) — solo los puntos van más chicos;
-                // meterlo todo en un span más chico (intento anterior)
-                // encogía el "$" también, que se veía raro/inconsistente.
-                ? <>${' '}<span style={{ fontSize: 20, fontWeight: 400, letterSpacing: 3 }}>●●●●●</span></>
-                : `$${formatMonto(stats.ganancias)}`}
-            </p>
-            <span
-              onClick={toggleOcultarMonto}
-              role="button"
-              aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
-              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4 }}
-            >
-              {ocultarMonto
-                ? <EyeOff size={16} color={agendaColors.sub} strokeWidth={2} />
-                : <Eye size={16} color={agendaColors.sub} strokeWidth={2} />}
-            </span>
-          </div>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: agendaColors.sub }}>
-            {t('appointmentsCompleted', { count: stats.total_turnos })}
-          </p>
-        </div>
-        {topServicio && (
-          <div style={{ textAlign: 'right', minWidth: 0, maxWidth: '55%' }}>
-            <p style={{
-              margin: 0, fontSize: 13, fontWeight: 600, color: agendaColors.text, lineHeight: 1.3,
-              // Un nombre largo baja a 2 líneas con "…" en vez de desbordar
-              // la tarjeta (antes: flexShrink:0 sin límite de ancho).
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-              overflow: 'hidden', overflowWrap: 'anywhere',
-            }}>{topServicio}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 11, color: agendaColors.sub }}>{t('topServiceLabel')}</p>
-          </div>
-        )}
-      </div>
-
-      <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid color-mix(in srgb, ${agendaColors.primary} 15%, transparent)` }}>
-        <p style={{ margin: 0, fontSize: 12, color: agendaColors.sub }}>
-          {t('newClientsThisMonth', { count: stats.clientes.nuevas })}
-        </p>
-      </div>
-    </button>
+    <div style={{
+      display: 'flex', alignItems: 'center', height: 44, boxSizing: 'border-box',
+      backgroundColor: agendaColors.surface, border: `1px solid ${agendaColors.border}`,
+      borderRadius: 14, boxShadow: agendaShadows.card, overflow: 'hidden',
+    }}>
+      <button
+        onClick={irAEstadisticas}
+        aria-label={t('viewStats')}
+        style={{
+          flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0 8px 0 14px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: agendaColors.sub, flexShrink: 0 }}>
+          {nombreMes(viewDate, 'long')}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: agendaColors.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span>{t('turnsCount', { count: stats.total_turnos })}</span>
+          {' · '}
+          <b style={{ fontWeight: 700 }}>
+            {ocultarMonto ? '$ ●●●●●' : `$${formatMonto(stats.ganancias)}`}
+          </b>
+        </span>
+        <ChevronRight size={16} color={agendaColors.muted} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+      </button>
+      <button
+        onClick={toggleOcultarMonto}
+        aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
+        style={{
+          width: 44, height: '100%', flexShrink: 0, border: 'none', borderLeft: `1px solid ${agendaColors.hairline}`,
+          background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+        }}
+      >
+        {ocultarMonto
+          ? <EyeOff size={16} color={agendaColors.sub} strokeWidth={2} />
+          : <Eye size={16} color={agendaColors.sub} strokeWidth={2} />}
+      </button>
+    </div>
   );
 }
