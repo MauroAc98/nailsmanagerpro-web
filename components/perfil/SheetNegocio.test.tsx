@@ -156,7 +156,7 @@ describe('SheetNegocio — client validation when seña is ON', () => {
     const props = setup({ ...onCompleto, direccionNegocio: '' });
     save();
     expect(props.onGuardar).not.toHaveBeenCalled();
-    expect(screen.getByText('Cargá tu dirección en Datos personales para poder pedir seña.')).toBeInTheDocument();
+    expect(screen.getByText('Cargá tu dirección en Datos del negocio para poder pedir seña.')).toBeInTheDocument();
   });
 
   it('sanitizes a pasted value with a newline before submitting', () => {
@@ -210,12 +210,12 @@ describe('SheetNegocio — missing location gate (automation toggles)', () => {
 
   it('renders the missing-location warning when location is missing', () => {
     setup({ latitudNegocio: null, longitudNegocio: null });
-    expect(screen.getByText('Cargá tu ubicación en Datos personales para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeInTheDocument();
+    expect(screen.getByText('Cargá tu ubicación en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeInTheDocument();
   });
 
   it('does not render the missing-location warning when location is saved', () => {
     setup({ latitudNegocio: -27.4692, longitudNegocio: -58.8306 });
-    expect(screen.queryByText('Cargá tu ubicación en Datos personales para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeNull();
+    expect(screen.queryByText('Cargá tu ubicación en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeNull();
   });
 });
 
@@ -242,7 +242,7 @@ describe('SheetNegocio — missing location gate (seña toggle, decision #691)',
 
   it('renders a missing-location warning near the deposit section', () => {
     setup({ latitudNegocio: null, longitudNegocio: null });
-    expect(screen.getByText('Cargá tu ubicación en Datos personales para poder pedir seña.')).toBeInTheDocument();
+    expect(screen.getByText('Cargá tu ubicación en Datos del negocio para poder pedir seña.')).toBeInTheDocument();
   });
 });
 
@@ -252,13 +252,13 @@ describe('SheetNegocio — preview map-header mock', () => {
   it('shows the missing-location placeholder when location is missing', () => {
     setup({ latitudNegocio: null, longitudNegocio: null });
     openPreview();
-    expect(screen.getByText('(marcá tu ubicación en Datos personales)')).toBeInTheDocument();
+    expect(screen.getByText('(marcá tu ubicación en Datos del negocio)')).toBeInTheDocument();
   });
 
   it('shows the business address instead of the placeholder when location is saved', () => {
     setup({ latitudNegocio: -27.4692, longitudNegocio: -58.8306, direccionNegocio: 'Av. Siempreviva 742' });
     openPreview();
-    expect(screen.queryByText('(marcá tu ubicación en Datos personales)')).toBeNull();
+    expect(screen.queryByText('(marcá tu ubicación en Datos del negocio)')).toBeNull();
     expect(screen.getByText('Av. Siempreviva 742')).toBeInTheDocument();
   });
 });
