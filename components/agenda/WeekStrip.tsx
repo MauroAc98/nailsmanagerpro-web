@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
-import { nombreDia, nombreMes } from '@/lib/dateFormat';
+import { nombreDia, nombreMes, fechaDeHoy } from '@/lib/dateFormat';
 import type { TurnoMes } from '@/services/turnoService';
 import { formatCellDate } from './agendaDateHelpers';
 
@@ -44,6 +44,7 @@ export function WeekStrip({
 }) {
   const t = useTranslations('agenda.WeekStrip');
   const countByDate = new Map(turnosMes.map(tm => [tm.fecha, tm.cantidad]));
+  const todayStr = fechaDeHoy();
 
   // "Esta semana" quedaba mal apenas la tira dejó de mostrar siempre la
   // semana actual (ahora sigue al día elegido en "Elegir fecha", que puede
@@ -75,7 +76,15 @@ export function WeekStrip({
         {dates.map((date) => {
           const cellStr    = formatCellDate(date);
           const isSelected = cellStr === fechaSeleccionada;
-          const tieneTurnos = (countByDate.get(cellStr) ?? 0) > 0;
+          const cantidad   = countByDate.get(cellStr) ?? 0;
+          const esPasado   = cellStr < todayStr;
+          // Mismo criterio que CalendarioMensual (Change 1 lo colapsó a esta
+          // tira, no lo reemplazó): día futuro con turnos -> badge con la
+          // cantidad; día pasado con turnos -> punto simple, sin número (ya
+          // pasó, no hace falta el detalle); sin turnos o día seleccionado
+          // (su círculo ya está lleno) -> nada.
+          const mostrarBadge = cantidad > 0 && !esPasado && !isSelected;
+          const mostrarPunto = cantidad > 0 && esPasado && !isSelected;
 
           return (
             <button
@@ -102,10 +111,22 @@ export function WeekStrip({
               }}>
                 {date.getDate()}
               </span>
-              <span style={{
-                width: 4, height: 4, borderRadius: 2,
-                backgroundColor: tieneTurnos ? colors.primary : 'transparent',
-              }} />
+              {mostrarBadge ? (
+                <span style={{
+                  minWidth: 14, height: 14, borderRadius: 7, padding: '0 3px',
+                  backgroundColor: colors.primarySoft,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 8, fontWeight: 900, color: colors.primaryDeep }}>
+                    {cantidad}
+                  </span>
+                </span>
+              ) : (
+                <span style={{
+                  width: 4, height: 4, borderRadius: 2,
+                  backgroundColor: mostrarPunto ? colors.divider : 'transparent',
+                }} />
+              )}
             </button>
           );
         })}

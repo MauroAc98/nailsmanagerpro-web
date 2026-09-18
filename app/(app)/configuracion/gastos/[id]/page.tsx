@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { useGastosStore } from '@/store/useGastoStore';
 import { gastoService, CATEGORIAS_GASTO } from '@/services/gastoService';
 import { labelCategoriaGasto } from '@/lib/categoriaLabel';
@@ -256,12 +258,17 @@ export default function EditarGastoPage() {
                     key={p.id}
                     type="button"
                     onClick={() => handleSeleccionarProfesional(p.id)}
-                    style={chipStyle(selected, color)}
+                    style={{ ...chipStyle(selected, color), padding: '4px 16px 4px 4px' }}
                   >
                     <span style={{
-                      width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                      backgroundColor: selected ? '#FFF' : color,
-                    }} />
+                      width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, fontWeight: 800,
+                      backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
+                      color: selected ? '#fff' : color,
+                    }}>
+                      {inicialesProfesional(p.nombre, p.apellido)}
+                    </span>
                     {p.nombre}
                   </button>
                 );

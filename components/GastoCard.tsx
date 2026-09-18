@@ -12,6 +12,10 @@ import { formatMonto } from '@/lib/money';
 // `useSwipeToDelete` compartido todavía, extraerlo queda para un follow-up.
 const SWIPE_REVEAL    = 80;
 const SWIPE_THRESHOLD = 55;
+// Resting/closed offset — mismo criterio que SwipeableTurnoCard (Change 4,
+// agenda): un sliver del panel de eliminar queda visible en reposo en vez de
+// translateX(0), como pista de que la card se puede deslizar.
+const SWIPE_PEEK = 8;
 
 // Mismo shape que ProfesionalLabel en agenda/page.tsx (SwipeableTurnoCard) —
 // dot de color + nombre, oculto cuando el gasto no tiene profesional_id.
@@ -45,7 +49,7 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
   const cardRef    = useRef<HTMLDivElement>(null);
   const startX     = useRef(0);
   const initOffset = useRef(0);
-  const liveOffset = useRef(0);
+  const liveOffset = useRef(-SWIPE_PEEK);
   const dragged    = useRef(false);
 
   const applyTransform = (offset: number, animate: boolean) => {
@@ -76,12 +80,12 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
   };
 
   const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : 0);
+    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : -SWIPE_PEEK);
   };
 
   const handleCardClick = () => {
     if (dragged.current) return;
-    if (liveOffset.current < -10) { snapTo(0); return; }
+    if (liveOffset.current < -10) { snapTo(-SWIPE_PEEK); return; }
     onEdit();
   };
 
@@ -127,7 +131,7 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
         onTouchEnd={handleTouchEnd}
         onClick={handleCardClick}
         style={{
-          position: 'relative', transform: 'translateX(0)',
+          position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
           display: 'flex', alignItems: 'center', gap: 12,
           backgroundColor: colors.surface,
           padding: '14px 16px', cursor: 'pointer', userSelect: 'none',

@@ -77,10 +77,18 @@ export function useHistoriaPrecios() {
   const { servicios } = useServiciosStore();
   const serviciosActivos = useMemo(
     () => profesionalActual
-      ? servicios.filter(s =>
-          s.activo &&
-          profesionalActual.servicios.some(ps => ps.id === s.id)
-        )
+      ? servicios
+          .filter(s =>
+            s.activo &&
+            profesionalActual.servicios.some(ps => ps.id === s.id)
+          )
+          // `reordenarEnSitio` (lib/reordenarEnSitio.ts, usado por
+          // useServicioStore.reordenarServicios) deja los ítems afectados en
+          // su posición ORIGINAL dentro del array del store — el drag de la
+          // pantalla de Servicios se refleja SOLO en el campo `orden` de cada
+          // servicio, nunca en la posición cruda del array. Sin este sort, la
+          // Historia de Precios mostraba el orden previo al último drag.
+          .sort((a, b) => a.orden - b.orden || a.id - b.id)
       : [],
     [servicios, profesionalActual]
   );
