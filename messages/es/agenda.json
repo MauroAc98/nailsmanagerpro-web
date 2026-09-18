@@ -1,7 +1,8 @@
 {
   "AgendaPage": {
     "title": "Mi Agenda",
-    "shareAria": "Compartir agenda",
+    "share": "COMPARTIR",
+    "team": "Profesionales",
     "noResultsFound": "No se encontraron turnos",
     "noAppointmentsToday": "No hay turnos para hoy",
     "noAppointmentsOn": "No hay turnos el {fecha}",
@@ -23,11 +24,6 @@
     "saveError": "No se pudo guardar el precio."
   },
   "SwipeableTurnoCard": {
-    "moreActions": "Más acciones",
-    "finish": "Finalizar",
-    "edit": "Editar",
-    "cancelAppointment": "Cancelar turno",
-    "close": "Cerrar",
     "deletedClient": "Cliente eliminado",
     "finishNow": "Finalizar ahora",
     "inProgress": "EN CURSO",
@@ -62,9 +58,8 @@
     "all": "Todo el equipo"
   },
   "WeekStrip": {
-    "viewCalendar": "Ver calendario",
-    "previousWeek": "Semana anterior",
-    "nextWeek": "Semana siguiente"
+    "weekEyebrow": "Semana",
+    "chooseDate": "Elegir fecha"
   },
   "ElegirFechaSheet": {
     "title": "Elegir fecha",
@@ -123,8 +118,11 @@
     "readyButton": "Listo"
   },
   "ResumenMesCard": {
-    "turnsCount": "{count, plural, one {# turno} other {# turnos}}",
-    "viewStats": "Ver estadísticas",
+    "statsThisMonth": "Estadísticas de este mes",
+    "statsOfMonth": "Estadísticas de {mes}",
+    "appointmentsCompleted": "{count, plural, one {# turno completado} other {# turnos completados}}",
+    "topServiceLabel": "servicio top",
+    "newClientsThisMonth": "{count, plural, one {# cliente nuevo este mes} other {# clientes nuevos este mes}}",
     "hideAmount": "Ocultar monto",
     "showAmount": "Mostrar monto"
   },

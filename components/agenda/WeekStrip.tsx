@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { nombreDia, nombreMes, fechaDeHoy } from '@/lib/dateFormat';
@@ -55,16 +55,12 @@ export function WeekStrip({
   turnosMes,
   onDayClick,
   onAbrirCalendario,
-  onSemanaAnterior,
-  onSemanaSiguiente,
 }: {
   dates:             Date[];
   fechaSeleccionada: string;
   turnosMes:         TurnoMes[];
   onDayClick:        (fecha: string) => void;
   onAbrirCalendario: () => void;
-  onSemanaAnterior:  () => void;
-  onSemanaSiguiente: () => void;
 }) {
   const t = useTranslations('agenda.WeekStrip');
   const countByDate = new Map(turnosMes.map(tm => [tm.fecha, tm.cantidad]));
@@ -73,34 +69,31 @@ export function WeekStrip({
 
   return (
     <div style={{ padding: '0 20px 12px' }}>
-      {/* Flechas de 44px para cambiar de semana sin abrir el calendario; el
-          título (rango real) es el botón que abre el calendario completo,
-          con un "Ver calendario" que dice qué hace. */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <button
-          onClick={onSemanaAnterior}
-          aria-label={t('previousWeek')}
-          style={{ width: 44, height: 44, marginLeft: -12, border: 'none', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-        >
-          <ChevronLeft size={20} color={colors.text} strokeWidth={2.2} />
-        </button>
-        <button
-          onClick={onAbrirCalendario}
-          style={{ border: 'none', background: 'none', textAlign: 'center', cursor: 'pointer', padding: 0 }}
-        >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div>
+          {/* Mismo tamaño/peso/tracking que el resto de los eyebrows de
+              sección de esta pantalla ("Profesionales", "Buscar cliente",
+              etc.) — 10px era una talla propia, sin precedente acá. */}
+          <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
+            {t('weekEyebrow')}
+          </p>
           <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong }}>
             {rangoSemana}
           </span>
-          <span style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 0.3, color: colors.primaryDeep }}>
-            {t('viewCalendar')}
-          </span>
-        </button>
+        </div>
+        {/* Botón-ícono en vez de texto "Elegir fecha" — separa "esto es lo
+            que estás viendo" (rango de arriba) de "esto es una acción",
+            en vez de dos textos compitiendo uno al lado del otro. */}
         <button
-          onClick={onSemanaSiguiente}
-          aria-label={t('nextWeek')}
-          style={{ width: 44, height: 44, marginRight: -12, border: 'none', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          onClick={onAbrirCalendario}
+          aria-label={t('chooseDate')}
+          style={{
+            flexShrink: 0, width: 38, height: 38, borderRadius: 19,
+            border: `1px solid ${colors.border}`, backgroundColor: colors.surface,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+          }}
         >
-          <ChevronRight size={20} color={colors.text} strokeWidth={2.2} />
+          <Calendar size={17} color={colors.primaryDeep} strokeWidth={2} />
         </button>
       </div>
 
@@ -132,7 +125,7 @@ export function WeekStrip({
                 {nombreDia(date, 'short').charAt(0).toUpperCase()}
               </span>
               <span style={{
-                width: 40, height: 40, borderRadius: 20,
+                width: 32, height: 32, borderRadius: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: isSelected ? agendaFontSerif : undefined,
                 fontWeight: isSelected ? 700 : 600,

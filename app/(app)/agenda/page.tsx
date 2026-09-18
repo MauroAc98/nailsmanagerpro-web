@@ -953,14 +953,6 @@ export default function AgendaPage() {
     setProfesionalFiltro(null);
   }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
 
-  // Flechas de la tira: mismo día de la semana en la semana anterior/
-  // siguiente, resuelto por handleDayClick (que ya se ocupa de cambiar de
-  // mes y de traer los turnos del día).
-  const handleCambiarSemana = useCallback((delta: number) => {
-    const base = parseFechaLocal(fechaSeleccionada);
-    handleDayClick(formatCellDate(new Date(base.getFullYear(), base.getMonth(), base.getDate() + delta * 7)));
-  }, [fechaSeleccionada, handleDayClick]);
-
   const handleAbrirElegirFecha = useCallback(() => {
     elegirFechaSheetRef.current?.snapToIndex(0);
   }, []);
@@ -1115,12 +1107,14 @@ export default function AgendaPage() {
           <NotificacionesBell />
           <button
             onClick={() => router.push(`/agenda/historia?fecha=${fechaSeleccionada}`)}
-            aria-label={t('shareAria')}
             style={{
-              width: 40, height: 40, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: `1px solid ${colors.border}`, backgroundColor: colors.surface, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 11, fontWeight: 600, color: colors.text, letterSpacing: 1, textTransform: 'uppercase',
+              border: `1px solid ${colors.border}`, borderRadius: 20, padding: '8px 14px',
+              backgroundColor: colors.surface, cursor: 'pointer',
             }}>
-            <Camera size={18} color={colors.text} strokeWidth={1.8} />
+            <Camera size={16} color={colors.text} strokeWidth={1.8} />
+            {t('share')}
           </button>
         </div>
       </div>
@@ -1144,6 +1138,9 @@ export default function AgendaPage() {
           siendo un roster fijo, no un filtro atado al día del calendario. */}
       {mostrarSelectorProfesional && (
         <div style={{ padding: '0 20px 12px' }}>
+          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
+            {t('team')}
+          </p>
           <SelectorProfesionalDia
             profesionales={activeProfesionales}
             filtroActivo={profesionalFiltro}
@@ -1164,8 +1161,6 @@ export default function AgendaPage() {
           turnosMes={turnosMesParaBadges}
           onDayClick={handleDayClick}
           onAbrirCalendario={handleAbrirElegirFecha}
-          onSemanaAnterior={() => handleCambiarSemana(-1)}
-          onSemanaSiguiente={() => handleCambiarSemana(1)}
         />
       </div>
 
@@ -1183,7 +1178,7 @@ export default function AgendaPage() {
       <BottomSheet
         ref={bottomSheetRef}
         snapPoints={[0.3, 0.5, 0.8]}
-        initialIndex={1}
+        initialIndex={0}
         enablePanDownToClose={false}
         handleColor={colors.border}
         backgroundColor={colors.surface}
