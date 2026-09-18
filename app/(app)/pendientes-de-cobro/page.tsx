@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { NAV_CLEARANCE } from '@/constants/layout';
+import { NAV_CLEARANCE, NAV_BUBBLE_POKE } from '@/constants/layout';
 import { formatMontoCorto } from '@/lib/money';
 import {
   agruparPorSemana,
@@ -185,7 +185,7 @@ export default function PendientesDeCobroPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 90 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 110 }}>
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas), sin el indent de
           48px que alineaba el subtítulo contra el BackButton inline. */}
@@ -322,7 +322,7 @@ export default function PendientesDeCobroPage() {
             position: 'fixed',
             left: 0,
             right: 0,
-            bottom: NAV_CLEARANCE,
+            bottom: `calc(${NAV_CLEARANCE + NAV_BUBBLE_POKE + 12}px + env(safe-area-inset-bottom))`,
             padding: '0 20px',
             zIndex: 10,
           }}
