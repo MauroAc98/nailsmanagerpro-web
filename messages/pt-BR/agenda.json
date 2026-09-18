@@ -2,8 +2,7 @@
   "AgendaPage": {
     "title": "Minha Agenda",
     "share": "COMPARTILHAR",
-    "professionalWithAppointmentToday": "Profissional com agendamento hoje",
-    "professionalWithAppointmentOn": "Profissional com agendamento em {fecha}",
+    "team": "Equipe",
     "noResultsFound": "Nenhum agendamento encontrado",
     "noAppointmentsToday": "Não há agendamentos para hoje",
     "noAppointmentsOn": "Não há agendamentos em {fecha}",
@@ -54,6 +53,15 @@
   },
   "SelectorProfesionalDia": {
     "all": "Todas"
+  },
+  "WeekStrip": {
+    "thisWeek": "Esta semana",
+    "chooseDate": "Escolher data"
+  },
+  "ElegirFechaSheet": {
+    "title": "Escolher data",
+    "today": "Hoje",
+    "close": "Fechar"
   },
   "EditarTurnoPage": {
     "title": "Editar Agendamento",
