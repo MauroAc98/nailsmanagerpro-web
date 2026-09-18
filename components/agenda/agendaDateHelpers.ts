@@ -32,6 +32,15 @@ export function formatCellDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// Inversa de formatCellDate. Parsea manualmente (no `new Date(fechaStr)`)
+// para evitar el corrimiento a medianoche UTC que voltea el día mostrado en
+// husos horarios negativos como ART (mismo gotcha ya documentado en
+// formatFechaCorta, page.tsx).
+export function parseFechaLocal(fechaStr: string): Date {
+  const [y, m, d] = fechaStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 // Multi-agenda — nombre + color de la profesional a cargo, para la tercera
 // línea de timeSection en SwipeableTurnoCard/FinalizadoCard. undefined/null
 // = no se muestra (cuenta con ≤1 profesional activa, o la vista ya está
