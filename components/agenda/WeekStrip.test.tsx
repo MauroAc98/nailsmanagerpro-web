@@ -41,6 +41,8 @@ describe('WeekStrip', () => {
   function setup(overrides: Partial<Parameters<typeof WeekStrip>[0]> = {}) {
     const onDayClick = vi.fn();
     const onAbrirCalendario = vi.fn();
+    const onSemanaAnterior = vi.fn();
+    const onSemanaSiguiente = vi.fn();
     renderWithProviders(
       <WeekStrip
         dates={dates}
@@ -48,25 +50,39 @@ describe('WeekStrip', () => {
         turnosMes={turnosMes}
         onDayClick={onDayClick}
         onAbrirCalendario={onAbrirCalendario}
+        onSemanaAnterior={onSemanaAnterior}
+        onSemanaSiguiente={onSemanaSiguiente}
         {...overrides}
       />,
     );
-    return { onDayClick, onAbrirCalendario };
+    return { onDayClick, onAbrirCalendario, onSemanaAnterior, onSemanaSiguiente };
   }
 
-  it('renders the "Semana" eyebrow + the real date range (not a bare month/year) and the calendar icon-button', () => {
+  it('renders the real date range with the week arrows and the calendar button', () => {
     setup();
-    // Rango real de la semana (14-20 de sept) en vez de "Septiembre 2026" —
-    // el mes suelto no representaba lo que la tira realmente muestra (7
-    // días puntuales, no un mes completo). El botón "Elegir fecha" pasa a
-    // ser un ícono con aria-label, no texto visible, para no competir con
-    // el rango de fechas como si fueran dos labels del mismo tipo.
-    expect(screen.getByText('Semana')).toBeInTheDocument();
-    expect(screen.getByText('14 – 20 de septiembre')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Elegir fecha' })).toBeInTheDocument();
+    expect(screen.getByText('14 – 20 de sept')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Semana anterior' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Semana siguiente' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver calendario completo' })).toBeInTheDocument();
+    // El botón dice qué hace: lleva la palabra "Calendario", no solo un ícono.
+    expect(screen.getByText('Calendario')).toBeInTheDocument();
     for (let d = 14; d <= 20; d++) {
       expect(screen.getByTestId(`week-day-${fecha(2026, 9, d)}`)).toBeInTheDocument();
     }
+  });
+
+  it('shows each day as a pill with its 3-letter weekday (uppercased by CSS)', () => {
+    setup();
+    expect(screen.getByTestId('week-day-2026-09-14')).toHaveTextContent('Lun');
+    expect(screen.getByTestId('week-day-2026-09-20')).toHaveTextContent('Dom');
+  });
+
+  it('calls onSemanaAnterior / onSemanaSiguiente from the arrows', () => {
+    const { onSemanaAnterior, onSemanaSiguiente } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Semana anterior' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Semana siguiente' }));
+    expect(onSemanaAnterior).toHaveBeenCalledTimes(1);
+    expect(onSemanaSiguiente).toHaveBeenCalledTimes(1);
   });
 
   it('shows the real day range even when the week crosses two months', () => {
@@ -81,9 +97,9 @@ describe('WeekStrip', () => {
     expect(onDayClick).toHaveBeenCalledWith(fecha(2026, 9, 16));
   });
 
-  it('opens the full calendar sheet via onAbrirCalendario', () => {
+  it('opens the full calendar sheet via the calendar button', () => {
     const { onAbrirCalendario } = setup();
-    fireEvent.click(screen.getByRole('button', { name: /Elegir fecha/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
     expect(onAbrirCalendario).toHaveBeenCalledTimes(1);
   });
 

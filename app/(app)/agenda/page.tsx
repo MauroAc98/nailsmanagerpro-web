@@ -953,6 +953,14 @@ export default function AgendaPage() {
     setProfesionalFiltro(null);
   }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
 
+  // Flechas de la tira: mismo día de la semana en la semana anterior/
+  // siguiente, resuelto por handleDayClick (que ya se ocupa de cambiar de
+  // mes y de traer los turnos del día).
+  const handleCambiarSemana = useCallback((delta: number) => {
+    const base = parseFechaLocal(fechaSeleccionada);
+    handleDayClick(formatCellDate(new Date(base.getFullYear(), base.getMonth(), base.getDate() + delta * 7)));
+  }, [fechaSeleccionada, handleDayClick]);
+
   const handleAbrirElegirFecha = useCallback(() => {
     elegirFechaSheetRef.current?.snapToIndex(0);
   }, []);
@@ -1161,6 +1169,8 @@ export default function AgendaPage() {
           turnosMes={turnosMesParaBadges}
           onDayClick={handleDayClick}
           onAbrirCalendario={handleAbrirElegirFecha}
+          onSemanaAnterior={() => handleCambiarSemana(-1)}
+          onSemanaSiguiente={() => handleCambiarSemana(1)}
         />
       </div>
 

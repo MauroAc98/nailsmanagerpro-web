@@ -19,6 +19,8 @@ const SWIPE_THRESHOLD = 55;
 // agenda): un sliver del panel de eliminar queda visible en reposo en vez de
 // translateX(0), como pista de que la card se puede deslizar.
 const SWIPE_PEEK = 8;
+// La capa se desplaza -SWIPE_PEEK y el borde de la card recorta esos px: el
+// padding izquierdo suma SWIPE_PEEK para que el contenido no pierda margen.
 
 interface Props {
   servicio: Servicio;
@@ -149,7 +151,7 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
           position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
           display: 'flex', alignItems: 'center', gap: 12,
           backgroundColor: cardBg,
-          padding: '14px 16px', cursor: 'pointer', userSelect: 'none',
+          padding: `14px 16px 14px ${16 + SWIPE_PEEK}px`, cursor: 'pointer', userSelect: 'none',
         }}
       >
         <div style={{

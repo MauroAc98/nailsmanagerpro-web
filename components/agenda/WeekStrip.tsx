@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Calendar } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { nombreDia, nombreMes, fechaDeHoy } from '@/lib/dateFormat';
@@ -10,11 +10,12 @@ import { formatCellDate } from './agendaDateHelpers';
 
 // ─────────────────────────────────────────────
 // etiquetaRangoSemana — rango real de días de la tira ("14 – 20 de
-// septiembre"), no el mes/año suelto que mostraba antes: ese label no
+// sept"), no el mes/año suelto que mostraba antes: ese label no
 // representaba bien lo que la tira efectivamente muestra (7 días
-// puntuales, no un mes completo) — feedback directo del usuario. Semana
-// dentro de un mismo mes: "14 – 20 de septiembre" (mes una sola vez, al
-// final). Semana que cruza de mes: "30 de nov – 6 de dic" (mes corto en
+// puntuales, no un mes completo) — feedback directo del usuario. Mes
+// abreviado siempre, para que entren las flechas y el botón "Calendario" en
+// una fila. Semana dentro de un mismo mes: "14 – 20 de sept" (mes una sola
+// vez, al final). Semana que cruza de mes: "30 de nov – 6 de dic" (mes en
 // cada punta, evita ambigüedad sobre a qué mes pertenece cada día).
 // ─────────────────────────────────────────────
 function etiquetaRangoSemana(dates: Date[]): string {
@@ -23,7 +24,7 @@ function etiquetaRangoSemana(dates: Date[]): string {
   const mismoMes = primero.getMonth() === ultimo.getMonth() && primero.getFullYear() === ultimo.getFullYear();
 
   if (mismoMes) {
-    return `${primero.getDate()} – ${ultimo.getDate()} de ${nombreMes(ultimo, 'long', 'ninguna')}`;
+    return `${primero.getDate()} – ${ultimo.getDate()} de ${nombreMes(ultimo, 'short', 'ninguna')}`;
   }
   return `${primero.getDate()} de ${nombreMes(primero, 'short', 'ninguna')} – ${ultimo.getDate()} de ${nombreMes(ultimo, 'short', 'ninguna')}`;
 }
@@ -55,59 +56,64 @@ export function WeekStrip({
   turnosMes,
   onDayClick,
   onAbrirCalendario,
+  onSemanaAnterior,
+  onSemanaSiguiente,
 }: {
   dates:             Date[];
   fechaSeleccionada: string;
   turnosMes:         TurnoMes[];
   onDayClick:        (fecha: string) => void;
   onAbrirCalendario: () => void;
+  onSemanaAnterior:  () => void;
+  onSemanaSiguiente: () => void;
 }) {
   const t = useTranslations('agenda.WeekStrip');
   const countByDate = new Map(turnosMes.map(tm => [tm.fecha, tm.cantidad]));
   const todayStr = fechaDeHoy();
   const rangoSemana = etiquetaRangoSemana(dates);
 
+  const flecha: React.CSSProperties = {
+    width: 40, height: 40, flexShrink: 0, border: 'none', background: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  };
+
   return (
     <div style={{ padding: '0 20px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div>
-          {/* Mismo tamaño/peso/tracking que el resto de los eyebrows de
-              sección de esta pantalla ("Profesionales", "Buscar cliente",
-              etc.) — 10px era una talla propia, sin precedente acá. */}
-          <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
-            {t('weekEyebrow')}
-          </p>
-          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong }}>
-            {rangoSemana}
-          </span>
-        </div>
-        {/* Botón-ícono en vez de texto "Elegir fecha" — separa "esto es lo
-            que estás viendo" (rango de arriba) de "esto es una acción",
-            en vez de dos textos compitiendo uno al lado del otro. */}
+      {/* Fila de navegación: ‹ rango › + botón de calendario completo. Las
+          flechas mueven de a una semana sin abrir el calendario. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 10, marginLeft: -10 }}>
+        <button onClick={onSemanaAnterior} aria-label={t('previousWeek')} style={flecha}>
+          <ChevronLeft size={20} color={colors.text} strokeWidth={2.2} />
+        </button>
+        <span style={{ flex: 1, textAlign: 'center', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong }}>
+          {rangoSemana}
+        </span>
+        <button onClick={onSemanaSiguiente} aria-label={t('nextWeek')} style={flecha}>
+          <ChevronRight size={20} color={colors.text} strokeWidth={2.2} />
+        </button>
         <button
           onClick={onAbrirCalendario}
-          aria-label={t('chooseDate')}
+          aria-label={t('openCalendar')}
           style={{
-            flexShrink: 0, width: 38, height: 38, borderRadius: 19,
-            border: `1px solid ${colors.border}`, backgroundColor: colors.surface,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            height: 36, flexShrink: 0, marginLeft: 6, padding: '0 12px', borderRadius: 18,
+            border: `1px solid ${withAlpha(colors.primary, '55')}`, backgroundColor: colors.surface,
+            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            fontSize: 12, fontWeight: 700, color: colors.primaryDeep,
           }}
         >
-          <Calendar size={17} color={colors.primaryDeep} strokeWidth={2} />
+          <Calendar size={16} color={colors.primaryDeep} strokeWidth={2} />
+          {t('calendarLabel')}
         </button>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
+      {/* Días como pastillas: abreviatura, número en serif y, abajo, el
+          badge con la cantidad (día futuro) o un punto (día pasado). */}
+      <div style={{ display: 'flex', gap: 6 }}>
         {dates.map((date) => {
           const cellStr    = formatCellDate(date);
           const isSelected = cellStr === fechaSeleccionada;
           const cantidad   = countByDate.get(cellStr) ?? 0;
           const esPasado   = cellStr < todayStr;
-          // Mismo criterio que CalendarioMensual (Change 1 lo colapsó a esta
-          // tira, no lo reemplazó): día futuro con turnos -> badge con la
-          // cantidad; día pasado con turnos -> punto simple, sin número (ya
-          // pasó, no hace falta el detalle); sin turnos o día seleccionado
-          // (su círculo ya está lleno) -> nada.
           const mostrarBadge = cantidad > 0 && !esPasado && !isSelected;
           const mostrarPunto = cantidad > 0 && esPasado && !isSelected;
 
@@ -117,41 +123,41 @@ export function WeekStrip({
               data-testid={`week-day-${cellStr}`}
               onClick={() => onDayClick(cellStr)}
               style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+                flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '8px 0', borderRadius: 16, cursor: 'pointer',
+                border: `1px solid ${isSelected ? colors.primarySolid : colors.hairline}`,
+                backgroundColor: isSelected ? colors.primarySolid : colors.surface,
+                boxShadow: isSelected ? `0 4px 10px ${withAlpha(colors.primary, '4D')}` : 'none',
               }}
             >
-              <span style={{ fontSize: 10, fontWeight: 700, color: colors.muted, textTransform: 'uppercase' }}>
-                {nombreDia(date, 'short').charAt(0).toUpperCase()}
+              <span style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase',
+                color: isSelected ? withAlpha(colors.primaryFg, 'BF') : colors.muted,
+              }}>
+                {nombreDia(date, 'short').slice(0, 3)}
               </span>
               <span style={{
-                width: 32, height: 32, borderRadius: 16,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: isSelected ? agendaFontSerif : undefined,
-                fontWeight: isSelected ? 700 : 600,
-                fontSize: isSelected ? 16 : 14,
+                marginTop: 2, fontFamily: agendaFontSerif, fontSize: 17,
+                fontWeight: isSelected ? 700 : 400,
                 color: isSelected ? colors.primaryFg : colors.text,
-                backgroundColor: isSelected ? colors.primarySolid : 'transparent',
-                boxShadow: isSelected ? `0 2px 4px ${withAlpha(colors.primary, '4D')}` : 'none',
               }}>
                 {date.getDate()}
               </span>
-              {mostrarBadge ? (
-                <span style={{
-                  minWidth: 14, height: 14, borderRadius: 7, padding: '0 3px',
-                  backgroundColor: colors.primarySoft,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <span style={{ fontSize: 8, fontWeight: 900, color: colors.primaryDeep }}>
-                    {cantidad}
+              <span style={{ height: 14, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {mostrarBadge ? (
+                  <span style={{
+                    minWidth: 14, height: 14, borderRadius: 7, padding: '0 3px', backgroundColor: colors.primarySoft,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: 8, fontWeight: 900, color: colors.primaryDeep }}>{cantidad}</span>
                   </span>
-                </span>
-              ) : (
-                <span style={{
-                  width: 4, height: 4, borderRadius: 2,
-                  backgroundColor: mostrarPunto ? colors.divider : 'transparent',
-                }} />
-              )}
+                ) : (
+                  <span style={{
+                    width: 5, height: 5, borderRadius: 3,
+                    backgroundColor: mostrarPunto ? colors.primary : 'transparent',
+                  }} />
+                )}
+              </span>
             </button>
           );
         })}
