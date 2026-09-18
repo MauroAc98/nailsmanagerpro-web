@@ -8,6 +8,7 @@ import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/services/statsService';
 import { extraerMensajeError } from '@/services/clienteService';
@@ -633,12 +634,29 @@ function EstadisticasContent() {
             <button
               onClick={() => setProfesionalFiltro(null)}
               style={{
-                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+                borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 border: `1px solid ${profesionalFiltro === null ? colors.primarySolid : colors.border}`,
                 backgroundColor: profesionalFiltro === null ? colors.primarySolid : colors.surface,
                 color: profesionalFiltro === null ? colors.primaryFg : colors.text,
               }}
             >
+              {/* Ícono de grupo — mismo criterio que Agenda/Gastos: distingue
+                  la opción agregadora de las profesionales puntuales, que
+                  llevan su avatar con iniciales. */}
+              <span style={{
+                width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                backgroundColor: profesionalFiltro === null ? withAlpha(colors.primaryFg, '3D') : withAlpha(colors.primary, '26'),
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                  stroke={profesionalFiltro === null ? colors.primaryFg : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </span>
               {t('all')}
             </button>
             {activeProfesionales.map(p => {
@@ -650,16 +668,21 @@ function EstadisticasContent() {
                   onClick={() => setProfesionalFiltro(selected ? null : p.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                     border: `1px solid ${selected ? color : colors.border}`,
                     backgroundColor: selected ? color : colors.surface,
                     color: selected ? '#FFF' : colors.text,
                   }}
                 >
                   <span style={{
-                    width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                    backgroundColor: selected ? '#FFF' : color,
-                  }} />
+                    width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 9, fontWeight: 800,
+                    backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
+                    color: selected ? '#fff' : color,
+                  }}>
+                    {inicialesProfesional(p.nombre, p.apellido)}
+                  </span>
                   {p.nombre}
                 </button>
               );

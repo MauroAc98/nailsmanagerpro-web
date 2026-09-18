@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -618,6 +619,7 @@ function SelectorProfesionalDia({
   onSeleccionar: (id: number | null) => void;
 }) {
   const t = useTranslations('agenda.SelectorProfesionalDia');
+  const todosSeleccionado = filtroActivo === null;
   return (
     <div style={{
       display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
@@ -625,13 +627,30 @@ function SelectorProfesionalDia({
       <button
         onClick={() => onSeleccionar(null)}
         style={{
-          flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-          border: `1px solid ${filtroActivo === null ? colors.primarySolid : colors.divider}`,
-          backgroundColor: filtroActivo === null ? colors.primarySolid : colors.surface,
-          color: filtroActivo === null ? colors.primaryFg : colors.text,
+          flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+          borderRadius: 20, padding: '4px 14px 4px 4px', fontSize: 12, fontWeight: 600,
+          border: `1px solid ${todosSeleccionado ? colors.primarySolid : colors.divider}`,
+          backgroundColor: todosSeleccionado ? colors.primarySolid : colors.surface,
+          color: todosSeleccionado ? colors.primaryFg : colors.text,
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}
       >
+        {/* Ícono de grupo — distingue de un vistazo la opción agregadora
+            ("todas") de las profesionales puntuales, que ahora llevan su
+            avatar con iniciales (Change: unificación de selectores). */}
+        <span style={{
+          width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+          backgroundColor: todosSeleccionado ? withAlpha(colors.primaryFg, '3D') : withAlpha(colors.primary, '26'),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+            stroke={todosSeleccionado ? colors.primaryFg : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </span>
         {t('all')}
       </button>
       {profesionales.map(p => {
@@ -642,15 +661,23 @@ function SelectorProfesionalDia({
             key={p.id}
             onClick={() => onSeleccionar(selected ? null : p.id)}
             style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
-              borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+              borderRadius: 20, padding: '4px 14px 4px 4px', fontSize: 12, fontWeight: 600,
               border: `1px solid ${selected ? color : colors.divider}`,
               backgroundColor: selected ? color : colors.surface,
               color: selected ? colors.primaryFg : colors.text,
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: 4, flexShrink: 0, backgroundColor: selected ? colors.primaryFg : color }} />
+            <span style={{
+              width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 9, fontWeight: 800,
+              backgroundColor: selected ? withAlpha(colors.primaryFg, '3D') : withAlpha(color, '26'),
+              color: selected ? colors.primaryFg : color,
+            }}>
+              {inicialesProfesional(p.nombre, p.apellido)}
+            </span>
             {p.nombre}
           </button>
         );

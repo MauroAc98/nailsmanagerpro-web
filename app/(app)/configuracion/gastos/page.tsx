@@ -17,6 +17,7 @@ import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import {
   filtrarGastos,
   contarFiltrosActivos,
@@ -333,8 +334,25 @@ export default function GastosPage() {
                     <button
                       type="button"
                       onClick={() => setFiltros(f => ({ ...f, profesionalId: null }))}
-                      style={chipStyle(filtros.profesionalId === null, colors.primary)}
+                      style={{ ...chipStyle(filtros.profesionalId === null, colors.primary), padding: '4px 14px 4px 4px' }}
                     >
+                      {/* Ícono de grupo — mismo criterio que el "Todo el
+                          equipo" de Agenda: distingue la opción agregadora
+                          de las profesionales puntuales, que llevan su
+                          avatar con iniciales. */}
+                      <span style={{
+                        width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                        backgroundColor: filtros.profesionalId === null ? withAlpha('#fff', '3D') : withAlpha(colors.primary, '26'),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                          stroke={filtros.profesionalId === null ? '#fff' : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                      </span>
                       {t('filterAll')}
                     </button>
                     {activeProfesionales.map(p => {
@@ -345,12 +363,17 @@ export default function GastosPage() {
                           key={p.id}
                           type="button"
                           onClick={() => setFiltros(f => ({ ...f, profesionalId: selected ? null : p.id }))}
-                          style={chipStyle(selected, color)}
+                          style={{ ...chipStyle(selected, color), padding: '4px 14px 4px 4px' }}
                         >
                           <span style={{
-                            width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                            backgroundColor: selected ? '#FFF' : color,
-                          }} />
+                            width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 9, fontWeight: 800,
+                            backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
+                            color: selected ? '#fff' : color,
+                          }}>
+                            {inicialesProfesional(p.nombre, p.apellido)}
+                          </span>
                           {p.nombre}
                         </button>
                       );

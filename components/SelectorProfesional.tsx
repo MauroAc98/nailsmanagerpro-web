@@ -2,11 +2,14 @@
 
 import type { CSSProperties } from 'react';
 import { agendaColors as colors } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 
 export interface ProfesionalOption {
-  id:     number;
-  nombre: string;
-  color?: string | null;
+  id:       number;
+  nombre:   string;
+  apellido?: string | null;
+  color?:   string | null;
 }
 
 interface Props {
@@ -72,16 +75,21 @@ export default function SelectorProfesional({
               onClick={() => onSelect(selected && toggleable ? null : p.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: pillFontWeight, cursor: 'pointer',
+                borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: pillFontWeight, cursor: 'pointer',
                 border: `1px solid ${selected ? color : unselectedBorderColor}`,
                 backgroundColor: selected ? color : colors.surface,
                 color: selected ? selectedFg : colors.text,
               }}
             >
               <span style={{
-                width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                backgroundColor: selected ? selectedFg : color,
-              }} />
+                width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 9, fontWeight: 800,
+                backgroundColor: selected ? withAlpha(selectedFg, '3D') : withAlpha(color, '26'),
+                color: selected ? selectedFg : color,
+              }}>
+                {inicialesProfesional(p.nombre, p.apellido)}
+              </span>
               {p.nombre}
             </button>
           );

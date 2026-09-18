@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import type { TurnoMes } from '@/services/turnoService';
@@ -82,5 +82,37 @@ describe('WeekStrip', () => {
     const { onAbrirCalendario } = setup();
     fireEvent.click(screen.getByRole('button', { name: /Elegir fecha/ }));
     expect(onAbrirCalendario).toHaveBeenCalledTimes(1);
+  });
+
+  // Mismo criterio que CalendarioMensual (Change 1 solo lo colapsó a esta
+  // tira, no cambió su lógica): día futuro con turnos -> badge numerado; día
+  // pasado con turnos -> punto simple sin número. "Hoy" se fija con fake
+  // timers para no depender del reloj real de quien corra el test.
+  describe('badge de cantidad vs. punto (futuro vs. pasado)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 16)); // "hoy" = miércoles 16/9/2026
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('muestra un badge con la cantidad en un día futuro con turnos', () => {
+      // El 16 (hoy) también tiene turnos en el fixture — usamos el 17
+      // (jueves, futuro) para no pisarnos con el caso "hoy" de otro test.
+      const turnosConFuturo: TurnoMes[] = [{ fecha: fecha(2026, 9, 17), cantidad: 5 }];
+      setup({ turnosMes: turnosConFuturo, fechaSeleccionada: fecha(2026, 9, 14) });
+      expect(screen.getByText('5')).toBeInTheDocument();
+    });
+
+    it('muestra un punto simple, sin número, en un día pasado con turnos', () => {
+      const turnosConPasado: TurnoMes[] = [{ fecha: fecha(2026, 9, 15), cantidad: 2 }]; // martes, pasado
+      setup({ turnosMes: turnosConPasado, fechaSeleccionada: fecha(2026, 9, 14) });
+      expect(screen.queryByText('2')).toBeNull();
+    });
+
+    it('no muestra badge ni punto en el día seleccionado, aunque tenga turnos', () => {
+      const turnosDelSeleccionado: TurnoMes[] = [{ fecha: fecha(2026, 9, 17), cantidad: 5 }];
+      setup({ turnosMes: turnosDelSeleccionado, fechaSeleccionada: fecha(2026, 9, 17) });
+      expect(screen.queryByText('5')).toBeNull();
+    });
   });
 });
