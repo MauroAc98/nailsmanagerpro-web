@@ -54,22 +54,25 @@ describe('WeekStrip', () => {
     return { onDayClick, onAbrirCalendario };
   }
 
-  it('renders the month/year of the strip (not a static "current week" label) and the "Elegir fecha" action', () => {
+  it('renders the "Semana" eyebrow + the real date range (not a bare month/year) and the calendar icon-button', () => {
     setup();
-    // dates[2] (miércoles) es 2026-09-16 -> "Septiembre 2026". Dinámico a
-    // propósito: la tira puede mostrar cualquier semana elegida desde el
-    // sheet de calendario, no solo la semana actual.
-    expect(screen.getByText('Septiembre 2026')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Elegir fecha/ })).toBeInTheDocument();
+    // Rango real de la semana (14-20 de sept) en vez de "Septiembre 2026" —
+    // el mes suelto no representaba lo que la tira realmente muestra (7
+    // días puntuales, no un mes completo). El botón "Elegir fecha" pasa a
+    // ser un ícono con aria-label, no texto visible, para no competir con
+    // el rango de fechas como si fueran dos labels del mismo tipo.
+    expect(screen.getByText('Semana')).toBeInTheDocument();
+    expect(screen.getByText('14 – 20 de septiembre')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Elegir fecha' })).toBeInTheDocument();
     for (let d = 14; d <= 20; d++) {
       expect(screen.getByTestId(`week-day-${fecha(2026, 9, d)}`)).toBeInTheDocument();
     }
   });
 
-  it('labels the strip by the month a different week falls in, not always the current month', () => {
-    const otroMes = Array.from({ length: 7 }, (_, i) => new Date(2026, 11, 7 + i)); // dic 7-13
+  it('shows the real day range even when the week crosses two months', () => {
+    const otroMes = Array.from({ length: 7 }, (_, i) => new Date(2026, 10, 30 + i)); // 30 nov - 6 dic
     setup({ dates: otroMes });
-    expect(screen.getByText('Diciembre 2026')).toBeInTheDocument();
+    expect(screen.getByText('30 de nov – 6 de dic')).toBeInTheDocument();
   });
 
   it('calls onDayClick with the clicked day\'s date string', () => {

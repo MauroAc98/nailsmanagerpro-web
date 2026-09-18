@@ -55,6 +55,7 @@
     "all": "Todo el equipo"
   },
   "WeekStrip": {
+    "weekEyebrow": "Semana",
     "chooseDate": "Elegir fecha"
   },
   "ElegirFechaSheet": {

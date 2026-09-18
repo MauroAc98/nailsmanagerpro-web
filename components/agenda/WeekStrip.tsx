@@ -1,12 +1,32 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ChevronRight } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { nombreDia, nombreMes, fechaDeHoy } from '@/lib/dateFormat';
 import type { TurnoMes } from '@/services/turnoService';
 import { formatCellDate } from './agendaDateHelpers';
+
+// ─────────────────────────────────────────────
+// etiquetaRangoSemana — rango real de días de la tira ("14 – 20 de
+// septiembre"), no el mes/año suelto que mostraba antes: ese label no
+// representaba bien lo que la tira efectivamente muestra (7 días
+// puntuales, no un mes completo) — feedback directo del usuario. Semana
+// dentro de un mismo mes: "14 – 20 de septiembre" (mes una sola vez, al
+// final). Semana que cruza de mes: "30 de nov – 6 de dic" (mes corto en
+// cada punta, evita ambigüedad sobre a qué mes pertenece cada día).
+// ─────────────────────────────────────────────
+function etiquetaRangoSemana(dates: Date[]): string {
+  const primero = dates[0];
+  const ultimo  = dates[dates.length - 1];
+  const mismoMes = primero.getMonth() === ultimo.getMonth() && primero.getFullYear() === ultimo.getFullYear();
+
+  if (mismoMes) {
+    return `${primero.getDate()} – ${ultimo.getDate()} de ${nombreMes(ultimo, 'long', 'ninguna')}`;
+  }
+  return `${primero.getDate()} de ${nombreMes(primero, 'short', 'ninguna')} – ${ultimo.getDate()} de ${nombreMes(ultimo, 'short', 'ninguna')}`;
+}
 
 // ─────────────────────────────────────────────
 // getCurrentWeekDates — pure helper, Monday-start (same week-start
@@ -45,30 +65,32 @@ export function WeekStrip({
   const t = useTranslations('agenda.WeekStrip');
   const countByDate = new Map(turnosMes.map(tm => [tm.fecha, tm.cantidad]));
   const todayStr = fechaDeHoy();
-
-  // "Esta semana" quedaba mal apenas la tira dejó de mostrar siempre la
-  // semana actual (ahora sigue al día elegido en "Elegir fecha", que puede
-  // caer en cualquier mes). En su lugar, mes/año calculado sobre el
-  // miércoles de la tira (índice 2) — evita el caso borde de una semana que
-  // cruza dos meses mostrando el mes "equivocado" más veces que el otro.
-  const mesReferencia = dates[2] ?? dates[0];
-  const etiquetaMes = `${nombreMes(mesReferencia, 'long')} ${mesReferencia.getFullYear()}`;
+  const rangoSemana = etiquetaRangoSemana(dates);
 
   return (
     <div style={{ padding: '0 20px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 15, color: colors.textStrong, textTransform: 'capitalize' }}>
-          {etiquetaMes}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div>
+          <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
+            {t('weekEyebrow')}
+          </p>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 600, fontSize: 19, color: colors.textStrong }}>
+            {rangoSemana}
+          </span>
+        </div>
+        {/* Botón-ícono en vez de texto "Elegir fecha" — separa "esto es lo
+            que estás viendo" (rango de arriba) de "esto es una acción",
+            en vez de dos textos compitiendo uno al lado del otro. */}
         <button
           onClick={onAbrirCalendario}
+          aria-label={t('chooseDate')}
           style={{
-            display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, fontSize: 12, fontWeight: 600, color: colors.primaryDeep,
+            flexShrink: 0, width: 38, height: 38, borderRadius: 19,
+            border: `1px solid ${colors.border}`, backgroundColor: colors.surface,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           }}
         >
-          {t('chooseDate')}
-          <ChevronRight size={14} color={colors.primaryDeep} strokeWidth={2.5} />
+          <Calendar size={17} color={colors.primaryDeep} strokeWidth={2} />
         </button>
       </div>
 
