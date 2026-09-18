@@ -988,8 +988,8 @@ export default function AgendaPage() {
           siendo un roster fijo, no un filtro atado al día del calendario. */}
       {mostrarSelectorProfesional && (
         <div style={{ padding: '0 20px 12px' }}>
-          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
-            {fechaSeleccionada === hoy ? t('professionalWithAppointmentToday') : t('professionalWithAppointmentOn', { fecha: formatFechaCorta(fechaSeleccionada) })}
+          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
+            {t('team')}
           </p>
           <SelectorProfesionalDia
             profesionales={activeProfesionales}

@@ -2,8 +2,7 @@
   "AgendaPage": {
     "title": "Minha Agenda",
     "share": "COMPARTILHAR",
-    "professionalWithAppointmentToday": "Profissional com agendamento hoje",
-    "professionalWithAppointmentOn": "Profissional com agendamento em {fecha}",
+    "team": "Equipe",
     "noResultsFound": "Nenhum agendamento encontrado",
     "noAppointmentsToday": "Não há agendamentos para hoje",
     "noAppointmentsOn": "Não há agendamentos em {fecha}",
