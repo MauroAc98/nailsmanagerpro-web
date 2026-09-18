@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -9,7 +8,6 @@ import { colors } from '@/theme/colors';
 import { confirmDialog } from '@/store/useConfirmStore';
 
 export default function SubscriptionExpiredPage() {
-  const router = useRouter();
   const t = useTranslations('common.SubscriptionExpiredPage');
   const { supportInfo, logout } = useAuth();
   const [checking, setChecking] = useState(false);
@@ -55,7 +53,10 @@ export default function SubscriptionExpiredPage() {
   const handleLogout = async () => {
     if (await confirmDialog(t('logoutConfirm'), { confirmText: t('logoutConfirmButton'), danger: true })) {
       await logout();
-      router.push('/login');
+      // Recarga completa, no router.push — mismo motivo que perfil/page.tsx:
+      // `logout()` solo limpia useAuthStore, el resto de los stores del
+      // negocio quedan cacheados en memoria si la navegación es client-side.
+      window.location.href = '/login';
     }
   };
 

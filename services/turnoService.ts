@@ -89,15 +89,21 @@ export interface DisponibilidadDia {
 }
 
 // ─────────────────────────────────────────────
-// Search filters — mirrors RN's typed union: the index endpoint accepts
-// exactly ONE of these params at a time (fecha | buscar | servicio_id),
-// plus the desde/hasta range branch that TurnoController::index also
-// supports.
+// Search filters — mirrors RN's typed union. OJO: a diferencia de lo que
+// decía este comentario antes, TurnoController::index NO trata estos
+// params como mutuamente excluyentes — son `if`s independientes que se
+// AND-ean sobre el mismo query builder (verificado leyendo el controller:
+// buscar/servicio_id/profesional_id se combinan entre sí y con
+// fecha/desde-hasta/mes sin problema). El store SÍ los trata como
+// exclusivos entre sí (un solo criterio de búsqueda activo a la vez, ver
+// useTurnoStore) — eso es una decisión de UX del frontend, no una
+// limitación del backend.
 // ─────────────────────────────────────────────
 export type FiltrosTurnos =
   | { fecha: string }
   | { buscar: string }
   | { servicio_id: number }
+  | { profesional_id: number }
   | { desde: string; hasta: string };
 
 // ─────────────────────────────────────────────
@@ -111,10 +117,11 @@ export const turnoService = {
 
   getAll: (fecha: string): Promise<Turno[]> => turnoService.getTurnos({ fecha }),
 
-  buscarPorNombre:   (nombre: string): Promise<Turno[]> => turnoService.getTurnos({ buscar: nombre }),
-  buscarPorServicio: (id: number):     Promise<Turno[]> => turnoService.getTurnos({ servicio_id: id }),
-  buscarPorFecha:    (fecha: string):  Promise<Turno[]> => turnoService.getTurnos({ fecha }),
-  buscarPorRango:    (desde: string, hasta: string): Promise<Turno[]> => turnoService.getTurnos({ desde, hasta }),
+  buscarPorNombre:      (nombre: string): Promise<Turno[]> => turnoService.getTurnos({ buscar: nombre }),
+  buscarPorServicio:    (id: number):     Promise<Turno[]> => turnoService.getTurnos({ servicio_id: id }),
+  buscarPorFecha:       (fecha: string):  Promise<Turno[]> => turnoService.getTurnos({ fecha }),
+  buscarPorProfesional: (id: number):     Promise<Turno[]> => turnoService.getTurnos({ profesional_id: id }),
+  buscarPorRango:       (desde: string, hasta: string): Promise<Turno[]> => turnoService.getTurnos({ desde, hasta }),
 
   // profesionalId opcional — el backend filtra server-side cuando se manda,
   // devuelve el conteo total de la cuenta cuando se omite (comportamiento

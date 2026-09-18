@@ -2,7 +2,7 @@
   "EstadisticasPage": {
     "title": "Estadísticas",
     "loading": "Cargando...",
-    "all": "Todas",
+    "all": "Todo el equipo",
     "period": "turnos este período",
     "peakLoad": "Ritmo de turnos",
     "peakLoadSubtitle": "Completados, confirmados y cancelados",

@@ -2,7 +2,7 @@
   "EstadisticasPage": {
     "title": "Estatísticas",
     "loading": "Carregando...",
-    "all": "Todas",
+    "all": "Toda a equipe",
     "period": "agendamentos neste período",
     "peakLoad": "Ritmo de agendamentos",
     "peakLoadSubtitle": "Concluídos, confirmados e cancelados",
