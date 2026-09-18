@@ -823,14 +823,14 @@ export default function AgendaPage() {
     elegirFechaSheetRef.current?.close();
   }, [handleDayClick]);
 
-  // "Hoy" en el header del sheet — solo salta el mes del grid de vuelta al
-  // actual, NO selecciona ningún día ni cierra el sheet (spec del Change 1).
+  // "Hoy" en el header del sheet — reportado sin función: la versión
+  // original solo movía el mes del grid de vuelta al actual sin seleccionar
+  // nada, así que si ya estabas viendo el mes de hoy, tocarlo no cambiaba
+  // nada visible. Ahora selecciona hoy y cierra el sheet, igual que tocar la
+  // celda de hoy en el grid — siempre hace algo perceptible.
   const handleHoy = useCallback(() => {
-    const ahora = new Date();
-    const nuevoViewDate = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    setViewDate(nuevoViewDate);
-    fetchTurnosMes(`${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`);
-  }, [fetchTurnosMes]);
+    handleDayClickEnSheet(hoy);
+  }, [handleDayClickEnSheet, hoy]);
 
   const handleFinalizar = async (turno: Turno) => {
     const referencias = new Map(servicios.map(s => [s.id, s.precio]));

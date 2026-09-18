@@ -54,13 +54,22 @@ describe('WeekStrip', () => {
     return { onDayClick, onAbrirCalendario };
   }
 
-  it('renders one cell per day of the week and the "Elegir fecha" action', () => {
+  it('renders the month/year of the strip (not a static "current week" label) and the "Elegir fecha" action', () => {
     setup();
-    expect(screen.getByText('Esta semana')).toBeInTheDocument();
+    // dates[2] (miércoles) es 2026-09-16 -> "Septiembre 2026". Dinámico a
+    // propósito: la tira puede mostrar cualquier semana elegida desde el
+    // sheet de calendario, no solo la semana actual.
+    expect(screen.getByText('Septiembre 2026')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Elegir fecha/ })).toBeInTheDocument();
     for (let d = 14; d <= 20; d++) {
       expect(screen.getByTestId(`week-day-${fecha(2026, 9, d)}`)).toBeInTheDocument();
     }
+  });
+
+  it('labels the strip by the month a different week falls in, not always the current month', () => {
+    const otroMes = Array.from({ length: 7 }, (_, i) => new Date(2026, 11, 7 + i)); // dic 7-13
+    setup({ dates: otroMes });
+    expect(screen.getByText('Diciembre 2026')).toBeInTheDocument();
   });
 
   it('calls onDayClick with the clicked day\'s date string', () => {
