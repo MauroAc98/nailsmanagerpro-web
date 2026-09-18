@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
-import { nombreDia } from '@/lib/dateFormat';
+import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import type { TurnoMes } from '@/services/turnoService';
 import { formatCellDate } from './agendaDateHelpers';
 
@@ -45,11 +45,19 @@ export function WeekStrip({
   const t = useTranslations('agenda.WeekStrip');
   const countByDate = new Map(turnosMes.map(tm => [tm.fecha, tm.cantidad]));
 
+  // "Esta semana" quedaba mal apenas la tira dejó de mostrar siempre la
+  // semana actual (ahora sigue al día elegido en "Elegir fecha", que puede
+  // caer en cualquier mes). En su lugar, mes/año calculado sobre el
+  // miércoles de la tira (índice 2) — evita el caso borde de una semana que
+  // cruza dos meses mostrando el mes "equivocado" más veces que el otro.
+  const mesReferencia = dates[2] ?? dates[0];
+  const etiquetaMes = `${nombreMes(mesReferencia, 'long')} ${mesReferencia.getFullYear()}`;
+
   return (
     <div style={{ padding: '0 20px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 15, color: colors.textStrong }}>
-          {t('thisWeek')}
+        <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 15, color: colors.textStrong, textTransform: 'capitalize' }}>
+          {etiquetaMes}
         </span>
         <button
           onClick={onAbrirCalendario}
