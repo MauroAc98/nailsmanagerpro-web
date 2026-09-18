@@ -102,6 +102,7 @@
     "filterTextLabel": "Descripción",
     "filterTextPlaceholder": "Buscar en la descripción",
     "filterProfesionalLabel": "Profesional",
+    "filterAllProfesionales": "Todo el equipo",
     "filterDateLabel": "Fecha",
     "filterDateFrom": "Desde",
     "filterDateTo": "Hasta",

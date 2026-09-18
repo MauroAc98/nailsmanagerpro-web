@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
@@ -104,7 +103,6 @@ function IconChevronRight() {
 
 export default function PerfilPage() {
   const t = useTranslations('perfil.PerfilPage');
-  const router = useRouter();
   const { user, updatePerfil, logout, subscriptionExpired, daysLeft, subscriptionEndsAt, isExempt } = useAuth();
 
   const sheetRef = useRef<BottomSheetHandle>(null);
@@ -307,7 +305,13 @@ export default function PerfilPage() {
   const handleLogout = async () => {
     if (await confirmDialog(t('logoutConfirm'), { confirmText: t('logoutConfirmButton'), danger: true })) {
       await logout();
-      router.push('/login');
+      // Recarga completa, no router.push: `logout()` solo limpia
+      // useAuthStore — el resto de los stores (turnos, servicios,
+      // profesionales, clientes, etc.) son módulos en memoria que una
+      // navegación de Next.js no reinicia. Sin esto, si otra cuenta inicia
+      // sesión en el mismo tab sin refrescar a mano, ve datos cacheados del
+      // negocio anterior hasta que cada pantalla vuelva a fetchear.
+      window.location.href = '/login';
     }
   };
 

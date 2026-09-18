@@ -50,6 +50,7 @@ interface TurnosState {
   ultimaBusqueda: string;
   ultimoServicioId: number | null;
   ultimaFecha: string | null;
+  ultimoProfesionalId: number | null;
 
   fetchTurnos: (fecha: string) => Promise<void>;
   fetchTurnosMes: (mes: string) => Promise<void>;
@@ -66,6 +67,7 @@ interface TurnosState {
   buscarPorNombre: (nombre: string) => Promise<void>;
   buscarPorServicio: (id: number | null) => Promise<void>;
   buscarPorFecha: (fecha: string | null) => Promise<void>;
+  buscarPorProfesional: (id: number | null) => Promise<void>;
   limpiarBusqueda: () => void;
 }
 
@@ -80,8 +82,8 @@ const refrescarAgenda = async (
   set: (partial: Partial<TurnosState>) => void,
   fecha: string,
 ): Promise<void> => {
-  const { ultimaBusqueda, ultimoServicioId, ultimaFecha } = get();
-  const hayFiltro = ultimaBusqueda.trim().length > 0 || ultimoServicioId !== null || ultimaFecha !== null;
+  const { ultimaBusqueda, ultimoServicioId, ultimaFecha, ultimoProfesionalId } = get();
+  const hayFiltro = ultimaBusqueda.trim().length > 0 || ultimoServicioId !== null || ultimaFecha !== null || ultimoProfesionalId !== null;
   const mes = fecha.slice(0, 7);
 
   if (hayFiltro) set({ cargandoBusqueda: true });
@@ -104,6 +106,8 @@ const refrescarAgenda = async (
       tareas.push(get().buscarPorServicio(ultimoServicioId));
     } else if (ultimaFecha !== null) {
       tareas.push(get().buscarPorFecha(ultimaFecha));
+    } else if (ultimoProfesionalId !== null) {
+      tareas.push(get().buscarPorProfesional(ultimoProfesionalId));
     }
 
     await Promise.all(tareas);
@@ -135,6 +139,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   ultimaBusqueda: '',
   ultimoServicioId: null,
   ultimaFecha: null,
+  ultimoProfesionalId: null,
 
   setFechaSeleccionada: (fecha) => set({ fechaSeleccionada: fecha }),
 
@@ -267,11 +272,11 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     if (nombre.trim().length === 0) {
       set({
         turnosBusqueda: [], buscando: false, cargandoBusqueda: false,
-        ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null,
+        ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null,
       });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimaBusqueda: nombre, ultimoServicioId: null, ultimaFecha: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimaBusqueda: nombre, ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null });
     try {
       const resultados = await turnoService.buscarPorNombre(nombre);
       // Descarta si mientras tanto se tipeó otra búsqueda — sin esto, una
@@ -291,7 +296,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
       set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimoServicioId: null });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimoServicioId: id, ultimaBusqueda: '', ultimaFecha: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimoServicioId: id, ultimaBusqueda: '', ultimaFecha: null, ultimoProfesionalId: null });
     try {
       const resultados = await turnoService.buscarPorServicio(id);
       if (get().ultimoServicioId !== id) return;
@@ -308,7 +313,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
       set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimaFecha: null });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimaFecha: fecha, ultimaBusqueda: '', ultimoServicioId: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimaFecha: fecha, ultimaBusqueda: '', ultimoServicioId: null, ultimoProfesionalId: null });
     try {
       const resultados = await turnoService.buscarPorFecha(fecha);
       if (get().ultimaFecha !== fecha) return;
@@ -320,6 +325,25 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     }
   },
 
+  buscarPorProfesional: async (id) => {
+    if (id === null) {
+      set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimoProfesionalId: null });
+      return;
+    }
+    set({ buscando: true, cargandoBusqueda: true, ultimoProfesionalId: id, ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null });
+    try {
+      const resultados = await turnoService.buscarPorProfesional(id);
+      // Descarta si mientras tanto se pidió OTRA profesional — mismo
+      // criterio que buscarPorServicio/buscarPorFecha arriba.
+      if (get().ultimoProfesionalId !== id) return;
+      set({ turnosBusqueda: resultados });
+    } catch (e) {
+      console.error('buscarPorProfesional:', extraerMensajeError(e));
+    } finally {
+      if (get().ultimoProfesionalId === id) set({ cargandoBusqueda: false });
+    }
+  },
+
   limpiarBusqueda: () => set({
     turnosBusqueda: [],
     buscando: false,
@@ -327,5 +351,6 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     ultimaBusqueda: '',
     ultimoServicioId: null,
     ultimaFecha: null,
+    ultimoProfesionalId: null,
   }),
 }));

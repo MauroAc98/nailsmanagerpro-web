@@ -49,6 +49,9 @@
     "datePlaceholder": "DD/MM/YYYY",
     "invalidDate": "Fecha inválida",
     "filterByService": "Filtrar por servicio",
+    "allServices": "Todos los servicios",
+    "filterByProfesional": "Filtrar por profesional",
+    "allTeam": "Todo el equipo",
     "viewResults": "Ver resultados"
   },
   "SelectorProfesionalDia": {

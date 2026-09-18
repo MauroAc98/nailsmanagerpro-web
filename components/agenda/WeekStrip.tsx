@@ -71,10 +71,13 @@ export function WeekStrip({
     <div style={{ padding: '0 20px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
-          <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
+          {/* Mismo tamaño/peso/tracking que el resto de los eyebrows de
+              sección de esta pantalla ("Profesionales", "Buscar cliente",
+              etc.) — 10px era una talla propia, sin precedente acá. */}
+          <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
             {t('weekEyebrow')}
           </p>
-          <span style={{ fontFamily: agendaFontSerif, fontWeight: 600, fontSize: 19, color: colors.textStrong }}>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong }}>
             {rangoSemana}
           </span>
         </div>
