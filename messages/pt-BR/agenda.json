@@ -12,16 +12,29 @@
     "cancelError": "Não foi possível cancelar o agendamento."
   },
   "PendientesDeCobroPage": {
-    "title": "Pendentes de cobrança",
-    "subtitle": "Agendamentos finalizados aos quais ainda falta cadastrar o preço",
+    "title": "Preços por cadastrar",
+    "subtitle": "Agendamentos finalizados sem preço registrado",
     "loading": "Carregando...",
     "emptyState": "Você não tem agendamentos pendentes de cobrança",
     "searchPlaceholder": "Buscar por nome da cliente...",
     "noResults": "Nenhum agendamento encontrado",
     "resultCount": "{count, plural, one {# agendamento} other {# agendamentos}}",
-    "loadPriceButton": "Cadastrar preço",
     "saved": "Preço salvo",
-    "saveError": "Não foi possível salvar o preço."
+    "saveError": "Não foi possível salvar o preço.",
+    "summaryLabel": "Sem registrar",
+    "summaryEstimated": "estimado a preço de tabela",
+    "sortOldest": "Mais antigos primeiro",
+    "sortNewest": "Mais recentes primeiro",
+    "groupThisWeek": "Esta semana · {count}",
+    "groupLastWeek": "Semana passada · {count}",
+    "groupOlder": "Anteriores · {count}",
+    "listPrice": "Tabela {monto}",
+    "noListPrice": "Sem preço de tabela",
+    "useListPrice": "Usar preço de tabela",
+    "loadPrice": "Cadastrar",
+    "loadOneByOne": "Cadastrar um a um · {count} →",
+    "confirmUseListPrice": "Registrar o agendamento de {cliente} a preço de tabela ({monto})? Depois só é possível corrigir pelo histórico.",
+    "confirmUseListPriceButton": "Registrar"
   },
   "SwipeableTurnoCard": {
     "deletedClient": "Cliente excluído",

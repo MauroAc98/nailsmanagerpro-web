@@ -28,7 +28,7 @@
     "dismiss": "Fechar aviso"
   },
   "PendientesDeCobroBanner": {
-    "title": "Pendências de cobrança",
+    "title": "Preços por cadastrar",
     "message": "{count, plural, one {# agendamento com preço pendente} other {# agendamentos com preço pendente}}",
     "view": "Ver",
     "checkError": "Não foi possível verificar agendamentos pendentes",
@@ -100,10 +100,21 @@
     "reasonOtro": "Outro"
   },
   "PrecioServiciosSheetHost": {
-    "title": "Preço final de cada serviço",
-    "pricePlaceholder": "$",
-    "back": "Voltar",
-    "confirm": "Finalizar agendamento"
+    "titleFinalizar": "Finalizar agendamento",
+    "titleCargar": "Cadastrar preço",
+    "listPrice": "Preço de tabela {monto}",
+    "noListPrice": "Sem preço de tabela",
+    "adjusted": "Ajustado {diferencia}",
+    "pricePlaceholder": "0",
+    "total": "Total a registrar",
+    "noCharge": "Não cobrar este agendamento",
+    "charge": "Cobrar",
+    "noChargeHint": "É registrado com preço $0.",
+    "cancel": "Cancelar",
+    "confirmFinalizar": "Finalizar · {total}",
+    "confirmCargar": "Salvar · {total}",
+    "confirmFinalizarSinCobro": "Finalizar sem cobrança",
+    "confirmCargarSinCobro": "Salvar sem cobrança"
   },
   "ColorSwatchPicker": {
     "ariaLabel": "Cor {color}"

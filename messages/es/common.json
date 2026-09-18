@@ -28,7 +28,7 @@
     "dismiss": "Cerrar aviso"
   },
   "PendientesDeCobroBanner": {
-    "title": "Pendientes de cobro",
+    "title": "Precios por cargar",
     "message": "{count, plural, one {# turno sin precio cargado} other {# turnos sin precio cargado}}",
     "view": "Ver",
     "checkError": "No pudimos verificar turnos pendientes de cobro",
@@ -100,10 +100,21 @@
     "reasonOtro": "Otro"
   },
   "PrecioServiciosSheetHost": {
-    "title": "Precio final de cada servicio",
-    "pricePlaceholder": "$",
-    "back": "Volver",
-    "confirm": "Finalizar turno"
+    "titleFinalizar": "Finalizar turno",
+    "titleCargar": "Cargar precio",
+    "listPrice": "Precio de lista {monto}",
+    "noListPrice": "Sin precio de lista",
+    "adjusted": "Ajustado {diferencia}",
+    "pricePlaceholder": "0",
+    "total": "Total a registrar",
+    "noCharge": "No cobrar este turno",
+    "charge": "Cobrar",
+    "noChargeHint": "Se registra con precio $0.",
+    "cancel": "Cancelar",
+    "confirmFinalizar": "Finalizar · {total}",
+    "confirmCargar": "Guardar · {total}",
+    "confirmFinalizarSinCobro": "Finalizar sin cobro",
+    "confirmCargarSinCobro": "Guardar sin cobro"
   },
   "ColorSwatchPicker": {
     "ariaLabel": "Color {color}"

@@ -29,3 +29,12 @@ export function formatMonto(monto: number): string {
     maximumFractionDigits: 2,
   }).format(monto);
 }
+
+// Como formatMonto pero sin decimales cuando el monto es entero: para
+// montos de lista/totales donde ",00" solo agrega ruido ("$18.000").
+export function formatMontoCorto(monto: number): string {
+  return new Intl.NumberFormat(localeMonto(), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(monto);
+}
