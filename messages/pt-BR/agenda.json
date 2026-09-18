@@ -58,8 +58,10 @@
     "all": "Toda a equipe"
   },
   "WeekStrip": {
-    "weekEyebrow": "Semana",
-    "chooseDate": "Escolher data"
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Próxima semana",
+    "calendarLabel": "Calendário",
+    "openCalendar": "Ver calendário completo"
   },
   "ElegirFechaSheet": {
     "title": "Escolher data",

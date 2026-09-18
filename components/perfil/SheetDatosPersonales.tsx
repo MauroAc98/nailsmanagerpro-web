@@ -123,7 +123,10 @@ export function SheetDatosPersonales({
     setBuscandoGps(true);
     setErrorGps(false);
     try {
-      const resultado = await withGlobalLoader(() => obtenerGps());
+      // pintarAntes + minMs: en iOS Safari el pedido de ubicación salta (o
+      // resuelve con una posición cacheada) antes de que el loader se pinte,
+      // y el usuario no veía ninguna señal de que algo estaba pasando.
+      const resultado = await withGlobalLoader(() => obtenerGps(), { pintarAntes: true, minMs: 600 });
       if (!resultado) {
         setErrorGps(true);
         return;

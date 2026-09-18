@@ -17,6 +17,8 @@ const SWIPE_THRESHOLD = 55;
 // agenda): un sliver del panel de eliminar queda visible en reposo en vez de
 // translateX(0), como pista de que la card se puede deslizar.
 const SWIPE_PEEK = 8;
+// La capa se desplaza -SWIPE_PEEK y el borde de la región recorta esos px: el
+// padding izquierdo (antes 0) suma SWIPE_PEEK para no comerse el texto.
 
 export function SlotCard({
   slot,
@@ -121,7 +123,7 @@ export function SlotCard({
             position: 'relative',
             display: 'flex', alignItems: 'center', gap: 12,
             backgroundColor: cardBg,
-            padding: '14px 16px 14px 0',
+            padding: `14px 16px 14px ${SWIPE_PEEK}px`,
             userSelect: 'none',
             transform: `translateX(${-SWIPE_PEEK}px)`,
           }}

@@ -28,6 +28,14 @@ describe('SwipeableTurnoCard — swipe-to-cancel resting peek (Change 4)', () =>
     expect(sliding.style.transform).toBe('translateX(-8px)');
   });
 
+  it('compensa el desplazamiento del peek con padding izquierdo, para no recortar el contenido', () => {
+    const { container } = renderWithProviders(
+      <SwipeableTurnoCard turno={buildTurno()} onCancel={vi.fn()} />,
+    );
+    const sliding = container.querySelector('[style*="translateX"]') as HTMLElement;
+    expect(sliding.style.paddingLeft).toBe('8px');
+  });
+
   it('does not apply any peek transform when the card has no onCancel', () => {
     const turno = buildTurno();
     const { container } = renderWithProviders(<SwipeableTurnoCard turno={turno} />);

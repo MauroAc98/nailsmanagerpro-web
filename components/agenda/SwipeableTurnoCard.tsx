@@ -339,7 +339,8 @@ export function SwipeableTurnoCard({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={handleCardClick}
-          style={{ ...restStyle, position: 'absolute', inset: 0, right: -1, transform: `translateX(${-SWIPE_PEEK}px)` }}
+          // paddingLeft: compensa los px que el peek recorta del lado izquierdo.
+          style={{ ...restStyle, position: 'absolute', inset: 0, right: -1, paddingLeft: SWIPE_PEEK, transform: `translateX(${-SWIPE_PEEK}px)` }}
         >
           {restBody}
         </div>

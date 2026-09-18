@@ -30,4 +30,13 @@ describe('GastoCard — swipe-to-delete resting peek', () => {
     expect(sliding).toBeTruthy();
     expect(sliding.style.transform).toBe('translateX(-8px)');
   });
+  // El peek desplaza la capa 8px a la izquierda y el borde de la card recorta
+  // esos 8px: sin compensar, el contenido perdía margen izquierdo.
+  it('compensa el desplazamiento del peek con padding izquierdo, para no recortar el contenido', () => {
+    const { container } = renderWithProviders(
+      <GastoCard gasto={buildGasto()} onEdit={vi.fn()} onDelete={vi.fn()} />,
+    );
+    const sliding = container.querySelector('[style*="translateX"]') as HTMLElement;
+    expect(sliding.style.paddingLeft).toBe('24px');
+  });
 });
