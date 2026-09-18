@@ -16,6 +16,7 @@
     "autoReminderSubtitle": "Envie um WhatsApp na noite anterior para suas clientes",
     "addressRequiredWarning": "Preencha seu endereço em Dados do negócio para ativar os envios automáticos — o modelo de WhatsApp inclui esse dado.",
     "locationRequiredWarning": "Preencha sua localização em Dados do negócio para ativar os envios automáticos — o modelo de WhatsApp inclui esse dado.",
+    "locationMissingNotice": "Suas mensagens automáticas são enviadas sem o mapa de localização. Preencha sua localização em Dados do negócio para incluí-lo.",
     "depositLocationRequiredWarning": "Preencha sua localização em Dados do negócio para poder pedir sinal.",
     "previewLocationMissing": "(marque sua localização em Dados do negócio)",
     "depositRequest": "Pedir sinal para confirmar agendamentos",

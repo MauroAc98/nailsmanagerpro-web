@@ -13,8 +13,18 @@ function localeActivo(): string {
   return useLocaleStore.getState().locale;
 }
 
+// El locale 'es' a secas (CLDR, minimumGroupingDigits=2) no agrupa los
+// números de 4 dígitos: 5000 -> "5000,00" pero 12500 -> "12.500,00", y los
+// montos de la app quedaban inconsistentes entre sí. La moneda del negocio es
+// el peso argentino: 'es-AR' agrupa desde 1.000 ("5.000,00"), igual que el
+// backend en los mensajes de WhatsApp. pt-BR ya agrupa desde 1.000.
+function localeMonto(): string {
+  const locale = localeActivo();
+  return locale === 'es' ? 'es-AR' : locale;
+}
+
 export function formatMonto(monto: number): string {
-  return new Intl.NumberFormat(localeActivo(), {
+  return new Intl.NumberFormat(localeMonto(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(monto);

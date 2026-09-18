@@ -18,6 +18,7 @@ import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { sanitizarLineaSimple, type SenaCampo } from '@/lib/senaConfig';
 import { esUbicacionValida } from '@/lib/ubicacion';
+import { formatMonto } from '@/lib/money';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -421,7 +422,7 @@ export default function PerfilPage() {
         </CardSeccion>
 
         <CardSeccion titulo={t('sectionBusiness')} icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>
-          <FilaDato label={t('depositAmount')} valor={user.sena_monto != null ? `$${user.sena_monto}` : null} />
+          <FilaDato label={t('depositAmount')} valor={user.sena_monto != null ? `$${formatMonto(Number(user.sena_monto))}` : null} />
           <FilaDato label={t('depositRequest')} valor={user.whatsapp_pide_sena ? t('yes') : t('no')} />
           {user.whatsapp_pide_sena && (
             <>

@@ -208,9 +208,29 @@ describe('SheetNegocio — missing location gate (automation toggles)', () => {
     expect(recordatorioToggle()).not.toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('renders the missing-location warning when location is missing', () => {
-    setup({ latitudNegocio: null, longitudNegocio: null });
+  it('renders the missing-location warning when location is missing and automatic sends are OFF', () => {
+    setup({ confirmacionAutomatica: false, recordatorioAutomatico: false, latitudNegocio: null, longitudNegocio: null });
     expect(screen.getByText('Cargá tu ubicación en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeInTheDocument();
+    expect(screen.queryByText(/se envían sin el mapa/)).toBeNull();
+  });
+
+  // Negocios que ya tenían los envíos activos antes del mapa: siguen
+  // mandando, pero con la plantilla SIN mapa. Hay que decírselo — el aviso
+  // de "para poder activar" no aplica (ya están activos).
+  it('tells the business that active automatic sends go out WITHOUT the map when location is missing', () => {
+    setup({ confirmacionAutomatica: true, recordatorioAutomatico: false, latitudNegocio: null, longitudNegocio: null });
+    expect(screen.getByText('Tus mensajes automáticos se envían sin el mapa de ubicación. Cargá tu ubicación en Datos del negocio para que lo incluyan.')).toBeInTheDocument();
+    expect(screen.queryByText('Cargá tu ubicación en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.')).toBeNull();
+  });
+
+  it('shows the without-map notice when only the reminder is active', () => {
+    setup({ confirmacionAutomatica: false, recordatorioAutomatico: true, latitudNegocio: null, longitudNegocio: null });
+    expect(screen.getByText(/se envían sin el mapa de ubicación/)).toBeInTheDocument();
+  });
+
+  it('does not show the without-map notice when location is saved', () => {
+    setup({ confirmacionAutomatica: true, latitudNegocio: -27.4692, longitudNegocio: -58.8306 });
+    expect(screen.queryByText(/se envían sin el mapa/)).toBeNull();
   });
 
   it('does not render the missing-location warning when location is saved', () => {

@@ -116,3 +116,19 @@ describe('PerfilPage — 422 latitud mapping', () => {
     expect(await screen.findByText('Guardá la ubicación completa: faltan coordenadas.')).toBeInTheDocument();
   });
 });
+
+// El monto de la seña se mostraba crudo ($5000 / $5000.00); ahora usa el mismo
+// formato que el resto de la app: punto de miles y coma decimal.
+describe('PerfilPage — monto de la seña', () => {
+  it('lo muestra con separador de miles y coma decimal', () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+    renderWithProviders(<PerfilPage />);
+    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
+  });
+
+  it('no muestra monto cuando no hay seña configurada', () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: null } });
+    renderWithProviders(<PerfilPage />);
+    expect(screen.queryByText(/^\$/)).toBeNull();
+  });
+});
