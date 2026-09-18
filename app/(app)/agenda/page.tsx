@@ -21,7 +21,7 @@ import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
-import { horaDeHora, formatFechaMini, formatCellDate, type ProfesionalLabel } from '@/components/agenda/agendaDateHelpers';
+import { horaDeHora, formatFechaMini, formatCellDate, parseFechaLocal, type ProfesionalLabel } from '@/components/agenda/agendaDateHelpers';
 import { SelectorServicios } from '@/components/SelectorServicios';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
@@ -1006,7 +1006,7 @@ export default function AgendaPage() {
           tenía el calendario completo antes. */}
       <div style={{ opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
         <WeekStrip
-          dates={getCurrentWeekDates()}
+          dates={getCurrentWeekDates(parseFechaLocal(fechaSeleccionada))}
           fechaSeleccionada={fechaSeleccionada}
           turnosMes={turnosMesParaBadges}
           onDayClick={handleDayClick}

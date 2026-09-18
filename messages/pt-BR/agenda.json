@@ -2,7 +2,7 @@
   "AgendaPage": {
     "title": "Minha Agenda",
     "share": "COMPARTILHAR",
-    "team": "Equipe",
+    "team": "Profissionais",
     "noResultsFound": "Nenhum agendamento encontrado",
     "noAppointmentsToday": "Não há agendamentos para hoje",
     "noAppointmentsOn": "Não há agendamentos em {fecha}",
@@ -52,7 +52,7 @@
     "viewResults": "Ver resultados"
   },
   "SelectorProfesionalDia": {
-    "all": "Todas"
+    "all": "Toda a equipe"
   },
   "WeekStrip": {
     "thisWeek": "Esta semana",
