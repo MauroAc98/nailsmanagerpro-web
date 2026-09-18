@@ -1,14 +1,24 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { NAV_CLEARANCE } from '@/constants/layout';
+import { formatMontoCorto } from '@/lib/money';
+import {
+  agruparPorSemana,
+  estimadoAPrecioDeLista,
+  ordenarPendientes,
+  tienePrecioDeListaCompleto,
+  type GrupoSemana,
+  type OrdenPendientes,
+} from '@/lib/pendientesDeCobro';
 import { usePendientesDeCobroStore, usePendientesFiltrados } from '@/store/usePendientesDeCobroStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
-import { alertDialog } from '@/store/useConfirmStore';
+import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { Turno } from '@/services/turnoService';
 
 function formatFechaHora(fechaHora: string): string {
@@ -18,7 +28,23 @@ function formatFechaHora(fechaHora: string): string {
   return `${fecha} ${hora}`;
 }
 
-function PendienteCard({ turno, onCargarPrecio }: { turno: Turno; onCargarPrecio: () => void }) {
+const nombreCliente = (turno: Turno) => `${turno.cliente.nombre} ${turno.cliente.apellido}`.trim();
+
+const GRUPO_KEY: Record<GrupoSemana, 'groupThisWeek' | 'groupLastWeek' | 'groupOlder'> = {
+  estaSemana: 'groupThisWeek',
+  semanaPasada: 'groupLastWeek',
+  anteriores: 'groupOlder',
+};
+
+interface PendienteCardProps {
+  turno: Turno;
+  precioLista: number;
+  puedeUsarLista: boolean;
+  onUsarLista: () => void;
+  onCargar: () => void;
+}
+
+function PendienteCard({ turno, precioLista, puedeUsarLista, onUsarLista, onCargar }: PendienteCardProps) {
   const t = useTranslations('agenda.PendientesDeCobroPage');
   return (
     <div
@@ -34,10 +60,10 @@ function PendienteCard({ turno, onCargarPrecio }: { turno: Turno; onCargarPrecio
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text }}>
-          {turno.cliente.nombre} {turno.cliente.apellido}
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text, minWidth: 0 }}>
+          {nombreCliente(turno)}
         </p>
-        <span style={{ fontSize: 13, color: colors.subtext, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 13, color: colors.subtext, whiteSpace: 'nowrap', flexShrink: 0 }}>
           {formatFechaHora(turno.fecha_hora)}
         </span>
       </div>
@@ -46,23 +72,46 @@ function PendienteCard({ turno, onCargarPrecio }: { turno: Turno; onCargarPrecio
         {turno.servicios.map(s => s.nombre).join(', ')}
       </p>
 
-      <button
-        onClick={onCargarPrecio}
-        style={{
-          alignSelf: 'flex-start',
-          marginTop: 4,
-          padding: '8px 14px',
-          borderRadius: 10,
-          border: 'none',
-          backgroundColor: colors.primarySolid,
-          color: '#FFF',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
-      >
-        {t('loadPriceButton')}
-      </button>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: colors.text }}>
+        {puedeUsarLista ? t('listPrice', { monto: `$${formatMontoCorto(precioLista)}` }) : t('noListPrice')}
+      </p>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        {puedeUsarLista && (
+          <button
+            onClick={onUsarLista}
+            style={{
+              flex: 1,
+              padding: '9px 12px',
+              borderRadius: 10,
+              border: `1px solid ${colors.border}`,
+              backgroundColor: colors.surface,
+              color: colors.text,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {t('useListPrice')}
+          </button>
+        )}
+        <button
+          onClick={onCargar}
+          style={{
+            flex: 1,
+            padding: '9px 12px',
+            borderRadius: 10,
+            border: 'none',
+            backgroundColor: colors.primarySolid,
+            color: '#FFF',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {t('loadPrice')}
+        </button>
+      </div>
     </div>
   );
 }
@@ -72,33 +121,71 @@ export default function PendientesDeCobroPage() {
   const { loading, error, buscar, setBuscar, fetchPendientes, actualizarPrecios } = usePendientesDeCobroStore();
   const pendientesFiltrados = usePendientesFiltrados();
   const { servicios, fetchServicios } = useServiciosStore();
+  const [orden, setOrden] = useState<OrdenPendientes>('antiguos');
 
   useEffect(() => {
     fetchPendientes();
     fetchServicios();
   }, []);
 
-  const handleCargarPrecio = async (turno: Turno) => {
-    const referencias = new Map(servicios.map(s => [s.id, s.precio]));
+  const referencias = useMemo(() => new Map(servicios.map(s => [s.id, s.precio])), [servicios]);
+  const ordenados = useMemo(() => ordenarPendientes(pendientesFiltrados, orden), [pendientesFiltrados, orden]);
+  const grupos = useMemo(() => agruparPorSemana(ordenados), [ordenados]);
+  const estimadoTotal = useMemo(
+    () => ordenados.reduce((acc, turno) => acc + estimadoAPrecioDeLista(turno, referencias), 0),
+    [ordenados, referencias]
+  );
+
+  const guardar = async (turno: Turno, precios: { servicio_id: number; precio: number }[]) => {
+    const result = await actualizarPrecios(turno.id, precios);
+    if (result.success) showToast(t('saved'));
+    else await alertDialog(result.message ?? t('saveError'));
+    return result.success;
+  };
+
+  // Abre el sheet para un turno. Devuelve false si se canceló o falló el
+  // guardado, para que el encadenado ("Cargar de a uno") se detenga.
+  const cargarConSheet = async (turno: Turno): Promise<boolean> => {
     const serviciosAPrecificar = turno.servicios.map(s => {
       const ref = referencias.get(s.id);
       return {
         servicio_id: s.id,
         nombre: s.nombre,
-        precioReferencia: ref != null ? Number(ref) : null,
+        precioReferencia: ref != null && ref !== '' ? Number(ref) : null,
       };
     });
 
-    const precios = await pedirPreciosServicios(serviciosAPrecificar);
-    if (!precios) return;
+    const precios = await pedirPreciosServicios(serviciosAPrecificar, {
+      cliente: nombreCliente(turno),
+      fechaHora: turno.fecha_hora,
+      modo: 'cargar',
+    });
+    if (!precios) return false;
+    return guardar(turno, precios);
+  };
 
-    const result = await actualizarPrecios(turno.id, precios);
-    if (result.success) showToast(t('saved'));
-    else await alertDialog(result.message ?? t('saveError'));
+  const handleUsarLista = async (turno: Turno) => {
+    const monto = `$${formatMontoCorto(estimadoAPrecioDeLista(turno, referencias))}`;
+    // Es dato de plata y no hay "deshacer" desde acá: confirmación breve.
+    const ok = await confirmDialog(t('confirmUseListPrice', { cliente: nombreCliente(turno), monto }), {
+      confirmText: t('confirmUseListPriceButton'),
+    });
+    if (!ok) return;
+    await guardar(
+      turno,
+      turno.servicios.map(s => ({ servicio_id: s.id, precio: Number(referencias.get(s.id)) }))
+    );
+  };
+
+  const handleCargarDeAUno = async () => {
+    // Snapshot: el store va quitando turnos a medida que se guardan.
+    for (const turno of [...ordenados]) {
+      if (!(await cargarConSheet(turno))) return;
+    }
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 90 }}>
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas), sin el indent de
           48px que alineaba el subtítulo contra el BackButton inline. */}
@@ -110,7 +197,29 @@ export default function PendientesDeCobroPage() {
         <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>{t('subtitle')}</p>
       </div>
 
-      <div style={{ padding: '0 20px 16px' }}>
+      {!loading && ordenados.length > 0 && (
+        <div style={{ padding: '0 20px 12px' }}>
+          <div
+            style={{
+              backgroundColor: colors.surface,
+              border: `1px solid ${colors.border}`,
+              boxShadow: shadows.card,
+              borderRadius: 14,
+              padding: '14px 16px',
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 12, color: colors.subtext }}>{t('summaryLabel')}</p>
+            <p style={{ margin: '2px 0 0', fontFamily: agendaFontSerif, fontSize: 28, color: colors.textStrong }}>
+              ${formatMontoCorto(estimadoTotal)}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.subtext }}>
+              {t('resultCount', { count: ordenados.length })} · {t('summaryEstimated')}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding: '0 20px 12px' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
@@ -154,24 +263,87 @@ export default function PendientesDeCobroPage() {
 
       {!loading && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {pendientesFiltrados.length > 0 && (
-            <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 0 4px' }}>
-              {t('resultCount', { count: pendientesFiltrados.length })}
-            </p>
+          {ordenados.length > 0 && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {(['antiguos', 'recientes'] as const).map(valor => {
+                const activo = orden === valor;
+                return (
+                  <button
+                    key={valor}
+                    onClick={() => setOrden(valor)}
+                    aria-pressed={activo}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 999,
+                      border: `1px solid ${activo ? colors.primarySolid : colors.border}`,
+                      backgroundColor: activo ? colors.primarySolid : colors.surface,
+                      color: activo ? '#FFF' : colors.text,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t(valor === 'antiguos' ? 'sortOldest' : 'sortNewest')}
+                  </button>
+                );
+              })}
+            </div>
           )}
-          {pendientesFiltrados.length === 0 ? (
+
+          {ordenados.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               {buscar ? t('noResults') : t('emptyState')}
             </p>
           ) : (
-            pendientesFiltrados.map(turno => (
-              <PendienteCard
-                key={turno.id}
-                turno={turno}
-                onCargarPrecio={() => handleCargarPrecio(turno)}
-              />
+            grupos.map(({ grupo, turnos }) => (
+              <div key={grupo + turnos[0].id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <p style={{ margin: '6px 0 0 4px', fontSize: 13, fontWeight: 700, color: colors.subtext }}>
+                  {t(GRUPO_KEY[grupo], { count: turnos.length })}
+                </p>
+                {turnos.map(turno => (
+                  <PendienteCard
+                    key={turno.id}
+                    turno={turno}
+                    precioLista={estimadoAPrecioDeLista(turno, referencias)}
+                    puedeUsarLista={tienePrecioDeListaCompleto(turno, referencias)}
+                    onUsarLista={() => handleUsarLista(turno)}
+                    onCargar={() => cargarConSheet(turno)}
+                  />
+                ))}
+              </div>
             ))
           )}
+        </div>
+      )}
+
+      {!loading && ordenados.length > 1 && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: NAV_CLEARANCE,
+            padding: '0 20px',
+            zIndex: 10,
+          }}
+        >
+          <button
+            onClick={handleCargarDeAUno}
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              borderRadius: 14,
+              border: 'none',
+              backgroundColor: colors.primarySolid,
+              color: '#FFF',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: shadows.card,
+            }}
+          >
+            {t('loadOneByOne', { count: ordenados.length })}
+          </button>
         </div>
       )}
     </div>

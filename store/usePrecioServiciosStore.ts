@@ -13,31 +13,43 @@ export interface ServicioAPrecificar {
   precioReferencia: number | null;
 }
 
+// Contexto para mostrar en el encabezado del sheet. `modo` cambia el
+// vocabulario: 'finalizar' (cierra el turno) vs 'cargar' (turno ya finalizado
+// al que solo le falta el precio, desde "Precios por cargar").
+export interface ContextoPrecios {
+  cliente?: string;
+  fechaHora?: string;
+  modo?: 'finalizar' | 'cargar';
+}
+
 interface PrecioServiciosState {
   visible: boolean;
   servicios: ServicioAPrecificar[];
+  contexto: ContextoPrecios | null;
   resolve: ((value: { servicio_id: number; precio: number }[] | null) => void) | null;
 }
 
 export const usePrecioServiciosStore = create<PrecioServiciosState>(() => ({
   visible: false,
   servicios: [],
+  contexto: null,
   resolve: null,
 }));
 
 // Resuelve con el precio final de cada servicio, o null si se descarta
 // (backdrop/"Volver") — el caller debe tratar null como "no completar".
 export function pedirPreciosServicios(
-  servicios: ServicioAPrecificar[]
+  servicios: ServicioAPrecificar[],
+  contexto: ContextoPrecios | null = null
 ): Promise<{ servicio_id: number; precio: number }[] | null> {
   return new Promise(resolve => {
-    usePrecioServiciosStore.setState({ visible: true, servicios, resolve });
+    usePrecioServiciosStore.setState({ visible: true, servicios, contexto, resolve });
   });
 }
 
 export function resolverPreciosServicios(precios: { servicio_id: number; precio: number }[] | null) {
   const { resolve } = usePrecioServiciosStore.getState();
   if (!resolve) return;
-  usePrecioServiciosStore.setState({ visible: false, servicios: [], resolve: null });
+  usePrecioServiciosStore.setState({ visible: false, servicios: [], contexto: null, resolve: null });
   resolve(precios);
 }

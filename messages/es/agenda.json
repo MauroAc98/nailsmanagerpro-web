@@ -12,16 +12,29 @@
     "cancelError": "No se pudo cancelar el turno."
   },
   "PendientesDeCobroPage": {
-    "title": "Pendientes de cobro",
-    "subtitle": "Turnos finalizados a los que todavía les falta cargar el precio",
+    "title": "Precios por cargar",
+    "subtitle": "Turnos finalizados sin precio registrado",
     "loading": "Cargando...",
     "emptyState": "No tenés turnos pendientes de cobro",
     "searchPlaceholder": "Buscar por nombre de cliente...",
     "noResults": "No se encontraron turnos",
     "resultCount": "{count, plural, one {# turno} other {# turnos}}",
-    "loadPriceButton": "Cargar precio",
     "saved": "Precio guardado",
-    "saveError": "No se pudo guardar el precio."
+    "saveError": "No se pudo guardar el precio.",
+    "summaryLabel": "Sin registrar",
+    "summaryEstimated": "estimado a precio de lista",
+    "sortOldest": "Más antiguos primero",
+    "sortNewest": "Más recientes primero",
+    "groupThisWeek": "Esta semana · {count}",
+    "groupLastWeek": "Semana pasada · {count}",
+    "groupOlder": "Anteriores · {count}",
+    "listPrice": "Lista {monto}",
+    "noListPrice": "Sin precio de lista",
+    "useListPrice": "Usar precio de lista",
+    "loadPrice": "Cargar",
+    "loadOneByOne": "Cargar de a uno · {count} →",
+    "confirmUseListPrice": "¿Registrar el turno de {cliente} a precio de lista ({monto})? Después solo se puede corregir desde el historial.",
+    "confirmUseListPriceButton": "Registrar"
   },
   "SwipeableTurnoCard": {
     "deletedClient": "Cliente eliminado",

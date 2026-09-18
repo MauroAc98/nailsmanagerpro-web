@@ -995,7 +995,11 @@ export default function AgendaPage() {
         };
       });
 
-    const precios = await pedirPreciosServicios(serviciosAPrecificar);
+    const precios = await pedirPreciosServicios(serviciosAPrecificar, {
+      cliente: turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}`.trim() : undefined,
+      fechaHora: turno.fecha_hora,
+      modo: 'finalizar',
+    });
     if (!precios) return;
 
     const result = await completarTurno(turno.id, precios);
