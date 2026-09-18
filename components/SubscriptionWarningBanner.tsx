@@ -1,8 +1,21 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
+
+// Predicado puro reutilizado tanto acá adentro como por
+// app/(app)/agenda/page.tsx (Change 2 del rediseño del home): solo el
+// banner de mayor prioridad ENTRE los que aplican se renderiza a la vez, así
+// que la página necesita poder preguntar "¿aplicaría este banner?" sin
+// montarlo. No duplica la condición — este hook es la única fuente de verdad,
+// el componente de abajo lo consume igual que antes.
+export function useSubscriptionWarningVisible(): boolean {
+  const { daysLeft, supportInfo } = useAuth();
+  const warningDays = supportInfo?.subscription_warning_days ?? 15;
+  return daysLeft !== null && daysLeft <= warningDays;
+}
 
 // ─────────────────────────────────────────────
 // SubscriptionWarningBanner — mismo criterio que el equivalente de RN
@@ -11,13 +24,16 @@ import { colors } from '@/theme/colors';
 // "urgente" (rojo) a partir de 3 días. Nunca se muestra para cuentas exentas
 // (daysLeft viene null en ese caso, ver AuthController::subscriptionStatus).
 // ─────────────────────────────────────────────
-export function SubscriptionWarningBanner() {
+export function SubscriptionWarningBanner({ onDismiss }: { onDismiss?: () => void }) {
   const t = useTranslations('common.SubscriptionWarningBanner');
   const { daysLeft, supportInfo } = useAuth();
+  const visible = useSubscriptionWarningVisible();
 
-  const warningDays = supportInfo?.subscription_warning_days ?? 15;
-
-  if (daysLeft === null || daysLeft > warningDays) return null;
+  // El segundo check es puramente para el narrowing de TS (visible=true ya
+  // implica daysLeft !== null vía useSubscriptionWarningVisible) — no
+  // reimplementa la condición de warningDays, así que no hay lógica
+  // duplicada acá.
+  if (!visible || daysLeft === null) return null;
 
   const isUrgent = daysLeft <= 3;
 
@@ -57,6 +73,19 @@ export function SubscriptionWarningBanner() {
       >
         {t('renew')}
       </button>
+      {onDismiss && (
+        <button
+          onClick={onDismiss}
+          aria-label={t('dismiss')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0,
+            color: isUrgent ? colors.danger : colors.warningFg, opacity: 0.7,
+          }}
+        >
+          <X size={14} strokeWidth={2.5} />
+        </button>
+      )}
     </div>
   );
 }

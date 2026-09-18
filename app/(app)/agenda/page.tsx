@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useTurnoStore } from '@/store/useTurnoStore';
@@ -14,13 +14,14 @@ import { turnoService, Turno, TurnoMes } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
-import { whatsappHelper } from '@/lib/whatsappHelper';
-import { useAuthStore } from '@/store/useAuthStore';
-import { SubscriptionWarningBanner } from '@/components/SubscriptionWarningBanner';
-import { PendientesDeCobroBanner } from '@/components/PendientesDeCobroBanner';
-import { RecordatoriosPendientesBanner } from '@/components/RecordatoriosPendientesBanner';
+import { SubscriptionWarningBanner, useSubscriptionWarningVisible } from '@/components/SubscriptionWarningBanner';
+import { PendientesDeCobroBanner, usePendientesDeCobroVisible } from '@/components/PendientesDeCobroBanner';
+import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from '@/components/RecordatoriosPendientesBanner';
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
+import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
+import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
+import { horaDeHora, formatFechaMini, formatCellDate, type ProfesionalLabel } from '@/components/agenda/agendaDateHelpers';
 import { SelectorServicios } from '@/components/SelectorServicios';
 import { alertDialog } from '@/store/useConfirmStore';
 import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
@@ -28,40 +29,49 @@ import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE, NAV_MARGIN } from '@/constants/layout';
 import { nombreDia, nombreMes, fechaDeHoy, formatoYMD } from '@/lib/dateFormat';
+import { pickVisibleBanner, type BannerKey } from '@/lib/bannerPriority';
 
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
-const SWIPE_REVEAL    = 80;
-const SWIPE_THRESHOLD = 55;
+
+// sessionStorage key prefix for the per-banner "dismissed for this session"
+// flag (Change 2) — same sessionStorage-not-localStorage pattern as
+// BIENVENIDA_KEY in store/useAuthStore.ts (survives an accidental refresh,
+// clears when the tab closes).
+const BANNER_DISMISSED_PREFIX = 'agenda_banner_dismissed_';
+
+// Lazy initializer (no efecto) — AgendaPage vive detrás del boot gate de
+// autenticación (app/providers.tsx: BootSplash hasta authStatus ===
+// 'authenticated', ver esa condición ahí) y por lo tanto nunca se sirve con
+// contenido real desde el servidor; no hay riesgo de mismatch de hidratación
+// al leer sessionStorage durante el render inicial acá, a diferencia de un
+// componente que sí se renderiza en el server con contenido real.
+function useDismissedBanner(key: BannerKey): [boolean, () => void] {
+  const storageKey = BANNER_DISMISSED_PREFIX + key;
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem(storageKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const dismiss = useCallback(() => {
+    try {
+      sessionStorage.setItem(storageKey, '1');
+    } catch {
+      // sin sessionStorage — igual ocultamos para esta sesión en memoria
+    }
+    setDismissed(true);
+  }, [storageKey]);
+
+  return [dismissed, dismiss];
+}
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-function fechaDeHora(fechaHora: string): string {
-  return fechaHora.slice(0, 10); // "YYYY-MM-DD"
-}
-
-function horaDeHora(fechaHora: string): string {
-  return fechaHora.slice(11, 16); // "HH:MM"
-}
-
-function formatFechaMini(fechaHora: string): string {
-  const dateStr = fechaDeHora(fechaHora);
-  const parts   = dateStr.split('-');
-  const mm      = parts[1];
-  const dd      = parts[2];
-  const d       = new Date(dateStr + 'T00:00:00');
-  return `${nombreDia(d, 'short')} ${dd}/${mm}`;
-}
-
-function formatCellDate(d: Date): string {
-  const y   = d.getFullYear();
-  const m   = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 // Parses manually (not `new Date(fechaStr)`) to avoid the UTC-midnight shift
 // that flips the displayed day for negative-offset timezones like ART.
 function formatFechaCorta(fechaStr: string): string {
@@ -79,332 +89,6 @@ const sectionLabelStyle: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
-
-// ─────────────────────────────────────────────
-// SwipeableTurnoCard — PENDIENTE and EN_CURSO
-// onCancel is optional: when omitted, the swipe-reveal cancel panel and
-// touch handlers are skipped entirely. completado never reaches this
-// component (rendered as FinalizadoCard instead); en_curso DOES pass
-// onCancel — an auto-started turno whose client never showed up must stay
-// cancellable, not just finishable.
-// ─────────────────────────────────────────────
-// Multi-agenda — nombre + color de la profesional a cargo, para la tercera
-// línea de timeSection. undefined/null = no se muestra (cuenta con ≤1
-// profesional activa, o la vista ya está filtrada a una sola).
-interface ProfesionalLabel {
-  nombre: string;
-  color:  string;
-}
-
-function SwipeableTurnoCard({
-  turno,
-  onCancel,
-  onFinalizar,
-  onPress,
-  profesionalLabel,
-  profesionalNombreWhatsapp,
-}: {
-  turno:                       Turno;
-  onCancel?:                   () => void;
-  onFinalizar?:                () => void;
-  onPress?:                    () => void;
-  profesionalLabel?:           ProfesionalLabel | null;
-  // Nombre de la profesional a cargo del turno, para el placeholder
-  // {profesional} del mensaje de WhatsApp. A diferencia de profesionalLabel
-  // (que se oculta con ≤1 profesional activa), este SIEMPRE se resuelve
-  // cuando el turno tiene profesional asignada — la sustitución del mensaje
-  // debe ser correcta sin importar el tamaño de la cuenta.
-  profesionalNombreWhatsapp?:  string;
-}) {
-  const t = useTranslations('agenda.SwipeableTurnoCard');
-  const user = useAuthStore(s => s.user);
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const startX     = useRef(0);
-  const initOffset = useRef(0);
-  const liveOffset = useRef(0);
-  const dragged    = useRef(false);
-
-  const applyTransform = (offset: number, animate: boolean) => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transition = animate
-      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
-    cardRef.current.style.transform = `translateX(${offset}px)`;
-  };
-
-  const snapTo = (target: number) => {
-    liveOffset.current = target;
-    applyTransform(target, true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current     = e.touches[0].clientX;
-    initOffset.current = liveOffset.current;
-    dragged.current    = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const delta   = e.touches[0].clientX - startX.current;
-    if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
-    liveOffset.current = clamped;
-    applyTransform(clamped, false);
-  };
-
-  const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : 0);
-  };
-
-  const handleCardClick = () => {
-    if (dragged.current) return;
-    if (liveOffset.current < -10) { snapTo(0); return; }
-    onPress?.();
-  };
-
-  const isEnCurso = turno.estado_visual === 'en_curso';
-  // El mockup no tiñe la card entera en_curso — el fondo siempre es
-  // colors.surface, sólo el badge chiquito lleva el color de estado.
-  const cardBg = colors.surface;
-
-  // Sección hora — ancho fijo, nunca se desliza. Si el swipe moviera esta
-  // columna (junto con el resto del card) el overflow:hidden del wrapper la
-  // clipearía apenas se revela el panel de cancelar (SWIPE_REVEAL ~ su ancho).
-  const timeSection = (
-    <div
-      onClick={() => onPress?.()}
-      style={{
-        width: 70, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', position: 'relative',
-        flexShrink: 0, backgroundColor: cardBg, cursor: 'pointer',
-      }}
-    >
-      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong, letterSpacing: 0 }}>
-        {horaDeHora(turno.fecha_hora)}
-      </span>
-      <span style={{ fontSize: 9, fontWeight: 700, color: colors.muted, marginTop: 2, textTransform: 'uppercase' }}>
-        {formatFechaMini(turno.fecha_hora)}
-      </span>
-      {profesionalLabel && (
-        <span style={{
-          display: 'flex', alignItems: 'center', gap: 3, marginTop: 2,
-          maxWidth: 64, overflow: 'hidden',
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: 3, flexShrink: 0,
-            backgroundColor: profesionalLabel.color,
-          }} />
-          <span style={{
-            fontSize: 9, fontWeight: 700, color: colors.subtext,
-            textTransform: 'uppercase', letterSpacing: 0.3,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {profesionalLabel.nombre}
-          </span>
-        </span>
-      )}
-      <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: colors.divider }} />
-    </div>
-  );
-
-  const restStyle: React.CSSProperties = {
-    backgroundColor: cardBg,
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-    userSelect: 'none',
-    paddingRight: 16, // matches RN's outer card padding — the CANCELAR panel (a
-                      // sibling, not part of this element) still reaches the
-                      // true right edge when revealed, since only this
-                      // sliding foreground gets inset, not the region behind it.
-    // minWidth: 0 — needed for the !onCancel branch below, where this element
-    // is a plain `flex: 1` child (not absolutely positioned like the onCancel
-    // branch's inset:0 sliding layer, which already gets a definite width from
-    // its positioned parent regardless of minWidth). Without it, a flex item's
-    // default min-width is 'auto': the browser refuses to shrink it below the
-    // client name's full nowrap width, so the inner ellipsis never triggers
-    // for long names on en_curso cards.
-    minWidth: 0,
-  };
-
-  const restBody = (
-    <>
-      {/* Sección info central — flex column propio, no depende únicamente
-          del alignItems del padre para centrarse (el padre puede crecer más
-          alto que este bloque, ej. en_curso con el badge+botón apilados). */}
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <p style={{
-          fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-        </p>
-        <p style={{
-          fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
-        </p>
-      </div>
-
-      {/* Sección acción */}
-      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
-        {isEnCurso ? (
-          // Badge apilado arriba del botón (no comparte fila con el nombre):
-          // cuando el badge iba al lado del nombre con flexShrink:0, absorbía
-          // el ancho que necesitaba y el nombre (minWidth:0) se llevaba toda
-          // la compresión, truncándose a un solo carácter en cards angostas.
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 9, fontWeight: 700, color: colors.amberFg, letterSpacing: 0.6, textTransform: 'uppercase',
-              backgroundColor: colors.amberBg,
-              borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.amber, flexShrink: 0 }} />
-              {t('inProgress')}
-            </span>
-            {onFinalizar && (
-              <button
-                onClick={e => { e.stopPropagation(); onFinalizar(); }}
-                // El botón vive dentro del área con los handlers de swipe
-                // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
-                // en onClick no alcanza — los eventos táctiles burbujean antes
-                // y de forma independiente del click, así que un tap con
-                // apenas unos px de deriva podía marcar dragged.current=true
-                // en el padre y hacer que el navegador cancele el click
-                // sintético del botón (el panel de precios nunca se abría).
-                onTouchStart={e => e.stopPropagation()}
-                onTouchMove={e => e.stopPropagation()}
-                onTouchEnd={e => e.stopPropagation()}
-                style={{
-                  fontSize: 11, fontWeight: 600, color: colors.primaryFg,
-                  border: 'none', borderRadius: 20,
-                  padding: '6px 14px', backgroundColor: colors.primarySolid, cursor: 'pointer',
-                }}
-              >
-                {t('finishNow')}
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {turno.cliente?.telefono && (
-              <a
-                href={whatsappHelper.buildUrl({
-                  clienteNombre:   turno.cliente.nombre,
-                  clienteTelefono: turno.cliente.telefono,
-                  servicio:        turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + '),
-                  fecha:           fechaDeHora(turno.fecha_hora),
-                  hora:            horaDeHora(turno.fecha_hora),
-                  tipo:            'recordatorio',
-                  negocio:         user?.name ?? '',
-                  direccion:       user?.direccion ?? null,
-                  telefonoNegocio: user?.telefono ?? null,
-                  profesional:     profesionalNombreWhatsapp,
-                })}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                style={{
-                  width: 38, height: 38, borderRadius: 19,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={colors.whatsapp}>
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-              </a>
-            )}
-            <ChevronRight size={20} color={colors.border} strokeWidth={2} style={{ marginLeft: 4 }} />
-          </>
-        )}
-      </div>
-    </>
-  );
-
-  const outerStyle: React.CSSProperties = {
-    display: 'flex',
-    // default alignItems (stretch) on purpose: both timeSection and the
-    // sliding region need to stretch to the row's full height — the sliding
-    // region's CANCELAR panel is top:0/bottom:0 within it, so it must span
-    // the whole row, not just its own content's natural height.
-    borderRadius: 18,
-    border: `1px solid ${colors.border}`,
-    boxShadow: shadows.card,
-    overflow: 'hidden',
-    backgroundColor: cardBg, // el paddingLeft de abajo queda fuera de timeSection/
-                             // restStyle (los que pintan cardBg) — sin esto, ese
-                             // hueco se ve blanco en vez del color real de la card.
-    minHeight: 75,
-    paddingLeft: 16, // matches RN's CardContainer/globalStyles.card outer padding
-  };
-
-  if (!onCancel) {
-    return (
-      <div style={outerStyle}>
-        {timeSection}
-        <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
-          {restBody}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={outerStyle}>
-      {timeSection}
-
-      {/* Región deslizable — un "viewport" (relative+overflow:hidden) con dos
-          capas que llenan su caja entera por posición absoluta (top/left/
-          right/bottom:0), igual técnica para las dos. Nada de flex-basis ni
-          anchos porcentuales acá: eso fue lo que rompía cosas distintas cada
-          vez que se tocaba algo — con fill absoluto no hay ambigüedad. */}
-      <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        {/* CANCELAR panel behind — llena toda la región */}
-        <div
-          onClick={onCancel}
-          style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', justifyContent: 'flex-end',
-          }}
-        >
-          <div style={{
-            width: SWIPE_REVEAL, height: '100%',
-            // Mismo patrón que ServicioCard/GastoCard (fondo dangerBg + ícono/
-            // texto en danger) en vez del rojo sólido del mockup — agenda sale
-            // sola a producción por ahora, así que este swipe-to-delete se
-            // mantiene visualmente unificado con el resto de la app.
-            backgroundColor: colors.dangerBg,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-            cursor: 'pointer',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
-            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: colors.danger, letterSpacing: 0.5 }}>
-              {t('cancel')}
-            </span>
-          </div>
-        </div>
-
-        {/* Foreground deslizable — también llena toda la región */}
-        <div
-          ref={cardRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onClick={handleCardClick}
-          style={{ ...restStyle, position: 'absolute', inset: 0, right: -1, transform: 'translateX(0)' }}
-        >
-          {restBody}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 // FinalizadoCard — opacity 0.6, no swipe
@@ -763,7 +447,10 @@ function FiltroSheetContent({
 }
 
 // ─────────────────────────────────────────────
-// CalendarioMensual — pure JS, no library
+// CalendarioMensual — pure JS, no library. Ya no se muestra siempre en la
+// pantalla principal (Change 1) — vive detrás del sheet "Elegir fecha" que
+// abre WeekStrip (components/agenda/WeekStrip.tsx), sin cambios de lógica
+// propios (mismo componente, solo cambió DÓNDE se monta).
 // ─────────────────────────────────────────────
 function CalendarioMensual({
   viewDate,
@@ -978,6 +665,7 @@ function SelectorProfesionalDia({
 export default function AgendaPage() {
   const router = useRouter();
   const t = useTranslations('agenda.AgendaPage');
+  const tElegirFecha = useTranslations('agenda.ElegirFechaSheet');
 
   const {
     turnos, turnosMes, loading,
@@ -1010,10 +698,35 @@ export default function AgendaPage() {
 
   const bottomSheetRef = useRef<BottomSheetHandle>(null);
   const filtroSheetRef = useRef<BottomSheetHandle>(null);
+  // Sheet "Elegir fecha" (Change 1) — hospeda el CalendarioMensual sin
+  // cambios de lógica, solo detrás de una acción explícita en vez de
+  // siempre visible en la pantalla principal.
+  const elegirFechaSheetRef = useRef<BottomSheetHandle>(null);
 
   const hayFiltroActivo = !!textoBusqueda || servicioFiltro !== null || fechaFiltro !== null;
   const hoy = fechaDeHoy();
   const esFechaPasada = fechaSeleccionada < hoy;
+
+  // ─────────────────────────────────────────────
+  // Banner de atención único (Change 2) — solo el de mayor prioridad ENTRE
+  // los que aplican se renderiza; el resto queda oculto (no desmontado: los
+  // otros dos hooks de visibilidad igual corren para poder reevaluar la
+  // prioridad en cualquier momento). Cada banner tiene su propio flag de
+  // "descartado esta sesión" en sessionStorage — mismo patrón que
+  // BIENVENIDA_KEY (store/useAuthStore.ts) — así que descartar uno no oculta
+  // a uno de mayor prioridad que aparezca después.
+  // ─────────────────────────────────────────────
+  const subscriptionVisible   = useSubscriptionWarningVisible();
+  const cobrosVisible         = usePendientesDeCobroVisible();
+  const recordatoriosVisible  = useRecordatoriosPendientesVisible();
+  const [subscriptionDismissed, dismissSubscription]   = useDismissedBanner('subscription');
+  const [cobrosDismissed, dismissCobros]               = useDismissedBanner('cobros');
+  const [recordatoriosDismissed, dismissRecordatorios] = useDismissedBanner('recordatorios');
+
+  const bannerGanador = pickVisibleBanner(
+    { subscription: subscriptionVisible, cobros: cobrosVisible, recordatorios: recordatoriosVisible },
+    { subscription: subscriptionDismissed, cobros: cobrosDismissed, recordatorios: recordatoriosDismissed },
+  );
 
   // ─────────────────────────────────────────────
   // Multi-agenda — invisible para cuentas con ≤1 profesional activa (el caso
@@ -1027,18 +740,6 @@ export default function AgendaPage() {
     () => new Map(profesionales.map(p => [p.id, p])),
     [profesionales]
   );
-
-  // Solo profesionales con al menos un turno vigente ese día — el "Todas"
-  // implícito lo agrega SelectorProfesionalDia.
-  const profesionalesConTurnoHoy = useMemo(() => {
-    if (!mostrarSelectorProfesional) return [];
-    const ids = new Set(
-      turnos
-        .filter(t => t.estado !== 'cancelado' && t.profesional_id != null)
-        .map(t => t.profesional_id as number)
-    );
-    return profesionales.filter(p => ids.has(p.id));
-  }, [turnos, profesionales, mostrarSelectorProfesional]);
 
   // Badges del calendario mensual filtrados por profesional — solo se pide
   // cuando hay una profesional puntual seleccionada; con "Todas" alcanza
@@ -1109,6 +810,27 @@ export default function AgendaPage() {
     fetchTurnos(fecha);
     setProfesionalFiltro(null);
   }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
+
+  const handleAbrirElegirFecha = useCallback(() => {
+    elegirFechaSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  // Tocar un día en el sheet "Elegir fecha" ES la confirmación (spec del
+  // Change 1) — no hay botón "aplicar" separado, el mismo tap que selecciona
+  // el día también cierra el sheet.
+  const handleDayClickEnSheet = useCallback((fecha: string) => {
+    handleDayClick(fecha);
+    elegirFechaSheetRef.current?.close();
+  }, [handleDayClick]);
+
+  // "Hoy" en el header del sheet — solo salta el mes del grid de vuelta al
+  // actual, NO selecciona ningún día ni cierra el sheet (spec del Change 1).
+  const handleHoy = useCallback(() => {
+    const ahora = new Date();
+    const nuevoViewDate = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+    setViewDate(nuevoViewDate);
+    fetchTurnosMes(`${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`);
+  }, [fetchTurnosMes]);
 
   const handleFinalizar = async (turno: Turno) => {
     const referencias = new Map(servicios.map(s => [s.id, s.precio]));
@@ -1247,9 +969,12 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      <SubscriptionWarningBanner />
-      <PendientesDeCobroBanner />
-      <RecordatoriosPendientesBanner />
+      {/* Un solo banner de atención a la vez (Change 2) — prioridad fija
+          suscripción > cobros pendientes > recordatorios, ver
+          pickVisibleBanner (lib/bannerPriority.ts) más arriba. */}
+      {bannerGanador === 'subscription' && <SubscriptionWarningBanner onDismiss={dismissSubscription} />}
+      {bannerGanador === 'cobros' && <PendientesDeCobroBanner onDismiss={dismissCobros} />}
+      {bannerGanador === 'recordatorios' && <RecordatoriosPendientesBanner onDismiss={dismissRecordatorios} />}
 
       {/* Resumen del mes — vistazo rápido, detalle completo en
           Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}
@@ -1257,32 +982,35 @@ export default function AgendaPage() {
         <ResumenMesCard profesionalId={profesionalFiltro} viewDate={viewDate} />
       </div>
 
-      {/* Selector de profesional — invisible con ≤1 profesional activa, o si
-          nadie tiene turno vigente ese día. Solo entran acá las profesionales
-          con turno en fechaSeleccionada — la etiqueta aclara de qué día,
-          porque si no parece una lista fija de profesionales y no un filtro
-          atado al día que estás mirando en el calendario. */}
-      {mostrarSelectorProfesional && profesionalesConTurnoHoy.length > 0 && (
+      {/* Selector de profesional — invisible con ≤1 profesional activa
+          (único gate). Change 3: ahora lista SIEMPRE todas las profesionales
+          activas, no solo las que tienen turno en fechaSeleccionada — sigue
+          siendo un roster fijo, no un filtro atado al día del calendario. */}
+      {mostrarSelectorProfesional && (
         <div style={{ padding: '0 20px 12px' }}>
           <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
             {fechaSeleccionada === hoy ? t('professionalWithAppointmentToday') : t('professionalWithAppointmentOn', { fecha: formatFechaCorta(fechaSeleccionada) })}
           </p>
           <SelectorProfesionalDia
-            profesionales={profesionalesConTurnoHoy}
+            profesionales={activeProfesionales}
             filtroActivo={profesionalFiltro}
             onSeleccionar={setProfesionalFiltro}
           />
         </div>
       )}
 
-      {/* Calendar — dimmed and disabled while a filter is active */}
+      {/* Week strip — reemplaza al grid mensual completo en la pantalla
+          principal (Change 1); el grid sigue existiendo sin cambios, ahora
+          detrás del sheet "Elegir fecha" que abre el botón de acá adentro.
+          Dimmed and disabled while a filter is active — mismo criterio que
+          tenía el calendario completo antes. */}
       <div style={{ opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
-        <CalendarioMensual
-          viewDate={viewDate}
-          onMonthChange={handleMonthChange}
+        <WeekStrip
+          dates={getCurrentWeekDates()}
           fechaSeleccionada={fechaSeleccionada}
           turnosMes={turnosMesParaBadges}
           onDayClick={handleDayClick}
+          onAbrirCalendario={handleAbrirElegirFecha}
         />
       </div>
 
@@ -1394,6 +1122,48 @@ export default function AgendaPage() {
           onCambiarFecha={handleCambiarFecha}
           onLimpiarTodo={handleLimpiarTodo}
           onAplicar={() => filtroSheetRef.current?.close()}
+        />
+      </BottomSheet>
+
+      {/* "Elegir fecha" sheet (Change 1) — hospeda el CalendarioMensual de
+          siempre, sin cambios de lógica. Tocar un día ahí ES la confirmación
+          (handleDayClickEnSheet cierra el sheet), "Hoy" solo mueve el mes del
+          grid sin seleccionar ni cerrar. */}
+      <BottomSheet
+        ref={elegirFechaSheetRef}
+        snapPoints={[0.65]}
+        initialIndex={-1}
+        enablePanDownToClose
+        handleColor={colors.border}
+        backgroundColor={colors.surface}
+        bottomOffset={NAV_CLEARANCE}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 12px' }}>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong }}>
+            {tElegirFecha('title')}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button
+              onClick={handleHoy}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontWeight: 600, color: colors.primaryDeep }}
+            >
+              {tElegirFecha('today')}
+            </button>
+            <button
+              onClick={() => elegirFechaSheetRef.current?.close()}
+              aria-label={tElegirFecha('close')}
+              style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+            >
+              <X size={18} color={colors.text} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+        <CalendarioMensual
+          viewDate={viewDate}
+          onMonthChange={handleMonthChange}
+          fechaSeleccionada={fechaSeleccionada}
+          turnosMes={turnosMesParaBadges}
+          onDayClick={handleDayClickEnSheet}
         />
       </BottomSheet>
 

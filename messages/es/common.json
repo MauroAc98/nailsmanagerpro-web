@@ -24,21 +24,24 @@
     "renewWhatsappMessage": "Hola! Quiero renovar mi suscripción de Turnetto.",
     "expiresToday": "Tu suscripción vence hoy",
     "expiresInDays": "Tu suscripción vence en {days, plural, one {# día} other {# días}}",
-    "renew": "Renovar"
+    "renew": "Renovar",
+    "dismiss": "Cerrar aviso"
   },
   "PendientesDeCobroBanner": {
     "title": "Pendientes de cobro",
     "message": "{count, plural, one {# turno sin precio cargado} other {# turnos sin precio cargado}}",
     "view": "Ver",
     "checkError": "No pudimos verificar turnos pendientes de cobro",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "dismiss": "Cerrar aviso"
   },
   "RecordatoriosPendientesBanner": {
     "title": "Recordatorios pendientes",
     "message": "{count, plural, one {# turno de mañana sin aviso enviado} other {# turnos de mañana sin aviso enviado}}",
     "view": "Mandar",
     "checkError": "No pudimos verificar los recordatorios pendientes",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "dismiss": "Cerrar aviso"
   },
   "NotificacionesBell": {
     "title": "Notificaciones",

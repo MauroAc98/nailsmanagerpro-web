@@ -55,6 +55,15 @@
   "SelectorProfesionalDia": {
     "all": "Todas"
   },
+  "WeekStrip": {
+    "thisWeek": "Esta semana",
+    "chooseDate": "Elegir fecha"
+  },
+  "ElegirFechaSheet": {
+    "title": "Elegir fecha",
+    "today": "Hoy",
+    "close": "Cerrar"
+  },
   "EditarTurnoPage": {
     "title": "Editar Turno",
     "loadingAppointment": "Cargando turno...",

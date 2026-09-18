@@ -24,21 +24,24 @@
     "renewWhatsappMessage": "Olá! Quero renovar minha assinatura do Turnetto.",
     "expiresToday": "Sua assinatura vence hoje",
     "expiresInDays": "Sua assinatura vence em {days, plural, one {# dia} other {# dias}}",
-    "renew": "Renovar"
+    "renew": "Renovar",
+    "dismiss": "Fechar aviso"
   },
   "PendientesDeCobroBanner": {
     "title": "Pendências de cobrança",
     "message": "{count, plural, one {# agendamento com preço pendente} other {# agendamentos com preço pendente}}",
     "view": "Ver",
     "checkError": "Não foi possível verificar agendamentos pendentes",
-    "retry": "Tentar novamente"
+    "retry": "Tentar novamente",
+    "dismiss": "Fechar aviso"
   },
   "RecordatoriosPendientesBanner": {
     "title": "Lembretes pendentes",
     "message": "{count, plural, one {# agendamento amanhã sem lembrete automático} other {# agendamentos amanhã sem lembrete automático}}",
     "view": "Enviar",
     "checkError": "Não foi possível verificar os lembretes pendentes",
-    "retry": "Tentar novamente"
+    "retry": "Tentar novamente",
+    "dismiss": "Fechar aviso"
   },
   "NotificacionesBell": {
     "title": "Notificações",
