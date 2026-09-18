@@ -30,6 +30,7 @@ import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE, NAV_MARGIN } from '@/constants/layout';
 import { nombreDia, nombreMes, fechaDeHoy, formatoYMD } from '@/lib/dateFormat';
 import { pickVisibleBanner, type BannerKey } from '@/lib/bannerPriority';
+import { ordenarTurnosBusqueda } from '@/lib/ordenarTurnosBusqueda';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -1063,15 +1064,12 @@ export default function AgendaPage() {
   // Cancelled turnos never render in either view — safety filter kept from
   // the pre-search implementation (backend already excludes them in practice).
   const vigentes = (list: Turno[]) => list.filter(t => t.estado !== 'cancelado');
-  // Ascendente por fecha_hora — el más próximo a atender primero. La vista
-  // sin filtro ya lo hacía; turnosBusqueda (resultados del sheet "Filtrar")
-  // venía sin ordenar, tal cual el backend lo devuelve, mostrando los
-  // resultados salteados en vez de cronológicos.
-  const ordenarPorFechaHora = (list: Turno[]) => [...list].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
-
+  // Vista de un día: ascendente por hora. Resultados del sheet "Filtrar"
+  // (cruzan fechas): los próximos a atender primero, los ya finalizados al
+  // final — ver ordenarTurnosBusqueda.
   const datosBase = hayFiltroActivo
-    ? ordenarPorFechaHora(vigentes(turnosBusqueda))
-    : ordenarPorFechaHora(vigentes(turnos));
+    ? ordenarTurnosBusqueda(vigentes(turnosBusqueda))
+    : [...vigentes(turnos)].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
 
   const datosAMostrar = (mostrarSelectorProfesional && profesionalFiltro !== null)
     ? datosBase.filter(t => t.profesional_id === profesionalFiltro)

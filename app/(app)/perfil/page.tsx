@@ -123,6 +123,17 @@ export default function PerfilPage() {
     setLatitud(lat);
     setLongitud(lng);
   };
+  // Quitar es local hasta "Guardar cambios", igual que marcarla. Si los envíos
+  // automáticos están activos el backend rechaza el guardado con un 422 en
+  // `latitud`, que el sheet muestra junto a la tarjeta de ubicación.
+  const quitarUbicacion = async () => {
+    const confirmado = await confirmDialog(t('locationRemoveConfirm'), {
+      confirmText: t('locationRemoveConfirmButton'), danger: true,
+    });
+    if (!confirmado) return;
+    setLatitud(null);
+    setLongitud(null);
+  };
   const [senaMonto, setSenaMonto] = useState('');
   const [whatsappPideSena, setWhatsappPideSena] = useState(false);
   const [senaTitular, setSenaTitular] = useState('');
@@ -332,6 +343,7 @@ export default function PerfilPage() {
             latitud={latitud}
             longitud={longitud}
             setUbicacion={setUbicacion}
+            onQuitarUbicacion={quitarUbicacion}
             errorUbicacion={errorUbicacion}
             onGuardar={handleGuardar}
             guardando={guardando}

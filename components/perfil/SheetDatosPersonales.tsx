@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Locate } from 'lucide-react';
+import { Locate, Pencil, Trash2 } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { PAISES } from '@/lib/phoneUtils';
 import { esUbicacionValida } from '@/lib/ubicacion';
+import { urlMapaEstatico } from '@/lib/mapaEstatico';
 import { obtenerGps } from '@/lib/obtenerGps';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 
@@ -25,6 +26,9 @@ interface Props {
   latitud: number | null;
   longitud: number | null;
   setUbicacion: (lat: number, lng: number) => void;
+  // Quita la ubicación (vuelve a null/null en el estado local del sheet); el
+  // caller decide si confirma antes — el guardado sigue siendo el de abajo.
+  onQuitarUbicacion: () => void;
   // 422 del backend en `latitud` (todos los errores de coordenadas se
   // devuelven bajo esa key, ver apply-progress de A1) — se muestra junto al
   // campo, nunca como diálogo genérico.
@@ -73,6 +77,13 @@ function IconClose() {
   );
 }
 
+const accionUbicacionStyle: React.CSSProperties = {
+  flex: 1, height: 42, borderRadius: 12, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, color: colors.primaryDeep,
+  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+};
+
 const sectionLabelStyle: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
@@ -82,7 +93,7 @@ export function SheetDatosPersonales({
   nombreEstudio, setNombreEstudio,
   codigoPais, setCodigoPais, telefono, setTelefono, onPasteTelefono,
   direccion, setDireccion,
-  latitud, longitud, setUbicacion, errorUbicacion,
+  latitud, longitud, setUbicacion, onQuitarUbicacion, errorUbicacion,
   onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetDatosPersonales');
@@ -90,6 +101,13 @@ export function SheetDatosPersonales({
   const [buscandoGps, setBuscandoGps] = useState(false);
   const [errorGps, setErrorGps] = useState(false);
   const ubicacionCargada = esUbicacionValida(latitud, longitud);
+  // Vista previa: si la imagen falla (sin red, key inválida) se oculta esa URL
+  // puntual en vez de dejar un ícono de imagen rota; una ubicación nueva
+  // genera otra URL y vuelve a intentar.
+  const [urlFallida, setUrlFallida] = useState<string | null>(null);
+  const urlVistaPrevia = ubicacionCargada
+    ? urlMapaEstatico(latitud as number, longitud as number, process.env.NEXT_PUBLIC_LOCATIONIQ_KEY)
+    : null;
 
   // Cargar por GPS sin necesitar abrir el mapa (feedback de usuario: quería
   // "ubicarlo por GPS previamente, antes de abrir [el mapa]" — este botón
@@ -185,43 +203,116 @@ export function SheetDatosPersonales({
         </div>
       </div>
 
-      <div style={{
-        marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 10, backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
-        borderRadius: 12, padding: '12px 14px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <IconMapPin />
-          <span style={{ fontSize: 14, color: colors.text }}>
-            {ubicacionCargada ? t('locationLoaded') : t('locationNotLoaded')}
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={usarGpsDirecto}
-            disabled={buscandoGps}
-            aria-label={t('mapUseGpsButton')}
-            style={{
+      <div style={{ marginBottom: 16 }}>
+        <p style={sectionLabelStyle}>{t('locationSection')}</p>
+
+        {!ubicacionCargada ? (
+          <div style={{
+            border: `1.5px dashed ${colors.border}`, borderRadius: 16, backgroundColor: colors.surfaceSubtle,
+            padding: '22px 18px 18px', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', textAlign: 'center', gap: 6,
+          }}>
+            <span style={{
+              width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primarySoft,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 32, height: 32, borderRadius: 16, border: `1px solid ${colors.border}`,
-              backgroundColor: colors.surface, cursor: buscandoGps ? 'default' : 'pointer',
-              opacity: buscandoGps ? 0.6 : 1, flexShrink: 0,
-            }}
-          >
-            <Locate size={16} color={colors.primaryDeep} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapaAbierto(true)}
-            style={{
-              background: 'none', border: 'none', color: colors.primaryDeep,
-              fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap',
-            }}
-          >
-            {ubicacionCargada ? t('locationEdit') : t('locationSet')}
-          </button>
-        </div>
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </span>
+            <p style={{ margin: '6px 0 0', fontSize: 16, fontWeight: 700, color: colors.textStrong }}>
+              {t('locationEmptyTitle')}
+            </p>
+            <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45, color: colors.subtext }}>
+              {t('locationEmptyHint')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setMapaAbierto(true)}
+              style={{
+                width: '100%', height: 46, border: 'none', borderRadius: 12,
+                backgroundColor: colors.primarySolid, color: colors.primaryFg,
+                fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              {t('locationSet')}
+            </button>
+            <button
+              type="button"
+              onClick={usarGpsDirecto}
+              disabled={buscandoGps}
+              style={{
+                width: '100%', height: 44, border: `1px solid ${colors.border}`, borderRadius: 12,
+                backgroundColor: colors.surface, color: colors.primaryDeep,
+                fontSize: 14, fontWeight: 700, cursor: buscandoGps ? 'default' : 'pointer',
+                opacity: buscandoGps ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <Locate size={17} color={colors.primaryDeep} />
+              {t('locationUseCurrent')}
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            border: `1px solid ${colors.border}`, borderRadius: 16, backgroundColor: colors.surface,
+            boxShadow: shadows.card, overflow: 'hidden',
+          }}>
+            {urlVistaPrevia && urlVistaPrevia !== urlFallida && (
+              // eslint-disable-next-line @next/next/no-img-element -- mapa estático externo (LocationIQ), no un asset optimizable
+              <img
+                src={urlVistaPrevia}
+                alt={t('locationPreviewAlt')}
+                onError={() => setUrlFallida(urlVistaPrevia)}
+                style={{ display: 'block', width: '100%', height: 150, objectFit: 'cover', backgroundColor: colors.surfaceSubtle }}
+              />
+            )}
+            <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                width: 20, height: 20, borderRadius: 10, backgroundColor: colors.successBg, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: colors.textStrong }}>{t('locationMarked')}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, padding: '0 14px 14px' }}>
+              <button
+                type="button"
+                onClick={() => setMapaAbierto(true)}
+                style={accionUbicacionStyle}
+              >
+                <Pencil size={15} color={colors.primaryDeep} />
+                {t('locationMovePin')}
+              </button>
+              <button
+                type="button"
+                onClick={usarGpsDirecto}
+                disabled={buscandoGps}
+                style={{ ...accionUbicacionStyle, opacity: buscandoGps ? 0.6 : 1, cursor: buscandoGps ? 'default' : 'pointer' }}
+              >
+                <Locate size={15} color={colors.primaryDeep} />
+                {t('locationUseGpsShort')}
+              </button>
+              <button
+                type="button"
+                onClick={onQuitarUbicacion}
+                aria-label={t('locationRemove')}
+                style={{
+                  width: 42, height: 42, flexShrink: 0, borderRadius: 12,
+                  border: `1px solid ${colors.dangerBorder}`, backgroundColor: colors.dangerBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                }}
+              >
+                <Trash2 size={17} color={colors.danger} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {errorGps && (

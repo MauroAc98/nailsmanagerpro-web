@@ -30,6 +30,7 @@ function setup(overrides: Partial<Props> = {}) {
     latitud: null,
     longitud: null,
     setUbicacion: vi.fn(),
+    onQuitarUbicacion: vi.fn(),
     errorUbicacion: null,
     onGuardar: vi.fn(),
     guardando: false,
@@ -40,17 +41,49 @@ function setup(overrides: Partial<Props> = {}) {
   return props;
 }
 
-describe('SheetDatosPersonales — location status row', () => {
-  it('shows "sin cargar" and the "Marcar en el mapa" button when no coordinates are saved', () => {
+describe('SheetDatosPersonales — location card', () => {
+  it('empty state: explains the feature and offers "Marcar en el mapa" + "Usar mi ubicación actual"', () => {
     setup({ latitud: null, longitud: null });
-    expect(screen.getByText('Sin cargar')).toBeInTheDocument();
+    expect(screen.getByText('Todavía no marcaste tu negocio')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Marcar en el mapa' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Usar mi ubicación actual' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Quitar ubicación' })).toBeNull();
   });
 
-  it('shows "✓ Ubicación cargada" and the "Editar" button when coordinates are saved', () => {
+  it('loaded state: shows "Ubicación marcada" with move-pin, GPS and remove actions', () => {
     setup({ latitud: -27.4692, longitud: -58.8306 });
-    expect(screen.getByText('✓ Ubicación cargada')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
+    expect(screen.getByText('Ubicación marcada')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mover pin' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Usar GPS' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quitar ubicación' })).toBeInTheDocument();
+    expect(screen.queryByText('Todavía no marcaste tu negocio')).toBeNull();
+  });
+
+  it('loaded state: renders the static map preview when a LocationIQ key is configured', () => {
+    vi.stubEnv('NEXT_PUBLIC_LOCATIONIQ_KEY', 'abc123');
+    setup({ latitud: -27.4692, longitud: -58.8306 });
+    const img = screen.getByRole('img', { name: 'Vista previa de la ubicación' });
+    expect(img.getAttribute('src')).toContain('maps.locationiq.com/v3/staticmap');
+    vi.unstubAllEnvs();
+  });
+
+  it('loaded state: without a key, no preview image is rendered (no broken image)', () => {
+    vi.stubEnv('NEXT_PUBLIC_LOCATIONIQ_KEY', '');
+    setup({ latitud: -27.4692, longitud: -58.8306 });
+    expect(screen.queryByRole('img', { name: 'Vista previa de la ubicación' })).toBeNull();
+    vi.unstubAllEnvs();
+  });
+
+  it('calls onQuitarUbicacion when the remove button is clicked', () => {
+    const props = setup({ latitud: -27.4692, longitud: -58.8306, onQuitarUbicacion: vi.fn() });
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar ubicación' }));
+    expect(props.onQuitarUbicacion).toHaveBeenCalledTimes(1);
+  });
+
+  it('"Mover pin" opens the map modal', async () => {
+    setup({ latitud: -27.4692, longitud: -58.8306 });
+    fireEvent.click(screen.getByRole('button', { name: 'Mover pin' }));
+    expect(await screen.findByTestId('mapa-picker-mock')).toBeInTheDocument();
   });
 
   it('shows a server-side error message near the location row', () => {
