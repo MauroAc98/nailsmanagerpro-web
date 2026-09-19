@@ -6,7 +6,7 @@ import type { BloqueoAgenda } from '@/services/bloqueoAgendaService';
 function buildProfesional(overrides: Partial<Profesional> = {}): Profesional {
   return {
     id: 1, user_id: 1, nombre: 'Natalia', apellido: null, nombre_completo: 'Natalia',
-    color: null, activo: true, servicios: [], fondo_historia_url: null,
+    color: null, activo: true, servicios: [], fondo_historia_url: null, avatar_url: null,
     historia_precios_template_id: null, historia_precios_fotos: [], historia_precios_nota: null,
     dias_atencion: null,
     ...overrides,

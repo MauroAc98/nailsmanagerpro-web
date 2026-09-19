@@ -62,6 +62,10 @@ export interface Profesional {
   // no tiene uno guardado. Siempre viene como URL pública lista para usar
   // (appended por el backend), nunca como ruta interna del disco.
   fondo_historia_url: string | null;
+  // Avatar de esta profesional (circular, en la reserva online y en el
+  // selector de profesional) — null si todavia no subio uno. Misma
+  // convencion que fondo_historia_url: siempre URL publica lista para usar.
+  avatar_url: string | null;
   // Selección actual del picker de "historia de precios" — null si la
   // profesional todavía no eligió plantilla.
   historia_precios_template_id: TemplateId | null;
@@ -166,6 +170,24 @@ export const profesionalService = {
 
   borrarFondoHistoria: async (id: number): Promise<Profesional> => {
     const { data } = await api.delete<Profesional>(`/profesionales/${id}/fondo-historia`);
+    return data;
+  },
+
+  // Guarda (o reemplaza) el avatar de esta profesional. Mismo motivo que
+  // subirFondoHistoria para pisar el Content-Type: sin esto axios serializa
+  // el FormData como JSON y el backend responde 422.
+  subirAvatar: async (id: number, archivo: File): Promise<Profesional> => {
+    const form = new FormData();
+    form.append('imagen', archivo);
+    const { data } = await api.post<Profesional>(`/profesionales/${id}/avatar`, form, {
+      headers: { 'Content-Type': undefined },
+      timeout: 60_000,
+    });
+    return data;
+  },
+
+  borrarAvatar: async (id: number): Promise<Profesional> => {
+    const { data } = await api.delete<Profesional>(`/profesionales/${id}/avatar`);
     return data;
   },
 
