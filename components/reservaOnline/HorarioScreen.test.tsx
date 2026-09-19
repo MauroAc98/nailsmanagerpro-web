@@ -318,8 +318,81 @@ describe('HorarioScreen', () => {
       sinLugarHasta('2027-01-01');
       renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
       await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
-      expect(await screen.findByText('No encontramos lugar en los próximos días.')).toBeInTheDocument();
+      expect(await screen.findByText(/No hay lugar en los próximos 30 días/)).toBeInTheDocument();
       expect(hayRueda()).toBe(false);
+    });
+
+    describe('con la lectura de dias con lugar (salon real)', () => {
+      // getDiasConDisponibilidad responde `dias`; getAvailability del dia elegido esta
+      // vacio hasta `desde`. Se registran los pedidos de ambas lecturas.
+      const conDias = (dias: string[] | null, desde = '2026-09-22') => {
+        const base = prepararServicio();
+        const pedidosDias: { fechas: string[]; profesionalId?: number; servicioIds: number[] }[] = [];
+        const consultadas: string[] = [];
+        setServiceParaTests({
+          ...base,
+          getDiasConDisponibilidad: async (_slug, q) => {
+            pedidosDias.push(q);
+            return dias === null ? null : q.fechas.filter((f) => dias.includes(f));
+          },
+          getAvailability: async (slug, q) => {
+            consultadas.push(q.fecha);
+            if (q.fecha < desde) return { fecha: q.fecha, duracionTotalMinutos: 75, slots: [] };
+            return base.getAvailability(slug, q);
+          },
+        });
+        return { pedidosDias, consultadas };
+      };
+
+      it('la tira dibuja los puntos que devuelve la lectura (y solo esos)', async () => {
+        conDias(['2026-09-20']);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await waitFor(() =>
+          expect(screen.getByTestId('week-day-2026-09-20').querySelector('[data-punto]')).not.toBeNull(),
+        );
+        expect(screen.getByTestId('week-day-2026-09-19').querySelector('[data-punto]')).toBeNull();
+      });
+
+      it('pide toda la ventana en una lectura y la repite al cambiar de profesional', async () => {
+        const { pedidosDias } = conDias(['2026-09-22']);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await waitFor(() => expect(pedidosDias.length).toBeGreaterThan(0));
+        const antes = pedidosDias.length;
+        expect(pedidosDias[antes - 1].profesionalId).toBeUndefined();
+        await userEvent.click(await screen.findByRole('button', { name: 'Lucía' }));
+        await waitFor(() => expect(pedidosDias.length).toBeGreaterThan(antes));
+        expect(pedidosDias[pedidosDias.length - 1].profesionalId).toBeDefined();
+      });
+
+      it('"Ir al próximo día con lugar" usa la lista (una lectura) y no recorre dia por dia', async () => {
+        const { pedidosDias, consultadas } = conDias(['2026-09-22', '2026-09-25']);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+        await waitFor(() => expect(hayRueda()).toBe(true));
+        expect(screen.getByText(/Martes 22/)).toBeInTheDocument();
+        // solo la del dia elegido (19 y 22); nunca los intermedios
+        expect(consultadas).not.toContain('2026-09-20');
+        expect(consultadas).not.toContain('2026-09-21');
+        expect(pedidosDias[pedidosDias.length - 1].fechas[0]).toBe('2026-09-20');
+      });
+
+      it('si la lista viene vacia dice que no hay lugar en 30 dias, con la sugerencia, sin recorrer', async () => {
+        const { consultadas } = conDias([]);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+        expect(
+          await screen.findByText('No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al salón.'),
+        ).toBeInTheDocument();
+        expect(consultadas).toEqual(['2026-09-19']);
+      });
+
+      it('si la lectura devuelve null cae al recorrido dia por dia', async () => {
+        const { consultadas } = conDias(null);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+        await waitFor(() => expect(hayRueda()).toBe(true));
+        expect(consultadas).toEqual(expect.arrayContaining(['2026-09-20', '2026-09-21', '2026-09-22']));
+      });
     });
 
     it('"Elegir otro día" abre el calendario mensual', async () => {

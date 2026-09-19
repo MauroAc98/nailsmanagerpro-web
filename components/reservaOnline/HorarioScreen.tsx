@@ -156,13 +156,27 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     calendarioRef.current?.close();
   };
 
-  // Busca dia por dia (acotado a la ventana) el primero con horarios libres.
+  // Una sola lectura de dias con lugar (desde el dia siguiente hasta el fin de la
+  // ventana): se salta al primero. Solo si la lectura no sabe (null) se cae a
+  // buscar dia por dia, acotado a la ventana.
   const irAlProximoDia = async () => {
     setBuscando(true);
     setSinLugarProximos(false);
     setErrorRetener(false);
     try {
-      for (let f = sumarDias(fecha, 1); f <= ultimoDia; f = sumarDias(f, 1)) {
+      const desdeManana = sumarDias(fecha, 1);
+      const conLugar = await getService().getDiasConDisponibilidad(slug, {
+        fechas: diasReservables(desdeManana, ultimoDia),
+        servicioIds,
+        profesionalId: profesionalQuery,
+      });
+      if (conLugar !== null) {
+        const proximo = [...conLugar].sort().find((f) => f > fecha && !noReservable(f));
+        if (proximo) elegirDia(proximo);
+        else setSinLugarProximos(true);
+        return;
+      }
+      for (let f = desdeManana; f <= ultimoDia; f = sumarDias(f, 1)) {
         try {
           const dia = await getService().getAvailability(slug, { fecha: f, servicioIds, profesionalId: profesionalQuery });
           if (dia.slots.length > 0) {
