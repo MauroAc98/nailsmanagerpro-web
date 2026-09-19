@@ -78,7 +78,8 @@ describe('HorarioScreen', () => {
     await irAlDia('2026-09-21');
     await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
     const horas = horasDeLaRueda();
-    expect(horas).toHaveLength(16);
+    // solo los inicios configurados que entran (75 min), sin horarios intermedios
+    expect(horas).toEqual(['09:00', '09:30', '10:30', '11:00', '11:30', '13:00', '14:00', '16:00', '16:30', '17:30', '18:00']);
     expect(horas).toContain('14:00');
     for (const ocupada of ['14:30', '15:00', '15:30']) expect(horas).not.toContain(ocupada);
     expect(horas).toContain('16:00');
@@ -101,7 +102,7 @@ describe('HorarioScreen', () => {
   it('muestra el resumen de horarios libres (plural) con el rango de la rueda', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await irAlDia('2026-09-21');
-    expect(await screen.findByText('16 horarios libres · de 09:00 a 18:00')).toBeInTheDocument();
+    expect(await screen.findByText('11 horarios libres · de 09:00 a 18:00')).toBeInTheDocument();
   });
 
   it('la nota de duracion muestra el rango que ocupara el turno y cambia al girar la rueda', async () => {
@@ -246,7 +247,7 @@ describe('HorarioScreen', () => {
     girarA('10:30');
     expect(screen.getByText(/Lunes 21/).closest('div')).toHaveTextContent('Lunes 21 · 10:30 con cualquier profesional');
     await userEvent.click(screen.getByRole('button', { name: 'Lucía' }));
-    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:30')); // Lucia arranca a las 09:30
     girarA('10:30');
     expect(screen.getByText(/Lunes 21/).closest('div')).toHaveTextContent('Lunes 21 · 10:30 con Lucía');
   });

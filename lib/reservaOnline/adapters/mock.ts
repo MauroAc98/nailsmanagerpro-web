@@ -66,7 +66,7 @@ interface MockServicio extends BookableService {
 }
 
 // Intervalo ocupado todos los dias (turnos ya agendados del demo): hace que la
-// grilla de inicios se saltee horas y se vea el selector de hora sin solapes.
+// inicios configurados se descarten y se vea el selector de hora sin solapes.
 interface MockOcupado {
   profesionalId: number;
   desde: string; // 'HH:MM'
@@ -76,17 +76,18 @@ interface MockOcupado {
 interface MockSalon {
   info: SalonInfo;
   servicios: MockServicio[];
+  // Inicios ACTIVOS configurados por cada profesional (los desactivados
+  // simplemente no estan: ella no atiende a esa hora). Son la unica fuente de
+  // horarios ofrecidos: no se genera ninguna grilla.
+  horarios: Record<number, string[]>;
   ocupados?: MockOcupado[];
 }
 
-// Los horarios configurados por el salon definen un RANGO de inicios (primer y
-// ultimo inicio posibles), no una lista de turnos: la disponibilidad es la
-// grilla de inicios cada PASO_MIN entre ambos extremos (inclusive), menos los
-// que solapan un turno ocupado, una reserva pendiente o caen antes de ahora +
-// anticipacion. Espeja config('reservas.paso_minutos') del backend.
-const PRIMER_INICIO_MIN = 9 * 60;
-const ULTIMO_INICIO_MIN = 18 * 60;
-const PASO_MIN = 30;
+// Los horarios ofrecidos son EXACTAMENTE los inicios activos que cada
+// profesional configuro (MockSalon.horarios). Un inicio se ofrece si la duracion
+// total de los servicios entra sin solapar (semiabierto) un turno ocupado o una
+// reserva de ESA profesional, y no cae antes de ahora + anticipacion. Con
+// "Cualquiera" se une por hora y se listan solo las profesionales libres.
 const MIN_MS = 60_000;
 // Tiempo que se retiene el horario mientras la clienta completa sus datos
 // (espeja la config del backend). Al iniciar el pago pasa a la ventana de pago.
@@ -120,8 +121,14 @@ const SEED: Record<string, MockSalon> = {
       { id: 5, nombre: 'Combo mani + pedi', duracionMinutos: 105, precio: 24000, categoria: { id: 3, nombre: 'Promociones' }, fotos: [], profesionalIds: [1, 2] },
       { id: 2, nombre: 'Retiro de esmalte', duracionMinutos: 30, precio: 8000, categoria: null, fotos: [], profesionalIds: [1, 2] },
     ],
+    // Ana no atiende a las 09:30, 12:00 ni 15:00 (desactivados); ambas hacen
+    // pausa de almuerzo. Horarios irregulares y distintos por profesional.
+    horarios: {
+      1: ['09:00', '10:30', '11:30', '13:00', '14:00', '16:00', '17:30'],
+      2: ['09:30', '10:30', '11:00', '14:00', '15:30', '16:30', '18:00'],
+    },
     // Ana 15:00-16:00 y Lucia 15:30-16:30: con "Cualquiera" no hay lugar para
-    // un turno de 75 min que arranque entre 14:30 y 15:30.
+    // un turno de 75 min que arranque en 14:30, 15:00 o 15:30.
     ocupados: [
       { profesionalId: 1, desde: '15:00', hasta: '16:00' },
       { profesionalId: 2, desde: '15:30', hasta: '16:30' },
@@ -265,12 +272,17 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     }
 
     const minInicio = q.fecha === hoy.fecha ? hoy.minutos + p.settings.anticipacionMinutos : 0;
-    const slots: Availability['slots'] = [];
-    for (let m = PRIMER_INICIO_MIN; m <= ULTIMO_INICIO_MIN; m += PASO_MIN) {
-      if (m < minInicio) continue;
-      const libres = candidatos.filter((id) => estaLibre(s, p, slug, id, q.fecha, m, duracion));
-      if (libres.length > 0) slots.push({ hora: hhmm(m), profesionalIds: libres });
+    const porHora = new Map<number, number[]>();
+    for (const id of candidatos) {
+      for (const hora of new Set(s.horarios[id] ?? [])) {
+        const m = aMinutos(hora);
+        if (m < minInicio || !estaLibre(s, p, slug, id, q.fecha, m, duracion)) continue;
+        porHora.set(m, [...(porHora.get(m) ?? []), id]);
+      }
     }
+    const slots: Availability['slots'] = [...porHora.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([m, ids]) => ({ hora: hhmm(m), profesionalIds: ids }));
     return { fecha: q.fecha, duracionTotalMinutos: duracion, slots };
   };
 

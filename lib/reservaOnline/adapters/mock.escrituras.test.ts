@@ -10,7 +10,7 @@ const entrada = (over: Partial<ReservaCompleta> = {}): ReservaCompleta => ({
   servicioIds: [1],
   profesionalId: 1,
   fecha: '2026-09-25',
-  hora: '10:00',
+  hora: '10:30',
   cliente: { nombre: 'Sofi', apellido: 'Gomez', whatsapp: '+5491155551234' },
   ...over,
 });
@@ -35,23 +35,23 @@ describe('mock: crear reserva', () => {
     const { svc } = escenario();
     const r = await crearPendiente(svc, 'demo', entrada({ servicioIds: [1, 2] }));
     const st = await svc.getReservationStatus('demo', r.id);
-    expect(st.summary).toMatchObject({ duracionTotalMinutos: 75, hora: '10:00' });
+    expect(st.summary).toMatchObject({ duracionTotalMinutos: 75, hora: '10:30' });
     expect(st.summary).not.toHaveProperty('total');
     expect(st.summary.deposito).toBeGreaterThan(0);
   });
 
   it('un horario tomado por una reserva pendiente deja de estar disponible', async () => {
     const { svc } = escenario();
-    await crearPendiente(svc, 'demo', entrada({ hora: '10:00' }));
+    await crearPendiente(svc, 'demo', entrada({ hora: '10:30', servicioIds: [1, 2] })); // [10:30, 11:45)
     const disp = await svc.getAvailability('demo', {
       fecha: '2026-09-25',
       servicioIds: [1],
       profesionalId: 1,
     });
     const horas = disp.slots.map((s) => s.hora);
-    expect(horas).not.toContain('10:00');
-    expect(horas).not.toContain('10:30'); // solapa (45 min)
-    expect(horas).toContain('11:00'); // adyacente (termina 10:45) libre
+    expect(horas).not.toContain('10:30');
+    expect(horas).not.toContain('11:30'); // solapa aunque su inicio este libre
+    expect(horas).toContain('13:00');
   });
 
   it('reservar un horario ya tomado falla con slot_taken', async () => {
@@ -68,7 +68,7 @@ describe('mock: crear reserva', () => {
 
   it('sin profesionalId ("Cualquiera") el backend asigna la primera libre y la devuelve en el estado', async () => {
     const { svc } = escenario();
-    await crearPendiente(svc, 'demo', entrada({ profesionalId: 1 })); // Ana ocupada a las 10:00
+    await crearPendiente(svc, 'demo', entrada({ profesionalId: 1 })); // Ana ocupada a las 10:30
     const sinProfesional = { ...entrada(), profesionalId: undefined };
     const r = await crearPendiente(svc, 'demo', sinProfesional);
     expect((await svc.getReservationStatus('demo', r.id)).summary.profesionalId).toBe(2);
@@ -85,10 +85,10 @@ describe('mock: crear reserva', () => {
   it('un turno que se ocupa DESPUES de traer los horarios hace fallar la creacion con slot_taken (por solape, no solo por hora exacta)', async () => {
     const { svc } = escenario();
     const antes = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1], profesionalId: 1 });
-    expect(antes.slots.map((s) => s.hora)).toContain('10:30');
-    // Otra clienta toma 10:00 (45 min) mientras esta mira la lista: 10:30 ahora solapa.
-    await crearPendiente(svc, 'demo', entrada({ hora: '10:00' }));
-    await expect(crearPendiente(svc, 'demo', entrada({ hora: '10:30' }))).rejects.toMatchObject({
+    expect(antes.slots.map((s) => s.hora)).toContain('11:30');
+    // Otra clienta toma 10:30 (75 min) mientras esta mira la lista: 11:30 ahora solapa.
+    await crearPendiente(svc, 'demo', entrada({ hora: '10:30', servicioIds: [1, 2] }));
+    await expect(crearPendiente(svc, 'demo', entrada({ hora: '11:30' }))).rejects.toMatchObject({
       name: 'ReservaOnlineError',
       code: 'slot_taken',
     });
@@ -158,8 +158,8 @@ describe('mock: persistencia', () => {
 
   it('ids nuevos no chocan con los persistidos', async () => {
     const { svc, crear } = escenario();
-    const a = await crearPendiente(svc, 'demo', entrada({ hora: '10:00' }));
-    const b = await crearPendiente(crear(), 'demo', entrada({ hora: '12:00' }));
+    const a = await crearPendiente(svc, 'demo', entrada({ hora: '10:30' }));
+    const b = await crearPendiente(crear(), 'demo', entrada({ hora: '11:30' }));
     expect(b.id).not.toBe(a.id);
   });
 });
@@ -196,8 +196,8 @@ describe('mock: ajustes, Mercado Pago y reservas online', () => {
 
   it('listOnlineBookings solo trae las reservas pagadas, mas recientes primero', async () => {
     const { svc, reloj } = escenario();
-    const a = await crearPendiente(svc, 'demo', entrada({ hora: '10:00' }));
-    await crearPendiente(svc, 'demo', entrada({ hora: '12:00' })); // sin pagar
+    const a = await crearPendiente(svc, 'demo', entrada({ hora: '10:30' }));
+    await crearPendiente(svc, 'demo', entrada({ hora: '11:30' })); // sin pagar
     reloj.ms = AHORA + 1 * MIN;
     await svc.simulatePayment(a.id);
     const b = await crearPendiente(svc, 'demo', entrada({ hora: '14:00' }));
@@ -245,7 +245,7 @@ describe('mock: fotos de servicios (lado del salon)', () => {
 });
 
 
-const RETENER = { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '10:00' };
+const RETENER = { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '10:30' };
 const CLIENTE = { nombre: 'Sofi', apellido: 'Gomez', whatsapp: '+5491155551234' };
 const horasLibres = async (svc: ReturnType<typeof escenario>['svc'], profesionalId = 1) =>
   (await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1], profesionalId })).slots.map((s) => s.hora);
@@ -269,22 +269,23 @@ describe('mock: retencion del horario (hold) al elegirlo', () => {
   it('el hold ocupa el horario: desaparece de la disponibilidad y retenerlo de nuevo falla con slot_taken', async () => {
     const { svc } = escenario();
     await svc.retenerHorario('demo', RETENER);
-    expect(await horasLibres(svc)).not.toContain('10:00');
+    expect(await horasLibres(svc)).not.toContain('10:30');
     await expect(svc.retenerHorario('demo', RETENER)).rejects.toMatchObject({ code: 'slot_taken' });
   });
 
   it('el solape (no solo la hora exacta) tambien es slot_taken', async () => {
     const { svc } = escenario();
-    await svc.retenerHorario('demo', RETENER); // 10:00-10:45
-    await expect(svc.retenerHorario('demo', { ...RETENER, hora: '10:30' })).rejects.toMatchObject({ code: 'slot_taken' });
-    await expect(svc.retenerHorario('demo', { ...RETENER, hora: '11:00' })).resolves.toBeDefined(); // adyacente
+    const largo = { ...RETENER, servicioIds: [1, 2] };
+    await svc.retenerHorario('demo', largo); // [10:30, 11:45)
+    await expect(svc.retenerHorario('demo', { ...RETENER, hora: '11:30' })).rejects.toMatchObject({ code: 'slot_taken' });
+    await expect(svc.retenerHorario('demo', { ...RETENER, hora: '13:00' })).resolves.toBeDefined(); // fuera del rango
   });
 
   it('pasados 10 min sin avanzar el hold vence y libera el horario', async () => {
     const { svc, reloj } = escenario();
     await svc.retenerHorario('demo', RETENER);
     reloj.ms = AHORA + 10 * MIN;
-    expect(await horasLibres(svc)).toContain('10:00');
+    expect(await horasLibres(svc)).toContain('10:30');
   });
 
   it('retener en un slug inexistente falla con not_found', async () => {
@@ -298,7 +299,7 @@ describe('mock: retencion del horario (hold) al elegirlo', () => {
     await svc.liberarHold('demo', h.reservaId);
     await svc.liberarHold('demo', h.reservaId);
     await svc.liberarHold('demo', 'mock-999');
-    expect(await horasLibres(svc)).toContain('10:00');
+    expect(await horasLibres(svc)).toContain('10:30');
   });
 
   it('un hold sin pagar todavia no es una reserva consultable (not_found en el estado)', async () => {

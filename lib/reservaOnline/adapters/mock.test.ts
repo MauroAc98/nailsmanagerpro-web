@@ -44,60 +44,67 @@ describe('mock: lecturas', () => {
     expect(disp.duracionTotalMinutos).toBe(75);
   });
 
-  it('los horarios son una grilla de inicios de 09:00 a 18:00 cada 30 min (rango, no lista) menos lo ocupado del demo', async () => {
-    const disp = await nuevo().getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1, 2] });
-    const horas = disp.slots.map((s) => s.hora);
-    expect(horas[0]).toBe('09:00');
-    expect(horas[horas.length - 1]).toBe('18:00'); // el ultimo inicio no depende de la duracion
-    expect(horas.every((h) => h.endsWith(':00') || h.endsWith(':30'))).toBe(true);
-    // 19 inicios de grilla menos 14:30, 15:00 y 15:30 (ambas profesionales ocupadas)
-    expect(horas).toHaveLength(16);
+  it('ofrece exactamente los horarios configurados de cada profesional: irregulares, sin intermedios ni desactivados', async () => {
+    const svc = nuevo();
+    const cliente = { fecha: '2026-09-25', servicioIds: [2] }; // 30 min: nada se solapa con lo ocupado salvo 15:30 de Lucia
+    const ana = await svc.getAvailability('demo', { ...cliente, profesionalId: 1 });
+    // Ana: 09:30, 12:00 y 15:00 desactivados; hueco de almuerzo entre 11:30 y 13:00.
+    expect(ana.slots.map((s) => s.hora)).toEqual(['09:00', '10:30', '11:30', '13:00', '14:00', '16:00', '17:30']);
+    const lucia = await svc.getAvailability('demo', { ...cliente, profesionalId: 2 });
+    expect(lucia.slots.map((s) => s.hora)).toEqual(['09:30', '10:30', '11:00', '14:00', '16:30', '18:00']);
   });
 
-  it('el demo trae intervalos ocupados: con Cualquiera se saltean 14:30-15:30 y con Ana tambien 14:00', async () => {
-    const svc = nuevo();
-    const cualquiera = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1, 2] });
-    const horasCualquiera = cualquiera.slots.map((s) => s.hora);
-    expect(horasCualquiera).toContain('14:00');
-    expect(horasCualquiera).not.toContain('14:30');
-    expect(horasCualquiera).not.toContain('15:30');
-    expect(horasCualquiera).toContain('16:00');
-    const ana = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1, 2], profesionalId: 1 });
-    expect(ana.slots.map((s) => s.hora)).not.toContain('14:00');
+  it('Cualquiera une los horarios de todas y lista solo a las libres en cada uno', async () => {
+    const disp = await nuevo().getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1, 2] }); // 75 min
+    expect(disp.slots).toEqual([
+      { hora: '09:00', profesionalIds: [1] },
+      { hora: '09:30', profesionalIds: [2] },
+      { hora: '10:30', profesionalIds: [1, 2] },
+      { hora: '11:00', profesionalIds: [2] },
+      { hora: '11:30', profesionalIds: [1] },
+      { hora: '13:00', profesionalIds: [1] },
+      // 14:00 de Ana pisaria su turno de 15:00; el de Lucia entra ([14:00, 15:15))
+      { hora: '14:00', profesionalIds: [2] },
+      { hora: '16:00', profesionalIds: [1] },
+      { hora: '16:30', profesionalIds: [2] },
+      { hora: '17:30', profesionalIds: [1] },
+      { hora: '18:00', profesionalIds: [2] },
+    ]);
   });
 
-  it('un turno ocupado quita todo inicio cuyo intervalo lo solapa, y el adyacente sigue libre', async () => {
+  it('un inicio libre se descarta si el servicio completo pisa un turno posterior', async () => {
+    // Kapping gel (90 min, solo Ana): 14:00 -> [14:00, 15:30) pisa su turno de 15:00-16:00
+    const ana = await nuevo().getAvailability('demo', { fecha: '2026-09-25', servicioIds: [3], profesionalId: 1 });
+    const horas = ana.slots.map((s) => s.hora);
+    expect(horas).not.toContain('14:00');
+    expect(horas).toContain('13:00'); // [13:00, 14:30) entra
+    expect(horas).toContain('16:00'); // adyacente al fin del turno
+  });
+
+  it('hoy respeta la anticipacion y sigue ofreciendo solo horarios configurados', async () => {
+    const disp = await nuevo().getAvailability('demo', { fecha: '2026-09-19', servicioIds: [2] });
+    expect(disp.slots.map((s) => s.hora)).toEqual(['14:00', '16:00', '16:30', '17:30', '18:00']);
+  });
+
+  it('una reserva quita los horarios que pisa y deja el adyacente; con Cualquiera sigue la otra', async () => {
     const svc = nuevo();
-    // Ana 10:00-10:45 (45 min): con un servicio de 45 min quedan fuera 09:30 (solapa) y 10:00, 10:30;
-    // 09:00 (termina 09:45) y 11:00 (arranca despues del fin) quedan libres.
+    // Ana 10:30 con Kapping gel (90 min): ocupa [10:30, 12:00)
     await crearPendiente(svc, 'demo', {
-      servicioIds: [1],
+      servicioIds: [3],
       profesionalId: 1,
       fecha: '2026-09-25',
-      hora: '10:00',
+      hora: '10:30',
       cliente: { nombre: 'A', apellido: 'B', whatsapp: '+5491155551234' },
     });
-    const disp = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1], profesionalId: 1 });
-    const horas = disp.slots.map((s) => s.hora);
+    const ana = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [2], profesionalId: 1 });
+    const horas = ana.slots.map((s) => s.hora);
     expect(horas).toContain('09:00');
-    expect(horas).not.toContain('09:30');
-    expect(horas).not.toContain('10:00');
     expect(horas).not.toContain('10:30');
-    expect(horas).toContain('11:00');
-  });
-
-  it('Cualquiera fusiona por hora: un inicio sigue si al menos una profesional esta libre', async () => {
-    const svc = nuevo();
-    await crearPendiente(svc, 'demo', {
-      servicioIds: [1],
-      profesionalId: 1,
-      fecha: '2026-09-25',
-      hora: '10:00',
-      cliente: { nombre: 'A', apellido: 'B', whatsapp: '+5491155551234' },
-    });
-    const disp = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1] });
-    const diez = disp.slots.find((s) => s.hora === '10:00');
-    expect(diez?.profesionalIds).toEqual([2]);
+    expect(horas).not.toContain('11:30');
+    expect(horas).toContain('13:00');
+    const cualquiera = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [2] });
+    expect(cualquiera.slots.find((s) => s.hora === '10:30')?.profesionalIds).toEqual([2]);
+    expect(cualquiera.slots.map((s) => s.hora)).not.toContain('11:30');
   });
 
   it('getDiasConDisponibilidad excluye fechas pasadas y dias sin horarios', async () => {
