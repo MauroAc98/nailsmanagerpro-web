@@ -65,9 +65,18 @@ interface MockServicio extends BookableService {
   profesionalIds: number[]; // quienes lo ofrecen
 }
 
+// Intervalo ocupado todos los dias (turnos ya agendados del demo): hace que la
+// grilla de inicios se saltee horas y se vea el selector de hora sin solapes.
+interface MockOcupado {
+  profesionalId: number;
+  desde: string; // 'HH:MM'
+  hasta: string; // 'HH:MM'
+}
+
 interface MockSalon {
   info: SalonInfo;
   servicios: MockServicio[];
+  ocupados?: MockOcupado[];
 }
 
 // Los horarios configurados por el salon definen un RANGO de inicios (primer y
@@ -110,6 +119,12 @@ const SEED: Record<string, MockSalon> = {
       { id: 4, nombre: 'Pedicura spa', duracionMinutos: 60, precio: 14000, categoria: { id: 2, nombre: 'Pedicura' }, fotos: [], profesionalIds: [1, 2] },
       { id: 5, nombre: 'Combo mani + pedi', duracionMinutos: 105, precio: 24000, categoria: { id: 3, nombre: 'Promociones' }, fotos: [], profesionalIds: [1, 2] },
       { id: 2, nombre: 'Retiro de esmalte', duracionMinutos: 30, precio: 8000, categoria: null, fotos: [], profesionalIds: [1, 2] },
+    ],
+    // Ana 15:00-16:00 y Lucia 15:30-16:30: con "Cualquiera" no hay lugar para
+    // un turno de 75 min que arranque entre 14:30 y 15:30.
+    ocupados: [
+      { profesionalId: 1, desde: '15:00', hasta: '16:00' },
+      { profesionalId: 2, desde: '15:30', hasta: '16:30' },
     ],
   },
 };
@@ -194,6 +209,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
   };
 
   const estaLibre = (
+    s: MockSalon,
     p: Persistido,
     slug: string,
     profesionalId: number,
@@ -201,6 +217,9 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     inicio: number,
     duracion: number,
   ): boolean =>
+    !(s.ocupados ?? []).some(
+      (o) => o.profesionalId === profesionalId && aMinutos(o.desde) < inicio + duracion && aMinutos(o.hasta) > inicio,
+    ) &&
     !p.reservas.some((r) => {
       if (r.slug !== slug || r.profesionalId !== profesionalId || r.fecha !== fecha || !ocupa(r)) return false;
       const ri = aMinutos(r.hora);
@@ -249,7 +268,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     const slots: Availability['slots'] = [];
     for (let m = PRIMER_INICIO_MIN; m <= ULTIMO_INICIO_MIN; m += PASO_MIN) {
       if (m < minInicio) continue;
-      const libres = candidatos.filter((id) => estaLibre(p, slug, id, q.fecha, m, duracion));
+      const libres = candidatos.filter((id) => estaLibre(s, p, slug, id, q.fecha, m, duracion));
       if (libres.length > 0) slots.push({ hora: hhmm(m), profesionalIds: libres });
     }
     return { fecha: q.fecha, duracionTotalMinutos: duracion, slots };
