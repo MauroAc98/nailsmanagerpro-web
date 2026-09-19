@@ -34,6 +34,20 @@ describe('classifyTenant', () => {
     expect(classifyTenant(at('/legal/terminos'))).toBe('neutral');
   });
 
+  it('/reservar -> neutral', () => {
+    expect(classifyTenant(at('/reservar'))).toBe('neutral');
+  });
+
+  it('/reservar/{slug} y sus pasos -> neutral', () => {
+    expect(classifyTenant(at('/reservar/ana'))).toBe('neutral');
+    expect(classifyTenant(at('/reservar/ana/servicios'))).toBe('neutral');
+    expect(classifyTenant(at('/reservar/ana/reserva/42'))).toBe('neutral');
+  });
+
+  it('no confunde /reservarxyz con /reservar', () => {
+    expect(classifyTenant(at('/reservarxyz'))).toBe('protected');
+  });
+
   it('/cambiar-password -> change-pw', () => {
     expect(classifyTenant(at('/cambiar-password'))).toBe('change-pw');
   });

@@ -201,6 +201,16 @@ body {
   .mobile-only-notice {
     display: flex;
   }
+
+  /* Excepcion: el flujo publico de reserva online (/reservar/[slug]) tambien
+     se usa desde notebooks. PublicShell marca su raiz con .reserva-publica. */
+  .app-shell:has(.reserva-publica) {
+    display: block;
+  }
+
+  body:has(.reserva-publica) .mobile-only-notice {
+    display: none;
+  }
 }
 
 /* Agenda redesign palette — scoped to .agenda-light/.agenda-dark (applied on

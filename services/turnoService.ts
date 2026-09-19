@@ -25,6 +25,9 @@ export interface Turno {
   // eager-load de esa relación (a diferencia de `cliente`/`servicios`). Para
   // mostrar nombre/color hay que resolverlo contra useProfesionalStore.
   profesional_id?: number | null;
+  // Columna `origen` del turno: 'app' (cargado por el salon) o 'web' (reserva
+  // online de la clienta). Opcional: respuestas viejas o mocks pueden omitirla.
+  origen?: 'app' | 'web';
 }
 
 // Un evento real de WhatsApp automático de hoy (confirmación al agendar,

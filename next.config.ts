@@ -42,7 +42,7 @@ const apiHostEscapado = apiHostname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // "/api" (Laravel sirve /api/auth/..., no /auth/...); en local puede no
 // tenerlo. Va primero en el array porque workbox matchea en orden.
 const rutasSensiblesSinCache = new RegExp(
-  `^https://(connect\\.facebook\\.net/|${apiHostEscapado}/(api/)?(auth/|support-info($|\\?)|admin/))`
+  `^https://(connect\\.facebook\\.net/|${apiHostEscapado}/(api/)?(auth/|support-info($|\\?)|admin/|public/))`
 );
 
 // LocationIQ (Slice A del mapa de ubicación) — dos hosts, dos políticas

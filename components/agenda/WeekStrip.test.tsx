@@ -134,4 +134,34 @@ describe('WeekStrip', () => {
       expect(screen.queryByText('5')).toBeNull();
     });
   });
+
+  // Props opcionales para la reserva online (dias no reservables, puntos de
+  // disponibilidad y flechas deshabilitadas); la agenda propia no las usa.
+  describe('props opcionales de la reserva online', () => {
+    it('un dia deshabilitado no dispara onDayClick y queda disabled', () => {
+      const { onDayClick } = setup({ diaDeshabilitado: (f) => f < fecha(2026, 9, 16) });
+      const pasado = screen.getByTestId(`week-day-${fecha(2026, 9, 15)}`);
+      expect(pasado).toBeDisabled();
+      fireEvent.click(pasado);
+      expect(onDayClick).not.toHaveBeenCalled();
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 16)}`)).toBeEnabled();
+    });
+
+    it('dibuja un punto en los dias de diasConPunto (que no son el seleccionado)', () => {
+      setup({ turnosMes: [], diasConPunto: [fecha(2026, 9, 16), fecha(2026, 9, 14)] });
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 16)}`).querySelector('[data-punto]')).not.toBeNull();
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 17)}`).querySelector('[data-punto]')).toBeNull();
+      // el seleccionado (14) no lleva punto
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 14)}`).querySelector('[data-punto]')).toBeNull();
+    });
+
+    it('las flechas se pueden deshabilitar', () => {
+      const { onSemanaAnterior } = setup({ semanaAnteriorDeshabilitada: true, semanaSiguienteDeshabilitada: true });
+      const anterior = screen.getByRole('button', { name: 'Semana anterior' });
+      expect(anterior).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Semana siguiente' })).toBeDisabled();
+      fireEvent.click(anterior);
+      expect(onSemanaAnterior).not.toHaveBeenCalled();
+    });
+  });
 });

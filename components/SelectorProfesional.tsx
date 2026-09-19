@@ -44,6 +44,11 @@ interface Props {
   // Peso de fuente del label del pill. Default sin setear (historia-precios
   // no lo especifica). agenda/historia pasa 600.
   pillFontWeight?: number;
+  // Opcional: label de un pill inicial "todas/cualquiera" (con ícono de grupo)
+  // que queda seleccionado cuando selectedId es null y al tocarlo llama
+  // onSelect(null). Sin esta prop no se renderiza nada extra: los callers que
+  // no la usan (historia, historia-precios) no cambian.
+  todasLabel?: string;
 }
 
 // SelectorProfesional — pill picker compartido para elegir un profesional
@@ -57,14 +62,45 @@ interface Props {
 // diseño de referencia — se exponen en vez de forzar un único look.
 export default function SelectorProfesional({
   label, labelStyle, profesionales, selectedId, onSelect, toggleable = true,
-  selectedFg = '#FFF', unselectedBorderColor = colors.divider, pillFontWeight,
+  selectedFg = '#FFF', unselectedBorderColor = colors.divider, pillFontWeight, todasLabel,
 }: Props) {
+  const todasSel = selectedId === null;
   return (
     <div style={{ width: '100%', marginBottom: 14 }}>
       <p style={labelStyle ?? { margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: colors.subtext }}>
         {label}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {todasLabel !== undefined && (
+          <button
+            type="button"
+            aria-pressed={todasSel}
+            onClick={() => onSelect(null)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: pillFontWeight, cursor: 'pointer',
+              border: `1px solid ${todasSel ? colors.primarySolid : unselectedBorderColor}`,
+              backgroundColor: todasSel ? colors.primarySolid : colors.surface,
+              color: todasSel ? selectedFg : colors.text,
+            }}
+          >
+            {/* Ícono de grupo: distingue la opción agregadora de las profesionales puntuales. */}
+            <span style={{
+              width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: todasSel ? withAlpha(selectedFg, '3D') : withAlpha(colors.primary, '26'),
+            }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                stroke={todasSel ? selectedFg : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            {todasLabel}
+          </button>
+        )}
         {profesionales.map(p => {
           const selected = selectedId === p.id;
           const color    = p.color || colors.primary;
@@ -72,6 +108,7 @@ export default function SelectorProfesional({
             <button
               key={p.id}
               type="button"
+              aria-pressed={selected}
               onClick={() => onSelect(selected && toggleable ? null : p.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
