@@ -69,7 +69,7 @@ describe('mock: crear reserva', () => {
   it('sin profesionalId ("Cualquiera") el backend asigna la primera libre y la devuelve en el estado', async () => {
     const { svc } = escenario();
     await crearPendiente(svc, 'demo', entrada({ profesionalId: 1 })); // Ana ocupada a las 10:00
-    const { profesionalId: _omitida, ...sinProfesional } = entrada();
+    const sinProfesional = { ...entrada(), profesionalId: undefined };
     const r = await crearPendiente(svc, 'demo', sinProfesional);
     expect((await svc.getReservationStatus('demo', r.id)).summary.profesionalId).toBe(2);
   });
@@ -78,7 +78,7 @@ describe('mock: crear reserva', () => {
     const { svc } = escenario();
     await crearPendiente(svc, 'demo', entrada({ profesionalId: 1 }));
     await crearPendiente(svc, 'demo', entrada({ profesionalId: 2 }));
-    const { profesionalId: _omitida, ...sinProfesional } = entrada();
+    const sinProfesional = { ...entrada(), profesionalId: undefined };
     await expect(crearPendiente(svc, 'demo', sinProfesional)).rejects.toMatchObject({ code: 'slot_taken' });
   });
 
@@ -262,7 +262,7 @@ describe('mock: retencion del horario (hold) al elegirlo', () => {
   it('"Cualquiera" (sin profesionalId) se resuelve en ese momento: la primera libre', async () => {
     const { svc } = escenario();
     await svc.retenerHorario('demo', RETENER); // Ana retenida
-    const { profesionalId: _p, ...cualquiera } = RETENER;
+    const cualquiera = { ...RETENER, profesionalId: undefined };
     expect((await svc.retenerHorario('demo', cualquiera)).profesionalId).toBe(2);
   });
 

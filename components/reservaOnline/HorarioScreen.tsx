@@ -49,19 +49,19 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   useEffect(() => {
     if (!listo) return;
     const { hold, limpiarHold } = useReservaOnlineStore.getState();
-    if (!hold) {
-      setLiberado(true);
-      return;
-    }
-    getService()
-      .liberarHold(slug, hold.reservaId)
-      .catch(() => {
-        // un hold que ya no existe o vencio no bloquea elegir otro horario
-      })
-      .finally(() => {
-        limpiarHold();
-        setLiberado(true);
-      });
+    let vigente = true;
+    const previo = hold
+      ? getService()
+          .liberarHold(slug, hold.reservaId)
+          .catch(() => {
+            // un hold que ya no existe o vencio no bloquea elegir otro horario
+          })
+          .then(limpiarHold)
+      : Promise.resolve();
+    previo.then(() => vigente && setLiberado(true));
+    return () => {
+      vigente = false;
+    };
   }, [listo, slug]);
 
   const { data: salon } = useCarga(() => getService().getSalon(slug), slug);
