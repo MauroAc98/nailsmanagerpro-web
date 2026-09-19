@@ -101,8 +101,7 @@
     "minutos": "{minutos} min",
     "editar": "Editar",
     "guardar": "Salvar",
-    "guardado": "Salvo",
-    "sinQr": "O código QR chega em uma próxima versão."
+    "guardado": "Salvo"
   },
   "mp": {
     "connect": "Conectar Mercado Pago",

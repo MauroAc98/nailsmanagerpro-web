@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { AgendaThemeScope } from '@/components/AgendaThemeScope';
+import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 
 const OPCIONES = [
   {
@@ -60,6 +61,20 @@ const OPCIONES = [
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="19" x2="12" y2="5" />
         <polyline points="5 12 12 5 19 12" />
+      </svg>
+    ),
+  },
+  {
+    // Solo visible con la flag de reserva online prendida (ver OPCIONES_VISIBLES).
+    path: '/configuracion/reservas-online',
+    titleKey: 'reservasOnline',
+    grupo: 'negocio' as const,
+    soloConFlag: true,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
     ),
   },
@@ -126,6 +141,8 @@ const GRUPOS = ['negocio', 'cuenta', 'soporte'] as const;
 export default function ConfiguracionPage() {
   const router = useRouter();
   const t = useTranslations('configuracion.ConfiguracionPage');
+  const habilitada = reservaOnlineHabilitada();
+  const opciones = OPCIONES.filter(op => !('soloConFlag' in op) || habilitada);
 
   return (
     // AgendaThemeScope acá, no en un layout.tsx del segmento: /configuracion
@@ -142,7 +159,7 @@ export default function ConfiguracionPage() {
 
         <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}>
           {GRUPOS.map(grupo => {
-            const items = OPCIONES.filter(op => op.grupo === grupo);
+            const items = opciones.filter(op => op.grupo === grupo);
             return (
               <div key={grupo}>
                 <p style={{
