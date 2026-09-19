@@ -152,5 +152,21 @@
     "vencidoTitulo": "Seu horário foi liberado",
     "vencidoDetalle": "O tempo acabou e outra pessoa pode reservá-lo. Escolha outro horário para continuar.",
     "elegirOtro": "Escolher outro horário"
+  },
+  "fotos": {
+    "titulo": "Fotos dos seus trabalhos",
+    "ayuda": "As clientes as veem ao escolher este serviço. A primeira é a capa.",
+    "portada": "Capa",
+    "agregar": "Adicionar",
+    "agregarAria": "Adicionar fotos",
+    "quitar": "Remover foto {n}",
+    "moverIzquierda": "Mover foto {n} para a esquerda",
+    "moverDerecha": "Mover foto {n} para a direita",
+    "nota": "Use as setas para reordenar e o X para remover. Até {max} fotos.",
+    "maximo": "Você atingiu o máximo de {max} fotos.",
+    "grande": "A foto é grande demais. Tente outra mais leve.",
+    "fila": "Fotos dos seus trabalhos",
+    "filaAyuda": "Aparecem para as clientes ao reservar online.",
+    "sinFotos": "Ainda sem fotos"
   }
 }

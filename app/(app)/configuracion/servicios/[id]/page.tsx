@@ -12,6 +12,7 @@ import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCa
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
+import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -177,6 +178,9 @@ export default function EditarServicioPage() {
           </div>
           <PillToggle value={esPromo} onChange={setEsPromo} />
         </div>
+
+        {/* Fotos de trabajos (reserva online): la fila se oculta con la flag apagada. */}
+        <EntradaFotosServicio servicioId={id} onAbrir={() => router.push(`/configuracion/servicios/${id}/fotos`)} />
 
         {/* Button */}
         {/* categoriasLoading también deshabilita: fetchCategorias() (ahora
