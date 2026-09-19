@@ -55,16 +55,17 @@
     "notaAyuda": "Ajuda o salão a confirmar o valor final para você."
   },
   "resumen": {
-    "title": "Resumo",
-    "total": "Total",
-    "senaTitulo": "Sinal para confirmar",
-    "senaDetalle": "O restante ({resto}) você paga no salão. Você tem {minutos} minutos para pagar e garantir seu horário.",
+    "title": "Revise e confirme",
+    "senaTitulo": "Sinal para reservar",
+    "senaDetalle": "Faz parte do valor final. O restante é definido no salão conforme o seu design e pago lá.",
     "pagar": "Pagar sinal com",
     "pagando": "Criando sua reserva…",
-    "pagoSeguro": "Pagamento seguro · Você será redirecionada ao Mercado Pago",
-    "conProfesional": "{hora} · com {profesional} · {minutos} min",
-    "horarioTomado": "Esse horário acabou de ser ocupado. Escolha outro.",
-    "elegirOtro": "Escolher outro horário"
+    "pagoSeguro": "Pagamento seguro. Levamos você ao Mercado Pago.",
+    "conProfesional": "Com {profesional}",
+    "duracion": "Duração {duracion}",
+    "tuIdea": "Sua ideia",
+    "tiempoPagar": "Você tem {minutos} minutos para pagar e garantir o horário",
+    "cancelacion": "Cancelamento grátis até {horas} h antes"
   },
   "estado": {
     "confirmada": "Reserva confirmada",
