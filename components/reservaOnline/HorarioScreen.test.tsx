@@ -41,6 +41,22 @@ describe('HorarioScreen', () => {
   });
   afterEach(() => setServiceParaTests(null));
 
+  // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto que
+  // respeta la forma de la tarjeta de horarios (la unica parte que falta:
+  // selector de profesional y tira de semana no dependen de esta carga).
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    expect(screen.getByTestId('horario-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas los horarios estan listos', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    expect(screen.getByTestId('horario-skeleton')).toBeInTheDocument();
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(screen.queryByTestId('horario-skeleton')).toBeNull();
+  });
+
   it('si faltan servicios redirige al paso de servicios (guard)', async () => {
     limpiarFlujo();
     const ir = vi.fn();
