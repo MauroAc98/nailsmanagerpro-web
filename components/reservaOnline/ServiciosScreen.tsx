@@ -11,7 +11,7 @@ import { agendaColors as colors } from '@/theme/agendaColors';
 import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoMas, IcoReloj } from './iconos';
-import { BarraInferior, BotonPrimario, Mensaje, PasoHeader } from './ui';
+import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
 // Datos de la tarjeta: nombre, duracion y "Desde $X" (precio de referencia: el
 // valor final lo confirma el salon; el DTO no trae descripcion, asi que no se
@@ -49,6 +49,32 @@ function Circulo({ elegido }: { elegido: boolean }) {
     >
       {elegido ? <IcoCheck color={colors.primaryFg} size={15} sw={3} /> : <IcoMas color={colors.primaryDeep} sw={2.5} />}
     </span>
+  );
+}
+
+// Forma del layout real (tira de pastillas de filtro + tarjetas de servicio
+// con circulo de estado), para que no salte nada al llegar los servicios.
+function ServiciosSkeleton() {
+  return (
+    <div data-testid="servicios-skeleton">
+      <div style={{ display: 'flex', gap: 8, paddingBottom: 12 }}>
+        <Hueso w={64} h={30} r={999} />
+        <Hueso w={84} h={30} r={999} />
+        <Hueso w={72} h={30} r={999} />
+      </div>
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px 12px 12px', marginBottom: 10 }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Hueso w="60%" h={17} />
+            <Hueso w="40%" h={13} style={{ marginTop: 10 }} />
+          </div>
+          <Hueso w={32} h={32} r={16} />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -101,7 +127,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
           <button type="button" onClick={reintentar}>{t('comun.reintentar')}</button>
         </>
       )}
-      {cargando && !error && <Mensaje>{t('comun.cargando')}</Mensaje>}
+      {cargando && !error && <ServiciosSkeleton />}
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
       {hayFiltros && (
         <div

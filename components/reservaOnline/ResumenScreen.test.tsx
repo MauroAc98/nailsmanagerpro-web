@@ -28,6 +28,21 @@ describe('ResumenScreen', () => {
     await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/datos'));
   });
 
+  // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto que
+  // respeta la forma real (tarjeta de resumen + tarjeta de sena).
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    expect(screen.getByTestId('resumen-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas el resumen esta listo', async () => {
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    expect(screen.getByTestId('resumen-skeleton')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Revisá y confirmá' });
+    expect(screen.queryByTestId('resumen-skeleton')).toBeNull();
+  });
+
   it('muestra fecha, hora, duracion, servicios (sin precios), profesional y direccion del salon', async () => {
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByRole('heading', { name: 'Revisá y confirmá' })).toBeInTheDocument();

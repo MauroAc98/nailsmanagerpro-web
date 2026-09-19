@@ -27,9 +27,25 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { NoDisponibleAun } from './NoDisponibleAun';
-import { BarraInferior, BotonPrimario, Etiqueta, Mensaje, PasoHeader } from './ui';
+import { BarraInferior, BotonPrimario, Etiqueta, Hueso, Mensaje, PasoHeader } from './ui';
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Forma de la tarjeta de horarios (la unica parte que depende de esta carga:
+// el selector de profesional y la tira de semana ya se ven con datos reales
+// o directamente no se muestran, asi que no hace falta duplicarlos aca).
+function HorarioSkeleton() {
+  return (
+    <div data-testid="horario-skeleton" style={{ marginBottom: 14 }}>
+      <Hueso w={90} h={11} style={{ marginBottom: 8 }} />
+      <div style={{ padding: 16, borderRadius: 24, border: `1px solid ${colors.border}` }}>
+        <Hueso w="70%" h={13} style={{ margin: '0 auto 14px' }} />
+        <Hueso w="100%" h={132} r={12} />
+        <Hueso w="55%" h={13} style={{ margin: '10px auto 0' }} />
+      </div>
+    </div>
+  );
+}
 
 // Pantalla 3: profesional (selector compartido con la agenda), tira de semana con flechas y calendario
 // (la misma de la agenda de la profesional) y UNA rueda con los inicios libres
@@ -289,7 +305,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         />
       </div>
 
-      {cargando && <Mensaje>{t('comun.cargando')}</Mensaje>}
+      {cargando && <HorarioSkeleton />}
       {errorDeCarga && (
         <>
           <Mensaje tono="error">{t('horario.errorCarga')}</Mensaje>

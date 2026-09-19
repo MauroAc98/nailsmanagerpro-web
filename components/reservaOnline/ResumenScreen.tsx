@@ -14,7 +14,7 @@ import { useCarga, useGuardaPaso, useHold, type Ir } from './hooks';
 import { HoldVencido } from './HoldVencido';
 import { IcoBrillo, IcoCalendario, IcoCandado, IcoPin, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
-import { BarraInferior, BotonPrimario, HoldPill, Mensaje, PasoHeader, Tarjeta } from './ui';
+import { BarraInferior, BotonPrimario, HoldPill, Hueso, Mensaje, PasoHeader, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
 
@@ -34,6 +34,43 @@ function Fila({ icono, titulo, detalle }: { icono: ReactNode; titulo: string; de
         <div style={{ fontSize: 14.5, fontWeight: 700, color: colors.strong }}>{titulo}</div>
         {detalle && <div style={{ fontSize: 13, color: colors.sub, marginTop: 2, lineHeight: 1.4 }}>{detalle}</div>}
       </div>
+    </div>
+  );
+}
+
+// Fila de la tarjeta con huesos, misma forma que `Fila` (circulo + 2 lineas).
+function FilaHueso() {
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <Hueso w={34} h={34} r={17} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Hueso w="70%" h={14} />
+        <Hueso w="45%" h={12} style={{ marginTop: 8 }} />
+      </div>
+    </div>
+  );
+}
+
+// Forma del layout real (tarjeta de resumen con 3 filas + tarjeta de sena),
+// para que no salte nada al llegar los datos.
+function ResumenSkeleton() {
+  return (
+    <div data-testid="resumen-skeleton">
+      <Tarjeta estilo={{ borderRadius: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <FilaHueso />
+          <FilaHueso />
+          <FilaHueso />
+        </div>
+      </Tarjeta>
+      <div style={{ height: 12 }} />
+      <Tarjeta estilo={{ borderRadius: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Hueso w={110} h={14} />
+          <Hueso w={64} h={26} />
+        </div>
+        <Hueso w="85%" h={12} style={{ marginTop: 12 }} />
+      </Tarjeta>
     </div>
   );
 }
@@ -83,7 +120,7 @@ export function ResumenScreen({
   if (noDisponible) return <NoDisponibleAun />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
-  if (!data || !fecha || !hora || !hold) return <Mensaje>{t('comun.cargando')}</Mensaje>;
+  if (!data || !fecha || !hora || !hold) return <ResumenSkeleton />;
 
   const { salon, servicios, terminos } = data;
   const elegidos = servicios.filter((s) => servicioIds.includes(s.id));

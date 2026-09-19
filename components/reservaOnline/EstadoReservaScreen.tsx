@@ -15,7 +15,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAhora, useCarga, type Ir } from './hooks';
 import { IcoCalendario, IcoCheck, IcoPin, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
-import { BarraInferior, BotonPrimario, Mensaje, Tarjeta } from './ui';
+import { BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
 
@@ -28,6 +28,27 @@ const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1
 const tituloEstilo = { margin: '22px 0 8px', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, color: colors.strong } as const;
 const textoEstilo = { fontSize: 14.5, color: colors.sub, lineHeight: 1.5 } as const;
 const centrado = { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '70px 12px 0' } as const;
+
+// Esqueleto neutro: mientras carga no se sabe si la reserva esta pendiente,
+// confirmada o vencida, asi que no imita ninguna de esas formas puntuales;
+// solo el circulo/titulo centrados y la tarjeta que casi todas comparten.
+function EstadoReservaSkeleton() {
+  return (
+    <div data-testid="estado-reserva-skeleton">
+      <div style={centrado}>
+        <Hueso w={84} h={84} r={42} />
+        <Hueso w={180} h={22} style={{ marginTop: 22 }} />
+        <Hueso w={220} h={14} style={{ marginTop: 10 }} />
+      </div>
+      <div style={{ paddingTop: 26 }}>
+        <Tarjeta estilo={{ borderRadius: 16, padding: '14px 16px' }}>
+          <Hueso w="55%" h={16} />
+          <Hueso w="40%" h={13} style={{ marginTop: 8 }} />
+        </Tarjeta>
+      </div>
+    </div>
+  );
+}
 
 // Anillo circular con la cuenta regresiva mm:ss. `progreso` 0..1 = fraccion de
 // la ventana de pago que queda (el arco verde se vacia con el tiempo).
@@ -121,7 +142,7 @@ export function EstadoReservaScreen({
     if (error.code === 'creation_disabled') return <NoDisponibleAun />;
     return <Mensaje tono="error">{error.code === 'not_found' ? t('estado.noEncontrada') : t('errores.generico')}</Mensaje>;
   }
-  if (!data || !estado) return <Mensaje>{t('comun.cargando')}</Mensaje>;
+  if (!data || !estado) return <EstadoReservaSkeleton />;
 
   const { salon, servicios, terminos } = data;
   const resumen = estado.summary;

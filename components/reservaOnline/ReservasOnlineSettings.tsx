@@ -9,7 +9,7 @@ import { agendaColors as colors } from '@/theme/agendaColors';
 import { useCarga } from './hooks';
 import { LinkCompartir } from './LinkCompartir';
 import { MpConnectionCard } from './MpConnectionCard';
-import { Mensaje, Tarjeta } from './ui';
+import { Hueso, Mensaje, Tarjeta } from './ui';
 
 // Fila numerica editable: guarda al salir del campo; vacio/0/no numerico se
 // descarta y vuelve al valor guardado. `key={valor}` en el uso remonta la fila
@@ -59,6 +59,51 @@ function FilaAjuste({
   );
 }
 
+// Fila de ajuste con huesos, misma forma que `FilaAjuste` (etiqueta + valor).
+function FilaAjusteHueso() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
+      <Hueso w={140} h={14} />
+      <Hueso w={72} h={22} />
+    </div>
+  );
+}
+
+// Forma del layout real (tarjeta de switch, link para compartir, tarjeta de
+// Mercado Pago y tarjeta de ajustes numericos), para que no salte nada al
+// llegar los datos.
+function ReservasOnlineSettingsSkeleton() {
+  const separador = { height: 1, background: colors.border, margin: '6px 0' };
+  return (
+    <div data-testid="reservas-online-settings-skeleton" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Tarjeta estilo={{ padding: '14px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <Hueso w={140} h={15} />
+            <Hueso w={70} h={12} style={{ marginTop: 8 }} />
+          </div>
+          <Hueso w={42} h={24} r={12} />
+        </div>
+      </Tarjeta>
+      <Tarjeta estilo={{ padding: '14px 16px' }}>
+        <Hueso w="80%" h={15} />
+      </Tarjeta>
+      <Tarjeta estilo={{ padding: '14px 16px' }}>
+        <Hueso w="60%" h={15} />
+      </Tarjeta>
+      <Tarjeta estilo={{ padding: '14px 16px' }}>
+        <FilaAjusteHueso />
+        <div style={separador} />
+        <FilaAjusteHueso />
+        <div style={separador} />
+        <FilaAjusteHueso />
+        <div style={separador} />
+        <FilaAjusteHueso />
+      </Tarjeta>
+    </div>
+  );
+}
+
 // Cuerpo de Configuracion > Reservas online (mockup ConfigReservas). Todo
 // contra el mock de settings/MP del servicio (slice 1). `slug` es el del salon.
 export function ReservasOnlineSettings({ slug }: { slug: string }) {
@@ -71,7 +116,7 @@ export function ReservasOnlineSettings({ slug }: { slug: string }) {
   const [avisoMp, setAvisoMp] = useState(false);
 
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
-  if (!data) return <Mensaje>{t('comun.cargando')}</Mensaje>;
+  if (!data) return <ReservasOnlineSettingsSkeleton />;
 
   const { ajustes, mp } = data;
   const guardar = async (patch: Partial<Ajustes>) => {
