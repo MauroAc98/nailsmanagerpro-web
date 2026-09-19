@@ -21,8 +21,8 @@ const SALON = {
   profesionales: [{ id: 3, nombre: 'Ana' }],
 };
 const SERVICIOS = [
-  { id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000 },
-  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000 },
+  { id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000, categoria: { id: 2, nombre: 'Manicura' } },
+  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null },
 ];
 
 export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
@@ -73,6 +73,7 @@ describe('real: mapeo', () => {
       nombre: 'Esmaltado',
       duracionMinutos: 45,
       precio: 12000,
+      categoria: { id: 2, nombre: 'Manicura' },
       fotos: [],
     });
     const d = await r.getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
@@ -120,6 +121,12 @@ describe('real: campos que el backend todavia no tiene', () => {
   it('fotos de los servicios se mapea a [] (el backend aun no las expone)', async () => {
     const servicios = await nuevo().getServices('ana');
     expect(servicios.every((s) => Array.isArray(s.fotos) && s.fotos.length === 0)).toBe(true);
+  });
+
+  it('mapea la categoria del servicio (o null si no tiene)', async () => {
+    const servicios = await nuevo().getServices('ana');
+    expect(servicios[0].categoria).toEqual({ id: 2, nombre: 'Manicura' });
+    expect(servicios[1].categoria).toBeNull();
   });
 
   it('no hay endpoint de dias con disponibilidad: devuelve null y la UI no dibuja puntos', async () => {

@@ -16,6 +16,7 @@ interface ServicioDto {
   nombre: string;
   duracion_minutos: number;
   precio: number;
+  categoria?: { id: number; nombre: string } | null;
 }
 interface DisponibilidadDto {
   fecha: string;
@@ -35,6 +36,7 @@ const aServicio = (d: ServicioDto): BookableService => ({
   nombre: d.nombre,
   duracionMinutos: d.duracion_minutos,
   precio: Number(d.precio),
+  categoria: d.categoria ? { id: d.categoria.id, nombre: d.categoria.nombre } : null,
   // El backend todavia no expone fotos de servicios: se mapea a [].
   fotos: [],
 });

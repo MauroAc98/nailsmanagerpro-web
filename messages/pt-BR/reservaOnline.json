@@ -24,6 +24,9 @@
     "fotos": "{count, plural, one {# foto} other {# fotos}}",
     "verFotos": "Ver fotos de {nombre}",
     "notaPrecios": "Os preços são de referência: o valor final depende do design e é confirmado no salão.",
+    "filtroTodos": "Todos",
+    "filtroOtros": "Outros",
+    "filtrosAria": "Filtrar por categoria",
     "continuar": "Continuar · {count, plural, one {# serviço} other {# serviços}}"
   },
   "horario": {

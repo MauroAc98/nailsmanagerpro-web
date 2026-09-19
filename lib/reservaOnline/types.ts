@@ -22,9 +22,16 @@ export interface SalonInfo {
   profesionales: ProfesionalPublico[];
 }
 
+export interface ServicioCategoria {
+  id: number;
+  nombre: string;
+}
+
 export interface BookableService {
   id: number;
   nombre: string;
+  // Categoria del servicio en el salon (null/ausente = sin categoria).
+  categoria?: ServicioCategoria | null;
   duracionMinutos: number;
   // Precio de REFERENCIA ("Desde $X"): el valor final depende del diseno y lo
   // confirma el salon. Nunca se suma ni se muestra como total.
