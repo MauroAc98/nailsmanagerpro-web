@@ -29,10 +29,21 @@ export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
   return (config) => {
     const url = (config.url ?? '') + (config.params ? `?${JSON.stringify(config.params)}` : '');
     pedidos.push(url);
-    const [, , slug, recurso] = (config.url ?? '').split('/');
+    const [, , slug, recurso, sub] = (config.url ?? '').split('/');
     if (slug !== 'ana') return respuesta(config, 404, { message: 'No encontrado' });
     if (recurso === 'info') return respuesta(config, 200, SALON);
     if (recurso === 'servicios') return respuesta(config, 200, SERVICIOS);
+    if (recurso === 'disponibilidad' && sub === 'dias') {
+      const p = config.params as { desde: string; hasta: string; servicio_ids?: number[] };
+      if (!p.servicio_ids?.length || p.hasta < p.desde) return respuesta(config, 422, { message: 'invalido' });
+      // Contrato del backend: solo dias con al menos un inicio libre.
+      return respuesta(config, 200, {
+        dias: [
+          { fecha: '2026-09-22', libres: 3 },
+          { fecha: '2026-09-25', libres: 1 },
+        ],
+      });
+    }
     if (recurso === 'disponibilidad') {
       const p = config.params as { fecha: string; servicio_ids?: number[] };
       if (!p.servicio_ids?.length || p.fecha < '2026-09-19') {
@@ -129,8 +140,44 @@ describe('real: campos que el backend todavia no tiene', () => {
     expect(servicios[1].categoria).toBeNull();
   });
 
-  it('no hay endpoint de dias con disponibilidad: devuelve null y la UI no dibuja puntos', async () => {
-    const dias = await nuevo().getDiasConDisponibilidad('ana', { fechas: ['2026-09-25'], servicioIds: [7] });
-    expect(dias).toBeNull();
+  it('getDiasConDisponibilidad pide UN rango (min-max de las fechas) y devuelve las fechas pedidas con lugar', async () => {
+    const pedidos: string[] = [];
+    const dias = await nuevo(pedidos).getDiasConDisponibilidad('ana', {
+      fechas: ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25'],
+      servicioIds: [7, 9],
+      profesionalId: 3,
+    });
+    expect(dias).toEqual(['2026-09-22', '2026-09-25']);
+    expect(pedidos).toEqual([
+      '/public/ana/disponibilidad/dias?{"desde":"2026-09-21","hasta":"2026-09-25","servicio_ids":[7,9],"profesional_id":3}',
+    ]);
+  });
+
+  it('descarta las fechas del backend que no estaban entre las pedidas', async () => {
+    const dias = await nuevo().getDiasConDisponibilidad('ana', { fechas: ['2026-09-22', '2026-09-23'], servicioIds: [7] });
+    expect(dias).toEqual(['2026-09-22']);
+  });
+
+  it('sin fechas devuelve [] sin pedir nada', async () => {
+    const pedidos: string[] = [];
+    expect(await nuevo(pedidos).getDiasConDisponibilidad('ana', { fechas: [], servicioIds: [7] })).toEqual([]);
+    expect(pedidos).toEqual([]);
+  });
+
+  it('un rango de mas de 45 dias se parte en pedidos de 45 y se unen los resultados', async () => {
+    const pedidos: string[] = [];
+    const fechas = Array.from({ length: 50 }, (_, i) => new Date(Date.UTC(2026, 8, 20 + i)).toISOString().slice(0, 10));
+    await nuevo(pedidos).getDiasConDisponibilidad('ana', { fechas, servicioIds: [7] });
+    expect(pedidos).toHaveLength(2);
+  });
+
+  it('cualquier error (404, 422, red) devuelve null para que la UI degrade sin puntos', async () => {
+    expect(await nuevo().getDiasConDisponibilidad('nadie', { fechas: ['2026-09-25'], servicioIds: [7] })).toBeNull();
+    expect(await nuevo().getDiasConDisponibilidad('ana', { fechas: ['2026-09-25'], servicioIds: [] })).toBeNull();
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: () => Promise.reject(Object.assign(new Error('red'), { isAxiosError: true })),
+    });
+    expect(await createRealReads(http).getDiasConDisponibilidad('ana', { fechas: ['2026-09-25'], servicioIds: [7] })).toBeNull();
   });
 });

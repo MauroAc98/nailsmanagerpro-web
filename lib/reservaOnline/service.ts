@@ -22,8 +22,8 @@ export interface ReservaOnlineReads {
   getSalon(slug: string): Promise<SalonInfo>;
   getServices(slug: string, query?: ServicesQuery): Promise<BookableService[]>;
   getAvailability(slug: string, query: AvailabilityQuery): Promise<Availability>;
-  // Fechas con horarios libres; `null` = este origen no lo sabe (el real no
-  // tiene endpoint) y la UI no dibuja puntos de disponibilidad.
+  // Fechas con horarios libres; `null` = no se pudo saber (el real ante un error
+  // de red/servidor) y la UI no dibuja puntos y cae a buscar dia por dia.
   getDiasConDisponibilidad(slug: string, query: DiasQuery): Promise<Fecha[] | null>;
 }
 
