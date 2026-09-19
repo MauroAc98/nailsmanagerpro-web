@@ -1,4 +1,4 @@
-// Validacion de WhatsApp en formato E.164: '+' + codigo de ppais (sin 0
+// Validacion de WhatsApp en formato E.164: '+' + codigo de pais (sin 0
 // inicial) + numero, 8 a 15 digitos en total.
 const E164 = /^\+[1-9]\d{7,14}$/;
 
