@@ -19,6 +19,7 @@ const vacio = (): FlowData => ({
   hora: null,
   cliente: { nombre: '', apellido: '', whatsapp: '' },
   reservaId: null,
+  nota: '',
 });
 
 interface FlowState extends FlowData {
@@ -29,6 +30,7 @@ interface FlowState extends FlowData {
   setHorario: (fecha: Fecha, hora: Hora) => void;
   setCliente: (parcial: Partial<ClienteInput>) => void;
   setReservaId: (id: string) => void;
+  setNota: (nota: string) => void;
   // Reserva confirmada: limpia lo guardado y el estado (conserva el slug).
   confirmar: () => void;
   reiniciar: () => void;
@@ -41,6 +43,7 @@ const datosDe = (s: FlowState): FlowData => ({
   hora: s.hora,
   cliente: s.cliente,
   reservaId: s.reservaId,
+  nota: s.nota,
 });
 
 function leer(slug: string): FlowData | null {
@@ -82,6 +85,7 @@ export const useReservaOnlineStore = create<FlowState>((set, get) => {
     setHorario: (fecha, hora) => aplicar({ fecha, hora }),
     setCliente: (parcial) => aplicar({ cliente: { ...get().cliente, ...parcial } }),
     setReservaId: (id) => aplicar({ reservaId: id }),
+    setNota: (nota) => aplicar({ nota }),
     confirmar: () => {
       const { slug } = get();
       if (slug) escribir(slug, null);

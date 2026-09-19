@@ -8,7 +8,8 @@ const AHORA = Date.UTC(2026, 8, 19, 15, 0);
 // salones que no son `demo` (composicion: lecturas reales + escrituras mock).
 const lecturas: ReservaOnlineReads = {
   getSalon: async () => ({ nombre: 'Studio Ana', logoUrl: null, direccion: null, profesionales: [{ id: 3, nombre: 'Ana' }] }),
-  getServices: async () => [{ id: 7, nombre: 'Esmaltado', duracionMinutos: 45, precio: 12000 }],
+  getServices: async () => [{ id: 7, nombre: 'Esmaltado', duracionMinutos: 45, precio: 12000, fotos: [] }],
+  getDiasConDisponibilidad: async () => null,
   getAvailability: async (_s, q) => ({
     fecha: q.fecha,
     duracionTotalMinutos: 45,
@@ -32,11 +33,10 @@ describe('mock con salon real (lecturas inyectadas)', () => {
     expect((await nuevo(lecturas).getTerms('ana')).deposito).toBeGreaterThan(0);
   });
 
-  it('crea la reserva calculando total y duracion con los servicios reales', async () => {
+  it('crea la reserva calculando la duracion con los servicios reales', async () => {
     const svc = nuevo(lecturas);
     const r = await svc.createReservation('ana', input);
     const est = await svc.getReservationStatus('ana', r.id);
-    expect(est.summary.total).toBe(12000);
     expect(est.summary.duracionTotalMinutos).toBe(45);
   });
 

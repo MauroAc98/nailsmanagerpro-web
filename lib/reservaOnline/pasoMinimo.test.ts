@@ -8,6 +8,7 @@ const vacio: FlowData = {
   hora: null,
   cliente: { nombre: '', apellido: '', whatsapp: '' },
   reservaId: null,
+  nota: '',
 };
 
 const conServicios: FlowData = { ...vacio, servicioIds: [1] };

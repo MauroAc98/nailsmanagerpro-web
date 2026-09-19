@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { totalesDeServicios } from './totales';
+import { duracionDeServicios, formatearDuracion } from './totales';
 import type { BookableService } from './types';
 
 const svc = (id: number, duracionMinutos: number, precio: number): BookableService => ({
@@ -7,24 +7,37 @@ const svc = (id: number, duracionMinutos: number, precio: number): BookableServi
   nombre: `s${id}`,
   duracionMinutos,
   precio,
+  fotos: [],
 });
 
-describe('totalesDeServicios', () => {
+describe('duracionDeServicios', () => {
   const servicios = [svc(1, 45, 12000), svc(2, 30, 8000), svc(3, 60, 20000)];
 
-  it('suma precio y duracion de los servicios elegidos', () => {
-    expect(totalesDeServicios(servicios, [1, 3])).toEqual({ precio: 32000, duracionMinutos: 105 });
+  it('suma la duracion de los servicios elegidos (nunca el precio)', () => {
+    expect(duracionDeServicios(servicios, [1, 3])).toBe(105);
   });
 
-  it('sin seleccion devuelve ceros', () => {
-    expect(totalesDeServicios(servicios, [])).toEqual({ precio: 0, duracionMinutos: 0 });
+  it('sin seleccion devuelve cero', () => {
+    expect(duracionDeServicios(servicios, [])).toBe(0);
   });
 
   it('ignora ids que no estan en el catalogo', () => {
-    expect(totalesDeServicios(servicios, [2, 99])).toEqual({ precio: 8000, duracionMinutos: 30 });
+    expect(duracionDeServicios(servicios, [2, 99])).toBe(30);
   });
 
   it('no cuenta dos veces un id repetido', () => {
-    expect(totalesDeServicios(servicios, [1, 1])).toEqual({ precio: 12000, duracionMinutos: 45 });
+    expect(duracionDeServicios(servicios, [1, 1])).toBe(45);
+  });
+});
+
+describe('formatearDuracion', () => {
+  it('menos de una hora: solo minutos', () => {
+    expect(formatearDuracion(45)).toBe('45 min');
+  });
+  it('horas exactas: solo horas', () => {
+    expect(formatearDuracion(120)).toBe('2 h');
+  });
+  it('horas y minutos', () => {
+    expect(formatearDuracion(150)).toBe('2 h 30 min');
   });
 });

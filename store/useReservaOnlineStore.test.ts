@@ -67,6 +67,14 @@ describe('useReservaOnlineStore', () => {
     expect(store()).toMatchObject({ slug: 'ana', servicioIds: [], reservaId: null });
   });
 
+  it('setNota guarda la idea de la clienta y la persiste; confirmar la limpia', () => {
+    store().activarSlug('ana');
+    store().setNota('flores y dorado');
+    expect(JSON.parse(sessionStorage.getItem(claveFlujo('ana')) as string).nota).toBe('flores y dorado');
+    store().confirmar();
+    expect(store().nota).toBe('');
+  });
+
   it('un JSON corrupto en sessionStorage se ignora', () => {
     sessionStorage.setItem(claveFlujo('ana'), '{no-json');
     store().activarSlug('ana');

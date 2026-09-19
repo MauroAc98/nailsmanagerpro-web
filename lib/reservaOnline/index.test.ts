@@ -18,6 +18,7 @@ describe('composicion del servicio', () => {
       getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [] }),
       getServices: async () => [],
       getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
+      getDiasConDisponibilidad: async () => null,
     };
     const svc = componerServicio(mock, reales);
     expect((await svc.getSalon('ana')).nombre).toBe('Real');
@@ -40,9 +41,24 @@ describe('composicion del servicio', () => {
       getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [] }),
       getServices: async () => [],
       getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
+      getDiasConDisponibilidad: async () => null,
     };
     const svc = componerServicio(mock, reales);
     expect((await svc.getSalon('demo')).nombre).toBe('Studio Demo');
     expect((await svc.getSalon('ana')).nombre).toBe('Real');
+  });
+
+  it('getDiasConDisponibilidad: demo la calcula el mock; un salon real responde lo que sepan las lecturas reales (null = no sabe)', async () => {
+    const mock = createMockService({ storage: memoriaStorage() });
+    const reales: ReservaOnlineReads = {
+      getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [] }),
+      getServices: async () => [],
+      getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
+      getDiasConDisponibilidad: async () => null,
+    };
+    const svc = componerServicio(mock, reales);
+    const q = { fechas: ['2999-01-01'], servicioIds: [1] };
+    expect(await svc.getDiasConDisponibilidad('demo', q)).toEqual(['2999-01-01']);
+    expect(await svc.getDiasConDisponibilidad('ana', q)).toBeNull();
   });
 });

@@ -73,6 +73,7 @@ describe('real: mapeo', () => {
       nombre: 'Esmaltado',
       duracionMinutos: 45,
       precio: 12000,
+      fotos: [],
     });
     const d = await r.getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
     expect(d.duracionTotalMinutos).toBe(90);
@@ -112,5 +113,17 @@ describe('real: mapeo', () => {
       adapter: () => Promise.reject(Object.assign(new Error('red'), { isAxiosError: true })),
     });
     await expect(createRealReads(http).getSalon('ana')).rejects.toMatchObject({ code: 'unknown' });
+  });
+});
+
+describe('real: campos que el backend todavia no tiene', () => {
+  it('fotos de los servicios se mapea a [] (el backend aun no las expone)', async () => {
+    const servicios = await nuevo().getServices('ana');
+    expect(servicios.every((s) => Array.isArray(s.fotos) && s.fotos.length === 0)).toBe(true);
+  });
+
+  it('no hay endpoint de dias con disponibilidad: devuelve null y la UI no dibuja puntos', async () => {
+    const dias = await nuevo().getDiasConDisponibilidad('ana', { fechas: ['2026-09-25'], servicioIds: [7] });
+    expect(dias).toBeNull();
   });
 });

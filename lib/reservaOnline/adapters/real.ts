@@ -35,6 +35,8 @@ const aServicio = (d: ServicioDto): BookableService => ({
   nombre: d.nombre,
   duracionMinutos: d.duracion_minutos,
   precio: Number(d.precio),
+  // El backend todavia no expone fotos de servicios: se mapea a [].
+  fotos: [],
 });
 
 const aDisponibilidad = (d: DisponibilidadDto): Availability => ({
@@ -72,6 +74,10 @@ export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
       const params = query?.profesionalId ? { profesional_id: query.profesionalId } : undefined;
       const data = await pedir(() => http.get<ServicioDto[]>(`${base(slug)}/servicios`, { params }));
       return data.map(aServicio);
+    },
+    // No existe endpoint de dias con disponibilidad: no se inventan datos.
+    async getDiasConDisponibilidad() {
+      return null;
     },
     async getAvailability(slug, query) {
       const params: Record<string, unknown> = {

@@ -40,6 +40,12 @@ export function describeReadsContract(
       });
     });
 
+    it('getDiasConDisponibilidad devuelve null (no lo sabe) o un subconjunto de las fechas pedidas', async () => {
+      const fechas = [esc.fechaFutura, esc.fechaPasada];
+      const dias = await crear().getDiasConDisponibilidad(esc.slug, { fechas, servicioIds: esc.servicioIds });
+      if (dias !== null) for (const d of dias) expect(fechas).toContain(d);
+    });
+
     it('getServices devuelve servicios con la forma BookableService', async () => {
       const servicios = await crear().getServices(esc.slug);
       expect(servicios.length).toBeGreaterThan(0);
@@ -48,6 +54,7 @@ export function describeReadsContract(
         expect(typeof s.nombre).toBe('string');
         expect(s.duracionMinutos).toBeGreaterThan(0);
         expect(typeof s.precio).toBe('number');
+        expect(Array.isArray(s.fotos)).toBe(true);
       }
     });
 

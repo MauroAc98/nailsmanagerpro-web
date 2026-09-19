@@ -1,6 +1,7 @@
 import type {
   Availability,
   AvailabilityQuery,
+  Fecha,
   BookableService,
   CreateReservationInput,
   MpConnection,
@@ -11,6 +12,7 @@ import type {
   ReservationTerms,
   SalonInfo,
   ServicesQuery,
+  DiasQuery,
 } from './types';
 
 // Lecturas publicas: las unicas con backend real en el slice 1 (decision D5).
@@ -18,6 +20,9 @@ export interface ReservaOnlineReads {
   getSalon(slug: string): Promise<SalonInfo>;
   getServices(slug: string, query?: ServicesQuery): Promise<BookableService[]>;
   getAvailability(slug: string, query: AvailabilityQuery): Promise<Availability>;
+  // Fechas con horarios libres; `null` = este origen no lo sabe (el real no
+  // tiene endpoint) y la UI no dibuja puntos de disponibilidad.
+  getDiasConDisponibilidad(slug: string, query: DiasQuery): Promise<Fecha[] | null>;
 }
 
 // Escrituras y lado del salon: mock hasta los slices siguientes. Cada slice
@@ -33,7 +38,13 @@ export interface ReservaOnlineWrites {
   connectMp(): Promise<MpConnection>;
   disconnectMp(): Promise<MpConnection>;
   listOnlineBookings(): Promise<OnlineBooking[]>;
+  // Fotos de trabajos por servicio (lado del salon). Mock hasta que el backend
+  // tenga almacenamiento; el orden es el de la lista y la primera es la portada.
+  getFotosServicio(servicioId: number): Promise<string[]>;
+  saveFotosServicio(servicioId: number, fotos: string[]): Promise<string[]>;
 }
+
+export const MAX_FOTOS_SERVICIO = 12;
 
 export interface ReservaOnlineService extends ReservaOnlineReads, ReservaOnlineWrites {}
 

@@ -18,7 +18,7 @@ export const SLUGS_MOCK: readonly string[] = ['demo'];
 // Fuerza el mock para TODOS los slugs en desarrollo (build-time, inlineado).
 const forzarMock = (): boolean => process.env.NEXT_PUBLIC_RESERVA_ONLINE_MOCK === 'true';
 
-// Composicion: el mock lo implementa todo; las lecturas reales pisan sus 3
+// Composicion: el mock lo implementa todo; las lecturas reales pisan sus
 // metodos salvo para los slugs mock. Cada slice posterior mueve mas metodos al
 // lado real.
 export function componerServicio(
@@ -33,6 +33,8 @@ export function componerServicio(
     getSalon: (slug) => (esMock(slug) ? mock : reales).getSalon(slug),
     getServices: (slug, q) => (esMock(slug) ? mock : reales).getServices(slug, q),
     getAvailability: (slug, q) => (esMock(slug) ? mock : reales).getAvailability(slug, q),
+    getDiasConDisponibilidad: (slug, q) =>
+      (esMock(slug) ? mock : reales).getDiasConDisponibilidad(slug, q),
   };
 }
 

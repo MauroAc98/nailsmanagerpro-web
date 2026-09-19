@@ -11,6 +11,8 @@ export interface FlowData {
   hora: Hora | null;
   cliente: ClienteInput;
   reservaId: string | null;
+  // "Contanos tu idea" (opcional).
+  nota: string;
 }
 
 // Primer paso incompleto del flujo. Cada pagina redirige aca al montar, asi un

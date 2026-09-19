@@ -26,7 +26,12 @@ export interface BookableService {
   id: number;
   nombre: string;
   duracionMinutos: number;
+  // Precio de REFERENCIA ("Desde $X"): el valor final depende del diseno y lo
+  // confirma el salon. Nunca se suma ni se muestra como total.
   precio: number;
+  // Fotos de trabajos (urls, opcionales). El backend aun no las expone: el
+  // adapter real las mapea a [].
+  fotos: string[];
 }
 
 export interface AvailabilitySlot {
@@ -43,6 +48,13 @@ export interface Availability {
 
 export interface AvailabilityQuery {
   fecha: Fecha;
+  servicioIds: number[];
+  profesionalId?: number;
+}
+
+// Dias (fechas) entre `fechas` en los que hay al menos un horario libre.
+export interface DiasQuery {
+  fechas: Fecha[];
   servicioIds: number[];
   profesionalId?: number;
 }
@@ -71,6 +83,8 @@ export interface CreateReservationInput {
   fecha: Fecha;
   hora: Hora;
   cliente: ClienteInput;
+  // "Contanos tu idea": texto libre opcional (max ~300 caracteres).
+  nota?: string;
 }
 
 export type ReservationStatusValue = 'pending_payment' | 'confirmed' | 'expired' | 'cancelled';
@@ -87,15 +101,18 @@ export interface ReservationSummary {
   profesionalId: number;
   fecha: Fecha;
   hora: Hora;
-  total: number;
+  // Unico monto firme del flujo: la sena. No hay total (los precios son "desde").
   deposito: number;
   duracionTotalMinutos: number;
+  nota?: string;
 }
 
 export interface ReservationStatus {
   id: string;
   status: ReservationStatusValue;
   expiresAtMs: number;
+  // Para "Volver a Mercado Pago" mientras la reserva sigue pendiente.
+  checkoutUrl?: string;
   summary: ReservationSummary;
 }
 
@@ -119,4 +136,5 @@ export interface OnlineBooking {
   fecha: Fecha;
   hora: Hora;
   pagadaAtMs: number;
+  nota?: string;
 }

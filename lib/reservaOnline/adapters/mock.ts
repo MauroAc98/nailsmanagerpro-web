@@ -1,7 +1,8 @@
-import { ReservaOnlineError, type ReservaOnlineReads, type ReservaOnlineService } from '../service';
+import { MAX_FOTOS_SERVICIO, ReservaOnlineError, type ReservaOnlineReads, type ReservaOnlineService } from '../service';
 import type {
   Availability,
   AvailabilityQuery,
+  DiasQuery,
   BookableService,
   CreateReservationInput,
   Fecha,
@@ -55,6 +56,9 @@ export const aMinutos = (hora: string): number => {
   return h * 60 + m;
 };
 
+// Fotos de ejemplo: baldosas de gradiente ('placeholder:N', sin imagenes externas).
+const placeholders = (n: number): string[] => Array.from({ length: n }, (_, i) => `placeholder:${i}`);
+
 interface MockServicio extends BookableService {
   profesionalIds: number[]; // quienes lo ofrecen
 }
@@ -64,8 +68,13 @@ interface MockSalon {
   servicios: MockServicio[];
 }
 
-const APERTURA_MIN = 10 * 60;
-const CIERRE_MIN = 18 * 60;
+// Los horarios configurados por el salon definen un RANGO de inicios (primer y
+// ultimo inicio posibles), no una lista de turnos: la disponibilidad es la
+// grilla de inicios cada PASO_MIN entre ambos extremos (inclusive), menos los
+// que solapan un turno ocupado, una reserva pendiente o caen antes de ahora +
+// anticipacion. Espeja config('reservas.paso_minutos') del backend.
+const PRIMER_INICIO_MIN = 9 * 60;
+const ULTIMO_INICIO_MIN = 18 * 60;
 const PASO_MIN = 30;
 const MIN_MS = 60_000;
 
@@ -91,9 +100,9 @@ const SEED: Record<string, MockSalon> = {
       ],
     },
     servicios: [
-      { id: 1, nombre: 'Esmaltado semipermanente', duracionMinutos: 45, precio: 12000, profesionalIds: [1, 2] },
-      { id: 2, nombre: 'Retiro de esmalte', duracionMinutos: 30, precio: 8000, profesionalIds: [1, 2] },
-      { id: 3, nombre: 'Kapping gel', duracionMinutos: 90, precio: 20000, profesionalIds: [1] },
+      { id: 1, nombre: 'Esmaltado semipermanente', duracionMinutos: 45, precio: 12000, fotos: placeholders(4), profesionalIds: [1, 2] },
+      { id: 2, nombre: 'Retiro de esmalte', duracionMinutos: 30, precio: 8000, fotos: [], profesionalIds: [1, 2] },
+      { id: 3, nombre: 'Kapping gel', duracionMinutos: 90, precio: 20000, fotos: placeholders(6), profesionalIds: [1] },
     ],
   },
 };
@@ -107,8 +116,8 @@ interface ReservaGuardada {
   hora: string;
   clienteNombre: string;
   duracionTotalMinutos: number;
-  total: number;
   deposito: number;
+  nota?: string;
   createdAtMs: number;
   expiresAtMs: number;
   status: 'pending_payment' | 'confirmed' | 'cancelled';
@@ -120,6 +129,7 @@ interface Persistido {
   reservas: ReservaGuardada[];
   settings: ReservaOnlineSettings;
   mp: MpConnection;
+  fotosServicio: Record<number, string[]>;
 }
 
 const ESTADO_INICIAL = (): Persistido => ({
@@ -127,6 +137,7 @@ const ESTADO_INICIAL = (): Persistido => ({
   reservas: [],
   settings: { ...SETTINGS_DEFAULT },
   mp: { conectada: false, cuenta: null },
+  fotosServicio: {},
 });
 
 export interface MockOptions {
@@ -196,7 +207,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       .servicios.filter(
         (x) => query?.profesionalId === undefined || x.profesionalIds.includes(query.profesionalId),
       )
-      .map(({ id, nombre, duracionMinutos, precio }) => ({ id, nombre, duracionMinutos, precio }));
+      .map(({ id, nombre, duracionMinutos, precio, fotos }) => ({ id, nombre, duracionMinutos, precio, fotos: [...fotos] }));
 
   const resolverServicios = (s: MockSalon, ids: number[]): MockServicio[] => {
     if (ids.length === 0) throw new ReservaOnlineError('validation', 'servicio_ids');
@@ -226,12 +237,31 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
 
     const minInicio = q.fecha === hoy.fecha ? hoy.minutos + p.settings.anticipacionMinutos : 0;
     const slots: Availability['slots'] = [];
-    for (let m = APERTURA_MIN; m + duracion <= CIERRE_MIN; m += PASO_MIN) {
+    for (let m = PRIMER_INICIO_MIN; m <= ULTIMO_INICIO_MIN; m += PASO_MIN) {
       if (m < minInicio) continue;
       const libres = candidatos.filter((id) => estaLibre(p, slug, id, q.fecha, m, duracion));
       if (libres.length > 0) slots.push({ hora: hhmm(m), profesionalIds: libres });
     }
     return { fecha: q.fecha, duracionTotalMinutos: duracion, slots };
+  };
+
+  // Solo el mock conoce la agenda completa: marca los dias con al menos un horario libre.
+  const getDiasConDisponibilidad = async (slug: string, q: DiasQuery): Promise<Fecha[] | null> => {
+    const con: Fecha[] = [];
+    for (const fecha of q.fechas) {
+      try {
+        const disp = await getAvailability(slug, {
+          fecha,
+          servicioIds: q.servicioIds,
+          profesionalId: q.profesionalId,
+        });
+        if (disp.slots.length > 0) con.push(fecha);
+      } catch (e) {
+        // fecha pasada (validation): sin disponibilidad; cualquier otro error se propaga
+        if (!(e instanceof ReservaOnlineError && e.code === 'validation')) throw e;
+      }
+    }
+    return con;
   };
 
   const getTerms = async (slug: string): Promise<ReservationTerms> => {
@@ -254,19 +284,16 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       servicioIds: input.servicioIds,
       profesionalId: input.profesionalId,
     };
-    let servicios: BookableService[];
     let disp: Availability;
     if (SEED[slug]) {
-      servicios = resolverServicios(SEED[slug], input.servicioIds);
+      resolverServicios(SEED[slug], input.servicioIds); // valida los ids
       // Reusa la disponibilidad: valida profesional/fecha y decide si el horario sigue libre.
       disp = await getAvailability(slug, consulta);
     } else if (opts.lecturas) {
       const todos = await opts.lecturas.getServices(slug);
-      servicios = input.servicioIds.map((id) => {
-        const x = todos.find((y) => y.id === id);
-        if (!x) throw new ReservaOnlineError('validation', 'servicio_ids');
-        return x;
-      });
+      for (const id of input.servicioIds) {
+        if (!todos.some((y) => y.id === id)) throw new ReservaOnlineError('validation', 'servicio_ids');
+      }
       disp = await opts.lecturas.getAvailability(slug, consulta);
     } else {
       throw new ReservaOnlineError('not_found', `salon ${slug}`);
@@ -287,8 +314,8 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       hora: input.hora,
       clienteNombre: `${input.cliente.nombre} ${input.cliente.apellido}`.trim(),
       duracionTotalMinutos: disp.duracionTotalMinutos,
-      total: servicios.reduce((a, x) => a + x.precio, 0),
       deposito: p.settings.deposito,
+      nota: input.nota?.trim() || undefined,
       createdAtMs,
       expiresAtMs,
       status: 'pending_payment',
@@ -310,14 +337,15 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       id: r.id,
       status: estadoEfectivo(r),
       expiresAtMs: r.expiresAtMs,
+      checkoutUrl: `/reservar/${slug}/reserva/${r.id}?mock=1`,
       summary: {
         servicioIds: r.servicioIds,
         profesionalId: r.profesionalId,
         fecha: r.fecha,
         hora: r.hora,
-        total: r.total,
         deposito: r.deposito,
         duracionTotalMinutos: r.duracionTotalMinutos,
+        nota: r.nota,
       },
     };
   };
@@ -366,12 +394,26 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
         fecha: r.fecha,
         hora: r.hora,
         pagadaAtMs: r.pagadaAtMs as number,
+        nota: r.nota,
       }));
+
+  const getFotosServicio = async (servicioId: number): Promise<string[]> => [
+    ...(cargar().fotosServicio[servicioId] ?? []),
+  ];
+
+  const saveFotosServicio = async (servicioId: number, fotos: string[]): Promise<string[]> => {
+    if (fotos.length > MAX_FOTOS_SERVICIO) throw new ReservaOnlineError('validation', 'fotos');
+    const p = cargar();
+    p.fotosServicio = { ...p.fotosServicio, [servicioId]: [...fotos] };
+    guardar(p);
+    return [...fotos];
+  };
 
   return {
     getSalon,
     getServices,
     getAvailability,
+    getDiasConDisponibilidad,
     getTerms,
     createReservation,
     getReservationStatus,
@@ -382,6 +424,8 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     connectMp: () => setMp({ conectada: true, cuenta: 'cuenta-demo@turnetto.com' }),
     disconnectMp: () => setMp({ conectada: false, cuenta: null }),
     listOnlineBookings,
+    getFotosServicio,
+    saveFotosServicio,
     simulatePayment,
   };
 }

@@ -43,9 +43,60 @@ describe('mock: lecturas', () => {
     expect(disp.duracionTotalMinutos).toBe(75);
   });
 
-  it('no ofrece slots cuyo fin excede el cierre (18:00)', async () => {
+  it('los horarios son una grilla de inicios de 09:00 a 18:00 inclusive cada 30 min (rango, no lista)', async () => {
     const disp = await nuevo().getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1, 2] });
-    const ultima = disp.slots[disp.slots.length - 1].hora; // 75 min -> ultimo inicio 16:30
-    expect(ultima).toBe('16:30');
+    const horas = disp.slots.map((s) => s.hora);
+    expect(horas[0]).toBe('09:00');
+    expect(horas[horas.length - 1]).toBe('18:00'); // el ultimo inicio no depende de la duracion
+    expect(horas).toHaveLength(19);
+    expect(horas.every((h) => h.endsWith(':00') || h.endsWith(':30'))).toBe(true);
+  });
+
+  it('un turno ocupado quita todo inicio cuyo intervalo lo solapa, y el adyacente sigue libre', async () => {
+    const svc = nuevo();
+    // Ana 10:00-10:45 (45 min): con un servicio de 45 min quedan fuera 09:30 (solapa) y 10:00, 10:30;
+    // 09:00 (termina 09:45) y 11:00 (arranca despues del fin) quedan libres.
+    await svc.createReservation('demo', {
+      servicioIds: [1],
+      profesionalId: 1,
+      fecha: '2026-09-25',
+      hora: '10:00',
+      cliente: { nombre: 'A', apellido: 'B', whatsapp: '+5491155551234' },
+    });
+    const disp = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1], profesionalId: 1 });
+    const horas = disp.slots.map((s) => s.hora);
+    expect(horas).toContain('09:00');
+    expect(horas).not.toContain('09:30');
+    expect(horas).not.toContain('10:00');
+    expect(horas).not.toContain('10:30');
+    expect(horas).toContain('11:00');
+  });
+
+  it('Cualquiera fusiona por hora: un inicio sigue si al menos una profesional esta libre', async () => {
+    const svc = nuevo();
+    await svc.createReservation('demo', {
+      servicioIds: [1],
+      profesionalId: 1,
+      fecha: '2026-09-25',
+      hora: '10:00',
+      cliente: { nombre: 'A', apellido: 'B', whatsapp: '+5491155551234' },
+    });
+    const disp = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1] });
+    const diez = disp.slots.find((s) => s.hora === '10:00');
+    expect(diez?.profesionalIds).toEqual([2]);
+  });
+
+  it('getDiasConDisponibilidad excluye fechas pasadas y dias sin horarios', async () => {
+    const dias = await nuevo().getDiasConDisponibilidad('demo', {
+      fechas: ['2026-09-18', '2026-09-19', '2026-09-25'],
+      servicioIds: [1],
+    });
+    expect(dias).toEqual(['2026-09-19', '2026-09-25']);
+  });
+
+  it('los servicios sembrados traen fotos (placeholders) o vacio', async () => {
+    const servicios = await nuevo().getServices('demo');
+    expect(servicios.find((s) => s.id === 1)?.fotos.length).toBeGreaterThan(1);
+    expect(servicios.find((s) => s.id === 2)?.fotos).toEqual([]);
   });
 });

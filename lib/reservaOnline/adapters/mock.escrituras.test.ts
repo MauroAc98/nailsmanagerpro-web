@@ -30,11 +30,12 @@ describe('mock: crear reserva', () => {
     expect(r.checkoutUrl).toContain(r.id);
   });
 
-  it('el resumen refleja total, sena y duracion', async () => {
+  it('el resumen refleja sena y duracion, y nunca un total', async () => {
     const { svc } = escenario();
     const r = await svc.createReservation('demo', entrada({ servicioIds: [1, 2] }));
     const st = await svc.getReservationStatus('demo', r.id);
-    expect(st.summary).toMatchObject({ total: 20000, duracionTotalMinutos: 75, hora: '10:00' });
+    expect(st.summary).toMatchObject({ duracionTotalMinutos: 75, hora: '10:00' });
+    expect(st.summary).not.toHaveProperty('total');
     expect(st.summary.deposito).toBeGreaterThan(0);
   });
 
@@ -177,4 +178,40 @@ describe('mock: ajustes, Mercado Pago y reservas online', () => {
     expect(lista.map((x) => x.id)).toEqual([b.id, a.id]);
     expect(lista[0]).toMatchObject({ clienteNombre: 'Sofi Gomez', fecha: '2026-09-25', hora: '14:00' });
   });
+
+  it('la nota "Contanos tu idea" viaja en la reserva y llega al estado y al aviso del salon', async () => {
+    const { svc } = escenario();
+    const r = await svc.createReservation('demo', entrada({ nota: 'flores y dorado' }));
+    expect((await svc.getReservationStatus('demo', r.id)).summary.nota).toBe('flores y dorado');
+    await svc.simulatePayment(r.id);
+    expect((await svc.listOnlineBookings())[0].nota).toBe('flores y dorado');
+  });
+
+  it('el estado expone la URL de checkout para "Volver a Mercado Pago"', async () => {
+    const { svc } = escenario();
+    const r = await svc.createReservation('demo', entrada());
+    expect((await svc.getReservationStatus('demo', r.id)).checkoutUrl).toBe(r.checkoutUrl);
+  });
 });
+
+describe('mock: fotos de servicios (lado del salon)', () => {
+  it('sin fotos guardadas devuelve []', async () => {
+    const { svc } = escenario();
+    expect(await svc.getFotosServicio(99)).toEqual([]);
+  });
+
+  it('guarda y relee la lista (orden incluido) por servicio', async () => {
+    const { svc, crear } = escenario();
+    await svc.saveFotosServicio(5, ['data:a', 'data:b']);
+    await svc.saveFotosServicio(6, ['data:z']);
+    expect(await crear().getFotosServicio(5)).toEqual(['data:a', 'data:b']);
+    expect(await crear().getFotosServicio(6)).toEqual(['data:z']);
+  });
+
+  it('respeta el maximo de 12 fotos', async () => {
+    const { svc } = escenario();
+    const trece = Array.from({ length: 13 }, (_, i) => `data:${i}`);
+    await expect(svc.saveFotosServicio(5, trece)).rejects.toMatchObject({ code: 'validation' });
+  });
+});
+
