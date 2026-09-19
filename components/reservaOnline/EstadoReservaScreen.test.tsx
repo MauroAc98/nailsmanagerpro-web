@@ -30,6 +30,21 @@ describe('EstadoReservaScreen', () => {
     return ir;
   };
 
+  // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto neutro
+  // (no se sabe el estado todavia, asi que no imita pendiente/confirmado/vencido).
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    montar();
+    expect(screen.getByTestId('estado-reserva-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas el estado esta listo', async () => {
+    montar();
+    expect(screen.getByTestId('estado-reserva-skeleton')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Esperando tu pago' });
+    expect(screen.queryByTestId('estado-reserva-skeleton')).toBeNull();
+  });
+
   describe('esperando el pago', () => {
     it('titulo, explicacion y resumen corto con la sena (sin total)', async () => {
       montar();
