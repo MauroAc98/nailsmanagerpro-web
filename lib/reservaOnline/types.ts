@@ -13,6 +13,9 @@ export type Hora = string; // 'HH:MM'
 export interface ProfesionalPublico {
   id: number;
   nombre: string;
+  // Avatar circular de esta profesional — null si todavia no subio uno
+  // (EntryScreen/HorarioScreen caen a la inicial via el componente Avatar).
+  avatarUrl: string | null;
 }
 
 export interface SalonInfo {
@@ -36,8 +39,9 @@ export interface BookableService {
   // Precio de REFERENCIA ("Desde $X"): el valor final depende del diseno y lo
   // confirma el salon. Nunca se suma ni se muestra como total.
   precio: number;
-  // Fotos de trabajos (urls, opcionales). El backend aun no las expone: el
-  // adapter real las mapea a [].
+  // Fotos de trabajos del portafolio de este servicio — urls absolutas,
+  // ordenadas (la primera es la portada). El adapter real las mapea
+  // directamente desde GET /api/public/{slug}/servicios.
   fotos: string[];
 }
 

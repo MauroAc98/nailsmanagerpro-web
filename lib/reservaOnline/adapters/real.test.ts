@@ -18,11 +18,14 @@ const SALON = {
   nombre: 'Studio Ana',
   logo_url: null,
   direccion: 'Av. X 123',
-  profesionales: [{ id: 3, nombre: 'Ana' }],
+  profesionales: [{ id: 3, nombre: 'Ana', avatar_url: 'https://cdn.test/ana.png' }],
 };
 const SERVICIOS = [
-  { id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000, categoria: { id: 2, nombre: 'Manicura' } },
-  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null },
+  {
+    id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000,
+    categoria: { id: 2, nombre: 'Manicura' }, fotos: ['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg'],
+  },
+  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null, fotos: [] },
 ];
 
 export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
@@ -79,13 +82,14 @@ describe('real: mapeo', () => {
   it('mapea snake_case a camelCase', async () => {
     const r = nuevo();
     expect((await r.getSalon('ana')).logoUrl).toBeNull();
+    expect((await r.getSalon('ana')).profesionales[0]).toEqual({ id: 3, nombre: 'Ana', avatarUrl: 'https://cdn.test/ana.png' });
     expect((await r.getServices('ana'))[0]).toEqual({
       id: 7,
       nombre: 'Esmaltado',
       duracionMinutos: 45,
       precio: 12000,
       categoria: { id: 2, nombre: 'Manicura' },
-      fotos: [],
+      fotos: ['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg'],
     });
     const d = await r.getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
     expect(d.duracionTotalMinutos).toBe(90);
@@ -128,10 +132,21 @@ describe('real: mapeo', () => {
   });
 });
 
-describe('real: campos que el backend todavia no tiene', () => {
-  it('fotos de los servicios se mapea a [] (el backend aun no las expone)', async () => {
+describe('real: fotos y avatar', () => {
+  it('mapea las fotos del servicio tal como las devuelve el backend (urls ordenadas)', async () => {
     const servicios = await nuevo().getServices('ana');
-    expect(servicios.every((s) => Array.isArray(s.fotos) && s.fotos.length === 0)).toBe(true);
+    expect(servicios[0].fotos).toEqual(['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg']);
+    expect(servicios[1].fotos).toEqual([]);
+  });
+
+  it('avatar_url null se mapea a avatarUrl: null', async () => {
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) =>
+        respuesta(config, 200, { ...SALON, profesionales: [{ id: 3, nombre: 'Ana', avatar_url: null }] }),
+    });
+    const salon = await createRealReads(http).getSalon('ana');
+    expect(salon.profesionales[0].avatarUrl).toBeNull();
   });
 
   it('mapea la categoria del servicio (o null si no tiene)', async () => {

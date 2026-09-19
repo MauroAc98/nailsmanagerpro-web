@@ -110,8 +110,8 @@ const SEED: Record<string, MockSalon> = {
       logoUrl: null,
       direccion: 'Av. Siempreviva 742',
       profesionales: [
-        { id: 1, nombre: 'Ana' },
-        { id: 2, nombre: 'Lucía' },
+        { id: 1, nombre: 'Ana', avatarUrl: null },
+        { id: 2, nombre: 'Lucía', avatarUrl: null },
       ],
     },
     servicios: [
