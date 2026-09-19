@@ -11,6 +11,8 @@ import ColorSwatchPicker from '@/components/ColorSwatchPicker';
 import { profesionalPalette } from '@/theme/colors';
 import { alertDialog } from '@/store/useConfirmStore';
 import { SelectorServicios } from '@/components/SelectorServicios';
+import WeekdayPicker from '@/components/WeekdayPicker';
+import { diasAtencionParaGuardar } from '@/lib/diasAtencionParaGuardar';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -33,6 +35,10 @@ export default function NuevoProfesionalPage() {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [color, setColor] = useState<string>(profesionalPalette[0]);
+  // Vacío = "atiende todos los días" al guardar (se envía `null`, ver
+  // handleGuardar) — mismo criterio que el default del backend cuando se
+  // omite el campo en el alta.
+  const [diasAtencion, setDiasAtencion] = useState<number[]>([]);
   const [servicioIds, setServicioIds] = useState<number[]>([]);
   const [errorNombre, setErrorNombre] = useState('');
   const [saving, setSaving] = useState(false);
@@ -66,6 +72,7 @@ export default function NuevoProfesionalPage() {
       apellido: apellido.trim() || undefined,
       color,
       servicio_ids: servicioIds,
+      dias_atencion: diasAtencionParaGuardar(diasAtencion),
     });
     setSaving(false);
 
@@ -118,6 +125,13 @@ export default function NuevoProfesionalPage() {
         <div>
           <label style={labelStyle}>{t('colorLabel')}</label>
           <ColorSwatchPicker value={color} onChange={setColor} />
+        </div>
+
+        {/* Días que atiende */}
+        <div>
+          <label style={labelStyle}>{t('workingDaysLabel')}</label>
+          <WeekdayPicker value={diasAtencion} onChange={setDiasAtencion} />
+          <p style={{ margin: '6px 0 0 2px', fontSize: 12, color: colors.subtext }}>{t('workingDaysHint')}</p>
         </div>
 
         {/* Servicios */}
