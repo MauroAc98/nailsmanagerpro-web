@@ -1,37 +1,120 @@
 {
   "entry": {
     "cta": "Reservar horário",
-    "howItWorksTitle": "Como funciona"
+    "howItWorksTitle": "Como funciona",
+    "step1": "Escolha seus serviços, o dia e a hora",
+    "step2": "Pague um sinal para garantir seu lugar",
+    "step3": "Pronto: seu horário fica confirmado na hora",
+    "depositNote": "O sinal é descontado do total do seu atendimento."
+  },
+  "comun": {
+    "volver": "Voltar",
+    "continuar": "Continuar",
+    "cargando": "Carregando…",
+    "reintentar": "Tentar de novo"
   },
   "servicios": {
-    "title": "Escolha seus serviços"
+    "title": "Escolha seus serviços",
+    "resumen": "{count, plural, one {# serviço} other {# serviços}} · {minutos} min",
+    "vacio": "Este salão ainda não tem serviços para reservar online.",
+    "sinSeleccion": "Escolha pelo menos um serviço"
   },
   "horario": {
-    "title": "Escolha dia e horário"
+    "title": "Dia e hora",
+    "conQuien": "Com quem",
+    "cualquiera": "Qualquer uma",
+    "verMasDias": "Ver mais dias",
+    "horarios": "Horários · {dia}",
+    "duracion": "Seu atendimento dura {minutos} min",
+    "sinHorarios": "Não há horários livres neste dia. Tente outro.",
+    "errorCarga": "Não conseguimos carregar os horários."
   },
   "datos": {
-    "title": "Seus dados"
+    "title": "Seus dados",
+    "nombre": "Nome",
+    "apellido": "Sobrenome",
+    "whatsapp": "WhatsApp",
+    "whatsappAyuda": "Enviamos a confirmação e o lembrete por aqui.",
+    "privacidad": "Usamos seu número somente para gerenciar seu horário."
   },
   "resumen": {
-    "title": "Resumo da sua reserva"
+    "title": "Resumo",
+    "total": "Total",
+    "senaTitulo": "Sinal para confirmar",
+    "senaDetalle": "O restante ({resto}) você paga no salão. Você tem {minutos} minutos para pagar e garantir seu horário.",
+    "pagar": "Pagar sinal com",
+    "pagando": "Criando sua reserva…",
+    "pagoSeguro": "Pagamento seguro · Você será redirecionada ao Mercado Pago",
+    "conProfesional": "{hora} · com {profesional} · {minutos} min",
+    "horarioTomado": "Esse horário acabou de ser ocupado. Escolha outro.",
+    "elegirOtro": "Escolher outro horário"
   },
   "estado": {
     "confirmada": "Reserva confirmada",
     "vencida": "O prazo de pagamento venceu",
-    "pendiente": "Aguardando o pagamento"
+    "pendiente": "Aguardando o pagamento",
+    "confirmadaTitulo": "Horário confirmado!",
+    "confirmadaDetalle": "Esperamos você em {salon}. Enviamos os detalhes por WhatsApp.",
+    "senaPagada": "Sinal pago",
+    "restaAbonar": "Falta pagar no salão",
+    "agendar": "Agendar",
+    "comoLlegar": "Como chegar",
+    "cancelarNota": "Não pode vir? Cancele ou remarque pelo link que enviamos por WhatsApp, até {horas} h antes.",
+    "vencidaTitulo": "O prazo de pagamento venceu",
+    "vencidaDetalle": "Liberamos o horário das {hora} porque não recebemos o sinal. Você pode tentar de novo.",
+    "elegirOtro": "Escolher outro horário",
+    "volverInicio": "Voltar ao início",
+    "pendienteTitulo": "Aguardando o pagamento do sinal",
+    "pendienteDetalle": "Você tem {restante} para concluir o pagamento e garantir seu horário.",
+    "canceladaTitulo": "Esta reserva foi cancelada",
+    "noEncontrada": "Não encontramos esta reserva."
+  },
+  "dev": {
+    "titulo": "Somente desenvolvimento",
+    "simularPago": "Simular pagamento aprovado",
+    "nota": "O Mercado Pago ainda não está conectado: esta reserva é simulada."
   },
   "errores": {
-    "generico": "Não foi possível concluir a operação. Tente novamente.",
+    "generico": "Não conseguimos concluir a operação. Tente de novo.",
     "noEncontrado": "Não encontramos este salão.",
-    "whatsappInvalido": "Informe um WhatsApp válido com código do país, por exemplo +5491155551234."
+    "whatsappInvalido": "Informe um WhatsApp válido com código do país, por exemplo +5511955551234."
   },
   "settings": {
-    "title": "Reservas online"
+    "title": "Reservas online",
+    "subtitle": "Suas clientes reservam sozinhas e pagam o sinal",
+    "aceptar": "Aceitar reservas online",
+    "activo": "Ativo",
+    "inactivo": "Inativo",
+    "necesitaMp": "Conecte o Mercado Pago para poder ativá-las.",
+    "linkTitulo": "Seu link para compartilhar",
+    "linkBloqueado": "O link é habilitado quando você ativa as reservas e conecta o Mercado Pago.",
+    "copiar": "Copiar",
+    "copiado": "Copiado",
+    "enviar": "Enviar",
+    "mensajeWhatsapp": "Reserve seu horário online aqui: {link}",
+    "senia": "Sinal",
+    "ventanaPago": "Tempo para pagar",
+    "anticipacion": "Reservar com antecedência",
+    "anticipacionValor": "{horas} h",
+    "cancelacion": "Cancelamento grátis até",
+    "cancelacionValor": "{horas} h antes",
+    "minutos": "{minutos} min",
+    "editar": "Editar",
+    "guardar": "Salvar",
+    "guardado": "Salvo",
+    "sinQr": "O código QR chega em uma próxima versão."
   },
   "mp": {
-    "connect": "Conectar Mercado Pago"
+    "connect": "Conectar Mercado Pago",
+    "titulo": "Mercado Pago",
+    "conectada": "Conectada · {cuenta}",
+    "noConectada": "Não conectada",
+    "desconectar": "Desconectar",
+    "nota": "O sinal vai direto para a sua conta. O Turnetto não mexe no seu dinheiro."
   },
   "agenda": {
-    "badge": "Reserva online"
+    "badge": "Reserva online",
+    "aviso": "{nombre} reservou e pagou o sinal",
+    "avisoDetalle": "{fecha} {hora}"
   }
 }
