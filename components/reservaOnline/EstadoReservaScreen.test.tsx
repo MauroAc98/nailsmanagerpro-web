@@ -3,6 +3,7 @@ import { renderWithProviders, screen, waitFor, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
+import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { EstadoReservaScreen } from './EstadoReservaScreen';
 import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
@@ -178,5 +179,17 @@ describe('EstadoReservaScreen', () => {
     await svc.cancelReservation('demo', 'mock-1');
     montar();
     expect(await screen.findByText('Esta reserva fue cancelada')).toBeInTheDocument();
+  });
+
+  it('si el kill switch del backend esta apagado (creation_disabled) muestra la pantalla completa de "no disponible", nunca "no encontramos esta reserva"', async () => {
+    setServiceParaTests({
+      ...svc,
+      getReservationStatus: async () => {
+        throw new ReservaOnlineError('creation_disabled');
+      },
+    });
+    montar();
+    expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
+    expect(screen.queryByText('No encontramos esta reserva.')).toBeNull();
   });
 });

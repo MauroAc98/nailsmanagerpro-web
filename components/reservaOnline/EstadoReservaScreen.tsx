@@ -14,6 +14,7 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAhora, useCarga, type Ir } from './hooks';
 import { IcoCalendario, IcoCheck, IcoPin, IcoReloj } from './iconos';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { BarraInferior, BotonPrimario, Mensaje, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
@@ -115,6 +116,9 @@ export function EstadoReservaScreen({
   }, [confirmada]);
 
   if (error) {
+    // El kill switch del backend (RESERVAS_CREACION_HABILITADA=false) tambien
+    // corta la lectura del estado: a pantalla completa, nunca "no encontrada".
+    if (error.code === 'creation_disabled') return <NoDisponibleAun />;
     return <Mensaje tono="error">{error.code === 'not_found' ? t('estado.noEncontrada') : t('errores.generico')}</Mensaje>;
   }
   if (!data || !estado) return <Mensaje>{t('comun.cargando')}</Mensaje>;
