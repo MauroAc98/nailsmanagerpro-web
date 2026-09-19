@@ -13,7 +13,9 @@ describe('exigirReservaOnlineHabilitada', () => {
   });
 
   it('con la flag encendida no hace nada', () => {
-    const notFound = vi.fn();
+    const notFound = vi.fn(() => {
+      throw new Error('NEXT_NOT_FOUND');
+    });
     exigirReservaOnlineHabilitada({ habilitada: () => true, notFound });
     expect(notFound).not.toHaveBeenCalled();
   });
