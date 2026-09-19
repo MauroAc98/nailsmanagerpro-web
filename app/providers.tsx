@@ -49,6 +49,23 @@ function esRutaAdmin(): boolean {
   return typeof window !== 'undefined' && window.location.hostname === ADMIN_HOST;
 }
 
+// reservar.turnetto.com — bug real de prod (2026-09-19): ese host reescribe
+// (middleware.ts) CUALQUIER pathname a /reservar/{eso} por dentro, pero la
+// reescritura es invisible para el browser y, en la práctica, este guard vio
+// el pathname SIN el prefijo /reservar (classifyTenant('/natalia-acosta') no
+// matchea '/reservar' y cae en 'protected'). Eso empujaba a /login — que en
+// ESE MISMO host se reescribe a su vez a /reservar/login, matcheando el
+// [slug] dinámico con slug="login" y disparando un fetch real a
+// /api/public/login/info que explotaba (CORS/404) frente a la clienta.
+// Mismo corte que ADMIN_HOST arriba: por HOST, nunca por pathname — la
+// reserva pública no tiene sesión que gatear, así que ni vale la pena
+// depender de que `usePathname()` refleje bien la reescritura.
+const RESERVA_PUBLICA_HOST = 'reservar.turnetto.com';
+
+function esRutaReservaPublica(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === RESERVA_PUBLICA_HOST;
+}
+
 function ProvidersInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -170,6 +187,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // is gone. `resolveAuthRoute` decides allow/redirect/blank once; the effect
   // only navigates, the render only gates. They can never disagree.
   const isAdmin = esRutaAdmin(); // window read — stays outside the pure fn
+  const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario arriba
   const qs = searchParams.toString();
   const snapshot: AuthRouteSnapshot = {
     status: authStatus,
@@ -193,9 +211,11 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   const redirectTo = route.type === 'redirect' ? route.to : null;
 
   // The admin panel guards itself (app/(admin)/admin/layout.tsx) — this tenant
-  // guard never redirects there and never blanks its children.
+  // guard never redirects there and never blanks its children. Same for
+  // reservar.turnetto.com: app/reservar/[slug]/layout.tsx already gates on
+  // the feature flag server-side: this guard never redirects or blanks there.
   useEffect(() => {
-    if (isAdmin) return;
+    if (isAdmin || isReservaPublica) return;
     if (!redirectTo) return;
 
     // Rider #14: before bouncing a subscription-blocked user to
@@ -215,7 +235,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     }
 
     router.push(redirectTo);
-  }, [isAdmin, redirectTo, router, pathname, search]);
+  }, [isAdmin, isReservaPublica, redirectTo, router, pathname, search]);
 
   // Verify CRITICAL-2: clear the captured origin only once the post-renew
   // navigation has actually COMMITTED (pathname left `/subscription-expired`
@@ -237,7 +257,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin, authStatus, pathname, subscriptionBlockedOrigin]);
 
-  const puedeMostrarContenido = isAdmin || route.type === 'allow';
+  const puedeMostrarContenido = isAdmin || isReservaPublica || route.type === 'allow';
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">

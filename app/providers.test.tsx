@@ -22,11 +22,21 @@ function markI18nReady() {
   });
 }
 
+const ORIGINAL_LOCATION = window.location;
+
+function setHostname(hostname: string) {
+  Object.defineProperty(window, 'location', {
+    value: { ...ORIGINAL_LOCATION, hostname },
+    configurable: true,
+  });
+}
+
 beforeEach(() => {
   resetNavigationMock();
   mockedGet.mockReset();
   localStorage.clear();
   sessionStorage.clear();
+  setHostname(ORIGINAL_LOCATION.hostname);
   useAuthStore.setState({
     token: null,
     user: null,
@@ -270,5 +280,48 @@ describe('Providers — unauthenticated redirect', () => {
       ),
     );
     expect(screen.queryByText('PROTECTED CONTENT')).toBeNull();
+  });
+});
+
+// Bug real de prod: reservar.turnetto.com reescribe (proxy.ts/middleware.ts)
+// TODO a /reservar/{slug} por dentro, pero eso es invisible para el browser —
+// `usePathname()` en este guard puede leer el pathname SIN el prefijo
+// /reservar (ver comentario largo en providers.tsx). Sin este corte por HOST,
+// classifyTenant('/natalia-acosta') cae en 'protected' y el guard empuja a
+// /login — que en ese mismo host vuelve a reescribirse a /reservar/login,
+// matcheando el [slug] dinámico con slug="login" y disparando un fetch a
+// /api/public/login/info que explota. Mismo patrón que ADMIN_HOST: cortar
+// por host, nunca confiar en el pathname post-rewrite para este guard.
+describe('Providers — reservar.turnetto.com (reserva pública)', () => {
+  it('nunca redirige a /login, aunque el pathname (sin el prefijo /reservar) parezca protegido', async () => {
+    setHostname('reservar.turnetto.com');
+    setMockLocation('/natalia-acosta');
+    render(<Providers><div>RESERVA CONTENT</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('RESERVA CONTENT')).toBeInTheDocument();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  it('renderiza el contenido de entrada aunque authStatus siga booting', async () => {
+    setHostname('reservar.turnetto.com');
+    mockedGet.mockReturnValue(new Promise(() => {})); // nunca resuelve
+    setMockLocation('/natalia-acosta');
+    render(<Providers><div>RESERVA CONTENT</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('RESERVA CONTENT')).toBeInTheDocument();
+  });
+
+  it('el mismo pathname en app.turnetto.com sigue yendo a /login (no se rompió el guard normal)', async () => {
+    setMockLocation('/natalia-acosta');
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(
+        `/login?redirect=${encodeURIComponent('/natalia-acosta')}`,
+      ),
+    );
   });
 });
