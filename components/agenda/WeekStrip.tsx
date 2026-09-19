@@ -58,6 +58,10 @@ export function WeekStrip({
   onAbrirCalendario,
   onSemanaAnterior,
   onSemanaSiguiente,
+  diaDeshabilitado,
+  diasConPunto,
+  semanaAnteriorDeshabilitada = false,
+  semanaSiguienteDeshabilitada = false,
 }: {
   dates:             Date[];
   fechaSeleccionada: string;
@@ -66,29 +70,48 @@ export function WeekStrip({
   onAbrirCalendario: () => void;
   onSemanaAnterior:  () => void;
   onSemanaSiguiente: () => void;
+  // Opcionales (los usa la reserva online, la agenda propia no): dias que no
+  // se pueden elegir, dias con un punto (ej. "hay lugar") y flechas apagadas.
+  diaDeshabilitado?:            (fecha: string) => boolean;
+  diasConPunto?:                string[];
+  semanaAnteriorDeshabilitada?: boolean;
+  semanaSiguienteDeshabilitada?: boolean;
 }) {
   const t = useTranslations('agenda.WeekStrip');
   const countByDate = new Map(turnosMes.map(tm => [tm.fecha, tm.cantidad]));
   const todayStr = fechaDeHoy();
   const rangoSemana = etiquetaRangoSemana(dates);
 
+  const conPunto = new Set(diasConPunto ?? []);
+
   const flecha: React.CSSProperties = {
     width: 40, height: 40, flexShrink: 0, border: 'none', background: 'none', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   };
+  const flechaApagada: React.CSSProperties = { ...flecha, cursor: 'default', opacity: 0.3 };
 
   return (
     <div style={{ padding: '0 20px 12px' }}>
       {/* Fila de navegación: ‹ rango › + botón de calendario completo. Las
           flechas mueven de a una semana sin abrir el calendario. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 10, marginLeft: -10 }}>
-        <button onClick={onSemanaAnterior} aria-label={t('previousWeek')} style={flecha}>
+        <button
+          onClick={onSemanaAnterior}
+          disabled={semanaAnteriorDeshabilitada}
+          aria-label={t('previousWeek')}
+          style={semanaAnteriorDeshabilitada ? flechaApagada : flecha}
+        >
           <ChevronLeft size={20} color={colors.text} strokeWidth={2.2} />
         </button>
         <span style={{ flex: 1, textAlign: 'center', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong }}>
           {rangoSemana}
         </span>
-        <button onClick={onSemanaSiguiente} aria-label={t('nextWeek')} style={flecha}>
+        <button
+          onClick={onSemanaSiguiente}
+          disabled={semanaSiguienteDeshabilitada}
+          aria-label={t('nextWeek')}
+          style={semanaSiguienteDeshabilitada ? flechaApagada : flecha}
+        >
           <ChevronRight size={20} color={colors.text} strokeWidth={2.2} />
         </button>
         <button
@@ -115,16 +138,19 @@ export function WeekStrip({
           const cantidad   = countByDate.get(cellStr) ?? 0;
           const esPasado   = cellStr < todayStr;
           const mostrarBadge = cantidad > 0 && !esPasado && !isSelected;
-          const mostrarPunto = cantidad > 0 && esPasado && !isSelected;
+          const mostrarPunto = (cantidad > 0 && esPasado && !isSelected) || (conPunto.has(cellStr) && !isSelected);
+          const deshabilitado = diaDeshabilitado?.(cellStr) ?? false;
 
           return (
             <button
               key={cellStr}
               data-testid={`week-day-${cellStr}`}
+              disabled={deshabilitado}
               onClick={() => onDayClick(cellStr)}
               style={{
                 flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                padding: '8px 0', borderRadius: 16, cursor: 'pointer',
+                padding: '8px 0', borderRadius: 16, cursor: deshabilitado ? 'default' : 'pointer',
+                opacity: deshabilitado ? 0.35 : 1,
                 border: `1px solid ${isSelected ? colors.primarySolid : colors.hairline}`,
                 backgroundColor: isSelected ? colors.primarySolid : colors.surface,
                 boxShadow: isSelected ? `0 4px 10px ${withAlpha(colors.primary, '4D')}` : 'none',
@@ -152,7 +178,7 @@ export function WeekStrip({
                     <span style={{ fontSize: 8, fontWeight: 900, color: colors.primaryDeep }}>{cantidad}</span>
                   </span>
                 ) : (
-                  <span style={{
+                  <span data-punto={mostrarPunto ? '' : undefined} style={{
                     width: 5, height: 5, borderRadius: 3,
                     backgroundColor: mostrarPunto ? colors.primary : 'transparent',
                   }} />
