@@ -1,0 +1,37 @@
+{
+  "entry": {
+    "cta": "Reservar horário",
+    "howItWorksTitle": "Como funciona"
+  },
+  "servicios": {
+    "title": "Escolha seus serviços"
+  },
+  "horario": {
+    "title": "Escolha dia e horário"
+  },
+  "datos": {
+    "title": "Seus dados"
+  },
+  "resumen": {
+    "title": "Resumo da sua reserva"
+  },
+  "estado": {
+    "confirmada": "Reserva confirmada",
+    "vencida": "O prazo de pagamento venceu",
+    "pendiente": "Aguardando o pagamento"
+  },
+  "errores": {
+    "generico": "Não foi possível concluir a operação. Tente novamente.",
+    "noEncontrado": "Não encontramos este salão.",
+    "whatsappInvalido": "Informe um WhatsApp válido com código do país, por exemplo +5491155551234."
+  },
+  "settings": {
+    "title": "Reservas online"
+  },
+  "mp": {
+    "connect": "Conectar Mercado Pago"
+  },
+  "agenda": {
+    "badge": "Reserva online"
+  }
+}

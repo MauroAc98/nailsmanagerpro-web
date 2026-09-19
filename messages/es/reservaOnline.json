@@ -1,0 +1,37 @@
+{
+  "entry": {
+    "cta": "Reservar turno",
+    "howItWorksTitle": "Cómo funciona"
+  },
+  "servicios": {
+    "title": "Elegí tus servicios"
+  },
+  "horario": {
+    "title": "Elegí día y horario"
+  },
+  "datos": {
+    "title": "Tus datos"
+  },
+  "resumen": {
+    "title": "Resumen de tu reserva"
+  },
+  "estado": {
+    "confirmada": "Reserva confirmada",
+    "vencida": "La ventana de pago venció",
+    "pendiente": "Esperando el pago"
+  },
+  "errores": {
+    "generico": "No pudimos completar la operación. Probá de nuevo.",
+    "noEncontrado": "No encontramos este salón.",
+    "whatsappInvalido": "Ingresá un WhatsApp válido con código de país, por ejemplo +5491155551234."
+  },
+  "settings": {
+    "title": "Reservas online"
+  },
+  "mp": {
+    "connect": "Conectar Mercado Pago"
+  },
+  "agenda": {
+    "badge": "Reserva online"
+  }
+}
