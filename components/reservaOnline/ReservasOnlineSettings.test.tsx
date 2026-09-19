@@ -16,6 +16,21 @@ describe('ReservasOnlineSettings', () => {
   const montar = () => renderWithProviders(<ReservasOnlineSettings slug="nails-by-natalie" />);
   const interruptor = () => screen.findByRole('switch', { name: 'Aceptar reservas online' });
 
+  // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto que
+  // respeta la forma real (tarjeta de switch + link + tarjeta de ajustes).
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    montar();
+    expect(screen.getByTestId('reservas-online-settings-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas los ajustes estan listos', async () => {
+    montar();
+    expect(screen.getByTestId('reservas-online-settings-skeleton')).toBeInTheDocument();
+    await interruptor();
+    expect(screen.queryByTestId('reservas-online-settings-skeleton')).toBeNull();
+  });
+
   it('arranca inactivo y con el link bloqueado', async () => {
     montar();
     expect(await interruptor()).toHaveAttribute('aria-checked', 'false');
