@@ -14,7 +14,7 @@ function matchesAny(pathname: string, prefixes: string[]): boolean {
 
 export function classifyTenant(loc: RouteLocation): RouteClass {
   const { pathname } = loc;
-  if (matchesAny(pathname, ['/legal'])) return 'neutral';
+  if (matchesAny(pathname, ['/legal', '/reservar'])) return 'neutral';
   if (matchesAny(pathname, ['/login', '/forgot-password', '/reset-password'])) return 'public';
   if (matchesAny(pathname, ['/cambiar-password'])) return 'change-pw';
   if (matchesAny(pathname, ['/subscription-expired'])) return 'blocked';

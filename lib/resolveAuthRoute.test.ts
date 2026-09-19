@@ -228,6 +228,15 @@ describe('resolveAuthRoute — with real classifiers', () => {
     );
   });
 
+  it('classifyTenant: /reservar/{slug} -> allow en cualquier estado (booting, i18n sin listo, autenticada)', () => {
+    const l = loc('/reservar/ana/horario');
+    expect(resolveAuthRoute({ status: 'booting', i18nReady: false }, l, classifyTenant)).toEqual(allow);
+    expect(resolveAuthRoute(ready('unauthenticated'), l, classifyTenant)).toEqual(allow);
+    // Una dueña logueada que abre el link de reserva NO es redirigida a /agenda.
+    expect(resolveAuthRoute(ready('authenticated'), l, classifyTenant)).toEqual(allow);
+    expect(resolveAuthRoute(ready('subscription-blocked'), l, classifyTenant)).toEqual(allow);
+  });
+
   it('classifyAdmin: unauthenticated on /suscripciones -> redirect to /login with origin', () => {
     expect(
       resolveAuthRoute(ready('unauthenticated'), loc('/suscripciones'), classifyAdmin),
