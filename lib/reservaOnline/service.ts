@@ -59,14 +59,29 @@ export const MAX_FOTOS_SERVICIO = 12;
 export interface ReservaOnlineService extends ReservaOnlineReads, ReservaOnlineWrites {}
 
 // Error tipado para respuestas de negocio (404 salon, 422 validacion, slot tomado,
-// retencion vencida).
-export type ReservaOnlineErrorCode = 'not_found' | 'validation' | 'slot_taken' | 'hold_expired' | 'unknown';
+// retencion vencida). Los ultimos 5 codigos son de las escrituras reales
+// (slice 3, decision A4/A5/A7 del diseno): limite de intentos, telefono en
+// enfriamiento, verificacion pendiente, reto anti-bot fallido y kill switch apagado.
+export type ReservaOnlineErrorCode =
+  | 'not_found'
+  | 'validation'
+  | 'slot_taken'
+  | 'hold_expired'
+  | 'rate_limited'
+  | 'phone_cooldown'
+  | 'challenge_failed'
+  | 'verification_required'
+  | 'creation_disabled'
+  | 'unknown';
 
 export class ReservaOnlineError extends Error {
   readonly code: ReservaOnlineErrorCode;
-  constructor(code: ReservaOnlineErrorCode, message?: string) {
+  // Segundos a esperar antes de reintentar (solo rate_limited y phone_cooldown).
+  readonly retryAfterSeconds?: number;
+  constructor(code: ReservaOnlineErrorCode, message?: string, retryAfterSeconds?: number) {
     super(message ?? code);
     this.name = 'ReservaOnlineError';
     this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }

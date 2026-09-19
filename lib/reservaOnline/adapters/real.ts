@@ -1,6 +1,7 @@
-import { isAxiosError, type AxiosInstance } from 'axios';
-import { ReservaOnlineError, type ReservaOnlineReads } from '../service';
+import type { AxiosInstance } from 'axios';
+import type { ReservaOnlineReads } from '../service';
 import type { Availability, BookableService, Fecha, SalonInfo } from '../types';
+import { traducirErrorHttp } from './errores';
 
 // Adapter real de las 3 lecturas publicas (/api/public/{slug}), tarea 2.8.
 // El mapeo snake_case -> camelCase vive solo en este archivo (decision D5).
@@ -54,17 +55,6 @@ const aDisponibilidad = (d: DisponibilidadDto): Availability => ({
   slots: d.slots.map((s) => ({ hora: s.hora, profesionalIds: s.profesional_ids })),
 });
 
-// 404 -> not_found (salon inexistente o vencido, no se distingue a proposito),
-// 422 -> validation; todo lo demas (red, 5xx, 429) -> unknown.
-function traducirError(err: unknown): ReservaOnlineError {
-  if (isAxiosError(err) && err.response) {
-    const mensaje = (err.response.data as { message?: string } | undefined)?.message;
-    if (err.response.status === 404) return new ReservaOnlineError('not_found', mensaje);
-    if (err.response.status === 422) return new ReservaOnlineError('validation', mensaje);
-  }
-  return new ReservaOnlineError('unknown', err instanceof Error ? err.message : undefined);
-}
-
 // Cantidad de dias de `desde` a `hasta` inclusive (fechas de pared, sin zona).
 const diasEntre = (desde: Fecha, hasta: Fecha): number =>
   Math.round((Date.parse(hasta) - Date.parse(desde)) / 86_400_000) + 1;
@@ -73,7 +63,7 @@ async function pedir<T>(fn: () => Promise<{ data: T }>): Promise<T> {
   try {
     return (await fn()).data;
   } catch (err) {
-    throw traducirError(err);
+    throw traducirErrorHttp(err);
   }
 }
 
