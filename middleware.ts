@@ -24,6 +24,22 @@ import { NextRequest, NextResponse } from 'next/server';
 const ADMIN_HOST = 'admin.turnetto.com';
 const APP_HOST = 'app.turnetto.com';
 
+// reservar.turnetto.com — mismo proceso/build que app.turnetto.com (ver
+// nginx sites-available/reservar-turnetto), separado solo por Host. A
+// diferencia de admin (páginas puntuales), acá TODO el subárbol público de
+// reserva vive bajo un único prefijo (app/reservar/[slug]/**), así que el
+// rewrite es "agregar /reservar adelante" en vez de una lista de páginas.
+// Los estáticos de public/ (manifest.json, sw.js, workbox-*.js, íconos,
+// favicon) NUNCA deben llevar ese prefijo — mismo bug que el de admin
+// (comentario grande arriba): se detectan por tener un '.' en el último
+// segmento del path, igual que cualquier archivo real de public/.
+const RESERVAR_HOST = 'reservar.turnetto.com';
+
+function esArchivoEstatico(pathname: string): boolean {
+  const ultimoSegmento = pathname.slice(pathname.lastIndexOf('/') + 1);
+  return ultimoSegmento.includes('.');
+}
+
 const ADMIN_ASSET_MAP: Record<string, string> = {
   '/manifest.json': '/admin-manifest.json',
   '/icon-192.png': '/admin-icon-192.png',
@@ -68,10 +84,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (host === RESERVAR_HOST) {
+    if (esArchivoEstatico(pathname)) {
+      return NextResponse.next();
+    }
+    // Mismo motivo que el rewrite de admin más abajo: forzar 'http:' porque
+    // el proceso Node solo escucha HTTP plano en :3000 (nginx termina TLS),
+    // y este rewrite hace un fetch interno real a ese origin.
+    const url = request.nextUrl.clone();
+    url.protocol = 'http:';
+    url.pathname = `/reservar${pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
   if (host !== ADMIN_HOST) {
-    // Ni admin.turnetto.com ni app.turnetto.com — incluye el fetch interno
-    // de Next resolviendo su propio rewrite (Host: localhost:3000). Dejar
-    // pasar sin tocar.
+    // Ni admin.turnetto.com, app.turnetto.com ni reservar.turnetto.com —
+    // incluye el fetch interno de Next resolviendo su propio rewrite (Host:
+    // localhost:3000). Dejar pasar sin tocar.
     return NextResponse.next();
   }
 
