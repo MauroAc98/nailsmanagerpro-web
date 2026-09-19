@@ -6,7 +6,15 @@
 // "correcta".
 export const LOGO_ASPECT_RATIO = 3 / 2; // ancho:alto
 const LOGO_CANVAS_WIDTH = 1200;
-const LOGO_CANVAS_HEIGHT = Math.round(LOGO_CANVAS_WIDTH / LOGO_ASPECT_RATIO); // 800
+
+// Tamaño del lienzo de salida para un aspect ratio dado, con el ancho fijo
+// de siempre (1200) — generalizado desde el cálculo que antes estaba
+// hardcodeado a LOGO_ASPECT_RATIO, para reusar el mismo recorte con el
+// avatar circular de una profesional (aspect ratio 1/1) sin duplicar
+// recortarLogo. Función pura, sin dependencia del DOM.
+export function tamanoCanvasParaAspecto(aspectRatio: number): { width: number; height: number } {
+  return { width: LOGO_CANVAS_WIDTH, height: Math.round(LOGO_CANVAS_WIDTH / aspectRatio) };
+}
 
 export interface AreaRecorte {
   x: number;
@@ -25,22 +33,29 @@ function cargarImagen(url: string): Promise<HTMLImageElement> {
 }
 
 // Toma el área que el usuario recortó en LogoCropModal (en píxeles de la
-// imagen original, ya con el aspect ratio 3:2 forzado por el Cropper) y la
+// imagen original, ya con el aspect ratio forzado por el Cropper) y la
 // redibuja en un lienzo de tamaño fijo — normaliza el archivo final a un
 // tamaño consistente sin importar la resolución de la foto subida.
-export async function recortarLogo(imageSrc: string, area: AreaRecorte): Promise<File> {
+// `aspectRatio` default LOGO_ASPECT_RATIO (3:2, uso original del logo del
+// negocio); el avatar circular de una profesional pasa 1 (cuadrado).
+export async function recortarLogo(
+  imageSrc: string,
+  area: AreaRecorte,
+  aspectRatio: number = LOGO_ASPECT_RATIO,
+): Promise<File> {
   const img = await cargarImagen(imageSrc);
 
+  const { width, height } = tamanoCanvasParaAspecto(aspectRatio);
   const canvas = document.createElement('canvas');
-  canvas.width = LOGO_CANVAS_WIDTH;
-  canvas.height = LOGO_CANVAS_HEIGHT;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('recortarLogo: sin contexto 2d');
 
   ctx.drawImage(
     img,
     area.x, area.y, area.width, area.height,
-    0, 0, LOGO_CANVAS_WIDTH, LOGO_CANVAS_HEIGHT,
+    0, 0, width, height,
   );
 
   return new Promise((resolve, reject) => {
