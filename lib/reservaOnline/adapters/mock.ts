@@ -1,4 +1,4 @@
-import { ReservaOnlineError, type ReservaOnlineService } from '../service';
+import { ReservaOnlineError, type ReservaOnlineReads, type ReservaOnlineService } from '../service';
 import type {
   Availability,
   AvailabilityQuery,
@@ -132,6 +132,9 @@ const ESTADO_INICIAL = (): Persistido => ({
 export interface MockOptions {
   now?: () => number;
   storage?: StorageLike;
+  // Lecturas reales (composicion): para salones que no son `demo`, las
+  // escrituras mock calculan servicios y horarios libres a traves de ellas.
+  lecturas?: ReservaOnlineReads;
 }
 
 // Helper solo de desarrollo/tests: simula que Mercado Pago aprobo el pago.
@@ -232,7 +235,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
   };
 
   const getTerms = async (slug: string): Promise<ReservationTerms> => {
-    salon(slug);
+    if (!SEED[slug] && !opts.lecturas) throw new ReservaOnlineError('not_found', `salon ${slug}`);
     const { settings } = cargar();
     return {
       deposito: settings.deposito,
@@ -246,14 +249,28 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     slug: string,
     input: CreateReservationInput,
   ): Promise<ReservationCreated> => {
-    const s = salon(slug);
-    const servicios = resolverServicios(s, input.servicioIds);
-    // Reusa la disponibilidad: valida profesional/fecha y decide si el horario sigue libre.
-    const disp = await getAvailability(slug, {
+    const consulta = {
       fecha: input.fecha,
       servicioIds: input.servicioIds,
       profesionalId: input.profesionalId,
-    });
+    };
+    let servicios: BookableService[];
+    let disp: Availability;
+    if (SEED[slug]) {
+      servicios = resolverServicios(SEED[slug], input.servicioIds);
+      // Reusa la disponibilidad: valida profesional/fecha y decide si el horario sigue libre.
+      disp = await getAvailability(slug, consulta);
+    } else if (opts.lecturas) {
+      const todos = await opts.lecturas.getServices(slug);
+      servicios = input.servicioIds.map((id) => {
+        const x = todos.find((y) => y.id === id);
+        if (!x) throw new ReservaOnlineError('validation', 'servicio_ids');
+        return x;
+      });
+      disp = await opts.lecturas.getAvailability(slug, consulta);
+    } else {
+      throw new ReservaOnlineError('not_found', `salon ${slug}`);
+    }
     if (!disp.slots.some((x) => x.hora === input.hora)) throw new ReservaOnlineError('slot_taken');
 
     const p = cargar();

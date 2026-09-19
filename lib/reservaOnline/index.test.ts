@@ -20,7 +20,7 @@ describe('composicion del servicio', () => {
       getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
     };
     const svc = componerServicio(mock, reales);
-    expect((await svc.getSalon('demo')).nombre).toBe('Real');
+    expect((await svc.getSalon('ana')).nombre).toBe('Real');
     expect((await svc.getSettings()).habilitada).toBe(false); // mock
   });
 
@@ -30,7 +30,19 @@ describe('composicion del servicio', () => {
     expect(getService()).toBe(mock);
   });
 
-  it('las lecturas reales siguen apagadas hasta que exista el adapter (2.8)', () => {
-    expect(LECTURAS_REALES).toBe(false);
+  it('las lecturas reales estan activas (adapter 2.8 implementado)', () => {
+    expect(LECTURAS_REALES).toBe(true);
+  });
+
+  it('el slug demo sigue en mock y cualquier otro va a las lecturas reales', async () => {
+    const mock = createMockService({ storage: memoriaStorage() });
+    const reales: ReservaOnlineReads = {
+      getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [] }),
+      getServices: async () => [],
+      getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
+    };
+    const svc = componerServicio(mock, reales);
+    expect((await svc.getSalon('demo')).nombre).toBe('Studio Demo');
+    expect((await svc.getSalon('ana')).nombre).toBe('Real');
   });
 });
