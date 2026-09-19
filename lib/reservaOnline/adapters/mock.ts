@@ -298,7 +298,11 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     } else {
       throw new ReservaOnlineError('not_found', `salon ${slug}`);
     }
-    if (!disp.slots.some((x) => x.hora === input.hora)) throw new ReservaOnlineError('slot_taken');
+    // Re-chequeo al crear (el real lo hace con lock): si el inicio ya no entra
+    // por solape con un turno o una reserva pendiente, la lista quedo vieja.
+    const slot = disp.slots.find((x) => x.hora === input.hora);
+    if (!slot) throw new ReservaOnlineError('slot_taken');
+    const profesionalId = input.profesionalId ?? slot.profesionalIds[0];
 
     const p = cargar();
     const id = `mock-${p.seq + 1}`;
@@ -309,7 +313,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       id,
       slug,
       servicioIds: input.servicioIds,
-      profesionalId: input.profesionalId,
+      profesionalId,
       fecha: input.fecha,
       hora: input.hora,
       clienteNombre: `${input.cliente.nombre} ${input.cliente.apellido}`.trim(),

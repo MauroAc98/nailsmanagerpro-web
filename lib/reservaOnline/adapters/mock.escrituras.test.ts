@@ -65,6 +65,34 @@ describe('mock: crear reserva', () => {
     await expect(svc.createReservation('demo', entrada({ profesionalId: 2 }))).resolves.toBeDefined();
   });
 
+  it('sin profesionalId ("Cualquiera") el backend asigna la primera libre y la devuelve en el estado', async () => {
+    const { svc } = escenario();
+    await svc.createReservation('demo', entrada({ profesionalId: 1 })); // Ana ocupada a las 10:00
+    const { profesionalId: _omitida, ...sinProfesional } = entrada();
+    const r = await svc.createReservation('demo', sinProfesional);
+    expect((await svc.getReservationStatus('demo', r.id)).summary.profesionalId).toBe(2);
+  });
+
+  it('con "Cualquiera" y todas ocupadas a esa hora falla con slot_taken (el horario se acaba de ocupar)', async () => {
+    const { svc } = escenario();
+    await svc.createReservation('demo', entrada({ profesionalId: 1 }));
+    await svc.createReservation('demo', entrada({ profesionalId: 2 }));
+    const { profesionalId: _omitida, ...sinProfesional } = entrada();
+    await expect(svc.createReservation('demo', sinProfesional)).rejects.toMatchObject({ code: 'slot_taken' });
+  });
+
+  it('un turno que se ocupa DESPUES de traer los horarios hace fallar la creacion con slot_taken (por solape, no solo por hora exacta)', async () => {
+    const { svc } = escenario();
+    const antes = await svc.getAvailability('demo', { fecha: '2026-09-25', servicioIds: [1], profesionalId: 1 });
+    expect(antes.slots.map((s) => s.hora)).toContain('10:30');
+    // Otra clienta toma 10:00 (45 min) mientras esta mira la lista: 10:30 ahora solapa.
+    await svc.createReservation('demo', entrada({ hora: '10:00' }));
+    await expect(svc.createReservation('demo', entrada({ hora: '10:30' }))).rejects.toMatchObject({
+      name: 'ReservaOnlineError',
+      code: 'slot_taken',
+    });
+  });
+
   it('slug inexistente falla con not_found', async () => {
     const { svc } = escenario();
     await expect(svc.createReservation('nope', entrada())).rejects.toMatchObject({ code: 'not_found' });

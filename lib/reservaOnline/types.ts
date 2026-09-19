@@ -79,7 +79,9 @@ export interface ClienteInput {
 
 export interface CreateReservationInput {
   servicioIds: number[];
-  profesionalId: number;
+  // Omitido cuando la clienta elige "Cualquiera": el backend asigna la primera
+  // profesional libre al crear (la lista de horarios puede estar desactualizada).
+  profesionalId?: number;
   fecha: Fecha;
   hora: Hora;
   cliente: ClienteInput;
