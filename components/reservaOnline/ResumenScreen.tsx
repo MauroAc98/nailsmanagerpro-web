@@ -13,6 +13,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, useGuardaPaso, useHold, type Ir } from './hooks';
 import { HoldVencido } from './HoldVencido';
 import { IcoBrillo, IcoCalendario, IcoCandado, IcoPin, IcoReloj } from './iconos';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { BarraInferior, BotonPrimario, HoldPill, Mensaje, PasoHeader, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
@@ -64,6 +65,9 @@ export function ResumenScreen({
   const [enviando, setEnviando] = useState(false);
   const [holdPerdido, setHoldPerdido] = useState(false);
   const [errorPago, setErrorPago] = useState(false);
+  const [limiteIntentos, setLimiteIntentos] = useState(false);
+  // Kill switch del backend apagado: a pantalla completa, como en Horario/Datos.
+  const [noDisponible, setNoDisponible] = useState(false);
 
   const { data, error } = useCarga(async () => {
     const svc = getService();
@@ -76,6 +80,7 @@ export function ResumenScreen({
   }, `${slug}|${servicioIds.join(',')}`);
 
   if (!listo) return null;
+  if (noDisponible) return <NoDisponibleAun />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
   if (!data || !fecha || !hora || !hold) return <Mensaje>{t('comun.cargando')}</Mensaje>;
@@ -88,6 +93,7 @@ export function ResumenScreen({
   const pagar = async () => {
     setEnviando(true);
     setErrorPago(false);
+    setLimiteIntentos(false);
     try {
       const pago = await getService().iniciarPago(slug, hold.reservaId);
       // Con Mercado Pago real aca se redirigiria a pago.checkoutUrl; el mock
@@ -95,6 +101,8 @@ export function ResumenScreen({
       ir(rutaReserva(slug, pago.id));
     } catch (e) {
       if (e instanceof ReservaOnlineError && e.code === 'hold_expired') setHoldPerdido(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') setNoDisponible(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'rate_limited') setLimiteIntentos(true);
       else setErrorPago(true);
       setEnviando(false);
     }
@@ -152,6 +160,7 @@ export function ResumenScreen({
         </div>
       </div>
 
+      {limiteIntentos && <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>}
       {errorPago && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       <BarraInferior>
