@@ -313,6 +313,11 @@
   "EditarProfesionalPage": {
     "title": "Editar profesional",
     "loading": "Cargando...",
+    "avatarChange": "Cambiar foto de la profesional",
+    "avatarRemove": "Quitar foto de la profesional",
+    "avatarTooLarge": "La imagen no puede pesar más de 5MB.",
+    "avatarRemoveConfirm": "¿Quitar la foto de esta profesional?",
+    "avatarRemoveConfirmButton": "Quitar",
     "nameLabel": "Nombre *",
     "namePlaceholder": "Ej: Sofía",
     "nameRequired": "El nombre es obligatorio",
