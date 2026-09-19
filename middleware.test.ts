@@ -25,6 +25,11 @@ describe('middleware — reservar.turnetto.com', () => {
     expect(res.headers.get('x-middleware-rewrite')).toBe('http://reservar.turnetto.com/reservar/natalia-acosta/servicios');
   });
 
+  it('es idempotente: una ruta que ya trae el prefijo /reservar no se duplica', () => {
+    const res = middleware(requestA('/reservar/natalia-acosta/servicios', 'reservar.turnetto.com'));
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
   it('no reescribe archivos estáticos (manifest, sw.js, íconos)', () => {
     for (const path of ['/manifest.json', '/sw.js', '/icon-192.png', '/workbox-965a1397.js', '/favicon.ico']) {
       const res = middleware(requestA(path, 'reservar.turnetto.com'));

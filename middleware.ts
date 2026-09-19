@@ -88,6 +88,14 @@ export function middleware(request: NextRequest) {
     if (esArchivoEstatico(pathname)) {
       return NextResponse.next();
     }
+    // Idempotente: una ruta que YA trae el prefijo (bug real visto en prod —
+    // useIr() ahora lo saca antes de navegar, ver lib/reservaOnline/rutas.ts,
+    // pero un link viejo, un bookmark o un service worker con una página
+    // vieja en caché podría seguir pidiendo /reservar/... tal cual) no debe
+    // duplicarse en /reservar/reservar/... (404).
+    if (pathname === '/reservar' || pathname.startsWith('/reservar/')) {
+      return NextResponse.next();
+    }
     // Mismo motivo que el rewrite de admin más abajo: forzar 'http:' porque
     // el proceso Node solo escucha HTTP plano en :3000 (nginx termina TLS),
     // y este rewrite hace un fetch interno real a ese origin.

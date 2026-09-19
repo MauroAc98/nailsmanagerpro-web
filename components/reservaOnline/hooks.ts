@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import type { HoldFlujo } from '@/lib/reservaOnline/types';
 import { pasoMinimo, type Paso } from '@/lib/reservaOnline/pasoMinimo';
-import { rutaPaso } from '@/lib/reservaOnline/rutas';
+import { rutaExterna, rutaPaso } from '@/lib/reservaOnline/rutas';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 
 // Navegacion inyectable: las pantallas no dependen de next/navigation, asi se
@@ -13,9 +13,18 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 export type Ir = (ruta: string) => void;
 
 // Conecta la navegacion inyectable con el router de Next (uso en las paginas).
+// `rutaExterna` saca el prefijo /reservar en reservar.turnetto.com antes de
+// empujar — ver su comentario en lib/reservaOnline/rutas.ts (bug real: sin
+// esto, cada "Continuar" duplicaba el prefijo y daba 404).
 export function useIr(): Ir {
   const router = useRouter();
-  return useCallback((ruta: string) => router.push(ruta), [router]);
+  return useCallback(
+    (ruta: string) => {
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+      router.push(rutaExterna(ruta, hostname));
+    },
+    [router],
+  );
 }
 
 const ORDEN: Paso[] = ['servicios', 'horario', 'datos', 'resumen'];

@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute';
 import { classifyTenant } from '@/lib/authRouteClasses';
+import { esHostReservaPublica } from '@/lib/reservaOnline/host';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
@@ -59,11 +60,11 @@ function esRutaAdmin(): boolean {
 // /api/public/login/info que explotaba (CORS/404) frente a la clienta.
 // Mismo corte que ADMIN_HOST arriba: por HOST, nunca por pathname — la
 // reserva pública no tiene sesión que gatear, así que ni vale la pena
-// depender de que `usePathname()` refleje bien la reescritura.
-const RESERVA_PUBLICA_HOST = 'reservar.turnetto.com';
-
+// depender de que `usePathname()` refleje bien la reescritura. El hostname
+// vive en lib/reservaOnline/host.ts, único lugar (useIr() también lo usa
+// para no duplicar el prefijo /reservar al navegar dentro del flujo).
 function esRutaReservaPublica(): boolean {
-  return typeof window !== 'undefined' && window.location.hostname === RESERVA_PUBLICA_HOST;
+  return typeof window !== 'undefined' && esHostReservaPublica(window.location.hostname);
 }
 
 function ProvidersInner({ children }: { children: React.ReactNode }) {
