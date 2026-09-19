@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import type { Turno } from '@/services/turnoService';
@@ -63,5 +63,27 @@ describe('SwipeableTurnoCard — en_curso layout (Change 5)', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Finalizar ahora' }));
     expect(onFinalizar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SwipeableTurnoCard — badge "Reserva online"', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('lo muestra en turnos de origen web cuando la flag esta prendida', () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ origen: 'web' })} onCancel={vi.fn()} />);
+    expect(screen.getByText('Reserva online')).toBeInTheDocument();
+  });
+
+  it('no lo muestra con la flag apagada', () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'false');
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ origen: 'web' })} onCancel={vi.fn()} />);
+    expect(screen.queryByText('Reserva online')).toBeNull();
+  });
+
+  it('no lo muestra en turnos cargados desde la app', () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ origen: 'app' })} onCancel={vi.fn()} />);
+    expect(screen.queryByText('Reserva online')).toBeNull();
   });
 });

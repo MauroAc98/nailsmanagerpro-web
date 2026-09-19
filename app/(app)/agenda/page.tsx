@@ -21,6 +21,7 @@ import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
+import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
 import { horaDeHora, formatFechaMini, formatCellDate, parseFechaLocal, type ProfesionalLabel } from '@/components/agenda/agendaDateHelpers';
 import { alertDialog } from '@/store/useConfirmStore';
@@ -1137,6 +1138,9 @@ export default function AgendaPage() {
       {bannerGanador === 'subscription' && <SubscriptionWarningBanner onDismiss={dismissSubscription} />}
       {bannerGanador === 'cobros' && <PendientesDeCobroBanner onDismiss={dismissCobros} />}
       {bannerGanador === 'recordatorios' && <RecordatoriosPendientesBanner onDismiss={dismissRecordatorios} />}
+
+      {/* Aviso de reserva online pagada (oculto con la flag apagada). */}
+      <AvisoReservaOnline />
 
       {/* Resumen del mes — vistazo rápido, detalle completo en
           Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}

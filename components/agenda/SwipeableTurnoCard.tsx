@@ -6,6 +6,8 @@ import { ChevronRight } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { useAuthStore } from '@/store/useAuthStore';
+import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
+import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import type { Turno } from '@/services/turnoService';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
 
@@ -186,12 +188,17 @@ export function SwipeableTurnoCard({
       {/* Sección info central — flex column propio, no depende únicamente
           del alignItems del padre para centrarse. */}
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <p style={{
-          fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-        </p>
+        {/* Badge "Reserva online" (flag D4): al lado del nombre, sin cambiar
+            la altura de la card; el nombre conserva su ellipsis. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <p style={{
+            fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+          </p>
+          {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline />}
+        </div>
         <p style={{
           fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
