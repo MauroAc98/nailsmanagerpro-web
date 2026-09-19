@@ -37,6 +37,7 @@ function profesional(overrides: Partial<Profesional>): Profesional {
     historia_precios_template_id: null,
     historia_precios_fotos: [],
     historia_precios_nota: null,
+    dias_atencion: null,
     ...overrides,
   };
 }

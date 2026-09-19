@@ -73,6 +73,11 @@ export interface Profesional {
   // todavía no guardó ninguno. Patcheado por el mismo PUT que
   // historia_precios_template_id (ver UpdateProfesionalDto).
   historia_precios_nota: NotaHistoriaPrecios | null;
+  // Días de la semana que atiende (convención Carbon: 0=domingo..6=sábado),
+  // deduplicados y ordenados por el backend. `null` = atiende todos los
+  // días (default, sin backfill) — ver DisponibilidadService::calcularDia
+  // en el backend, que trata `null` como "sin restricción".
+  dias_atencion: number[] | null;
 }
 
 // La profesional "jefa": la primera en crearse (id más chico) entre las
@@ -92,6 +97,9 @@ export interface CreateProfesionalDto {
   apellido?: string;
   color?: string;
   servicio_ids?: number[];
+  // Omitir el campo deja el default del backend (`null`, atiende todos los
+  // días) — ver Profesional.dias_atencion arriba.
+  dias_atencion?: number[] | null;
 }
 
 export interface UpdateProfesionalDto {
@@ -107,6 +115,9 @@ export interface UpdateProfesionalDto {
   // Mismo precedente que `color` — patcheado por el PUT principal, no un
   // sub-recurso propio (a diferencia de las fotos).
   historia_precios_nota?: NotaHistoriaPrecios | null;
+  // Omitir el campo deja el valor actual sin tocar (a diferencia de create,
+  // donde omitirlo resetea a `null`) — ver ProfesionalController::update.
+  dias_atencion?: number[] | null;
 }
 
 // ─────────────────────────────────────────────

@@ -14,10 +14,13 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useBloqueosAgendaStore } from '@/store/useBloqueosAgendaStore';
 import { Cliente } from '@/services/clienteService';
+import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
-import { alertDialog } from '@/store/useConfirmStore';
+import { advertenciaTurno } from '@/lib/turnoAdvertencias';
+import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha } from '@/lib/dateFormat';
 
@@ -72,6 +75,7 @@ export default function EditarTurnoPage() {
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
 
   const [fecha,               setFecha]               = useState('');
   const [turnoClienteId,      setTurnoClienteId]      = useState<number | null>(null);
@@ -95,6 +99,7 @@ export default function EditarTurnoPage() {
     if (slots.length === 0) fetchSlots();
     if (profesionales.length === 0) fetchProfesionales();
     fetchTurno(turnoId);
+    fetchBloqueos();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Populate the form once the turno arrives from the store
@@ -128,6 +133,11 @@ export default function EditarTurnoPage() {
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionado    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
+
+  // Mismo criterio que agenda/nuevo — ver comentario ahí.
+  const profesionalParaAdvertencia = mostrarSelectorProfesional
+    ? profesionalSeleccionado
+    : profesionalJefa(activeProfesionales);
 
   // Cada profesional tiene sus propias horas de atención. Cuando cambia la
   // profesional elegida en el paso PROFESIONAL, refetch de slots escopeado a
@@ -197,6 +207,19 @@ export default function EditarTurnoPage() {
     if (errorValidacion) {
       await alertDialog(errorValidacion);
       return;
+    }
+
+    // Aviso NO bloqueante — ver comentario en agenda/nuevo.
+    const duracionMinutosTurno = servicios
+      .filter(s => selectedServicioIds.includes(s.id))
+      .reduce((sum, s) => sum + s.duracion_minutos, 0);
+    const advertencia = advertenciaTurno({
+      fecha, hora, duracionMinutos: duracionMinutosTurno,
+      profesional: profesionalParaAdvertencia, bloqueos,
+    });
+    if (advertencia) {
+      const confirmado = await confirmDialog(advertencia);
+      if (!confirmado) return;
     }
 
     setSaving(true);

@@ -15,10 +15,13 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useBloqueosAgendaStore } from '@/store/useBloqueosAgendaStore';
 import { Cliente } from '@/services/clienteService';
+import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
-import { alertDialog } from '@/store/useConfirmStore';
+import { advertenciaTurno } from '@/lib/turnoAdvertencias';
+import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
 import { useAuth } from '@/hooks/useAuth';
@@ -76,6 +79,7 @@ function NuevoTurnoContent() {
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
   const user = useAuthStore(s => s.user);
   const { requiereEnvioManualWhatsapp }      = useAuth();
 
@@ -103,6 +107,7 @@ function NuevoTurnoContent() {
     if (slots.length === 0) fetchSlots();
     if (profesionales.length === 0) fetchProfesionales();
     fetchTurnos(fecha);
+    fetchBloqueos();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─────────────────────────────────────────────
@@ -112,6 +117,14 @@ function NuevoTurnoContent() {
   const activeProfesionales      = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionado  = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
+
+  // Profesional a considerar para el aviso no bloqueante de días/bloqueos:
+  // con selector visible, la elegida; sin selector (≤1 activa), la única
+  // activa (misma resolución de default que usan configuracion/servicios y
+  // configuracion/slots — ver profesionalJefa).
+  const profesionalParaAdvertencia = mostrarSelectorProfesional
+    ? profesionalSeleccionado
+    : profesionalJefa(activeProfesionales);
 
   // Cada profesional tiene sus propias horas de atención. Cuando cambia la
   // profesional elegida en el paso PROFESIONAL, refetch de slots escopeado a
@@ -178,6 +191,22 @@ function NuevoTurnoContent() {
     if (errorValidacion) {
       await alertDialog(errorValidacion);
       return;
+    }
+
+    // Aviso NO bloqueante — a diferencia de validarTurno, un día no
+    // laborable o una fecha bloqueada no impiden agendar acá (ver
+    // lib/turnoAdvertencias.ts). Corre DESPUÉS de la validación dura y
+    // ANTES del submit real, sin duplicar ni suprimir el 422 del backend.
+    const duracionMinutosTurno = servicios
+      .filter(s => selectedServicioIds.includes(s.id))
+      .reduce((sum, s) => sum + s.duracion_minutos, 0);
+    const advertencia = advertenciaTurno({
+      fecha, hora, duracionMinutos: duracionMinutosTurno,
+      profesional: profesionalParaAdvertencia, bloqueos,
+    });
+    if (advertencia) {
+      const confirmado = await confirmDialog(advertencia);
+      if (!confirmado) return;
     }
 
     setSaving(true);

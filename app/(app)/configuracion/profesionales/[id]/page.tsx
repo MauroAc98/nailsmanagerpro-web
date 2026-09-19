@@ -12,6 +12,8 @@ import { profesionalPalette } from '@/theme/colors';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
 import { SelectorServicios } from '@/components/SelectorServicios';
+import WeekdayPicker from '@/components/WeekdayPicker';
+import { diasAtencionParaGuardar } from '@/lib/diasAtencionParaGuardar';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -37,6 +39,10 @@ export default function EditarProfesionalPage() {
   const [apellido,    setApellido]    = useState('');
   const [color,       setColor]       = useState<string>(profesionalPalette[0]);
   const [activo,      setActivo]      = useState(true);
+  // `null` (atiende todos los días) se hidrata como `[]` en el picker —
+  // WeekdayPicker no distingue "todos" de "ninguno" visualmente, ambos se
+  // muestran sin chips marcados (ver diasAtencionParaGuardar al guardar).
+  const [diasAtencion, setDiasAtencion] = useState<number[]>([]);
   const [servicioIds, setServicioIds] = useState<number[]>([]);
   const [errorNombre, setErrorNombre] = useState('');
   const [loadingProfesional, setLoadingProfesional] = useState(true);
@@ -62,6 +68,7 @@ export default function EditarProfesionalPage() {
       setApellido(p.apellido ?? '');
       setColor(p.color || profesionalPalette[0]);
       setActivo(p.activo);
+      setDiasAtencion(p.dias_atencion ?? []);
       // `p.servicios` viene de `->with('servicios')` en el backend, sin
       // filtrar por `activo` (ver Profesional::servicios / ProfesionalController@index) —
       // incluye servicios inactivos ya asignados. Semillar acá con TODOS
@@ -101,6 +108,7 @@ export default function EditarProfesionalPage() {
       color,
       activo,
       servicio_ids: servicioIds,
+      dias_atencion: diasAtencionParaGuardar(diasAtencion),
     });
     setSaving(false);
 
@@ -175,6 +183,13 @@ export default function EditarProfesionalPage() {
             </p>
           </div>
           <PillToggle value={activo} onChange={setActivo} />
+        </div>
+
+        {/* Días que atiende */}
+        <div>
+          <label style={labelStyle}>{t('workingDaysLabel')}</label>
+          <WeekdayPicker value={diasAtencion} onChange={setDiasAtencion} />
+          <p style={{ margin: '6px 0 0 2px', fontSize: 12, color: colors.subtext }}>{t('workingDaysHint')}</p>
         </div>
 
         {/* Servicios */}
