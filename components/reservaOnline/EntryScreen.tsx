@@ -1,6 +1,5 @@
 'use client';
 
-import type { CSSProperties } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { linkComoLlegar } from '@/lib/reservaOnline/calendario';
@@ -8,16 +7,7 @@ import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, type Ir } from './hooks';
 import { IcoBrillo, IcoCalendario, IcoCheck, IcoEscudo, IcoPin } from './iconos';
-import { Avatar, BarraInferior, BotonPrimario, Mensaje, Tarjeta } from './ui';
-
-function Hueso({ w, h, r = 8, style }: { w: number | string; h: number; r?: number; style?: CSSProperties }) {
-  return (
-    <div
-      className="rz-skeleton"
-      style={{ width: w, height: h, borderRadius: r, background: colors.divider, ...style }}
-    />
-  );
-}
+import { Avatar, BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
 
 // Forma del layout real (portada + círculo + nombre/direccion + tarjeta de
 // pasos), para que no salte nada al llegar los datos.

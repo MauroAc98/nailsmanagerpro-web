@@ -190,6 +190,18 @@ export function Etiqueta({ children }: { children: ReactNode }) {
   );
 }
 
+// Bloque "hueso" de esqueleto de carga: rectangulo con pulso (animacion
+// rz-pulse de globals.css). Compartido por todas las pantallas del flujo
+// publico para no duplicar la primitiva pantalla por pantalla.
+export function Hueso({ w, h, r = 8, style }: { w: number | string; h: number; r?: number; style?: CSSProperties }) {
+  return (
+    <div
+      className="rz-skeleton"
+      style={{ width: w, height: h, borderRadius: r, background: colors.divider, ...style }}
+    />
+  );
+}
+
 export function Mensaje({ children, tono = 'sub' }: { children: ReactNode; tono?: 'sub' | 'error' }) {
   return (
     <p
