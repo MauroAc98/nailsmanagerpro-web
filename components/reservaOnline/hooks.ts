@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { pasoMinimo, type Paso } from '@/lib/reservaOnline/pasoMinimo';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
@@ -10,6 +11,12 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 // testean sin mockear el router. Las paginas la conectan con useRouter().push.
 export type Ir = (ruta: string) => void;
 
+// Conecta la navegacion inyectable con el router de Next (uso en las paginas).
+export function useIr(): Ir {
+  const router = useRouter();
+  return useCallback((ruta: string) => router.push(ruta), [router]);
+}
+
 const ORDEN: Paso[] = ['servicios', 'horario', 'datos', 'resumen'];
 
 // Guard de paso (decision D6): activa el slug, y si el estado guardado no
@@ -17,7 +24,6 @@ const ORDEN: Paso[] = ['servicios', 'horario', 'datos', 'resumen'];
 // recien cuando el paso puede renderizarse (evita parpadeo y mismatch de
 // hidratacion: en el servidor el store esta vacio).
 export function useGuardaPaso(slug: string, paso: Paso, ir: Ir): boolean {
-  const [listo, setListo] = useState(false);
   const irRef = useRef(ir);
   useEffect(() => {
     irRef.current = ir;
@@ -26,13 +32,13 @@ export function useGuardaPaso(slug: string, paso: Paso, ir: Ir): boolean {
     const store = useReservaOnlineStore.getState();
     if (store.slug !== slug) store.activarSlug(slug);
     const minimo = pasoMinimo(useReservaOnlineStore.getState());
-    if (ORDEN.indexOf(minimo) < ORDEN.indexOf(paso)) {
-      irRef.current(rutaPaso(slug, minimo));
-      return;
-    }
-    setListo(true);
+    if (ORDEN.indexOf(minimo) < ORDEN.indexOf(paso)) irRef.current(rutaPaso(slug, minimo));
   }, [slug, paso]);
-  return listo;
+  // Derivado del store (sin setState en el efecto): en el servidor y en la
+  // primera pasada del cliente el slug aun no esta activo, asi que no hay mismatch.
+  return useReservaOnlineStore(
+    (s) => s.slug === slug && ORDEN.indexOf(pasoMinimo(s)) >= ORDEN.indexOf(paso),
+  );
 }
 
 // Carga asincrona con estados explicitos. `clave` cambia => vuelve a pedir.
