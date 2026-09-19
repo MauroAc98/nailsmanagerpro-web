@@ -24,17 +24,17 @@ describe('DatosScreen', () => {
     limpiarFlujo();
     await flujoHasta('horario');
     const ir = vi.fn();
-    renderWithProviders(<DatosScreen slug="demo" ir={ir} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={ir} ahora={() => AHORA} />);
     await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/horario'));
   });
 
   it('Continuar esta deshabilitado con los datos vacios', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
   it('un WhatsApp sin codigo de pais bloquea Continuar y muestra el error', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
     await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
     await userEvent.type(screen.getByLabelText('WhatsApp'), '1155');
@@ -44,7 +44,7 @@ describe('DatosScreen', () => {
 
   it('con datos validos guarda en el store (E.164 normalizado) y avanza al resumen', async () => {
     const ir = vi.fn();
-    renderWithProviders(<DatosScreen slug="demo" ir={ir} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={ir} ahora={() => AHORA} />);
     await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
     await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
     await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
@@ -59,7 +59,7 @@ describe('DatosScreen', () => {
   });
 
   it('Continuar guarda los datos y la idea sobre el hold del servicio', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
     await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
     await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
@@ -78,7 +78,7 @@ describe('DatosScreen', () => {
     await flujoHasta('horario');
     useReservaOnlineStore.getState().setHorario('2026-09-25', '13:00');
     const ir = vi.fn();
-    renderWithProviders(<DatosScreen slug="demo" ir={ir} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={ir} ahora={() => AHORA} />);
     await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/horario'));
   });
 
@@ -112,19 +112,19 @@ describe('DatosScreen', () => {
   });
 
   it('el prefijo +54 9 es fijo (no editable) y el numero se tipea local', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByText('+54 9')).toBeInTheDocument();
     expect(screen.getByLabelText('WhatsApp')).toHaveValue('');
   });
 
   it('si pega el numero completo con +54 9 no se duplica el prefijo', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await userEvent.type(await screen.findByLabelText('WhatsApp'), '+54 9 376 512 3456');
     expect(useReservaOnlineStore.getState().cliente.whatsapp).toBe('+5493765123456');
   });
 
   it('titulo con subtitulo, ayuda del WhatsApp y linea de privacidad', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByRole('heading', { name: 'Tus datos' })).toBeInTheDocument();
     expect(screen.getByText('Los usamos solo para gestionar tu turno.')).toBeInTheDocument();
     expect(screen.getByText('Te mandamos la confirmación y el recordatorio por acá.')).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe('DatosScreen', () => {
 
   it('"Contanos tu idea" es opcional: no bloquea Continuar y se guarda en el store', async () => {
     useReservaOnlineStore.getState().setCliente({ nombre: 'Lu', apellido: 'Paz', whatsapp: '+5491155551234' });
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     const nota = await screen.findByLabelText(/Contanos tu idea/);
     expect(screen.getByText('Opcional')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled();
@@ -143,19 +143,19 @@ describe('DatosScreen', () => {
   });
 
   it('la idea tiene un maximo de 300 caracteres', async () => {
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByLabelText(/Contanos tu idea/)).toHaveAttribute('maxlength', '300');
   });
 
   it('restaura la idea guardada al volver desde el resumen', async () => {
     useReservaOnlineStore.getState().setNota('mi idea');
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByLabelText(/Contanos tu idea/)).toHaveValue('mi idea');
   });
 
   it('restaura lo guardado al volver desde el resumen', async () => {
     useReservaOnlineStore.getState().setCliente({ nombre: 'Lu', apellido: 'Paz', whatsapp: '+5491155551234' });
-    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByLabelText('Nombre')).toHaveValue('Lu');
     expect(screen.getByLabelText('WhatsApp')).toHaveValue('1155551234');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled();

@@ -23,12 +23,12 @@ describe('ResumenScreen', () => {
   it('con datos personales incompletos redirige a datos (guard)', async () => {
     useReservaOnlineStore.getState().setCliente({ whatsapp: '1155' });
     const ir = vi.fn();
-    renderWithProviders(<ResumenScreen slug="demo" ir={ir} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
     await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/datos'));
   });
 
   it('muestra fecha, hora, duracion, servicios (sin precios), profesional y direccion del salon', async () => {
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByRole('heading', { name: 'Revisá y confirmá' })).toBeInTheDocument();
     expect(await screen.findByText('Viernes 25 de septiembre · 13:00')).toBeInTheDocument();
     expect(screen.getByText('Duración 1 h 15 min')).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('ResumenScreen', () => {
   });
 
   it('NO hay total ni precios por servicio: el unico monto es la sena', async () => {
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await screen.findByText('Seña para reservar');
     expect(screen.queryByText('Total')).toBeNull();
     expect(screen.queryByText(/12\.000/)).toBeNull();
@@ -48,27 +48,27 @@ describe('ResumenScreen', () => {
   });
 
   it('la sena aclara que es parte del valor final y el resto se define y paga en el salon', async () => {
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(
       await screen.findByText('Es parte del valor final. El resto se define en el salón según tu diseño y se abona ahí.'),
     ).toBeInTheDocument();
   });
 
   it('avisa el tiempo para pagar y la cancelacion gratis (24 h por defecto)', async () => {
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByText('Tenés 15 minutos para pagar y asegurar el horario')).toBeInTheDocument();
     expect(screen.getByText('Cancelación gratis hasta 24 h antes')).toBeInTheDocument();
   });
 
   it('muestra "Tu idea" solo si la clienta la escribio', async () => {
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await screen.findByText('Seña para reservar');
     expect(screen.queryByText('Tu idea')).toBeNull();
   });
 
   it('con idea guardada la muestra en el resumen', async () => {
     useReservaOnlineStore.getState().setNota('flores y dorado');
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByText('Tu idea')).toBeInTheDocument();
     expect(screen.getByText('flores y dorado')).toBeInTheDocument();
   });
@@ -78,7 +78,7 @@ describe('ResumenScreen', () => {
     s.setProfesional('any');
     s.setHorario('2026-09-25', '13:00');
     s.setHold({ reservaId: s.hold!.reservaId, expiraMs: s.hold!.expiraMs, profesionalId: 2 });
-    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} />);
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByText('Con Lucía')).toBeInTheDocument();
   });
 
