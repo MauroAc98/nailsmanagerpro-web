@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent } from '@testing-library/react';
 import { renderWithProviders, screen, waitFor, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
@@ -8,6 +9,24 @@ import { HorarioScreen } from './HorarioScreen';
 import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
 
 const reloj = () => AHORA;
+
+// La rueda de horarios es UNA sola columna cuyos items son los inicios libres.
+const rueda = (): HTMLElement => document.querySelector('[data-drum]') as HTMLElement;
+const horasDeLaRueda = (): string[] => Array.from(rueda().children).map((c) => c.textContent ?? '');
+const hayRueda = () => document.querySelector('[data-drum]') !== null;
+// Gira la rueda hasta `hora` (el alto de cada item es 44px).
+function girarA(hora: string) {
+  const el = rueda();
+  Object.defineProperty(el, 'scrollTop', { value: horasDeLaRueda().indexOf(hora) * 44, configurable: true, writable: true });
+  fireEvent.scroll(el);
+}
+// Va al dia con las flechas de semana (si no esta en la tira actual) y lo toca.
+async function irAlDia(fecha: string) {
+  for (let i = 0; i < 6 && !screen.queryByTestId(`week-day-${fecha}`); i++) {
+    await userEvent.click(screen.getByRole('button', { name: 'Semana siguiente' }));
+  }
+  await userEvent.click(screen.getByTestId(`week-day-${fecha}`));
+}
 
 describe('HorarioScreen', () => {
   let svc: MockReservaOnlineService;
@@ -26,32 +45,128 @@ describe('HorarioScreen', () => {
     await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/servicios'));
   });
 
-  it('muestra avatares de profesional (Cualquiera primero + del salon) y la tira de dias desde hoy', async () => {
+  it('muestra avatares de profesional y la tira de semana de la agenda con flechas y boton Calendario', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     expect(await screen.findByRole('button', { name: 'Lucía' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cualquiera' })).toHaveAttribute('aria-pressed', 'true');
-    // 2026-09-19 es sabado
-    expect(screen.getByRole('button', { name: /Sáb 19/ })).toBeInTheDocument();
-    expect(screen.getByText('Septiembre 2026')).toBeInTheDocument();
+    // 2026-09-19 es sabado: semana lunes 14 a domingo 20
+    expect(screen.getByText('14 – 20 de sept')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Semana anterior' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Semana siguiente' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver calendario completo' })).toBeInTheDocument();
+    expect(screen.getByTestId('week-day-2026-09-19')).toBeInTheDocument();
   });
 
-  it('hoy respeta la anticipacion: el primer horario del dia elegido es 14:00', async () => {
+  it('los dias anteriores a hoy estan deshabilitados y la flecha de semana anterior tambien', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    expect(await screen.findByRole('button', { name: '14:00' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '10:00' })).toBeNull();
+    await screen.findByRole('button', { name: 'Lucía' });
+    expect(screen.getByTestId('week-day-2026-09-18')).toBeDisabled();
+    expect(screen.getByTestId('week-day-2026-09-19')).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Semana anterior' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Semana siguiente' })).toBeEnabled();
   });
 
-  it('elegir un dia distinto recarga los horarios', async () => {
+  it('hoy respeta la anticipacion: el primer horario de la rueda es 14:00 y no hay 10:00', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    expect(await screen.findByRole('button', { name: '10:00' })).toBeInTheDocument();
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(horasDeLaRueda()[0]).toBe('14:00');
+    expect(horasDeLaRueda()).not.toContain('10:00');
   });
 
-  it('elegir un horario lo guarda en el store y habilita Continuar', async () => {
+  it('la rueda lista SOLO los inicios libres: no aparecen los ocupados del demo (14:30-15:30 con Cualquiera)', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
-    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    const horas = horasDeLaRueda();
+    expect(horas).toHaveLength(16);
+    expect(horas).toContain('14:00');
+    for (const ocupada of ['14:30', '15:00', '15:30']) expect(horas).not.toContain(ocupada);
+    expect(horas).toContain('16:00');
+    // una sola columna: no hay ruedas separadas de hora y minuto
+    expect(document.querySelectorAll('[data-drum]')).toHaveLength(1);
+  });
+
+  it('cambiar de profesional refetchea (Ana tambien ocupada a las 14:00) e invalida la hora elegida', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()).toContain('14:00'));
+    girarA('10:30');
+    expect(useReservaOnlineStore.getState().hora).toBe('10:30');
+    await userEvent.click(screen.getByRole('button', { name: 'Ana' }));
+    expect(useReservaOnlineStore.getState().profesionalId).toBe(1);
+    expect(useReservaOnlineStore.getState().hora).toBeNull();
+    await waitFor(() => expect(horasDeLaRueda()).not.toContain('14:00'));
+  });
+
+  it('muestra el resumen de horarios libres (plural) con el rango de la rueda', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    expect(await screen.findByText('16 horarios libres · de 09:00 a 18:00')).toBeInTheDocument();
+  });
+
+  it('la nota de duracion muestra el rango que ocupara el turno y cambia al girar la rueda', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    expect(screen.getByText(/Tu turno ocupa de/)).toHaveTextContent('Tu turno ocupa de 09:00 a 10:15.');
+    girarA('13:00');
+    expect(screen.getByText(/Tu turno ocupa de/)).toHaveTextContent('Tu turno ocupa de 13:00 a 14:15.');
+  });
+
+  it('cambiar de semana con las flechas refetchea los horarios y limpia la hora elegida', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('14:00'));
+    girarA('16:00');
+    expect(useReservaOnlineStore.getState().hora).toBe('16:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Semana siguiente' }));
+    // mismo dia de la semana (sabado 26) y semana 21 - 27
+    expect(screen.getByText('21 – 27 de sept')).toBeInTheDocument();
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    expect(useReservaOnlineStore.getState().hora).toBeNull();
+    // ahora si se puede volver: la semana anterior ya no esta deshabilitada
+    expect(screen.getByRole('button', { name: 'Semana anterior' })).toBeEnabled();
+  });
+
+  it('el boton Calendario abre el calendario mensual: dias pasados deshabilitados, dias reservables no', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await screen.findByRole('button', { name: 'Lucía' });
+    expect(document.querySelector('[data-calendario-abierto="true"]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
+    expect(document.querySelector('[data-calendario-abierto="true"]')).not.toBeNull();
+    expect(screen.getByTestId('cal-day-2026-09-18')).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByTestId('cal-day-2026-09-19')).not.toHaveAttribute('aria-disabled');
+    expect(screen.getByTestId('cal-day-2026-09-29')).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('el ultimo dia reservable del calendario es hoy + 30; el siguiente esta deshabilitado', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await screen.findByRole('button', { name: 'Lucía' });
+    await userEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
+    // hoy 2026-09-19 + 30 = 2026-10-19: mes siguiente con la flecha de la cabecera (0 = cerrar, 1 = mes anterior)
+    const contenedor = document.querySelector('[data-calendario-abierto]') as HTMLElement;
+    fireEvent.click(within(contenedor).getAllByRole('button')[2]);
+    expect(screen.getByTestId('cal-day-2026-10-19')).not.toHaveAttribute('aria-disabled');
+    expect(screen.getByTestId('cal-day-2026-10-20')).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('elegir un dia en el calendario lo selecciona, refetchea y cierra; uno deshabilitado no hace nada', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await screen.findByRole('button', { name: 'Lucía' });
+    await userEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
+    fireEvent.click(screen.getByTestId('cal-day-2026-09-18'));
+    expect(screen.getByText('14 – 20 de sept')).toBeInTheDocument();
+    expect(document.querySelector('[data-calendario-abierto="true"]')).not.toBeNull();
+    fireEvent.click(screen.getByTestId('cal-day-2026-09-30'));
+    expect(screen.getByText('28 de sept – 4 de oct')).toBeInTheDocument();
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    expect(document.querySelector('[data-calendario-abierto="true"]')).toBeNull();
+  });
+
+  it('girar la rueda guarda la hora en el store y Continuar queda habilitado', async () => {
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
     expect(useReservaOnlineStore.getState().fecha).toBe('2026-09-21');
     expect(useReservaOnlineStore.getState().hora).toBe('10:30');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled();
@@ -60,53 +175,53 @@ describe('HorarioScreen', () => {
   it('Continuar RETIENE el horario (con "Cualquiera" resuelve la profesional), guarda el hold y avanza a datos', async () => {
     const ir = vi.fn();
     renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/datos'));
     const { hold } = useReservaOnlineStore.getState();
     expect(hold).toMatchObject({ profesionalId: 1, expiraMs: AHORA + 10 * 60_000 });
-    // el horario quedo ocupado para otra clienta
     await expect(
       svc.retenerHorario('demo', { servicioIds: [1, 2], profesionalId: 1, fecha: '2026-09-21', hora: '10:30' }),
     ).rejects.toMatchObject({ code: 'slot_taken' });
   });
 
-  it('si el horario ya no esta libre: mensaje amable en el lugar, se queda en horario, limpia la hora y refresca los horarios', async () => {
+  it('sin girar la rueda no avanza solo; Continuar retiene la primera hora libre', async () => {
     const ir = vi.fn();
     renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    expect(ir).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/datos'));
+    expect(useReservaOnlineStore.getState().hora).toBe('09:00');
+  });
+
+  it('si el horario ya no esta libre: mensaje amable, se queda en horario, limpia la hora y refresca la rueda', async () => {
+    const ir = vi.fn();
+    renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
     // otra clienta lo toma mientras esta miraba la lista
     await svc.retenerHorario('demo', { servicioIds: [1, 2], fecha: '2026-09-21', hora: '10:30' });
     await svc.retenerHorario('demo', { servicioIds: [1, 2], fecha: '2026-09-21', hora: '10:30' }); // Lucia tambien
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Ese horario se acaba de ocupar. Elegí otro.');
     expect(ir).not.toHaveBeenCalled();
-    expect(useReservaOnlineStore.getState().hora).toBeNull();
     expect(useReservaOnlineStore.getState().hold).toBeNull();
-    await waitFor(() => expect(screen.queryByRole('button', { name: '10:30' })).toBeNull());
-    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+    await waitFor(() => expect(horasDeLaRueda()).not.toContain('10:30'));
   });
 
   it('al volver al horario con un hold vigente lo suelta antes de elegir otro (y el horario propio vuelve a estar libre)', async () => {
     await flujoHasta('datos', svc); // hold de 13:00 del 25/09 con Ana
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await waitFor(() => expect(useReservaOnlineStore.getState().hold).toBeNull());
-    await userEvent.click(await screen.findByRole('button', { name: /Vie 25/ }));
-    expect(await screen.findByRole('button', { name: '13:00' })).toBeInTheDocument();
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(horasDeLaRueda()).toContain('13:00');
     const otra = await svc.retenerHorario('demo', { servicioIds: [1, 2], profesionalId: 1, fecha: '2026-09-25', hora: '13:00' });
     expect(otra.reservaId).toBeDefined(); // estaba liberado
-  });
-
-  it('cambiar de profesional invalida el horario elegido', async () => {
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Lucía' }));
-    expect(useReservaOnlineStore.getState().profesionalId).toBe(2);
-    expect(useReservaOnlineStore.getState().hora).toBeNull();
-    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
   it('el subtitulo muestra la duracion total del turno', async () => {
@@ -124,77 +239,94 @@ describe('HorarioScreen', () => {
     expect(within(screen.getByRole('button', { name: 'Lucía' })).getByText('L')).toBeInTheDocument();
   });
 
-  it('los horarios se agrupan en Mañana (antes de las 13:00) y Tarde en grilla de 4 columnas', async () => {
+  it('la barra inferior muestra dia y hora elegidos, y con quien si hay profesional', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    const manana = (await screen.findByText('Mañana')).parentElement as HTMLElement;
-    const tarde = screen.getByText('Tarde').parentElement as HTMLElement;
-    expect(within(manana).getByRole('button', { name: '12:30' })).toBeInTheDocument();
-    expect(within(manana).queryByRole('button', { name: '13:00' })).toBeNull();
-    expect(within(tarde).getByRole('button', { name: '13:00' })).toBeInTheDocument();
-    expect(within(tarde).getByRole('button', { name: '18:00' })).toBeInTheDocument();
-    expect(within(tarde).getByRole('button', { name: '13:00' }).parentElement).toHaveStyle({
-      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-    });
-  });
-
-  it('hoy (desde las 14:00) no hay grupo Mañana', async () => {
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: '14:00' });
-    expect(screen.queryByText('Mañana')).toBeNull();
-    expect(screen.getByText('Tarde')).toBeInTheDocument();
-  });
-
-  it('el horario elegido queda oscuro (pressed) y la barra inferior muestra dia y hora', async () => {
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
-    expect(screen.getByRole('button', { name: '10:30' })).toHaveAttribute('aria-pressed', 'true');
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
     expect(screen.getByText(/Lunes 21/).closest('div')).toHaveTextContent('Lunes 21 · 10:30 con cualquier profesional');
-  });
-
-  it('con una profesional elegida la barra dice con quien', async () => {
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Lucía' }));
-    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
-    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lucía' }));
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
     expect(screen.getByText(/Lunes 21/).closest('div')).toHaveTextContent('Lunes 21 · 10:30 con Lucía');
   });
 
-  it('sin horario elegido no hay barra de seleccion', async () => {
+  it('cuando el servicio sabe la disponibilidad (mock) los dias con horarios de la semana llevan punto', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: '14:00' });
-    expect(screen.queryByText(/con cualquier profesional/)).toBeNull();
-  });
-
-  it('cuando el servicio sabe la disponibilidad (mock) los dias con horarios llevan punto', async () => {
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: '14:00' });
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Lun 21/ }).querySelector('[data-disponible]')).not.toBeNull(),
+      expect(screen.getByTestId('week-day-2026-09-20').querySelector('[data-punto]')).not.toBeNull(),
     );
   });
 
   it('cuando NO lo sabe (adapter real: null) no se dibuja ningun punto', async () => {
-    const svc = prepararServicio();
-    setServiceParaTests({ ...svc, getDiasConDisponibilidad: async () => null });
+    const otro = prepararServicio();
+    setServiceParaTests({ ...otro, getDiasConDisponibilidad: async () => null });
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: '14:00' });
-    expect(document.querySelector('[data-disponible]')).toBeNull();
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(document.querySelector('[data-punto]')).toBeNull();
   });
 
-  it('dia sin horarios libres muestra el estado vacio', async () => {
-    prepararServicio(() => Date.UTC(2026, 8, 20, 0, 0)); // 21:00 del 19: hoy ya no hay turnos
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={() => Date.UTC(2026, 8, 20, 0, 0)} />);
-    expect(await screen.findByText('No hay horarios libres este día. Probá con otro.')).toBeInTheDocument();
+  it('si "hoy" ya no tiene lugar por la anticipacion (22:30 + 2 h) arranca en el primer dia reservable', async () => {
+    const tarde = () => Date.UTC(2026, 8, 20, 1, 30); // 22:30 del sabado 19 en el salon
+    prepararServicio(tarde);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={tarde} />);
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(screen.getByTestId('week-day-2026-09-19')).toBeDisabled();
+    expect(horasDeLaRueda()[0]).toBe('09:00');
+    expect(screen.getByText(/Domingo 20/)).toBeInTheDocument();
   });
 
-  it('"Ver más días" extiende la tira', async () => {
-    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Sáb 19/ });
-    const antes = screen.getAllByRole('button', { name: /^(Lun|Mar|Mié|Jue|Vie|Sáb|Dom) \d+/ }).length;
-    await userEvent.click(screen.getByRole('button', { name: 'Ver más días' }));
-    const despues = screen.getAllByRole('button', { name: /^(Lun|Mar|Mié|Jue|Vie|Sáb|Dom) \d+/ }).length;
-    expect(despues).toBeGreaterThan(antes);
+  describe('dia sin horarios libres', () => {
+    // Servicio mock sin horarios antes de `desde`; desde esa fecha usa el mock real.
+    const sinLugarHasta = (desde: string) => {
+      const base = prepararServicio();
+      const consultadas: string[] = [];
+      setServiceParaTests({
+        ...base,
+        getDiasConDisponibilidad: async () => null,
+        getAvailability: async (slug, q) => {
+          consultadas.push(q.fecha);
+          if (q.fecha < desde) return { fecha: q.fecha, duracionTotalMinutos: 75, slots: [] };
+          return base.getAvailability(slug, q);
+        },
+      });
+      return consultadas;
+    };
+
+    it('no dibuja la rueda: muestra el estado vacio con "Ir al próximo día con lugar" y "Elegir otro día"', async () => {
+      sinLugarHasta('2026-09-30');
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByText('No hay horarios libres este día. Probá con otro.')).toBeInTheDocument();
+      expect(hayRueda()).toBe(false);
+      expect(screen.getByRole('button', { name: 'Ir al próximo día con lugar' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Elegir otro día' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+    });
+
+    it('"Ir al próximo día con lugar" busca dia por dia y salta al primero con horarios', async () => {
+      const consultadas = sinLugarHasta('2026-09-22');
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+      await waitFor(() => expect(hayRueda()).toBe(true));
+      expect(horasDeLaRueda()[0]).toBe('09:00');
+      expect(screen.getByText('21 – 27 de sept')).toBeInTheDocument();
+      expect(screen.getByText(/Martes 22/)).toBeInTheDocument();
+      expect(consultadas).toEqual(expect.arrayContaining(['2026-09-20', '2026-09-21', '2026-09-22']));
+    });
+
+    it('si en toda la ventana no hay lugar lo dice y no salta', async () => {
+      sinLugarHasta('2027-01-01');
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+      expect(await screen.findByText('No encontramos lugar en los próximos días.')).toBeInTheDocument();
+      expect(hayRueda()).toBe(false);
+    });
+
+    it('"Elegir otro día" abre el calendario mensual', async () => {
+      sinLugarHasta('2026-09-30');
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await userEvent.click(await screen.findByRole('button', { name: 'Elegir otro día' }));
+      expect(document.querySelector('[data-calendario-abierto="true"]')).not.toBeNull();
+    });
   });
 });

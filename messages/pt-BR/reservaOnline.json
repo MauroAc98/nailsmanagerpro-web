@@ -32,16 +32,20 @@
   "horario": {
     "title": "Quando você vem?",
     "cualquiera": "Qualquer uma",
-    "verMasDias": "Ver mais dias",
     "sinHorarios": "Não há horários livres neste dia. Tente outro.",
     "errorCarga": "Não conseguimos carregar os horários.",
     "subtitulo": "Seu atendimento dura {duracion}.",
     "profesional": "Profissional",
-    "manana": "Manhã",
-    "tarde": "Tarde",
     "elegidoCualquiera": "<b>{dia}</b> · {hora} com qualquer profissional",
     "elegidoCon": "<b>{dia}</b> · {hora} com {profesional}",
     "tomado": "Esse horário acabou de ser ocupado. Escolha outro.",
+    "labelHora": "Escolha o horário",
+    "resumenLibres": "{n, plural, one {# horário livre} other {# horários livres}} · de {desde} a {hasta}",
+    "ocupaRango": "Seu atendimento ocupa de <b>{inicio}</b> a <b>{fin}</b>.",
+    "irProximoDia": "Ir para o próximo dia com vaga",
+    "elegirOtroDia": "Escolher outro dia",
+    "buscando": "Procurando o próximo dia com vaga…",
+    "sinLugarProximos": "Não encontramos vaga nos próximos dias.",
     "reteniendo": "Reservando seu horário…"
   },
   "datos": {
