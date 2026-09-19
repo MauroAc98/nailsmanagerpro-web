@@ -10,7 +10,8 @@ import type { ReservaOnlineReads } from '../service';
 //      con los 3 JSON exactos del diseno;
 //   3. activar LECTURAS_REALES en ../index.ts.
 // Hasta entonces la composicion sigue usando el mock para todo.
-export function createRealReads(_http: AxiosInstance): ReservaOnlineReads {
+export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
+  void http; // se usara al implementar la tarea 2.8
   const pendiente = (): never => {
     throw new Error('adapter real de lecturas pendiente (tarea 2.8, requiere backend)');
   };
