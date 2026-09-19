@@ -12,6 +12,22 @@ describe('EntryScreen', () => {
   });
   afterEach(() => setServiceParaTests(null));
 
+  // El "Cargando…" de texto plano (Mensaje) se ve mal en la primera pantalla
+  // que ve la clienta — acá pasa a un esqueleto que respeta la forma del
+  // layout nuevo (portada + círculo + tarjetas), sin salto al llegar los datos.
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    expect(screen.getByTestId('entry-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas los datos están listos', async () => {
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    expect(screen.getByTestId('entry-skeleton')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Studio Demo' });
+    expect(screen.queryByTestId('entry-skeleton')).toBeNull();
+  });
+
   it('muestra nombre serif y direccion con "Cómo llegar" a Google Maps', async () => {
     renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
     expect(await screen.findByRole('heading', { name: 'Studio Demo' })).toBeInTheDocument();

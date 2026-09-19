@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { linkComoLlegar } from '@/lib/reservaOnline/calendario';
@@ -8,6 +9,31 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, type Ir } from './hooks';
 import { IcoBrillo, IcoCalendario, IcoCheck, IcoEscudo, IcoPin } from './iconos';
 import { Avatar, BarraInferior, BotonPrimario, Mensaje, Tarjeta } from './ui';
+
+function Hueso({ w, h, r = 8, style }: { w: number | string; h: number; r?: number; style?: CSSProperties }) {
+  return (
+    <div
+      className="rz-skeleton"
+      style={{ width: w, height: h, borderRadius: r, background: colors.divider, ...style }}
+    />
+  );
+}
+
+// Forma del layout real (portada + círculo + nombre/direccion + tarjeta de
+// pasos), para que no salte nada al llegar los datos.
+function EntrySkeleton() {
+  return (
+    <div data-testid="entry-skeleton">
+      <Hueso w="calc(100% + 40px)" h={190} r={0} style={{ margin: '-16px -20px 0' }} />
+      <div style={{ marginTop: -34, padding: '0 0 0', position: 'relative' }}>
+        <Hueso w={58} h={58} r={29} style={{ border: `3px solid ${colors.bg}`, boxSizing: 'border-box' }} />
+        <Hueso w="70%" h={26} style={{ marginTop: 14 }} />
+        <Hueso w="55%" h={14} style={{ marginTop: 10 }} />
+      </div>
+      <Hueso w="100%" h={92} r={16} style={{ marginTop: 20 }} />
+    </div>
+  );
+}
 
 // Pantalla 1: entrada. Banda de portada con degrade de marca (el DTO no trae
 // imagen de portada), avatar con logo o inicial, direccion con "Como llegar",
@@ -28,7 +54,11 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
       </Mensaje>
     );
   }
-  if (cargando || !data) return <Mensaje>{t('comun.cargando')}</Mensaje>;
+  // Esqueleto en vez del "Cargando…" de texto plano (Mensaje): es la primera
+  // pantalla que ve la clienta, y ese flash de texto suelto desentonaba con
+  // el resto. Respeta la forma del layout real (portada + círculo + tarjeta
+  // de pasos) para que no salte al llegar los datos.
+  if (cargando || !data) return <EntrySkeleton />;
 
   const { salon, terminos } = data;
   const inicial = salon.nombre.trim().charAt(0).toUpperCase();

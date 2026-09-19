@@ -154,6 +154,17 @@ body {
   animation: spin 0.8s linear infinite;
 }
 
+/* Esqueletos de carga (ej. reserva online, EntryScreen) — bloques neutros
+   que laten suave en vez de un "Cargando..." de texto plano. */
+@keyframes rz-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.rz-skeleton {
+  animation: rz-pulse 1.4s ease-in-out infinite;
+}
+
 /* Bottom nav — el bubble del tab activo se monta/desmonta en cada cambio de
    ruta (branch condicional en app/(app)/layout.tsx, no una transform de un
    elemento persistente), así que un transition normal no lo agarra: no hay
