@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { BottomSheet, type BottomSheetHandle } from '@/components/BottomSheet';
 import { DrumPicker } from '@/components/DrumPicker';
+import SelectorProfesional from '@/components/SelectorProfesional';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
 import { WeekStrip } from '@/components/agenda/WeekStrip';
 import { parseFechaLocal } from '@/components/agenda/agendaDateHelpers';
@@ -25,11 +26,11 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
-import { Avatar, BarraInferior, BotonPrimario, Etiqueta, Mensaje, PasoHeader } from './ui';
+import { BarraInferior, BotonPrimario, Etiqueta, Mensaje, PasoHeader } from './ui';
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
-// Pantalla 3: profesional (avatares), tira de semana con flechas y calendario
+// Pantalla 3: profesional (selector compartido con la agenda), tira de semana con flechas y calendario
 // (la misma de la agenda de la profesional) y UNA rueda con los inicios libres
 // del dia: como los items son exactamente los horarios libres que devuelve la
 // lectura de disponibilidad, no se puede armar una combinacion solapada.
@@ -229,33 +230,6 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     }
   };
 
-  const avatarBoton = (id: number | 'any', nombre: string, contenido?: string) => {
-    const activo = profesionalId === id;
-    return (
-      <button
-        key={id}
-        type="button"
-        data-profesional=""
-        aria-label={nombre}
-        aria-pressed={activo}
-        onClick={() => setProfesional(id)}
-        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center' }}
-      >
-        <Avatar nombre={nombre} size={48} anillo={activo}>
-          {contenido}
-        </Avatar>
-        <div
-          style={{
-            fontSize: 12, marginTop: 5, fontWeight: activo ? 700 : 400, color: activo ? colors.strong : colors.text,
-            maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}
-        >
-          {nombre.trim().split(/\s+/)[0]}
-        </div>
-      </button>
-    );
-  };
-
   const botonSecundario = {
     background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
     color: colors.primaryDeep, padding: '10px 0',
@@ -270,11 +244,21 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         onVolver={() => ir(rutaPaso(slug, 'servicios'))}
       />
 
-      <Etiqueta>{t('horario.profesional')}</Etiqueta>
-      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 6 }}>
-        {avatarBoton('any', t('horario.cualquiera'), '★')}
-        {salon?.profesionales.map((p) => avatarBoton(p.id, p.nombre))}
-      </div>
+      {/* Mismo selector de la agenda propia (mismos tokens que agenda/historia);
+          solo con 2+ profesionales. "Cualquiera" = sin profesional puntual. */}
+      {salon && salon.profesionales.length > 1 && (
+        <SelectorProfesional
+          label={t('horario.profesional')}
+          labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
+          todasLabel={t('horario.cualquiera')}
+          profesionales={salon.profesionales}
+          selectedId={profesionalId === 'any' ? null : profesionalId}
+          onSelect={(id) => setProfesional(id ?? 'any')}
+          selectedFg={colors.primaryFg}
+          unselectedBorderColor={colors.border}
+          pillFontWeight={600}
+        />
+      )}
 
       {/* La tira de la agenda propia; su padding lateral propio se compensa. */}
       <div style={{ margin: '14px -20px 0' }}>
