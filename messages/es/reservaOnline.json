@@ -27,14 +27,17 @@
     "continuar": "Continuar · {count, plural, one {# servicio} other {# servicios}}"
   },
   "horario": {
-    "title": "Día y hora",
-    "conQuien": "Con quién",
+    "title": "¿Cuándo venís?",
     "cualquiera": "Cualquiera",
     "verMasDias": "Ver más días",
-    "horarios": "Horarios · {dia}",
-    "duracion": "Tu turno dura {minutos} min",
     "sinHorarios": "No hay horarios libres este día. Probá con otro.",
-    "errorCarga": "No pudimos cargar los horarios."
+    "errorCarga": "No pudimos cargar los horarios.",
+    "subtitulo": "Tu turno dura {duracion}.",
+    "profesional": "Profesional",
+    "manana": "Mañana",
+    "tarde": "Tarde",
+    "elegidoCualquiera": "<b>{dia}</b> · {hora} con cualquier profesional",
+    "elegidoCon": "<b>{dia}</b> · {hora} con {profesional}"
   },
   "datos": {
     "title": "Tus datos",
