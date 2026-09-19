@@ -13,6 +13,21 @@ describe('DetalleServicioScreen', () => {
   });
   afterEach(() => setServiceParaTests(null));
 
+  // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto que
+  // respeta la forma real (galeria + titulo/duracion + boton).
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
+    expect(screen.getByTestId('detalle-servicio-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas el servicio esta listo', async () => {
+    renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
+    expect(screen.getByTestId('detalle-servicio-skeleton')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Esmaltado semipermanente' });
+    expect(screen.queryByTestId('detalle-servicio-skeleton')).toBeNull();
+  });
+
   it('muestra nombre, duracion, "Desde", la nota del valor final y el contador de fotos', async () => {
     renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
     expect(await screen.findByRole('heading', { name: 'Esmaltado semipermanente' })).toBeInTheDocument();

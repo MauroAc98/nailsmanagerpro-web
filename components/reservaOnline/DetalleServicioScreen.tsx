@@ -10,7 +10,25 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoAtras, IcoReloj } from './iconos';
-import { BarraInferior, BotonPrimario, Mensaje } from './ui';
+import { BarraInferior, BotonPrimario, Hueso, Mensaje } from './ui';
+
+// Forma del layout real (galeria + titulo/duracion + boton), para que no
+// salte nada al llegar el servicio.
+function DetalleServicioSkeleton() {
+  return (
+    <div data-testid="detalle-servicio-skeleton">
+      <Hueso w="calc(100% + 40px)" h={250} r={0} style={{ margin: '-16px -20px 0' }} />
+      <div style={{ padding: '16px 0 0' }}>
+        <Hueso w="65%" h={26} />
+        <Hueso w="45%" h={14} style={{ marginTop: 10 }} />
+        <Hueso w="90%" h={13} style={{ marginTop: 12 }} />
+      </div>
+      <BarraInferior>
+        <Hueso w="100%" h={52} r={14} />
+      </BarraInferior>
+    </div>
+  );
+}
 
 // Detalle de un servicio: galeria paginada (deslizable) con miniaturas, datos
 // y "Agregar a mi turno". El precio es solo de referencia ("Desde"): el valor
@@ -36,7 +54,7 @@ export function DetalleServicioScreen({
   const volver = () => ir(rutaPaso(slug, 'servicios'));
 
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
-  if (!servicios) return <Mensaje>{t('comun.cargando')}</Mensaje>;
+  if (!servicios) return <DetalleServicioSkeleton />;
   const s = servicios.find((x) => x.id === servicioId);
   if (!s) return <Mensaje tono="error">{t('detalle.noEncontrado')}</Mensaje>;
 
