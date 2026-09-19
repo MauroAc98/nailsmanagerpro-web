@@ -13,6 +13,21 @@ describe('ServiciosScreen', () => {
   });
   afterEach(() => setServiceParaTests(null));
 
+  // El "Cargando…" de texto plano se ve mal aca tambien: pasa a un esqueleto
+  // que respeta la forma real (pastillas de filtro + tarjetas de servicio).
+  it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    expect(screen.getByTestId('servicios-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+  });
+
+  it('el esqueleto desaparece apenas los servicios estan listos', async () => {
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    expect(screen.getByTestId('servicios-skeleton')).toBeInTheDocument();
+    await screen.findByText('Kapping gel');
+    expect(screen.queryByTestId('servicios-skeleton')).toBeNull();
+  });
+
   it('lista los servicios con duracion y precio "Desde" (referencia, nunca un precio firme)', async () => {
     renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
     expect(await screen.findByText('Esmaltado semipermanente')).toBeInTheDocument();
