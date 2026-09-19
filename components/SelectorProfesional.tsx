@@ -10,6 +10,12 @@ export interface ProfesionalOption {
   nombre:   string;
   apellido?: string | null;
   color?:   string | null;
+  // Avatar real, opcional — cuando esta presente se muestra en vez de las
+  // iniciales (usado por la reserva online, HorarioScreen, que pasa
+  // salon.profesionales tal cual). Callers que no lo pasan (agenda,
+  // historia, historia-precios) no cambian: sin esta prop nada se pinta
+  // distinto.
+  avatarUrl?: string | null;
 }
 
 interface Props {
@@ -119,13 +125,18 @@ export default function SelectorProfesional({
               }}
             >
               <span style={{
-                width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 9, fontWeight: 800,
                 backgroundColor: selected ? withAlpha(selectedFg, '3D') : withAlpha(color, '26'),
                 color: selected ? selectedFg : color,
               }}>
-                {inicialesProfesional(p.nombre, p.apellido)}
+                {p.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  inicialesProfesional(p.nombre, p.apellido)
+                )}
               </span>
               {p.nombre}
             </button>

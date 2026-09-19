@@ -308,6 +308,24 @@ describe('HorarioScreen', () => {
     expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('el selector de profesional muestra la foto real cuando la profesional tiene avatarUrl', async () => {
+    setServiceParaTests({
+      ...svc,
+      getSalon: async (s) => {
+        const salon = await svc.getSalon(s);
+        return {
+          ...salon,
+          profesionales: salon.profesionales.map((p) =>
+            p.nombre === 'Ana' ? { ...p, avatarUrl: 'https://cdn.test/ana.jpg' } : p,
+          ),
+        };
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await screen.findByRole('button', { name: /Lucía$/ });
+    expect(document.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
+  });
+
   it('elegir una profesional la marca y tocarla de nuevo vuelve a "Cualquiera"', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await screen.findByRole('button', { name: /Lucía$/ });

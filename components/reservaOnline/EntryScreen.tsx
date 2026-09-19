@@ -156,7 +156,7 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
             <div style={{ display: 'flex' }}>
               {salon.profesionales.slice(0, 4).map((p, i) => (
                 <div key={p.id} style={{ marginLeft: i === 0 ? 0 : -8 }}>
-                  <Avatar nombre={p.nombre} />
+                  <Avatar nombre={p.nombre} fotoUrl={p.avatarUrl} />
                 </div>
               ))}
             </div>
