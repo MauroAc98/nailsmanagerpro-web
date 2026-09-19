@@ -7,5 +7,10 @@
     "serviceAlreadyBooked": "A cliente já tem agendado: {nombres} para este dia.",
     "unknownClientFallback": "outra cliente",
     "scheduleConflict": "{hora} está dentro do agendamento de {cliente} ({servicios}, {desde} - {hasta}). Escolha outro horário."
+  },
+  "TurnoAdvertencias": {
+    "diaNoLaborable": "{diaSemana} não é um dia útil para {profesional}. Confirmar mesmo assim?",
+    "fechaBloqueadaConMotivo": "Esse dia está bloqueado ({motivo}). Confirmar mesmo assim?",
+    "fechaBloqueadaSinMotivo": "Esse dia está bloqueado. Confirmar mesmo assim?"
   }
 }
