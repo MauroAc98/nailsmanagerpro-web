@@ -2,15 +2,54 @@
 
 import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
-import { rutaPaso } from '@/lib/reservaOnline/rutas';
-import { totalesDeServicios } from '@/lib/reservaOnline/totales';
+import { rutaPaso, rutaServicio } from '@/lib/reservaOnline/rutas';
 import { formatMontoCorto } from '@/lib/money';
+import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
-import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors as colors } from '@/theme/agendaColors';
+import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
+import { IcoBrillo, IcoCheck, IcoMas, IcoReloj } from './iconos';
 import { BarraInferior, BotonPrimario, Mensaje, PasoHeader } from './ui';
 
-// Pantalla 2: seleccion multiple de servicios con total y duracion corriente.
+// Datos de la tarjeta: nombre, duracion y "Desde $X" (precio de referencia: el
+// valor final lo confirma el salon; el DTO no trae descripcion, asi que no se
+// renderiza ninguna linea de descripcion).
+function DatosServicio({ s }: { s: BookableService }) {
+  const t = useTranslations('reservaOnline.servicios');
+  return (
+    <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+      <div style={{ fontSize: 15.5, fontWeight: 700, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {s.nombre}
+      </div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8, fontSize: 12.5, color: colors.sub }}>
+        <IcoReloj color={colors.muted} size={15} />
+        <span>{s.duracionMinutos} min</span>
+        <span aria-hidden="true" style={{ color: colors.border }}>|</span>
+        <b style={{ color: colors.strong, fontWeight: 600 }}>{t('desde', { monto: `$${formatMontoCorto(s.precio)}` })}</b>
+      </div>
+    </div>
+  );
+}
+
+// Circulo de estado: check relleno si esta elegido, "+" si no.
+function Circulo({ elegido }: { elegido: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 32, height: 32, borderRadius: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: elegido ? colors.primarySolid : colors.surface,
+        border: elegido ? 'none' : `1.5px solid ${colors.border}`,
+      }}
+    >
+      {elegido ? <IcoCheck color={colors.primaryFg} size={15} sw={3} /> : <IcoMas color={colors.primaryDeep} sw={2.5} />}
+    </span>
+  );
+}
+
+// Pantalla 2: seleccion multiple de servicios. Sin total corriente: solo
+// "Desde $X" por servicio y una nota de que el valor final se confirma en el salon.
 export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   const t = useTranslations('reservaOnline');
   const listo = useGuardaPaso(slug, 'servicios', ir);
@@ -25,11 +64,15 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
 
   const alternar = (id: number) =>
     setServicios(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id]);
-  const totales = totalesDeServicios(servicios ?? [], seleccion);
 
   return (
     <div>
-      <PasoHeader titulo={t('servicios.title')} paso={1} onVolver={() => ir(rutaPaso(slug))} />
+      <PasoHeader
+        titulo={t('servicios.title')}
+        subtitulo={t('servicios.subtitle')}
+        paso={1}
+        onVolver={() => ir(rutaPaso(slug))}
+      />
       {error && (
         <>
           <Mensaje tono="error">{t('errores.generico')}</Mensaje>
@@ -40,59 +83,78 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
       {servicios?.map((s) => {
         const elegido = seleccion.includes(s.id);
+        const tarjeta = {
+          display: 'flex', alignItems: 'center', gap: 12, width: '100%', boxSizing: 'border-box',
+          background: elegido ? colors.primarySoft : colors.surface, borderRadius: 16, padding: '12px 14px 12px 12px',
+          marginBottom: 10, border: `${elegido ? 1.5 : 1}px solid ${elegido ? colors.primarySolid : colors.border}`,
+        } as const;
+
+        // Sin fotos: la tarjeta entera es el checkbox (sin miniatura).
+        if (s.fotos.length === 0) {
+          return (
+            <button
+              key={s.id}
+              type="button"
+              role="checkbox"
+              aria-checked={elegido}
+              aria-label={s.nombre}
+              onClick={() => alternar(s.id)}
+              style={{ ...tarjeta, cursor: 'pointer', textAlign: 'left' }}
+            >
+              <DatosServicio s={s} />
+              <Circulo elegido={elegido} />
+            </button>
+          );
+        }
+
+        // Con fotos: el cuerpo abre el detalle; el circulo agrega/quita.
         return (
-          <button
-            key={s.id}
-            type="button"
-            role="checkbox"
-            aria-checked={elegido}
-            aria-label={s.nombre}
-            onClick={() => alternar(s.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
-              background: colors.surface, borderRadius: 14, padding: '14px 16px', marginBottom: 8, cursor: 'pointer',
-              border: `${elegido ? 1.5 : 1}px solid ${elegido ? colors.primarySolid : colors.border}`,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 700, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {s.nombre}
-              </div>
-              <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 3 }}>{s.duracionMinutos} min</div>
-            </div>
-            <div style={{ fontFamily: agendaFontSerif, fontSize: 18, color: colors.textStrong, flexShrink: 0 }}>
-              ${formatMontoCorto(s.precio)}
-            </div>
-            <div
-              aria-hidden="true"
+          <div key={s.id} style={tarjeta}>
+            <button
+              type="button"
+              aria-label={t('servicios.verFotos', { nombre: s.nombre })}
+              onClick={() => ir(rutaServicio(slug, s.id))}
               style={{
-                width: 24, height: 24, borderRadius: 12, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: elegido ? colors.primarySolid : 'transparent',
-                border: elegido ? 'none' : `1.5px solid ${colors.border}`,
+                flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, padding: 0,
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              {elegido && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primaryFg} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </div>
-          </button>
+              <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+                <FotoTile src={s.fotos[0]} estilo={{ borderRadius: 12 }} />
+                <span
+                  style={{
+                    position: 'absolute', right: 4, bottom: 4, background: 'rgba(43, 34, 38, 0.72)', color: '#fff',
+                    fontSize: 10, fontWeight: 700, borderRadius: 8, padding: '1px 6px',
+                  }}
+                >
+                  {t('servicios.fotos', { count: s.fotos.length })}
+                </span>
+              </div>
+              <DatosServicio s={s} />
+            </button>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={elegido}
+              aria-label={s.nombre}
+              onClick={() => alternar(s.id)}
+              style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}
+            >
+              <Circulo elegido={elegido} />
+            </button>
+          </div>
         );
       })}
 
       <BarraInferior>
-        {seleccion.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.sub, marginBottom: 10 }}>
-            <span>{t('servicios.resumen', { count: seleccion.length, minutos: totales.duracionMinutos })}</span>
-            <b style={{ color: colors.textStrong, fontFamily: agendaFontSerif, fontSize: 18 }}>
-              ${formatMontoCorto(totales.precio)}
-            </b>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: colors.sub, marginBottom: 10, lineHeight: 1.4 }}>
+          <IcoBrillo color={colors.primaryDeep} />
+          <span>{t('servicios.notaPrecios')}</span>
+        </div>
         <BotonPrimario disabled={seleccion.length === 0} onClick={() => ir(rutaPaso(slug, 'horario'))}>
-          {t('comun.continuar')}
+          {seleccion.length > 0
+            ? t('servicios.continuar', { count: seleccion.length })
+            : t('comun.continuar')}
         </BotonPrimario>
       </BarraInferior>
     </div>

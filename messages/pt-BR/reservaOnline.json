@@ -17,10 +17,14 @@
     "pasoDe": "Passo {actual} de {total}"
   },
   "servicios": {
-    "title": "Escolha seus serviços",
-    "resumen": "{count, plural, one {# serviço} other {# serviços}} · {minutos} min",
+    "title": "O que você quer fazer?",
     "vacio": "Este salão ainda não tem serviços para reservar online.",
-    "sinSeleccion": "Escolha pelo menos um serviço"
+    "subtitle": "Você pode escolher mais de um.",
+    "desde": "A partir de {monto}",
+    "fotos": "{count, plural, one {# foto} other {# fotos}}",
+    "verFotos": "Ver fotos de {nombre}",
+    "notaPrecios": "Os preços são de referência: o valor final depende do design e é confirmado no salão.",
+    "continuar": "Continuar · {count, plural, one {# serviço} other {# serviços}}"
   },
   "horario": {
     "title": "Dia e hora",
@@ -118,5 +122,13 @@
     "badge": "Reserva online",
     "aviso": "{nombre} reservou e pagou o sinal",
     "avisoDetalle": "{fecha} {hora}"
+  },
+  "detalle": {
+    "agregar": "Adicionar ao meu horário",
+    "quitar": "Remover do meu horário",
+    "contador": "{actual} / {total}",
+    "verFoto": "Ver foto {n}",
+    "notaValor": "O valor final depende do design e é confirmado no salão.",
+    "noEncontrado": "Não encontramos este serviço."
   }
 }
