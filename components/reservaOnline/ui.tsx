@@ -10,61 +10,117 @@ import { agendaColors as colors, agendaFontSerif, agendaShadows as shadows } fro
 
 export const TOTAL_PASOS = 5;
 
+// Cabecera de los 5 pasos: boton redondo de volver + progreso segmentado con
+// "N/5", y debajo el titulo serif con un subtitulo corto opcional.
 export function PasoHeader({
   titulo,
+  subtitulo,
   paso,
   onVolver,
 }: {
   titulo: string;
+  subtitulo?: string;
   paso: number; // 1..TOTAL_PASOS: cuantos segmentos van rellenos
   onVolver?: () => void;
 }) {
   const t = useTranslations('reservaOnline.comun');
   return (
-    <header>
-      <div style={{ padding: '4px 0 2px', minHeight: 30 }}>
+    <header style={{ margin: '0 -20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px 6px', minHeight: 40 }}>
         {onVolver && (
           <button
             type="button"
             onClick={onVolver}
             aria-label={t('volver')}
-            style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', display: 'flex' }}
+            style={{
+              width: 36, height: 36, borderRadius: 18, flexShrink: 0, cursor: 'pointer', padding: 0,
+              background: colors.surface, border: `1px solid ${colors.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.strong} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
         )}
+        <div
+          role="progressbar"
+          aria-label={t('pasoDe', { actual: paso, total: TOTAL_PASOS })}
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_PASOS}
+          aria-valuenow={paso}
+          style={{ flex: 1, display: 'flex', gap: 5 }}
+        >
+          {Array.from({ length: TOTAL_PASOS }, (_, i) => (
+            <div
+              key={i}
+              style={{ flex: 1, height: 4, borderRadius: 2, background: i < paso ? colors.primarySolid : colors.border }}
+            />
+          ))}
+        </div>
+        <div aria-hidden="true" style={{ fontSize: 12, fontWeight: 600, color: colors.sub, width: 34, textAlign: 'right' }}>
+          {paso}/{TOTAL_PASOS}
+        </div>
       </div>
-      <h1 style={{ margin: '4px 0 10px', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong }}>
-        {titulo}
-      </h1>
-      <div style={{ display: 'flex', gap: 6, paddingBottom: 14 }} aria-hidden="true">
-        {Array.from({ length: TOTAL_PASOS }, (_, i) => (
-          <div
-            key={i}
-            style={{ flex: 1, height: 4, borderRadius: 2, background: i < paso ? colors.primarySolid : colors.border }}
-          />
-        ))}
+      <div style={{ padding: '14px 20px 14px' }}>
+        <h1 style={{ margin: 0, fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 27, lineHeight: 1.15, color: colors.textStrong }}>
+          {titulo}
+        </h1>
+        {subtitulo && (
+          <div style={{ fontSize: 14, color: colors.sub, marginTop: 5, lineHeight: 1.45 }}>{subtitulo}</div>
+        )}
       </div>
     </header>
   );
 }
 
-// Barra inferior fija (pegada al borde de la columna de 480px).
+// Barra inferior fija con degrade hacia el fondo (pegada al borde de la
+// columna de 480px): el contenido se desvanece detras del boton.
 export function BarraInferior({ children }: { children: ReactNode }) {
   return (
     <div
       style={{
         position: 'sticky',
         bottom: 0,
-        margin: '24px -16px -24px',
-        padding: '14px 20px 26px',
-        background: colors.bg,
-        borderTop: `1px solid ${colors.border}`,
+        margin: '24px -20px -24px',
+        padding: '12px 20px 26px',
+        background: `linear-gradient(to top, ${colors.bg} 78%, transparent)`,
       }}
     >
       {children}
+    </div>
+  );
+}
+
+// Tintes pastel de los avatares del tablero (no son del tema): rosa, verde salvia, azul.
+const TINTES_AVATAR = ['#d9c2c7', '#c5d3c4', '#c8cfe0', '#e6d8bf'];
+
+const tinteDe = (nombre: string): string =>
+  TINTES_AVATAR[[...nombre].reduce((a, c) => a + c.charCodeAt(0), 0) % TINTES_AVATAR.length];
+
+// Circulo con la inicial (o contenido propio). `anillo` marca la seleccion.
+export function Avatar({
+  nombre,
+  size = 36,
+  anillo = false,
+  children,
+}: {
+  nombre: string;
+  size?: number;
+  anillo?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: size / 2, flexShrink: 0,
+        background: tinteDe(nombre), color: colors.textStrong,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: agendaFontSerif, fontSize: Math.round(size * 0.48),
+        boxShadow: anillo ? `0 0 0 2px ${colors.primarySolid}` : undefined,
+      }}
+    >
+      {children ?? nombre.trim().charAt(0).toUpperCase()}
     </div>
   );
 }

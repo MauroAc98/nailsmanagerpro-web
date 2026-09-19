@@ -1,17 +1,20 @@
 {
   "entry": {
     "cta": "Reservar turno",
-    "howItWorksTitle": "Cómo funciona",
-    "step1": "Elegí tus servicios, el día y la hora",
-    "step2": "Pagá una seña para asegurar tu lugar",
-    "step3": "Listo: tu turno queda confirmado al instante",
-    "depositNote": "La seña se descuenta del total de tu turno."
+    "como1": "Elegí servicios y horario",
+    "como2": "Pagá una seña",
+    "como3": "Turno confirmado",
+    "comoLlegar": "Cómo llegar",
+    "teAtienden": "Te atienden",
+    "cancelacion": "Cancelación gratis hasta {horas} h antes",
+    "pagoSeguro": "Pago seguro con Mercado Pago"
   },
   "comun": {
     "volver": "Volver",
     "continuar": "Continuar",
     "cargando": "Cargando…",
-    "reintentar": "Reintentar"
+    "reintentar": "Reintentar",
+    "pasoDe": "Paso {actual} de {total}"
   },
   "servicios": {
     "title": "Elegí tus servicios",

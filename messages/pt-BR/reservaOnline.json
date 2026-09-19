@@ -1,17 +1,20 @@
 {
   "entry": {
     "cta": "Reservar horário",
-    "howItWorksTitle": "Como funciona",
-    "step1": "Escolha seus serviços, o dia e a hora",
-    "step2": "Pague um sinal para garantir seu lugar",
-    "step3": "Pronto: seu horário fica confirmado na hora",
-    "depositNote": "O sinal é descontado do total do seu atendimento."
+    "como1": "Escolha serviços e horário",
+    "como2": "Pague um sinal",
+    "como3": "Horário confirmado",
+    "comoLlegar": "Como chegar",
+    "teAtienden": "Atendem você",
+    "cancelacion": "Cancelamento grátis até {horas} h antes",
+    "pagoSeguro": "Pagamento seguro com Mercado Pago"
   },
   "comun": {
     "volver": "Voltar",
     "continuar": "Continuar",
     "cargando": "Carregando…",
-    "reintentar": "Tentar de novo"
+    "reintentar": "Tentar de novo",
+    "pasoDe": "Passo {actual} de {total}"
   },
   "servicios": {
     "title": "Escolha seus serviços",

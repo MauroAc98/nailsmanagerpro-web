@@ -18,7 +18,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           color: agendaColors.text,
         }}
       >
-        <main style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px' }}>{children}</main>
+        <main style={{ maxWidth: 480, margin: '0 auto', padding: '16px 20px 24px' }}>{children}</main>
       </div>
     </AgendaThemeScope>
   );
