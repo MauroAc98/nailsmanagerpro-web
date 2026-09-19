@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ReservaOnlineReads } from '../service';
 import { createMockService, memoriaStorage } from './mock';
+import { crearPendiente } from './mockTestHelpers';
 
 const AHORA = Date.UTC(2026, 8, 19, 15, 0);
 
@@ -35,13 +36,13 @@ describe('mock con salon real (lecturas inyectadas)', () => {
 
   it('crea la reserva calculando la duracion con los servicios reales', async () => {
     const svc = nuevo(lecturas);
-    const r = await svc.createReservation('ana', input);
+    const r = await crearPendiente(svc, 'ana', input);
     const est = await svc.getReservationStatus('ana', r.id);
     expect(est.summary.duracionTotalMinutos).toBe(45);
   });
 
   it('un horario que ya no esta libre falla con slot_taken', async () => {
-    await expect(nuevo(lecturas).createReservation('ana', { ...input, hora: '11:00' })).rejects.toMatchObject({
+    await expect(crearPendiente(nuevo(lecturas), 'ana', { ...input, hora: '11:00' })).rejects.toMatchObject({
       code: 'slot_taken',
     });
   });

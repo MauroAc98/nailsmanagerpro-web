@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { FlowData } from '@/lib/reservaOnline/pasoMinimo';
-import type { ClienteInput, Fecha, Hora } from '@/lib/reservaOnline/types';
+import type { ClienteInput, Fecha, Hora, HoldFlujo } from '@/lib/reservaOnline/types';
 
 // Estado del flujo publico de reserva (decision D6). Se persiste en
 // sessionStorage con clave POR SLUG (`ro_flow_<slug>`): un refresh o deep link
@@ -18,7 +18,7 @@ const vacio = (): FlowData => ({
   fecha: null,
   hora: null,
   cliente: { nombre: '', apellido: '', whatsapp: '' },
-  reservaId: null,
+  hold: null,
   nota: '',
 });
 
@@ -29,7 +29,10 @@ interface FlowState extends FlowData {
   setProfesional: (id: number | 'any') => void;
   setHorario: (fecha: Fecha, hora: Hora) => void;
   setCliente: (parcial: Partial<ClienteInput>) => void;
-  setReservaId: (id: string) => void;
+  setHold: (hold: HoldFlujo) => void;
+  limpiarHold: () => void;
+  // Suelta la hora y el hold (conserva servicios, profesional y dia): vuelta a elegir horario.
+  limpiarHorario: () => void;
   setNota: (nota: string) => void;
   // Reserva confirmada: limpia lo guardado y el estado (conserva el slug).
   confirmar: () => void;
@@ -42,7 +45,7 @@ const datosDe = (s: FlowState): FlowData => ({
   fecha: s.fecha,
   hora: s.hora,
   cliente: s.cliente,
-  reservaId: s.reservaId,
+  hold: s.hold,
   nota: s.nota,
 });
 
@@ -84,7 +87,9 @@ export const useReservaOnlineStore = create<FlowState>((set, get) => {
     setProfesional: (id) => aplicar({ profesionalId: id, fecha: null, hora: null }),
     setHorario: (fecha, hora) => aplicar({ fecha, hora }),
     setCliente: (parcial) => aplicar({ cliente: { ...get().cliente, ...parcial } }),
-    setReservaId: (id) => aplicar({ reservaId: id }),
+    setHold: (hold) => aplicar({ hold }),
+    limpiarHold: () => aplicar({ hold: null }),
+    limpiarHorario: () => aplicar({ hora: null, hold: null }),
     setNota: (nota) => aplicar({ nota }),
     confirmar: () => {
       const { slug } = get();

@@ -3,13 +3,15 @@ import type {
   AvailabilityQuery,
   Fecha,
   BookableService,
-  CreateReservationInput,
+  DatosReserva,
   MpConnection,
   OnlineBooking,
   ReservaOnlineSettings,
   ReservationCreated,
   ReservationStatus,
   ReservationTerms,
+  Retencion,
+  RetenerInput,
   SalonInfo,
   ServicesQuery,
   DiasQuery,
@@ -29,7 +31,15 @@ export interface ReservaOnlineReads {
 // mueve metodos de aca al adapter real, sin tocar la UI.
 export interface ReservaOnlineWrites {
   getTerms(slug: string): Promise<ReservationTerms>;
-  createReservation(slug: string, input: CreateReservationInput): Promise<ReservationCreated>;
+  // Flujo de escritura: el horario se RETIENE al elegirlo (antes de pedir datos)
+  // para que la clienta no descubra al pagar que se lo ocuparon. slot_taken se
+  // levanta en retenerHorario; hold_expired si el hold ya vencio.
+  retenerHorario(slug: string, input: RetenerInput): Promise<Retencion>;
+  actualizarDatosReserva(slug: string, reservaId: string, datos: DatosReserva): Promise<void>;
+  // Extiende la retencion a la ventana de pago completa y devuelve los datos
+  // de redireccion al pago (el mock va a la pagina de estado).
+  iniciarPago(slug: string, reservaId: string): Promise<ReservationCreated>;
+  liberarHold(slug: string, reservaId: string): Promise<void>;
   getReservationStatus(slug: string, id: string): Promise<ReservationStatus>;
   cancelReservation(slug: string, id: string): Promise<void>;
   getSettings(): Promise<ReservaOnlineSettings>;
@@ -48,8 +58,9 @@ export const MAX_FOTOS_SERVICIO = 12;
 
 export interface ReservaOnlineService extends ReservaOnlineReads, ReservaOnlineWrites {}
 
-// Error tipado para respuestas de negocio (404 salon, 422 validacion, slot tomado).
-export type ReservaOnlineErrorCode = 'not_found' | 'validation' | 'slot_taken' | 'unknown';
+// Error tipado para respuestas de negocio (404 salon, 422 validacion, slot tomado,
+// retencion vencida).
+export type ReservaOnlineErrorCode = 'not_found' | 'validation' | 'slot_taken' | 'hold_expired' | 'unknown';
 
 export class ReservaOnlineError extends Error {
   readonly code: ReservaOnlineErrorCode;

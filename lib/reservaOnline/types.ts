@@ -77,13 +77,32 @@ export interface ClienteInput {
   whatsapp: string; // E.164, ej. +5491155551234
 }
 
-export interface CreateReservationInput {
+// Paso "Continuar" del horario: retiene (hold) el horario elegido.
+export interface RetenerInput {
   servicioIds: number[];
   // Omitido cuando la clienta elige "Cualquiera": el backend asigna la primera
-  // profesional libre al crear (la lista de horarios puede estar desactualizada).
+  // profesional libre en ese momento (la lista de horarios puede estar vieja).
   profesionalId?: number;
   fecha: Fecha;
   hora: Hora;
+}
+
+export interface Retencion {
+  reservaId: string;
+  expiresAtMs: number;
+  // Profesional resuelta al retener (la elegida o, con "Cualquiera", la primera libre).
+  profesionalId: number;
+}
+
+// Retencion vigente del flujo (se persiste por slug junto con lo elegido).
+export interface HoldFlujo {
+  reservaId: string;
+  expiraMs: number;
+  profesionalId: number;
+}
+
+// Datos que se guardan sobre el hold al salir del paso "Tus datos".
+export interface DatosReserva {
   cliente: ClienteInput;
   // "Contanos tu idea": texto libre opcional (max ~300 caracteres).
   nota?: string;

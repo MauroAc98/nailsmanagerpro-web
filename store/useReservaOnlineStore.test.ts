@@ -61,10 +61,38 @@ describe('useReservaOnlineStore', () => {
   it('confirmar limpia lo guardado y el estado, conservando el slug', () => {
     store().activarSlug('ana');
     store().setServicios([1]);
-    store().setReservaId('mock-1');
+    store().setHold({ reservaId: 'mock-1', expiraMs: 5, profesionalId: 1 });
     store().confirmar();
     expect(sessionStorage.getItem(claveFlujo('ana'))).toBeNull();
-    expect(store()).toMatchObject({ slug: 'ana', servicioIds: [], reservaId: null });
+    expect(store()).toMatchObject({ slug: 'ana', servicioIds: [], hold: null });
+  });
+
+  it('setHold persiste la retencion del horario y limpiarHold la quita', () => {
+    store().activarSlug('ana');
+    store().setHold({ reservaId: 'mock-3', expiraMs: 900, profesionalId: 2 });
+    expect(JSON.parse(sessionStorage.getItem(claveFlujo('ana')) as string).hold).toEqual({
+      reservaId: 'mock-3',
+      expiraMs: 900,
+      profesionalId: 2,
+    });
+    store().limpiarHold();
+    expect(store().hold).toBeNull();
+  });
+
+  it('limpiarHorario suelta la hora y el hold pero conserva servicios, profesional y dia', () => {
+    store().activarSlug('ana');
+    store().setServicios([1]);
+    store().setProfesional(2);
+    store().setHorario('2026-09-25', '10:00');
+    store().setHold({ reservaId: 'mock-3', expiraMs: 900, profesionalId: 2 });
+    store().limpiarHorario();
+    expect(store()).toMatchObject({
+      servicioIds: [1],
+      profesionalId: 2,
+      fecha: '2026-09-25',
+      hora: null,
+      hold: null,
+    });
   });
 
   it('setNota guarda la idea de la clienta y la persiste; confirmar la limpia', () => {

@@ -4,7 +4,7 @@ import type {
   AvailabilityQuery,
   DiasQuery,
   BookableService,
-  CreateReservationInput,
+  DatosReserva,
   Fecha,
   MpConnection,
   OnlineBooking,
@@ -13,6 +13,8 @@ import type {
   ReservationStatus,
   ReservationStatusValue,
   ReservationTerms,
+  Retencion,
+  RetenerInput,
   SalonInfo,
   ServicesQuery,
 } from '../types';
@@ -77,6 +79,9 @@ const PRIMER_INICIO_MIN = 9 * 60;
 const ULTIMO_INICIO_MIN = 18 * 60;
 const PASO_MIN = 30;
 const MIN_MS = 60_000;
+// Tiempo que se retiene el horario mientras la clienta completa sus datos
+// (espeja la config del backend). Al iniciar el pago pasa a la ventana de pago.
+const HOLD_MINUTOS = 10;
 
 // Defaults de los ajustes. La anticipacion espeja config('reservas.anticipacion_minutos')
 // del backend (riesgo de drift anotado en el diseno).
@@ -120,7 +125,8 @@ interface ReservaGuardada {
   nota?: string;
   createdAtMs: number;
   expiresAtMs: number;
-  status: 'pending_payment' | 'confirmed' | 'cancelled';
+  // 'held' = horario retenido, todavia sin iniciar el pago.
+  status: 'held' | 'pending_payment' | 'confirmed' | 'cancelled';
   pagadaAtMs: number | null;
 }
 
@@ -177,12 +183,12 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     return s;
   };
 
-  const estadoEfectivo = (r: ReservaGuardada): ReservationStatusValue =>
-    r.status === 'pending_payment' && now() >= r.expiresAtMs ? 'expired' : r.status;
+  const estadoEfectivo = (r: ReservaGuardada): ReservationStatusValue | 'held' =>
+    (r.status === 'pending_payment' || r.status === 'held') && now() >= r.expiresAtMs ? 'expired' : r.status;
 
   const ocupa = (r: ReservaGuardada): boolean => {
     const e = estadoEfectivo(r);
-    return e === 'pending_payment' || e === 'confirmed';
+    return e === 'held' || e === 'pending_payment' || e === 'confirmed';
   };
 
   const estaLibre = (
@@ -275,10 +281,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     };
   };
 
-  const createReservation = async (
-    slug: string,
-    input: CreateReservationInput,
-  ): Promise<ReservationCreated> => {
+  const retenerHorario = async (slug: string, input: RetenerInput): Promise<Retencion> => {
     const consulta = {
       fecha: input.fecha,
       servicioIds: input.servicioIds,
@@ -298,8 +301,8 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     } else {
       throw new ReservaOnlineError('not_found', `salon ${slug}`);
     }
-    // Re-chequeo al crear (el real lo hace con lock): si el inicio ya no entra
-    // por solape con un turno o una reserva pendiente, la lista quedo vieja.
+    // Re-chequeo al retener (el real lo hace con lock): si el inicio ya no entra
+    // por solape con un turno o una retencion/reserva pendiente, la lista quedo vieja.
     const slot = disp.slots.find((x) => x.hora === input.hora);
     if (!slot) throw new ReservaOnlineError('slot_taken');
     const profesionalId = input.profesionalId ?? slot.profesionalIds[0];
@@ -307,7 +310,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     const p = cargar();
     const id = `mock-${p.seq + 1}`;
     const createdAtMs = now();
-    const expiresAtMs = createdAtMs + p.settings.ventanaPagoMinutos * MIN_MS;
+    const expiresAtMs = createdAtMs + HOLD_MINUTOS * MIN_MS;
     p.seq += 1;
     p.reservas.push({
       id,
@@ -316,17 +319,57 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       profesionalId,
       fecha: input.fecha,
       hora: input.hora,
-      clienteNombre: `${input.cliente.nombre} ${input.cliente.apellido}`.trim(),
+      clienteNombre: '',
       duracionTotalMinutos: disp.duracionTotalMinutos,
       deposito: p.settings.deposito,
-      nota: input.nota?.trim() || undefined,
       createdAtMs,
       expiresAtMs,
-      status: 'pending_payment',
+      status: 'held',
       pagadaAtMs: null,
     });
     guardar(p);
-    return { id, status: 'pending_payment', expiresAtMs, checkoutUrl: `/reservar/${slug}/reserva/${id}?mock=1` };
+    return { reservaId: id, expiresAtMs, profesionalId };
+  };
+
+  const actualizarDatosReserva = async (slug: string, id: string, datos: DatosReserva): Promise<void> => {
+    const p = cargar();
+    const r = buscar(p, slug, id);
+    const e = estadoEfectivo(r);
+    if (e === 'expired') throw new ReservaOnlineError('hold_expired');
+    if (e !== 'held') throw new ReservaOnlineError('validation', 'la reserva ya no esta retenida');
+    r.clienteNombre = `${datos.cliente.nombre} ${datos.cliente.apellido}`.trim();
+    r.nota = datos.nota?.trim() || undefined;
+    guardar(p);
+  };
+
+  const iniciarPago = async (slug: string, id: string): Promise<ReservationCreated> => {
+    const p = cargar();
+    const r = buscar(p, slug, id);
+    const e = estadoEfectivo(r);
+    if (e === 'expired') throw new ReservaOnlineError('hold_expired');
+    if (e === 'held') {
+      // La retencion pasa a la ventana de pago completa, contada desde ahora.
+      r.status = 'pending_payment';
+      r.expiresAtMs = now() + p.settings.ventanaPagoMinutos * MIN_MS;
+      guardar(p);
+    } else if (e !== 'pending_payment') {
+      throw new ReservaOnlineError('validation', 'la reserva no se puede pagar');
+    }
+    return {
+      id,
+      status: 'pending_payment',
+      expiresAtMs: r.expiresAtMs,
+      checkoutUrl: `/reservar/${slug}/reserva/${id}?mock=1`,
+    };
+  };
+
+  const liberarHold = async (slug: string, id: string): Promise<void> => {
+    const p = cargar();
+    const r = p.reservas.find((x) => x.id === id && x.slug === slug);
+    if (r && r.status === 'held') {
+      r.status = 'cancelled';
+      guardar(p);
+    }
   };
 
   const buscar = (p: Persistido, slug: string, id: string): ReservaGuardada => {
@@ -337,9 +380,12 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
 
   const getReservationStatus = async (slug: string, id: string): Promise<ReservationStatus> => {
     const r = buscar(cargar(), slug, id);
+    const status = estadoEfectivo(r);
+    // Un hold todavia no es una reserva: la pagina de estado solo existe desde iniciarPago.
+    if (status === 'held') throw new ReservaOnlineError('not_found', `reserva ${id}`);
     return {
       id: r.id,
-      status: estadoEfectivo(r),
+      status,
       expiresAtMs: r.expiresAtMs,
       checkoutUrl: `/reservar/${slug}/reserva/${r.id}?mock=1`,
       summary: {
@@ -419,7 +465,10 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     getAvailability,
     getDiasConDisponibilidad,
     getTerms,
-    createReservation,
+    retenerHorario,
+    actualizarDatosReserva,
+    iniciarPago,
+    liberarHold,
     getReservationStatus,
     cancelReservation,
     getSettings,

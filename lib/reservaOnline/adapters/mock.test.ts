@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { describeReadsContract } from '../service.contract';
 import { createMockService, memoriaStorage } from './mock';
+import { crearPendiente } from './mockTestHelpers';
 
 // 2026-09-19 12:00 hora del salon (UTC-3).
 export const AHORA = Date.UTC(2026, 8, 19, 15, 0);
@@ -56,7 +57,7 @@ describe('mock: lecturas', () => {
     const svc = nuevo();
     // Ana 10:00-10:45 (45 min): con un servicio de 45 min quedan fuera 09:30 (solapa) y 10:00, 10:30;
     // 09:00 (termina 09:45) y 11:00 (arranca despues del fin) quedan libres.
-    await svc.createReservation('demo', {
+    await crearPendiente(svc, 'demo', {
       servicioIds: [1],
       profesionalId: 1,
       fecha: '2026-09-25',
@@ -74,7 +75,7 @@ describe('mock: lecturas', () => {
 
   it('Cualquiera fusiona por hora: un inicio sigue si al menos una profesional esta libre', async () => {
     const svc = nuevo();
-    await svc.createReservation('demo', {
+    await crearPendiente(svc, 'demo', {
       servicioIds: [1],
       profesionalId: 1,
       fecha: '2026-09-25',

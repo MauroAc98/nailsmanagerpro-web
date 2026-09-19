@@ -7,14 +7,16 @@ const vacio: FlowData = {
   fecha: null,
   hora: null,
   cliente: { nombre: '', apellido: '', whatsapp: '' },
-  reservaId: null,
+  hold: null,
   nota: '',
 };
 
 const conServicios: FlowData = { ...vacio, servicioIds: [1] };
 const conHorario: FlowData = { ...conServicios, fecha: '2026-09-25', hora: '10:00' };
+const HOLD = { reservaId: 'mock-1', expiraMs: 1_000, profesionalId: 1 };
+const conHold: FlowData = { ...conHorario, hold: HOLD };
 const conDatos: FlowData = {
-  ...conHorario,
+  ...conHold,
   cliente: { nombre: 'Ana', apellido: 'Perez', whatsapp: '+5491155551234' },
 };
 
@@ -31,8 +33,16 @@ describe('pasoMinimo', () => {
     expect(pasoMinimo({ ...conServicios, fecha: '2026-09-25' })).toBe('horario');
   });
 
-  it('con horario pero sin datos, es datos', () => {
-    expect(pasoMinimo(conHorario)).toBe('datos');
+  it('con horario elegido pero sin haberlo retenido todavia, hay que volver a horario', () => {
+    expect(pasoMinimo(conHorario)).toBe('horario');
+  });
+
+  it('con el horario retenido pero sin datos, es datos', () => {
+    expect(pasoMinimo(conHold)).toBe('datos');
+  });
+
+  it('un hold vencido NO redirige: la pantalla muestra "Se liberó tu horario" (el guard solo mira si hubo hold)', () => {
+    expect(pasoMinimo({ ...conDatos, hold: { ...HOLD, expiraMs: 0 } })).toBe('resumen');
   });
 
   it('un whatsapp invalido deja el paso en datos', () => {
