@@ -136,7 +136,8 @@
   "agenda": {
     "badge": "Reserva online",
     "aviso": "{nombre} reservou e pagou o sinal",
-    "avisoDetalle": "{fecha} {hora}"
+    "avisoDetalle": "{fecha} {hora}",
+    "avisoNota": "Ideia: {nota}"
   },
   "detalle": {
     "agregar": "Adicionar ao meu horário",

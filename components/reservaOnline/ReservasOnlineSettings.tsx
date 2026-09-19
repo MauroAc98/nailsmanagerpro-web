@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
+import { linkReserva } from '@/lib/reservaOnline/linkPublico';
 import type { ReservaOnlineSettings as Ajustes } from '@/lib/reservaOnline/types';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useCarga } from './hooks';
@@ -91,7 +92,11 @@ export function ReservasOnlineSettings({ slug }: { slug: string }) {
     reintentar();
   };
 
-  const url = `${window.location.origin}/reservar/${slug}`;
+  // Base configurable (ej. https://reservar.turnetto.com); sin ella, `${origin}/reservar` (dev).
+  const url = linkReserva(slug, {
+    base: process.env.NEXT_PUBLIC_RESERVA_BASE_URL,
+    origin: window.location.origin,
+  });
   const separador = { height: 1, background: colors.border, margin: '6px 0' };
 
   return (

@@ -54,6 +54,11 @@ export function AvisoReservaOnline({ ahora = Date.now }: { ahora?: () => number 
           <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 2 }}>
             {t('avisoDetalle', { fecha: diaLargoCorto(ultima.fecha, locale), hora: ultima.hora })}
           </div>
+          {ultima.nota && (
+            <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {t('avisoNota', { nota: ultima.nota })}
+            </div>
+          )}
         </div>
       </div>
     </div>

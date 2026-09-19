@@ -8,8 +8,9 @@ import { crearPendiente } from '@/lib/reservaOnline/adapters/mockTestHelpers';
 
 const HORA = 60 * 60_000;
 
-async function reservaPagada(svc: MockReservaOnlineService) {
+async function reservaPagada(svc: MockReservaOnlineService, nota?: string) {
   const r = await crearPendiente(svc, 'demo', {
+    nota,
     servicioIds: [1],
     profesionalId: 1,
     fecha: '2026-09-25',
@@ -43,6 +44,21 @@ describe('AvisoReservaOnline', () => {
     renderWithProviders(<AvisoReservaOnline ahora={() => AHORA} />);
     expect(await screen.findByText('Marta Ríos reservó y pagó la seña')).toBeInTheDocument();
     expect(screen.getByText('viernes 25 13:00')).toBeInTheDocument();
+  });
+
+  it('el aviso no menciona ningun total: solo dia y hora', async () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    await reservaPagada(svc);
+    renderWithProviders(<AvisoReservaOnline ahora={() => AHORA} />);
+    const aviso = await screen.findByRole('status');
+    expect(aviso).not.toHaveTextContent(/total|\$/i);
+  });
+
+  it('si la clienta dejo su idea, el aviso la muestra', async () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    await reservaPagada(svc, 'flores y dorado');
+    renderWithProviders(<AvisoReservaOnline ahora={() => AHORA} />);
+    expect(await screen.findByText('Idea: flores y dorado')).toBeInTheDocument();
   });
 
   it('sin reservas pagadas no muestra aviso', async () => {

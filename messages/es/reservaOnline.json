@@ -136,7 +136,8 @@
   "agenda": {
     "badge": "Reserva online",
     "aviso": "{nombre} reservó y pagó la seña",
-    "avisoDetalle": "{fecha} {hora}"
+    "avisoDetalle": "{fecha} {hora}",
+    "avisoNota": "Idea: {nota}"
   },
   "detalle": {
     "agregar": "Agregar a mi turno",

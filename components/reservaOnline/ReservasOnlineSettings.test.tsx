@@ -38,7 +38,21 @@ describe('ReservasOnlineSettings', () => {
     await userEvent.click(await interruptor());
     await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
     expect((await svc.getSettings()).habilitada).toBe(true);
-    expect(screen.getByText('http://localhost:3000/reservar/nails-by-natalie')).toBeInTheDocument();
+    // se muestra sin protocolo (como el tablero); Copiar/Enviar usan el link completo
+    expect(screen.getByText('localhost:3000/reservar/nails-by-natalie')).toBeInTheDocument();
+  });
+
+  it('con NEXT_PUBLIC_RESERVA_BASE_URL el link es <base>/<slug> (ej. reservar.turnetto.com/natalia)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_BASE_URL', 'https://reservar.turnetto.com');
+    await svc.connectMp();
+    await svc.saveSettings({ habilitada: true });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    montar();
+    expect(await screen.findByText('reservar.turnetto.com/nails-by-natalie')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Copiar' }));
+    expect(writeText).toHaveBeenCalledWith('https://reservar.turnetto.com/nails-by-natalie');
+    vi.unstubAllEnvs();
   });
 
   it('Enviar abre WhatsApp con el link en el mensaje', async () => {

@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { linkReservaCorto } from '@/lib/reservaOnline/linkPublico';
 import { agendaColors as colors } from '@/theme/agendaColors';
+import { IcoGlobo } from './iconos';
 import { Etiqueta, Tarjeta } from './ui';
 
 const boton = {
@@ -49,7 +51,8 @@ export function LinkCompartir({ url, habilitado }: { url: string; habilitado: bo
               padding: '0 12px', fontSize: 13.5, color: colors.strong, wordBreak: 'break-all',
             }}
           >
-            {url}
+            <IcoGlobo color={colors.primaryDeep} />
+            <span style={{ flex: 1 }}>{linkReservaCorto(url)}</span>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
             <button type="button" onClick={copiar} style={boton}>
