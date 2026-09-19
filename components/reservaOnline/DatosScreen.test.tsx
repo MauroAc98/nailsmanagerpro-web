@@ -3,6 +3,7 @@ import { renderWithProviders, screen, waitFor } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
+import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { DatosScreen } from './DatosScreen';
 import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
@@ -109,6 +110,55 @@ describe('DatosScreen', () => {
       expect(await screen.findByRole('heading', { name: 'Se liberó tu horario' })).toBeInTheDocument();
       expect(ir).not.toHaveBeenCalledWith('/reservar/demo/resumen');
     });
+  });
+
+  it('si el telefono esta en enfriamiento (phone_cooldown) muestra cuanto falta en minutos', async () => {
+    setServiceParaTests({
+      ...svc,
+      actualizarDatosReserva: async () => {
+        throw new ReservaOnlineError('phone_cooldown', 'en enfriamiento', 1800);
+      },
+    });
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ese número tiene una reserva reciente sin pagar. Probá de nuevo en 30 min.',
+    );
+  });
+
+  it('si se necesita verificar el WhatsApp (verification_required) muestra un aviso especifico', async () => {
+    setServiceParaTests({
+      ...svc,
+      actualizarDatosReserva: async () => {
+        throw new ReservaOnlineError('verification_required');
+      },
+    });
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Necesitamos verificar tu WhatsApp para continuar. Escribinos y te ayudamos.',
+    );
+  });
+
+  it('si el kill switch del backend esta apagado (creation_disabled) muestra la pantalla completa de "no disponible"', async () => {
+    setServiceParaTests({
+      ...svc,
+      actualizarDatosReserva: async () => {
+        throw new ReservaOnlineError('creation_disabled');
+      },
+    });
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
   });
 
   it('el prefijo +54 9 es fijo (no editable) y el numero se tipea local', async () => {

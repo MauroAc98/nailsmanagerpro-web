@@ -10,6 +10,7 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useGuardaPaso, useHold, type Ir } from './hooks';
 import { HoldVencido } from './HoldVencido';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { BarraInferior, BotonPrimario, HoldPill, Mensaje, PasoHeader } from './ui';
 
 const NOTA_MAX = 300;
@@ -56,8 +57,14 @@ export function DatosScreen({
   const [enviando, setEnviando] = useState(false);
   const [holdPerdido, setHoldPerdido] = useState(false);
   const [errorGuardar, setErrorGuardar] = useState(false);
+  // Telefono con una reserva reciente sin pagar (minutos restantes) o
+  // pendiente de verificar por WhatsApp (decision A4 del diseno).
+  const [avisoTelefono, setAvisoTelefono] = useState<{ tipo: 'phone_cooldown'; minutos: number } | { tipo: 'verification_required' } | null>(null);
+  // Kill switch del backend apagado: a pantalla completa, como en Horario.
+  const [noDisponible, setNoDisponible] = useState(false);
 
   if (!listo) return null;
+  if (noDisponible) return <NoDisponibleAun />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
 
   const whatsappVisible = whatsappCrudo ?? localDeWhatsapp(cliente.whatsapp);
@@ -69,6 +76,7 @@ export function DatosScreen({
     if (!hold) return;
     setEnviando(true);
     setErrorGuardar(false);
+    setAvisoTelefono(null);
     try {
       await getService().actualizarDatosReserva(slug, hold.reservaId, {
         cliente,
@@ -77,7 +85,14 @@ export function DatosScreen({
       ir(rutaPaso(slug, 'resumen'));
     } catch (e) {
       if (e instanceof ReservaOnlineError && e.code === 'hold_expired') setHoldPerdido(true);
-      else setErrorGuardar(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') setNoDisponible(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'phone_cooldown') {
+        setAvisoTelefono({ tipo: 'phone_cooldown', minutos: Math.ceil((e.retryAfterSeconds ?? 0) / 60) });
+      } else if (e instanceof ReservaOnlineError && e.code === 'verification_required') {
+        setAvisoTelefono({ tipo: 'verification_required' });
+      } else {
+        setErrorGuardar(true);
+      }
     } finally {
       setEnviando(false);
     }
@@ -164,6 +179,10 @@ export function DatosScreen({
         <div style={ayuda}>{t('datos.notaAyuda')}</div>
       </div>
       <div style={{ fontSize: 12.5, color: colors.sub, lineHeight: 1.5, marginTop: 4 }}>{t('datos.privacidad')}</div>
+      {avisoTelefono?.tipo === 'phone_cooldown' && (
+        <Mensaje tono="error">{t('errores.telefonoEnfriamiento', { minutos: avisoTelefono.minutos })}</Mensaje>
+      )}
+      {avisoTelefono?.tipo === 'verification_required' && <Mensaje tono="error">{t('errores.verificacionRequerida')}</Mensaje>}
       {errorGuardar && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       <BarraInferior>
