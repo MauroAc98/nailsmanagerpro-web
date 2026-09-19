@@ -44,30 +44,52 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
 
   return (
     <div>
+      {/* logoUrl es casi siempre una FOTO del local (cartel, ambiente), no un
+          ícono cuadrado — recortarla en el círculo chico de abajo la vuelve
+          ilegible (caso real: la placa de un salón, apaisada, con pared y
+          sombra alrededor). Con foto, ES la portada: banda ancha, con
+          degradado abajo para que el nombre se lea encima. Sin foto, degradé
+          de marca como antes. */}
       <div
         aria-hidden="true"
         style={{
-          height: 150,
+          height: 190,
           margin: '-16px -20px 0',
-          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primarySolid})`,
+          position: 'relative',
+          overflow: 'hidden',
+          background: salon.logoUrl ? undefined : `linear-gradient(135deg, ${colors.primary}, ${colors.primarySolid})`,
         }}
-      />
-      <div style={{ marginTop: -38, position: 'relative' }}>
+      >
+        {salon.logoUrl && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={salon.logoUrl}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }}
+            />
+            <div
+              style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, rgba(20,16,17,.05) 0%, rgba(20,16,17,.55) 100%)',
+              }}
+            />
+          </>
+        )}
+      </div>
+      <div style={{ marginTop: -34, position: 'relative' }}>
+        {/* El círculo SIEMPRE es la inicial, con o sin logoUrl — nunca la
+            foto recortada (ver comentario arriba). */}
         <div
           style={{
-            width: 76, height: 76, borderRadius: 38, background: colors.surface, border: `4px solid ${colors.bg}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxSizing: 'border-box',
-            fontFamily: agendaFontSerif, fontSize: 32, color: colors.primaryDeep,
+            width: 58, height: 58, borderRadius: 29, background: colors.primarySolid, border: `3px solid ${colors.bg}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box',
+            fontFamily: agendaFontSerif, fontSize: 24, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,.15)',
           }}
         >
-          {salon.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={salon.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            inicial
-          )}
+          {inicial}
         </div>
-        <h1 style={{ margin: '10px 0 0', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 28, lineHeight: 1.1, color: colors.textStrong }}>
+        <h1 style={{ margin: '12px 0 0', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 28, lineHeight: 1.1, color: colors.textStrong }}>
           {salon.nombre}
         </h1>
         {salon.direccion && (

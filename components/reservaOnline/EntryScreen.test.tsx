@@ -27,7 +27,11 @@ describe('EntryScreen', () => {
     expect(screen.getByText('S')).toBeInTheDocument();
   });
 
-  it('con logo_url, el avatar es la imagen del salon', async () => {
+  // logoUrl casi siempre es una FOTO del local (cartel, ambiente), no un
+  // ícono cuadrado — recortarla en el círculo chico la vuelve ilegible (ver
+  // caso real: placa de Natalia Acosta). Pasa a portada (banda ancha, donde
+  // una foto real luce bien) y el círculo siempre queda con la inicial.
+  it('con logo_url, la foto va de portada (banda ancha), no en el círculo', async () => {
     const svc = prepararServicio();
     setServiceParaTests({
       ...svc,
@@ -36,6 +40,17 @@ describe('EntryScreen', () => {
     renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
     await screen.findByRole('heading', { name: 'Studio Demo' });
     expect(document.querySelector('img[src="https://cdn.test/logo.png"]')).not.toBeNull();
+  });
+
+  it('con o sin logo_url, el círculo siempre muestra la inicial (nunca la foto recortada)', async () => {
+    const svc = prepararServicio();
+    setServiceParaTests({
+      ...svc,
+      getSalon: async (s) => ({ ...(await svc.getSalon(s)), logoUrl: 'https://cdn.test/logo.png' }),
+    });
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    await screen.findByRole('heading', { name: 'Studio Demo' });
+    expect(screen.getByText('S')).toBeInTheDocument();
   });
 
   it('explica como funciona en 3 pasos', async () => {
