@@ -4,11 +4,12 @@ import { setServiceParaTests } from '@/lib/reservaOnline';
 import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
 import { AvisoReservaOnline } from './AvisoReservaOnline';
 import { AHORA, prepararServicio } from './testUtils';
+import { crearPendiente } from '@/lib/reservaOnline/adapters/mockTestHelpers';
 
 const HORA = 60 * 60_000;
 
 async function reservaPagada(svc: MockReservaOnlineService) {
-  const r = await svc.createReservation('demo', {
+  const r = await crearPendiente(svc, 'demo', {
     servicioIds: [1],
     profesionalId: 1,
     fecha: '2026-09-25',
