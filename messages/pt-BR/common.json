@@ -119,6 +119,22 @@
   "ColorSwatchPicker": {
     "ariaLabel": "Cor {color}"
   },
+  "WeekdayPicker": {
+    "mon": "S",
+    "tue": "T",
+    "wed": "Q",
+    "thu": "Q",
+    "fri": "S",
+    "sat": "S",
+    "sun": "D",
+    "monFull": "Segunda-feira",
+    "tueFull": "Terça-feira",
+    "wedFull": "Quarta-feira",
+    "thuFull": "Quinta-feira",
+    "friFull": "Sexta-feira",
+    "satFull": "Sábado",
+    "sunFull": "Domingo"
+  },
   "BackButton": {
     "ariaLabel": "Voltar"
   },
