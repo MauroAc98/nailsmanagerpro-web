@@ -37,15 +37,22 @@
     "manana": "Mañana",
     "tarde": "Tarde",
     "elegidoCualquiera": "<b>{dia}</b> · {hora} con cualquier profesional",
-    "elegidoCon": "<b>{dia}</b> · {hora} con {profesional}"
+    "elegidoCon": "<b>{dia}</b> · {hora} con {profesional}",
+    "tomado": "Ese horario se acaba de ocupar. Elegí otro.",
+    "reteniendo": "Reservando tu horario…"
   },
   "datos": {
     "title": "Tus datos",
     "nombre": "Nombre",
     "apellido": "Apellido",
     "whatsapp": "WhatsApp",
-    "whatsappAyuda": "Te enviamos la confirmación y el recordatorio por acá.",
-    "privacidad": "Usamos tu número solo para gestionar tu turno."
+    "whatsappAyuda": "Te mandamos la confirmación y el recordatorio por acá.",
+    "privacidad": "Usamos tu número solo para gestionar tu turno.",
+    "subtitle": "Los usamos solo para gestionar tu turno.",
+    "notaLabel": "Contanos tu idea",
+    "opcional": "Opcional",
+    "notaPlaceholder": "Ej.: quiero un diseño con flores y detalles dorados",
+    "notaAyuda": "Sirve para que el salón te confirme el valor final."
   },
   "resumen": {
     "title": "Resumen",
@@ -87,7 +94,7 @@
   "errores": {
     "generico": "No pudimos completar la operación. Probá de nuevo.",
     "noEncontrado": "No encontramos este salón.",
-    "whatsappInvalido": "Ingresá un WhatsApp válido con código de país, por ejemplo +5491155551234."
+    "whatsappInvalido": "Ingresá tu número con código de área, sin 0 ni 15. Ej.: 376 512 3456."
   },
   "settings": {
     "title": "Reservas online",
@@ -133,5 +140,11 @@
     "verFoto": "Ver foto {n}",
     "notaValor": "El valor final depende del diseño y se confirma en el salón.",
     "noEncontrado": "No encontramos este servicio."
+  },
+  "hold": {
+    "pill": "Tu horario está reservado · {restante}",
+    "vencidoTitulo": "Se liberó tu horario",
+    "vencidoDetalle": "Pasó el tiempo y otra persona puede tomarlo. Elegí otro horario para continuar.",
+    "elegirOtro": "Elegir otro horario"
   }
 }

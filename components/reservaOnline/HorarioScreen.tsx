@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { diasDesde } from '@/lib/reservaOnline/diasDesde';
 import { diaCorto, diaDelMes, diaLargoCorto, hoyDelSalon, mesAnio } from '@/lib/reservaOnline/formatoFecha';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
+import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { duracionDeServicios, formatearDuracion } from '@/lib/reservaOnline/totales';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -37,18 +38,44 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const [hoy] = useState(() => hoyDelSalon(ahora()));
   const [fechaSel, setFechaSel] = useState<string>(() => fechaGuardada ?? hoy);
   const [tandas, setTandas] = useState(1);
+  // Retencion: al entrar se suelta el hold anterior (si lo habia) ANTES de pedir
+  // horarios, asi el horario propio vuelve a figurar libre.
+  const [liberado, setLiberado] = useState(false);
+  const [reteniendo, setReteniendo] = useState(false);
+  const [tomado, setTomado] = useState(false);
+  const [errorRetener, setErrorRetener] = useState(false);
   const dias = diasDesde(hoy, DIAS_POR_TANDA * tandas);
+
+  useEffect(() => {
+    if (!listo) return;
+    const { hold, limpiarHold } = useReservaOnlineStore.getState();
+    if (!hold) {
+      setLiberado(true);
+      return;
+    }
+    getService()
+      .liberarHold(slug, hold.reservaId)
+      .catch(() => {
+        // un hold que ya no existe o vencio no bloquea elegir otro horario
+      })
+      .finally(() => {
+        limpiarHold();
+        setLiberado(true);
+      });
+  }, [listo, slug]);
 
   const { data: salon } = useCarga(() => getService().getSalon(slug), slug);
   const { data: servicios } = useCarga(() => getService().getServices(slug), slug);
-  const claveDisp = `${slug}|${fechaSel}|${servicioIds.join(',')}|${profesionalId}`;
+  const claveDisp = `${slug}|${fechaSel}|${servicioIds.join(',')}|${profesionalId}|${liberado}`;
   const { data: disp, error, cargando, reintentar } = useCarga(
     () =>
-      getService().getAvailability(slug, {
-        fecha: fechaSel,
-        servicioIds,
-        profesionalId: profesionalId === 'any' ? undefined : profesionalId,
-      }),
+      liberado
+        ? getService().getAvailability(slug, {
+            fecha: fechaSel,
+            servicioIds,
+            profesionalId: profesionalId === 'any' ? undefined : profesionalId,
+          })
+        : new Promise<never>(() => {}), // espera a que se suelte el hold anterior
     claveDisp,
   );
   // Puntos de disponibilidad: `null` = el origen no lo sabe (adapter real) y
@@ -72,6 +99,38 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const profesionalNombre =
     profesionalId === 'any' ? null : salon?.profesionales.find((p) => p.id === profesionalId)?.nombre;
 
+  const continuar = async () => {
+    if (!horaElegida) return;
+    setReteniendo(true);
+    setTomado(false);
+    setErrorRetener(false);
+    try {
+      const retencion = await getService().retenerHorario(slug, {
+        servicioIds,
+        fecha: fechaSel,
+        hora: horaElegida,
+        profesionalId: profesionalId === 'any' ? undefined : profesionalId,
+      });
+      useReservaOnlineStore.getState().setHold({
+        reservaId: retencion.reservaId,
+        expiraMs: retencion.expiresAtMs,
+        profesionalId: retencion.profesionalId,
+      });
+      ir(rutaPaso(slug, 'datos'));
+    } catch (e) {
+      if (e instanceof ReservaOnlineError && e.code === 'slot_taken') {
+        // La lista estaba vieja: se suelta la hora elegida y se vuelven a pedir los horarios.
+        useReservaOnlineStore.getState().limpiarHorario();
+        setTomado(true);
+        reintentar();
+      } else {
+        setErrorRetener(true);
+      }
+    } finally {
+      setReteniendo(false);
+    }
+  };
+
   const manana = disp?.slots.filter((s) => s.hora < CORTE_TARDE) ?? [];
   const tarde = disp?.slots.filter((s) => s.hora >= CORTE_TARDE) ?? [];
 
@@ -87,7 +146,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
                 key={s.hora}
                 type="button"
                 aria-pressed={activo}
-                onClick={() => setHorario(fechaSel, s.hora)}
+                onClick={() => {
+                  setTomado(false);
+                  setHorario(fechaSel, s.hora);
+                }}
                 style={{
                   padding: '13px 0', borderRadius: 12, fontSize: 15, cursor: 'pointer',
                   fontWeight: activo ? 700 : 600,
@@ -171,7 +233,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
               type="button"
               aria-pressed={activo}
               aria-label={`${diaCorto(d, locale)} ${diaDelMes(d)}`}
-              onClick={() => setFechaSel(d)}
+              onClick={() => {
+                setTomado(false);
+                setFechaSel(d);
+              }}
               style={{
                 width: 54, flexShrink: 0, padding: '10px 0 4px', borderRadius: 16, textAlign: 'center', cursor: 'pointer',
                 background: activo ? colors.strong : colors.surface,
@@ -202,6 +267,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         </>
       )}
       {sinHorarios && <Mensaje>{t('horario.sinHorarios')}</Mensaje>}
+      {tomado && <Mensaje tono="error">{t('horario.tomado')}</Mensaje>}
+      {errorRetener && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
       {grupo(t('horario.manana'), manana)}
       {grupo(t('horario.tarde'), tarde)}
 
@@ -216,8 +283,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
             })}
           </div>
         )}
-        <BotonPrimario disabled={!horaElegida} onClick={() => ir(rutaPaso(slug, 'datos'))}>
-          {t('comun.continuar')}
+        <BotonPrimario disabled={!horaElegida || reteniendo} onClick={continuar}>
+          {reteniendo ? t('horario.reteniendo') : t('comun.continuar')}
         </BotonPrimario>
       </BarraInferior>
     </div>

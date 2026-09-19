@@ -2,6 +2,8 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { formatearRestante } from '@/lib/reservaOnline/cuentaRegresiva';
+import { IcoReloj } from './iconos';
 import { agendaColors as colors, agendaFontSerif, agendaShadows as shadows } from '@/theme/agendaColors';
 
 // Primitivas visuales compartidas por las pantallas publicas de reserva.
@@ -17,9 +19,12 @@ export function PasoHeader({
   subtitulo,
   paso,
   onVolver,
+  pill,
 }: {
   titulo: string;
   subtitulo?: string;
+  // Cuenta regresiva de la retencion del horario (pasos Datos y Resumen).
+  pill?: ReactNode;
   paso: number; // 1..TOTAL_PASOS: cuantos segmentos van rellenos
   onVolver?: () => void;
 }) {
@@ -62,6 +67,7 @@ export function PasoHeader({
           {paso}/{TOTAL_PASOS}
         </div>
       </div>
+      {pill && <div style={{ padding: '8px 20px 0', display: 'flex', justifyContent: 'center' }}>{pill}</div>}
       <div style={{ padding: '14px 20px 14px' }}>
         <h1 style={{ margin: 0, fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 27, lineHeight: 1.15, color: colors.textStrong }}>
           {titulo}
@@ -192,5 +198,24 @@ export function Mensaje({ children, tono = 'sub' }: { children: ReactNode; tono?
     >
       {children}
     </p>
+  );
+}
+
+// Pastilla de la barra superior: "Tu horario esta reservado · mm:ss". Pasa a
+// tono ambar cuando queda poco (menos de 2 minutos).
+export function HoldPill({ restanteMs }: { restanteMs: number }) {
+  const t = useTranslations('reservaOnline.hold');
+  const poco = restanteMs < 120_000;
+  return (
+    <div
+      role="timer"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 600,
+        background: poco ? colors.amberBg : colors.primarySoft, color: poco ? colors.amberFg : colors.primaryDeep,
+      }}
+    >
+      <IcoReloj color={poco ? colors.amberFg : colors.primaryDeep} size={14} />
+      {t('pill', { restante: formatearRestante(restanteMs) })}
+    </div>
   );
 }

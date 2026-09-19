@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, screen, waitFor, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
+import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { HorarioScreen } from './HorarioScreen';
 import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
@@ -9,10 +10,11 @@ import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
 const reloj = () => AHORA;
 
 describe('HorarioScreen', () => {
-  beforeEach(() => {
-    prepararServicio();
+  let svc: MockReservaOnlineService;
+  beforeEach(async () => {
+    svc = prepararServicio();
     limpiarFlujo();
-    flujoHasta('horario');
+    await flujoHasta('horario');
     useReservaOnlineStore.getState().setProfesional('any');
   });
   afterEach(() => setServiceParaTests(null));
@@ -46,15 +48,55 @@ describe('HorarioScreen', () => {
   });
 
   it('elegir un horario lo guarda en el store y habilita Continuar', async () => {
-    const ir = vi.fn();
-    renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
     expect(useReservaOnlineStore.getState().fecha).toBe('2026-09-21');
     expect(useReservaOnlineStore.getState().hora).toBe('10:30');
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled();
+  });
+
+  it('Continuar RETIENE el horario (con "Cualquiera" resuelve la profesional), guarda el hold y avanza a datos', async () => {
+    const ir = vi.fn();
+    renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
+    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
-    expect(ir).toHaveBeenCalledWith('/reservar/demo/datos');
+    await waitFor(() => expect(ir).toHaveBeenCalledWith('/reservar/demo/datos'));
+    const { hold } = useReservaOnlineStore.getState();
+    expect(hold).toMatchObject({ profesionalId: 1, expiraMs: AHORA + 10 * 60_000 });
+    // el horario quedo ocupado para otra clienta
+    await expect(
+      svc.retenerHorario('demo', { servicioIds: [1, 2], profesionalId: 1, fecha: '2026-09-21', hora: '10:30' }),
+    ).rejects.toMatchObject({ code: 'slot_taken' });
+  });
+
+  it('si el horario ya no esta libre: mensaje amable en el lugar, se queda en horario, limpia la hora y refresca los horarios', async () => {
+    const ir = vi.fn();
+    renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Lun 21/ }));
+    await userEvent.click(await screen.findByRole('button', { name: '10:30' }));
+    // otra clienta lo toma mientras esta miraba la lista
+    await svc.retenerHorario('demo', { servicioIds: [1, 2], fecha: '2026-09-21', hora: '10:30' });
+    await svc.retenerHorario('demo', { servicioIds: [1, 2], fecha: '2026-09-21', hora: '10:30' }); // Lucia tambien
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ese horario se acaba de ocupar. Elegí otro.');
+    expect(ir).not.toHaveBeenCalled();
+    expect(useReservaOnlineStore.getState().hora).toBeNull();
+    expect(useReservaOnlineStore.getState().hold).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('button', { name: '10:30' })).toBeNull());
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+  });
+
+  it('al volver al horario con un hold vigente lo suelta antes de elegir otro (y el horario propio vuelve a estar libre)', async () => {
+    await flujoHasta('datos', svc); // hold de 13:00 del 25/09 con Ana
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await waitFor(() => expect(useReservaOnlineStore.getState().hold).toBeNull());
+    await userEvent.click(await screen.findByRole('button', { name: /Vie 25/ }));
+    expect(await screen.findByRole('button', { name: '13:00' })).toBeInTheDocument();
+    const otra = await svc.retenerHorario('demo', { servicioIds: [1, 2], profesionalId: 1, fecha: '2026-09-25', hora: '13:00' });
+    expect(otra.reservaId).toBeDefined(); // estaba liberado
   });
 
   it('cambiar de profesional invalida el horario elegido', async () => {

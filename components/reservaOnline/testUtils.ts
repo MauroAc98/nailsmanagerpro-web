@@ -19,14 +19,29 @@ export function limpiarFlujo(): void {
   useReservaOnlineStore.getState().reiniciar();
 }
 
-// Estado de flujo listo hasta el paso pedido (demo: servicios 1 y 2, Ana).
-export function flujoHasta(paso: 'horario' | 'datos' | 'resumen'): void {
+// Estado de flujo listo hasta el paso pedido (demo: servicios 1 y 2, Ana). Desde
+// 'datos' el horario queda RETENIDO en el servicio (hold real del mock), como
+// pasa al tocar Continuar en el horario; en 'resumen' tambien se guardan los datos.
+export async function flujoHasta(
+  paso: 'horario' | 'datos' | 'resumen',
+  svc?: MockReservaOnlineService,
+): Promise<void> {
   const s = useReservaOnlineStore.getState();
   s.activarSlug('demo');
   s.setServicios([1, 2]);
   s.setProfesional(1);
   if (paso === 'horario') return;
+  if (!svc) throw new Error('flujoHasta(' + paso + ') necesita el servicio mock');
   s.setHorario('2026-09-25', '13:00');
+  const h = await svc.retenerHorario('demo', {
+    servicioIds: [1, 2],
+    profesionalId: 1,
+    fecha: '2026-09-25',
+    hora: '13:00',
+  });
+  s.setHold({ reservaId: h.reservaId, expiraMs: h.expiresAtMs, profesionalId: h.profesionalId });
   if (paso === 'datos') return;
-  s.setCliente({ nombre: 'Marta', apellido: 'Ríos', whatsapp: '+5493765123456' });
+  const cliente = { nombre: 'Marta', apellido: 'Ríos', whatsapp: '+5493765123456' };
+  s.setCliente(cliente);
+  await svc.actualizarDatosReserva('demo', h.reservaId, { cliente });
 }

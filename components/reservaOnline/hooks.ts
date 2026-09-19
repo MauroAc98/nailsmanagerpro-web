@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
+import type { HoldFlujo } from '@/lib/reservaOnline/types';
 import { pasoMinimo, type Paso } from '@/lib/reservaOnline/pasoMinimo';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
@@ -80,6 +81,19 @@ export function useCarga<T>(
     cargando: !vigenteEstado,
     reintentar,
   };
+}
+
+// Retencion vigente del flujo con su cuenta regresiva. `vencido` = hubo hold y
+// ya paso su vencimiento segun el reloj de la pantalla (el servidor decide en
+// ultima instancia: puede responder hold_expired antes).
+export function useHold(
+  ahora: () => number = Date.now,
+  cadaMs = 1000,
+): { hold: HoldFlujo | null; restanteMs: number; vencido: boolean } {
+  const hold = useReservaOnlineStore((s) => s.hold);
+  const reloj = useAhora(ahora, cadaMs);
+  const restanteMs = hold ? hold.expiraMs - reloj : 0;
+  return { hold, restanteMs, vencido: hold !== null && restanteMs <= 0 };
 }
 
 // Reloj para la cuenta regresiva; `ahora` es inyectable (tests con reloj fijo).
