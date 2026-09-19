@@ -106,7 +106,13 @@
   "errores": {
     "generico": "No pudimos completar la operación. Probá de nuevo.",
     "noEncontrado": "No encontramos este salón.",
-    "whatsappInvalido": "Ingresá tu número con código de área, sin 0 ni 15. Ej.: 376 512 3456."
+    "whatsappInvalido": "Ingresá tu número con código de área, sin 0 ni 15. Ej.: 376 512 3456.",
+    "noDisponibleTitulo": "Todavía no está disponible",
+    "noDisponibleDetalle": "La reserva online no está disponible en este momento. Volvé a intentarlo más tarde.",
+    "limiteIntentos": "Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.",
+    "telefonoEnfriamiento": "Ese número tiene una reserva reciente sin pagar. Probá de nuevo en {minutos} min.",
+    "verificacionRequerida": "Necesitamos verificar tu WhatsApp para continuar. Escribinos y te ayudamos.",
+    "desafioFallido": "No pudimos verificar que sos una persona. Volvé a intentarlo."
   },
   "settings": {
     "title": "Reservas online",

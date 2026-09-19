@@ -26,6 +26,7 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { BarraInferior, BotonPrimario, Etiqueta, Mensaje, PasoHeader } from './ui';
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
@@ -57,6 +58,11 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const [reteniendo, setReteniendo] = useState(false);
   const [tomado, setTomado] = useState(false);
   const [errorRetener, setErrorRetener] = useState(false);
+  // Kill switch del backend apagado (RESERVAS_CREACION_HABILITADA=false): a
+  // pantalla completa, nunca se confunde con slot_taken/hold_expired (esos
+  // dejan seguir reservando, esto no).
+  const [noDisponible, setNoDisponible] = useState(false);
+  const [avisoRetener, setAvisoRetener] = useState<'rate_limited' | 'challenge_failed' | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [sinLugarProximos, setSinLugarProximos] = useState(false);
   const [calendarioAbierto, setCalendarioAbierto] = useState(false);
@@ -117,6 +123,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const horas = useMemo(() => disp?.slots.map((s) => s.hora) ?? [], [disp]);
 
   if (!listo) return null;
+  if (noDisponible) return <NoDisponibleAun />;
 
   const sinHorarios = error?.code === 'validation' || (disp !== null && disp.slots.length === 0);
   const errorDeCarga = error && error.code !== 'validation';
@@ -202,6 +209,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     setReteniendo(true);
     setTomado(false);
     setErrorRetener(false);
+    setAvisoRetener(null);
     try {
       const retencion = await getService().retenerHorario(slug, {
         servicioIds,
@@ -222,6 +230,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         useReservaOnlineStore.getState().limpiarHorario();
         setTomado(true);
         reintentar();
+      } else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') {
+        setNoDisponible(true);
+      } else if (e instanceof ReservaOnlineError && (e.code === 'rate_limited' || e.code === 'challenge_failed')) {
+        setAvisoRetener(e.code);
       } else {
         setErrorRetener(true);
       }
@@ -299,6 +311,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       )}
       {sinLugarProximos && <Mensaje>{t('horario.sinLugarProximos')}</Mensaje>}
       {tomado && <Mensaje tono="error">{t('horario.tomado')}</Mensaje>}
+      {avisoRetener === 'rate_limited' && <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>}
+      {avisoRetener === 'challenge_failed' && <Mensaje tono="error">{t('errores.desafioFallido')}</Mensaje>}
       {errorRetener && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       {horaRueda && horas.length > 0 && (

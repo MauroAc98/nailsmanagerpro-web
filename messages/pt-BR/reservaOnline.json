@@ -106,7 +106,13 @@
   "errores": {
     "generico": "Não conseguimos concluir a operação. Tente de novo.",
     "noEncontrado": "Não encontramos este salão.",
-    "whatsappInvalido": "Digite seu número com DDD, sem 0 nem 15. Ex.: 376 512 3456."
+    "whatsappInvalido": "Digite seu número com DDD, sem 0 nem 15. Ex.: 376 512 3456.",
+    "noDisponibleTitulo": "Ainda não está disponível",
+    "noDisponibleDetalle": "A reserva online não está disponível neste momento. Tente novamente mais tarde.",
+    "limiteIntentos": "Você fez muitas tentativas. Aguarde um momento e tente de novo.",
+    "telefonoEnfriamiento": "Esse número tem uma reserva recente sem pagamento. Tente de novo em {minutos} min.",
+    "verificacionRequerida": "Precisamos verificar seu WhatsApp para continuar. Escreva para nós e ajudamos você.",
+    "desafioFallido": "Não conseguimos verificar que você é uma pessoa. Tente de novo."
   },
   "settings": {
     "title": "Reservas online",

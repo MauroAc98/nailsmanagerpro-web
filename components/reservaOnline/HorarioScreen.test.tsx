@@ -4,6 +4,7 @@ import { renderWithProviders, screen, waitFor, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
+import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { HorarioScreen } from './HorarioScreen';
 import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
@@ -215,6 +216,55 @@ describe('HorarioScreen', () => {
     expect(ir).not.toHaveBeenCalled();
     expect(useReservaOnlineStore.getState().hold).toBeNull();
     await waitFor(() => expect(horasDeLaRueda()).not.toContain('10:30'));
+  });
+
+  it('si el kill switch del backend esta apagado (creation_disabled) muestra la pantalla completa de "no disponible", nunca el mensaje generico', async () => {
+    const ir = vi.fn();
+    setServiceParaTests({
+      ...svc,
+      retenerHorario: async () => {
+        throw new ReservaOnlineError('creation_disabled', 'La reserva online todavía no está disponible.');
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
+    expect(screen.queryByText('Ese horario se acaba de ocupar. Elegí otro.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
+    expect(ir).not.toHaveBeenCalled();
+  });
+
+  it('si el backend limita los intentos (rate_limited) muestra un aviso especifico, no el generico', async () => {
+    setServiceParaTests({
+      ...svc,
+      retenerHorario: async () => {
+        throw new ReservaOnlineError('rate_limited', 'Hiciste muchos intentos.', 60);
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.');
+  });
+
+  it('si el reto anti-bot falla (challenge_failed) muestra un aviso especifico', async () => {
+    setServiceParaTests({
+      ...svc,
+      retenerHorario: async () => {
+        throw new ReservaOnlineError('challenge_failed');
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos verificar que sos una persona. Volvé a intentarlo.');
   });
 
   it('al volver al horario con un hold vigente lo suelta antes de elegir otro (y el horario propio vuelve a estar libre)', async () => {
