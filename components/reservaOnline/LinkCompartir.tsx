@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { linkReservaCorto } from '@/lib/reservaOnline/linkPublico';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { IcoGlobo } from './iconos';
+import { QrLinkModal } from './QrLinkModal';
 import { Etiqueta, Tarjeta } from './ui';
 
 const boton = {
@@ -23,12 +24,13 @@ const boton = {
   textDecoration: 'none',
 } as const;
 
-// Link para compartir: copiar y enviar por WhatsApp. El QR NO esta: el repo no
-// tiene libreria de QR y no se agrega una dependencia sin decision explicita.
+// Link para compartir: copiar, enviar por WhatsApp o ver como QR (el QR se
+// genera perezosamente, solo mientras QrLinkModal esta abierto).
 // `habilitado` = reservas activas Y Mercado Pago conectado (decision S12).
 export function LinkCompartir({ url, habilitado }: { url: string; habilitado: boolean }) {
   const t = useTranslations('reservaOnline.settings');
   const [copiado, setCopiado] = useState(false);
+  const [mostrarQr, setMostrarQr] = useState(false);
 
   const copiar = async () => {
     try {
@@ -66,7 +68,11 @@ export function LinkCompartir({ url, habilitado }: { url: string; habilitado: bo
             >
               {t('enviar')}
             </a>
+            <button type="button" onClick={() => setMostrarQr(true)} style={boton}>
+              {t('verQr')}
+            </button>
           </div>
+          {mostrarQr && <QrLinkModal url={url} onClose={() => setMostrarQr(false)} />}
         </>
       ) : (
         <div style={{ fontSize: 13, color: colors.sub, lineHeight: 1.5 }}>{t('linkBloqueado')}</div>
