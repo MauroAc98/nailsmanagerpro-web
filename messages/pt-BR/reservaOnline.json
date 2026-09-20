@@ -180,5 +180,9 @@
     "grande": "A foto é grande demais. Tente outra mais leve.",
     "fila": "Fotos dos seus trabalhos",
     "sinFotos": "Ainda sem fotos"
+  },
+  "visor": {
+    "cerrar": "Fechar",
+    "contador": "{actual} / {total}"
   }
 }
