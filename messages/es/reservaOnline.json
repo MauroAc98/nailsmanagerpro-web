@@ -157,6 +157,7 @@
     "quitar": "Quitar de mi turno",
     "contador": "{actual} / {total}",
     "verFoto": "Ver foto {n}",
+    "ampliarFoto": "Ampliar foto {n}",
     "notaValor": "El valor final depende del diseño y se confirma en el salón.",
     "noEncontrado": "No encontramos este servicio."
   },

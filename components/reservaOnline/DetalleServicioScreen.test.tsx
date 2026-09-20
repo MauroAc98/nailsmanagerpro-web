@@ -82,4 +82,23 @@ describe('DetalleServicioScreen', () => {
     renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={99} ir={() => {}} />);
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No encontramos este servicio.'));
   });
+
+  it('tocar la foto grande abre el visor a pantalla completa en la foto actual', async () => {
+    // El servicio demo usa fotos placeholder (baldosas de gradiente, sin
+    // imagenes reales) — ver lib/reservaOnline/adapters/mock.ts.
+    renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver foto 3' }));
+    expect(screen.getByText('3 / 4')).toBeInTheDocument();
+
+    await userEvent.click(await screen.findByLabelText('Ampliar foto 3'));
+    const visor = screen.getByTestId('visor-fotos-area');
+    expect(visor.querySelector('[data-placeholder]')).toHaveAttribute('data-placeholder', '2'); // fotos[2] = 'placeholder:2'
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('button', { name: 'Cerrar' })).toBeNull();
+    // La galeria paginada de abajo sigue intacta, sin reemplazarse por el visor.
+    expect(screen.getByText('3 / 4')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver foto 3' })).toHaveAttribute('aria-current', 'true');
+  });
 });

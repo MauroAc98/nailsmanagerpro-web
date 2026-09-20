@@ -11,6 +11,7 @@ import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoAtras, IcoReloj } from './iconos';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje } from './ui';
+import { VisorFotos } from './VisorFotos';
 
 // Forma del layout real (galeria + titulo/duracion + boton), para que no
 // salte nada al llegar el servicio.
@@ -48,6 +49,8 @@ export function DetalleServicioScreen({
   const seleccion = useReservaOnlineStore((s) => s.servicioIds);
   const setServicios = useReservaOnlineStore((s) => s.setServicios);
   const [indice, setIndice] = useState(0);
+  // `null` = visor cerrado; un numero es el indice de la foto que muestra.
+  const [visorIndice, setVisorIndice] = useState<number | null>(null);
   const galeria = useRef<HTMLDivElement>(null);
 
   if (!listo) return null;
@@ -86,9 +89,18 @@ export function DetalleServicioScreen({
           style={{ display: 'flex', height: '100%', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none' }}
         >
           {fotos.map((f, i) => (
-            <div key={i} style={{ flex: '0 0 100%', height: '100%', scrollSnapAlign: 'start' }}>
+            <button
+              key={i}
+              type="button"
+              onClick={() => setVisorIndice(i)}
+              aria-label={t('detalle.ampliarFoto', { n: i + 1 })}
+              style={{
+                flex: '0 0 100%', height: '100%', scrollSnapAlign: 'start',
+                border: 'none', padding: 0, background: 'none', cursor: 'pointer', display: 'block',
+              }}
+            >
               <FotoTile src={f} iconoTam={40} />
-            </div>
+            </button>
           ))}
         </div>
         <button
@@ -151,6 +163,9 @@ export function DetalleServicioScreen({
       <BarraInferior>
         <BotonPrimario onClick={alternar}>{elegido ? t('detalle.quitar') : t('detalle.agregar')}</BotonPrimario>
       </BarraInferior>
+      {visorIndice !== null && (
+        <VisorFotos fotos={fotos} indiceInicial={visorIndice} onClose={() => setVisorIndice(null)} />
+      )}
     </div>
   );
 }

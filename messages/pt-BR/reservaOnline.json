@@ -157,6 +157,7 @@
     "quitar": "Remover do meu horário",
     "contador": "{actual} / {total}",
     "verFoto": "Ver foto {n}",
+    "ampliarFoto": "Ampliar foto {n}",
     "notaValor": "O valor final depende do design e é confirmado no salão.",
     "noEncontrado": "Não encontramos este serviço."
   },
