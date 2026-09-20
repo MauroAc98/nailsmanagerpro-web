@@ -27,7 +27,7 @@ describe('servicioService — fotos del portafolio (autenticado)', () => {
       expect.any(FormData),
       expect.objectContaining({ headers: { 'Content-Type': undefined } }),
     );
-    const form = mockedPost.mock.calls[0][1] as FormData;
+    const form = mockedPost.mock.calls.at(-1)?.[1] as FormData;
     expect(form.get('imagen')).toBe(archivo);
     expect(servicio.fotos).toEqual([{ id: 1, url: 'https://cdn.test/a.jpg', orden: 0 }]);
   });
