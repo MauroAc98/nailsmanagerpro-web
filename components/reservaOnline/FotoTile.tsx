@@ -21,10 +21,14 @@ export function FotoTile({
   src,
   estilo,
   iconoTam = 18,
+  objectFit = 'cover',
 }: {
   src: string;
   estilo?: CSSProperties;
   iconoTam?: number;
+  // 'cover' (default, mosaicos/miniaturas: rellenar recortando) o 'contain'
+  // (visor a pantalla completa: mostrar la foto entera, sin recortar).
+  objectFit?: CSSProperties['objectFit'];
 }) {
   const base: CSSProperties = { width: '100%', height: '100%', ...estilo };
   if (src.startsWith(PREFIJO_PLACEHOLDER)) {
@@ -46,5 +50,5 @@ export function FotoTile({
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" style={{ ...base, objectFit: 'cover', display: 'block' }} />;
+  return <img src={src} alt="" style={{ ...base, objectFit, display: 'block' }} />;
 }
