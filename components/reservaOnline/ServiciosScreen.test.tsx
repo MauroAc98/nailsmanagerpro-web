@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, screen, within } from '@/test/render';
+import { fireEvent, renderWithProviders, screen, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
@@ -90,21 +90,34 @@ describe('ServiciosScreen', () => {
   });
 
   describe('fotos', () => {
-    it('un servicio con fotos muestra miniatura y la pastilla "N fotos"', async () => {
+    it('un servicio con fotos muestra miniatura y el link "Ver N fotos"', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
       await screen.findByText('Esmaltado semipermanente');
-      expect(screen.getByText('4 fotos')).toBeInTheDocument();
-      expect(screen.getByText('6 fotos')).toBeInTheDocument();
+      expect(screen.getByText('Ver 4 fotos ›')).toBeInTheDocument();
+      expect(screen.getByText('Ver 6 fotos ›')).toBeInTheDocument();
     });
 
-    it('un servicio sin fotos es la tarjeta de siempre, sin miniatura ni pastilla', async () => {
+    it('un servicio sin fotos es la tarjeta de siempre, sin miniatura ni link de fotos', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
       const retiro = (await screen.findByText('Retiro de esmalte')).closest('button') as HTMLElement;
       expect(retiro).toHaveAttribute('role', 'checkbox');
       expect(within(retiro).queryByText(/foto/)).toBeNull();
+      expect(screen.queryByRole('button', { name: /Ver fotos de Retiro de esmalte/ })).toBeNull();
     });
 
-    it('tocar el cuerpo de la tarjeta abre el detalle y NO cambia la seleccion', async () => {
+    // Antes, tocar el cuerpo de una tarjeta CON fotos abria el detalle en vez
+    // de seleccionar (misma tarjeta, dos reglas distintas segun si tenia
+    // fotos) — la fuente real de la queja de que la pantalla no era intuitiva.
+    // Ahora una unica regla: toda la tarjeta siempre selecciona.
+    it('tocar el nombre o la foto de una tarjeta con fotos selecciona, no navega', async () => {
+      const ir = vi.fn();
+      renderWithProviders(<ServiciosScreen slug="demo" ir={ir} />);
+      await userEvent.click(await screen.findByText('Esmaltado semipermanente'));
+      expect(useReservaOnlineStore.getState().servicioIds).toEqual([1]);
+      expect(ir).not.toHaveBeenCalled();
+    });
+
+    it('el link "Ver fotos" (aparte de la tarjeta) navega al detalle y no cambia la seleccion', async () => {
       const ir = vi.fn();
       renderWithProviders(<ServiciosScreen slug="demo" ir={ir} />);
       await userEvent.click(await screen.findByRole('button', { name: /Ver fotos de Esmaltado semipermanente/ }));
@@ -112,12 +125,50 @@ describe('ServiciosScreen', () => {
       expect(useReservaOnlineStore.getState().servicioIds).toEqual([]);
     });
 
-    it('el boton de agregar de una tarjeta con fotos selecciona sin navegar', async () => {
+    it('tocar la insignia de una tarjeta con fotos tambien selecciona sin navegar', async () => {
       const ir = vi.fn();
       renderWithProviders(<ServiciosScreen slug="demo" ir={ir} />);
       await userEvent.click(await screen.findByRole('checkbox', { name: /Esmaltado semipermanente/ }));
       expect(useReservaOnlineStore.getState().servicioIds).toEqual([1]);
       expect(ir).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pista de categorias con mas para deslizar', () => {
+    function simularDesborde(
+      el: HTMLElement,
+      { scrollWidth, clientWidth, scrollLeft = 0 }: { scrollWidth: number; clientWidth: number; scrollLeft?: number },
+    ) {
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scrollWidth });
+      Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth });
+      Object.defineProperty(el, 'scrollLeft', { configurable: true, value: scrollLeft, writable: true });
+    }
+
+    it('si queda contenido oculto a la derecha, muestra la pista', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
+      simularDesborde(grupo, { scrollWidth: 600, clientWidth: 350 });
+      fireEvent.scroll(grupo);
+      expect(screen.getByTestId('pista-categorias')).toBeInTheDocument();
+    });
+
+    it('si todas las categorias ya entran, no muestra la pista', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
+      simularDesborde(grupo, { scrollWidth: 340, clientWidth: 350 });
+      fireEvent.scroll(grupo);
+      expect(screen.queryByTestId('pista-categorias')).toBeNull();
+    });
+
+    it('al llegar al final del scroll, la pista desaparece', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
+      simularDesborde(grupo, { scrollWidth: 600, clientWidth: 350, scrollLeft: 0 });
+      fireEvent.scroll(grupo);
+      expect(screen.getByTestId('pista-categorias')).toBeInTheDocument();
+      simularDesborde(grupo, { scrollWidth: 600, clientWidth: 350, scrollLeft: 250 });
+      fireEvent.scroll(grupo);
+      expect(screen.queryByTestId('pista-categorias')).toBeNull();
     });
   });
 

@@ -23,6 +23,7 @@
     "desde": "Desde {monto}",
     "fotos": "{count, plural, one {# foto} other {# fotos}}",
     "verFotos": "Ver fotos de {nombre}",
+    "verNFotos": "Ver {count, plural, one {# foto} other {# fotos}} ›",
     "notaPrecios": "Los precios son de referencia: el valor final depende del diseño y se confirma en el negocio.",
     "filtroTodos": "Todos",
     "filtroOtros": "Otros",

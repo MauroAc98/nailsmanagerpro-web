@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso, rutaServicio } from '@/lib/reservaOnline/rutas';
@@ -10,23 +10,31 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
-import { IcoBrillo, IcoCheck, IcoMas, IcoReloj } from './iconos';
+import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
+// Ancho de la miniatura + separacion: el link "Ver fotos" (fuera del boton de
+// seleccion, ver mas abajo) se indenta este mismo valor para quedar alineado
+// debajo del nombre en vez de debajo de la foto.
+const ANCHO_MINIATURA = 68;
+const GAP_TARJETA = 14;
+
 // Datos de la tarjeta: nombre, duracion y "Desde $X" (precio de referencia: el
-// valor final lo confirma el salon; el DTO no trae descripcion, asi que no se
-// renderiza ninguna linea de descripcion).
+// valor final lo confirma el negocio; el DTO no trae descripcion, asi que no
+// se renderiza ninguna linea de descripcion). Tipografia mas grande que el
+// resto de la app: esta pantalla la usa cualquier clienta, incluidas
+// personas mayores, y es la primera decision de todo el flujo.
 function DatosServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCategoria: boolean }) {
   const t = useTranslations('reservaOnline.servicios');
   return (
     <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-      <div style={{ fontSize: 15.5, fontWeight: 700, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <div style={{ fontSize: 17, fontWeight: 700, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {s.nombre}
       </div>
       {mostrarCategoria && s.categoria && (
-        <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{s.categoria.nombre}</div>
+        <div style={{ fontSize: 12.5, color: colors.muted, marginTop: 2 }}>{s.categoria.nombre}</div>
       )}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8, fontSize: 12.5, color: colors.sub }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 7, fontSize: 13.5, color: colors.sub }}>
         <IcoReloj color={colors.muted} size={15} />
         <span>{s.duracionMinutos} min</span>
         <span aria-hidden="true" style={{ color: colors.border }}>|</span>
@@ -36,18 +44,22 @@ function DatosServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCat
   );
 }
 
-// Circulo de estado: check relleno si esta elegido, "+" si no.
+// Insignia de estado, mas grande que antes (44px: zona de toque comoda) y sin
+// icono cuando no esta elegido — el circulo vacio ya lee como "sin marcar" y
+// evita el "+" ambiguo (¿agregar? ¿sumar?). Elegido se codifica de tres formas
+// a la vez (borde de la tarjeta, relleno de fondo y este circulo con tilde),
+// nunca solo con color, para que tambien funcione con bajo contraste de vision.
 function Circulo({ elegido }: { elegido: boolean }) {
   return (
     <span
       aria-hidden="true"
       style={{
-        width: 32, height: 32, borderRadius: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 44, height: 44, borderRadius: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: elegido ? colors.primarySolid : colors.surface,
-        border: elegido ? 'none' : `1.5px solid ${colors.border}`,
+        border: elegido ? 'none' : `2.5px solid ${colors.muted}`,
       }}
     >
-      {elegido ? <IcoCheck color={colors.primaryFg} size={15} sw={3} /> : <IcoMas color={colors.primaryDeep} sw={2.5} />}
+      {elegido && <IcoCheck color={colors.primaryFg} size={20} sw={3} />}
     </span>
   );
 }
@@ -65,13 +77,13 @@ function ServiciosSkeleton() {
       {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px 12px 12px', marginBottom: 10 }}
+          style={{ display: 'flex', alignItems: 'center', gap: GAP_TARJETA, padding: 14, marginBottom: 12 }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Hueso w="60%" h={17} />
-            <Hueso w="40%" h={13} style={{ marginTop: 10 }} />
+            <Hueso w="60%" h={18} />
+            <Hueso w="40%" h={14} style={{ marginTop: 10 }} />
           </div>
-          <Hueso w={32} h={32} r={16} />
+          <Hueso w={44} h={44} r={22} />
         </div>
       ))}
     </div>
@@ -79,7 +91,7 @@ function ServiciosSkeleton() {
 }
 
 // Pantalla 2: seleccion multiple de servicios. Sin total corriente: solo
-// "Desde $X" por servicio y una nota de que el valor final se confirma en el salon.
+// "Desde $X" por servicio y una nota de que el valor final se confirma en el negocio.
 export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   const t = useTranslations('reservaOnline');
   const listo = useGuardaPaso(slug, 'servicios', ir);
@@ -93,6 +105,24 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   // Filtro de categoria: 'todos' | id de categoria | 'otros' (sin categoria).
   // Solo cambia lo visible; la seleccion vive en el store y no se toca.
   const [filtro, setFiltro] = useState<'todos' | 'otros' | number>('todos');
+
+  // Pista de que la fila de categorias se puede deslizar: un degrade + flecha
+  // sutil en el borde derecho, visible solo mientras queda contenido oculto a
+  // la derecha (no al llegar al final, ni si todas las pills ya entran).
+  const filaRef = useRef<HTMLDivElement>(null);
+  const [hayMasCategorias, setHayMasCategorias] = useState(false);
+  useEffect(() => {
+    const el = filaRef.current;
+    if (!el) return;
+    const revisar = () => setHayMasCategorias(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+    revisar();
+    el.addEventListener('scroll', revisar);
+    window.addEventListener('resize', revisar);
+    return () => {
+      el.removeEventListener('scroll', revisar);
+      window.removeEventListener('resize', revisar);
+    };
+  }, [servicios]);
 
   if (!listo) return null;
 
@@ -130,94 +160,107 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       {cargando && !error && <ServiciosSkeleton />}
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
       {hayFiltros && (
-        <div
-          role="group"
-          aria-label={t('servicios.filtrosAria')}
-          style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 2 }}
-        >
-          {pills.map((p) => {
-            const activa = filtro === p.clave;
-            return (
-              <button
-                key={String(p.clave)}
-                type="button"
-                aria-pressed={activa}
-                onClick={() => setFiltro(p.clave)}
+        <div style={{ position: 'relative', marginBottom: 2 }}>
+          <div
+            ref={filaRef}
+            role="group"
+            aria-label={t('servicios.filtrosAria')}
+            style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12 }}
+          >
+            {pills.map((p) => {
+              const activa = filtro === p.clave;
+              return (
+                <button
+                  key={String(p.clave)}
+                  type="button"
+                  aria-pressed={activa}
+                  onClick={() => setFiltro(p.clave)}
+                  style={{
+                    flexShrink: 0, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 13.5, fontWeight: 600,
+                    padding: '8px 16px', borderRadius: 999,
+                    background: activa ? colors.strong : colors.surface,
+                    color: activa ? colors.surface : colors.strong,
+                    border: `1px solid ${activa ? colors.strong : colors.border}`,
+                  }}
+                >
+                  {p.texto}
+                </button>
+              );
+            })}
+          </div>
+          {/* Pista de "hay mas, desliza": termina justo donde termina esta
+              fila (misma columna que las tarjetas), nunca mas alla. */}
+          {hayMasCategorias && (
+            <div
+              data-testid="pista-categorias"
+              aria-hidden="true"
+              style={{
+                position: 'absolute', top: 0, right: 0, bottom: 12, width: 40, pointerEvents: 'none',
+                background: `linear-gradient(to right, transparent, ${colors.bg} 75%)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+              }}
+            >
+              <span
                 style={{
-                  flexShrink: 0, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                  padding: '7px 14px', borderRadius: 999,
-                  background: activa ? colors.strong : colors.surface,
-                  color: activa ? colors.surface : colors.strong,
-                  border: `1px solid ${activa ? colors.strong : colors.border}`,
+                  width: 22, height: 22, borderRadius: 11, background: colors.bg, border: `1px solid ${colors.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                {p.texto}
-              </button>
-            );
-          })}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </span>
+            </div>
+          )}
         </div>
       )}
       {visibles.map((s) => {
         const elegido = seleccion.includes(s.id);
+        const conFotos = s.fotos.length > 0;
         const tarjeta = {
-          display: 'flex', alignItems: 'center', gap: 12, width: '100%', boxSizing: 'border-box',
-          background: elegido ? colors.primarySoft : colors.surface, borderRadius: 16, padding: '12px 14px 12px 12px',
-          marginBottom: 10, border: `${elegido ? 1.5 : 1}px solid ${elegido ? colors.primarySolid : colors.border}`,
+          borderRadius: 16, padding: GAP_TARJETA, marginBottom: 12, width: '100%', boxSizing: 'border-box',
+          background: elegido ? colors.primarySoft : colors.surface,
+          border: `${elegido ? 2.5 : 2}px solid ${elegido ? colors.primarySolid : colors.border}`,
         } as const;
 
-        // Sin fotos: la tarjeta entera es el checkbox (sin miniatura).
-        if (s.fotos.length === 0) {
-          return (
-            <button
-              key={s.id}
-              type="button"
-              role="checkbox"
-              aria-checked={elegido}
-              aria-label={s.nombre}
-              onClick={() => alternar(s.id)}
-              style={{ ...tarjeta, cursor: 'pointer', textAlign: 'left' }}
-            >
-              <DatosServicio s={s} mostrarCategoria={filtro === 'todos'} />
-              <Circulo elegido={elegido} />
-            </button>
-          );
-        }
-
-        // Con fotos: el cuerpo abre el detalle; el circulo agrega/quita.
+        // Una unica regla, siempre: toda la tarjeta selecciona el servicio.
+        // "Ver fotos" (cuando hay) es un link aparte, chico y con texto propio,
+        // en vez de compartir la zona de toque con la seleccion.
         return (
           <div key={s.id} style={tarjeta}>
             <button
               type="button"
-              aria-label={t('servicios.verFotos', { nombre: s.nombre })}
-              onClick={() => ir(rutaServicio(slug, s.id))}
-              style={{
-                flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, padding: 0,
-                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-              }}
-            >
-              <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
-                <FotoTile src={s.fotos[0]} estilo={{ borderRadius: 12 }} />
-                <span
-                  style={{
-                    position: 'absolute', right: 4, bottom: 4, background: 'rgba(43, 34, 38, 0.72)', color: '#fff',
-                    fontSize: 10, fontWeight: 700, borderRadius: 8, padding: '1px 6px',
-                  }}
-                >
-                  {t('servicios.fotos', { count: s.fotos.length })}
-                </span>
-              </div>
-              <DatosServicio s={s} mostrarCategoria={filtro === 'todos'} />
-            </button>
-            <button
-              type="button"
               role="checkbox"
               aria-checked={elegido}
               aria-label={s.nombre}
               onClick={() => alternar(s.id)}
-              style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: GAP_TARJETA, padding: 0,
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+              }}
             >
+              {conFotos && (
+                <div style={{ width: ANCHO_MINIATURA, height: ANCHO_MINIATURA, flexShrink: 0 }}>
+                  <FotoTile src={s.fotos[0]} estilo={{ borderRadius: 12 }} />
+                </div>
+              )}
+              <DatosServicio s={s} mostrarCategoria={filtro === 'todos'} />
               <Circulo elegido={elegido} />
             </button>
+            {conFotos && (
+              <button
+                type="button"
+                aria-label={t('servicios.verFotos', { nombre: s.nombre })}
+                onClick={() => ir(rutaServicio(slug, s.id))}
+                style={{
+                  display: 'block', marginTop: 8, marginLeft: ANCHO_MINIATURA + GAP_TARJETA, padding: 0,
+                  background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  fontSize: 13, fontWeight: 600, color: colors.primaryDeep, textDecoration: 'underline',
+                }}
+              >
+                {t('servicios.verNFotos', { count: s.fotos.length })}
+              </button>
+            )}
           </div>
         );
       })}
