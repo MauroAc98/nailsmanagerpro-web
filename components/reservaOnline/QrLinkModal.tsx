@@ -20,6 +20,17 @@ function nombreArchivoDesdeUrl(url: string): string {
   return segmentos[segmentos.length - 1] ?? 'link';
 }
 
+// Decodifica a mano en vez de `fetch(dataUrl)`: Safari historicamente no
+// soporta bien fetch() sobre `data:` URLs, y esto evita depender de eso.
+function dataUrlABlob(dataUrl: string): Blob {
+  const [meta, base64] = dataUrl.split(',');
+  const mime = meta.match(/:(.*?);/)?.[1] ?? 'image/png';
+  const binario = atob(base64);
+  const bytes = new Uint8Array(binario.length);
+  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
 // Modal del codigo QR del link publico de reserva. Genera el QR de forma
 // perezosa (solo mientras este modal esta montado, nunca desde LinkCompartir
 // de forma eager) y lo muestra sobre una tarjeta blanca explicita — el QR
@@ -37,6 +48,33 @@ export function QrLinkModal({ url, onClose }: { url: string; onClose: () => void
   const reintentar = () => {
     setEstado({ tipo: 'cargando' });
     setIntento((n) => n + 1);
+  };
+
+  // Mismo patron que compartirImagen (useGenerarHistoria.ts): Web Share API
+  // con el archivo real cuando el navegador la soporta; cancelar el share
+  // nativo (AbortError) no es un error, se ignora en silencio. Sin soporte
+  // (desktop, navegadores viejos), cae al mismo comportamiento que Descargar.
+  const compartir = async () => {
+    if (estado.tipo !== 'listo') return;
+    const nombreArchivo = `reserva-${nombreArchivoDesdeUrl(url)}.png`;
+    const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
+    if (nav.share && nav.canShare) {
+      const file = new File([dataUrlABlob(estado.dataUrl)], nombreArchivo, { type: 'image/png' });
+      if (nav.canShare({ files: [file] })) {
+        try {
+          await nav.share({ files: [file] });
+        } catch (err) {
+          if (err instanceof Error && err.name !== 'AbortError') {
+            console.error('QrLinkModal: compartir fallo', err);
+          }
+        }
+        return;
+      }
+    }
+    const a = document.createElement('a');
+    a.href = estado.dataUrl;
+    a.download = nombreArchivo;
+    a.click();
   };
 
   useEffect(() => {
@@ -157,27 +195,61 @@ export function QrLinkModal({ url, onClose }: { url: string; onClose: () => void
         </span>
 
         {estado.tipo === 'listo' && (
-          <a
-            href={estado.dataUrl}
-            download={`reserva-${nombreArchivoDesdeUrl(url)}.png`}
-            style={{
-              width: '100%',
-              height: 40,
-              borderRadius: 10,
-              border: 'none',
-              background: colors.primarySolid,
-              color: '#FFFFFF',
-              fontSize: 13,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textDecoration: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            {t('qrDescargar')}
-          </a>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <button
+              type="button"
+              onClick={compartir}
+              style={{
+                flex: 1,
+                height: 40,
+                borderRadius: 10,
+                border: 'none',
+                background: colors.primarySolid,
+                color: '#FFFFFF',
+                fontSize: 13,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 7,
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              {t('qrCompartir')}
+            </button>
+            <a
+              href={estado.dataUrl}
+              download={`reserva-${nombreArchivoDesdeUrl(url)}.png`}
+              style={{
+                flex: 1,
+                height: 40,
+                borderRadius: 10,
+                border: `1px solid ${colors.border}`,
+                background: 'transparent',
+                color: colors.strong,
+                fontSize: 13,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 7,
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.strong} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {t('qrDescargar')}
+            </a>
+          </div>
         )}
       </div>
     </div>
