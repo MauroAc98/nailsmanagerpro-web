@@ -354,19 +354,25 @@
   },
   "NuevoBloqueoPage": {
     "title": "Nuevo bloqueo",
+    "subtitle": "Elegí qué querés bloquear: una fecha completa, o solo un horario puntual dentro del día.",
     "dateLabel": "Fecha *",
     "dateRequired": "Elegí una fecha",
-    "professionalLabel": "Profesional",
+    "whoAffectsLabel": "¿A quién afecta?",
     "allSalonOption": "Todo el salón",
-    "hourRangeLabel": "Horario (opcional — vacío es día completo)",
+    "durationLabel": {
+      "allDayOption": "Todo el día",
+      "specificHoursOption": "Un horario puntual"
+    },
+    "durationHelp": "Nadie va a poder reservar ese día completo. Elegí \"Un horario puntual\" para bloquear solo una parte, por ejemplo una tarde libre.",
     "hourFromLabel": "Desde",
     "hourToLabel": "Hasta",
     "motivoLabel": "Motivo (opcional)",
     "motivoPlaceholder": "Ej: Vacaciones",
     "incompleteRange": "Cargá los dos horarios, o ninguno para bloquear el día completo.",
     "invalidRange": "El horario \"hasta\" debe ser posterior al horario \"desde\".",
+    "previewLabel": "Vas a bloquear",
     "saving": "Guardando...",
-    "submit": "Agregar bloqueo",
+    "submit": "Bloquear fecha",
     "saveError": "No se pudo guardar el bloqueo."
   },
   "AparienciaPage": {
