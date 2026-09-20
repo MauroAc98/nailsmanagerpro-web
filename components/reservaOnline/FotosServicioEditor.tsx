@@ -9,6 +9,7 @@ import { FotoTile } from './FotoTile';
 import { useCarga } from './hooks';
 import { IcoAtras, IcoMas } from './iconos';
 import { Etiqueta, Mensaje } from './ui';
+import { VisorFotos } from './VisorFotos';
 
 const boton: CSSProperties = {
   width: 26, height: 26, borderRadius: 13, border: 'none', padding: 0, cursor: 'pointer',
@@ -40,6 +41,8 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
   // `null` = todavia no se toco nada: se muestra lo cargado.
   const [editadas, setEditadas] = useState<FotoServicio[] | null>(null);
   const [problema, setProblema] = useState<'grande' | 'error' | null>(null);
+  // `null` = visor cerrado; un numero es el indice de la foto que muestra.
+  const [visorIndice, setVisorIndice] = useState<number | null>(null);
 
   if (error) return <Mensaje tono="error">{tc('errores.generico')}</Mensaje>;
   if (!data) return <Mensaje>{tc('comun.cargando')}</Mensaje>;
@@ -99,7 +102,18 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
         {fotos.map((foto, i) => (
           <div key={foto.id} data-foto={i} data-src={foto.url} style={{ position: 'relative', height: 104 }}>
-            <FotoTile src={foto.url} estilo={{ borderRadius: 14 }} />
+            {/* Boton "de fondo": tocar la foto abre el visor. Es un hermano
+                de la fila de botones (mover/quitar), no un ancestro — un
+                click en un boton nunca burbujea hacia este (evita el doble
+                disparo que pedia el ticket). */}
+            <button
+              type="button"
+              onClick={() => setVisorIndice(i)}
+              aria-label={t('verFoto', { n: i + 1 })}
+              style={{ position: 'absolute', inset: 0, border: 'none', padding: 0, background: 'none', cursor: 'pointer' }}
+            >
+              <FotoTile src={foto.url} estilo={{ borderRadius: 14 }} />
+            </button>
             {i === 0 && (
               <span
                 style={{
@@ -163,6 +177,13 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
       <div style={{ fontSize: 12, color: colors.sub, marginTop: 12, lineHeight: 1.45 }}>
         {lleno ? t('maximo', { max: MAX_FOTOS_SERVICIO }) : t('nota', { max: MAX_FOTOS_SERVICIO })}
       </div>
+      {visorIndice !== null && (
+        <VisorFotos
+          fotos={fotos.map((f) => f.url)}
+          indiceInicial={visorIndice}
+          onClose={() => setVisorIndice(null)}
+        />
+      )}
     </div>
   );
 }

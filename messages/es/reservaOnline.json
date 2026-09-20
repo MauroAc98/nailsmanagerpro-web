@@ -157,6 +157,7 @@
     "quitar": "Quitar de mi turno",
     "contador": "{actual} / {total}",
     "verFoto": "Ver foto {n}",
+    "ampliarFoto": "Ampliar foto {n}",
     "notaValor": "El valor final depende del diseño y se confirma en el salón.",
     "noEncontrado": "No encontramos este servicio."
   },
@@ -175,10 +176,15 @@
     "quitar": "Quitar foto {n}",
     "moverIzquierda": "Mover foto {n} a la izquierda",
     "moverDerecha": "Mover foto {n} a la derecha",
+    "verFoto": "Ver foto {n} en pantalla completa",
     "nota": "Usá las flechas para reordenar y la X para quitar. Hasta {max} fotos.",
     "maximo": "Llegaste al máximo de {max} fotos.",
     "grande": "La foto es demasiado grande. Probá con otra más liviana.",
     "fila": "Fotos de tus trabajos",
     "sinFotos": "Sin fotos todavía"
+  },
+  "visor": {
+    "cerrar": "Cerrar",
+    "contador": "{actual} / {total}"
   }
 }

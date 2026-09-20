@@ -18,4 +18,14 @@ describe('FotoTile', () => {
     expect(container.querySelector('img')).toBeNull();
     expect(container.firstElementChild).toHaveAttribute('data-placeholder', '2');
   });
+
+  it('por defecto la imagen real rellena con object-fit cover', () => {
+    const { container } = renderWithProviders(<FotoTile src="https://cdn.test/a.jpg" />);
+    expect(container.querySelector('img')).toHaveStyle({ objectFit: 'cover' });
+  });
+
+  it('objectFit permite pedir "contain" (visor a pantalla completa: no recortar la foto)', () => {
+    const { container } = renderWithProviders(<FotoTile src="https://cdn.test/a.jpg" objectFit="contain" />);
+    expect(container.querySelector('img')).toHaveStyle({ objectFit: 'contain' });
+  });
 });

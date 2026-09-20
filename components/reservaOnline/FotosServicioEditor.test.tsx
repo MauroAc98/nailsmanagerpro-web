@@ -136,4 +136,25 @@ describe('FotosServicioEditor', () => {
     await userEvent.upload(await screen.findByLabelText('Agregar fotos'), archivo);
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos completar la operación');
   });
+
+  it('tocar la foto de una tile abre el visor en esa foto; cerrar vuelve al editor', async () => {
+    mockServicio([foto(1), foto(2), foto(3)]);
+    montar();
+    await userEvent.click(await screen.findByLabelText('Ver foto 2 en pantalla completa'));
+    const visor = screen.getByTestId('visor-fotos-area');
+    expect(visor.querySelector('img')).toHaveAttribute('src', 'https://cdn.test/2.jpg');
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('button', { name: 'Cerrar' })).toBeNull();
+  });
+
+  it('abrir el visor no interfiere con los botones de mover/quitar de la tile', async () => {
+    mockServicio([foto(1), foto(2)]);
+    mockedDelete.mockResolvedValue({ data: { id: ID, fotos: [foto(2)] } });
+    montar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Quitar foto 1' }));
+    // Si el tap hubiera burbujeado tambien al handler de "abrir visor", el
+    // visor (con su boton "Cerrar") quedaria abierto encima del editor.
+    expect(screen.queryByRole('button', { name: 'Cerrar' })).toBeNull();
+    await waitFor(() => expect(mockedDelete).toHaveBeenCalledWith('/servicios/5/fotos/1'));
+  });
 });
