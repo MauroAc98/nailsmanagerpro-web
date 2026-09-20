@@ -44,22 +44,24 @@ function DatosServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCat
   );
 }
 
-// Insignia de estado, mas grande que antes (44px: zona de toque comoda) y sin
-// icono cuando no esta elegido — el circulo vacio ya lee como "sin marcar" y
-// evita el "+" ambiguo (¿agregar? ¿sumar?). Elegido se codifica de tres formas
-// a la vez (borde de la tarjeta, relleno de fondo y este circulo con tilde),
-// nunca solo con color, para que tambien funcione con bajo contraste de vision.
+// Insignia de estado: un poco mas grande que la original (36px, no 44 — ese
+// tamano terminaba empujando el resto de la tarjeta en el ancho real de un
+// celular) y sin icono cuando no esta elegido — el circulo vacio ya lee como
+// "sin marcar" y evita el "+" ambiguo (¿agregar? ¿sumar?). Elegido se
+// codifica de tres formas a la vez (borde de la tarjeta, relleno de fondo y
+// este circulo con tilde), nunca solo con color, para que tambien funcione
+// con bajo contraste de vision.
 function Circulo({ elegido }: { elegido: boolean }) {
   return (
     <span
       aria-hidden="true"
       style={{
-        width: 44, height: 44, borderRadius: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 36, height: 36, borderRadius: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: elegido ? colors.primarySolid : colors.surface,
-        border: elegido ? 'none' : `2.5px solid ${colors.muted}`,
+        border: elegido ? 'none' : `2px solid ${colors.muted}`,
       }}
     >
-      {elegido && <IcoCheck color={colors.primaryFg} size={20} sw={3} />}
+      {elegido && <IcoCheck color={colors.primaryFg} size={16} sw={3} />}
     </span>
   );
 }
@@ -83,7 +85,7 @@ function ServiciosSkeleton() {
             <Hueso w="60%" h={18} />
             <Hueso w="40%" h={14} style={{ marginTop: 10 }} />
           </div>
-          <Hueso w={44} h={44} r={22} />
+          <Hueso w={36} h={36} r={18} />
         </div>
       ))}
     </div>
