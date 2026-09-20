@@ -339,8 +339,10 @@
   },
   "BloqueosPage": {
     "title": "Bloqueos",
+    "subtitle": "Cerrá fechas u horarios puntuales: tus clientas no van a poder reservarlos online, y tu agenda te avisa si igual agendás ahí.",
     "loading": "Cargando bloqueos...",
-    "empty": "No tenés ningún bloqueo cargado.",
+    "emptyTitle": "No tenés ningún bloqueo cargado.",
+    "emptyText": "Usalos para cerrar vacaciones, feriados o cualquier día u horario en el que el salón no atiende.",
     "todoElSalon": "Todo el salón",
     "todoElDia": "Todo el día",
     "sinMotivo": "Sin motivo especificado",
