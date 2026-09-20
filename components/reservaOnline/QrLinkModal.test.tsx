@@ -25,6 +25,15 @@ describe('QrLinkModal', () => {
     expect(link.getAttribute('href')).toMatch(/^data:image\//);
   });
 
+  // El nombre del archivo usa el slug del salon (ultimo segmento del link),
+  // no un nombre generico — cada duena descarga SU QR, identificable.
+  it('el nombre del archivo descargado usa el slug del salon', async () => {
+    renderWithProviders(<QrLinkModal url={url} onClose={() => {}} />);
+    await screen.findByRole('img');
+    const link = screen.getByRole('link', { name: 'Descargar' });
+    expect(link).toHaveAttribute('download', 'reserva-mi-salon.png');
+  });
+
   it('el boton cerrar llama a onClose', async () => {
     const onClose = vi.fn();
     renderWithProviders(<QrLinkModal url={url} onClose={onClose} />);

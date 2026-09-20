@@ -13,6 +13,13 @@ const Z_INDEX = 200;
 
 type Estado = { tipo: 'cargando' } | { tipo: 'listo'; dataUrl: string } | { tipo: 'error' };
 
+// El slug del salon (ultimo segmento del link) — cada duena descarga SU QR,
+// identificable, en vez de un nombre generico de la app para todas.
+function nombreArchivoDesdeUrl(url: string): string {
+  const segmentos = url.split('/').filter(Boolean);
+  return segmentos[segmentos.length - 1] ?? 'link';
+}
+
 // Modal del codigo QR del link publico de reserva. Genera el QR de forma
 // perezosa (solo mientras este modal esta montado, nunca desde LinkCompartir
 // de forma eager) y lo muestra sobre una tarjeta blanca explicita — el QR
@@ -152,7 +159,7 @@ export function QrLinkModal({ url, onClose }: { url: string; onClose: () => void
         {estado.tipo === 'listo' && (
           <a
             href={estado.dataUrl}
-            download="qr-turnetto.png"
+            download={`reserva-${nombreArchivoDesdeUrl(url)}.png`}
             style={{
               width: '100%',
               height: 40,
