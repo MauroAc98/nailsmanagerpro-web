@@ -90,11 +90,21 @@ describe('ServiciosScreen', () => {
   });
 
   describe('fotos', () => {
-    it('un servicio con fotos muestra miniatura y el link "Ver N fotos"', async () => {
+    it('un servicio con fotos muestra el link "Ver N fotos"', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
       await screen.findByText('Esmaltado semipermanente');
       expect(screen.getByText('Ver 4 fotos ›')).toBeInTheDocument();
       expect(screen.getByText('Ver 6 fotos ›')).toBeInTheDocument();
+    });
+
+    // La foto de origen no pasa por ningun recorte al subirla: forzarla a un
+    // cuadrado chico con object-fit:cover podia recortarla de forma fea
+    // (reportado en produccion). Se saca la miniatura de la tarjeta por
+    // completo; la foto se ve entera (sin recortar) recien en el detalle/visor.
+    it('no muestra ninguna miniatura de foto en la tarjeta', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Esmaltado semipermanente');
+      expect(screen.queryByRole('img')).toBeNull();
     });
 
     it('un servicio sin fotos es la tarjeta de siempre, sin miniatura ni link de fotos', async () => {

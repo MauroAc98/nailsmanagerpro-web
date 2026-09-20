@@ -8,15 +8,10 @@ import { formatMontoCorto } from '@/lib/money';
 import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
-import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
-// Ancho de la miniatura + separacion: el link "Ver fotos" (fuera del boton de
-// seleccion, ver mas abajo) se indenta este mismo valor para quedar alineado
-// debajo del nombre en vez de debajo de la foto.
-const ANCHO_MINIATURA = 68;
 const GAP_TARJETA = 14;
 
 // Datos de la tarjeta: nombre, duracion y "Desde $X" (precio de referencia: el
@@ -163,11 +158,17 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
       {hayFiltros && (
         <div style={{ position: 'relative', marginBottom: 2 }}>
+          {/* Scrollbar nativa oculta (Firefox via scrollbarWidth, Chrome/Android
+              via el selector de abajo): sin esto, apenas la fila desborda
+              aparece la barra del navegador compitiendo con la pista propia
+              de "hay mas" — reportado en produccion. */}
+          <style>{'[data-fila-categorias]::-webkit-scrollbar { display: none; }'}</style>
           <div
             ref={filaRef}
+            data-fila-categorias=""
             role="group"
             aria-label={t('servicios.filtrosAria')}
-            style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12 }}
+            style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, scrollbarWidth: 'none' }}
           >
             {pills.map((p) => {
               const activa = filtro === p.clave;
@@ -226,8 +227,16 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
         } as const;
 
         // Una unica regla, siempre: toda la tarjeta selecciona el servicio.
-        // "Ver fotos" (cuando hay) es un link aparte, chico y con texto propio,
-        // en vez de compartir la zona de toque con la seleccion.
+        // "Ver fotos" (cuando hay) es un link aparte con texto propio, en vez
+        // de compartir la zona de toque con la seleccion.
+        //
+        // Sin miniatura: la foto de origen no pasa por ningun recorte al
+        // subirla (a diferencia del logo/avatar), asi que forzarla a un
+        // cuadrado de 68px con object-fit:cover podia recortarla de forma
+        // fea (una cara cortada rara) — reportado en produccion. En vez de
+        // agregar un cropper nuevo solo para esta miniatura chica, se saca
+        // del todo: el link lleva al detalle/visor, donde la foto se ve
+        // completa (object-fit:contain), sin recortar nada.
         return (
           <div key={s.id} style={tarjeta}>
             <button
@@ -241,11 +250,6 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
                 background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              {conFotos && (
-                <div style={{ width: ANCHO_MINIATURA, height: ANCHO_MINIATURA, flexShrink: 0 }}>
-                  <FotoTile src={s.fotos[0]} estilo={{ borderRadius: 12 }} />
-                </div>
-              )}
               <DatosServicio s={s} mostrarCategoria={filtro === 'todos'} />
               <Circulo elegido={elegido} />
             </button>
@@ -255,7 +259,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
                 aria-label={t('servicios.verFotos', { nombre: s.nombre })}
                 onClick={() => ir(rutaServicio(slug, s.id))}
                 style={{
-                  display: 'block', marginTop: 8, marginLeft: ANCHO_MINIATURA + GAP_TARJETA, padding: 0,
+                  display: 'block', marginTop: 8, padding: 0,
                   background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
                   fontSize: 13, fontWeight: 600, color: colors.primaryDeep, textDecoration: 'underline',
                 }}
