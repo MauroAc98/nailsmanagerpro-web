@@ -47,6 +47,25 @@ describe('EntryScreen', () => {
   // ícono cuadrado — recortarla en el círculo chico la vuelve ilegible (ver
   // caso real: placa de Natalia Acosta). Pasa a portada (banda ancha, donde
   // una foto real luce bien) y el círculo siempre queda con la inicial.
+  it('con avatarUrl, la profesional se ve con su foto real en "Te atienden"', async () => {
+    const svc = prepararServicio();
+    setServiceParaTests({
+      ...svc,
+      getSalon: async (s) => {
+        const salon = await svc.getSalon(s);
+        return {
+          ...salon,
+          profesionales: salon.profesionales.map((p) =>
+            p.nombre === 'Ana' ? { ...p, avatarUrl: 'https://cdn.test/ana.jpg' } : p,
+          ),
+        };
+      },
+    });
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    await screen.findByRole('heading', { name: 'Studio Demo' });
+    expect(document.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
+  });
+
   it('con logo_url, la foto va de portada (banda ancha), no en el círculo', async () => {
     const svc = prepararServicio();
     setServiceParaTests({

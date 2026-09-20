@@ -1,5 +1,18 @@
 import api from '@/lib/api';
 
+// Una foto del portafolio de trabajos de un servicio. `orden` determina la
+// posicion en la grilla del editor — index 0 (primera por `orden`) es la
+// portada, misma convencion que `FotoHistoria` en profesionalService.
+export interface FotoServicio {
+  id: number;
+  url: string;
+  orden: number;
+}
+
+// Tope de fotos por servicio — espeja ServicioController::MAX_FOTOS_SERVICIO
+// en el backend (defensa en profundidad: el backend igual lo valida).
+export const MAX_FOTOS_SERVICIO = 12;
+
 export interface Servicio {
   id: number;
   user_id: number;
@@ -7,6 +20,12 @@ export interface Servicio {
   duracion_minutos: number;
   precio: string | null;
   activo: boolean;
+  // Proyeccion de solo lectura del portafolio de fotos de trabajos,
+  // ordenada por `orden`. Ausente/undefined en las respuestas de
+  // index/show (el backend no las precarga ahi); solo viene poblada al
+  // recibir la respuesta de subirFoto/borrarFoto/reordenarFotos (ver
+  // FotosServicioEditor, que la trata como `?? []`).
+  fotos?: FotoServicio[];
   // Marca el servicio como promoción. Separa el catálogo en dos grupos
   // reordenables por separado (ver useServicioStore.reordenarServicios) y
   // determina el modo "Promociones" de la historia de precios — no es
@@ -79,6 +98,39 @@ export const servicioService = {
   // entero ya re-ordenado por `orden`.
   reordenar: async (ids: number[]): Promise<Servicio[]> => {
     const { data } = await api.patch<Servicio[]>('/servicios/reordenar', { ids });
+    return data;
+  },
+
+  // Agrega una foto al portafolio de trabajos de este servicio (no
+  // reemplaza — agrega un slot nuevo, hasta MAX_FOTOS_SERVICIO). Mismo
+  // motivo que profesionalService.subirFotoHistoriaPrecios para pisar el
+  // Content-Type: sin esto axios serializa el FormData como JSON y el
+  // backend responde 422. Devuelve el Servicio completo (incluye `fotos`
+  // actualizado).
+  subirFoto: async (id: number, archivo: File): Promise<Servicio> => {
+    const form = new FormData();
+    form.append('imagen', archivo);
+    const { data } = await api.post<Servicio>(`/servicios/${id}/fotos`, form, {
+      headers: { 'Content-Type': undefined },
+      // Mismo timeout extendido que profesionalService (default 15s de
+      // `api` es corto para una subida de imagen desde el celular).
+      timeout: 60_000,
+    });
+    return data;
+  },
+
+  // Borra una foto puntual del portafolio por su id. Devuelve el Servicio
+  // completo, igual que el resto de los endpoints de fotos.
+  borrarFoto: async (id: number, fotoId: number): Promise<Servicio> => {
+    const { data } = await api.delete<Servicio>(`/servicios/${id}/fotos/${fotoId}`);
+    return data;
+  },
+
+  // Reordena las fotos del portafolio. `ids` es el array completo en el
+  // nuevo orden. Devuelve el Servicio completo, igual que el resto de los
+  // endpoints de fotos.
+  reordenarFotos: async (id: number, ids: number[]): Promise<Servicio> => {
+    const { data } = await api.patch<Servicio>(`/servicios/${id}/fotos/reordenar`, { ids });
     return data;
   },
 };

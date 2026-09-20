@@ -10,6 +10,10 @@ interface Props {
   archivo: File;
   onCancelar: () => void;
   onConfirmar: (archivoRecortado: File) => void;
+  // Aspect ratio forzado del recorte (ancho:alto). Default = LOGO_ASPECT_RATIO
+  // (3/2, logo del negocio) — el avatar circular de una profesional pasa 1
+  // (cuadrado) para reusar este mismo modal sin duplicar la lógica de cropper.
+  aspectRatio?: number;
 }
 
 // Encima de todo lo demás en la app (ConfirmSheetHost/ToastHost llegan a
@@ -18,7 +22,7 @@ interface Props {
 // overlay mientras está abierto.
 const Z_INDEX = 200;
 
-export function LogoCropModal({ archivo, onCancelar, onConfirmar }: Props) {
+export function LogoCropModal({ archivo, onCancelar, onConfirmar, aspectRatio = LOGO_ASPECT_RATIO }: Props) {
   const t = useTranslations('perfil.HeroPerfil');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -44,7 +48,7 @@ export function LogoCropModal({ archivo, onCancelar, onConfirmar }: Props) {
     if (!imageSrc || !areaPixeles || procesando) return;
     setProcesando(true);
     try {
-      const archivoRecortado = await recortarLogo(imageSrc, areaPixeles);
+      const archivoRecortado = await recortarLogo(imageSrc, areaPixeles, aspectRatio);
       onConfirmar(archivoRecortado);
     } finally {
       setProcesando(false);
@@ -62,7 +66,7 @@ export function LogoCropModal({ archivo, onCancelar, onConfirmar }: Props) {
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={LOGO_ASPECT_RATIO}
+            aspect={aspectRatio}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={(_, pixels) => setAreaPixeles(pixels)}

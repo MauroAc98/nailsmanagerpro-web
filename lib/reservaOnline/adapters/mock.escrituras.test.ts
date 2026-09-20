@@ -223,27 +223,10 @@ describe('mock: ajustes, Mercado Pago y reservas online', () => {
   });
 });
 
-describe('mock: fotos de servicios (lado del salon)', () => {
-  it('sin fotos guardadas devuelve []', async () => {
-    const { svc } = escenario();
-    expect(await svc.getFotosServicio(99)).toEqual([]);
-  });
-
-  it('guarda y relee la lista (orden incluido) por servicio', async () => {
-    const { svc, crear } = escenario();
-    await svc.saveFotosServicio(5, ['data:a', 'data:b']);
-    await svc.saveFotosServicio(6, ['data:z']);
-    expect(await crear().getFotosServicio(5)).toEqual(['data:a', 'data:b']);
-    expect(await crear().getFotosServicio(6)).toEqual(['data:z']);
-  });
-
-  it('respeta el maximo de 12 fotos', async () => {
-    const { svc } = escenario();
-    const trece = Array.from({ length: 13 }, (_, i) => `data:${i}`);
-    await expect(svc.saveFotosServicio(5, trece)).rejects.toMatchObject({ code: 'validation' });
-  });
-});
-
+// Las fotos de trabajos de un servicio (lado del salon) ya no viven en este
+// adapter mock: son un recurso autenticado (POST/DELETE/PATCH
+// /api/servicios/{id}/fotos), no parte del API publico anonimo que compone
+// este servicio. Ver services/servicioService.ts + su propio test.
 
 const RETENER = { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '10:30' };
 const CLIENTE = { nombre: 'Sofi', apellido: 'Gomez', whatsapp: '+5491155551234' };

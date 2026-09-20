@@ -1,4 +1,4 @@
-import { MAX_FOTOS_SERVICIO, ReservaOnlineError, type ReservaOnlineReads, type ReservaOnlineService } from '../service';
+import { ReservaOnlineError, type ReservaOnlineReads, type ReservaOnlineService } from '../service';
 import type {
   Availability,
   AvailabilityQuery,
@@ -110,8 +110,8 @@ const SEED: Record<string, MockSalon> = {
       logoUrl: null,
       direccion: 'Av. Siempreviva 742',
       profesionales: [
-        { id: 1, nombre: 'Ana' },
-        { id: 2, nombre: 'Lucía' },
+        { id: 1, nombre: 'Ana', avatarUrl: null },
+        { id: 2, nombre: 'Lucía', avatarUrl: null },
       ],
     },
     servicios: [
@@ -159,7 +159,6 @@ interface Persistido {
   reservas: ReservaGuardada[];
   settings: ReservaOnlineSettings;
   mp: MpConnection;
-  fotosServicio: Record<number, string[]>;
 }
 
 const ESTADO_INICIAL = (): Persistido => ({
@@ -167,7 +166,6 @@ const ESTADO_INICIAL = (): Persistido => ({
   reservas: [],
   settings: { ...SETTINGS_DEFAULT },
   mp: { conectada: false, cuenta: null },
-  fotosServicio: {},
 });
 
 export interface MockOptions {
@@ -482,18 +480,6 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
         nota: r.nota,
       }));
 
-  const getFotosServicio = async (servicioId: number): Promise<string[]> => [
-    ...(cargar().fotosServicio[servicioId] ?? []),
-  ];
-
-  const saveFotosServicio = async (servicioId: number, fotos: string[]): Promise<string[]> => {
-    if (fotos.length > MAX_FOTOS_SERVICIO) throw new ReservaOnlineError('validation', 'fotos');
-    const p = cargar();
-    p.fotosServicio = { ...p.fotosServicio, [servicioId]: [...fotos] };
-    guardar(p);
-    return [...fotos];
-  };
-
   return {
     getSalon,
     getServices,
@@ -512,8 +498,6 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     connectMp: () => setMp({ conectada: true, cuenta: 'cuenta-demo@turnetto.com' }),
     disconnectMp: () => setMp({ conectada: false, cuenta: null }),
     listOnlineBookings,
-    getFotosServicio,
-    saveFotosServicio,
     simulatePayment,
   };
 }

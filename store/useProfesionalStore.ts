@@ -29,6 +29,8 @@ interface ProfesionalesState {
   toggleActivo: (id: number, activo: boolean) => Promise<void>;
   guardarFondoHistoria: (id: number, archivo: File) => Promise<OperacionResult>;
   borrarFondoHistoria: (id: number) => Promise<OperacionResult>;
+  subirAvatar: (id: number, archivo: File) => Promise<OperacionResult>;
+  borrarAvatar: (id: number) => Promise<OperacionResult>;
   subirFotoHistoriaPrecios: (id: number, archivo: File) => Promise<OperacionResult>;
   borrarFotoHistoriaPrecios: (id: number, fotoId: number) => Promise<OperacionResult>;
   reordenarFotosHistoriaPrecios: (id: number, ids: number[]) => Promise<void>;
@@ -113,6 +115,34 @@ export const useProfesionalStore = create<ProfesionalesState>((set, get) => ({
     return withGlobalLoader(async () => {
       try {
         const actualizado = await profesionalService.borrarFondoHistoria(id);
+        set(state => ({
+          profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  subirAvatar: async (id, archivo) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await profesionalService.subirAvatar(id, archivo);
+        set(state => ({
+          profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
+        }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  borrarAvatar: async (id) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizado = await profesionalService.borrarAvatar(id);
         set(state => ({
           profesionales: state.profesionales.map(p => p.id === id ? actualizado : p),
         }));

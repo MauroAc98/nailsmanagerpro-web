@@ -36,4 +36,15 @@ describe('Avatar', () => {
     renderWithProviders(<Avatar nombre="Cualquiera">★</Avatar>);
     expect(screen.getByText('★')).toBeInTheDocument();
   });
+
+  it('con fotoUrl muestra la foto real en vez de la inicial', () => {
+    renderWithProviders(<Avatar nombre="Gabriela" fotoUrl="https://cdn.test/gabriela.jpg" />);
+    expect(document.querySelector('img[src="https://cdn.test/gabriela.jpg"]')).not.toBeNull();
+    expect(screen.queryByText('G')).toBeNull();
+  });
+
+  it('sin fotoUrl (null) sigue mostrando la inicial', () => {
+    renderWithProviders(<Avatar nombre="Gabriela" fotoUrl={null} />);
+    expect(screen.getByText('G')).toBeInTheDocument();
+  });
 });

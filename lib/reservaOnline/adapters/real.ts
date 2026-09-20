@@ -10,7 +10,7 @@ interface SalonDto {
   nombre: string;
   logo_url: string | null;
   direccion: string | null;
-  profesionales: { id: number; nombre: string }[];
+  profesionales: { id: number; nombre: string; avatar_url: string | null }[];
 }
 interface ServicioDto {
   id: number;
@@ -18,6 +18,10 @@ interface ServicioDto {
   duracion_minutos: number;
   precio: number;
   categoria?: { id: number; nombre: string } | null;
+  // Urls absolutas, ordenadas (la primera es la portada) — forma publica de
+  // GET /api/public/{slug}/servicios (distinta de la forma autenticada
+  // {id,url,orden} que usa el editor de fotos, ver servicioService).
+  fotos: string[];
 }
 interface DisponibilidadDto {
   fecha: string;
@@ -36,7 +40,7 @@ const aSalon = (d: SalonDto): SalonInfo => ({
   nombre: d.nombre,
   logoUrl: d.logo_url ?? null,
   direccion: d.direccion ?? null,
-  profesionales: d.profesionales.map((p) => ({ id: p.id, nombre: p.nombre })),
+  profesionales: d.profesionales.map((p) => ({ id: p.id, nombre: p.nombre, avatarUrl: p.avatar_url ?? null })),
 });
 
 const aServicio = (d: ServicioDto): BookableService => ({
@@ -45,8 +49,7 @@ const aServicio = (d: ServicioDto): BookableService => ({
   duracionMinutos: d.duracion_minutos,
   precio: Number(d.precio),
   categoria: d.categoria ? { id: d.categoria.id, nombre: d.categoria.nombre } : null,
-  // El backend todavia no expone fotos de servicios: se mapea a [].
-  fotos: [],
+  fotos: d.fotos,
 });
 
 const aDisponibilidad = (d: DisponibilidadDto): Availability => ({

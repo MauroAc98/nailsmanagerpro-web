@@ -104,16 +104,23 @@ const TINTES_AVATAR = ['#d9c2c7', '#c5d3c4', '#c8cfe0', '#e6d8bf'];
 const tinteDe = (nombre: string): string =>
   TINTES_AVATAR[[...nombre].reduce((a, c) => a + c.charCodeAt(0), 0) % TINTES_AVATAR.length];
 
-// Circulo con la inicial (o contenido propio). `anillo` marca la seleccion.
+// Circulo con la inicial (o contenido propio), o una foto real si se pasa
+// `fotoUrl` (avatar de la profesional). `anillo` marca la seleccion.
 export function Avatar({
   nombre,
   size = 36,
   anillo = false,
+  fotoUrl,
   children,
 }: {
   nombre: string;
   size?: number;
   anillo?: boolean;
+  // Avatar real de la profesional — null/undefined cae a la inicial (o a
+  // `children`, si se paso). Un circulo chico es un recorte apropiado para
+  // un headshot cuadrado/casi-cuadrado (a diferencia de la portada del
+  // salon en EntryScreen, que nunca se recorta en un circulo).
+  fotoUrl?: string | null;
   children?: ReactNode;
 }) {
   return (
@@ -121,12 +128,17 @@ export function Avatar({
       style={{
         width: size, height: size, borderRadius: size / 2, flexShrink: 0,
         background: tinteDe(nombre), color: colors.textStrong,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         fontFamily: agendaFontSerif, fontSize: Math.round(size * 0.48),
         boxShadow: anillo ? `0 0 0 2px ${colors.primarySolid}` : undefined,
       }}
     >
-      {children ?? nombre.trim().charAt(0).toUpperCase()}
+      {fotoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={fotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        children ?? nombre.trim().charAt(0).toUpperCase()
+      )}
     </div>
   );
 }

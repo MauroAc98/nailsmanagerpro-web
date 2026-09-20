@@ -34,6 +34,7 @@ function profesional(overrides: Partial<Profesional>): Profesional {
     activo: true,
     servicios: [],
     fondo_historia_url: null,
+    avatar_url: null,
     historia_precios_template_id: null,
     historia_precios_fotos: [],
     historia_precios_nota: null,
