@@ -1,16 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, screen } from '@/test/render';
 import userEvent from '@testing-library/user-event';
-import { setServiceParaTests } from '@/lib/reservaOnline';
+import api from '@/lib/api';
 import { EntradaFotosServicio } from './EntradaFotosServicio';
-import { prepararServicio } from './testUtils';
+
+// La fila lee las fotos via servicioService.getOne (autenticado — este es un
+// componente de Configuracion, no del flujo publico de reserva), asi que se
+// mockea `@/lib/api` (limite de red), no el servicio de reserva online.
+vi.mock('@/lib/api', () => ({
+  default: { get: vi.fn() },
+}));
+const mockedGet = vi.mocked(api.get);
 
 describe('EntradaFotosServicio', () => {
   beforeEach(() => {
-    prepararServicio();
+    mockedGet.mockReset();
+    mockedGet.mockResolvedValue({ data: { id: 5, fotos: [] } });
   });
   afterEach(() => {
-    setServiceParaTests(null);
     vi.unstubAllEnvs();
   });
 
@@ -31,8 +38,9 @@ describe('EntradaFotosServicio', () => {
 
   it('muestra cuantas fotos tiene el servicio', async () => {
     vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
-    const { getService } = await import('@/lib/reservaOnline');
-    await getService().saveFotosServicio(5, ['placeholder:0', 'placeholder:1']);
+    mockedGet.mockResolvedValue({
+      data: { id: 5, fotos: [{ id: 1, url: 'https://cdn.test/a.jpg', orden: 0 }, { id: 2, url: 'https://cdn.test/b.jpg', orden: 1 }] },
+    });
     renderWithProviders(<EntradaFotosServicio servicioId={5} onAbrir={() => {}} />);
     expect(await screen.findByText('2 fotos')).toBeInTheDocument();
   });

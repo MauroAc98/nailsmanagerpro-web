@@ -98,10 +98,10 @@ describe('composicion del servicio', () => {
     await svc.liberarHold('ana', 'real-1');
     await svc.getReservationStatus('ana', 'real-1');
     expect(llamadas).toEqual(['retenerHorario', 'actualizarDatosReserva', 'iniciarPago', 'liberarHold', 'getReservationStatus']);
-    // metodos mock-only: ajustes, Mercado Pago, fotos y listado siguen en el mock
+    // metodos mock-only: ajustes, Mercado Pago y listado siguen en el mock
+    // (las fotos de servicio ya no viven aca, ver servicioService.ts)
     expect((await svc.getSettings()).habilitada).toBe(false);
     expect((await svc.getMpConnection()).conectada).toBe(false);
-    expect(await svc.getFotosServicio(1)).toEqual([]);
     expect(await svc.listOnlineBookings()).toEqual([]);
   });
 

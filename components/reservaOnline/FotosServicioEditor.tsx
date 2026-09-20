@@ -2,9 +2,8 @@
 
 import { useState, type ChangeEvent, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
-import { getService } from '@/lib/reservaOnline';
-import { bytesDeDataUrl, moverFoto, quitarFoto, reducirImagen, TOPE_BYTES_FOTO } from '@/lib/reservaOnline/fotos';
-import { MAX_FOTOS_SERVICIO } from '@/lib/reservaOnline/service';
+import { moverFoto } from '@/lib/reservaOnline/fotos';
+import { MAX_FOTOS_SERVICIO, servicioService, type FotoServicio } from '@/services/servicioService';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { FotoTile } from './FotoTile';
 import { useCarga } from './hooks';
@@ -16,27 +15,55 @@ const boton: CSSProperties = {
   background: 'rgba(43, 34, 38, 0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
-// Editor de las fotos de trabajos de un servicio (lado del salon). La primera
-// es la portada; se puede agregar (hasta 12), quitar y reordenar con botones
-// izquierda/derecha. Mock: las fotos se guardan como data URLs reducidas en
-// localStorage a traves del seam del servicio; el almacenamiento persistente
-// requiere un slice de backend.
+// Mismo limite/copy que valida el backend para este mismo endpoint (5MB,
+// image|mimes:jpeg,png,jpg,webp,gif,bmp) — mismo criterio que
+// HeroPerfil.MAX_LOGO_BYTES para el logo del negocio. Chequeado sobre el
+// archivo ORIGINAL antes de subir, no sobre ninguna reduccion local: a
+// diferencia de la vieja implementacion mock (localStorage), el backend
+// guarda el archivo tal cual, sin thumbnailing.
+const MAX_BYTES_FOTO = 5 * 1024 * 1024;
+
+// Editor de las fotos de trabajos de un servicio (lado del salon, pantalla
+// autenticada de Configuracion). La primera es la portada; se puede agregar
+// (hasta MAX_FOTOS_SERVICIO), quitar y reordenar con botones izquierda/derecha.
+// Rewireado a los endpoints reales via servicioService: cada foto es un item
+// direccionable por id (subir de a un archivo, borrar por id, reordenar
+// posteando el array completo de ids) — ya no hay un "guardar todo el
+// array" como en el viejo mock.
 export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
   const t = useTranslations('reservaOnline.fotos');
   const tc = useTranslations('reservaOnline');
-  const { data, error } = useCarga(() => getService().getFotosServicio(servicioId), `fotos|${servicioId}`);
+  const { data, error } = useCarga(
+    () => servicioService.getOne(servicioId).then((s) => s.fotos ?? []),
+    `fotos|${servicioId}`,
+  );
   // `null` = todavia no se toco nada: se muestra lo cargado.
-  const [editadas, setEditadas] = useState<string[] | null>(null);
+  const [editadas, setEditadas] = useState<FotoServicio[] | null>(null);
   const [problema, setProblema] = useState<'grande' | 'error' | null>(null);
 
   if (error) return <Mensaje tono="error">{tc('errores.generico')}</Mensaje>;
   if (!data) return <Mensaje>{tc('comun.cargando')}</Mensaje>;
 
   const fotos = editadas ?? data;
-  const guardar = async (nuevas: string[]) => {
-    setEditadas(nuevas);
+
+  const mover = async (indice: number, delta: -1 | 1) => {
+    const ids = fotos.map((f) => f.id);
+    const nuevosIds = moverFoto(ids, indice, delta);
+    if (nuevosIds.every((id, i) => id === ids[i])) return; // extremo: moverFoto no cambio nada
+    setProblema(null);
     try {
-      await getService().saveFotosServicio(servicioId, nuevas);
+      const servicio = await servicioService.reordenarFotos(servicioId, nuevosIds);
+      setEditadas(servicio.fotos ?? []);
+    } catch {
+      setProblema('error');
+    }
+  };
+
+  const quitar = async (fotoId: number) => {
+    setProblema(null);
+    try {
+      const servicio = await servicioService.borrarFoto(servicioId, fotoId);
+      setEditadas(servicio.fotos ?? []);
     } catch {
       setProblema('error');
     }
@@ -46,21 +73,21 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
     const archivos = Array.from(e.target.files ?? []);
     e.target.value = '';
     setProblema(null);
-    let lista = [...fotos];
+    let actuales = fotos;
     for (const archivo of archivos) {
-      if (lista.length >= MAX_FOTOS_SERVICIO) break;
+      if (actuales.length >= MAX_FOTOS_SERVICIO) break;
+      if (archivo.size > MAX_BYTES_FOTO) {
+        setProblema('grande');
+        continue;
+      }
       try {
-        const dataUrl = await reducirImagen(archivo);
-        if (bytesDeDataUrl(dataUrl) > TOPE_BYTES_FOTO) {
-          setProblema('grande');
-          continue;
-        }
-        lista = [...lista, dataUrl];
+        const servicio = await servicioService.subirFoto(servicioId, archivo);
+        actuales = servicio.fotos ?? [];
+        setEditadas(actuales);
       } catch {
         setProblema('error');
       }
     }
-    if (lista.length !== fotos.length) await guardar(lista);
   };
 
   const lleno = fotos.length >= MAX_FOTOS_SERVICIO;
@@ -70,9 +97,9 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
       <Etiqueta>{t('titulo')}</Etiqueta>
       <div style={{ fontSize: 13, color: colors.sub, lineHeight: 1.45, margin: '-4px 0 12px' }}>{t('ayuda')}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-        {fotos.map((src, i) => (
-          <div key={`${i}-${src.slice(-24)}`} data-foto={i} data-src={src} style={{ position: 'relative', height: 104 }}>
-            <FotoTile src={src} estilo={{ borderRadius: 14 }} />
+        {fotos.map((foto, i) => (
+          <div key={foto.id} data-foto={i} data-src={foto.url} style={{ position: 'relative', height: 104 }}>
+            <FotoTile src={foto.url} estilo={{ borderRadius: 14 }} />
             {i === 0 && (
               <span
                 style={{
@@ -89,11 +116,11 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
                 style={{ ...boton, opacity: i === 0 ? 0.35 : 1 }}
                 disabled={i === 0}
                 aria-label={t('moverIzquierda', { n: i + 1 })}
-                onClick={() => guardar(moverFoto(fotos, i, -1))}
+                onClick={() => mover(i, -1)}
               >
                 <IcoAtras color="#fff" size={14} />
               </button>
-              <button type="button" style={boton} aria-label={t('quitar', { n: i + 1 })} onClick={() => guardar(quitarFoto(fotos, i))}>
+              <button type="button" style={boton} aria-label={t('quitar', { n: i + 1 })} onClick={() => quitar(foto.id)}>
                 <span aria-hidden="true" style={{ color: '#fff', fontSize: 16, lineHeight: 1 }}>×</span>
               </button>
               <button
@@ -101,7 +128,7 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
                 style={{ ...boton, opacity: i === fotos.length - 1 ? 0.35 : 1 }}
                 disabled={i === fotos.length - 1}
                 aria-label={t('moverDerecha', { n: i + 1 })}
-                onClick={() => guardar(moverFoto(fotos, i, 1))}
+                onClick={() => mover(i, 1)}
               >
                 <span style={{ display: 'flex', transform: 'scaleX(-1)' }}>
                   <IcoAtras color="#fff" size={14} />

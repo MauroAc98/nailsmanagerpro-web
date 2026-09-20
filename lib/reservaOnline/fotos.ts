@@ -7,9 +7,11 @@ export const TOPE_BYTES_FOTO = 400 * 1024;
 const LADO_MAXIMO_PX = 1024;
 const CALIDAD_JPEG = 0.72;
 
-// Mueve la foto `indice` `delta` posiciones (la primera es la portada). En los
-// extremos no hace nada. Siempre devuelve una lista nueva.
-export function moverFoto(fotos: string[], indice: number, delta: -1 | 1): string[] {
+// Mueve el elemento `indice` `delta` posiciones (la primera es la portada).
+// En los extremos no hace nada. Siempre devuelve una lista nueva. Generico:
+// lo usa tanto el viejo mock (arrays de data URLs) como
+// FotosServicioEditor (arrays de ids numericos, para el reordenar real).
+export function moverFoto<T>(fotos: T[], indice: number, delta: -1 | 1): T[] {
   const destino = indice + delta;
   const copia = [...fotos];
   if (indice < 0 || indice >= fotos.length || destino < 0 || destino >= fotos.length) return copia;

@@ -29,6 +29,15 @@ export interface ReservaOnlineReads {
 
 // Escrituras y lado del salon: mock hasta los slices siguientes. Cada slice
 // mueve metodos de aca al adapter real, sin tocar la UI.
+//
+// Las fotos de trabajos de un servicio (FotosServicioEditor) NO viven aca:
+// aunque el mock las tuvo guardadas en localStorage durante la etapa mock,
+// los endpoints reales (POST/DELETE/PATCH /api/servicios/{id}/fotos) son
+// autenticados (Bearer token del dueño del salon), no parte del API
+// publico anonimo que consume este servicio (crearPublicHttp +
+// X-Device-Token). Viven en services/servicioService.ts junto al resto del
+// CRUD autenticado de servicios (mismo patron que
+// profesionalService.subirFotoHistoriaPrecios).
 export interface ReservaOnlineWrites {
   getTerms(slug: string): Promise<ReservationTerms>;
   // Flujo de escritura: el horario se RETIENE al elegirlo (antes de pedir datos)
@@ -48,13 +57,7 @@ export interface ReservaOnlineWrites {
   connectMp(): Promise<MpConnection>;
   disconnectMp(): Promise<MpConnection>;
   listOnlineBookings(): Promise<OnlineBooking[]>;
-  // Fotos de trabajos por servicio (lado del salon). Mock hasta que el backend
-  // tenga almacenamiento; el orden es el de la lista y la primera es la portada.
-  getFotosServicio(servicioId: number): Promise<string[]>;
-  saveFotosServicio(servicioId: number, fotos: string[]): Promise<string[]>;
 }
-
-export const MAX_FOTOS_SERVICIO = 12;
 
 export interface ReservaOnlineService extends ReservaOnlineReads, ReservaOnlineWrites {}
 
