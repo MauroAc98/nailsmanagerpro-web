@@ -124,7 +124,7 @@ describe('EstadoReservaScreen', () => {
       expect(within(ticket).getByText('Studio Demo · Av. Siempreviva 742')).toBeInTheDocument();
       expect(within(ticket).getByText('Seña pagada')).toBeInTheDocument();
       expect(within(ticket).getByText('$5.000')).toBeInTheDocument();
-      expect(within(ticket).getByText('El valor final se confirma en el salón según tu diseño.')).toBeInTheDocument();
+      expect(within(ticket).getByText('El valor final se confirma en el negocio según tu diseño.')).toBeInTheDocument();
     });
 
     it('no muestra total ni "resta abonar"', async () => {

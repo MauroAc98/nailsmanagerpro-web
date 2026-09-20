@@ -41,7 +41,7 @@ describe('ServiciosScreen', () => {
     expect(await screen.findByRole('heading', { name: '¿Qué te querés hacer?' })).toBeInTheDocument();
     expect(screen.getByText('Podés elegir más de uno.')).toBeInTheDocument();
     expect(
-      screen.getByText('Los precios son de referencia: el valor final depende del diseño y se confirma en el salón.'),
+      screen.getByText('Los precios son de referencia: el valor final depende del diseño y se confirma en el negocio.'),
     ).toBeInTheDocument();
   });
 

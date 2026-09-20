@@ -121,7 +121,7 @@ describe('EntryScreen', () => {
 
   it('salon inexistente: mensaje de no encontrado y sin CTA', async () => {
     renderWithProviders(<EntryScreen slug="no-existe" ir={() => {}} />);
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No encontramos este salón.'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No encontramos este negocio.'));
     expect(screen.queryByRole('button', { name: 'Reservar turno' })).toBeNull();
   });
 });

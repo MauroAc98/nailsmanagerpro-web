@@ -66,7 +66,7 @@ describe('ResumenScreen', () => {
   it('la sena aclara que es parte del valor final y el resto se define y paga en el salon', async () => {
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(
-      await screen.findByText('Es parte del valor final. El resto se define en el salón según tu diseño y se abona ahí.'),
+      await screen.findByText('Es parte del valor final. El resto se define en el negocio según tu diseño y se abona ahí.'),
     ).toBeInTheDocument();
   });
 

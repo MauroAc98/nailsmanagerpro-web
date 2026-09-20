@@ -189,7 +189,7 @@ describe('DatosScreen', () => {
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled();
     await userEvent.type(nota, 'flores y dorado');
     expect(useReservaOnlineStore.getState().nota).toBe('flores y dorado');
-    expect(screen.getByText('Sirve para que el salón te confirme el valor final.')).toBeInTheDocument();
+    expect(screen.getByText('Sirve para que el negocio te confirme el valor final.')).toBeInTheDocument();
   });
 
   it('la idea tiene un maximo de 300 caracteres', async () => {

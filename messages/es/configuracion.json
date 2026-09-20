@@ -342,8 +342,8 @@
     "subtitle": "Cerrá fechas u horarios puntuales: tus clientas no van a poder reservarlos online, y tu agenda te avisa si igual agendás ahí.",
     "loading": "Cargando bloqueos...",
     "emptyTitle": "No tenés ningún bloqueo cargado.",
-    "emptyText": "Usalos para cerrar vacaciones, feriados o cualquier día u horario en el que el salón no atiende.",
-    "todoElSalon": "Todo el salón",
+    "emptyText": "Usalos para cerrar vacaciones, feriados o cualquier día u horario en el que el negocio no atiende.",
+    "todoElSalon": "Todo el negocio",
     "todoElDia": "Todo el día",
     "sinMotivo": "Sin motivo especificado",
     "profesionalDesconocida": "Profesional",
@@ -358,7 +358,7 @@
     "dateLabel": "Fecha *",
     "dateRequired": "Elegí una fecha",
     "whoAffectsLabel": "¿A quién afecta?",
-    "allSalonOption": "Todo el salón",
+    "allSalonOption": "Todo el negocio",
     "durationLabel": {
       "allDayOption": "Todo el día",
       "specificHoursOption": "Un horario puntual"

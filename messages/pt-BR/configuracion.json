@@ -342,8 +342,8 @@
     "subtitle": "Feche datas ou horários específicos: suas clientes não vão poder reservá-los online, e sua agenda avisa se você mesma agendar ali.",
     "loading": "Carregando bloqueios...",
     "emptyTitle": "Você não tem nenhum bloqueio cadastrado.",
-    "emptyText": "Use-os para fechar férias, feriados ou qualquer dia ou horário em que o salão não atende.",
-    "todoElSalon": "Todo o salão",
+    "emptyText": "Use-os para fechar férias, feriados ou qualquer dia ou horário em que o negócio não atende.",
+    "todoElSalon": "Todo o negócio",
     "todoElDia": "Dia inteiro",
     "sinMotivo": "Nenhum motivo especificado",
     "profesionalDesconocida": "Profissional",
@@ -358,7 +358,7 @@
     "dateLabel": "Data *",
     "dateRequired": "Escolha uma data",
     "whoAffectsLabel": "Quem é afetado?",
-    "allSalonOption": "Todo o salão",
+    "allSalonOption": "Todo o negócio",
     "durationLabel": {
       "allDayOption": "Dia inteiro",
       "specificHoursOption": "Um horário específico"

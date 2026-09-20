@@ -18,12 +18,12 @@
   },
   "servicios": {
     "title": "¿Qué te querés hacer?",
-    "vacio": "Este salón todavía no tiene servicios para reservar online.",
+    "vacio": "Este negocio todavía no tiene servicios para reservar online.",
     "subtitle": "Podés elegir más de uno.",
     "desde": "Desde {monto}",
     "fotos": "{count, plural, one {# foto} other {# fotos}}",
     "verFotos": "Ver fotos de {nombre}",
-    "notaPrecios": "Los precios son de referencia: el valor final depende del diseño y se confirma en el salón.",
+    "notaPrecios": "Los precios son de referencia: el valor final depende del diseño y se confirma en el negocio.",
     "filtroTodos": "Todos",
     "filtroOtros": "Otros",
     "filtrosAria": "Filtrar por categoría",
@@ -45,7 +45,7 @@
     "irProximoDia": "Ir al próximo día con lugar",
     "elegirOtroDia": "Elegir otro día",
     "buscando": "Buscando el próximo día con lugar…",
-    "sinLugarProximos": "No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al salón.",
+    "sinLugarProximos": "No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al negocio.",
     "reteniendo": "Reservando tu horario…"
   },
   "datos": {
@@ -59,12 +59,12 @@
     "notaLabel": "Contanos tu idea",
     "opcional": "Opcional",
     "notaPlaceholder": "Ej.: quiero un diseño con flores y detalles dorados",
-    "notaAyuda": "Sirve para que el salón te confirme el valor final."
+    "notaAyuda": "Sirve para que el negocio te confirme el valor final."
   },
   "resumen": {
     "title": "Revisá y confirmá",
     "senaTitulo": "Seña para reservar",
-    "senaDetalle": "Es parte del valor final. El resto se define en el salón según tu diseño y se abona ahí.",
+    "senaDetalle": "Es parte del valor final. El resto se define en el negocio según tu diseño y se abona ahí.",
     "pagar": "Pagar seña con",
     "pagando": "Creando tu reserva…",
     "pagoSeguro": "Pago seguro. Te llevamos a Mercado Pago.",
@@ -95,7 +95,7 @@
     "volverMp": "Volver a Mercado Pago",
     "yaPague": "Ya pagué · actualizar estado",
     "conProfesional": "con {profesional}",
-    "valorFinal": "El valor final se confirma en el salón según tu diseño.",
+    "valorFinal": "El valor final se confirma en el negocio según tu diseño.",
     "cambiarNota": "¿Necesitás cambiarlo? Reprogramá o cancelá desde el link que te mandamos por WhatsApp. Gratis hasta {horas} h antes."
   },
   "dev": {
@@ -105,7 +105,7 @@
   },
   "errores": {
     "generico": "No pudimos completar la operación. Probá de nuevo.",
-    "noEncontrado": "No encontramos este salón.",
+    "noEncontrado": "No encontramos este negocio.",
     "whatsappInvalido": "Ingresá tu número con código de área, sin 0 ni 15. Ej.: 376 512 3456.",
     "noDisponibleTitulo": "Todavía no está disponible",
     "noDisponibleDetalle": "La reserva online no está disponible en este momento. Volvé a intentarlo más tarde.",
@@ -165,7 +165,7 @@
     "contador": "{actual} / {total}",
     "verFoto": "Ver foto {n}",
     "ampliarFoto": "Ampliar foto {n}",
-    "notaValor": "El valor final depende del diseño y se confirma en el salón.",
+    "notaValor": "El valor final depende del diseño y se confirma en el negocio.",
     "noEncontrado": "No encontramos este servicio."
   },
   "hold": {

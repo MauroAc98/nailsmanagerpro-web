@@ -57,9 +57,9 @@ describe('NuevoBloqueoPage', () => {
   it('la vista previa refleja profesional, fecha y "Todo el día" / rango horario a medida que cambia el form', () => {
     renderWithProviders(<NuevoBloqueoPage />);
 
-    // Default: "Todo el salón" + todo el día.
+    // Default: "Todo el negocio" + todo el día.
     const preview = screen.getByTestId('preview-bloqueo');
-    expect(preview).toHaveTextContent('Todo el salón');
+    expect(preview).toHaveTextContent('Todo el negocio');
     expect(preview).toHaveTextContent('Todo el día');
 
     fireEvent.click(screen.getByText('Lucía'));

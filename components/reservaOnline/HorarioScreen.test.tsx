@@ -494,7 +494,7 @@ describe('HorarioScreen', () => {
         renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
         await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
         expect(
-          await screen.findByText('No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al salón.'),
+          await screen.findByText('No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al negocio.'),
         ).toBeInTheDocument();
         expect(consultadas).toEqual(['2026-09-19']);
       });

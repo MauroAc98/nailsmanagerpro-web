@@ -57,14 +57,14 @@ describe('BloqueosPage', () => {
     expect(screen.getByText(/no van a poder reservarlos online/i)).toBeInTheDocument();
   });
 
-  it('un bloqueo de todo el salón sin horario muestra el ícono de local y las pills "Todo el salón" / "Todo el día"', () => {
+  it('un bloqueo de todo el negocio sin horario muestra el ícono de local y las pills "Todo el negocio" / "Todo el día"', () => {
     seedBloqueos([bloqueo({ profesional_id: null, hora_desde: null, hora_hasta: null })]);
 
     renderWithProviders(<BloqueosPage />);
 
     expect(screen.getByTestId('icono-local')).toBeInTheDocument();
     expect(screen.queryByTestId('avatar-profesional')).not.toBeInTheDocument();
-    expect(screen.getByText('Todo el salón')).toBeInTheDocument();
+    expect(screen.getByText('Todo el negocio')).toBeInTheDocument();
     const pillHorario = screen.getByTestId('pill-horario');
     expect(pillHorario).toHaveTextContent('Todo el día');
   });
