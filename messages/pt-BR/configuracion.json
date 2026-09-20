@@ -339,8 +339,10 @@
   },
   "BloqueosPage": {
     "title": "Bloqueios",
+    "subtitle": "Feche datas ou horários específicos: suas clientes não vão poder reservá-los online, e sua agenda avisa se você mesma agendar ali.",
     "loading": "Carregando bloqueios...",
-    "empty": "Você não tem nenhum bloqueio cadastrado.",
+    "emptyTitle": "Você não tem nenhum bloqueio cadastrado.",
+    "emptyText": "Use-os para fechar férias, feriados ou qualquer dia ou horário em que o salão não atende.",
     "todoElSalon": "Todo o salão",
     "todoElDia": "Dia inteiro",
     "sinMotivo": "Nenhum motivo especificado",
@@ -352,19 +354,25 @@
   },
   "NuevoBloqueoPage": {
     "title": "Novo bloqueio",
+    "subtitle": "Escolha o que você quer bloquear: uma data completa, ou só um horário específico dentro do dia.",
     "dateLabel": "Data *",
     "dateRequired": "Escolha uma data",
-    "professionalLabel": "Profissional",
+    "whoAffectsLabel": "Quem é afetado?",
     "allSalonOption": "Todo o salão",
-    "hourRangeLabel": "Horário (opcional — vazio é dia inteiro)",
+    "durationLabel": {
+      "allDayOption": "Dia inteiro",
+      "specificHoursOption": "Um horário específico"
+    },
+    "durationHelp": "Ninguém vai poder reservar esse dia inteiro. Escolha \"Um horário específico\" para bloquear só uma parte, por exemplo uma tarde livre.",
     "hourFromLabel": "Das",
     "hourToLabel": "Até",
     "motivoLabel": "Motivo (opcional)",
     "motivoPlaceholder": "Ex: Férias",
     "incompleteRange": "Preencha os dois horários, ou nenhum para bloquear o dia inteiro.",
     "invalidRange": "O horário \"até\" deve ser posterior ao horário \"das\".",
+    "previewLabel": "Você vai bloquear",
     "saving": "Salvando...",
-    "submit": "Adicionar bloqueio",
+    "submit": "Bloquear data",
     "saveError": "Não foi possível salvar o bloqueio."
   },
   "AparienciaPage": {
