@@ -175,6 +175,7 @@
     "quitar": "Remover foto {n}",
     "moverIzquierda": "Mover foto {n} para a esquerda",
     "moverDerecha": "Mover foto {n} para a direita",
+    "verFoto": "Ver foto {n} em tela cheia",
     "nota": "Use as setas para reordenar e o X para remover. Até {max} fotos.",
     "maximo": "Você atingiu o máximo de {max} fotos.",
     "grande": "A foto é grande demais. Tente outra mais leve.",
