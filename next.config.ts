@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { securityHeaders } from "./lib/securityHeaders";
 // Default runtimeCaching de next-pwa (no reescribirlo desde cero: perdería
 // la caché de assets estáticos, etc. — solo se le antepone una regla).
 // Nombre distinto del que arma el array final más abajo (antes ambos se
@@ -109,7 +110,12 @@ const withPWA = require("next-pwa")({
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // No anunciar el framework (X-Powered-By: Next.js) a quien escanea el sitio.
+  poweredByHeader: false,
   turbopack: {},
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
   images: {
     // Logo del negocio en LoginScreen (/login/{slug}) — servido por la API.
     remotePatterns: [
