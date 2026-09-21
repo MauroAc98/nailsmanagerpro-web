@@ -41,8 +41,16 @@ const apiHostEscapado = apiHostname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // El prefijo `/api/` es opcional: en prod NEXT_PUBLIC_API_URL termina en
 // "/api" (Laravel sirve /api/auth/..., no /auth/...); en local puede no
 // tenerlo. Va primero en el array porque workbox matchea en orden.
+//
+// Toda la API va NetworkOnly, salvo /storage/ (logos y fotos publicas, que
+// entran por <img>): antes solo estaban excluidos algunos prefijos y el
+// catch-all de next-pwa guardaba /clientes, /turnos, /gastos, etc. (con datos
+// de la sesion) en la cache 'cross-origin', sin separar por usuario ni vaciarla
+// al cerrar sesion — la persona siguiente en un celular compartido podia ver
+// datos de la anterior si fallaba la red. La app no tiene modo offline para
+// esos datos, asi que cachearlos solo agregaba riesgo.
 const rutasSensiblesSinCache = new RegExp(
-  `^https://(connect\\.facebook\\.net/|${apiHostEscapado}/(api/)?(auth/|support-info($|\\?)|admin/|public/))`
+  `^https://(connect\\.facebook\\.net/|${apiHostEscapado}/(?!(api/)?storage/))`
 );
 
 // LocationIQ (Slice A del mapa de ubicación) — dos hosts, dos políticas

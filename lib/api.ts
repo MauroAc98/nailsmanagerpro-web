@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logAuthEvent } from '@/lib/logAuthEvent';
+import { limpiarCachesDeSesion } from '@/lib/limpiarCachesSw';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -51,6 +52,7 @@ api.interceptors.response.use(
       } catch {
         // sin acceso a localStorage — igual avisamos del logout vía el evento
       }
+      void limpiarCachesDeSesion();
       window.dispatchEvent(new CustomEvent('auth:session-revoked'));
     }
 

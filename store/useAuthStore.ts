@@ -7,6 +7,7 @@ import { resolveLocale } from '@/lib/locale';
 import { useLocaleStore, setLocale, tStatic } from '@/store/useLocaleStore';
 import { logAuthEvent } from '@/lib/logAuthEvent';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
+import { limpiarCachesDeSesion } from '@/lib/limpiarCachesSw';
 
 // sessionStorage (no localStorage): sobrevive a un refresh accidental dentro
 // de la misma pestaña, pero se limpia al cerrarla — evita repetir la
@@ -250,6 +251,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // sin acceso a localStorage — igual seguimos con la transición
     }
+    void limpiarCachesDeSesion();
 
     // Boot-time revocation (verify CRITICAL-1): the stored token was already
     // revoked server-side, so the boot `checkSubscription()` 401s. The user
@@ -482,6 +484,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // sin acceso a localStorage — igual seguimos con la transición
     }
+    // Datos de la sesion que el service worker pudo dejar en Cache Storage.
+    void limpiarCachesDeSesion();
     set({
       user: null,
       token: null,
