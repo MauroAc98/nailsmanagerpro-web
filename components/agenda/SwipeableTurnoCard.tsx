@@ -189,15 +189,18 @@ export function SwipeableTurnoCard({
           del alignItems del padre para centrarse. */}
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         {/* Badge "Reserva online" (flag D4): al lado del nombre, sin cambiar
-            la altura de la card; el nombre conserva su ellipsis. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            la altura de la card; el nombre conserva su ellipsis.
+            Compacto (solo icono, sin texto) — con el texto completo le
+            dejaba muy poco ancho al nombre en esta fila tan angosta; el
+            texto completo sigue viéndose en la pantalla de editar turno. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <p style={{
             fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
           </p>
-          {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline />}
+          {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline compacto />}
         </div>
         <p style={{
           fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',

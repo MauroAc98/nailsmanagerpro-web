@@ -69,21 +69,23 @@ describe('SwipeableTurnoCard — en_curso layout (Change 5)', () => {
 describe('SwipeableTurnoCard — badge "Reserva online"', () => {
   afterEach(() => vi.unstubAllEnvs());
 
+  // Compacto (solo icono, sin texto) desde el fix del nombre cortado — se
+  // detecta por aria-label/title, no por texto visible (ver BadgeReservaOnline).
   it('lo muestra en turnos de origen web cuando la flag esta prendida', () => {
     vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
     renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ origen: 'web' })} onCancel={vi.fn()} />);
-    expect(screen.getByText('Reserva online')).toBeInTheDocument();
+    expect(screen.getByLabelText('Reserva online')).toBeInTheDocument();
   });
 
   it('no lo muestra con la flag apagada', () => {
     vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'false');
     renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ origen: 'web' })} onCancel={vi.fn()} />);
-    expect(screen.queryByText('Reserva online')).toBeNull();
+    expect(screen.queryByLabelText('Reserva online')).toBeNull();
   });
 
   it('no lo muestra en turnos cargados desde la app', () => {
     vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
     renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ origen: 'app' })} onCancel={vi.fn()} />);
-    expect(screen.queryByText('Reserva online')).toBeNull();
+    expect(screen.queryByLabelText('Reserva online')).toBeNull();
   });
 });

@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, User } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
+import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
@@ -292,6 +294,14 @@ export default function EditarTurnoPage() {
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
           {t('title')}
         </h1>
+        {/* En la card de agenda el badge es solo un icono (compacto, ver
+            SwipeableTurnoCard) para no comerle ancho al nombre — acá, donde
+            sobra espacio, se ve el texto completo. */}
+        {turnoActual?.origen === 'web' && reservaOnlineHabilitada() && (
+          <div style={{ marginTop: 8 }}>
+            <BadgeReservaOnline />
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '0 20px' }}>
