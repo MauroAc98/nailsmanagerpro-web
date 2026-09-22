@@ -75,6 +75,7 @@ export type ReservaOnlineErrorCode =
   | 'challenge_failed'
   | 'verification_required'
   | 'creation_disabled'
+  | 'mp_no_conectado'
   | 'unknown';
 
 export class ReservaOnlineError extends Error {

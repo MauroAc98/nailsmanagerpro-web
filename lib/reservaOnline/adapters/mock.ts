@@ -113,6 +113,8 @@ const SEED: Record<string, MockSalon> = {
         { id: 1, nombre: 'Ana', avatarUrl: null },
         { id: 2, nombre: 'Lucía', avatarUrl: null },
       ],
+      // El mock simula el checkout entero (ver ResumenScreen): siempre habilitado.
+      pagoHabilitado: true,
     },
     servicios: [
       { id: 1, nombre: 'Esmaltado semipermanente', duracionMinutos: 45, precio: 12000, categoria: { id: 1, nombre: 'Manicura' }, fotos: placeholders(4), profesionalIds: [1, 2] },

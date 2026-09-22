@@ -11,6 +11,7 @@ interface SalonDto {
   logo_url: string | null;
   direccion: string | null;
   profesionales: { id: number; nombre: string; avatar_url: string | null }[];
+  pago_habilitado: boolean;
 }
 interface ServicioDto {
   id: number;
@@ -41,6 +42,7 @@ const aSalon = (d: SalonDto): SalonInfo => ({
   logoUrl: d.logo_url ?? null,
   direccion: d.direccion ?? null,
   profesionales: d.profesionales.map((p) => ({ id: p.id, nombre: p.nombre, avatarUrl: p.avatar_url ?? null })),
+  pagoHabilitado: d.pago_habilitado ?? false,
 });
 
 const aServicio = (d: ServicioDto): BookableService => ({

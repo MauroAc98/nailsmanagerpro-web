@@ -153,7 +153,11 @@ export function ResumenScreen({
       }
     } catch (e) {
       if (e instanceof ReservaOnlineError && e.code === 'hold_expired') setHoldPerdido(true);
-      else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') setNoDisponible(true);
+      // mp_no_conectado: en teoria EntryScreen ya corta el paso antes de
+      // llegar aca (salon.pagoHabilitado), pero MP pudo desconectarse
+      // mientras la clienta completaba el formulario — mismo bloqueo de
+      // pantalla completa que el kill switch, nunca el error generico.
+      else if (e instanceof ReservaOnlineError && (e.code === 'creation_disabled' || e.code === 'mp_no_conectado')) setNoDisponible(true);
       else if (e instanceof ReservaOnlineError && e.code === 'rate_limited') setLimiteIntentos(true);
       else setErrorPago(true);
       setEnviando(false);

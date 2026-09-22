@@ -23,6 +23,7 @@ describe('traducirErrorHttp', () => {
       ['challenge_failed', 'challenge_failed'],
       ['verification_required', 'verification_required'],
       ['creation_disabled', 'creation_disabled'],
+      ['mp_no_conectado', 'mp_no_conectado'],
     ];
     for (const [code, esperado] of casos) {
       const err = traducirErrorHttp(axiosError(409, { message: 'x', code }));
@@ -35,6 +36,10 @@ describe('traducirErrorHttp', () => {
     expect(traducirErrorHttp(axiosError(422, { code: 'device_token_required' })).code).toBe('validation');
     expect(traducirErrorHttp(axiosError(422, { code: 'datos_required' })).code).toBe('validation');
     expect(traducirErrorHttp(axiosError(409, { code: 'already_confirmed' })).code).toBe('slot_taken');
+  });
+
+  it('mp_error (falla transitoria de MP, no permanente) cae a unknown, no a mp_no_conectado', () => {
+    expect(traducirErrorHttp(axiosError(502, { code: 'mp_error' })).code).toBe('unknown');
   });
 
   it('propaga retry_after_seconds cuando viene en el cuerpo', () => {

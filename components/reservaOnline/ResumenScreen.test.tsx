@@ -167,6 +167,22 @@ describe('ResumenScreen', () => {
     expect(ir).not.toHaveBeenCalled();
   });
 
+  // EntryScreen ya deberia haber cortado antes (salon.pagoHabilitado), pero
+  // MP pudo desconectarse mientras la clienta completaba el formulario.
+  it('si el negocio no tiene MP conectado (mp_no_conectado) muestra la pantalla completa de "no disponible", no un error generico', async () => {
+    setServiceParaTests({
+      ...svc,
+      iniciarPago: async () => {
+        throw new ReservaOnlineError('mp_no_conectado');
+      },
+    });
+    const ir = vi.fn();
+    renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+    expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
+    expect(ir).not.toHaveBeenCalled();
+  });
+
   it('si el backend limita los intentos (rate_limited) al pagar muestra un aviso especifico', async () => {
     setServiceParaTests({
       ...svc,

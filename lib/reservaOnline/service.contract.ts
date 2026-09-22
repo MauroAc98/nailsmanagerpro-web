@@ -27,6 +27,7 @@ export function describeReadsContract(
       expect(salon.logoUrl === null || typeof salon.logoUrl === 'string').toBe(true);
       expect(salon.direccion === null || typeof salon.direccion === 'string').toBe(true);
       expect(salon.profesionales.length).toBeGreaterThan(0);
+      expect(typeof salon.pagoHabilitado).toBe('boolean');
       for (const p of salon.profesionales) {
         expect(typeof p.id).toBe('number');
         expect(typeof p.nombre).toBe('string');

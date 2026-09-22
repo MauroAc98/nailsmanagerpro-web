@@ -27,6 +27,11 @@ const CODIGOS_CONOCIDOS: Record<string, ReservaOnlineErrorCode> = {
   challenge_failed: 'challenge_failed',
   verification_required: 'verification_required',
   creation_disabled: 'creation_disabled',
+  // mp_error (falla transitoria de MP al crear la preferencia) NO esta
+  // mapeado a proposito: cae a 'unknown' (error generico, reintentable) —
+  // a diferencia de mp_no_conectado, que es permanente hasta que se
+  // configure y merece el bloqueo de pantalla completa.
+  mp_no_conectado: 'mp_no_conectado',
 };
 
 // Traductor unico de errores HTTP -> ReservaOnlineError, usado por lecturas y

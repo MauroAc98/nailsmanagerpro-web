@@ -119,6 +119,20 @@ describe('EntryScreen', () => {
     expect(ir).toHaveBeenCalledWith('/reservar/demo/servicios');
   });
 
+  // Fase 1 de Mercado Pago: sin seña+MP conectados no tiene sentido dejar
+  // completar todo el formulario para terminar en un error al pagar.
+  it('con pagoHabilitado en false, bloquea a pantalla completa y no ofrece el CTA', async () => {
+    const svc = prepararServicio();
+    setServiceParaTests({
+      ...svc,
+      getSalon: async (s) => ({ ...(await svc.getSalon(s)), pagoHabilitado: false }),
+    });
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    expect(await screen.findByText('Todavía no está disponible')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reservar turno' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Studio Demo' })).toBeNull();
+  });
+
   it('salon inexistente: mensaje de no encontrado y sin CTA', async () => {
     renderWithProviders(<EntryScreen slug="no-existe" ir={() => {}} />);
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No encontramos este negocio.'));

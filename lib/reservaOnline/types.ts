@@ -23,6 +23,11 @@ export interface SalonInfo {
   logoUrl: string | null;
   direccion: string | null;
   profesionales: ProfesionalPublico[];
+  // Fase 1 de Mercado Pago: el negocio tiene seña configurada Y su cuenta de
+  // MP conectada. En falso, todo el flujo de reserva online se bloquea desde
+  // la entrada — no tiene sentido dejar completar el formulario para
+  // terminar con un error generico al momento de pagar.
+  pagoHabilitado: boolean;
 }
 
 export interface ServicioCategoria {

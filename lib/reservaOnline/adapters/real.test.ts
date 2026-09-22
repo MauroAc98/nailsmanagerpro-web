@@ -19,6 +19,7 @@ const SALON = {
   logo_url: null,
   direccion: 'Av. X 123',
   profesionales: [{ id: 3, nombre: 'Ana', avatar_url: 'https://cdn.test/ana.png' }],
+  pago_habilitado: true,
 };
 const SERVICIOS = [
   {
@@ -82,6 +83,7 @@ describe('real: mapeo', () => {
   it('mapea snake_case a camelCase', async () => {
     const r = nuevo();
     expect((await r.getSalon('ana')).logoUrl).toBeNull();
+    expect((await r.getSalon('ana')).pagoHabilitado).toBe(true);
     expect((await r.getSalon('ana')).profesionales[0]).toEqual({ id: 3, nombre: 'Ana', avatarUrl: 'https://cdn.test/ana.png' });
     expect((await r.getServices('ana'))[0]).toEqual({
       id: 7,

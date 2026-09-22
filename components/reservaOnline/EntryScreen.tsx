@@ -7,6 +7,7 @@ import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, type Ir } from './hooks';
 import { IcoBrillo, IcoCalendario, IcoCheck, IcoEscudo, IcoPin } from './iconos';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { Avatar, BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
 
 // Forma del layout real (portada + círculo + nombre/direccion + tarjeta de
@@ -51,6 +52,12 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
   if (cargando || !data) return <EntrySkeleton />;
 
   const { salon, terminos } = data;
+
+  // Fase 1 de Mercado Pago: sin seña configurada y sin la cuenta de MP
+  // conectada, el negocio no puede cobrar. Se corta ACA, antes de dejar
+  // completar todo el formulario para terminar en un error al pagar.
+  if (!salon.pagoHabilitado) return <NoDisponibleAun />;
+
   const inicial = salon.nombre.trim().charAt(0).toUpperCase();
   const primerNombre = (n: string) => n.trim().split(/\s+/)[0];
   const nombres = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(

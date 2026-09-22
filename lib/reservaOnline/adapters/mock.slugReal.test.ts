@@ -8,7 +8,7 @@ const AHORA = Date.UTC(2026, 8, 19, 15, 0);
 // Lecturas "reales" falsas: el mock de escrituras debe apoyarse en ellas para
 // salones que no son `demo` (composicion: lecturas reales + escrituras mock).
 const lecturas: ReservaOnlineReads = {
-  getSalon: async () => ({ nombre: 'Studio Ana', logoUrl: null, direccion: null, profesionales: [{ id: 3, nombre: 'Ana', avatarUrl: null }] }),
+  getSalon: async () => ({ nombre: 'Studio Ana', logoUrl: null, direccion: null, profesionales: [{ id: 3, nombre: 'Ana', avatarUrl: null }], pagoHabilitado: true }),
   getServices: async () => [{ id: 7, nombre: 'Esmaltado', duracionMinutos: 45, precio: 12000, fotos: [] }],
   getDiasConDisponibilidad: async () => null,
   getAvailability: async (_s, q) => ({
