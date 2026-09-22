@@ -18,6 +18,8 @@
     "locationRequiredWarning": "Cargá tu ubicación en Datos del negocio para poder activar los envíos automáticos — la plantilla de WhatsApp la incluye.",
     "locationMissingNotice": "Tus mensajes automáticos se envían sin el mapa de ubicación. Cargá tu ubicación en Datos del negocio para que lo incluyan.",
     "depositLocationRequiredWarning": "Cargá tu ubicación en Datos del negocio para poder pedir seña.",
+    "depositAmountMovedNotice": "El monto de la seña se carga en Seña y pagos.",
+    "depositAmountMissingWarning": "Cargá el monto de la seña en Seña y pagos para poder activarla.",
     "previewLocationMissing": "(marcá tu ubicación en Datos del negocio)",
     "depositRequest": "Pedir seña para confirmar turnos",
     "depositRequestSubtitle": "El cliente recibe los datos para transferir la seña junto con la confirmación",
@@ -41,6 +43,16 @@
     "previewTabRecordatorio": "Recordatorio",
     "previewSampleNegocio": "Tu negocio",
     "previewDisclaimer": "El texto es fijo, no se puede editar — así lo va a recibir tu cliente.",
+    "saving": "Guardando...",
+    "save": "Guardar cambios"
+  },
+  "SheetSenaYPagos": {
+    "title": "Seña y pagos",
+    "subtitle": "El monto que se le pide a la clienta para confirmar un turno — por reserva online o por WhatsApp.",
+    "depositAmount": "Monto de la seña ($)",
+    "mpInfoTitle": "Mercado Pago",
+    "mpInfoBody": "En esta primera versión, la conexión con Mercado Pago la configura el equipo de Turnetto con vos. Escribinos al soporte para conectar o cambiar la cuenta.",
+    "crosslinkToMensajes": "¿También pedís la seña por transferencia bancaria en tus mensajes de WhatsApp? Los datos de la cuenta (titular, alias/CBU) se cargan en Mensajes automáticos.",
     "saving": "Guardando...",
     "save": "Guardar cambios"
   },
@@ -81,8 +93,9 @@
     "save": "Guardar cambios"
   },
   "PerfilPage": {
-    "title": "Perfil",
-    "sectionPersonalData": "Datos del negocio",
+    "title": "Mi negocio",
+    "groupDatosNegocio": "Datos del negocio",
+    "rowDatosNegocio": "Nombre, contacto y ubicación",
     "locationRemoveConfirm": "¿Quitar la ubicación de tu negocio? Sin ubicación no se pueden tener activos los envíos automáticos de WhatsApp.",
     "locationRemoveConfirmButton": "Quitar",
     "studioName": "Nombre del negocio",
@@ -90,7 +103,11 @@
     "address": "Dirección",
     "location": "Ubicación",
     "locationLoaded": "Cargada",
-    "sectionBusiness": "Mensajes automáticos",
+    "groupReservasPagos": "Reservas y pagos",
+    "rowReservasOnline": "Reservas online",
+    "rowSenaYPagos": "Seña y pagos",
+    "groupMensajes": "Mensajes automáticos",
+    "rowMensajes": "Confirmación, recordatorio y seña por WhatsApp",
     "depositAmount": "Monto de seña",
     "depositRequest": "Pide seña",
     "depositHolder": "Titular",
@@ -101,7 +118,13 @@
     "yes": "Sí",
     "no": "No",
     "reminderTime": "Hora de recordatorio",
-    "sectionSubscription": "Suscripción",
+    "groupFinanzas": "Finanzas",
+    "rowFinanzas": "Gastos, ingresos y estadísticas",
+    "groupApariencia": "Apariencia e idioma",
+    "rowApariencia": "Apariencia",
+    "rowIdioma": "Idioma",
+    "groupCuenta": "Mi cuenta",
+    "rowSuscripcion": "Suscripción",
     "exemptAccount": "Cuenta exenta",
     "status": "Estado",
     "expired": "Vencida",
@@ -109,6 +132,7 @@
     "expiresOn": "Vence el",
     "daysLeft": "Días restantes",
     "changePassword": "Cambiar contraseña",
+    "rowAyuda": "Ayuda",
     "logout": "Cerrar sesión",
     "logoutConfirm": "¿Seguro que querés salir?",
     "logoutConfirmButton": "Salir",
@@ -117,5 +141,11 @@
     "dataSaved": "Datos guardados",
     "passwordsDontMatch": "Las contraseñas no coinciden.",
     "depositAmountInvalid": "Ingresá un monto válido (o dejalo vacío para no pedir seña)."
+  },
+  "FinanzasPage": {
+    "title": "Finanzas",
+    "gastos": "Gastos",
+    "ingresos": "Ingresos",
+    "estadisticas": "Estadísticas"
   }
 }

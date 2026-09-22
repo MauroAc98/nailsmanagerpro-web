@@ -22,8 +22,11 @@ const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 type TipoPreview = 'confirmacion' | 'recordatorio';
 
 interface Props {
+  // Monto de seña: solo lectura acá. El campo editable vive en "Seña y
+  // pagos" (junto al estado de Mercado Pago) desde el rediseño de Perfil —
+  // este sheet solo lo usa para el preview del mensaje y para saber si
+  // puede activarse "pedir seña por WhatsApp" (ver faltaMonto más abajo).
   senaMonto: string;
-  setSenaMonto: (v: string) => void;
   // Opt-in "pedir seña" + datos bancarios que viajan en la confirmación de
   // WhatsApp. El estado vive en el padre (perfil/page.tsx) igual que el resto
   // del sheet; acá solo se editan y se validan antes de guardar.
@@ -57,7 +60,6 @@ interface Props {
   erroresServidor?: Partial<Record<SenaCampo, string>>;
   onGuardar: () => void;
   guardando: boolean;
-  error: string | null;
   onClose: () => void;
 }
 
@@ -181,7 +183,7 @@ function IconMapPin() {
 }
 
 export function SheetNegocio({
-  senaMonto, setSenaMonto,
+  senaMonto,
   whatsappPideSena, setWhatsappPideSena,
   senaTitular, setSenaTitular, senaEntidad, setSenaEntidad,
   senaAlias, setSenaAlias, senaCbu, setSenaCbu,
@@ -189,7 +191,7 @@ export function SheetNegocio({
   recordatorioAutomatico, setRecordatorioAutomatico,
   horaRecordatorio, setHoraRecordatorio, nombreNegocio, telefonoContacto,
   direccionNegocio, latitudNegocio, longitudNegocio,
-  erroresServidor, onGuardar, guardando, error, onClose,
+  erroresServidor, onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetNegocio');
   const [previewAbierto, setPreviewAbierto] = useState(false);
@@ -202,6 +204,11 @@ export function SheetNegocio({
   // deliberadamente NO el de seña. No sumar faltaDireccion al predicate del
   // toggle de seña (:below) salvo que una decisión futura lo pida.
   const faltaUbicacion = !esUbicacionValida(latitudNegocio, longitudNegocio);
+  const montoActual = montoComoNumero(senaMonto);
+  // El monto ahora se carga en "Seña y pagos", no acá — si todavía no hay
+  // uno válido, este toggle no puede activarse (mismo patrón que
+  // faltaUbicacion: no bloquea uno que ya esté ON).
+  const faltaMonto = montoActual === undefined || montoActual <= 0;
 
   // Código de validación local -> mensaje traducido. Los errores del backend
   // ya llegan como string completo, así que el fallback (`?? v`) los deja pasar.
@@ -221,12 +228,16 @@ export function SheetNegocio({
   const handleGuardar = () => {
     if (whatsappPideSena) {
       const errs = validarSenaConfig({
-        monto: montoComoNumero(senaMonto),
+        monto: montoActual,
         direccion: direccionNegocio,
         titular: senaTitular,
         alias: senaAlias,
         cbu: senaCbu,
       });
+      // El monto no se edita en este sheet (ver faltaMonto): el toggle ya
+      // no puede activarse sin uno válido, así que ese error nunca tiene
+      // dónde mostrarse acá — si el mapa lo trae de todos modos, se ignora.
+      delete errs.sena_monto;
       if (Object.keys(errs).length > 0) {
         setErroresLocales(errs);
         return;
@@ -260,27 +271,22 @@ export function SheetNegocio({
         </button>
       </div>
 
-      <SheetInput
-        label={t('depositAmount')}
-        icon={<IconMoney />}
-        value={senaMonto}
-        onChange={setSenaMonto}
-        placeholder="0"
-        type="text"
-        inputMode="decimal"
-      />
-
-      {error && (
-        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
-      )}
-
-      {/* Fuera del "whatsappPideSena &&" de abajo a proposito: el guard de
-          Mercado Pago (reserva online) puede rechazar sena_monto aunque este
-          toggle este apagado — sin esto, ese 422 se guardaba en erroresNegocio
-          pero nunca se veia en pantalla. */}
-      {textoError('sena_monto') && (
-        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{textoError('sena_monto')}</p>
-      )}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '12px 14px', marginBottom: 16,
+      }}>
+        <IconMoney />
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>
+            {t('depositAmountMovedNotice')}
+          </p>
+          {!faltaMonto && (
+            <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: colors.text }}>
+              {formatearMontoSena(montoActual!)}
+            </p>
+          )}
+        </div>
+      </div>
 
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -295,7 +301,7 @@ export function SheetNegocio({
         <PillToggle
           value={whatsappPideSena}
           onChange={setWhatsappPideSena}
-          disabled={faltaUbicacion && !whatsappPideSena}
+          disabled={(faltaUbicacion || faltaMonto) && !whatsappPideSena}
           ariaLabel={t('depositRequest')}
         />
       </div>
@@ -303,6 +309,12 @@ export function SheetNegocio({
       {faltaUbicacion && (
         <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
           {t('depositLocationRequiredWarning')}
+        </p>
+      )}
+
+      {faltaMonto && (
+        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
+          {t('depositAmountMissingWarning')}
         </p>
       )}
 

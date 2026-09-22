@@ -1,24 +1,22 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { HeroPerfil } from '@/components/perfil/HeroPerfil';
-import { CardSeccion } from '@/components/perfil/CardSeccion';
-import { FilaDato } from '@/components/perfil/FilaDato';
 import { SheetDatosPersonales } from '@/components/perfil/SheetDatosPersonales';
 import { SheetNegocio } from '@/components/perfil/SheetNegocio';
+import { SheetSenaYPagos } from '@/components/perfil/SheetSenaYPagos';
 import { SheetPassword } from '@/components/perfil/SheetPassword';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { sanitizarLineaSimple, type SenaCampo } from '@/lib/senaConfig';
-import { esUbicacionValida } from '@/lib/ubicacion';
-import { formatMonto } from '@/lib/money';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -48,17 +46,18 @@ function formatFechaCorta(iso: string): string {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-type Sheet = 'personal' | 'negocio' | 'password' | null;
+type Sheet = 'personal' | 'negocio' | 'senaYPagos' | 'password' | null;
 
 const SNAP_POINTS: Record<Exclude<Sheet, null>, number[]> = {
   personal: [0.75],
   negocio: [0.8],
+  senaYPagos: [0.65],
   password: [0.6],
 };
 
 function IconStore() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l1.5-5h15L21 9" />
       <path d="M3 9v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9" />
       <path d="M3 9h18" />
@@ -67,18 +66,61 @@ function IconStore() {
   );
 }
 
-function IconBriefcase() {
+function IconGlobeReservas() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="7" width="20" height="14" rx="2" />
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </svg>
+  );
+}
+
+function IconCardPago() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" />
+    </svg>
+  );
+}
+
+function IconChatBubble() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  );
+}
+
+function IconChartUp() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
+    </svg>
+  );
+}
+
+function IconSun() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.2" y1="4.2" x2="5.6" y2="5.6" /><line x1="18.4" y1="18.4" x2="19.8" y2="19.8" />
+    </svg>
+  );
+}
+
+function IconGlobeIdioma() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
     </svg>
   );
 }
 
 function IconSuscripcion() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M16 2v4M8 2v4M3 10h18" />
     </svg>
@@ -87,24 +129,102 @@ function IconSuscripcion() {
 
 function IconLock() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   );
 }
 
+function IconHelp() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 function IconChevronRight() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );
 }
 
+// Grupo de filas compactas con su eyebrow — mismo lenguaje visual que ya usa
+// /configuracion (ver rediseño de Perfil, board 01-MiNegocio).
+function Grupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase',
+        color: colors.subtext, margin: '0 0 6px 4px',
+      }}>
+        {titulo}
+      </div>
+      <div style={{
+        backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+        borderRadius: 14, overflow: 'hidden',
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FilaNav({ icon, label, onClick, ultima }: {
+  icon: React.ReactNode; label: string; onClick: () => void; ultima?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        backgroundColor: 'transparent', border: 'none',
+        borderBottom: ultima ? 'none' : `1px solid ${colors.border}`,
+        padding: '13px 14px', cursor: 'pointer', textAlign: 'left',
+      }}
+    >
+      <div style={{
+        width: 32, height: 32, backgroundColor: colors.surfaceSubtle, borderRadius: 9,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: colors.text }}>{label}</span>
+      <IconChevronRight />
+    </button>
+  );
+}
+
+// Fila de solo lectura (Suscripción): no navega a ningún lado hoy, así que
+// no lleva ni cursor de link ni chevron — solo el valor a la derecha.
+function FilaInfo({ icon, label, valor, ultima }: {
+  icon: React.ReactNode; label: string; valor: string; ultima?: boolean;
+}) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
+      borderBottom: ultima ? 'none' : `1px solid ${colors.border}`,
+    }}>
+      <div style={{
+        width: 32, height: 32, backgroundColor: colors.surfaceSubtle, borderRadius: 9,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: colors.text }}>{label}</span>
+      <span style={{ fontSize: 12, color: colors.subtext }}>{valor}</span>
+    </div>
+  );
+}
+
 export default function PerfilPage() {
+  const router = useRouter();
   const t = useTranslations('perfil.PerfilPage');
-  const { user, updatePerfil, logout, subscriptionExpired, daysLeft, subscriptionEndsAt, isExempt } = useAuth();
+  const { user, updatePerfil, logout, subscriptionExpired, subscriptionEndsAt, isExempt } = useAuth();
 
   const sheetRef = useRef<BottomSheetHandle>(null);
   const [sheetActivo, setSheetActivo] = useState<Sheet>(null);
@@ -148,9 +268,9 @@ export default function PerfilPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [senaMontoError, setSenaMontoError] = useState<string | null>(null);
-  // Errores 422 del backend para la seña, mapeados por campo. El guard de
-  // `PUT /perfil` valida el estado final: monto > 0 + direccion + titular +
-  // (alias o CBU) cuando `whatsapp_pide_sena` queda en true.
+  // Errores 422 del backend para la seña, mapeados por campo. Compartido
+  // entre "Mensajes automáticos" y "Seña y pagos" — el guard de `PUT /perfil`
+  // valida el estado final sin importar desde qué sheet llegó el campo.
   const [erroresNegocio, setErroresNegocio] = useState<Partial<Record<SenaCampo, string>>>({});
 
   useEffect(() => {
@@ -224,7 +344,7 @@ export default function PerfilPage() {
     }
 
     let senaMontoParseada: number | undefined;
-    if (sheetActivo === 'negocio') {
+    if (sheetActivo === 'senaYPagos') {
       const resultado = parsearSenaMonto(senaMonto);
       if (!resultado) {
         setSenaMontoError(t('depositAmountInvalid'));
@@ -246,9 +366,10 @@ export default function PerfilPage() {
           latitud,
           longitud,
         });
+      } else if (sheetActivo === 'senaYPagos') {
+        await updatePerfil({ sena_monto: senaMontoParseada });
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
-          sena_monto: senaMontoParseada,
           whatsapp_pide_sena: whatsappPideSena,
           // Espeja `WhatsappTemplate::unaLinea` del backend: sin `\r\n\t` ni
           // espacios interiores repetidos. String vacío -> null para no
@@ -269,7 +390,7 @@ export default function PerfilPage() {
       }
       showToast(
         sheetActivo === 'password' ? t('passwordUpdated') :
-        sheetActivo === 'negocio'  ? t('changesSaved') :
+        (sheetActivo === 'negocio' || sheetActivo === 'senaYPagos') ? t('changesSaved') :
         t('dataSaved')
       );
       cerrarSheet();
@@ -289,10 +410,10 @@ export default function PerfilPage() {
         } else {
           await alertDialog(mensaje);
         }
-      } else if (sheetActivo === 'negocio') {
-        // Mapea el 422 del guard de seña a errores por campo, que el sheet
-        // muestra al lado del input correspondiente. Si el 422 no trae
-        // ninguno de estos campos, cae al diálogo genérico.
+      } else if (sheetActivo === 'negocio' || sheetActivo === 'senaYPagos') {
+        // Mapea el 422 del guard de seña a errores por campo. Compartido
+        // entre los dos sheets (ver erroresNegocio arriba): el guard valida
+        // el estado final sin importar desde cuál de los dos llegó el 422.
         const errores = (e as { response?: { data?: { errors?: Record<string, string[]> } } })
           .response?.data?.errors ?? {};
         const campos: SenaCampo[] = ['sena_monto', 'direccion', 'whatsapp_sena_titular', 'whatsapp_sena_alias'];
@@ -351,11 +472,22 @@ export default function PerfilPage() {
             onClose={cerrarSheet}
           />
         );
+      case 'senaYPagos':
+        return (
+          <SheetSenaYPagos
+            senaMonto={senaMonto}
+            setSenaMonto={setSenaMonto}
+            error={senaMontoError}
+            erroresServidor={erroresNegocio}
+            onGuardar={handleGuardar}
+            guardando={guardando}
+            onClose={cerrarSheet}
+          />
+        );
       case 'negocio':
         return (
           <SheetNegocio
             senaMonto={senaMonto}
-            setSenaMonto={setSenaMonto}
             whatsappPideSena={whatsappPideSena}
             setWhatsappPideSena={setWhatsappPideSena}
             senaTitular={senaTitular}
@@ -380,7 +512,6 @@ export default function PerfilPage() {
             longitudNegocio={user.longitud}
             onGuardar={handleGuardar}
             guardando={guardando}
-            error={senaMontoError}
             onClose={cerrarSheet}
           />
         );
@@ -404,75 +535,52 @@ export default function PerfilPage() {
 
   return (
     // Sin BackButton (raíz de tab), mismo patrón que clientes/page.tsx.
-    // AgendaThemeScope viene del layout.tsx propio del segmento (perfil no
-    // tiene rutas hijas), no envuelto acá.
-    <div style={{ minHeight: '100vh', backgroundColor: colors.surfaceSubtle, paddingBottom: 24 }}>
+    // AgendaThemeScope viene del layout.tsx propio del segmento.
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
       <div style={{ padding: '24px 20px 12px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
-      <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <HeroPerfil user={user} />
+      <div style={{ padding: '10px 20px 0' }}>
+        <div style={{ marginBottom: 16 }}>
+          <HeroPerfil user={user} />
+        </div>
 
-        <CardSeccion titulo={t('sectionPersonalData')} icono={<IconStore />} onEditar={() => abrirSheet('personal')}>
-          <FilaDato label={t('studioName')} valor={user.name} />
-          <FilaDato label={t('phone')} valor={user.telefono} />
-          <FilaDato label={t('address')} valor={user.direccion} />
-          <FilaDato label={t('location')} valor={esUbicacionValida(user.latitud, user.longitud) ? t('locationLoaded') : null} />
-        </CardSeccion>
+        <Grupo titulo={t('groupDatosNegocio')}>
+          <FilaNav icon={<IconStore />} label={t('rowDatosNegocio')} onClick={() => abrirSheet('personal')} ultima />
+        </Grupo>
 
-        <CardSeccion titulo={t('sectionBusiness')} icono={<IconBriefcase />} onEditar={() => abrirSheet('negocio')}>
-          <FilaDato label={t('depositAmount')} valor={user.sena_monto != null ? `$${formatMonto(Number(user.sena_monto))}` : null} />
-          <FilaDato label={t('depositRequest')} valor={user.whatsapp_pide_sena ? t('yes') : t('no')} />
-          {user.whatsapp_pide_sena && (
-            <>
-              <FilaDato label={t('depositHolder')} valor={user.whatsapp_sena_titular} />
-              <FilaDato label={t('depositAlias')} valor={user.whatsapp_sena_alias} />
-              <FilaDato label={t('depositCbu')} valor={user.whatsapp_sena_cbu} />
-            </>
-          )}
-          <FilaDato label={t('autoConfirmation')} valor={user.confirmacion_automatica ? t('yes') : t('no')} />
-          <FilaDato label={t('autoReminder')} valor={user.recordatorio_automatico ? t('yes') : t('no')} />
-          {user.recordatorio_automatico && (
-            <FilaDato label={t('reminderTime')} valor={user.hora_recordatorio} />
-          )}
-        </CardSeccion>
+        <Grupo titulo={t('groupReservasPagos')}>
+          <FilaNav icon={<IconGlobeReservas />} label={t('rowReservasOnline')} onClick={() => router.push('/configuracion/reservas-online')} />
+          <FilaNav icon={<IconCardPago />} label={t('rowSenaYPagos')} onClick={() => abrirSheet('senaYPagos')} ultima />
+        </Grupo>
 
-        <CardSeccion titulo={t('sectionSubscription')} icono={<IconSuscripcion />}>
-          {isExempt ? (
-            <FilaDato label={t('status')} valor={t('exemptAccount')} />
-          ) : (
-            <>
-              <FilaDato label={t('status')} valor={subscriptionExpired ? t('expired') : t('active')} />
-              <FilaDato
-                label={t('expiresOn')}
-                valor={subscriptionEndsAt ? formatFechaCorta(subscriptionEndsAt) : null}
-              />
-              {!subscriptionExpired && daysLeft != null && (
-                <FilaDato label={t('daysLeft')} valor={String(daysLeft)} />
-              )}
-            </>
-          )}
-        </CardSeccion>
+        <Grupo titulo={t('groupMensajes')}>
+          <FilaNav icon={<IconChatBubble />} label={t('rowMensajes')} onClick={() => abrirSheet('negocio')} ultima />
+        </Grupo>
 
-        <button
-          onClick={() => abrirSheet('password')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 15,
-            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14,
-            padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
-          }}
-        >
-          <div style={{
-            width: 40, height: 40, backgroundColor: colors.surfaceSubtle,
-            borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <IconLock />
-          </div>
-          <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: colors.text }}>{t('changePassword')}</span>
-          <IconChevronRight />
-        </button>
+        <Grupo titulo={t('groupFinanzas')}>
+          <FilaNav icon={<IconChartUp />} label={t('rowFinanzas')} onClick={() => router.push('/perfil/finanzas')} ultima />
+        </Grupo>
+
+        <Grupo titulo={t('groupApariencia')}>
+          <FilaNav icon={<IconSun />} label={t('rowApariencia')} onClick={() => router.push('/configuracion/apariencia')} />
+          <FilaNav icon={<IconGlobeIdioma />} label={t('rowIdioma')} onClick={() => router.push('/configuracion/idioma')} ultima />
+        </Grupo>
+
+        <Grupo titulo={t('groupCuenta')}>
+          <FilaInfo
+            icon={<IconSuscripcion />}
+            label={t('rowSuscripcion')}
+            valor={
+              isExempt ? t('exemptAccount') :
+              subscriptionExpired ? t('expired') :
+              subscriptionEndsAt ? `${t('active')} · ${formatFechaCorta(subscriptionEndsAt)}` : t('active')
+            }
+          />
+          <FilaNav icon={<IconLock />} label={t('changePassword')} onClick={() => abrirSheet('password')} />
+          <FilaNav icon={<IconHelp />} label={t('rowAyuda')} onClick={() => router.push('/configuracion/ayuda')} ultima />
+        </Grupo>
 
         <button
           onClick={handleLogout}
@@ -480,7 +588,7 @@ export default function PerfilPage() {
             width: '100%', boxSizing: 'border-box',
             backgroundColor: colors.dangerBg, border: `1px solid ${colors.dangerBorder}`, borderRadius: 14,
             padding: '14px', textAlign: 'center', cursor: 'pointer',
-            color: colors.danger, fontSize: 15, fontWeight: 600,
+            color: colors.danger, fontSize: 15, fontWeight: 600, marginBottom: 16,
           }}
         >
           {t('logout')}

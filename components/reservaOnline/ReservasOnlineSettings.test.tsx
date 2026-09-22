@@ -60,7 +60,7 @@ describe('ReservasOnlineSettings', () => {
     expect(screen.queryByRole('button', { name: 'Conectar Mercado Pago' })).toBeNull();
   });
 
-  it('no muestra los campos de seña/ventanas de la tarjeta vieja, y en cambio manda a Perfil', async () => {
+  it('no muestra los campos de seña/ventanas de la tarjeta vieja, y en cambio manda a Seña y pagos', async () => {
     montar();
     await interruptor();
     expect(screen.queryByLabelText('Seña')).toBeNull();
@@ -68,8 +68,8 @@ describe('ReservasOnlineSettings', () => {
     expect(screen.queryByLabelText('Reservar con antelación')).toBeNull();
     expect(screen.queryByLabelText('Cancelación gratis hasta')).toBeNull();
 
-    expect(screen.getByText('El monto de la seña se configura en tu perfil.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Ir a Perfil' }));
+    expect(screen.getByText('El monto de la seña se configura en Seña y pagos.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a Seña y pagos' }));
     expect(push).toHaveBeenCalledWith('/perfil');
   });
 

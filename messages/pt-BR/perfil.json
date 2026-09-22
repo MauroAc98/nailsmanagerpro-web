@@ -18,6 +18,8 @@
     "locationRequiredWarning": "Preencha sua localização em Dados do negócio para ativar os envios automáticos — o modelo de WhatsApp inclui esse dado.",
     "locationMissingNotice": "Suas mensagens automáticas são enviadas sem o mapa de localização. Preencha sua localização em Dados do negócio para incluí-lo.",
     "depositLocationRequiredWarning": "Preencha sua localização em Dados do negócio para poder pedir sinal.",
+    "depositAmountMovedNotice": "O valor do sinal é definido em Sinal e pagamentos.",
+    "depositAmountMissingWarning": "Defina o valor do sinal em Sinal e pagamentos para poder ativá-lo.",
     "previewLocationMissing": "(marque sua localização em Dados do negócio)",
     "depositRequest": "Pedir sinal para confirmar agendamentos",
     "depositRequestSubtitle": "A cliente recebe os dados para transferir o sinal junto com a confirmação",
@@ -41,6 +43,16 @@
     "previewTabRecordatorio": "Lembrete",
     "previewSampleNegocio": "Seu negócio",
     "previewDisclaimer": "O texto é fixo, não pode ser editado — atualmente só existe em espanhol (ainda não há um modelo aprovado em português).",
+    "saving": "Salvando...",
+    "save": "Salvar alterações"
+  },
+  "SheetSenaYPagos": {
+    "title": "Sinal e pagamentos",
+    "subtitle": "O valor pedido à cliente para confirmar um horário — por reserva online ou por WhatsApp.",
+    "depositAmount": "Valor do sinal ($)",
+    "mpInfoTitle": "Mercado Pago",
+    "mpInfoBody": "Nesta primeira versão, a conexão com o Mercado Pago é configurada pela equipe da Turnetto junto com você. Fale com o suporte para conectar ou trocar a conta.",
+    "crosslinkToMensajes": "Você também pede o sinal por transferência bancária nas suas mensagens de WhatsApp? Os dados da conta (titular, chave/CBU) são preenchidos em Mensagens automáticas.",
     "saving": "Salvando...",
     "save": "Salvar alterações"
   },
@@ -81,8 +93,9 @@
     "save": "Salvar alterações"
   },
   "PerfilPage": {
-    "title": "Perfil",
-    "sectionPersonalData": "Dados do negócio",
+    "title": "Meu negócio",
+    "groupDatosNegocio": "Dados do negócio",
+    "rowDatosNegocio": "Nome, contato e localização",
     "locationRemoveConfirm": "Remover a localização do seu negócio? Sem localização não é possível manter os envios automáticos de WhatsApp ativos.",
     "locationRemoveConfirmButton": "Remover",
     "studioName": "Nome do negócio",
@@ -90,7 +103,11 @@
     "address": "Endereço",
     "location": "Localização",
     "locationLoaded": "Preenchida",
-    "sectionBusiness": "Mensagens automáticas",
+    "groupReservasPagos": "Reservas e pagamentos",
+    "rowReservasOnline": "Reservas online",
+    "rowSenaYPagos": "Sinal e pagamentos",
+    "groupMensajes": "Mensagens automáticas",
+    "rowMensajes": "Confirmação, lembrete e sinal por WhatsApp",
     "depositAmount": "Valor do sinal",
     "depositRequest": "Pede sinal",
     "depositHolder": "Titular",
@@ -101,7 +118,13 @@
     "yes": "Sim",
     "no": "Não",
     "reminderTime": "Horário do lembrete",
-    "sectionSubscription": "Assinatura",
+    "groupFinanzas": "Finanças",
+    "rowFinanzas": "Despesas, receitas e estatísticas",
+    "groupApariencia": "Aparência e idioma",
+    "rowApariencia": "Aparência",
+    "rowIdioma": "Idioma",
+    "groupCuenta": "Minha conta",
+    "rowSuscripcion": "Assinatura",
     "exemptAccount": "Conta isenta",
     "status": "Status",
     "expired": "Vencida",
@@ -109,6 +132,7 @@
     "expiresOn": "Vence em",
     "daysLeft": "Dias restantes",
     "changePassword": "Alterar senha",
+    "rowAyuda": "Ajuda",
     "logout": "Sair",
     "logoutConfirm": "Tem certeza que quer sair?",
     "logoutConfirmButton": "Sair",
@@ -117,5 +141,11 @@
     "dataSaved": "Dados salvos",
     "passwordsDontMatch": "As senhas não coincidem.",
     "depositAmountInvalid": "Informe um valor válido (ou deixe em branco para não pedir sinal)."
+  },
+  "FinanzasPage": {
+    "title": "Finanças",
+    "gastos": "Despesas",
+    "ingresos": "Receitas",
+    "estadisticas": "Estatísticas"
   }
 }

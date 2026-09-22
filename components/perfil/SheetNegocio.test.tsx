@@ -13,7 +13,6 @@ type Props = Parameters<typeof SheetNegocio>[0];
 function setup(overrides: Partial<Props> = {}) {
   const props: Props = {
     senaMonto: '5000',
-    setSenaMonto: vi.fn(),
     whatsappPideSena: false,
     setWhatsappPideSena: vi.fn(),
     senaTitular: '',
@@ -38,7 +37,6 @@ function setup(overrides: Partial<Props> = {}) {
     erroresServidor: undefined,
     onGuardar: vi.fn(),
     guardando: false,
-    error: null,
     onClose: vi.fn(),
     ...overrides,
   };
@@ -145,13 +143,6 @@ describe('SheetNegocio — client validation when seña is ON', () => {
     expect(screen.getByText('Cargá el alias o el CBU de la cuenta.')).toBeInTheDocument();
   });
 
-  it('blocks the save when the monto is zero', () => {
-    const props = setup({ ...onCompleto, senaMonto: '0' });
-    save();
-    expect(props.onGuardar).not.toHaveBeenCalled();
-    expect(screen.getByText('Ingresá un monto de seña mayor a cero.')).toBeInTheDocument();
-  });
-
   it('blocks the save and points to the other sheet when the address is missing', () => {
     const props = setup({ ...onCompleto, direccionNegocio: '' });
     save();
@@ -178,14 +169,47 @@ describe('SheetNegocio — seña OFF still saves', () => {
     save();
     expect(props.onGuardar).toHaveBeenCalledTimes(1);
   });
+});
 
-  // Bug real: el guard de Mercado Pago (reserva online) puede rechazar
-  // sena_monto aunque este toggle este apagado — antes, ese 422 quedaba en
-  // erroresServidor pero el parrafo de error vivia adentro del bloque
-  // "whatsappPideSena &&", asi que nunca se veia en pantalla.
-  it('surfaces a sena_monto server error even with the WhatsApp toggle OFF', () => {
-    setup({ whatsappPideSena: false, erroresServidor: { sena_monto: 'No podés vaciar la seña: tenés Mercado Pago conectado.' } });
-    expect(screen.getByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
+// El monto ya no se edita en este sheet (se mudó a "Seña y pagos" — ver
+// board 02-SenaYPagos.dc.html), así que el 422 de sena_monto del guard de
+// Mercado Pago se muestra ahí, no acá. Ver SheetSenaYPagos.test.tsx.
+describe('SheetNegocio — missing deposit amount gate (seña toggle)', () => {
+  it('disables the seña toggle when off and the deposit amount is missing', () => {
+    setup({ whatsappPideSena: false, senaMonto: '' });
+    expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('disables the seña toggle when off and the deposit amount is zero', () => {
+    setup({ whatsappPideSena: false, senaMonto: '0' });
+    expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does NOT disable the seña toggle when a valid deposit amount is set', () => {
+    setup({ whatsappPideSena: false, senaMonto: '5000' });
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('leaves an already-ON seña toggle enabled despite a missing deposit amount', () => {
+    const props = setup({ whatsappPideSena: true, senaMonto: '' });
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(senaToggle());
+    expect(props.setWhatsappPideSena).toHaveBeenCalledWith(false);
+  });
+
+  it('renders a missing-amount warning pointing to Seña y pagos', () => {
+    setup({ senaMonto: '' });
+    expect(screen.getByText('Cargá el monto de la seña en Seña y pagos para poder activarla.')).toBeInTheDocument();
+  });
+
+  it('does not render the missing-amount warning when a valid amount is set', () => {
+    setup({ senaMonto: '5000' });
+    expect(screen.queryByText('Cargá el monto de la seña en Seña y pagos para poder activarla.')).toBeNull();
+  });
+
+  it('shows the current amount, formatted, as a read-only reference', () => {
+    setup({ senaMonto: '5000' });
+    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
   });
 });
 

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { useAuth } from '@/hooks/useAuth';
+import { routerMock } from '@/test/mocks/nextNavigation';
 import type { User } from '@/services/authService';
 import PerfilPage from './page';
 
@@ -78,8 +79,7 @@ function mockUseAuth(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
 }
 
 function abrirSheetPersonal() {
-  const [editarPersonal] = screen.getAllByRole('button', { name: 'Editar' });
-  fireEvent.click(editarPersonal);
+  fireEvent.click(screen.getByRole('button', { name: 'Nombre, contacto y ubicación' }));
 }
 
 afterEach(() => {
@@ -117,18 +117,66 @@ describe('PerfilPage — 422 latitud mapping', () => {
   });
 });
 
-// El monto de la seña se mostraba crudo ($5000 / $5000.00); ahora usa el mismo
-// formato que el resto de la app: punto de miles y coma decimal.
-describe('PerfilPage — monto de la seña', () => {
-  it('lo muestra con separador de miles y coma decimal', () => {
-    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
-    renderWithProviders(<PerfilPage />);
-    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
+// Rediseño de Perfil: el hub "Mi negocio" solo navega — Seña y pagos abre su
+// propio sheet, Reservas online/Finanzas/Apariencia/Idioma/Ayuda navegan a
+// rutas existentes (ver components/perfil/SheetSenaYPagos.tsx y
+// app/(app)/perfil/finanzas/page.tsx). El monto ya no se muestra en esta
+// página — se ve dentro de Seña y pagos.
+describe('PerfilPage — hub "Mi negocio"', () => {
+  afterEach(() => {
+    routerMock.push.mockClear();
   });
 
-  it('no muestra monto cuando no hay seña configurada', () => {
-    mockUseAuth({ user: { ...BASE_USER, sena_monto: null } });
+  it('abre Seña y pagos con el monto guardado', () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
-    expect(screen.queryByText(/^\$/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
+    expect(screen.getByRole('textbox', { name: 'Monto de la seña ($)' })).toHaveValue('5000');
+  });
+
+  it('guarda desde Seña y pagos mandando solo sena_monto', async () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+    renderWithProviders(<PerfilPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({ sena_monto: 5000 }));
+  });
+
+  it('guarda desde Mensajes automáticos sin mandar sena_monto', async () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+    renderWithProviders(<PerfilPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmación, recordatorio y seña por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalled());
+    const payload = vi.mocked(useAuth().updatePerfil).mock.calls[0][0];
+    expect(payload).not.toHaveProperty('sena_monto');
+  });
+
+  it('navega a Reservas online, Finanzas, Apariencia, Idioma y Ayuda', () => {
+    mockUseAuth();
+    renderWithProviders(<PerfilPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reservas online' }));
+    expect(routerMock.push).toHaveBeenLastCalledWith('/configuracion/reservas-online');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gastos, ingresos y estadísticas' }));
+    expect(routerMock.push).toHaveBeenLastCalledWith('/perfil/finanzas');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apariencia' }));
+    expect(routerMock.push).toHaveBeenLastCalledWith('/configuracion/apariencia');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Idioma' }));
+    expect(routerMock.push).toHaveBeenLastCalledWith('/configuracion/idioma');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ayuda' }));
+    expect(routerMock.push).toHaveBeenLastCalledWith('/configuracion/ayuda');
+  });
+
+  it('muestra la suscripción como fila informativa, sin botón', () => {
+    mockUseAuth({ subscriptionExpired: false, subscriptionEndsAt: null, isExempt: false });
+    renderWithProviders(<PerfilPage />);
+    expect(screen.getByText('Suscripción')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Suscripción' })).toBeNull();
+    expect(screen.getByText('Activa')).toBeInTheDocument();
   });
 });
