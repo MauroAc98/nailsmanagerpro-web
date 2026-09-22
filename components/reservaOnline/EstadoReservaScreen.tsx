@@ -107,12 +107,14 @@ export function EstadoReservaScreen({
   ir,
   ahora = Date.now,
   cadaMs = 1000,
+  pollMs = 3000,
 }: {
   slug: string;
   id: string;
   ir: Ir;
   ahora?: () => number;
   cadaMs?: number;
+  pollMs?: number;
 }) {
   const t = useTranslations('reservaOnline');
   const locale = useLocale();
@@ -135,6 +137,18 @@ export function EstadoReservaScreen({
   useEffect(() => {
     if (vencioLaVentana) reintentar();
   }, [vencioLaVentana, reintentar]);
+
+  // Auto-poll mientras esta pendiente: el redirect de MP vuelve casi al
+  // toque, pero el webhook que confirma el pago es async y puede tardar unos
+  // segundos mas — bug real reportado en produccion, la clienta quedaba
+  // viendo "Esperando tu pago" para siempre a menos que tocara "Ya pagué" a
+  // mano, aunque el pago ya estuviera aprobado y el turno confirmado.
+  const pendiente = estado?.status === 'pending_payment';
+  useEffect(() => {
+    if (!pendiente) return;
+    const intervalId = setInterval(reintentar, pollMs);
+    return () => clearInterval(intervalId);
+  }, [pendiente, pollMs, reintentar]);
 
   // Reserva confirmada: el flujo guardado ya no sirve.
   const confirmada = estado?.status === 'confirmed';

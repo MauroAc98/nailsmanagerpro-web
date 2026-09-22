@@ -26,7 +26,7 @@ describe('EstadoReservaScreen', () => {
   afterEach(() => setServiceParaTests(null));
 
   const montar = (ir = vi.fn()) => {
-    renderWithProviders(<EstadoReservaScreen slug="demo" id="mock-1" ir={ir} ahora={ahora} cadaMs={20} />);
+    renderWithProviders(<EstadoReservaScreen slug="demo" id="mock-1" ir={ir} ahora={ahora} cadaMs={20} pollMs={20} />);
     return ir;
   };
 
@@ -114,6 +114,18 @@ describe('EstadoReservaScreen', () => {
       await screen.findByRole('heading', { name: 'Esperando tu pago' });
       await svc.simulatePayment('mock-1'); // el pago entra por fuera de la pantalla
       await userEvent.click(screen.getByRole('button', { name: 'Ya pagué · actualizar estado' }));
+      expect(await screen.findByRole('heading', { name: '¡Turno confirmado!' })).toBeInTheDocument();
+    });
+
+    // Bug real reportado en produccion: el redirect de MP vuelve casi al
+    // toque, pero el webhook que confirma el pago es async y puede tardar
+    // unos segundos mas. Sin auto-poll, la clienta quedaba viendo "Esperando
+    // tu pago" para siempre a menos que tocara "Ya pagué" a mano — aunque el
+    // pago ya estuviera aprobado y el turno confirmado del otro lado.
+    it('se auto-actualiza sola sin que la clienta toque nada, si el pago se aprueba mientras espera', async () => {
+      montar();
+      await screen.findByRole('heading', { name: 'Esperando tu pago' });
+      await svc.simulatePayment('mock-1'); // se aprueba "del otro lado" via webhook
       expect(await screen.findByRole('heading', { name: '¡Turno confirmado!' })).toBeInTheDocument();
     });
 
