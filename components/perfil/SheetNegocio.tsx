@@ -274,6 +274,14 @@ export function SheetNegocio({
         <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
       )}
 
+      {/* Fuera del "whatsappPideSena &&" de abajo a proposito: el guard de
+          Mercado Pago (reserva online) puede rechazar sena_monto aunque este
+          toggle este apagado — sin esto, ese 422 se guardaba en erroresNegocio
+          pero nunca se veia en pantalla. */}
+      {textoError('sena_monto') && (
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{textoError('sena_monto')}</p>
+      )}
+
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
@@ -300,9 +308,6 @@ export function SheetNegocio({
 
       {whatsappPideSena && (
         <div style={{ marginBottom: 16 }}>
-          {textoError('sena_monto') && (
-            <p style={{ fontSize: 12, color: colors.danger, margin: '0 0 12px', lineHeight: 1.4 }}>{textoError('sena_monto')}</p>
-          )}
           {textoError('direccion') && (
             <p style={{ fontSize: 12, color: colors.danger, margin: '0 0 12px', lineHeight: 1.4 }}>{textoError('direccion')}</p>
           )}

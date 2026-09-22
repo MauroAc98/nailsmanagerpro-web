@@ -178,6 +178,15 @@ describe('SheetNegocio — seña OFF still saves', () => {
     save();
     expect(props.onGuardar).toHaveBeenCalledTimes(1);
   });
+
+  // Bug real: el guard de Mercado Pago (reserva online) puede rechazar
+  // sena_monto aunque este toggle este apagado — antes, ese 422 quedaba en
+  // erroresServidor pero el parrafo de error vivia adentro del bloque
+  // "whatsappPideSena &&", asi que nunca se veia en pantalla.
+  it('surfaces a sena_monto server error even with the WhatsApp toggle OFF', () => {
+    setup({ whatsappPideSena: false, erroresServidor: { sena_monto: 'No podés vaciar la seña: tenés Mercado Pago conectado.' } });
+    expect(screen.getByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
+  });
 });
 
 // Missing location (decision #691): blocks all three automation toggles the
