@@ -16,6 +16,7 @@ import { useCarga, useGuardaPaso, useHold, type Ir } from './hooks';
 import { HoldVencido } from './HoldVencido';
 import { IcoBrillo, IcoCalendario, IcoCandado, IcoPin, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
+import { RedirigiendoAMercadoPago } from './RedirigiendoAMercadoPago';
 import { BarraInferior, BotonPrimario, HoldPill, Hueso, Mensaje, PasoHeader, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
@@ -119,6 +120,13 @@ export function ResumenScreen({
   }, `${slug}|${servicioIds.join(',')}`);
 
   if (!listo) return null;
+  // Reemplaza TODA la pantalla (header, boton volver, barra inferior
+  // incluidos) desde que se toca "Pagar" hasta que el navegador efectivamente
+  // sale hacia Mercado Pago: sin esto el unico cambio visible era el texto
+  // del boton, la pantalla se sentia "congelada" y el boton volver seguia
+  // tocable, dejando reprogramar/perder el hold a mitad de una navegacion ya
+  // en curso.
+  if (enviando) return <RedirigiendoAMercadoPago />;
   if (noDisponible) return <NoDisponibleAun />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
@@ -224,14 +232,11 @@ export function ResumenScreen({
           <IcoCandado color={colors.muted} size={14} />
           {t('resumen.pagoSeguro')}
         </div>
-        <BotonPrimario fondo={AZUL_MP} disabled={enviando} onClick={pagar}>
-          {enviando ? (
-            t('resumen.pagando')
-          ) : (
-            <>
-              {t('resumen.pagar')} <span style={{ fontWeight: 800 }}>Mercado Pago</span>
-            </>
-          )}
+        {/* enviando ya no se refleja aca: mientras es true, el early return
+            de arriba reemplaza toda la pantalla por RedirigiendoAMercadoPago
+            (este boton nunca llega a pintarse en ese estado). */}
+        <BotonPrimario fondo={AZUL_MP} onClick={pagar}>
+          {t('resumen.pagar')} <span style={{ fontWeight: 800 }}>Mercado Pago</span>
         </BotonPrimario>
       </BarraInferior>
     </div>

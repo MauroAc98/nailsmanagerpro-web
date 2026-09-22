@@ -228,6 +228,24 @@ describe('ResumenScreen', () => {
       expect(ir).not.toHaveBeenCalledWith(expect.stringContaining('/reserva/'));
     });
 
+    // Bug real: la unica pista de que algo pasaba era el texto del boton —
+    // se sentia "congelado" y el boton volver seguia tocable durante el
+    // hueco hasta que el navegador efectivamente salia hacia MP.
+    it('mientras redirige a MP real, reemplaza toda la pantalla y saca el boton volver', async () => {
+      stubLocation();
+      setServiceParaTests({
+        ...svc,
+        iniciarPago: async (slug, reservaId) => ({
+          ...(await svc.iniciarPago(slug, reservaId)),
+          checkoutUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PREF-1',
+        }),
+      });
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+      expect(await screen.findByRole('heading', { name: 'Te llevamos a Mercado Pago' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Volver' })).toBeNull();
+    });
+
     // Defensivo: un checkoutUrl que no es ni un path interno ni https (no
     // deberia pasar nunca con el backend real) no redirige a ciegas.
     it('con un checkoutUrl que no es interno ni https, muestra error generico y no redirige', async () => {

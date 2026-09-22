@@ -68,6 +68,8 @@
     "senaDetalle": "Es parte del valor final. El resto se define en el negocio según tu diseño y se abona ahí.",
     "pagar": "Pagar seña con",
     "pagando": "Creando tu reserva…",
+    "redirigiendoTitulo": "Te llevamos a Mercado Pago",
+    "redirigiendoDetalle": "No cierres esta pantalla ni vuelvas atrás — en un segundo se abre el pago.",
     "pagoSeguro": "Pago seguro. Te llevamos a Mercado Pago.",
     "conProfesional": "Con {profesional}",
     "duracion": "Duración {duracion}",
