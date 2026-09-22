@@ -81,6 +81,34 @@ describe('EstadoReservaScreen', () => {
       expect(enlace).toHaveAttribute('href', expect.stringContaining('/reservar/demo/reserva/mock-1'));
     });
 
+    it('con un checkoutUrl de un link real de Mercado Pago, tambien lo muestra', async () => {
+      setServiceParaTests({
+        ...svc,
+        getReservationStatus: async (slug, id) => ({
+          ...(await svc.getReservationStatus(slug, id)),
+          checkoutUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PREF-1',
+        }),
+      });
+      montar();
+      const enlace = await screen.findByRole('link', { name: 'Volver a Mercado Pago' });
+      expect(enlace).toHaveAttribute('href', 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PREF-1');
+    });
+
+    // Defensivo: si algo raro llegara en checkoutUrl (nunca deberia pasar
+    // con el backend real), no se renderiza un href sin validar.
+    it('con un checkoutUrl invalido, no muestra el boton "Volver a Mercado Pago"', async () => {
+      setServiceParaTests({
+        ...svc,
+        getReservationStatus: async (slug, id) => ({
+          ...(await svc.getReservationStatus(slug, id)),
+          checkoutUrl: 'javascript:alert(1)',
+        }),
+      });
+      montar();
+      await screen.findByRole('heading', { name: 'Esperando tu pago' });
+      expect(screen.queryByRole('link', { name: 'Volver a Mercado Pago' })).toBeNull();
+    });
+
     it('"Ya pagué · actualizar estado" vuelve a pedir el estado y pasa a confirmado si ya se acredito', async () => {
       montar();
       await screen.findByRole('heading', { name: 'Esperando tu pago' });

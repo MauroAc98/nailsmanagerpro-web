@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import type { ReservaOnlineService } from '@/lib/reservaOnline';
 import { linkComoLlegar, linkGoogleCalendar } from '@/lib/reservaOnline/calendario';
+import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
 import { formatearRestante } from '@/lib/reservaOnline/cuentaRegresiva';
 import { diaLargoCorto, fechaLarga } from '@/lib/reservaOnline/formatoFecha';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
@@ -313,7 +314,7 @@ export function EstadoReservaScreen({
         </div>
       )}
       <BarraInferior>
-        {estado.checkoutUrl && (
+        {estado.checkoutUrl && esCheckoutUrlValida(estado.checkoutUrl) && (
           <a
             href={estado.checkoutUrl}
             style={{

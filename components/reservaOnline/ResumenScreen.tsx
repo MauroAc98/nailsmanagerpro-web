@@ -2,7 +2,9 @@
 
 import { useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { getService } from '@/lib/reservaOnline';
+import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
 import { fechaLarga } from '@/lib/reservaOnline/formatoFecha';
 import { rutaPaso, rutaReserva } from '@/lib/reservaOnline/rutas';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
@@ -133,9 +135,22 @@ export function ResumenScreen({
     setLimiteIntentos(false);
     try {
       const pago = await getService().iniciarPago(slug, hold.reservaId);
-      // Con Mercado Pago real aca se redirigiria a pago.checkoutUrl; el mock
-      // devuelve directamente la pagina de estado de la reserva.
-      ir(rutaReserva(slug, pago.id));
+      if (esRedirectSeguro(pago.checkoutUrl)) {
+        // Adapter mock (slug demo): checkoutUrl es un path interno propio,
+        // la pagina de estado ya simula el pago — se sigue navegando adentro
+        // de la SPA, sin salir del origen.
+        ir(rutaReserva(slug, pago.id));
+      } else if (esCheckoutUrlValida(pago.checkoutUrl)) {
+        // Mercado Pago real: checkoutUrl es el link de pago de MP, en otro
+        // origen — ir() (router de Next) no puede navegar ahi, hace falta
+        // una navegacion de navegador de verdad.
+        window.location.href = pago.checkoutUrl;
+      } else {
+        // Nunca deberia pasar (el backend solo devuelve un path interno o un
+        // https:// de MP) — no redirigir a algo sin verificar.
+        setErrorPago(true);
+        setEnviando(false);
+      }
     } catch (e) {
       if (e instanceof ReservaOnlineError && e.code === 'hold_expired') setHoldPerdido(true);
       else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') setNoDisponible(true);

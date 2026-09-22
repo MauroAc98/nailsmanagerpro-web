@@ -10,6 +10,21 @@ import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
 
 const MIN = 60_000;
 
+// window.location.href real (no la version jsdom, que no navega y ademas
+// haria que el resto de los tests de este archivo, corridos despues, ya
+// estuvieran en esa URL) — mismo patron que app/providers.test.tsx.
+const ORIGINAL_LOCATION = window.location;
+function stubLocation() {
+  Object.defineProperty(window, 'location', {
+    value: { ...ORIGINAL_LOCATION, href: ORIGINAL_LOCATION.href },
+    writable: true,
+    configurable: true,
+  });
+}
+function restoreLocation() {
+  Object.defineProperty(window, 'location', { value: ORIGINAL_LOCATION, writable: true, configurable: true });
+}
+
 describe('ResumenScreen', () => {
   let reloj = AHORA;
   let svc: MockReservaOnlineService;
@@ -19,7 +34,10 @@ describe('ResumenScreen', () => {
     limpiarFlujo();
     await flujoHasta('resumen', svc);
   });
-  afterEach(() => setServiceParaTests(null));
+  afterEach(() => {
+    setServiceParaTests(null);
+    restoreLocation();
+  });
 
   it('con datos personales incompletos redirige a datos (guard)', async () => {
     useReservaOnlineStore.getState().setCliente({ whatsapp: '1155' });
@@ -159,5 +177,59 @@ describe('ResumenScreen', () => {
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.');
+  });
+
+  describe('redireccion al pagar', () => {
+    // El mock (slug demo) devuelve un path interno: sigue navegando adentro
+    // de la SPA, como siempre.
+    it('con un checkoutUrl interno (mock), navega con ir() y no toca window.location', async () => {
+      stubLocation();
+      const ir = vi.fn();
+      const hrefOriginal = window.location.href;
+      renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+      await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+      await waitFor(() => expect(ir).toHaveBeenCalledWith(expect.stringMatching(/^\/reservar\/demo\/reserva\//)));
+      expect(window.location.href).toBe(hrefOriginal);
+    });
+
+    // Con Mercado Pago real, checkoutUrl es un link externo de verdad: hay
+    // que salir de la SPA (ir() no puede navegar a otro origen).
+    it('con un checkoutUrl externo (Mercado Pago real), redirige de verdad y no navega dentro de la SPA', async () => {
+      stubLocation();
+      setServiceParaTests({
+        ...svc,
+        iniciarPago: async (slug, reservaId) => ({
+          ...(await svc.iniciarPago(slug, reservaId)),
+          checkoutUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PREF-1',
+        }),
+      });
+      const ir = vi.fn();
+      renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+      await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+      await waitFor(() =>
+        expect(window.location.href).toBe('https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=PREF-1'),
+      );
+      expect(ir).not.toHaveBeenCalledWith(expect.stringContaining('/reserva/'));
+    });
+
+    // Defensivo: un checkoutUrl que no es ni un path interno ni https (no
+    // deberia pasar nunca con el backend real) no redirige a ciegas.
+    it('con un checkoutUrl que no es interno ni https, muestra error generico y no redirige', async () => {
+      stubLocation();
+      const hrefOriginal = window.location.href;
+      setServiceParaTests({
+        ...svc,
+        iniciarPago: async (slug, reservaId) => ({
+          ...(await svc.iniciarPago(slug, reservaId)),
+          checkoutUrl: 'javascript:alert(1)',
+        }),
+      });
+      const ir = vi.fn();
+      renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+      await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos completar la operación. Probá de nuevo.');
+      expect(window.location.href).toBe(hrefOriginal);
+      expect(ir).not.toHaveBeenCalledWith(expect.stringContaining('/reserva/'));
+    });
   });
 });
