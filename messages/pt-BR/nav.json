@@ -2,8 +2,8 @@
   "AppLayout": {
     "agenda": "Agenda",
     "clientes": "Clientes",
-    "config": "Config",
-    "perfil": "Perfil",
+    "config": "Ajustes",
+    "perfil": "Negócio",
     "pendingCobroAriaLabel": "Agendamentos pendentes de cobrança"
   }
 }

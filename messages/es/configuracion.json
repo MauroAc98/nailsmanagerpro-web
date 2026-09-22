@@ -1,6 +1,7 @@
 {
   "ConfiguracionPage": {
-    "title": "Configuración",
+    "title": "Preparar mi agenda",
+    "subtitle": "Todo lo que necesitás cargado antes de poder agendar un turno.",
     "group_negocio": "Gestión",
     "group_cuenta": "Cuenta",
     "group_soporte": "Soporte",

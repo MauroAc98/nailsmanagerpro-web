@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AppRouterContext, type AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { renderWithProviders, screen } from '@/test/render';
 import userEvent from '@testing-library/user-event';
@@ -14,21 +14,34 @@ function conRouter(push: (ruta: string) => void) {
   );
 }
 
-describe('Configuracion: fila "Reservas online"', () => {
-  afterEach(() => vi.unstubAllEnvs());
-
-  it('con la flag apagada la fila no aparece', () => {
-    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'false');
+// Reducida a su propósito original ("todo lo necesario para agendar un
+// turno"): Reservas online, Seña y pagos, Gastos/Ingresos/Estadísticas,
+// Apariencia/Idioma y Ayuda se mudaron a /perfil ("Mi negocio") — ver
+// pattern-flex-minwidth-long-names / rediseño de Perfil.
+describe('ConfiguracionPage — reducida a "preparar mi agenda"', () => {
+  it('muestra solo Servicios, Horarios, Profesionales y Bloqueos', () => {
     conRouter(() => {});
-    expect(screen.queryByRole('button', { name: 'Reservas online' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Servicios' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Horarios Disponibles' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Profesionales' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bloqueos' })).toBeInTheDocument();
   });
 
-  it('con la flag prendida aparece y navega a la pantalla de ajustes', async () => {
-    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+  it('ya no muestra lo que se mudó a Mi negocio', () => {
+    conRouter(() => {});
+    expect(screen.queryByRole('button', { name: 'Reservas online' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Gastos' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ingresos' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Estadísticas' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Apariencia' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Idioma' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ayuda' })).toBeNull();
+  });
+
+  it('navega a la ruta correspondiente al tocar una fila', async () => {
     const push = vi.fn();
     conRouter(push);
-    await userEvent.click(screen.getByRole('button', { name: 'Reservas online' }));
-    expect(push).toHaveBeenCalledWith('/configuracion/reservas-online');
+    await userEvent.click(screen.getByRole('button', { name: 'Servicios' }));
+    expect(push).toHaveBeenCalledWith('/configuracion/servicios');
   });
 });
