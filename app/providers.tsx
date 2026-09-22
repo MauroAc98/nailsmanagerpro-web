@@ -274,8 +274,13 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
           `unauthenticated` / `subscription-blocked` y el welcome NUNCA se
           pinta encima del redirect a /login o /subscription-expired (bug
           #15 del flujo de auth). El flag ya se prende recién post-chequeo
-          en useAuthStore, este gate es el cinturón. */}
-      {mostrarBienvenida && authStatus === 'authenticated' && <WelcomeScreen />}
+          en useAuthStore, este gate es el cinturón.
+          Bug real de prod: si el dueño del salon esta logueado en su propia
+          cuenta en el MISMO navegador mientras prueba reservar.turnetto.com
+          (u observa admin.turnetto.com), este componente vive fuera de
+          `puedeMostrarContenido` y no heredaba su exclusion de host — el
+          splash le tapaba el flujo publico/admin solo, sin tocar nada. */}
+      {mostrarBienvenida && authStatus === 'authenticated' && !isAdmin && !isReservaPublica && <WelcomeScreen />}
       <ConfirmSheetHost />
       <SessionEndedModal />
       <MotivoCancelacionSheetHost />

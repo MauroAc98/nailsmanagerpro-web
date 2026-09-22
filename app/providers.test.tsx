@@ -116,6 +116,35 @@ describe('Providers — boot gate', () => {
     expect(sessionStorage.getItem('bienvenida_mostrada')).toBe('1');
   });
 
+  // Bug real reportado en produccion: el dueño del salon estaba logueado en
+  // su propia cuenta (authStatus 'authenticated') en el mismo navegador
+  // mientras probaba reservar.turnetto.com/testeo-dev — el WelcomeScreen
+  // ("Buenos dias, {nombre}") le tapo la pantalla del flujo publico de
+  // reserva online sola, sin tocar nada. `puedeMostrarContenido` ya excluye
+  // reserva publica/admin del gate de auth, pero el render de WelcomeScreen
+  // vivia en un `&&` aparte que nunca chequeaba el host.
+  it('en reservar.turnetto.com nunca pinta el WelcomeScreen encima del flujo publico, aunque el dueño este logueado', async () => {
+    setHostname('reservar.turnetto.com');
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+
+    setMockLocation('/testeo-dev');
+    render(<Providers><div>FLUJO PUBLICO</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('FLUJO PUBLICO')).toBeInTheDocument();
+    await waitFor(() => expect(useAuthStore.getState().mostrarBienvenida).toBe(true));
+    expect(screen.queryByTestId('welcome-screen')).toBeNull();
+  });
+
   it('capturing the blocked-from route: expired user on a deep protected route -> subscriptionBlockedOrigin set before the redirect', async () => {
     localStorage.setItem('auth_token', 'tok');
     mockedGet.mockImplementation((url: string) => {
