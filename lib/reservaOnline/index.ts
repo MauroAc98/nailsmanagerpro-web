@@ -40,6 +40,7 @@ export function componerServicio(
   return {
     ...mock,
     getSalon: (slug) => (reales && !esMock(slug) ? reales : mock).getSalon(slug),
+    getTerms: (slug) => (reales && !esMock(slug) ? reales : mock).getTerms(slug),
     getServices: (slug, q) => (reales && !esMock(slug) ? reales : mock).getServices(slug, q),
     getAvailability: (slug, q) => (reales && !esMock(slug) ? reales : mock).getAvailability(slug, q),
     getDiasConDisponibilidad: (slug, q) =>

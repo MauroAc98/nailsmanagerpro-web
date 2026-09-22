@@ -21,6 +21,12 @@ const SALON = {
   profesionales: [{ id: 3, nombre: 'Ana', avatar_url: 'https://cdn.test/ana.png' }],
   pago_habilitado: true,
 };
+const TERMINOS = {
+  deposito: 10000,
+  ventana_pago_minutos: 15,
+  anticipacion_minutos: 120,
+  ventana_cancelacion_horas: 24,
+};
 const SERVICIOS = [
   {
     id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000,
@@ -36,6 +42,7 @@ export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
     const [, , slug, recurso, sub] = (config.url ?? '').split('/');
     if (slug !== 'ana') return respuesta(config, 404, { message: 'No encontrado' });
     if (recurso === 'info') return respuesta(config, 200, SALON);
+    if (recurso === 'terminos') return respuesta(config, 200, TERMINOS);
     if (recurso === 'servicios') return respuesta(config, 200, SERVICIOS);
     if (recurso === 'disponibilidad' && sub === 'dias') {
       const p = config.params as { desde: string; hasta: string; servicio_ids?: number[] };
@@ -92,6 +99,12 @@ describe('real: mapeo', () => {
       precio: 12000,
       categoria: { id: 2, nombre: 'Manicura' },
       fotos: ['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg'],
+    });
+    expect(await r.getTerms('ana')).toEqual({
+      deposito: 10000,
+      ventanaPagoMinutos: 15,
+      anticipacionMinutos: 120,
+      ventanaCancelacionHoras: 24,
     });
     const d = await r.getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
     expect(d.duracionTotalMinutos).toBe(90);

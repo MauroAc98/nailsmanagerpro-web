@@ -13,16 +13,22 @@ describe('composicion del servicio', () => {
     expect((await svc.getSalon('demo')).nombre).toBe('Studio Demo');
   });
 
-  it('con lecturas reales, getSalon/getServices/getAvailability las usan y el resto sigue en mock', async () => {
+  it('con lecturas reales, getSalon/getTerms/getServices/getAvailability las usan y el resto sigue en mock', async () => {
     const mock = createMockService({ storage: memoriaStorage() });
     const reales: ReservaOnlineReads = {
       getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [], pagoHabilitado: true }),
+      getTerms: async () => ({ deposito: 10000, ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24 }),
       getServices: async () => [],
       getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
       getDiasConDisponibilidad: async () => null,
     };
     const svc = componerServicio(mock, reales);
     expect((await svc.getSalon('ana')).nombre).toBe('Real');
+    // Bug real en produccion: getTerms vivia en ReservaOnlineWrites y
+    // componerServicio nunca lo reasignaba — un negocio real veia el
+    // deposito/ventanas MOCKEADOS ($5000) en vez de los suyos propios
+    // ($10000), aunque el backend ya tuviera /terminos funcionando.
+    expect((await svc.getTerms('ana')).deposito).toBe(10000);
     expect((await svc.getSettings()).habilitada).toBe(false); // mock
   });
 
@@ -40,6 +46,7 @@ describe('composicion del servicio', () => {
     const mock = createMockService({ storage: memoriaStorage() });
     const reales: ReservaOnlineReads = {
       getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [], pagoHabilitado: true }),
+      getTerms: async () => ({ deposito: 5000, ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24 }),
       getServices: async () => [],
       getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
       getDiasConDisponibilidad: async () => null,
@@ -53,6 +60,7 @@ describe('composicion del servicio', () => {
     const mock = createMockService({ storage: memoriaStorage() });
     const reales: ReservaOnlineReads = {
       getSalon: async () => ({ nombre: 'Real', logoUrl: null, direccion: null, profesionales: [], pagoHabilitado: true }),
+      getTerms: async () => ({ deposito: 5000, ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24 }),
       getServices: async () => [],
       getAvailability: async () => ({ fecha: '2026-09-25', duracionTotalMinutos: 0, slots: [] }),
       getDiasConDisponibilidad: async () => null,

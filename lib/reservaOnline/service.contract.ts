@@ -34,6 +34,14 @@ export function describeReadsContract(
       }
     });
 
+    it('getTerms devuelve la forma ReservationTerms', async () => {
+      const terminos = await crear().getTerms(esc.slug);
+      expect(typeof terminos.deposito).toBe('number');
+      expect(typeof terminos.ventanaPagoMinutos).toBe('number');
+      expect(typeof terminos.anticipacionMinutos).toBe('number');
+      expect(typeof terminos.ventanaCancelacionHoras).toBe('number');
+    });
+
     it('getSalon de un slug inexistente falla con not_found', async () => {
       await expect(crear().getSalon(esc.slugInexistente)).rejects.toMatchObject({
         name: ReservaOnlineError.name,

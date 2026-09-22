@@ -25,6 +25,12 @@ export interface ReservaOnlineReads {
   // Fechas con horarios libres; `null` = no se pudo saber (el real ante un error
   // de red/servidor) y la UI no dibuja puntos y cae a buscar dia por dia.
   getDiasConDisponibilidad(slug: string, query: DiasQuery): Promise<Fecha[] | null>;
+  // GET /api/public/{slug}/terminos — antes vivia en ReservaOnlineWrites y
+  // quedaba SIEMPRE en el mock (componerServicio nunca lo reasignaba): un
+  // negocio real veia el deposito/ventanas mockeados (ej. $5000) en vez del
+  // suyo propio, aunque el backend ya tuviera el endpoint real. Es una
+  // lectura publica sin efectos secundarios, por eso va aca.
+  getTerms(slug: string): Promise<ReservationTerms>;
 }
 
 // Escrituras y lado del salon: mock hasta los slices siguientes. Cada slice
@@ -39,7 +45,6 @@ export interface ReservaOnlineReads {
 // CRUD autenticado de servicios (mismo patron que
 // profesionalService.subirFotoHistoriaPrecios).
 export interface ReservaOnlineWrites {
-  getTerms(slug: string): Promise<ReservationTerms>;
   // Flujo de escritura: el horario se RETIENE al elegirlo (antes de pedir datos)
   // para que la clienta no descubra al pagar que se lo ocuparon. slot_taken se
   // levanta en retenerHorario; hold_expired si el hold ya vencio.

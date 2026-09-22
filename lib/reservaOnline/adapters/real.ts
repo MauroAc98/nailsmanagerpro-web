@@ -1,6 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type { ReservaOnlineReads } from '../service';
-import type { Availability, BookableService, Fecha, SalonInfo } from '../types';
+import type { Availability, BookableService, Fecha, ReservationTerms, SalonInfo } from '../types';
 import { traducirErrorHttp } from './errores';
 
 // Adapter real de las 3 lecturas publicas (/api/public/{slug}), tarea 2.8.
@@ -34,6 +34,13 @@ interface DiasDto {
   dias: { fecha: string; libres: number }[];
 }
 
+interface TerminosDto {
+  deposito: number;
+  ventana_pago_minutos: number;
+  anticipacion_minutos: number;
+  ventana_cancelacion_horas: number;
+}
+
 // El backend acepta rangos de hasta 45 dias por pedido.
 const MAX_DIAS_POR_PEDIDO = 45;
 
@@ -60,6 +67,13 @@ const aDisponibilidad = (d: DisponibilidadDto): Availability => ({
   slots: d.slots.map((s) => ({ hora: s.hora, profesionalIds: s.profesional_ids })),
 });
 
+const aTerminos = (d: TerminosDto): ReservationTerms => ({
+  deposito: d.deposito,
+  ventanaPagoMinutos: d.ventana_pago_minutos,
+  anticipacionMinutos: d.anticipacion_minutos,
+  ventanaCancelacionHoras: d.ventana_cancelacion_horas,
+});
+
 // Cantidad de dias de `desde` a `hasta` inclusive (fechas de pared, sin zona).
 const diasEntre = (desde: Fecha, hasta: Fecha): number =>
   Math.round((Date.parse(hasta) - Date.parse(desde)) / 86_400_000) + 1;
@@ -77,6 +91,9 @@ export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
   return {
     async getSalon(slug) {
       return aSalon(await pedir(() => http.get<SalonDto>(`${base(slug)}/info`)));
+    },
+    async getTerms(slug) {
+      return aTerminos(await pedir(() => http.get<TerminosDto>(`${base(slug)}/terminos`)));
     },
     async getServices(slug, query) {
       const params = query?.profesionalId ? { profesional_id: query.profesionalId } : undefined;
