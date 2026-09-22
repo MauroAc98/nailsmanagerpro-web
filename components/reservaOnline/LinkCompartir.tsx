@@ -26,7 +26,7 @@ const boton = {
 
 // Link para compartir: copiar, enviar por WhatsApp o ver como QR (el QR se
 // genera perezosamente, solo mientras QrLinkModal esta abierto).
-// `habilitado` = reservas activas Y Mercado Pago conectado (decision S12).
+// `habilitado` = reservas online activas (toggle de ReservasOnlineSettings).
 export function LinkCompartir({ url, habilitado }: { url: string; habilitado: boolean }) {
   const t = useTranslations('reservaOnline.settings');
   const [copiado, setCopiado] = useState(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { linkReserva } from '@/lib/reservaOnline/linkPublico';
@@ -8,72 +8,11 @@ import type { ReservaOnlineSettings as Ajustes } from '@/lib/reservaOnline/types
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useCarga } from './hooks';
 import { LinkCompartir } from './LinkCompartir';
-import { MpConnectionCard } from './MpConnectionCard';
 import { Hueso, Mensaje, Tarjeta } from './ui';
 
-// Fila numerica editable: guarda al salir del campo; vacio/0/no numerico se
-// descarta y vuelve al valor guardado. `key={valor}` en el uso remonta la fila
-// cuando el valor persistido cambia (sin efecto de sincronizacion).
-function FilaAjuste({
-  id,
-  etiqueta,
-  valor,
-  sufijo,
-  onGuardar,
-}: {
-  id: string;
-  etiqueta: string;
-  valor: number;
-  sufijo: string;
-  onGuardar: (n: number) => void;
-}) {
-  const [borrador, setBorrador] = useState(String(valor));
-  const confirmar = () => {
-    const n = Number(borrador);
-    if (!Number.isFinite(n) || n <= 0) {
-      setBorrador(String(valor));
-      return;
-    }
-    if (n !== valor) onGuardar(n);
-  };
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', gap: 12 }}>
-      <label htmlFor={id} style={{ fontSize: 14, color: colors.text }}>{etiqueta}</label>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: colors.strong }}>
-        <input
-          id={id}
-          type="number"
-          inputMode="numeric"
-          min={1}
-          value={borrador}
-          onChange={(e) => setBorrador(e.target.value)}
-          onBlur={confirmar}
-          style={{
-            width: 72, height: 36, textAlign: 'right', borderRadius: 8, padding: '0 8px',
-            border: `1px solid ${colors.border}`, background: colors.surface, color: colors.strong, fontSize: 14, fontWeight: 700,
-          }}
-        />
-        <span style={{ fontSize: 13, fontWeight: 400, color: colors.sub, minWidth: 28 }}>{sufijo}</span>
-      </span>
-    </div>
-  );
-}
-
-// Fila de ajuste con huesos, misma forma que `FilaAjuste` (etiqueta + valor).
-function FilaAjusteHueso() {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
-      <Hueso w={140} h={14} />
-      <Hueso w={72} h={22} />
-    </div>
-  );
-}
-
-// Forma del layout real (tarjeta de switch, link para compartir, tarjeta de
-// Mercado Pago y tarjeta de ajustes numericos), para que no salte nada al
-// llegar los datos.
+// Forma del layout real (tarjeta de switch + link para compartir), para que
+// no salte nada al llegar los datos.
 function ReservasOnlineSettingsSkeleton() {
-  const separador = { height: 1, background: colors.border, margin: '6px 0' };
   return (
     <div data-testid="reservas-online-settings-skeleton" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Tarjeta estilo={{ padding: '14px 16px' }}>
@@ -88,61 +27,40 @@ function ReservasOnlineSettingsSkeleton() {
       <Tarjeta estilo={{ padding: '14px 16px' }}>
         <Hueso w="80%" h={15} />
       </Tarjeta>
-      <Tarjeta estilo={{ padding: '14px 16px' }}>
-        <Hueso w="60%" h={15} />
-      </Tarjeta>
-      <Tarjeta estilo={{ padding: '14px 16px' }}>
-        <FilaAjusteHueso />
-        <div style={separador} />
-        <FilaAjusteHueso />
-        <div style={separador} />
-        <FilaAjusteHueso />
-        <div style={separador} />
-        <FilaAjusteHueso />
-      </Tarjeta>
     </div>
   );
 }
 
-// Cuerpo de Configuracion > Reservas online (mockup ConfigReservas). Todo
-// contra el mock de settings/MP del servicio (slice 1). `slug` es el del salon.
+// Cuerpo de Configuracion > Reservas online. `slug` es el del salon.
+//
+// La tarjeta de conexion con Mercado Pago (OAuth) y la de ajustes numericos
+// (sena, ventana de pago, antelacion, cancelacion) se sacaron de esta
+// pantalla: eran una maqueta de una fase anterior del diseno que nunca se
+// conecto a lo que terminamos construyendo (Fase 1: la cuenta de MP se
+// conecta a mano por el equipo de Turnetto, no por OAuth desde aca) y el
+// monto de "seña" de esa tarjeta era un campo mockeado, totalmente separado
+// del sena_monto real de Perfil — el negocio editaba un numero que despues
+// nunca se usaba para cobrar nada, lo que generaba confusion real.
 export function ReservasOnlineSettings({ slug }: { slug: string }) {
   const t = useTranslations('reservaOnline');
-  const { data, error, reintentar } = useCarga(async () => {
-    const svc = getService();
-    const [ajustes, mp] = await Promise.all([svc.getSettings(), svc.getMpConnection()]);
-    return { ajustes, mp };
-  }, 'settings');
-  const [avisoMp, setAvisoMp] = useState(false);
+  const router = useRouter();
+  const { data, error, reintentar } = useCarga(() => getService().getSettings(), 'settings');
 
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
   if (!data) return <ReservasOnlineSettingsSkeleton />;
 
-  const { ajustes, mp } = data;
+  const ajustes = data;
   const guardar = async (patch: Partial<Ajustes>) => {
     await getService().saveSettings(patch);
     reintentar();
   };
-  const alternar = () => {
-    if (!ajustes.habilitada && !mp.conectada) {
-      setAvisoMp(true);
-      return;
-    }
-    setAvisoMp(false);
-    void guardar({ habilitada: !ajustes.habilitada });
-  };
-  const cambiarMp = async (accion: 'connectMp' | 'disconnectMp') => {
-    await getService()[accion]();
-    setAvisoMp(false);
-    reintentar();
-  };
+  const alternar = () => void guardar({ habilitada: !ajustes.habilitada });
 
   // Base configurable (ej. https://reservar.turnetto.com); sin ella, `${origin}/reservar` (dev).
   const url = linkReserva(slug, {
     base: process.env.NEXT_PUBLIC_RESERVA_BASE_URL,
     origin: window.location.origin,
   });
-  const separador = { height: 1, background: colors.border, margin: '6px 0' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -173,49 +91,22 @@ export function ReservasOnlineSettings({ slug }: { slug: string }) {
             />
           </button>
         </div>
-        {avisoMp && <Mensaje tono="error">{t('settings.necesitaMp')}</Mensaje>}
       </Tarjeta>
 
-      <LinkCompartir url={url} habilitado={ajustes.habilitada && mp.conectada} />
+      <LinkCompartir url={url} habilitado={ajustes.habilitada} />
 
-      <MpConnectionCard mp={mp} onConnect={() => cambiarMp('connectMp')} onDisconnect={() => cambiarMp('disconnectMp')} />
-
-      <Tarjeta estilo={{ padding: '14px 16px' }}>
-        <FilaAjuste
-          key={`d${ajustes.deposito}`}
-          id="ro-deposito"
-          etiqueta={t('settings.senia')}
-          valor={ajustes.deposito}
-          sufijo="$"
-          onGuardar={(n) => guardar({ deposito: n })}
-        />
-        <div style={separador} />
-        <FilaAjuste
-          key={`p${ajustes.ventanaPagoMinutos}`}
-          id="ro-pago"
-          etiqueta={t('settings.ventanaPago')}
-          valor={ajustes.ventanaPagoMinutos}
-          sufijo="min"
-          onGuardar={(n) => guardar({ ventanaPagoMinutos: n })}
-        />
-        <div style={separador} />
-        <FilaAjuste
-          key={`a${ajustes.anticipacionMinutos}`}
-          id="ro-antelacion"
-          etiqueta={t('settings.anticipacion')}
-          valor={ajustes.anticipacionMinutos / 60}
-          sufijo="h"
-          onGuardar={(h) => guardar({ anticipacionMinutos: Math.round(h * 60) })}
-        />
-        <div style={separador} />
-        <FilaAjuste
-          key={`c${ajustes.ventanaCancelacionHoras}`}
-          id="ro-cancelacion"
-          etiqueta={t('settings.cancelacion')}
-          valor={ajustes.ventanaCancelacionHoras}
-          sufijo="h"
-          onGuardar={(n) => guardar({ ventanaCancelacionHoras: n })}
-        />
+      <Tarjeta estilo={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ fontSize: 13, color: colors.sub, lineHeight: 1.4 }}>{t('settings.senaPerfilNota')}</div>
+        <button
+          type="button"
+          onClick={() => router.push('/perfil')}
+          style={{
+            flexShrink: 0, padding: '8px 14px', borderRadius: 10, border: `1px solid ${colors.border}`,
+            background: 'transparent', fontSize: 13, fontWeight: 600, color: colors.primaryDeep, cursor: 'pointer',
+          }}
+        >
+          {t('settings.irAPerfil')}
+        </button>
       </Tarjeta>
     </div>
   );

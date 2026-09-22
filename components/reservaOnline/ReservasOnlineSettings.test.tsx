@@ -6,18 +6,25 @@ import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock
 import { ReservasOnlineSettings } from './ReservasOnlineSettings';
 import { prepararServicio } from './testUtils';
 
+const push = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+
+// La tarjeta de Mercado Pago (OAuth) y la de ajustes numericos (sena, ventana
+// de pago, antelacion, cancelacion) se sacaron de esta pantalla: eran mock
+// puro, nunca conectado a nada real, y el monto de "seña" que se editaba ahi
+// era un campo separado del sena_monto real de Perfil — confundia al negocio,
+// que cambiaba un numero que despues no se usaba para cobrar nada.
 describe('ReservasOnlineSettings', () => {
   let svc: MockReservaOnlineService;
   beforeEach(() => {
     svc = prepararServicio();
+    push.mockClear();
   });
   afterEach(() => setServiceParaTests(null));
 
   const montar = () => renderWithProviders(<ReservasOnlineSettings slug="nails-by-natalie" />);
   const interruptor = () => screen.findByRole('switch', { name: 'Aceptar reservas online' });
 
-  // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto que
-  // respeta la forma real (tarjeta de switch + link + tarjeta de ajustes).
   it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
     montar();
     expect(screen.getByTestId('reservas-online-settings-skeleton')).toBeInTheDocument();
@@ -35,31 +42,39 @@ describe('ReservasOnlineSettings', () => {
     montar();
     expect(await interruptor()).toHaveAttribute('aria-checked', 'false');
     expect(screen.getByText('Inactivo')).toBeInTheDocument();
-    expect(screen.getByText(/El link se habilita cuando activás/)).toBeInTheDocument();
+    expect(screen.getByText('El link se habilita cuando activás las reservas online.')).toBeInTheDocument();
   });
 
-  it('no se puede activar sin Mercado Pago conectado', async () => {
+  it('activar el toggle no depende de Mercado Pago: persiste y habilita el link directo', async () => {
     montar();
-    await userEvent.click(await interruptor());
-    expect(screen.getByText('Conectá Mercado Pago para poder activarlas.')).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
-    expect((await svc.getSettings()).habilitada).toBe(false);
-  });
-
-  it('conectar Mercado Pago y activar persiste y habilita el link', async () => {
-    montar();
-    await userEvent.click(await screen.findByRole('button', { name: 'Conectar Mercado Pago' }));
-    expect(await screen.findByText('Conectada · cuenta-demo@turnetto.com')).toBeInTheDocument();
     await userEvent.click(await interruptor());
     await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
     expect((await svc.getSettings()).habilitada).toBe(true);
-    // se muestra sin protocolo (como el tablero); Copiar/Enviar usan el link completo
     expect(screen.getByText('localhost:3000/reservar/nails-by-natalie')).toBeInTheDocument();
+  });
+
+  it('no muestra ninguna tarjeta ni afordancia de Mercado Pago', async () => {
+    montar();
+    await interruptor();
+    expect(screen.queryByText(/Mercado Pago/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Conectar Mercado Pago' })).toBeNull();
+  });
+
+  it('no muestra los campos de seña/ventanas de la tarjeta vieja, y en cambio manda a Perfil', async () => {
+    montar();
+    await interruptor();
+    expect(screen.queryByLabelText('Seña')).toBeNull();
+    expect(screen.queryByLabelText('Tiempo para pagar')).toBeNull();
+    expect(screen.queryByLabelText('Reservar con antelación')).toBeNull();
+    expect(screen.queryByLabelText('Cancelación gratis hasta')).toBeNull();
+
+    expect(screen.getByText('El monto de la seña se configura en tu perfil.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a Perfil' }));
+    expect(push).toHaveBeenCalledWith('/perfil');
   });
 
   it('con NEXT_PUBLIC_RESERVA_BASE_URL el link es <base>/<slug> (ej. reservar.turnetto.com/natalia)', async () => {
     vi.stubEnv('NEXT_PUBLIC_RESERVA_BASE_URL', 'https://reservar.turnetto.com');
-    await svc.connectMp();
     await svc.saveSettings({ habilitada: true });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -71,7 +86,6 @@ describe('ReservasOnlineSettings', () => {
   });
 
   it('Enviar abre WhatsApp con el link en el mensaje', async () => {
-    await svc.connectMp();
     await svc.saveSettings({ habilitada: true });
     montar();
     const enviar = await screen.findByRole('link', { name: 'Enviar' });
@@ -83,7 +97,6 @@ describe('ReservasOnlineSettings', () => {
   });
 
   it('Copiar escribe el link en el portapapeles y confirma', async () => {
-    await svc.connectMp();
     await svc.saveSettings({ habilitada: true });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -93,48 +106,11 @@ describe('ReservasOnlineSettings', () => {
     expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
   });
 
-  it('desconectar Mercado Pago vuelve a bloquear el link', async () => {
-    await svc.connectMp();
+  it('desactivar el toggle vuelve a bloquear el link', async () => {
     await svc.saveSettings({ habilitada: true });
     montar();
-    await userEvent.click(await screen.findByRole('button', { name: 'Desconectar' }));
-    expect(await screen.findByText(/El link se habilita cuando activás/)).toBeInTheDocument();
-  });
-
-  it('editar la sena, el tiempo de pago y las ventanas persiste en el mock', async () => {
-    montar();
-    const sena = await screen.findByLabelText('Seña');
-    await userEvent.clear(sena);
-    await userEvent.type(sena, '7000');
-    await userEvent.tab();
-    const pago = screen.getByLabelText('Tiempo para pagar');
-    await userEvent.clear(pago);
-    await userEvent.type(pago, '20');
-    await userEvent.tab();
-    const antelacion = screen.getByLabelText('Reservar con antelación');
-    await userEvent.clear(antelacion);
-    await userEvent.type(antelacion, '3');
-    await userEvent.tab();
-    const cancelacion = screen.getByLabelText('Cancelación gratis hasta');
-    await userEvent.clear(cancelacion);
-    await userEvent.type(cancelacion, '48');
-    await userEvent.tab();
-    await waitFor(async () => {
-      const s = await svc.getSettings();
-      expect(s).toMatchObject({
-        deposito: 7000,
-        ventanaPagoMinutos: 20,
-        anticipacionMinutos: 180,
-        ventanaCancelacionHoras: 48,
-      });
-    });
-  });
-
-  it('un valor invalido (vacio o 0) no se guarda', async () => {
-    montar();
-    const sena = await screen.findByLabelText('Seña');
-    await userEvent.clear(sena);
-    await userEvent.tab();
-    expect((await svc.getSettings()).deposito).toBe(5000);
+    await userEvent.click(await interruptor());
+    await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false'));
+    expect(screen.getByText('El link se habilita cuando activás las reservas online.')).toBeInTheDocument();
   });
 });
