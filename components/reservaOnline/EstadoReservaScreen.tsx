@@ -2,7 +2,7 @@
 
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { getService } from '@/lib/reservaOnline';
+import { getService, SLUGS_MOCK } from '@/lib/reservaOnline';
 import type { ReservaOnlineService } from '@/lib/reservaOnline';
 import { linkComoLlegar, linkGoogleCalendar } from '@/lib/reservaOnline/calendario';
 import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
@@ -20,8 +20,13 @@ import { BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
 
-// El mock expone simulatePayment (solo desarrollo); cuando el pago sea real
-// el metodo desaparece de la composicion y la afordancia deja de mostrarse.
+// El mock expone simulatePayment (solo desarrollo) como propiedad EXTRA,
+// fuera de las interfaces ReservaOnlineReads/Writes. Bug real encontrado en
+// produccion: componerServicio() arma el servicio final con `{...mock, ...}`,
+// asi que esa propiedad se cuela para CUALQUIER slug, no solo 'demo' — una
+// clienta de un negocio real llegaba a ver el cartel de "Solo desarrollo" y
+// el boton de simular pago en su propia pantalla. Por eso, ademas de que el
+// metodo exista, se exige que el slug actual sea uno de los de SLUGS_MOCK.
 type ConSimulacion = ReservaOnlineService & { simulatePayment?: (id: string) => Promise<void> };
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
@@ -279,7 +284,7 @@ export function EstadoReservaScreen({
 
   // pending_payment
   const svc = getService() as ConSimulacion;
-  const simular = svc.simulatePayment;
+  const simular = SLUGS_MOCK.includes(slug) ? svc.simulatePayment : undefined;
   const totalMs = terminos.ventanaPagoMinutos * 60_000;
   return (
     <div>

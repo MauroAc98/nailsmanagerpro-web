@@ -123,6 +123,41 @@ describe('EstadoReservaScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Simular pago aprobado' }));
       expect(await screen.findByRole('heading', { name: '¡Turno confirmado!' })).toBeInTheDocument();
     });
+
+    // Bug real en produccion: componerServicio() arma el servicio compuesto
+    // con `{...mock, ...}` — como `simulatePayment` es una propiedad EXTRA
+    // del mock (fuera de las interfaces ReservaOnlineReads/Writes), ese
+    // spread la cuela en el objeto final para CUALQUIER slug, no solo
+    // 'demo'. Una clienta real de un negocio real llegaba a ver el cartel
+    // "Solo desarrollo" y un boton de "Simular pago aprobado" en su propia
+    // pantalla de pago.
+    it('con un slug real (no demo) NO muestra la afordancia de desarrollo, aunque el servicio compuesto exponga simulatePayment', async () => {
+      const conSimulacionFiltrada = {
+        getSalon: async () => ({
+          nombre: 'Nails by Ana', logoUrl: null, direccion: null,
+          profesionales: [{ id: 1, nombre: 'Ana', avatarUrl: null }], pagoHabilitado: true,
+        }),
+        getServices: async () => [{ id: 1, nombre: 'Esmaltado', duracionMinutos: 45, precio: 12000, fotos: [] }],
+        getTerms: async () => ({ deposito: 10000, ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24 }),
+        getReservationStatus: async () => ({
+          id: 'real-1',
+          status: 'pending_payment' as const,
+          expiresAtMs: ahora() + 15 * MIN,
+          checkoutUrl: 'https://www.mercadopago.com.ar/checkout/x',
+          summary: { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '13:00', deposito: 10000, duracionTotalMinutos: 45 },
+        }),
+        // Simula exactamente la fuga real: esta funcion NO deberia existir
+        // para un negocio real, pero el spread de componerServicio la deja pasar.
+        simulatePayment: vi.fn(),
+      };
+      setServiceParaTests(conSimulacionFiltrada as unknown as MockReservaOnlineService);
+
+      renderWithProviders(<EstadoReservaScreen slug="ana" id="real-1" ir={vi.fn()} ahora={ahora} cadaMs={20} />);
+
+      await screen.findByRole('heading', { name: 'Esperando tu pago' });
+      expect(screen.queryByText('Solo desarrollo')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Simular pago aprobado' })).toBeNull();
+    });
   });
 
   describe('turno confirmado (ticket)', () => {
