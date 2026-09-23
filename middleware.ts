@@ -54,7 +54,7 @@ const ADMIN_PAGES = new Set([
   '/negocios/nuevo',
   '/suscripciones',
   '/configuracion',
-  '/whatsapp',
+  '/mercadopago',
 ]);
 
 // pathname === '/admin' o pathname empieza con '/admin/' — NO
