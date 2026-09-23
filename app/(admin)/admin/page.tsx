@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, RefreshCw, Settings, MessageCircle } from 'lucide-react';
+import { Building2, RefreshCw, Settings, MessageCircle, Wallet } from 'lucide-react';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { colors, shadows } from '@/theme/colors';
 
@@ -112,6 +112,28 @@ export default function AdminHomePage() {
         <div>
           <p style={{ fontSize: 14, fontWeight: 600, color: colors.textStrong, margin: 0 }}>WhatsApp por salón</p>
           <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>Conectar el número propio de WhatsApp de cada salón</p>
+        </div>
+      </Link>
+
+      <Link
+        href="/mercadopago"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '16px 18px',
+          borderRadius: 16,
+          backgroundColor: colors.surface,
+          boxShadow: shadows.card,
+          border: `1px solid ${colors.border}`,
+          textDecoration: 'none',
+          maxWidth: 320,
+        }}
+      >
+        <Wallet size={20} color={colors.primaryDeep} strokeWidth={1.5} />
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: colors.textStrong, margin: 0 }}>Mercado Pago por negocio</p>
+          <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>Cargar el access_token de la cuenta de MP de cada negocio</p>
         </div>
       </Link>
 

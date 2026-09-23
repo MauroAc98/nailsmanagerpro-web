@@ -141,6 +141,40 @@ export interface WhatsappConexionConflicto {
 }
 
 // ─────────────────────────────────────────────
+// Mercado Pago — Fase 1: carga manual del access_token por negocio (sin
+// OAuth propio, a diferencia de WhatsApp Embedded Signup arriba). Ver
+// MercadoPagoAdminController en el backend.
+// ─────────────────────────────────────────────
+export interface MercadoPagoNegocioConexion {
+  user_id: number;
+  nombre: string;
+  slug: string;
+  // Cast decimal:2 del backend -> string ("5000.00"), null sin seña cargada.
+  sena_monto: string | null;
+  conectado: boolean;
+  mp_user_id: string | null;
+  webhook_url: string | null;
+}
+
+export interface MercadoPagoConexionesResponse {
+  // `salones` es el nombre real de la clave JSON del backend — no renombrar
+  // sin tocar también la API.
+  salones: MercadoPagoNegocioConexion[];
+}
+
+export interface ConectarMercadoPagoPayload {
+  user_id: number;
+  mp_access_token: string;
+  mp_user_id: string;
+}
+
+export interface MercadoPagoConexionCreada {
+  user_id: number;
+  mp_user_id: string;
+  webhook_url: string;
+}
+
+// ─────────────────────────────────────────────
 // Keys de localStorage — deliberadamente distintas de KEYS en
 // services/authService.ts (auth_token/auth_user), ver design admin-panel
 // decisión #7.
@@ -294,6 +328,18 @@ export const adminService = {
       payload,
       { timeout: 45000 },
     );
+    return response.data;
+  },
+
+  // Usado por app/(admin)/admin/mercadopago/page.tsx. Una fila por negocio,
+  // conectado o no.
+  obtenerConexionesMercadoPago: async (): Promise<MercadoPagoConexionesResponse> => {
+    const response = await adminApi.get<MercadoPagoConexionesResponse>('/admin/mercadopago/connections');
+    return response.data;
+  },
+
+  conectarMercadoPago: async (payload: ConectarMercadoPagoPayload): Promise<MercadoPagoConexionCreada> => {
+    const response = await adminApi.post<MercadoPagoConexionCreada>('/admin/mercadopago/connections', payload);
     return response.data;
   },
 
