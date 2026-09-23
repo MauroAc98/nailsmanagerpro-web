@@ -146,6 +146,23 @@ describe('DatosScreen', () => {
     );
   });
 
+  // Bug real: caia al error generico ("Ocurrió un error...") en vez del
+  // aviso especifico de limite de intentos que ya usan Horario y Resumen.
+  it('si se llega al limite de intentos (rate_limited) muestra el aviso especifico, no el generico', async () => {
+    setServiceParaTests({
+      ...svc,
+      actualizarDatosReserva: async () => {
+        throw new ReservaOnlineError('rate_limited', 'demasiados intentos', 209);
+      },
+    });
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.');
+  });
+
   it('si el kill switch del backend esta apagado (creation_disabled) muestra la pantalla completa de "no disponible"', async () => {
     setServiceParaTests({
       ...svc,

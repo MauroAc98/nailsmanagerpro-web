@@ -57,6 +57,7 @@ export function DatosScreen({
   const [enviando, setEnviando] = useState(false);
   const [holdPerdido, setHoldPerdido] = useState(false);
   const [errorGuardar, setErrorGuardar] = useState(false);
+  const [limiteIntentos, setLimiteIntentos] = useState(false);
   // Telefono con una reserva reciente sin pagar (minutos restantes) o
   // pendiente de verificar por WhatsApp (decision A4 del diseno).
   const [avisoTelefono, setAvisoTelefono] = useState<{ tipo: 'phone_cooldown'; minutos: number } | { tipo: 'verification_required' } | null>(null);
@@ -76,6 +77,7 @@ export function DatosScreen({
     if (!hold) return;
     setEnviando(true);
     setErrorGuardar(false);
+    setLimiteIntentos(false);
     setAvisoTelefono(null);
     try {
       await getService().actualizarDatosReserva(slug, hold.reservaId, {
@@ -90,6 +92,10 @@ export function DatosScreen({
         setAvisoTelefono({ tipo: 'phone_cooldown', minutos: Math.ceil((e.retryAfterSeconds ?? 0) / 60) });
       } else if (e instanceof ReservaOnlineError && e.code === 'verification_required') {
         setAvisoTelefono({ tipo: 'verification_required' });
+      } else if (e instanceof ReservaOnlineError && e.code === 'rate_limited') {
+        // Bug real: caia al error generico ("Ocurrio un error") en vez del
+        // aviso especifico que ya usan Horario/Resumen para el mismo codigo.
+        setLimiteIntentos(true);
       } else {
         setErrorGuardar(true);
       }
@@ -183,6 +189,7 @@ export function DatosScreen({
         <Mensaje tono="error">{t('errores.telefonoEnfriamiento', { minutos: avisoTelefono.minutos })}</Mensaje>
       )}
       {avisoTelefono?.tipo === 'verification_required' && <Mensaje tono="error">{t('errores.verificacionRequerida')}</Mensaje>}
+      {limiteIntentos && <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>}
       {errorGuardar && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       <BarraInferior>

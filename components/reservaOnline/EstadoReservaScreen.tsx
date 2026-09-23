@@ -160,6 +160,10 @@ export function EstadoReservaScreen({
     // El kill switch del backend (RESERVAS_CREACION_HABILITADA=false) tambien
     // corta la lectura del estado: a pantalla completa, nunca "no encontrada".
     if (error.code === 'creation_disabled') return <NoDisponibleAun />;
+    // Bug real: el polling automatico (o "Ya pague" tocado varias veces)
+    // podia gatillar el limite de reservas-estado, y caia al error generico
+    // en vez del aviso especifico que ya usan Horario/Resumen/Datos.
+    if (error.code === 'rate_limited') return <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>;
     return <Mensaje tono="error">{error.code === 'not_found' ? t('estado.noEncontrada') : t('errores.generico')}</Mensaje>;
   }
   if (!data || !estado) return <EstadoReservaSkeleton />;

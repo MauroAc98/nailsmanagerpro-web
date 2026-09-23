@@ -282,4 +282,18 @@ describe('EstadoReservaScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
     expect(screen.queryByText('No encontramos esta reserva.')).toBeNull();
   });
+
+  // Bug real: el polling automatico podia gatillar el limite de
+  // reservas-estado y caia al error generico en vez del aviso especifico
+  // que ya usan Horario/Resumen/Datos para el mismo codigo.
+  it('si se llega al limite de intentos (rate_limited) muestra el aviso especifico, no el generico', async () => {
+    setServiceParaTests({
+      ...svc,
+      getReservationStatus: async () => {
+        throw new ReservaOnlineError('rate_limited', 'demasiados intentos', 209);
+      },
+    });
+    montar();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.');
+  });
 });
