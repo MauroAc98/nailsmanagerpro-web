@@ -128,8 +128,9 @@ export default function ConfiguracionPage() {
               </label>
               <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>
                 Se le suma al monto de la seña en el checkout de reserva online para que, descontada la
-                comisión, el negocio reciba el monto completo. Cada negocio ve su propia comisión en
-                Mercado Pago, bajo &quot;Dinero disponible en&quot;.
+                comisión (con IVA incluido, se calcula solo), el negocio reciba el monto completo. Cargá
+                acá el número tal cual lo ves en tu cuenta de Mercado Pago, bajo &quot;Dinero disponible
+                en&quot; — sin sumarle nada vos.
               </p>
               <div
                 style={{
@@ -153,6 +154,18 @@ export default function ConfiguracionPage() {
                   style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 15, color: colors.text }}
                 />
               </div>
+              {(() => {
+                const base = Number(comisionMp.replace(',', '.'));
+                if (!Number.isFinite(base) || base <= 0) return null;
+                // 1.21 = IVA (21%) sobre la comisión de MP — MercadoPagoService::montoACobrar
+                // lo suma solo, esto es nomás para que se vea cuánto termina siendo en la práctica.
+                const conIva = base * 1.21;
+                return (
+                  <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>
+                    Con IVA (21%), lo que realmente se descuenta es <strong>{conIva.toFixed(2)}%</strong>.
+                  </p>
+                );
+              })()}
             </div>
 
             <button
