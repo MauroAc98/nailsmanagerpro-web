@@ -9,13 +9,17 @@ import { colors, shadows } from '@/theme/colors';
 
 function extraerMensajeError(e: unknown, fallback: string): string {
   if (isAxiosError(e)) {
-    return e.response?.data?.errors?.dias_prueba_default?.[0] ?? e.response?.data?.message ?? fallback;
+    return e.response?.data?.errors?.dias_prueba_default?.[0]
+      ?? e.response?.data?.errors?.comision_mp_porcentaje?.[0]
+      ?? e.response?.data?.message
+      ?? fallback;
   }
   return fallback;
 }
 
 export default function ConfiguracionPage() {
   const [diasPrueba, setDiasPrueba] = useState('10');
+  const [comisionMp, setComisionMp] = useState('6.29');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +27,10 @@ export default function ConfiguracionPage() {
 
   useEffect(() => {
     adminService.obtenerSettings()
-      .then((data) => setDiasPrueba(String(data.dias_prueba_default)))
+      .then((data) => {
+        setDiasPrueba(String(data.dias_prueba_default));
+        setComisionMp(String(data.comision_mp_porcentaje));
+      })
       .catch((e) => setError(extraerMensajeError(e, 'No se pudo cargar la configuración.')))
       .finally(() => setCargando(false));
   }, []);
@@ -35,13 +42,18 @@ export default function ConfiguracionPage() {
 
     const n = Number(diasPrueba);
     if (!Number.isInteger(n) || n < 1 || n > 90) {
-      setError('Tiene que ser un número entero entre 1 y 90.');
+      setError('Los días de prueba tienen que ser un número entero entre 1 y 90.');
+      return;
+    }
+    const comision = Number(comisionMp.replace(',', '.'));
+    if (!Number.isFinite(comision) || comision < 0 || comision > 50) {
+      setError('La comisión de Mercado Pago tiene que ser un número entre 0 y 50.');
       return;
     }
 
     setGuardando(true);
     try {
-      await adminService.actualizarSettings({ dias_prueba_default: n });
+      await adminService.actualizarSettings({ dias_prueba_default: n, comision_mp_porcentaje: comision });
       setGuardado(true);
       setTimeout(() => setGuardado(false), 2500);
     } catch (e: unknown) {
@@ -105,6 +117,39 @@ export default function ConfiguracionPage() {
                   max={90}
                   value={diasPrueba}
                   onChange={(e) => setDiasPrueba(e.target.value)}
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 15, color: colors.text }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label htmlFor="comision-mp" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>
+                Comisión de Mercado Pago (%)
+              </label>
+              <p style={{ fontSize: 12, color: colors.subtext, margin: 0 }}>
+                Se le suma al monto de la seña en el checkout de reserva online para que, descontada la
+                comisión, el negocio reciba el monto completo. Cada negocio ve su propia comisión en
+                Mercado Pago, bajo &quot;Dinero disponible en&quot;.
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: 54,
+                  backgroundColor: colors.surface,
+                  border: `1px solid ${colors.border}`,
+                  boxShadow: shadows.card,
+                  borderRadius: 16,
+                  paddingLeft: 16,
+                  paddingRight: 16,
+                }}
+              >
+                <input
+                  id="comision-mp"
+                  type="text"
+                  inputMode="decimal"
+                  value={comisionMp}
+                  onChange={(e) => setComisionMp(e.target.value)}
                   style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 15, color: colors.text }}
                 />
               </div>

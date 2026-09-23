@@ -75,6 +75,10 @@ export interface SubscriptionActionResponse {
 // romper el contrato (ver AdminController::obtenerSettings/actualizarSettings).
 export interface AdminSettings {
   dias_prueba_default: number;
+  // % que se le suma al monto de la seña en el checkout de reserva online
+  // para que, descontada la comision de Mercado Pago, el negocio reciba el
+  // monto completo (ver MercadoPagoService::montoACobrar en el backend).
+  comision_mp_porcentaje: number;
 }
 
 // ─────────────────────────────────────────────
