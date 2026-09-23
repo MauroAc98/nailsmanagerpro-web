@@ -183,13 +183,22 @@ describe('EstadoReservaScreen', () => {
       expect(screen.getByText('Te esperamos en Studio Demo. Te enviamos los detalles por WhatsApp.')).toBeInTheDocument();
     });
 
-    it('cabecera del ticket: fecha, hora grande, duracion y profesional', async () => {
+    it('cabecera del ticket: fecha, hora grande y duracion', async () => {
       montar();
       const ticket = (await screen.findByText('Viernes 25 de septiembre')).closest('[data-ticket]') as HTMLElement;
       expect(ticket).not.toBeNull();
       expect(within(ticket).getByText('13:00')).toBeInTheDocument();
       expect(within(ticket).getByText(/1 h 15 min/)).toBeInTheDocument();
-      expect(within(ticket).getByText(/con Ana/)).toBeInTheDocument();
+    });
+
+    // Fila propia con foto de 48px, separada del header (fecha/hora/duracion)
+    // — una version anterior la metia como texto chico al lado de la
+    // duracion y no se justificaba agregar una foto ahi de tan chica.
+    it('fila "Te atiende" con el nombre y la foto de la profesional', async () => {
+      montar();
+      const ticket = (await screen.findByText('Viernes 25 de septiembre')).closest('[data-ticket]') as HTMLElement;
+      expect(within(ticket).getByText('Te atiende')).toBeInTheDocument();
+      expect(within(ticket).getByText('Ana')).toBeInTheDocument();
     });
 
     it('cuerpo: servicios, salon con direccion, sena pagada y nota del valor final', async () => {

@@ -16,7 +16,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAhora, useCarga, type Ir } from './hooks';
 import { IcoCalendario, IcoCheck, IcoPin, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
-import { BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
+import { Avatar, BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
 
@@ -171,7 +171,8 @@ export function EstadoReservaScreen({
   const { salon, servicios, terminos } = data;
   const resumen = estado.summary;
   const nombresServicios = servicios.filter((s) => resumen.servicioIds.includes(s.id)).map((s) => s.nombre).join(' + ');
-  const profesional = salon.profesionales.find((p) => p.id === resumen.profesionalId)?.nombre;
+  const profesionalObj = salon.profesionales.find((p) => p.id === resumen.profesionalId);
+  const profesional = profesionalObj?.nombre;
 
   if (estado.status === 'confirmed') {
     return (
@@ -210,10 +211,23 @@ export function EstadoReservaScreen({
                 <div style={{ fontFamily: agendaFontSerif, fontSize: 26, marginTop: 2 }}>{resumen.hora}</div>
               </div>
               <div style={{ fontSize: 12.5, textAlign: 'right', opacity: 0.9 }}>
-                <div>{formatearDuracion(resumen.duracionTotalMinutos)}</div>
-                {profesional && <div>{t('estado.conProfesional', { profesional })}</div>}
+                {formatearDuracion(resumen.duracionTotalMinutos)}
               </div>
             </div>
+            {/* Fila propia, foto grande (48px): la version anterior metia un
+                avatar de 20px pegado al "con Fernanda" del header y quedaba
+                demasiado chico para que valiera la pena. */}
+            {profesional && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderBottom: `1px solid ${colors.border}` }}>
+                <Avatar nombre={profesional} size={48} fotoUrl={profesionalObj?.avatarUrl} />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.sub }}>
+                    {t('estado.teAtiende')}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: colors.strong, marginTop: 1 }}>{profesional}</div>
+                </div>
+              </div>
+            )}
             <div style={{ padding: '16px 18px', fontSize: 14, color: colors.text, lineHeight: 1.5 }}>
               <div style={{ fontWeight: 700, color: colors.strong }}>{nombresServicios}</div>
               <div style={{ color: colors.sub, marginTop: 2 }}>
