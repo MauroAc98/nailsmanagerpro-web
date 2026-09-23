@@ -79,8 +79,7 @@ export interface AdminSettings {
 
 // ─────────────────────────────────────────────
 // Mercado Pago — Fase 1: carga manual del access_token por negocio (sin
-// OAuth propio, a diferencia de WhatsApp Embedded Signup arriba). Ver
-// MercadoPagoAdminController en el backend.
+// OAuth propio). Ver MercadoPagoAdminController en el backend.
 // ─────────────────────────────────────────────
 export interface MercadoPagoNegocioConexion {
   user_id: number;
@@ -102,7 +101,9 @@ export interface MercadoPagoConexionesResponse {
 export interface ConectarMercadoPagoPayload {
   user_id: number;
   mp_access_token: string;
-  mp_user_id: string;
+  // Opcional: si se omite, el backend lo deriva llamando a GET /users/me
+  // con el access_token (y de paso valida que sea real).
+  mp_user_id?: string;
 }
 
 export interface MercadoPagoConexionCreada {

@@ -159,7 +159,7 @@ function FilaNegocio({ salon, onGuardado }: { salon: MercadoPagoNegocioConexion;
       const resultado = await adminService.conectarMercadoPago({
         user_id: salon.user_id,
         mp_access_token: accessToken.trim(),
-        mp_user_id: mpUserId.trim(),
+        mp_user_id: mpUserId.trim() || undefined,
       });
       setWebhookUrlNueva(resultado.webhook_url);
       setAccessToken('');
@@ -256,12 +256,12 @@ function FilaNegocio({ salon, onGuardado }: { salon: MercadoPagoNegocioConexion;
             style={campoEstilo}
           />
 
-          <label style={{ fontSize: 12, fontWeight: 600, color: colors.subtext }}>mp_user_id</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: colors.subtext }}>mp_user_id (opcional)</label>
           <input
             type="text"
             value={mpUserId}
             onChange={(e) => setMpUserId(e.target.value)}
-            placeholder={salon.mp_user_id ?? 'ID numérico de la cuenta de MP'}
+            placeholder={salon.mp_user_id ?? 'Se completa solo con el access_token'}
             style={campoEstilo}
           />
 
@@ -272,18 +272,17 @@ function FilaNegocio({ salon, onGuardado }: { salon: MercadoPagoNegocioConexion;
           <button
             type="button"
             onClick={guardar}
-            disabled={guardando || !accessToken.trim() || !mpUserId.trim()}
+            disabled={guardando || !accessToken.trim()}
             style={{
               alignSelf: 'flex-start',
               padding: '8px 16px',
               borderRadius: 10,
               border: 'none',
-              backgroundColor:
-                guardando || !accessToken.trim() || !mpUserId.trim() ? colors.primaryDisabled : colors.primarySolid,
+              backgroundColor: guardando || !accessToken.trim() ? colors.primaryDisabled : colors.primarySolid,
               color: '#fff',
               fontSize: 13,
               fontWeight: 600,
-              cursor: guardando || !accessToken.trim() || !mpUserId.trim() ? 'not-allowed' : 'pointer',
+              cursor: guardando || !accessToken.trim() ? 'not-allowed' : 'pointer',
             }}
           >
             {guardando ? 'Guardando…' : salon.conectado ? 'Actualizar credencial' : 'Guardar credencial'}
