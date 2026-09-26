@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
-  erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, problemasDeFila, type ComponenteDraft,
+  duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, moverFila,
+  paraleloDisponible, precioAGuardar, precioInicialComponentes, problemasDeFila, sumaComponentes,
+  type ComponenteDraft,
 } from './promoComponentes';
+import type { Servicio } from '@/services/servicioService';
+
+const servicio = (over: Partial<Servicio>): Servicio => ({
+  id: 1, user_id: 1, nombre: '', duracion_minutos: 0, precio: null, activo: true,
+  es_promo: false, orden: 0, categoria_id: null, created_at: '', updated_at: '', ...over,
+});
+const softgel = servicio({ id: 1, duracion_minutos: 60, precio: '13000' });
+const semis = servicio({ id: 2, duracion_minutos: 45, precio: '9000' });
+const catalogo = [softgel, semis];
 
 describe('promoComponentes — validación de filas', () => {
   it('filaIncompleta: true solo cuando un campo está elegido y el otro no', () => {
@@ -50,5 +61,56 @@ describe('promoComponentes — mapeo de errores 422 de PUT /componentes', () => 
   it('cae a un mensaje general para cualquier otro error', () => {
     const e = { response: { data: { message: 'Servicio inválido' } } };
     expect(erroresGuardarComponentes(e)).toEqual({ porFila: {}, general: 'Servicio inválido' });
+  });
+});
+
+describe('promoComponentes — modo paralelo gate', () => {
+  it('paraleloDisponible: solo con el ajuste del salón activo y más de una profesional activa', () => {
+    expect(paraleloDisponible(true, 2)).toBe(true);
+    expect(paraleloDisponible(true, 1)).toBe(false);
+    expect(paraleloDisponible(false, 2)).toBe(false);
+    expect(paraleloDisponible(undefined, 2)).toBe(false);
+  });
+});
+
+describe('promoComponentes — reordenar filas (secuencia)', () => {
+  const drafts: ComponenteDraft[] = [
+    { servicioId: 1, profesionalId: 1 }, { servicioId: 2, profesionalId: 2 }, { servicioId: 3, profesionalId: 3 },
+  ];
+
+  it('moverFila: sube/baja intercambiando posiciones, sin mutar el original', () => {
+    expect(moverFila(drafts, 1, -1)).toEqual([drafts[1], drafts[0], drafts[2]]);
+    expect(moverFila(drafts, 1, 1)).toEqual([drafts[0], drafts[2], drafts[1]]);
+    expect(moverFila(drafts, 0, -1)).toEqual(drafts);
+    expect(moverFila(drafts, 2, 1)).toEqual(drafts);
+    expect(drafts).toEqual([{ servicioId: 1, profesionalId: 1 }, { servicioId: 2, profesionalId: 2 }, { servicioId: 3, profesionalId: 3 }]);
+  });
+});
+
+describe('promoComponentes — duración y precio derivados', () => {
+  const drafts: ComponenteDraft[] = [{ servicioId: 1, profesionalId: 1 }, { servicioId: 2, profesionalId: 2 }];
+
+  it('duracionDerivada: paralelo = máximo, secuencia = suma, de las duraciones del catálogo', () => {
+    expect(duracionDerivada('paralelo', drafts, catalogo)).toBe(60);
+    expect(duracionDerivada('secuencia', drafts, catalogo)).toBe(105);
+    expect(duracionDerivada('secuencia', [], catalogo)).toBe(0);
+    expect(duracionDerivada('secuencia', [{ servicioId: null, profesionalId: null }], catalogo)).toBe(0);
+  });
+
+  it('sumaComponentes: suma los precios standalone del catálogo de las filas elegidas', () => {
+    expect(sumaComponentes(drafts, catalogo)).toBe(22000);
+    expect(sumaComponentes([{ servicioId: null, profesionalId: null }], catalogo)).toBe(0);
+  });
+
+  it('precioAGuardar: null si está vacío o igual a la suma; el número tipeado si difiere', () => {
+    expect(precioAGuardar('', 22000)).toBeNull();
+    expect(precioAGuardar('22000', 22000)).toBeNull();
+    expect(precioAGuardar('18000', 22000)).toBe(18000);
+  });
+
+  it('precioInicialComponentes: vacío si el precio persistido coincide con la suma viva, si no el persistido', () => {
+    expect(precioInicialComponentes({ precio: '22000', precio_componentes: 22000 })).toBe('');
+    expect(precioInicialComponentes({ precio: '18000', precio_componentes: 22000 })).toBe('18000');
+    expect(precioInicialComponentes({ precio: null, precio_componentes: null })).toBe('');
   });
 });
