@@ -273,6 +273,14 @@
     "submit": "Salvar alterações",
     "saveError": "Não foi possível salvar o serviço."
   },
+  "ComponentesPromoSection": {
+    "title": "Serviços incluídos",
+    "serviceLabel": "Serviço",
+    "servicePlaceholder": "Escolha um serviço",
+    "whoLabel": "Quem faz",
+    "noProfesional": "Nenhuma profissional ativa faz este serviço.",
+    "add": "Adicionar serviço"
+  },
   "SelectorCategoriaServicio": {
     "label": "Categoria",
     "none": "Sem categoria",

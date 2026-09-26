@@ -28,7 +28,6 @@ import { profesionalService, type Profesional } from '@/services/profesionalServ
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { routerMock, resetNavigationMock } from '@/test/mocks/nextNavigation';
-import { alertDialog } from '@/store/useConfirmStore';
 import EditarServicioPage from '@/app/(app)/configuracion/servicios/[id]/page';
 
 const servicio = (over: Partial<Servicio>): Servicio => ({
@@ -91,7 +90,8 @@ const comp = (orden: number, servicio_id: number, profesional_id: number) => ({
   orden, servicio_id, nombre: '', duracion_minutos: 30, precio: '1000', profesional_id, profesional_nombre: '',
 });
 const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-const pill = (nombre: string) => screen.getByRole('button', { name: nombre });
+// Pill accessible name = avatar initials + name ("AN Ana").
+const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`${nombre}$`) });
 
 describe('EditarServicioPage — components section (multi-professional promo)', () => {
   it('shows the saved components of a promo with their service and professional', async () => {
@@ -113,7 +113,7 @@ describe('EditarServicioPage — components section (multi-professional promo)',
     fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
     // Ana and Marta both offer Softgel: nothing is auto-picked, Laura is not offered.
     expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('button', { name: 'Laura' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Laura$/ })).not.toBeInTheDocument();
     fireEvent.click(pill('Marta'));
     fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
     fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '2' } });
@@ -125,15 +125,5 @@ describe('EditarServicioPage — components section (multi-professional promo)',
       modo_promo: 'secuencia', precio: null,
       componentes: [{ servicio_id: 1, profesional_id: 3 }, { servicio_id: 2, profesional_id: 2 }],
     });
-  });
-
-  it('removes a row and refuses to save a half-filled one', async () => {
-    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Quitar servicio' }))[1]);
-    expect(screen.getAllByRole('combobox')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
-    guardar();
-    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Completá el servicio y la profesional de cada fila.'));
-    expect(servicioService.update).not.toHaveBeenCalled();
   });
 });

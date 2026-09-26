@@ -6,13 +6,19 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { servicioService } from '@/services/servicioService';
+import { servicioService, type ModoPromo } from '@/services/servicioService';
+import { extraerMensajeError } from '@/services/clienteService';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
+import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import {
+  draftsDesdeDetalle, payloadComponentes, serviciosComponibles, type ComponenteDraft,
+} from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -46,6 +52,14 @@ export default function EditarServicioPage() {
   const [loadingServicio, setLoadingServicio] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Componentes de la promo (multi-profesional). `iniciales` es lo que hay
+  // guardado en el backend: solo si el draft difiere se llama al PUT
+  // componentes — una promo legacy sin tocar nunca lo dispara.
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const [componentes, setComponentes] = useState<ComponenteDraft[]>([]);
+  const [iniciales, setIniciales] = useState<ComponenteDraft[]>([]);
+  const [modoPromo, setModoPromo] = useState<ModoPromo>('secuencia');
+
   useEffect(() => {
     const cargar = async () => {
       try {
@@ -56,6 +70,14 @@ export default function EditarServicioPage() {
         setPrecio(s.precio ?? '');
         setEsPromo(s.es_promo);
         setCategoriaId(s.categoria_id);
+        if (s.es_promo) {
+          // El listado no trae los componentes: solo el GET-one.
+          const detalle = s.componentes ? s : await servicioService.getOne(id);
+          const drafts = draftsDesdeDetalle(detalle.componentes);
+          setComponentes(drafts);
+          setIniciales(drafts);
+          setModoPromo(detalle.modo_promo ?? 'secuencia');
+        }
       } catch {
         await alertDialog(t('loadError'));
         router.push('/configuracion/servicios');
@@ -65,6 +87,18 @@ export default function EditarServicioPage() {
     };
     if (id) cargar();
   }, [id]);
+
+  // Solo las promos necesitan el roster; una servicio común no paga la llamada.
+  useEffect(() => {
+    if (esPromo && profesionales.length === 0) fetchProfesionales();
+  }, [esPromo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Nada nuevo aparece si no hace falta: con una sola profesional activa la
+  // sección queda oculta salvo que la promo ya tenga componentes guardados.
+  const activas = profesionales.filter(p => p.activo).length;
+  const mostrarComponentes = esPromo && (activas > 1 || componentes.length > 0);
+  const aGuardar = payloadComponentes(componentes);
+  const componentesCambiaron = mostrarComponentes && JSON.stringify(aGuardar) !== JSON.stringify(payloadComponentes(iniciales));
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
@@ -97,6 +131,22 @@ export default function EditarServicioPage() {
       es_promo: esPromo,
       categoria_id: categoriaId ?? null,
     });
+    if (result.success && componentesCambiaron) {
+      // Va DESPUÉS del update: el PUT componentes exige que la promo ya sea
+      // es_promo en el backend, y pisa duración/precio con los derivados.
+      try {
+        await servicioService.guardarComponentes(id, {
+          modo_promo: modoPromo,
+          precio: null,
+          componentes: aGuardar,
+        });
+        await useServiciosStore.getState().fetchServicios();
+      } catch (e) {
+        setSaving(false);
+        await alertDialog(extraerMensajeError(e));
+        return;
+      }
+    }
     setSaving(false);
 
     if (result.success) {
@@ -178,6 +228,15 @@ export default function EditarServicioPage() {
           </div>
           <PillToggle value={esPromo} onChange={setEsPromo} />
         </div>
+
+        {mostrarComponentes && (
+          <ComponentesPromoSection
+            componentes={componentes}
+            onChange={setComponentes}
+            servicios={serviciosComponibles(servicios, id)}
+            profesionales={profesionales}
+          />
+        )}
 
         {/* Fotos de trabajos (reserva online): la fila se oculta con la flag apagada. */}
         <EntradaFotosServicio servicioId={id} onAbrir={() => router.push(`/configuracion/servicios/${id}/fotos`)} />
