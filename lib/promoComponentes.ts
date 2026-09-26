@@ -45,9 +45,14 @@ export const hayFilaIncompleta = (drafts: ComponenteDraft[]): boolean =>
 export type ProblemaFila = Pick<ProblemaPromo, 'orden' | 'mensaje'>;
 
 // Problems that belong to one specific row (orden is 1-based = index + 1).
-// `sin_inicios_alineados` (orden null) is a promo-wide problem, PR 2d's job.
+// `sin_inicios_alineados` (orden null) is a promo-wide problem, see below.
 export const problemasDeFila = (problemas: ProblemaFila[], index: number): ProblemaFila[] =>
   problemas.filter(p => p.orden === index + 1);
+
+// Promo-wide problems (orden null, e.g. `sin_inicios_alineados`) — shown
+// once for the whole promo, never tied to a specific row.
+export const problemasDePromo = (problemas: ProblemaFila[]): ProblemaFila[] =>
+  problemas.filter(p => p.orden === null);
 
 export interface ErroresGuardarComponentes {
   porFila: Record<number, string>;
@@ -77,6 +82,21 @@ export const erroresGuardarComponentes = (e: unknown): ErroresGuardarComponentes
 // more than one active professional to actually parallelize with.
 export const paraleloDisponible = (atiendeEnParalelo: boolean | undefined, activeProfesionales: number): boolean =>
   !!atiendeEnParalelo && activeProfesionales > 1;
+
+// Maps a PUT /perfil 422 (turning `atiende_en_paralelo` off while active
+// paralelo promos exist) into a message naming every blocking promo — the
+// backend's own `message` never lists them (see AuthController::updatePerfil).
+export const mensajeBloqueoParalelo = (e: unknown): string => {
+  if (e && typeof e === 'object' && 'response' in e) {
+    const err = e as { response?: { data?: { code?: string; message?: string; promos?: { nombre: string }[] } } };
+    const data = err.response?.data;
+    if (data?.code === 'promos_paralelas_activas' && data.promos && data.promos.length > 0) {
+      const nombres = data.promos.map(p => p.nombre).join(', ');
+      return `${data.message ?? ''} (${nombres})`;
+    }
+  }
+  return extraerMensajeError(e);
+};
 
 // Swaps a row with its neighbor (delta -1 = up, +1 = down); a no-op past
 // either edge. Array position IS the saved `orden` (backend: orden =

@@ -5,9 +5,9 @@ import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import SelectorProfesional from '@/components/SelectorProfesional';
 import { formatMontoCorto } from '@/lib/money';
-import type { ModoPromo, Servicio } from '@/services/servicioService';
+import type { AlineacionDescarte, ModoPromo, Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
-import { moverFila, profesionalesQueOfrecen, problemasDeFila, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
+import { moverFila, problemasDeFila, problemasDePromo, profesionalesQueOfrecen, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
 
 interface Props {
   componentes: ComponenteDraft[];
@@ -34,6 +34,9 @@ interface Props {
   sumaComponentes: number;
   precioComponentes: string;
   onPrecioComponentesChange: (value: string) => void;
+  // Discarded lead-tramo starts from the slot-alignment analysis (PR 2d).
+  // Non-blocking: the promo still saves, this is purely informational.
+  avisosAlineacion?: AlineacionDescarte[];
 }
 
 // "Servicios que incluye" section of a promo. Controlled and presentational:
@@ -41,9 +44,10 @@ interface Props {
 // professional who performs it (only professionals who offer that service).
 export default function ComponentesPromoSection({
   componentes, onChange, servicios, profesionales, problemas, modo, onModoChange, paraleloHabilitado, modoError,
-  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange,
+  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange, avisosAlineacion = [],
 }: Props) {
   const t = useTranslations('configuracion.ComponentesPromoSection');
+  const problemasPromo = problemasDePromo(problemas);
 
   const actualizar = (index: number, fila: ComponenteDraft) =>
     onChange(componentes.map((c, i) => (i === index ? fila : c)));
@@ -67,6 +71,19 @@ export default function ComponentesPromoSection({
       <label style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, marginBottom: 7, display: 'block', marginLeft: 2 }}>
         {t('title')}
       </label>
+
+      {/* Problema de la promo entera (ej. sin_inicios_alineados): mismo peso
+          visual que los problemas por fila (dangerBorder), pero en su propio
+          bloque porque no pertenece a ninguna fila puntual. */}
+      {problemasPromo.length > 0 && (
+        <div style={{
+          backgroundColor: colors.dangerBg, borderRadius: 10, padding: '10px 12px', marginBottom: 12,
+        }}>
+          {problemasPromo.map((p, i) => (
+            <p key={i} style={{ margin: 0, fontSize: 12.5, color: colors.dangerBorder, lineHeight: 1.4 }}>{p.mensaje}</p>
+          ))}
+        </div>
+      )}
 
       {/* Modo: paralelo solo si el ajuste del salón lo habilita. */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
@@ -98,6 +115,16 @@ export default function ComponentesPromoSection({
       )}
       {modoError && (
         <p style={{ margin: '0 0 10px 2px', fontSize: 12, color: colors.dangerBorder }}>{modoError}</p>
+      )}
+
+      {/* Avisos de desalineación de horarios (PR 2d): no bloquean el guardado,
+          solo explican por qué algunos inicios no se ofrecen online. */}
+      {avisosAlineacion.length > 0 && (
+        <div style={{ margin: '0 0 10px 2px' }}>
+          {avisosAlineacion.map((a, i) => (
+            <p key={i} style={{ margin: '0 0 4px', fontSize: 12, color: colors.warningFg }}>{a.mensaje}</p>
+          ))}
+        </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

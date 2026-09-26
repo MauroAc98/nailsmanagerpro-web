@@ -50,6 +50,11 @@ export interface Servicio {
   // persistidos del servicio pueden quedar viejos si un componente se edita).
   duracion_derivada?: number | null;
   precio_componentes?: number | null;
+  // Análisis de alineación de horarios (PR 2d): qué inicios del tramo líder
+  // se ofrecen online y cuáles se descartan y por qué. Solo GET-one / PUT
+  // componentes; ausente en index. `{ inicios_validos: [], descartados: [] }`
+  // en una promo sin componentes.
+  alineacion_slots?: AlineacionSlots | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +79,21 @@ export interface ProblemaPromo {
   profesional_id: number | null;
   servicio_id: number | null;
   mensaje: string;
+}
+
+// Un inicio del tramo líder descartado por falta de slot de otra profesional
+// (analizarPromo del backend). `hora_requerida` es el horario que le faltó.
+export interface AlineacionDescarte {
+  hora_inicio: string;
+  profesional_id: number;
+  profesional_nombre: string;
+  hora_requerida: string;
+  mensaje: string;
+}
+
+export interface AlineacionSlots {
+  inicios_validos: string[];
+  descartados: AlineacionDescarte[];
 }
 
 export interface GuardarComponentesDto {

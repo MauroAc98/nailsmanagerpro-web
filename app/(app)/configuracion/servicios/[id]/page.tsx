@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { servicioService, type ModoPromo } from '@/services/servicioService';
+import { servicioService, type AlineacionDescarte, type ModoPromo } from '@/services/servicioService';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
@@ -71,6 +71,7 @@ export default function EditarServicioPage() {
   // Problemas de configuración guardados (inactiva/desvinculado) más los que
   // devuelve un intento de guardado fallido, unidos por fila (item 3 + 4).
   const [problemas, setProblemas] = useState<ProblemaFila[]>([]);
+  const [avisosAlineacion, setAvisosAlineacion] = useState<AlineacionDescarte[]>([]);
   const [erroresFila, setErroresFila] = useState<Record<number, string>>({});
   const [modoError, setModoError] = useState('');
 
@@ -93,6 +94,7 @@ export default function EditarServicioPage() {
           setModoPromo(detalle.modo_promo ?? 'secuencia');
           setModoInicial(detalle.modo_promo ?? 'secuencia');
           setProblemas(detalle.problemas ?? []);
+          setAvisosAlineacion(detalle.alineacion_slots?.descartados ?? []);
           const precioInicial = precioInicialComponentes(detalle);
           setPrecioComponentes(precioInicial);
           setPrecioComponentesInicial(precioInicial);
@@ -320,6 +322,7 @@ export default function EditarServicioPage() {
             sumaComponentes={sumaActual}
             precioComponentes={precioComponentes}
             onPrecioComponentesChange={setPrecioComponentes}
+            avisosAlineacion={avisosAlineacion}
           />
         )}
 
