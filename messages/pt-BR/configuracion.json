@@ -281,7 +281,13 @@
     "whoLabel": "Quem faz",
     "noProfesional": "Nenhuma profissional ativa faz este serviço.",
     "add": "Adicionar serviço",
-    "remove": "Remover serviço"
+    "remove": "Remover serviço",
+    "modeSequential": "Uma depois da outra",
+    "modeParallel": "Ao mesmo tempo",
+    "modeParallelDisabledHint": "Ative \"Atende em paralelo\" em Configurações (com mais de uma profissional ativa) para oferecer este modo.",
+    "moveUp": "Subir na ordem",
+    "moveDown": "Descer na ordem",
+    "orderLabel": "Posição {n}"
   },
   "SelectorCategoriaServicio": {
     "label": "Categoria",

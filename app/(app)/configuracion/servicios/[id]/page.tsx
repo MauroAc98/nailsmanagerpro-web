@@ -15,9 +15,10 @@ import PillToggle from '@/components/PillToggle';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
-  draftsDesdeDetalle, erroresGuardarComponentes, hayFilaIncompleta, payloadComponentes,
-  serviciosComponibles, type ComponenteDraft, type ProblemaFila,
+  draftsDesdeDetalle, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
+  payloadComponentes, serviciosComponibles, type ComponenteDraft, type ProblemaFila,
 } from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
@@ -56,13 +57,16 @@ export default function EditarServicioPage() {
   // guardado en el backend: solo si el draft difiere se llama al PUT
   // componentes — una promo legacy sin tocar nunca lo dispara.
   const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const { user } = useAuthStore();
   const [componentes, setComponentes] = useState<ComponenteDraft[]>([]);
   const [iniciales, setIniciales] = useState<ComponenteDraft[]>([]);
   const [modoPromo, setModoPromo] = useState<ModoPromo>('secuencia');
+  const [modoInicial, setModoInicial] = useState<ModoPromo>('secuencia');
   // Problemas de configuración guardados (inactiva/desvinculado) más los que
   // devuelve un intento de guardado fallido, unidos por fila (item 3 + 4).
   const [problemas, setProblemas] = useState<ProblemaFila[]>([]);
   const [erroresFila, setErroresFila] = useState<Record<number, string>>({});
+  const [modoError, setModoError] = useState('');
 
   useEffect(() => {
     const cargar = async () => {
@@ -81,6 +85,7 @@ export default function EditarServicioPage() {
           setComponentes(drafts);
           setIniciales(drafts);
           setModoPromo(detalle.modo_promo ?? 'secuencia');
+          setModoInicial(detalle.modo_promo ?? 'secuencia');
           setProblemas(detalle.problemas ?? []);
         }
       } catch {
@@ -103,7 +108,10 @@ export default function EditarServicioPage() {
   const activas = profesionales.filter(p => p.activo).length;
   const mostrarComponentes = esPromo && (activas > 1 || componentes.length > 0);
   const aGuardar = payloadComponentes(componentes);
-  const componentesCambiaron = mostrarComponentes && JSON.stringify(aGuardar) !== JSON.stringify(payloadComponentes(iniciales));
+  const paraleloHabilitado = paraleloDisponible(user?.atiende_en_paralelo, activas);
+  const dtoActual = { modo_promo: modoPromo, componentes: aGuardar };
+  const dtoInicial = { modo_promo: modoInicial, componentes: payloadComponentes(iniciales) };
+  const componentesCambiaron = mostrarComponentes && JSON.stringify(dtoActual) !== JSON.stringify(dtoInicial);
   // Backend problemas + errores del último intento de guardado, por fila.
   const problemasCombinados: ProblemaFila[] = [
     ...problemas,
@@ -112,6 +120,7 @@ export default function EditarServicioPage() {
 
   const handleGuardar = async () => {
     setErroresFila({});
+    setModoError('');
 
     if (!nombre.trim()) {
       setErrorNombre(t('nameRequired'));
@@ -160,14 +169,15 @@ export default function EditarServicioPage() {
       } catch (e) {
         setSaving(false);
         // 422 por fila (componentes.{i}.servicio_id|profesional_id) se
-        // muestra junto a esa fila; cualquier otro error cae al diálogo
-        // genérico (incluye paralelo_no_habilitado — todavía sin selector
-        // de modo en esta pantalla, ver 2b-iii en apply-progress).
+        // muestra junto a esa fila; paralelo_no_habilitado junto al selector
+        // de modo; cualquier otro error cae al diálogo genérico.
         const errores = erroresGuardarComponentes(e);
         if (Object.keys(errores.porFila).length > 0) {
           setErroresFila(errores.porFila);
+        } else if (errores.modoHint) {
+          setModoError(errores.modoHint);
         } else {
-          await alertDialog(errores.modoHint ?? errores.general ?? t('saveError'));
+          await alertDialog(errores.general ?? t('saveError'));
         }
         return;
       }
@@ -261,6 +271,10 @@ export default function EditarServicioPage() {
             servicios={serviciosComponibles(servicios, id)}
             profesionales={profesionales}
             problemas={problemasCombinados}
+            modo={modoPromo}
+            onModoChange={setModoPromo}
+            paraleloHabilitado={paraleloHabilitado}
+            modoError={modoError || undefined}
           />
         )}
 
