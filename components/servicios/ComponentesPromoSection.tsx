@@ -1,12 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import SelectorProfesional from '@/components/SelectorProfesional';
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
-import { profesionalesQueOfrecen, type ComponenteDraft } from '@/lib/promoComponentes';
+import { profesionalesQueOfrecen, problemasDeFila, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
 
 interface Props {
   componentes: ComponenteDraft[];
@@ -14,12 +14,15 @@ interface Props {
   // Already filtered by the caller to the services that can be components.
   servicios: Servicio[];
   profesionales: Profesional[];
+  // Merges backend problemas with save-time 422 mapping — the page owns
+  // that union, this component only renders whatever lands on each row.
+  problemas: ProblemaFila[];
 }
 
 // "Servicios que incluye" section of a promo. Controlled and presentational:
 // the page owns the draft and the save flow. Every row = one service + the
 // professional who performs it (only professionals who offer that service).
-export default function ComponentesPromoSection({ componentes, onChange, servicios, profesionales }: Props) {
+export default function ComponentesPromoSection({ componentes, onChange, servicios, profesionales, problemas }: Props) {
   const t = useTranslations('configuracion.ComponentesPromoSection');
 
   const actualizar = (index: number, fila: ComponenteDraft) =>
@@ -36,6 +39,8 @@ export default function ComponentesPromoSection({ componentes, onChange, servici
     actualizar(index, { servicioId, profesionalId });
   };
 
+  const quitar = (index: number) => onChange(componentes.filter((_, i) => i !== index));
+
   return (
     <div>
       <label style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, marginBottom: 7, display: 'block', marginLeft: 2 }}>
@@ -44,6 +49,7 @@ export default function ComponentesPromoSection({ componentes, onChange, servici
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {componentes.map((fila, index) => {
           const ofrecen = profesionalesQueOfrecen(fila.servicioId, profesionales);
+          const problemasFila = problemasDeFila(problemas, index);
           return (
             <div key={index} style={{
               backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
@@ -63,6 +69,18 @@ export default function ComponentesPromoSection({ componentes, onChange, servici
                   <option value="">{t('servicePlaceholder')}</option>
                   {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
+                <button
+                  type="button"
+                  aria-label={t('remove')}
+                  onClick={() => quitar(index)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
+                    backgroundColor: 'transparent', border: `1px solid ${colors.border}`, color: colors.subtext,
+                  }}
+                >
+                  <X size={16} />
+                </button>
               </div>
               {fila.servicioId !== null && ofrecen.length === 0 && (
                 <p style={{ margin: '0 0 12px', fontSize: 12, color: colors.warningFg }}>{t('noProfesional')}</p>
@@ -76,6 +94,9 @@ export default function ComponentesPromoSection({ componentes, onChange, servici
                   toggleable={false}
                 />
               )}
+              {problemasFila.map((p, i) => (
+                <p key={i} style={{ margin: '0 0 12px', fontSize: 12, color: colors.dangerBorder }}>{p.mensaje}</p>
+              ))}
             </div>
           );
         })}

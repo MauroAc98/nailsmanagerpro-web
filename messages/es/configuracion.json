@@ -271,7 +271,8 @@
     "loadError": "No se pudo cargar el servicio.",
     "saving": "Guardando...",
     "submit": "Guardar cambios",
-    "saveError": "No se pudo guardar el servicio."
+    "saveError": "No se pudo guardar el servicio.",
+    "incompleteRow": "Completá el servicio y quién lo hace en cada fila antes de guardar."
   },
   "ComponentesPromoSection": {
     "title": "Servicios que incluye",
@@ -279,7 +280,8 @@
     "servicePlaceholder": "Elegí un servicio",
     "whoLabel": "Quién lo hace",
     "noProfesional": "Ninguna profesional activa hace este servicio.",
-    "add": "Agregar servicio"
+    "add": "Agregar servicio",
+    "remove": "Quitar servicio"
   },
   "SelectorCategoriaServicio": {
     "label": "Categoría",

@@ -271,7 +271,8 @@
     "loadError": "Não foi possível carregar o serviço.",
     "saving": "Salvando...",
     "submit": "Salvar alterações",
-    "saveError": "Não foi possível salvar o serviço."
+    "saveError": "Não foi possível salvar o serviço.",
+    "incompleteRow": "Preencha o serviço e quem faz em cada linha antes de salvar."
   },
   "ComponentesPromoSection": {
     "title": "Serviços incluídos",
@@ -279,7 +280,8 @@
     "servicePlaceholder": "Escolha um serviço",
     "whoLabel": "Quem faz",
     "noProfesional": "Nenhuma profissional ativa faz este serviço.",
-    "add": "Adicionar serviço"
+    "add": "Adicionar serviço",
+    "remove": "Remover serviço"
   },
   "SelectorCategoriaServicio": {
     "label": "Categoria",

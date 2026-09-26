@@ -7,7 +7,6 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { servicioService, type ModoPromo } from '@/services/servicioService';
-import { extraerMensajeError } from '@/services/clienteService';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
@@ -17,7 +16,8 @@ import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosSer
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import {
-  draftsDesdeDetalle, payloadComponentes, serviciosComponibles, type ComponenteDraft,
+  draftsDesdeDetalle, erroresGuardarComponentes, hayFilaIncompleta, payloadComponentes,
+  serviciosComponibles, type ComponenteDraft, type ProblemaFila,
 } from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
@@ -59,6 +59,10 @@ export default function EditarServicioPage() {
   const [componentes, setComponentes] = useState<ComponenteDraft[]>([]);
   const [iniciales, setIniciales] = useState<ComponenteDraft[]>([]);
   const [modoPromo, setModoPromo] = useState<ModoPromo>('secuencia');
+  // Problemas de configuración guardados (inactiva/desvinculado) más los que
+  // devuelve un intento de guardado fallido, unidos por fila (item 3 + 4).
+  const [problemas, setProblemas] = useState<ProblemaFila[]>([]);
+  const [erroresFila, setErroresFila] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const cargar = async () => {
@@ -77,6 +81,7 @@ export default function EditarServicioPage() {
           setComponentes(drafts);
           setIniciales(drafts);
           setModoPromo(detalle.modo_promo ?? 'secuencia');
+          setProblemas(detalle.problemas ?? []);
         }
       } catch {
         await alertDialog(t('loadError'));
@@ -99,14 +104,25 @@ export default function EditarServicioPage() {
   const mostrarComponentes = esPromo && (activas > 1 || componentes.length > 0);
   const aGuardar = payloadComponentes(componentes);
   const componentesCambiaron = mostrarComponentes && JSON.stringify(aGuardar) !== JSON.stringify(payloadComponentes(iniciales));
+  // Backend problemas + errores del último intento de guardado, por fila.
+  const problemasCombinados: ProblemaFila[] = [
+    ...problemas,
+    ...Object.entries(erroresFila).map(([idx, mensaje]) => ({ orden: Number(idx) + 1, mensaje })),
+  ];
 
   const handleGuardar = async () => {
+    setErroresFila({});
+
     if (!nombre.trim()) {
       setErrorNombre(t('nameRequired'));
       return;
     }
     if (duracion <= 0) {
       await alertDialog(t('invalidDuration'));
+      return;
+    }
+    if (mostrarComponentes && hayFilaIncompleta(componentes)) {
+      await alertDialog(t('incompleteRow'));
       return;
     }
 
@@ -143,7 +159,16 @@ export default function EditarServicioPage() {
         await useServiciosStore.getState().fetchServicios();
       } catch (e) {
         setSaving(false);
-        await alertDialog(extraerMensajeError(e));
+        // 422 por fila (componentes.{i}.servicio_id|profesional_id) se
+        // muestra junto a esa fila; cualquier otro error cae al diálogo
+        // genérico (incluye paralelo_no_habilitado — todavía sin selector
+        // de modo en esta pantalla, ver 2b-iii en apply-progress).
+        const errores = erroresGuardarComponentes(e);
+        if (Object.keys(errores.porFila).length > 0) {
+          setErroresFila(errores.porFila);
+        } else {
+          await alertDialog(errores.modoHint ?? errores.general ?? t('saveError'));
+        }
         return;
       }
     }
@@ -235,6 +260,7 @@ export default function EditarServicioPage() {
             onChange={setComponentes}
             servicios={serviciosComponibles(servicios, id)}
             profesionales={profesionales}
+            problemas={problemasCombinados}
           />
         )}
 
