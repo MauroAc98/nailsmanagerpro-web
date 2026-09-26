@@ -28,6 +28,7 @@ import { profesionalService, type Profesional } from '@/services/profesionalServ
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { routerMock, resetNavigationMock } from '@/test/mocks/nextNavigation';
+import { alertDialog } from '@/store/useConfirmStore';
 import EditarServicioPage from '@/app/(app)/configuracion/servicios/[id]/page';
 
 const servicio = (over: Partial<Servicio>): Servicio => ({
@@ -79,5 +80,60 @@ describe('EditarServicioPage — legacy form is unchanged (Rule L)', () => {
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
     expect(servicioService.update).toHaveBeenCalledWith(7, expect.objectContaining({ es_promo: true, duracion_minutos: 60, precio: 15000 }));
     expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
+  });
+});
+
+const ana = profesional(1, 'Ana', [softgel]);
+const laura = profesional(2, 'Laura', [semis]);
+const marta = profesional(3, 'Marta', [softgel]);
+const promo = servicio({ es_promo: true });
+const comp = (orden: number, servicio_id: number, profesional_id: number) => ({
+  orden, servicio_id, nombre: '', duracion_minutos: 30, precio: '1000', profesional_id, profesional_nombre: '',
+});
+const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+const pill = (nombre: string) => screen.getByRole('button', { name: nombre });
+
+describe('EditarServicioPage — components section (multi-professional promo)', () => {
+  it('shows the saved components of a promo with their service and professional', async () => {
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    const selects = await screen.findAllByRole('combobox');
+    expect(selects.map(s => (s as HTMLSelectElement).value)).toEqual(['1', '2']);
+    expect(pill('Ana')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('stays hidden with a single active professional and no components', async () => {
+    montar(promo, [ana], { componentes: [], problemas: [] });
+    await screen.findByRole('button', { name: 'Guardar cambios' });
+    expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
+  });
+
+  it('picks service and professional per row and saves them in order', async () => {
+    montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+    // Ana and Marta both offer Softgel: nothing is auto-picked, Laura is not offered.
+    expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: 'Laura' })).not.toBeInTheDocument();
+    fireEvent.click(pill('Marta'));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '2' } });
+    // Laura is the only one offering Semis pies: auto-picked.
+    expect(pill('Laura')).toHaveAttribute('aria-pressed', 'true');
+    guardar();
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalled());
+    expect(servicioService.guardarComponentes).toHaveBeenCalledWith(7, {
+      modo_promo: 'secuencia', precio: null,
+      componentes: [{ servicio_id: 1, profesional_id: 3 }, { servicio_id: 2, profesional_id: 2 }],
+    });
+  });
+
+  it('removes a row and refuses to save a half-filled one', async () => {
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Quitar servicio' }))[1]);
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
+    guardar();
+    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Completá el servicio y la profesional de cada fila.'));
+    expect(servicioService.update).not.toHaveBeenCalled();
   });
 });
