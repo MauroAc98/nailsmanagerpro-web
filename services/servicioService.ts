@@ -40,8 +40,47 @@ export interface Servicio {
   // "Sin categoría", nunca undefined — el backend siempre devuelve la
   // clave, con valor null cuando no hay categoría asignada.
   categoria_id: number | null;
+  // Detalle de promo con componentes (multi-profesional). Solo lo trae el
+  // GET-one / PUT componentes, y siempre aditivo: ausente en index y
+  // legacy. `modo_promo` es null en una promo sin componentes.
+  modo_promo?: ModoPromo | null;
+  componentes?: ComponentePromo[];
+  problemas?: ProblemaPromo[];
+  // Valores VIVOS derivados de los componentes (la duracion/precio
+  // persistidos del servicio pueden quedar viejos si un componente se edita).
+  duracion_derivada?: number | null;
+  precio_componentes?: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export type ModoPromo = 'secuencia' | 'paralelo';
+
+export interface ComponentePromo {
+  orden: number;
+  servicio_id: number;
+  nombre: string;
+  duracion_minutos: number;
+  precio: string | null;
+  profesional_id: number;
+  profesional_nombre: string;
+}
+
+// Problema de configuracion de un componente. `orden` es null para los
+// problemas de la promo entera (ej. sin_inicios_alineados, UI en PR 2d).
+export interface ProblemaPromo {
+  codigo: 'profesional_inactiva' | 'servicio_desvinculado' | 'sin_inicios_alineados';
+  orden: number | null;
+  profesional_id: number | null;
+  servicio_id: number | null;
+  mensaje: string;
+}
+
+export interface GuardarComponentesDto {
+  modo_promo: ModoPromo;
+  // null = precio derivado (suma de los componentes); un numero = override.
+  precio: number | null;
+  componentes: { servicio_id: number; profesional_id: number }[];
 }
 
 export interface CreateServicioDto {
@@ -85,6 +124,14 @@ export const servicioService = {
 
   update: async (id: number, dto: UpdateServicioDto): Promise<Servicio> => {
     const { data } = await api.put<Servicio>(`/servicios/${id}`, dto);
+    return data;
+  },
+
+  // Reemplaza los componentes de la promo (orden = posicion en el array).
+  // Devuelve el detalle completo, igual que getOne. Un array vacio revierte
+  // la promo a legacy.
+  guardarComponentes: async (id: number, dto: GuardarComponentesDto): Promise<Servicio> => {
+    const { data } = await api.put<Servicio>(`/servicios/${id}/componentes`, dto);
     return data;
   },
 
