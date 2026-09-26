@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import SelectorProfesional from '@/components/SelectorProfesional';
+import { formatMontoCorto } from '@/lib/money';
 import type { ModoPromo, Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { moverFila, profesionalesQueOfrecen, problemasDeFila, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
@@ -26,6 +27,13 @@ interface Props {
   // paralelo_no_habilitado 422 from the last save attempt, shown next to
   // the mode control instead of falling back to the generic dialog.
   modoError?: string;
+  // Live values derived from the catalog (never the promo's own persisted
+  // duracion/precio, which can go stale) — the page owns the computation
+  // (lib.duracionDerivada/sumaComponentes), this component only displays it.
+  duracionDerivada: number;
+  sumaComponentes: number;
+  precioComponentes: string;
+  onPrecioComponentesChange: (value: string) => void;
 }
 
 // "Servicios que incluye" section of a promo. Controlled and presentational:
@@ -33,6 +41,7 @@ interface Props {
 // professional who performs it (only professionals who offer that service).
 export default function ComponentesPromoSection({
   componentes, onChange, servicios, profesionales, problemas, modo, onModoChange, paraleloHabilitado, modoError,
+  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange,
 }: Props) {
   const t = useTranslations('configuracion.ComponentesPromoSection');
 
@@ -197,6 +206,33 @@ export default function ComponentesPromoSection({
           <Plus size={16} />{t('add')}
         </button>
       </div>
+
+      {componentes.some(c => c.servicioId !== null) && (
+        <div style={{ marginTop: 14 }}>
+          <p style={{ margin: '0 0 10px 2px', fontSize: 13, color: colors.subtext }}>
+            {t('durationDerived', { min: duracionDerivada })}
+          </p>
+          <label htmlFor="precioComponentes" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, marginBottom: 7, display: 'block', marginLeft: 2 }}>
+            {t('priceLabel')}
+          </label>
+          <input
+            id="precioComponentes"
+            type="number"
+            inputMode="decimal"
+            placeholder={t('pricePlaceholder')}
+            value={precioComponentes}
+            onChange={e => onPrecioComponentesChange(e.target.value)}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+              borderRadius: 10, padding: '10px 12px', fontSize: 14, color: colors.text,
+            }}
+          />
+          <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.subtext }}>
+            {t('priceSumHint', { monto: `$${formatMontoCorto(sumaComponentes)}` })}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

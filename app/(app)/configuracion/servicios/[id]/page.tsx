@@ -17,8 +17,9 @@ import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSect
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
-  draftsDesdeDetalle, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
-  payloadComponentes, serviciosComponibles, type ComponenteDraft, type ProblemaFila,
+  draftsDesdeDetalle, duracionDerivada, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
+  payloadComponentes, precioAGuardar, precioInicialComponentes, serviciosComponibles, sumaComponentes,
+  type ComponenteDraft, type ProblemaFila,
 } from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
@@ -62,6 +63,11 @@ export default function EditarServicioPage() {
   const [iniciales, setIniciales] = useState<ComponenteDraft[]>([]);
   const [modoPromo, setModoPromo] = useState<ModoPromo>('secuencia');
   const [modoInicial, setModoInicial] = useState<ModoPromo>('secuencia');
+  // Precio override dedicado — NUNCA reusar el `precio` legacy de arriba:
+  // una promo que pasa de 0 a su primer componente heredaría el precio
+  // legacy viejo como si fuera un override falso (ver precioAGuardar).
+  const [precioComponentes, setPrecioComponentes] = useState('');
+  const [precioComponentesInicial, setPrecioComponentesInicial] = useState('');
   // Problemas de configuración guardados (inactiva/desvinculado) más los que
   // devuelve un intento de guardado fallido, unidos por fila (item 3 + 4).
   const [problemas, setProblemas] = useState<ProblemaFila[]>([]);
@@ -87,6 +93,9 @@ export default function EditarServicioPage() {
           setModoPromo(detalle.modo_promo ?? 'secuencia');
           setModoInicial(detalle.modo_promo ?? 'secuencia');
           setProblemas(detalle.problemas ?? []);
+          const precioInicial = precioInicialComponentes(detalle);
+          setPrecioComponentes(precioInicial);
+          setPrecioComponentesInicial(precioInicial);
         }
       } catch {
         await alertDialog(t('loadError'));
@@ -108,10 +117,23 @@ export default function EditarServicioPage() {
   const activas = profesionales.filter(p => p.activo).length;
   const mostrarComponentes = esPromo && (activas > 1 || componentes.length > 0);
   const aGuardar = payloadComponentes(componentes);
+  // Filas completas (no solo "algún servicio elegido"): recién ahí hay una
+  // promo con componentes lista para guardar y para reemplazar los campos
+  // legacy de duración/precio de arriba.
+  const tieneComponentes = aGuardar.length > 0;
   const paraleloHabilitado = paraleloDisponible(user?.atiende_en_paralelo, activas);
-  const dtoActual = { modo_promo: modoPromo, componentes: aGuardar };
-  const dtoInicial = { modo_promo: modoInicial, componentes: payloadComponentes(iniciales) };
+  const sumaActual = sumaComponentes(componentes, servicios);
+  const precioOverride = tieneComponentes ? precioAGuardar(precioComponentes, sumaActual) : null;
+  const precioOverrideInicial = iniciales.length > 0
+    ? precioAGuardar(precioComponentesInicial, sumaComponentes(iniciales, servicios))
+    : null;
+  const dtoActual = { modo_promo: modoPromo, precio: precioOverride, componentes: aGuardar };
+  const dtoInicial = { modo_promo: modoInicial, precio: precioOverrideInicial, componentes: payloadComponentes(iniciales) };
   const componentesCambiaron = mostrarComponentes && JSON.stringify(dtoActual) !== JSON.stringify(dtoInicial);
+  // Se está apagando una promo que YA tenía componentes guardados: el
+  // backend exige que el servicio siga siendo es_promo mientras corre el
+  // PUT que los vacía, así que ese PUT debe ir ANTES de apagar es_promo.
+  const apagandoPromoConComponentes = !esPromo && iniciales.length > 0;
   // Backend problemas + errores del último intento de guardado, por fila.
   const problemasCombinados: ProblemaFila[] = [
     ...problemas,
@@ -146,6 +168,20 @@ export default function EditarServicioPage() {
     }
 
     setSaving(true);
+
+    if (apagandoPromoConComponentes) {
+      // Va ANTES del update: el backend exige que el servicio siga siendo
+      // es_promo mientras corre este PUT, así que hay que vaciar los
+      // componentes antes de que es_promo pase a false.
+      try {
+        await servicioService.guardarComponentes(id, { modo_promo: modoInicial, precio: null, componentes: [] });
+      } catch (e) {
+        setSaving(false);
+        await alertDialog(erroresGuardarComponentes(e).general ?? t('saveError'));
+        return;
+      }
+    }
+
     const result = await actualizarServicio(id, {
       nombre: nombre.trim(),
       duracion_minutos: duracion,
@@ -156,13 +192,13 @@ export default function EditarServicioPage() {
       es_promo: esPromo,
       categoria_id: categoriaId ?? null,
     });
-    if (result.success && componentesCambiaron) {
+    if (result.success && !apagandoPromoConComponentes && componentesCambiaron) {
       // Va DESPUÉS del update: el PUT componentes exige que la promo ya sea
       // es_promo en el backend, y pisa duración/precio con los derivados.
       try {
         await servicioService.guardarComponentes(id, {
           modo_promo: modoPromo,
-          precio: null,
+          precio: precioOverride,
           componentes: aGuardar,
         });
         await useServiciosStore.getState().fetchServicios();
@@ -231,24 +267,29 @@ export default function EditarServicioPage() {
           {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
-        {/* Duración */}
-        <div>
-          <label style={labelStyle}>{t('durationLabel')}</label>
-          <DuracionPicker value={duracion} onChange={setDuracion} />
-        </div>
+        {/* Duración y precio: ocultos una vez que la promo tiene componentes
+            completos — ComponentesPromoSection muestra la duración derivada
+            (solo lectura) y el precio override en su lugar. */}
+        {!tieneComponentes && (
+          <>
+            <div>
+              <label style={labelStyle}>{t('durationLabel')}</label>
+              <DuracionPicker value={duracion} onChange={setDuracion} />
+            </div>
 
-        {/* Precio */}
-        <div>
-          <label style={labelStyle}>{t('priceLabel')}</label>
-          <input
-            type="number"
-            placeholder={t('pricePlaceholder')}
-            value={precio}
-            onChange={e => setPrecio(e.target.value)}
-            style={inputStyle}
-            inputMode="decimal"
-          />
-        </div>
+            <div>
+              <label style={labelStyle}>{t('priceLabel')}</label>
+              <input
+                type="number"
+                placeholder={t('pricePlaceholder')}
+                value={precio}
+                onChange={e => setPrecio(e.target.value)}
+                style={inputStyle}
+                inputMode="decimal"
+              />
+            </div>
+          </>
+        )}
 
         {/* Promo */}
         <div style={{
@@ -275,6 +316,10 @@ export default function EditarServicioPage() {
             onModoChange={setModoPromo}
             paraleloHabilitado={paraleloHabilitado}
             modoError={modoError || undefined}
+            duracionDerivada={duracionDerivada(modoPromo, componentes, servicios)}
+            sumaComponentes={sumaActual}
+            precioComponentes={precioComponentes}
+            onPrecioComponentesChange={setPrecioComponentes}
           />
         )}
 

@@ -287,7 +287,11 @@
     "modeParallelDisabledHint": "Activá \"Atiende en paralelo\" en Configuración (con más de una profesional activa) para ofrecer este modo.",
     "moveUp": "Subir en el orden",
     "moveDown": "Bajar en el orden",
-    "orderLabel": "Posición {n}"
+    "orderLabel": "Posición {n}",
+    "durationDerived": "Duración calculada: {min} min",
+    "priceLabel": "Precio de la promo",
+    "pricePlaceholder": "Suma de los servicios",
+    "priceSumHint": "Por defecto, la suma de los servicios: {monto}"
   },
   "SelectorCategoriaServicio": {
     "label": "Categoría",
