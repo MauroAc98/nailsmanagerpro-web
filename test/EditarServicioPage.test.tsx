@@ -28,6 +28,12 @@ import { servicioService, type Servicio } from '@/services/servicioService';
 import { profesionalService, type Profesional } from '@/services/profesionalService';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import type { User } from '@/services/authService';
+
+// Test-only helper: only `atiende_en_paralelo` matters for these cases, the
+// rest of `User`'s required fields are irrelevant noise for this screen.
+const conAtiendeEnParalelo = (atiende_en_paralelo: boolean): User => ({ atiende_en_paralelo } as unknown as User);
 import { routerMock, resetNavigationMock } from '@/test/mocks/nextNavigation';
 import EditarServicioPage from '@/app/(app)/configuracion/servicios/[id]/page';
 
@@ -60,6 +66,7 @@ function montar(editado: Servicio, profesionales: Profesional[] = [], detalle: P
 beforeEach(() => {
   vi.clearAllMocks();
   resetNavigationMock();
+  useAuthStore.setState({ user: null });
 });
 
 describe('EditarServicioPage — legacy form is unchanged (Rule L)', () => {
@@ -168,6 +175,38 @@ describe('EditarServicioPage — components section (multi-professional promo)',
     guardar();
     expect(await screen.findByText('Marta no ofrece Softgel')).toBeInTheDocument();
     expect(alertDialog).not.toHaveBeenCalled();
+  });
+
+});
+
+describe('EditarServicioPage — mode, reorder, derived duration/price (2b-iii)', () => {
+  it('paralelo is disabled with a hint when the studio setting is off, even with 2+ active professionals', async () => {
+    useAuthStore.setState({ user: conAtiendeEnParalelo(false) });
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    expect(await screen.findByRole('button', { name: 'A la vez' })).toBeDisabled();
+    expect(screen.getByText(/Activá "Atiende en paralelo"/)).toBeInTheDocument();
+  });
+
+  it('paralelo is enabled with the setting on and switching to it hides reorder controls and order numbers', async () => {
+    useAuthStore.setState({ user: conAtiendeEnParalelo(true) });
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    expect((await screen.findAllByRole('button', { name: 'Subir en el orden' }))).toHaveLength(2);
+    expect(screen.getByLabelText('Posición 1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'A la vez' }));
+    expect(screen.queryByRole('button', { name: 'Subir en el orden' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Posición 1')).not.toBeInTheDocument();
+  });
+
+  it('reorders rows with the down arrow and sends precio null (empty field defaults to the sum)', async () => {
+    useAuthStore.setState({ user: conAtiendeEnParalelo(false) });
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Bajar en el orden' }))[0]);
+    guardar();
+    await waitFor(() => expect(servicioService.guardarComponentes).toHaveBeenCalled());
+    expect(servicioService.guardarComponentes).toHaveBeenCalledWith(7, {
+      modo_promo: 'secuencia', precio: null,
+      componentes: [{ servicio_id: 2, profesional_id: 2 }, { servicio_id: 1, profesional_id: 1 }],
+    });
   });
 
 });
