@@ -210,3 +210,46 @@ describe('EditarServicioPage — mode, reorder, derived duration/price (2b-iii)'
   });
 
 });
+
+describe('EditarServicioPage — derived duration, price override, turn-off cleanup (2b-iv)', () => {
+  it('shows the derived duration and hides the legacy duration/price inputs once a row is fully chosen', async () => {
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    expect(await screen.findByText('Duración calculada: 105 min')).toBeInTheDocument();
+    expect(screen.queryByText('Duración *')).not.toBeInTheDocument();
+    expect(screen.queryByText('Precio (opcional)')).not.toBeInTheDocument();
+  });
+
+  it('keeps legacy duration/price visible for a promo with zero components', async () => {
+    montar(promo, [ana, laura], { componentes: [], problemas: [] });
+    await screen.findByRole('button', { name: 'Guardar cambios' });
+    expect(screen.getByText('Duración *')).toBeInTheDocument();
+    expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
+  });
+
+  it('sends the typed override when the price field differs from the component sum', async () => {
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    const precioInput = await screen.findByLabelText('Precio de la promo');
+    fireEvent.change(precioInput, { target: { value: '18000' } });
+    guardar();
+    await waitFor(() => expect(servicioService.guardarComponentes).toHaveBeenCalled());
+    expect(servicioService.guardarComponentes).toHaveBeenCalledWith(7, {
+      modo_promo: 'secuencia', precio: 18000,
+      componentes: [{ servicio_id: 1, profesional_id: 1 }, { servicio_id: 2, profesional_id: 2 }],
+    });
+  });
+
+  it('sends componentes: [] before turning off es_promo on a promo with saved components', async () => {
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    await screen.findAllByRole('combobox');
+    vi.mocked(servicioService.guardarComponentes).mockResolvedValue(promo);
+    fireEvent.click(screen.getByRole('switch'));
+    guardar();
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalled());
+    expect(servicioService.guardarComponentes).toHaveBeenCalledWith(7, {
+      modo_promo: 'secuencia', precio: null, componentes: [],
+    });
+    const guardarOrder = vi.mocked(servicioService.guardarComponentes).mock.invocationCallOrder[0];
+    const updateOrder = vi.mocked(servicioService.update).mock.invocationCallOrder[0];
+    expect(guardarOrder).toBeLessThan(updateOrder);
+  });
+});
