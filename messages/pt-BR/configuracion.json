@@ -312,7 +312,9 @@
     "loading": "Carregando profissionais...",
     "emptyState": "Cadastre sua primeira profissional!",
     "noServices": "Sem serviços atribuídos",
-    "serviceCount": "{count, plural, one {# serviço} other {# serviços}}"
+    "serviceCount": "{count, plural, one {# serviço} other {# serviços}}",
+    "paraleloTitle": "Atende em paralelo",
+    "paraleloHint": "Permite criar promoções em que duas profissionais atendem a cliente ao mesmo tempo."
   },
   "NuevoProfesionalPage": {
     "title": "Nova profissional",

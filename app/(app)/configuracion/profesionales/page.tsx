@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { Profesional } from '@/services/profesionalService';
+import { useAuthStore } from '@/store/useAuthStore';
+import { alertDialog } from '@/store/useConfirmStore';
+import { mensajeBloqueoParalelo } from '@/lib/promoComponentes';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
 
@@ -73,8 +76,29 @@ export default function ProfesionalesPage() {
   const t = useTranslations('configuracion.ProfesionalesPage');
   const router = useRouter();
   const { profesionales, loading, error, fetchProfesionales, toggleActivo } = useProfesionalStore();
+  const { user, updatePerfil } = useAuthStore();
+  const [guardandoParalelo, setGuardandoParalelo] = useState(false);
 
   useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Nada nuevo aparece si no hace falta (principio de simplicidad): con una
+  // sola profesional activa "atender en paralelo" no tiene sentido.
+  const activas = profesionales.filter(p => p.activo).length;
+  const mostrarParalelo = activas > 1;
+
+  const handleToggleParalelo = async (valor: boolean) => {
+    setGuardandoParalelo(true);
+    try {
+      await updatePerfil({ atiende_en_paralelo: valor });
+    } catch (e) {
+      // El ajuste vuelve solo a su valor anterior: no hay estado optimista
+      // local, `PillToggle` refleja `user.atiende_en_paralelo`, que
+      // `updatePerfil` deja sin tocar cuando tira el 422.
+      await alertDialog(mensajeBloqueoParalelo(e));
+    } finally {
+      setGuardandoParalelo(false);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
@@ -108,6 +132,29 @@ export default function ProfesionalesPage() {
           {t('disclaimer')}
         </p>
       </div>
+
+      {/* Ajuste del salón "atiende en paralelo" (PR 2d): solo con más de una
+          profesional activa, apagado por defecto, una sola línea de ayuda. */}
+      {mostrarParalelo && (
+        <div style={{ padding: '0 20px 16px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14, padding: '13px 16px',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, color: colors.text }}>{t('paraleloTitle')}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('paraleloHint')}</p>
+            </div>
+            <PillToggle
+              value={user?.atiende_en_paralelo ?? false}
+              onChange={handleToggleParalelo}
+              disabled={guardandoParalelo}
+              ariaLabel={t('paraleloTitle')}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
