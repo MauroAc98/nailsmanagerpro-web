@@ -57,6 +57,11 @@ export interface User {
   // interiores y rechaza duplicados con 422.
   categorias_gasto: string[];
   categorias_ingreso: string[];
+  // Ajuste del salón "atiende en paralelo" (combo multi-profesional):
+  // habilita el modo paralelo en promos con componentes. Optional/undefined
+  // en respuestas viejas cacheadas; el backend siempre lo manda (default
+  // false) — ver ParaleloGuard.
+  atiende_en_paralelo?: boolean;
 }
 
 export interface NegocioBranding {
