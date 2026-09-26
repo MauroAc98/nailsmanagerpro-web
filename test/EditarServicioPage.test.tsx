@@ -23,6 +23,7 @@ vi.mock('@/services/categoriaServicioService', () => ({
 vi.mock('@/store/useConfirmStore', () => ({ alertDialog: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/components/reservaOnline/EntradaFotosServicio', () => ({ EntradaFotosServicio: () => null }));
 
+import { alertDialog } from '@/store/useConfirmStore';
 import { servicioService, type Servicio } from '@/services/servicioService';
 import { profesionalService, type Profesional } from '@/services/profesionalService';
 import { useServiciosStore } from '@/store/useServicioStore';
@@ -49,6 +50,10 @@ function montar(editado: Servicio, profesionales: Profesional[] = [], detalle: P
   vi.mocked(servicioService.getOne).mockResolvedValue({ ...editado, ...detalle });
   vi.mocked(servicioService.update).mockResolvedValue(editado);
   vi.mocked(profesionalService.getAll).mockResolvedValue(profesionales);
+  // clearAllMocks only clears call history, not a previously configured
+  // reject/resolve — reset explicitly so one test's error case never leaks
+  // into the next test's happy path.
+  vi.mocked(servicioService.guardarComponentes).mockReset();
   return renderWithProviders(<EditarServicioPage />);
 }
 
@@ -126,4 +131,43 @@ describe('EditarServicioPage — components section (multi-professional promo)',
       componentes: [{ servicio_id: 1, profesional_id: 3 }, { servicio_id: 2, profesional_id: 2 }],
     });
   });
+
+  it('removes a row with the X button', async () => {
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    await screen.findAllByRole('combobox');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Quitar servicio' })[0]);
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+  });
+
+  it('refuses to save a half-filled row', async () => {
+    montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
+    // Ana and Marta both offer Softgel: nothing is auto-picked, row stays half-filled.
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+    guardar();
+    await waitFor(() => expect(alertDialog).toHaveBeenCalled());
+    expect(servicioService.update).not.toHaveBeenCalled();
+  });
+
+  it('shows a saved problema message inline for its row', async () => {
+    montar(promo, [ana, laura], {
+      componentes: [comp(1, 1, 1), comp(2, 2, 2)],
+      problemas: [{ codigo: 'profesional_inactiva', orden: 2, profesional_id: 2, servicio_id: 2, mensaje: 'Laura está inactiva' }],
+    });
+    expect(await screen.findByText('Laura está inactiva')).toBeInTheDocument();
+  });
+
+  it('maps a 422 componentes.{i} error to its row instead of a generic dialog', async () => {
+    montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+    fireEvent.click(pill('Marta'));
+    vi.mocked(servicioService.guardarComponentes).mockRejectedValue({
+      response: { data: { message: 'x', errors: { 'componentes.0.profesional_id': ['Marta no ofrece Softgel'] } } },
+    });
+    guardar();
+    expect(await screen.findByText('Marta no ofrece Softgel')).toBeInTheDocument();
+    expect(alertDialog).not.toHaveBeenCalled();
+  });
+
 });
