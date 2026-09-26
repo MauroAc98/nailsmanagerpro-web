@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, moverFila,
-  paraleloDisponible, precioAGuardar, precioInicialComponentes, problemasDeFila, sumaComponentes,
+  duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, mensajeBloqueoParalelo, moverFila,
+  paraleloDisponible, precioAGuardar, precioInicialComponentes, problemasDeFila, problemasDePromo, sumaComponentes,
   type ComponenteDraft,
 } from './promoComponentes';
 import type { Servicio } from '@/services/servicioService';
@@ -42,6 +42,17 @@ describe('promoComponentes — problemas por fila', () => {
   });
 });
 
+describe('promoComponentes — problemas de la promo entera (PR 2d)', () => {
+  it('problemasDePromo: solo los de orden null (ej. sin_inicios_alineados), deja afuera los de fila', () => {
+    const problemas = [
+      { orden: 1, mensaje: 'Laura está inactiva' },
+      { orden: null, mensaje: 'Sin inicios alineados' },
+    ];
+    expect(problemasDePromo(problemas)).toEqual([{ orden: null, mensaje: 'Sin inicios alineados' }]);
+    expect(problemasDePromo([{ orden: 1, mensaje: 'x' }])).toEqual([]);
+  });
+});
+
 describe('promoComponentes — mapeo de errores 422 de PUT /componentes', () => {
   it('mapea componentes.{i}.servicio_id|profesional_id a la fila i (0-based)', () => {
     const e = { response: { data: { message: 'x', errors: {
@@ -61,6 +72,24 @@ describe('promoComponentes — mapeo de errores 422 de PUT /componentes', () => 
   it('cae a un mensaje general para cualquier otro error', () => {
     const e = { response: { data: { message: 'Servicio inválido' } } };
     expect(erroresGuardarComponentes(e)).toEqual({ porFila: {}, general: 'Servicio inválido' });
+  });
+});
+
+describe('promoComponentes — mensaje de bloqueo al apagar atiende_en_paralelo (PR 2d)', () => {
+  it('nombra las promos en paralelo activas cuando el 422 trae code promos_paralelas_activas', () => {
+    const e = { response: { data: {
+      message: 'No podés apagar "Atiende en paralelo" mientras tengas promos en paralelo activas. Pasalas a secuencia primero.',
+      code: 'promos_paralelas_activas',
+      promos: [{ id: 1, nombre: 'Softgel + Semis' }, { id: 2, nombre: 'Combo pies' }],
+    } } };
+    expect(mensajeBloqueoParalelo(e)).toBe(
+      'No podés apagar "Atiende en paralelo" mientras tengas promos en paralelo activas. Pasalas a secuencia primero. (Softgel + Semis, Combo pies)'
+    );
+  });
+
+  it('cae al mensaje general para cualquier otro error', () => {
+    const e = { response: { data: { message: 'Error de red' } } };
+    expect(mensajeBloqueoParalelo(e)).toBe('Error de red');
   });
 });
 

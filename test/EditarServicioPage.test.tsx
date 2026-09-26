@@ -238,6 +238,40 @@ describe('EditarServicioPage — derived duration, price override, turn-off clea
     });
   });
 
+});
+
+describe('EditarServicioPage — alignment warnings and unbookable notice (PR 2d)', () => {
+  it('shows a non-blocking alignment warning under the mode selector, save still enabled', async () => {
+    montar(promo, [ana, laura], {
+      componentes: [comp(1, 1, 1), comp(2, 2, 2)],
+      problemas: [],
+      alineacion_slots: {
+        inicios_validos: [],
+        descartados: [{ hora_inicio: '10:00', profesional_id: 2, profesional_nombre: 'Laura', hora_requerida: '11:00', mensaje: 'Laura no tiene slot a las 11:00, esta promo no se ofrecerá a las 10:00' }],
+      },
+    });
+    expect(await screen.findByText('Laura no tiene slot a las 11:00, esta promo no se ofrecerá a las 10:00')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).not.toBeDisabled();
+  });
+
+  it('hides the alignment warning block when descartados is empty', async () => {
+    montar(promo, [ana, laura], {
+      componentes: [comp(1, 1, 1), comp(2, 2, 2)],
+      problemas: [],
+      alineacion_slots: { inicios_validos: ['10:00'], descartados: [] },
+    });
+    await screen.findAllByRole('combobox');
+    expect(screen.queryByText(/no tiene slot/)).not.toBeInTheDocument();
+  });
+
+  it('shows the sin_inicios_alineados problema prominently, separate from per-row problems', async () => {
+    montar(promo, [ana, laura], {
+      componentes: [comp(1, 1, 1), comp(2, 2, 2)],
+      problemas: [{ codigo: 'sin_inicios_alineados', orden: null, profesional_id: null, servicio_id: null, mensaje: 'Ningún horario de esta promo coincide con los slots de todas las profesionales: no se ofrecerá online.' }],
+    });
+    expect(await screen.findByText(/no se ofrecerá online/)).toBeInTheDocument();
+  });
+
   it('sends componentes: [] before turning off es_promo on a promo with saved components', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
     await screen.findAllByRole('combobox');
