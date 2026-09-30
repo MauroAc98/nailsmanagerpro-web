@@ -44,13 +44,15 @@ describe('SwipeableTurnoCard — swipe-to-cancel resting peek (Change 4)', () =>
 });
 
 describe('SwipeableTurnoCard — en_curso layout (Change 5)', () => {
-  it('shows the "En curso" indicator in the time column and only the "Finalizar ahora" action', () => {
+  it('shows the "En curso" indicator (now in the action column, above "Finalizar ahora") and only that one action', () => {
     const turno = buildTurno({ estado_visual: 'en_curso' });
     renderWithProviders(
       <SwipeableTurnoCard turno={turno} onCancel={vi.fn()} onFinalizar={vi.fn()} />,
     );
-    // "EN CURSO" now renders exactly once (moved into the time column) —
-    // no more separate badge in the action zone.
+    // "EN CURSO" renders exactly once — Change 6 (2026-09-30) moved it from
+    // the time column to the action column, next to "Finalizar ahora" (same
+    // place the "Finalizado" badge already lives), but it's still a single
+    // indicator either way.
     expect(screen.getAllByText('EN CURSO')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Finalizar ahora' })).toBeInTheDocument();
   });
@@ -63,6 +65,67 @@ describe('SwipeableTurnoCard — en_curso layout (Change 5)', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Finalizar ahora' }));
     expect(onFinalizar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SwipeableTurnoCard — profesional como texto "con {nombre}" (Change 6, 2026-09-30)', () => {
+  // Reemplaza el punto de color + nombre en la columna de hora (ambiguo:
+  // no se distinguía de un dato de la clienta) — ver canvas aprobado.
+  // "con Natalia" va en su propia línea, después del servicio, para no
+  // competir por el mismo renglón truncado.
+  it('con profesionalLabel, muestra "con {nombre}" debajo del servicio', () => {
+    renderWithProviders(
+      <SwipeableTurnoCard
+        turno={buildTurno()}
+        onCancel={vi.fn()}
+        profesionalLabel={{ nombre: 'Natalia', color: '#8a7dc9' }}
+      />,
+    );
+    expect(screen.getByText('con Natalia')).toBeInTheDocument();
+  });
+
+  it('sin avatarUrl, el mini-avatar cae a iniciales (mismo criterio que SelectorProfesional)', () => {
+    renderWithProviders(
+      <SwipeableTurnoCard
+        turno={buildTurno()}
+        onCancel={vi.fn()}
+        profesionalLabel={{ nombre: 'Natalia', apellido: 'Diaz', color: '#8a7dc9' }}
+      />,
+    );
+    expect(screen.getByText('ND')).toBeInTheDocument();
+  });
+
+  it('con avatarUrl, muestra la foto real en vez de las iniciales', () => {
+    renderWithProviders(
+      <SwipeableTurnoCard
+        turno={buildTurno()}
+        onCancel={vi.fn()}
+        profesionalLabel={{ nombre: 'Natalia', color: '#8a7dc9', avatarUrl: 'https://cdn.turnetto.com/natalia.jpg' }}
+      />,
+    );
+    const foto = screen.getAllByAltText('').find(img => (img as HTMLImageElement).src.includes('natalia.jpg'));
+    expect(foto).toBeDefined();
+    expect(screen.queryByText('N')).not.toBeInTheDocument();
+  });
+
+  it('sin profesionalLabel (cuenta con una sola profesional), no muestra ningún "con"', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno()} onCancel={vi.fn()} />);
+    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
+  });
+});
+
+describe('SwipeableTurnoCard — tooltip del servicio (Change 6, 2026-09-30)', () => {
+  // El servicio vuelve a truncarse en una sola línea (cards de altura
+  // pareja); el texto completo queda disponible en un tooltip en vez de
+  // perderse — ver canvas aprobado. Alcanza con confirmar que el trigger
+  // expone el texto completo (vía Tooltip.Trigger render=), no hace falta
+  // simular el hover para probar el comportamiento de Base UI en sí.
+  it('el texto completo de los servicios sigue en el DOM, aunque se trunque visualmente', () => {
+    const turno = buildTurno({
+      servicios: [{ id: 1, nombre: 'Capping' }, { id: 2, nombre: 'Semis manos' }],
+    });
+    renderWithProviders(<SwipeableTurnoCard turno={turno} onCancel={vi.fn()} />);
+    expect(screen.getByText('Capping + Semis manos')).toBeInTheDocument();
   });
 });
 

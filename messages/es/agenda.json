@@ -40,11 +40,13 @@
     "deletedClient": "Cliente eliminado",
     "finishNow": "Finalizar ahora",
     "inProgress": "EN CURSO",
-    "cancel": "CANCELAR"
+    "cancel": "CANCELAR",
+    "withProfesional": "con {nombre}"
   },
   "FinalizadoCard": {
     "deletedClient": "Cliente eliminado",
-    "finished": "FINALIZADO"
+    "finished": "FINALIZADO",
+    "withProfesional": "con {nombre}"
   },
   "AgendaListHeader": {
     "results": "Resultados",
