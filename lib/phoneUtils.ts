@@ -38,6 +38,21 @@ export const phoneUtils = {
       : { codigo: '54', numero: raw };
   },
 
+  // Detecta si un valor recién ingresado (tipeado O pegado) ya trae el
+  // código de país embebido — empieza con "+" o es más largo que un número
+  // local — y en ese caso lo separa. Antes esto solo corría al pegar
+  // (pensado para números copiados de un contacto de WhatsApp, que vienen en
+  // formato internacional completo); pero tipear el número completo a mano
+  // deja el mismo problema: código de país duplicado entre el selector y el
+  // campo de texto. Devuelve null si no hay código embebido, para que el
+  // caller haga el clean() normal.
+  detectarCodigoPaisEmbebido: (valorCrudo: string): { codigo: string; numero: string } | null => {
+    const soloDigitos = phoneUtils.clean(valorCrudo);
+    if (!soloDigitos) return null;
+    const traeCodigoPais = valorCrudo.trim().startsWith('+') || soloDigitos.length > 11;
+    return traeCodigoPais ? phoneUtils.splitCodigoPais(soloDigitos) : null;
+  },
+
   // Formato de lectura ("376 474-1700") para mostrar un teléfono en UI, no
   // para linkear — a diferencia de formatForWhatsApp/splitCodigoPais, este
   // campo (telefono del estudio, perfil) es texto libre sin selector de país

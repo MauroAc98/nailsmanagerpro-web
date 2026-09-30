@@ -23,8 +23,8 @@ function setup(overrides: Partial<Props> = {}) {
     codigoPais: '54',
     setCodigoPais: vi.fn(),
     telefono: '',
-    setTelefono: vi.fn(),
     onPasteTelefono: vi.fn(),
+    onChangeTelefono: vi.fn(),
     direccion: 'Av. Siempreviva 742',
     setDireccion: vi.fn(),
     latitud: null,
@@ -42,14 +42,15 @@ function setup(overrides: Partial<Props> = {}) {
 }
 
 describe('SheetDatosPersonales — teléfono', () => {
-  it('tipear espacios/guion no los guarda: solo dígitos, como pegarlo (bug real 2026-09-30)', () => {
-    const setTelefono = vi.fn();
-    setup({ setTelefono });
-    // Tipeado, no pegado: el bug real llamaba a setTelefono con el valor
-    // crudo del input, espacio y guion incluidos, rompiendo el envío de
-    // WhatsApp (la API pide el número en solo dígitos).
+  it('tipear en el campo delega el valor crudo a onChangeTelefono, no a setTelefono directo', () => {
+    // La limpieza de dígitos y la separación de un código de país embebido
+    // las decide quien usa el componente (aplicarTelefonoIngresado en
+    // perfil/page.tsx), igual que para AltaClienteRapidaSheet — este
+    // componente solo reenvía lo que se tipeó, sin decidir el formato.
+    const onChangeTelefono = vi.fn();
+    setup({ onChangeTelefono });
     fireEvent.change(screen.getByPlaceholderText('Teléfono'), { target: { value: '376 424-0951' } });
-    expect(setTelefono).toHaveBeenCalledWith('3764240951');
+    expect(onChangeTelefono).toHaveBeenCalledWith('376 424-0951');
   });
 });
 
