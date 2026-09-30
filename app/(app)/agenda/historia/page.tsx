@@ -85,7 +85,7 @@ function HistoriaContent() {
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
     elegirFoto, quitarFondoFijo, descargarImagen, compartirImagen, fondoUri, fondoFijoGuardado,
-    nombreEstudio, telefonoEstudio, logoUrl,
+    nombreEstudio, telefonoEstudio,
   } = useGenerarHistoria(fechaInicial);
 
   // Multi-agenda — invisible con ≤1 profesional activa, mismo criterio que
@@ -237,7 +237,6 @@ function HistoriaContent() {
               titulo={titulo}
               nombreEstudio={nombreEstudio}
               telefonoEstudio={telefonoEstudio}
-              logoUrl={logoUrl}
               profesionalNombre={profesionalSeleccionada?.nombre}
               dias={diasAMostrar}
               fondoUri={fondoUri}

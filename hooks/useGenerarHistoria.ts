@@ -113,7 +113,6 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
   const telefonoEstudio = useAuthStore(s => s.user?.telefono ?? null);
-  const logoUrl = useAuthStore(s => s.user?.logo_url ?? null);
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
@@ -688,7 +687,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
-    fondoFijoGuardado, nombreEstudio, telefonoEstudio, logoUrl,
+    fondoFijoGuardado, nombreEstudio, telefonoEstudio,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
