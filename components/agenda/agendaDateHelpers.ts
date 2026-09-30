@@ -41,11 +41,15 @@ export function parseFechaLocal(fechaStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-// Multi-agenda — nombre + color de la profesional a cargo, para la tercera
-// línea de timeSection en SwipeableTurnoCard/FinalizadoCard. undefined/null
-// = no se muestra (cuenta con ≤1 profesional activa, o la vista ya está
-// filtrada a una sola).
+// Multi-agenda — datos de la profesional a cargo, para la línea "con
+// {nombre}" + mini-avatar en SwipeableTurnoCard/FinalizadoCard (Change 6,
+// 2026-09-30). undefined/null = no se muestra (cuenta con ≤1 profesional
+// activa, o la vista ya está filtrada a una sola). apellido/avatarUrl son
+// opcionales porque solo alimentan el avatar (mismo componente que
+// SelectorProfesional): sin ellos, cae a iniciales con solo el nombre.
 export interface ProfesionalLabel {
-  nombre: string;
-  color:  string;
+  nombre:     string;
+  apellido?:  string | null;
+  color:      string;
+  avatarUrl?: string | null;
 }

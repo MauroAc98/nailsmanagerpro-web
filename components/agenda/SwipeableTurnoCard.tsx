@@ -4,10 +4,13 @@ import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { useAuthStore } from '@/store/useAuthStore';
 import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
+import { Tooltip } from '@/components/ui/Tooltip';
 import type { Turno } from '@/services/turnoService';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
 
@@ -112,54 +115,26 @@ export function SwipeableTurnoCard({
   // Sección hora — ancho fijo, nunca se desliza. Si el swipe moviera esta
   // columna (junto con el resto del card) el overflow:hidden del wrapper la
   // clipearía apenas se revela el panel de cancelar (SWIPE_REVEAL ~ su ancho).
+  // Change 6 (2026-09-30, canvas aprobado): profesional y "en curso" se
+  // mudan de acá — quedaba ambiguo si el nombre chico de esta columna era
+  // de la clienta o de quien atiende. Esta columna vuelve a ser solo
+  // hora+fecha, igual en los 3 estados del turno.
   const timeSection = (
     <div
       onClick={() => onPress?.()}
       style={{
-        width: 70, display: 'flex', flexDirection: 'column',
+        width: 66, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', position: 'relative',
         flexShrink: 0, backgroundColor: cardBg, cursor: 'pointer',
       }}
     >
-      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong, letterSpacing: 0 }}>
+      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, letterSpacing: 0, lineHeight: 1 }}>
         {horaDeHora(turno.fecha_hora)}
       </span>
-      <span style={{ fontSize: 9, fontWeight: 700, color: colors.muted, marginTop: 2, textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 9, fontWeight: 700, color: colors.muted, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.4 }}>
         {formatFechaMini(turno.fecha_hora)}
       </span>
-      {profesionalLabel && (
-        <span style={{
-          display: 'flex', alignItems: 'center', gap: 3, marginTop: 2,
-          maxWidth: 64, overflow: 'hidden',
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: 3, flexShrink: 0,
-            backgroundColor: profesionalLabel.color,
-          }} />
-          <span style={{
-            fontSize: 9, fontWeight: 700, color: colors.subtext,
-            textTransform: 'uppercase', letterSpacing: 0.3,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {profesionalLabel.nombre}
-          </span>
-        </span>
-      )}
-      {/* En curso (Change 5) — antes vivía como badge en la columna de
-          acción (más alta que la de un turno pendiente, rompiendo la
-          paridad de altura entre cards); ahora es una tercera línea acá,
-          mismo patrón que profesionalLabel arriba. Va DESPUÉS del label de
-          profesional cuando ambos aplican (multi-agenda + en_curso), la
-          columna de 70px tiene lugar de sobra para las 3-4 líneas. */}
-      {isEnCurso && (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
-          <span style={{ width: 5, height: 5, borderRadius: 2.5, flexShrink: 0, backgroundColor: colors.amber }} />
-          <span style={{ fontSize: 8, fontWeight: 700, color: colors.amberFg, textTransform: 'uppercase', letterSpacing: 0.3, whiteSpace: 'nowrap' }}>
-            {t('inProgress')}
-          </span>
-        </span>
-      )}
-      <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: colors.divider }} />
+      <div style={{ position: 'absolute', right: 0, top: '22%', height: '56%', width: 1, backgroundColor: colors.divider }} />
     </div>
   );
 
@@ -187,7 +162,7 @@ export function SwipeableTurnoCard({
     <>
       {/* Sección info central — flex column propio, no depende únicamente
           del alignItems del padre para centrarse. */}
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ flex: 1, minWidth: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
         {/* Badge "Reserva online" (flag D4): al lado del nombre, sin cambiar
             la altura de la card; el nombre conserva su ellipsis.
             Compacto (solo icono, sin texto) — con el texto completo le
@@ -195,48 +170,92 @@ export function SwipeableTurnoCard({
             texto completo sigue viéndose en la pantalla de editar turno. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <p style={{
-            fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, minWidth: 0,
+            fontSize: 15.5, fontWeight: 600, color: colors.textStrong, margin: 0, minWidth: 0,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
           </p>
           {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline compacto />}
         </div>
-        <p style={{
-          fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
-        </p>
+        {/* Servicio(s) — vuelve a una sola línea con ellipsis (cards de
+            altura pareja, Change 6); la lista completa queda disponible en
+            un tooltip en vez de perderse. */}
+        <Tooltip label={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}>
+          <p style={{
+            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'help',
+          }}>
+            {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+          </p>
+        </Tooltip>
+        {/* "con {profesional}" — reemplaza el punto de color + nombre que
+            antes vivía en la columna de hora (Change 6, canvas aprobado
+            2026-09-30): quedaba ambiguo si era la clienta o quien atiende.
+            En su propia línea (no concatenado con el servicio) para no
+            perderlo si el "..." recorta la lista de servicios. */}
+        {profesionalLabel && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            {/* Mismo avatar que SelectorProfesional (foto real o iniciales
+                sobre el color de la profesional) — reutiliza el componente
+                ya establecido en vez de un punto de color nuevo. */}
+            <span style={{
+              width: 16, height: 16, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 7, fontWeight: 800,
+              backgroundColor: withAlpha(profesionalLabel.color, '26'), color: profesionalLabel.color,
+            }}>
+              {profesionalLabel.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profesionalLabel.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                inicialesProfesional(profesionalLabel.nombre, profesionalLabel.apellido)
+              )}
+            </span>
+            <p style={{ fontSize: 11.5, fontWeight: 700, color: colors.subtext, margin: 0 }}>
+              {t('withProfesional', { nombre: profesionalLabel.nombre })}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Sección acción — en_curso ahora muestra SOLO el botón de finalizar;
-          el badge "EN CURSO" se mudó a la columna de hora (Change 5) para
-          que esta card mida lo mismo que una pendiente (antes el badge
-          apilado arriba del botón la hacía más alta). */}
+      {/* Sección acción. */}
       <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, flexShrink: 0 }}>
         {isEnCurso ? (
           onFinalizar && (
-            <button
-              onClick={e => { e.stopPropagation(); onFinalizar(); }}
-              // El botón vive dentro del área con los handlers de swipe
-              // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
-              // en onClick no alcanza — los eventos táctiles burbujean antes
-              // y de forma independiente del click, así que un tap con
-              // apenas unos px de deriva podía marcar dragged.current=true
-              // en el padre y hacer que el navegador cancele el click
-              // sintético del botón (el panel de precios nunca se abría).
-              onTouchStart={e => e.stopPropagation()}
-              onTouchMove={e => e.stopPropagation()}
-              onTouchEnd={e => e.stopPropagation()}
-              style={{
-                fontSize: 11, fontWeight: 600, color: colors.primaryFg,
-                border: 'none', borderRadius: 20,
-                padding: '6px 14px', backgroundColor: colors.primarySolid, cursor: 'pointer',
-              }}
-            >
-              {t('finishNow')}
-            </button>
+            // "En curso" se muda acá (Change 6) — antes vivía en la columna
+            // de hora; ahora queda junto a su acción y en el mismo lugar
+            // donde el badge de "Finalizado" ya vive para ese otro estado,
+            // así toda la info de "estado del turno" queda en un solo sitio.
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 9, fontWeight: 700, color: colors.amberFg, textTransform: 'uppercase', letterSpacing: 0.3,
+                backgroundColor: colors.amberBg, borderRadius: 8, padding: '2px 7px',
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.amber, flexShrink: 0 }} />
+                {t('inProgress')}
+              </span>
+              <button
+                onClick={e => { e.stopPropagation(); onFinalizar(); }}
+                // El botón vive dentro del área con los handlers de swipe
+                // (onTouchStart/Move/End en cardRef, más abajo). stopPropagation
+                // en onClick no alcanza — los eventos táctiles burbujean antes
+                // y de forma independiente del click, así que un tap con
+                // apenas unos px de deriva podía marcar dragged.current=true
+                // en el padre y hacer que el navegador cancele el click
+                // sintético del botón (el panel de precios nunca se abría).
+                onTouchStart={e => e.stopPropagation()}
+                onTouchMove={e => e.stopPropagation()}
+                onTouchEnd={e => e.stopPropagation()}
+                style={{
+                  fontSize: 11, fontWeight: 600, color: colors.primaryFg,
+                  border: 'none', borderRadius: 20,
+                  padding: '6px 14px', backgroundColor: colors.primarySolid, cursor: 'pointer',
+                }}
+              >
+                {t('finishNow')}
+              </button>
+            </div>
           )
         ) : (
           <>
@@ -287,7 +306,7 @@ export function SwipeableTurnoCard({
     backgroundColor: cardBg, // el paddingLeft de abajo queda fuera de timeSection/
                              // restStyle (los que pintan cardBg) — sin esto, ese
                              // hueco se ve blanco en vez del color real de la card.
-    minHeight: 75,
+    minHeight: 88, // 75->88 (Change 6): más aire ahora que la info central lleva hasta 3 líneas (nombre, servicio, "con {profesional}")
     paddingLeft: 16, // matches RN's CardContainer/globalStyles.card outer padding
   };
 

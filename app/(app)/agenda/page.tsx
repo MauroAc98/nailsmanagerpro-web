@@ -21,6 +21,7 @@ import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
@@ -99,74 +100,81 @@ const sectionLabelStyle: React.CSSProperties = {
 function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesionalLabel?: ProfesionalLabel | null }) {
   const t = useTranslations('agenda.FinalizadoCard');
   return (
-    <div style={{ opacity: 0.6 }}>
+    // Change 6 (2026-09-30, canvas aprobado): sin opacity:0.6 en el wrapper
+    // — antes se sumaba a colores ya atenuados (colors.muted/subtext),
+    // doble atenuación. Ahora se apoya solo en esos colores + el fondo
+    // surfaceSubtle, mismo criterio que SwipeableTurnoCard.
+    <div style={{
+      backgroundColor: colors.surfaceSubtle, borderRadius: 18,
+      border: `1px solid ${colors.border}`, boxShadow: shadows.card,
+      padding: '0 16px 0 16px', display: 'flex', alignItems: 'center', minHeight: 88,
+    }}>
+      {/* Sección hora — solo hora+fecha, igual que en SwipeableTurnoCard
+          (Change 6): la profesional ya no vive acá. */}
       <div style={{
-        backgroundColor: colors.surfaceSubtle, borderRadius: 18,
-        border: `1px solid ${colors.border}`, boxShadow: shadows.card,
-        padding: '12px 26px 12px 16px', display: 'flex', alignItems: 'center', minHeight: 75,
+        width: 66, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
       }}>
-        {/* Sección hora */}
-        <div style={{
-          width: 70, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
-        }}>
-          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.muted, letterSpacing: 0 }}>
-            {horaDeHora(turno.fecha_hora)}
-          </span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 2, textTransform: 'uppercase' }}>
-            {formatFechaMini(turno.fecha_hora)}
-          </span>
-          {profesionalLabel && (
-            <span style={{
-              display: 'flex', alignItems: 'center', gap: 3, marginTop: 2,
-              maxWidth: 64, overflow: 'hidden',
-            }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: 3, flexShrink: 0,
-                backgroundColor: profesionalLabel.color,
-              }} />
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: colors.subtext,
-                textTransform: 'uppercase', letterSpacing: 0.3,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {profesionalLabel.nombre}
-              </span>
-            </span>
-          )}
-          <div style={{ position: 'absolute', right: 0, top: '20%', height: '60%', width: 1, backgroundColor: colors.divider }} />
-        </div>
+        <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.muted, letterSpacing: 0, lineHeight: 1 }}>
+          {horaDeHora(turno.fecha_hora)}
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          {formatFechaMini(turno.fecha_hora)}
+        </span>
+        <div style={{ position: 'absolute', right: 0, top: '22%', height: '56%', width: 1, backgroundColor: colors.divider }} />
+      </div>
 
-        {/* Sección info central */}
-        <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
+      {/* Sección info central */}
+      <div style={{ flex: 1, minWidth: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
+        <p style={{
+          fontSize: 15.5, fontWeight: 500, color: colors.muted, margin: 0, minWidth: 0,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+        </p>
+        <Tooltip label={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}>
           <p style={{
-            fontSize: 16, fontWeight: 600, color: colors.muted, margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-          </p>
-          <p style={{
-            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'help',
           }}>
             {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
           </p>
-        </div>
+        </Tooltip>
+        {profesionalLabel && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{
+              width: 16, height: 16, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 7, fontWeight: 800, opacity: 0.75,
+              backgroundColor: withAlpha(profesionalLabel.color, '26'), color: profesionalLabel.color,
+            }}>
+              {profesionalLabel.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profesionalLabel.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                inicialesProfesional(profesionalLabel.nombre, profesionalLabel.apellido)
+              )}
+            </span>
+            <p style={{ fontSize: 11.5, fontWeight: 700, color: colors.subtext, margin: 0 }}>
+              {t('withProfesional', { nombre: profesionalLabel.nombre })}
+            </p>
+          </div>
+        )}
+      </div>
 
-        {/* Sección acción — mismo lugar que el badge de SwipeableTurnoCard
-            en_curso (columna propia a la derecha), para que el badge de
-            estado no se mezcle con el nombre/servicio del bloque central. */}
-        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, flexShrink: 0 }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            fontSize: 9, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 0.6, textTransform: 'uppercase',
-            backgroundColor: colors.primarySoft,
-            borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-          }}>
-            <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} />
-            {t('finished')}
-          </span>
-        </div>
+      {/* Sección acción — mismo lugar que el badge de SwipeableTurnoCard
+          en_curso (columna propia a la derecha), para que el badge de
+          estado no se mezcle con el nombre/servicio del bloque central. */}
+      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, flexShrink: 0 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          fontSize: 9, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 0.6, textTransform: 'uppercase',
+          backgroundColor: colors.primarySoft,
+          borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
+        }}>
+          <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} />
+          {t('finished')}
+        </span>
       </div>
     </div>
   );
@@ -1082,7 +1090,10 @@ export default function AgendaPage() {
                 ? profesionalesById.get(turno.profesional_id)
                 : undefined;
               const profesionalLabel = profesionalDelTurno
-                ? { nombre: profesionalDelTurno.nombre, color: profesionalDelTurno.color || colors.primary }
+                ? {
+                    nombre: profesionalDelTurno.nombre, apellido: profesionalDelTurno.apellido,
+                    color: profesionalDelTurno.color || colors.primary, avatarUrl: profesionalDelTurno.avatar_url,
+                  }
                 : null;
 
               // Para el placeholder {profesional} del mensaje de WhatsApp: a
