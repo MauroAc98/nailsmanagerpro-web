@@ -26,6 +26,20 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
 
+// Tarjetas que agrupan los campos por sentido ("Identidad", "Disponibilidad",
+// "Servicios") en vez de una pila plana de campos sueltos con igual peso
+// visual — mismo criterio que EditarProfesionalPage (rediseño 2026-09-30).
+const sectionStyle: React.CSSProperties = {
+  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  boxShadow: shadows.card, borderRadius: 16, padding: 16,
+  display: 'flex', flexDirection: 'column', gap: 16,
+};
+
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700, color: colors.primaryDeep,
+  letterSpacing: 1, textTransform: 'uppercase', margin: 0,
+};
+
 export default function NuevoProfesionalPage() {
   const t = useTranslations('configuracion.NuevoProfesionalPage');
   const router = useRouter();
@@ -94,49 +108,65 @@ export default function NuevoProfesionalPage() {
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
-      {/* Form */}
-      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* Nombre */}
-        <div>
-          <label style={labelStyle}>{t('nameLabel')}</label>
-          <input
-            type="text"
-            placeholder={t('namePlaceholder')}
-            value={nombre}
-            onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-            style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
-          />
-          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
+      {/* Form — 3 tarjetas agrupadas por sentido en vez de una pila plana de
+          campos sueltos (rediseño 2026-09-30): Identidad (cómo se ve),
+          Disponibilidad (cuándo trabaja), Servicios (qué hace). Sin avatar
+          acá (a diferencia de Editar): no se puede subir una foto antes de
+          crear el registro. */}
+      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Identidad */}
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>{t('identitySection')}</p>
+
+          {/* Nombre + Apellido lado a lado — ahorra alto y se lee como un
+              solo dato (identidad), no dos campos sueltos. */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={labelStyle}>{t('nameLabel')}</label>
+              <input
+                type="text"
+                placeholder={t('namePlaceholder')}
+                value={nombre}
+                onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
+                style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
+              />
+              {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={labelStyle}>{t('lastNameLabel')}</label>
+              <input
+                type="text"
+                placeholder={t('lastNamePlaceholder')}
+                value={apellido}
+                onChange={e => setApellido(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Color — vive acá, no suelto más abajo: es literalmente el
+              color del avatar por iniciales de esta profesional hasta que
+              suba una foto real (recién disponible desde Editar). */}
+          <div>
+            <label style={labelStyle}>{t('colorLabel')}</label>
+            <ColorSwatchPicker value={color} onChange={setColor} />
+          </div>
         </div>
 
-        {/* Apellido */}
-        <div>
-          <label style={labelStyle}>{t('lastNameLabel')}</label>
-          <input
-            type="text"
-            placeholder={t('lastNamePlaceholder')}
-            value={apellido}
-            onChange={e => setApellido(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        {/* Color */}
-        <div>
-          <label style={labelStyle}>{t('colorLabel')}</label>
-          <ColorSwatchPicker value={color} onChange={setColor} />
-        </div>
-
-        {/* Días que atiende */}
-        <div>
-          <label style={labelStyle}>{t('workingDaysLabel')}</label>
-          <WeekdayPicker value={diasAtencion} onChange={setDiasAtencion} />
-          <p style={{ margin: '6px 0 0 2px', fontSize: 12, color: colors.subtext }}>{t('workingDaysHint')}</p>
+        {/* Disponibilidad */}
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>{t('availabilitySection')}</p>
+          <div>
+            <label style={labelStyle}>{t('workingDaysLabel')}</label>
+            <WeekdayPicker value={diasAtencion} onChange={setDiasAtencion} />
+            <p style={{ margin: '6px 0 0 2px', fontSize: 12, color: colors.subtext }}>{t('workingDaysHint')}</p>
+          </div>
         </div>
 
         {/* Servicios */}
-        <div>
-          <label style={labelStyle}>{t('servicesLabel')}</label>
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>{t('servicesLabel')}</p>
           <SelectorServicios
             servicios={servicios}
             mode="multi"
