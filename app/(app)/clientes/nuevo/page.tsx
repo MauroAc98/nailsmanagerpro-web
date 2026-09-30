@@ -143,7 +143,11 @@ export default function NuevoClientePage() {
               type="tel"
               placeholder={t('phonePlaceholder')}
               value={telefono}
-              onChange={e => { setTelefono(e.target.value); setErrors(prev => ({ ...prev, telefono: undefined })); }}
+              // phoneUtils.clean en cada tecla, no solo al pegar — antes
+              // tipear "376 424-0951" a mano guardaba el espacio y el guion
+              // tal cual (bug real, 2026-09-30: rompía el envío de WhatsApp,
+              // que necesita el número en solo dígitos).
+              onChange={e => { setTelefono(phoneUtils.clean(e.target.value)); setErrors(prev => ({ ...prev, telefono: undefined })); }}
               onPaste={handlePasteTelefono}
               style={{ ...inputStyle, flex: 1, borderColor: errors.telefono ? colors.dangerBorder : colors.border }}
             />
