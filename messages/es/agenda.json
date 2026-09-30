@@ -70,6 +70,21 @@
   "SelectorProfesionalDia": {
     "all": "Todo el equipo"
   },
+  "AltaClienteRapidaSheet": {
+    "title": "Nuevo cliente",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Ej: Carla",
+    "nameRequired": "El nombre es obligatorio",
+    "lastNameLabel": "Apellido *",
+    "lastNamePlaceholder": "Ej: Gomez",
+    "lastNameRequired": "El apellido es obligatorio",
+    "phoneLabel": "Teléfono",
+    "phonePlaceholder": "Número sin código de país",
+    "phoneRequired": "El teléfono es obligatorio",
+    "saving": "Guardando...",
+    "submit": "Agregar y seleccionar",
+    "saveError": "No se pudo guardar el cliente."
+  },
   "WeekStrip": {
     "previousWeek": "Semana anterior",
     "nextWeek": "Semana siguiente",
@@ -92,6 +107,7 @@
     "loadingClients": "Cargando clientes...",
     "retry": "Reintentar",
     "noClientsFound": "No se encontraron clientes.",
+    "newClientOption": "+ Agregar cliente nuevo",
     "professional": "PROFESIONAL",
     "services": "SERVICIOS",
     "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
@@ -115,6 +131,7 @@
     "loadingClients": "Cargando clientes...",
     "retry": "Reintentar",
     "noClientsFound": "No se encontraron clientes.",
+    "newClientOption": "+ Agregar cliente nuevo",
     "professional": "PROFESIONAL",
     "services": "SERVICIOS",
     "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",

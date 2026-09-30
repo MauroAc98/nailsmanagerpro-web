@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, User, CheckCircle2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { withAlpha } from '@/theme/colors';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { SelectorServicios } from '@/components/SelectorServicios';
+import { AltaClienteRapidaSheet, type AltaClienteRapidaHandle } from '@/components/clientes/AltaClienteRapidaSheet';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useClientesStore } from '@/store/useClienteStore';
@@ -82,6 +83,8 @@ function NuevoTurnoContent() {
   const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
   const user = useAuthStore(s => s.user);
   const { requiereEnvioManualWhatsapp }      = useAuth();
+
+  const altaClienteRef = useRef<AltaClienteRapidaHandle>(null);
 
   const [selectedCliente,      setSelectedCliente]      = useState<Cliente | null>(null);
   const [selectedServicioIds,  setSelectedServicioIds]  = useState<number[]>([]);
@@ -360,6 +363,17 @@ function NuevoTurnoContent() {
                   backgroundColor: 'transparent', color: colors.text,
                 }}
               />
+              {/* Alta rápida sin salir del turno — arriba de todo, no al
+                  final de la lista: con muchos clientes cargados había que
+                  scrollear toda la lista para llegar a esta opción (feedback
+                  real). Antes de esto había que ir a /clientes/nuevo y
+                  volver, perdiendo lo ya cargado en el turno. */}
+              <div
+                onClick={() => { setShowClienteDropdown(false); altaClienteRef.current?.open(); }}
+                style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: colors.primaryDeep, borderBottom: `1px solid ${colors.hairline}` }}
+              >
+                {t('newClientOption')}
+              </div>
               {clientesLoading && clientes.length === 0 && (
                 <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
                   {t('loadingClients')}
@@ -524,6 +538,11 @@ function NuevoTurnoContent() {
           </div>
         </div>
       )}
+
+      <AltaClienteRapidaSheet
+        ref={altaClienteRef}
+        onCreated={(c) => setSelectedCliente(c)}
+      />
     </div>
   );
 }
