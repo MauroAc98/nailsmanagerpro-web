@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Locate, Pencil, Trash2 } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
-import { PAISES } from '@/lib/phoneUtils';
+import { PAISES, phoneUtils } from '@/lib/phoneUtils';
 import { esUbicacionValida } from '@/lib/ubicacion';
 import { urlMapaEstatico } from '@/lib/mapaEstatico';
 import { obtenerGps } from '@/lib/obtenerGps';
@@ -174,7 +174,11 @@ export function SheetDatosPersonales({
             <IconPhone />
             <input
               value={telefono}
-              onChange={e => setTelefono(e.target.value)}
+              // phoneUtils.clean en cada tecla, no solo al pegar — antes
+              // tipear "376 424-0951" a mano guardaba el espacio y el guion
+              // tal cual (bug real, 2026-09-30: rompía el envío de WhatsApp,
+              // que necesita el número en solo dígitos).
+              onChange={e => setTelefono(phoneUtils.clean(e.target.value))}
               onPaste={onPasteTelefono}
               placeholder={t('phone')}
               type="tel"

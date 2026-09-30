@@ -73,6 +73,25 @@ describe('AltaClienteRapidaSheet', () => {
     expect(screen.queryByText('El apellido es obligatorio')).toBeNull();
   });
 
+  it('tipear espacios/guion en el teléfono no los guarda: solo dígitos, como pegarlo (bug real 2026-09-30)', async () => {
+    const nuevo = { id: 100, nombre: 'Mónica', apellido: 'Palamarchuk', telefono: '+5493764240951', activo: true };
+    vi.mocked(clienteService.create).mockResolvedValue(nuevo);
+
+    renderWithProviders(<Harness onCreated={vi.fn()} />);
+    fireEvent.click(screen.getByText('abrir'));
+    fireEvent.change(screen.getByPlaceholderText('Ej: Carla'), { target: { value: 'Mónica' } });
+    fireEvent.change(screen.getByPlaceholderText('Ej: Gomez'), { target: { value: 'Palamarchuk' } });
+    // Tipeado, no pegado: el bug real guardaba esto tal cual, con el espacio
+    // y el guion, rompiendo el envío de WhatsApp (la API pide solo dígitos).
+    fireEvent.change(screen.getByPlaceholderText('Número sin código de país'), { target: { value: '376 424-0951' } });
+    fireEvent.click(screen.getByText('Agregar y seleccionar'));
+
+    await waitFor(() => expect(clienteService.create).toHaveBeenCalled());
+    expect(clienteService.create).toHaveBeenCalledWith({
+      nombre: 'Mónica', apellido: 'Palamarchuk', telefono: '+543764240951',
+    });
+  });
+
   it('muestra el mensaje de error del servidor si crearCliente falla', async () => {
     vi.mocked(clienteService.create).mockRejectedValue({ response: { data: { message: 'Ya existe un cliente con ese teléfono' } } });
     renderWithProviders(<Harness onCreated={vi.fn()} />);

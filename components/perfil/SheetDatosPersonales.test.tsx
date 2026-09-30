@@ -41,6 +41,18 @@ function setup(overrides: Partial<Props> = {}) {
   return props;
 }
 
+describe('SheetDatosPersonales — teléfono', () => {
+  it('tipear espacios/guion no los guarda: solo dígitos, como pegarlo (bug real 2026-09-30)', () => {
+    const setTelefono = vi.fn();
+    setup({ setTelefono });
+    // Tipeado, no pegado: el bug real llamaba a setTelefono con el valor
+    // crudo del input, espacio y guion incluidos, rompiendo el envío de
+    // WhatsApp (la API pide el número en solo dígitos).
+    fireEvent.change(screen.getByPlaceholderText('Teléfono'), { target: { value: '376 424-0951' } });
+    expect(setTelefono).toHaveBeenCalledWith('3764240951');
+  });
+});
+
 describe('SheetDatosPersonales — location card', () => {
   it('empty state: explains the feature and offers "Marcar en el mapa" + "Usar mi ubicación actual"', () => {
     setup({ latitud: null, longitud: null });
