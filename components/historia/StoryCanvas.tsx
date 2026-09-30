@@ -72,6 +72,13 @@ interface Props {
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
   // Si viene, reemplaza a nombreEstudio como título (ver tituloPrincipal).
   profesionalNombre?: string;
+  // Foto/logo del negocio (User.logo_url) — badge fijo a la izquierda del
+  // header, en blanco y negro, para impulsar la marca del negocio en la
+  // imagen que se comparte (pedido explícito 2026-09-30). Siempre en los 3
+  // modos (día/semana/mes), a diferencia del chip de fecha de al lado que
+  // solo tiene sentido en modo Día. Sin logo cargado no se muestra nada acá
+  // (no hay foto que inventar), y el resto del header queda igual que hoy.
+  logoUrl?: string | null;
   dias:           DisponibilidadDia[]; // diasAMostrar
   fondoUri:       string | null;
   canvasWidth:    number;
@@ -87,7 +94,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -238,6 +245,29 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+              {/* Avatar del negocio — siempre a la izquierda de todo, en los
+                  3 modos, discreto (opción "A" del canvas de diseño,
+                  2026-09-30). Círculo tipo avatar de red social, no un
+                  cuadrado del mismo tamaño que el chip de fecha: un cuadrado
+                  competía visualmente con ese chip como si fueran dos
+                  íconos iguales, y si el logo trae su propio fondo blanco
+                  sólido se leía como un sticker pegado. Un círculo con anillo
+                  es el lenguaje ya conocido (avatar de Instagram/WhatsApp
+                  Status) y admite ese fondo blanco sin verse raro.
+                  object-fit:cover llena el círculo entero. En blanco y negro
+                  para que la marca acompañe sin competir en color con la
+                  foto de fondo. */}
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt=""
+                  style={{
+                    flexShrink: 0, width: 38, height: 38, borderRadius: 19,
+                    objectFit: 'cover', filter: 'grayscale(1)',
+                    border: '1.5px solid rgba(255,255,255,0.6)',
+                  }}
+                />
+              )}
               <span style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
