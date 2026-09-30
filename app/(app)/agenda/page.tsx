@@ -1015,7 +1015,7 @@ export default function AgendaPage() {
           detrás del sheet "Elegir fecha" que abre el botón de acá adentro.
           Dimmed and disabled while a filter is active — mismo criterio que
           tenía el calendario completo antes. */}
-      <div style={{ opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
+      <div style={{ marginTop: 14, opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
         <WeekStrip
           dates={getCurrentWeekDates(parseFechaLocal(fechaSeleccionada))}
           fechaSeleccionada={fechaSeleccionada}
