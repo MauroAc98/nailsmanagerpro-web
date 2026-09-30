@@ -72,6 +72,16 @@ interface Props {
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
   // Si viene, reemplaza a nombreEstudio como título (ver tituloPrincipal).
   profesionalNombre?: string;
+  // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
+  // ícono genérico en el header, en los 3 modos (día/semana/mes), para
+  // impulsar la marca del negocio en la imagen que se comparte (pedido
+  // 2026-09-30: "que se vea el perfil en el lugar donde se ve el ícono de
+  // agenda... o el ícono dinámico, según sea el caso"). Sin logo cargado,
+  // el header se ve igual que siempre (chip/ícono) — no hay foto que
+  // inventar. Un badge de fecha superpuesto no escala a semana/mes (no
+  // entra un rango o un mes en una etiqueta chica), así que la fecha/rango
+  // sigue viviendo solo en el texto de abajo, con o sin logo.
+  logoUrl?: string | null;
   dias:           DisponibilidadDia[]; // diasAMostrar
   fondoUri:       string | null;
   canvasWidth:    number;
@@ -87,7 +97,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -238,23 +248,45 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-              <span style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
-              }}>
-                {chipDiaNumero !== null ? (
-                  <>
-                    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
-                      {chipDiaLabel}
-                    </span>
-                    <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
-                      {chipDiaNumero}
-                    </span>
-                  </>
-                ) : (
-                  <CalendarDays size={18} color="#fff" strokeWidth={2} />
-                )}
-              </span>
+              {/* Con logo cargado, la foto del negocio ocupa este mismo
+                  recuadro (mismo tamaño/radio que el chip de fecha) en los 3
+                  modos — decisión 2026-09-30 tras canvas de diseño: un badge
+                  de fecha superpuesto no escala a semana/mes, así que se
+                  dropea la fecha del ícono y se apoya solo en el texto de
+                  abajo (que ya la muestra formateada para cada modo). En
+                  blanco y negro para que la marca acompañe sin competir en
+                  color con la foto de fondo. Sin logo, se ve exactamente
+                  igual que siempre (chip de fecha en modo Día, ícono
+                  genérico en Semana/Mes). */}
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt=""
+                  style={{
+                    flexShrink: 0, width: 44, height: 44, borderRadius: 12,
+                    objectFit: 'cover', filter: 'grayscale(1)',
+                    border: '1.5px solid rgba(255,255,255,0.6)',
+                  }}
+                />
+              ) : (
+                <span style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
+                }}>
+                  {chipDiaNumero !== null ? (
+                    <>
+                      <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
+                        {chipDiaLabel}
+                      </span>
+                      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
+                        {chipDiaNumero}
+                      </span>
+                    </>
+                  ) : (
+                    <CalendarDays size={18} color="#fff" strokeWidth={2} />
+                  )}
+                </span>
+              )}
 
               <div style={{ minWidth: 0, flex: 1 }}>
                 {tituloPrincipal && (
@@ -393,7 +425,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
                   <WhatsappGlyph size={10} color="#fff" />
                   <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                    {phoneUtils.formatDisplay(telefonoEstudio)}
+                    +{phoneUtils.formatDisplay(telefonoEstudio)}
                   </span>
                 </div>
               )}
