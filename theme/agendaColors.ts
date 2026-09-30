@@ -62,7 +62,14 @@ export const agendaColors = {
 };
 
 export const agendaShadows = {
-  card: '0 1px 3px rgba(0, 0, 0, 0.06)',
+  // Subida de 0.06 a 0.10 de opacidad, y de un tinte negro puro a uno cálido
+  // (mismo --ag-strong que el texto) — 2026-09-30, feedback de contraste:
+  // en modo claro esta sombra era más débil que --shadow-card del tema base
+  // (0.09), y junto con --ag-border casi imperceptible dejaba las cards sin
+  // separarse de la página. No es theme-scoped (a diferencia de --ag-*): en
+  // oscuro la separación ya la da el color de fondo/superficie, así que una
+  // sombra un poco más marcada ahí no molesta.
+  card: '0 2px 6px rgba(43, 34, 38, 0.10)',
   sheet: '0 -8px 28px rgba(0, 0, 0, 0.14)',
 };
 
