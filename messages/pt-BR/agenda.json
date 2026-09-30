@@ -73,8 +73,9 @@
   "WeekStrip": {
     "previousWeek": "Semana anterior",
     "nextWeek": "Próxima semana",
-    "calendarLabel": "Calendário",
-    "openCalendar": "Ver calendário completo"
+    "calendarLabel": "Ver calendário",
+    "openCalendar": "Ver calendário completo",
+    "today": "HOJE"
   },
   "ElegirFechaSheet": {
     "title": "Escolher data",

@@ -84,17 +84,28 @@ export function WeekStrip({
 
   const conPunto = new Set(diasConPunto ?? []);
 
+  // Redesign (selector de semana, Change: "táctil + hoy marcado") — antes
+  // eran botones sin fondo ni borde de 40px; ahora son un círculo con
+  // fondo y borde, mismo tamaño de toque pero más fáciles de ubicar como
+  // botón (antes se confundían con espacio vacío al lado del rango de fechas).
   const flecha: React.CSSProperties = {
-    width: 40, height: 40, flexShrink: 0, border: 'none', background: 'none', cursor: 'pointer',
+    width: 36, height: 36, flexShrink: 0, borderRadius: 18,
+    border: `1px solid ${colors.hairline}`, backgroundColor: colors.surface, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   };
   const flechaApagada: React.CSSProperties = { ...flecha, cursor: 'default', opacity: 0.3 };
 
   return (
     <div style={{ padding: '0 20px 12px' }}>
-      {/* Fila de navegación: ‹ rango › + botón de calendario completo. Las
-          flechas mueven de a una semana sin abrir el calendario. */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 10, marginLeft: -10 }}>
+      {/* Fila de navegación: ‹ rango+calendario › ›. Las flechas mueven de a
+          una semana sin abrir el calendario. El rango de fechas y el botón
+          de calendario se fusionaron en un solo botón (redesign: "táctil +
+          hoy marcado") — antes competían por espacio en una sola fila; ahora
+          el rango es el título y "Ver mes completo" es la acción, apiladas.
+          El aria-label sigue siendo el mismo de siempre (openCalendar), así
+          que la reserva online (HorarioScreen, que solo depende del
+          aria-label del botón, no de su forma) no se ve afectada. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <button
           onClick={onSemanaAnterior}
           disabled={semanaAnteriorDeshabilitada}
@@ -103,9 +114,22 @@ export function WeekStrip({
         >
           <ChevronLeft size={20} color={colors.text} strokeWidth={2.2} />
         </button>
-        <span style={{ flex: 1, textAlign: 'center', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong }}>
-          {rangoSemana}
-        </span>
+        <button
+          onClick={onAbrirCalendario}
+          aria-label={t('openCalendar')}
+          style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
+            border: 'none', background: 'none', cursor: 'pointer', padding: '4px 0',
+          }}
+        >
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: colors.textStrong }}>
+            {rangoSemana}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: colors.primaryDeep }}>
+            <Calendar size={13} color={colors.primaryDeep} strokeWidth={2} />
+            {t('calendarLabel')}
+          </span>
+        </button>
         <button
           onClick={onSemanaSiguiente}
           disabled={semanaSiguienteDeshabilitada}
@@ -113,19 +137,6 @@ export function WeekStrip({
           style={semanaSiguienteDeshabilitada ? flechaApagada : flecha}
         >
           <ChevronRight size={20} color={colors.text} strokeWidth={2.2} />
-        </button>
-        <button
-          onClick={onAbrirCalendario}
-          aria-label={t('openCalendar')}
-          style={{
-            height: 36, flexShrink: 0, marginLeft: 6, padding: '0 12px', borderRadius: 18,
-            border: `1px solid ${withAlpha(colors.primary, '55')}`, backgroundColor: colors.surface,
-            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-            fontSize: 12, fontWeight: 700, color: colors.primaryDeep,
-          }}
-        >
-          <Calendar size={16} color={colors.primaryDeep} strokeWidth={2} />
-          {t('calendarLabel')}
         </button>
       </div>
 
@@ -137,8 +148,13 @@ export function WeekStrip({
           const isSelected = cellStr === fechaSeleccionada;
           const cantidad   = countByDate.get(cellStr) ?? 0;
           const esPasado   = cellStr < todayStr;
+          const esHoy      = cellStr === todayStr;
           const mostrarBadge = cantidad > 0 && !esPasado && !isSelected;
-          const mostrarPunto = (cantidad > 0 && esPasado && !isSelected) || (conPunto.has(cellStr) && !isSelected);
+          // "HOY" solo cuando no hay badge que mostrar (el badge ya es
+          // suficiente señal) y no es el día seleccionado (que ya se
+          // distingue por el resaltado de color).
+          const mostrarHoy = esHoy && !mostrarBadge && !isSelected;
+          const mostrarPunto = !mostrarHoy && ((cantidad > 0 && esPasado && !isSelected) || (conPunto.has(cellStr) && !isSelected));
           const deshabilitado = diaDeshabilitado?.(cellStr) ?? false;
 
           return (
@@ -176,6 +192,10 @@ export function WeekStrip({
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <span style={{ fontSize: 8, fontWeight: 900, color: colors.primaryDeep }}>{cantidad}</span>
+                  </span>
+                ) : mostrarHoy ? (
+                  <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.3, color: colors.primary }}>
+                    {t('today')}
                   </span>
                 ) : (
                   <span data-punto={mostrarPunto ? '' : undefined} style={{
