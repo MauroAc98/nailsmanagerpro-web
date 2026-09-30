@@ -92,6 +92,25 @@ describe('AltaClienteRapidaSheet', () => {
     });
   });
 
+  it('tipear el número completo con código de país lo separa del selector, igual que al pegar', async () => {
+    const nuevo = { id: 101, nombre: 'Rocío', apellido: 'Diaz', telefono: '+5511987654321', activo: true };
+    vi.mocked(clienteService.create).mockResolvedValue(nuevo);
+
+    renderWithProviders(<Harness onCreated={vi.fn()} />);
+    fireEvent.click(screen.getByText('abrir'));
+    fireEvent.change(screen.getByPlaceholderText('Ej: Carla'), { target: { value: 'Rocío' } });
+    fireEvent.change(screen.getByPlaceholderText('Ej: Gomez'), { target: { value: 'Diaz' } });
+    // Tipeado a mano con el "+55" adentro, sin tocar el selector de país
+    // (que sigue en +54 por defecto): no debe quedar duplicado.
+    fireEvent.change(screen.getByPlaceholderText('Número sin código de país'), { target: { value: '+5511987654321' } });
+    fireEvent.click(screen.getByText('Agregar y seleccionar'));
+
+    await waitFor(() => expect(clienteService.create).toHaveBeenCalled());
+    expect(clienteService.create).toHaveBeenCalledWith({
+      nombre: 'Rocío', apellido: 'Diaz', telefono: '+5511987654321',
+    });
+  });
+
   it('muestra el mensaje de error del servidor si crearCliente falla', async () => {
     vi.mocked(clienteService.create).mockRejectedValue({ response: { data: { message: 'Ya existe un cliente con ese teléfono' } } });
     renderWithProviders(<Harness onCreated={vi.fn()} />);

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Locate, Pencil, Trash2 } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
-import { PAISES, phoneUtils } from '@/lib/phoneUtils';
+import { PAISES } from '@/lib/phoneUtils';
 import { esUbicacionValida } from '@/lib/ubicacion';
 import { urlMapaEstatico } from '@/lib/mapaEstatico';
 import { obtenerGps } from '@/lib/obtenerGps';
@@ -16,8 +16,10 @@ interface Props {
   codigoPais: string;
   setCodigoPais: (v: string) => void;
   telefono: string;
-  setTelefono: (v: string) => void;
   onPasteTelefono: (e: React.ClipboardEvent<HTMLInputElement>) => void;
+  // Misma detección de código de país embebido que onPasteTelefono, pero
+  // para cuando se tipea a mano — antes solo corría al pegar.
+  onChangeTelefono: (valorCrudo: string) => void;
   direccion: string;
   setDireccion: (v: string) => void;
   // Ubicación (Slice A) — el "Confirmar" del modal solo actualiza este
@@ -91,7 +93,7 @@ const sectionLabelStyle: React.CSSProperties = {
 
 export function SheetDatosPersonales({
   nombreEstudio, setNombreEstudio,
-  codigoPais, setCodigoPais, telefono, setTelefono, onPasteTelefono,
+  codigoPais, setCodigoPais, telefono, onPasteTelefono, onChangeTelefono,
   direccion, setDireccion,
   latitud, longitud, setUbicacion, onQuitarUbicacion, errorUbicacion,
   onGuardar, guardando, onClose,
@@ -174,11 +176,12 @@ export function SheetDatosPersonales({
             <IconPhone />
             <input
               value={telefono}
-              // phoneUtils.clean en cada tecla, no solo al pegar — antes
-              // tipear "376 424-0951" a mano guardaba el espacio y el guion
-              // tal cual (bug real, 2026-09-30: rompía el envío de WhatsApp,
-              // que necesita el número en solo dígitos).
-              onChange={e => setTelefono(phoneUtils.clean(e.target.value))}
+              // onChangeTelefono corre en cada tecla, no solo al pegar —
+              // antes tipear "376 424-0951" a mano guardaba el espacio y el
+              // guion tal cual (bug real, 2026-09-30), y tipear un código de
+              // país embebido quedaba duplicado con el selector de al lado
+              // en vez de separarse como pasaba al pegar.
+              onChange={e => onChangeTelefono(e.target.value)}
               onPaste={onPasteTelefono}
               placeholder={t('phone')}
               type="tel"

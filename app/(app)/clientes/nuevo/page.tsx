@@ -43,25 +43,26 @@ export default function NuevoClientePage() {
     return Object.keys(e).length === 0;
   };
 
-  const handlePasteTelefono = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pegado = e.clipboardData.getData('text');
-    const soloDigitos = phoneUtils.clean(pegado);
-    if (!soloDigitos) return;
-    e.preventDefault();
-
+  const aplicarTelefonoIngresado = (valorCrudo: string) => {
     // Si parece traer código de país (empieza con "+" o es más largo que un
     // número local), lo separamos automáticamente en vez de concatenarlo
-    // crudo — evita que pegar el número completo desde el perfil de
+    // crudo — evita que pegar o tipear el número completo desde el perfil de
     // WhatsApp de la cliente rompa el formato que esperan los mensajes
     // automáticos y semi-automáticos.
-    const traeCodigoPais = pegado.trim().startsWith('+') || soloDigitos.length > 11;
-    if (traeCodigoPais) {
-      const { codigo, numero } = phoneUtils.splitCodigoPais(soloDigitos);
-      setCodigoPais(codigo);
-      setTelefono(numero);
+    const detectado = phoneUtils.detectarCodigoPaisEmbebido(valorCrudo);
+    if (detectado) {
+      setCodigoPais(detectado.codigo);
+      setTelefono(detectado.numero);
     } else {
-      setTelefono(soloDigitos);
+      setTelefono(phoneUtils.clean(valorCrudo));
     }
+  };
+
+  const handlePasteTelefono = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pegado = e.clipboardData.getData('text');
+    if (!phoneUtils.clean(pegado)) return;
+    e.preventDefault();
+    aplicarTelefonoIngresado(pegado);
   };
 
   const handleGuardar = async () => {
@@ -143,11 +144,12 @@ export default function NuevoClientePage() {
               type="tel"
               placeholder={t('phonePlaceholder')}
               value={telefono}
-              // phoneUtils.clean en cada tecla, no solo al pegar — antes
-              // tipear "376 424-0951" a mano guardaba el espacio y el guion
-              // tal cual (bug real, 2026-09-30: rompía el envío de WhatsApp,
-              // que necesita el número en solo dígitos).
-              onChange={e => { setTelefono(phoneUtils.clean(e.target.value)); setErrors(prev => ({ ...prev, telefono: undefined })); }}
+              // aplicarTelefonoIngresado corre en cada tecla, no solo al
+              // pegar — antes tipear "376 424-0951" a mano guardaba el
+              // espacio y el guion tal cual (bug real, 2026-09-30), y tipear
+              // un código de país embebido quedaba duplicado con el selector
+              // de al lado en vez de separarse como pasaba al pegar.
+              onChange={e => { aplicarTelefonoIngresado(e.target.value); setErrors(prev => ({ ...prev, telefono: undefined })); }}
               onPaste={handlePasteTelefono}
               style={{ ...inputStyle, flex: 1, borderColor: errors.telefono ? colors.dangerBorder : colors.border }}
             />
