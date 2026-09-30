@@ -33,6 +33,21 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
 
+// Tarjetas que agrupan los campos por sentido ("Identidad", "Disponibilidad",
+// "Servicios") en vez de una pila plana de campos sueltos con igual peso
+// visual — rediseño 2026-09-30 (canvas: cómo se ve/cuándo trabaja/qué hace,
+// en vez de una lista de inputs sin jerarquía).
+const sectionStyle: React.CSSProperties = {
+  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  boxShadow: shadows.card, borderRadius: 16, padding: 16,
+  display: 'flex', flexDirection: 'column', gap: 16,
+};
+
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700, color: colors.primaryDeep,
+  letterSpacing: 1, textTransform: 'uppercase', margin: 0,
+};
+
 export default function EditarProfesionalPage() {
   const t = useTranslations('configuracion.EditarProfesionalPage');
   const router = useRouter();
@@ -198,79 +213,6 @@ export default function EditarProfesionalPage() {
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
       </div>
 
-      {/* Avatar — circulo tappable con recorte 1:1 (reusa LogoCropModal
-          generalizado con aspectRatio, mismo patron que HeroPerfil para el
-          logo del negocio). Con avatar guardado aparece la insignia de
-          quitar; sin avatar, la insignia de camara invita a subir uno. */}
-      <div style={{ padding: '0 20px 4px', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ position: 'relative', width: 84, height: 84 }}>
-          <button
-            type="button"
-            onClick={handleSeleccionarAvatar}
-            disabled={subiendoAvatar}
-            aria-label={t('avatarChange')}
-            style={{
-              position: 'relative', width: '100%', height: '100%', padding: 0,
-              background: 'none', border: 'none', cursor: subiendoAvatar ? 'default' : 'pointer',
-            }}
-          >
-            <div style={{
-              position: 'relative', width: '100%', height: '100%', borderRadius: 42,
-              backgroundColor: colors.surface2, border: `2px solid ${colors.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-            }}>
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ fontSize: 30, fontWeight: 700, color: colors.primaryDeep }}>
-                  {nombre.trim().charAt(0).toUpperCase() || '?'}
-                </span>
-              )}
-              {subiendoAvatar && (
-                <div style={{
-                  position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <div className="loader-spinner" style={{
-                    width: 20, height: 20, borderRadius: '50%',
-                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
-                  }} />
-                </div>
-              )}
-            </div>
-            {!subiendoAvatar && (
-              <span
-                aria-hidden
-                style={{
-                  position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: '50%',
-                  backgroundColor: colors.primarySolid, border: `2px solid ${colors.background}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <Camera size={12} color="#fff" strokeWidth={2.2} />
-              </span>
-            )}
-          </button>
-          {avatarUrl && !subiendoAvatar && (
-            <button
-              type="button"
-              onClick={handleQuitarAvatar}
-              aria-label={t('avatarRemove')}
-              style={{
-                position: 'absolute', top: -4, left: -4, width: 22, height: 22, borderRadius: '50%', padding: 0,
-                backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                fontSize: 13, lineHeight: 1, color: colors.dangerBorder,
-              }}
-            >
-              ×
-            </button>
-          )}
-        </div>
-        <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleArchivoAvatar} />
-      </div>
-
       {archivoAvatarParaRecortar && (
         <LogoCropModal
           archivo={archivoAvatarParaRecortar}
@@ -280,63 +222,145 @@ export default function EditarProfesionalPage() {
         />
       )}
 
-      {/* Form */}
-      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* Nombre */}
-        <div>
-          <label style={labelStyle}>{t('nameLabel')}</label>
-          <input
-            type="text"
-            placeholder={t('namePlaceholder')}
-            value={nombre}
-            onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-            style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
-          />
-          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
-        </div>
+      {/* Form — 3 tarjetas agrupadas por sentido en vez de una pila plana de
+          campos sueltos (rediseño 2026-09-30): Identidad (cómo se ve),
+          Disponibilidad (cuándo trabaja), Servicios (qué hace). */}
+      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Identidad */}
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>{t('identitySection')}</p>
 
-        {/* Apellido */}
-        <div>
-          <label style={labelStyle}>{t('lastNameLabel')}</label>
-          <input
-            type="text"
-            placeholder={t('lastNamePlaceholder')}
-            value={apellido}
-            onChange={e => setApellido(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        {/* Color */}
-        <div>
-          <label style={labelStyle}>{t('colorLabel')}</label>
-          <ColorSwatchPicker value={color} onChange={setColor} />
-        </div>
-
-        {/* Activo */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '12px 16px',
-        }}>
-          <div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('activeLabel')}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              {activo ? t('activeSubtitleOn') : t('activeSubtitleOff')}
-            </p>
+          {/* Avatar — circulo tappable con recorte 1:1 (reusa LogoCropModal
+              generalizado con aspectRatio, mismo patron que HeroPerfil para
+              el logo del negocio). Con avatar guardado aparece la insignia
+              de quitar; sin avatar, la insignia de camara invita a subir
+              uno. */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', width: 84, height: 84 }}>
+              <button
+                type="button"
+                onClick={handleSeleccionarAvatar}
+                disabled={subiendoAvatar}
+                aria-label={t('avatarChange')}
+                style={{
+                  position: 'relative', width: '100%', height: '100%', padding: 0,
+                  background: 'none', border: 'none', cursor: subiendoAvatar ? 'default' : 'pointer',
+                }}
+              >
+                <div style={{
+                  position: 'relative', width: '100%', height: '100%', borderRadius: 42,
+                  backgroundColor: colors.surface2, border: `2px solid ${colors.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                }}>
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: 30, fontWeight: 700, color: colors.primaryDeep }}>
+                      {nombre.trim().charAt(0).toUpperCase() || '?'}
+                    </span>
+                  )}
+                  {subiendoAvatar && (
+                    <div style={{
+                      position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <div className="loader-spinner" style={{
+                        width: 20, height: 20, borderRadius: '50%',
+                        border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                      }} />
+                    </div>
+                  )}
+                </div>
+                {!subiendoAvatar && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: '50%',
+                      backgroundColor: colors.primarySolid, border: `2px solid ${colors.background}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Camera size={12} color="#fff" strokeWidth={2.2} />
+                  </span>
+                )}
+              </button>
+              {avatarUrl && !subiendoAvatar && (
+                <button
+                  type="button"
+                  onClick={handleQuitarAvatar}
+                  aria-label={t('avatarRemove')}
+                  style={{
+                    position: 'absolute', top: -4, left: -4, width: 22, height: 22, borderRadius: '50%', padding: 0,
+                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    fontSize: 13, lineHeight: 1, color: colors.dangerBorder,
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleArchivoAvatar} />
           </div>
-          <PillToggle value={activo} onChange={setActivo} />
+
+          {/* Nombre + Apellido lado a lado — ahorra alto y se lee como un
+              solo dato (identidad), no dos campos sueltos. */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={labelStyle}>{t('nameLabel')}</label>
+              <input
+                type="text"
+                placeholder={t('namePlaceholder')}
+                value={nombre}
+                onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
+                style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
+              />
+              {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={labelStyle}>{t('lastNameLabel')}</label>
+              <input
+                type="text"
+                placeholder={t('lastNamePlaceholder')}
+                value={apellido}
+                onChange={e => setApellido(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Color — vive acá, no suelto más abajo: es literalmente el
+              color de este mismo avatar cuando no hay foto cargada. */}
+          <div>
+            <label style={labelStyle}>{t('colorLabel')}</label>
+            <ColorSwatchPicker value={color} onChange={setColor} />
+          </div>
         </div>
 
-        {/* Días que atiende */}
-        <div>
-          <label style={labelStyle}>{t('workingDaysLabel')}</label>
-          <WeekdayPicker value={diasAtencion} onChange={setDiasAtencion} />
-          <p style={{ margin: '6px 0 0 2px', fontSize: 12, color: colors.subtext }}>{t('workingDaysHint')}</p>
+        {/* Disponibilidad — activo + días que atiende son la misma
+            pregunta ("¿cuándo trabaja?"), antes vivían en bloques sueltos. */}
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>{t('availabilitySection')}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('activeLabel')}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
+                {activo ? t('activeSubtitleOn') : t('activeSubtitleOff')}
+              </p>
+            </div>
+            <PillToggle value={activo} onChange={setActivo} />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('workingDaysLabel')}</label>
+            <WeekdayPicker value={diasAtencion} onChange={setDiasAtencion} />
+            <p style={{ margin: '6px 0 0 2px', fontSize: 12, color: colors.subtext }}>{t('workingDaysHint')}</p>
+          </div>
         </div>
 
         {/* Servicios */}
-        <div>
-          <label style={labelStyle}>{t('servicesLabel')}</label>
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>{t('servicesLabel')}</p>
           <SelectorServicios
             servicios={servicios}
             mode="multi"
