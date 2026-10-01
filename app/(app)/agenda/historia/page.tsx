@@ -189,7 +189,12 @@ function HistoriaContent() {
           <SelectorProfesional
             label={t('showScheduleOf')}
             labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
-            profesionales={activeProfesionales}
+            // avatarUrl != avatar_url (ProfesionalOption vs Profesional) —
+            // sin este mapeo, Profesional pasa el typecheck (prop opcional)
+            // pero nunca muestra la foto real, solo iniciales (bug real
+            // 2026-10-01, mismo en otras 8 pantallas con selector de
+            // profesional).
+            profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
             selectedId={selectedProfesionalId ?? effectiveProfesionalId}
             onSelect={setSelectedProfesionalId}
             selectedFg={colors.primaryFg}

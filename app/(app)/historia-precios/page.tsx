@@ -123,7 +123,10 @@ export default function HistoriaPreciosPage() {
           {mostrarSelectorProfesional && (
             <SelectorProfesional
               label={t('showPricesOf')}
-              profesionales={activeProfesionales}
+              // avatarUrl != avatar_url (ProfesionalOption vs Profesional) —
+              // sin este mapeo, Profesional pasa el typecheck (prop
+              // opcional) pero nunca muestra la foto real, solo iniciales.
+              profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
               selectedId={selectedProfesionalId ?? effectiveProfesionalId}
               onSelect={setSelectedProfesionalId}
             />
