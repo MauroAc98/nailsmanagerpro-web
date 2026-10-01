@@ -9,24 +9,24 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 // IDs estables — no dependen del texto traducido (el título se usaba antes
 // como key de estado; ahora que el título viene de i18n, un id fijo evita
 // que cambiar la traducción rompa qué sección queda abierta).
+//
+// Agrupados por tema (2026-10-01, antes era una lista plana de 16 ítems sin
+// ningún orden temático — feedback: "está muy suelta"). De paso se suman
+// 3 pantallas que ya existían en la app pero no tenían ninguna mención acá
+// (bloqueos, categories, incomes) y se actualiza el contenido de varias que
+// había quedado desactualizado (professionals, whatsappMessages, myProfile).
+// Reserva online queda afuera a propósito: la flag NEXT_PUBLIC_RESERVA_ONLINE
+// está apagada en producción, documentar un feature que nadie puede ver en
+// su app generaría más confusión que ayuda.
 // ─────────────────────────────────────────────
-const SECTION_IDS = [
-  'gettingStarted',
-  'initialSetup',
-  'bookingAppointment',
-  'services',
-  'priceStory',
-  'availableSlots',
-  'clients',
-  'professionals',
-  'instagramStory',
-  'whatsappLink',
-  'whatsappMessages',
-  'myProfile',
-  'statistics',
-  'pendingPayments',
-  'appearance',
-  'language',
+const GROUPS = [
+  { id: 'onboarding', sectionIds: ['gettingStarted', 'initialSetup'] },
+  { id: 'agenda', sectionIds: ['bookingAppointment', 'bloqueos', 'instagramStory'] },
+  { id: 'servicesPricing', sectionIds: ['services', 'categories', 'priceStory'] },
+  { id: 'clientsAndTeam', sectionIds: ['clients', 'professionals', 'availableSlots'] },
+  { id: 'whatsapp', sectionIds: ['whatsappLink', 'whatsappMessages'] },
+  { id: 'statsAndMoney', sectionIds: ['statistics', 'pendingPayments', 'incomes', 'expenses'] },
+  { id: 'myBusiness', sectionIds: ['myProfile', 'appearance', 'language'] },
 ] as const;
 
 function IconChevron({ abierto }: { abierto: boolean }) {
@@ -44,11 +44,11 @@ export default function AyudaPage() {
   const t = useTranslations('configuracion.AyudaPage');
   const [abierta, setAbierta] = useState<string | null>(null);
 
-  const secciones = SECTION_IDS.map(id => ({
+  const textoDe = (id: string) => ({
     id,
     titulo: t(`sections.${id}.title`),
     texto: t(`sections.${id}.text`),
-  }));
+  });
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
@@ -67,39 +67,52 @@ export default function AyudaPage() {
         </p>
       </div>
 
-      <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {secciones.map(s => {
-          const abierto = abierta === s.id;
-          return (
-            <div
-              key={s.id}
-              style={{
-                backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                boxShadow: shadows.card, borderRadius: 14, overflow: 'hidden',
-              }}
-            >
-              <button
-                onClick={() => setAbierta(abierto ? null : s.id)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: 10, padding: '14px 16px', border: 'none', backgroundColor: 'transparent',
-                  cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>{s.titulo}</span>
-                <IconChevron abierto={abierto} />
-              </button>
-              {abierto && (
-                <p style={{
-                  margin: 0, padding: '0 16px 16px', fontSize: 13.5, color: colors.subtext, lineHeight: 1.6,
-                  whiteSpace: 'pre-line',
-                }}>
-                  {s.texto}
-                </p>
-              )}
+      <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {GROUPS.map(group => (
+          <div key={group.id}>
+            <p style={{
+              margin: '0 0 10px 2px', fontSize: 11, fontWeight: 700, color: colors.primaryDeep,
+              letterSpacing: 1, textTransform: 'uppercase',
+            }}>
+              {t(`groups.${group.id}`)}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {group.sectionIds.map(id => {
+                const s = textoDe(id);
+                const abierto = abierta === s.id;
+                return (
+                  <div
+                    key={s.id}
+                    style={{
+                      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                      boxShadow: shadows.card, borderRadius: 14, overflow: 'hidden',
+                    }}
+                  >
+                    <button
+                      onClick={() => setAbierta(abierto ? null : s.id)}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: 10, padding: '14px 16px', border: 'none', backgroundColor: 'transparent',
+                        cursor: 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>{s.titulo}</span>
+                      <IconChevron abierto={abierto} />
+                    </button>
+                    {abierto && (
+                      <p style={{
+                        margin: 0, padding: '0 16px 16px', fontSize: 13.5, color: colors.subtext, lineHeight: 1.6,
+                        whiteSpace: 'pre-line',
+                      }}>
+                        {s.texto}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );
