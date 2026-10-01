@@ -261,13 +261,18 @@ export default function EditarGastoPage() {
                     style={{ ...chipStyle(selected, color), padding: '4px 16px 4px 4px' }}
                   >
                     <span style={{
-                      width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                      width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 9, fontWeight: 800,
                       backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
                       color: selected ? '#fff' : color,
                     }}>
-                      {inicialesProfesional(p.nombre, p.apellido)}
+                      {p.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        inicialesProfesional(p.nombre, p.apellido)
+                      )}
                     </span>
                     {p.nombre}
                   </button>
