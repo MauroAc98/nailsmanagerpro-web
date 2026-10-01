@@ -238,54 +238,6 @@ function AgendaListHeader({
 }
 
 // ─────────────────────────────────────────────
-// Date filter parsing — ported verbatim from RN's FiltroSheet.tsx
-// ─────────────────────────────────────────────
-function autoFormatearFecha(texto: string, anterior: string): string {
-  if (texto.length < anterior.length) return texto;
-
-  let soloNums = texto.replace(/[^\d]/g, '');
-  if (soloNums.length > 8) soloNums = soloNums.slice(0, 8);
-
-  if (soloNums.length > 4) {
-    return `${soloNums.slice(0, 2)}/${soloNums.slice(2, 4)}/${soloNums.slice(4)}`;
-  }
-  if (soloNums.length > 2) {
-    return `${soloNums.slice(0, 2)}/${soloNums.slice(2)}`;
-  }
-  return soloNums;
-}
-
-function parsearFecha(input: string): string | null {
-  const partes = input.split('/');
-  if (partes.length !== 3) return null;
-
-  const [diaStr, mesStr, anioStr] = partes;
-  const dia  = parseInt(diaStr, 10);
-  const mes  = parseInt(mesStr, 10);
-  const anio = parseInt(anioStr, 10);
-
-  if (isNaN(dia) || isNaN(mes) || isNaN(anio)) return null;
-  if (dia < 1 || dia > 31)        return null;
-  if (mes < 1 || mes > 12)        return null;
-  if (anio < 2000 || anio > 2100) return null;
-  if (anioStr.length !== 4)       return null;
-
-  // Componentes locales (año, mes-1, día), NO new Date(fecha) sobre el
-  // string ISO: ese constructor parsea "YYYY-MM-DD" como UTC medianoche, y
-  // en husos negativos (ART/BRT, UTC-3) eso cae en el día anterior en hora
-  // local — el día 1 de cualquier mes se leía como el mes anterior y
-  // rechazaba fechas válidas ("Fecha inválida" para un 01/03/2026 real).
-  // Mismo patrón que formatFechaCorta (arriba, línea ~67), que ya lo hace
-  // bien.
-  const d = new Date(anio, mes - 1, dia);
-  if (isNaN(d.getTime()))       return null;
-  if (d.getMonth() + 1 !== mes) return null;
-
-  const fecha = `${anioStr}-${mesStr.padStart(2, '0')}-${diaStr.padStart(2, '0')}`;
-  return fecha;
-}
-
-// ─────────────────────────────────────────────
 // FiltroSheetContent — search by client name, arbitrary date, service
 // ─────────────────────────────────────────────
 function FiltroSheetContent({
@@ -304,6 +256,7 @@ function FiltroSheetContent({
   onChangeProfesionalFiltro,
   onLimpiarTodo,
   onAplicar,
+  onAbrirCalendarioFecha,
 }: {
   textoBusqueda: string;
   servicioFiltro: number | null;
@@ -320,41 +273,10 @@ function FiltroSheetContent({
   onChangeProfesionalFiltro: (id: number | null) => void;
   onLimpiarTodo: () => void;
   onAplicar: () => void;
+  onAbrirCalendarioFecha: () => void;
 }) {
   const t = useTranslations('agenda.FiltroSheetContent');
-  const [textoFecha, setTextoFecha] = useState(
-    fechaFiltro ? fechaFiltro.split('-').reverse().join('/') : '',
-  );
-  const [fechaError, setFechaError] = useState(false);
-
-  const btnDeshabilitado = !hayFiltroActivo || fechaError;
-
-  const handleCambiarTextoFecha = (texto: string) => {
-    const formateado = autoFormatearFecha(texto, textoFecha);
-    setTextoFecha(formateado);
-    setFechaError(false);
-
-    if (formateado.length === 0) {
-      onCambiarFecha(null);
-      return;
-    }
-
-    if (formateado.length === 10) {
-      const fechaApi = parsearFecha(formateado);
-      if (fechaApi) {
-        onCambiarFecha(fechaApi);
-      } else {
-        setFechaError(true);
-        onCambiarFecha(null);
-      }
-    }
-  };
-
-  const handleLimpiarFecha = () => {
-    setTextoFecha('');
-    setFechaError(false);
-    onCambiarFecha(null);
-  };
+  const btnDeshabilitado = !hayFiltroActivo;
 
   return (
     <div style={{ padding: '0 20px 24px' }}>
@@ -362,11 +284,7 @@ function FiltroSheetContent({
         <span style={{ fontSize: 16, fontWeight: 600, color: colors.textStrong }}>{t('title')}</span>
         {hayFiltroActivo && (
           <button
-            onClick={() => {
-              onLimpiarTodo();
-              setTextoFecha('');
-              setFechaError(false);
-            }}
+            onClick={onLimpiarTodo}
             style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: colors.primaryDeep }}
           >
             {t('clearAll')}
@@ -404,34 +322,40 @@ function FiltroSheetContent({
       <p style={{ fontSize: 11, fontWeight: 700, color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
         {t('searchByDate')}
       </p>
-      <div style={{
-        display: 'flex', alignItems: 'center', borderRadius: 12, padding: '0 14px', height: 45,
-        border: '1px solid transparent',
-        backgroundColor: fechaError ? colors.dangerBg : fechaFiltro ? withAlpha(colors.primary, '12') : colors.surfaceSubtle,
-        borderColor: fechaError ? withAlpha(colors.dangerBorder, '44') : fechaFiltro ? withAlpha(colors.primary, '44') : 'transparent',
-      }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : fechaFiltro ? colors.primaryDeep : colors.muted} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
+      {/* Botón que abre el calendario de siempre (CalendarioMensual, el
+          mismo sheet "Elegir fecha" que usa el WeekStrip) en vez de tipear
+          la fecha a mano — feedback 2026-10-01: tipear dígito a dígito era
+          lento y propenso a error, y la app ya tenía un calendario
+          construido que esta pantalla no reusaba. */}
+      <button
+        type="button"
+        onClick={onAbrirCalendarioFecha}
+        style={{
+          display: 'flex', alignItems: 'center', width: '100%', borderRadius: 12, padding: '0 14px', height: 45,
+          border: `1px solid ${fechaFiltro ? withAlpha(colors.primary, '44') : 'transparent'}`,
+          backgroundColor: fechaFiltro ? withAlpha(colors.primary, '12') : colors.surfaceSubtle,
+          cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaFiltro ? colors.primaryDeep : colors.muted} strokeWidth="2" style={{ marginRight: 8, flexShrink: 0 }}>
           <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
-        <input
-          value={textoFecha}
-          onChange={e => handleCambiarTextoFecha(e.target.value)}
-          placeholder={t('datePlaceholder')}
-          maxLength={10}
-          inputMode="numeric"
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: colors.text, background: 'transparent', letterSpacing: 1 }}
-        />
-        {textoFecha !== '' && (
-          <button onClick={handleLimpiarFecha} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={fechaError ? colors.dangerBorder : colors.primaryDeep} strokeWidth="2">
+        <span style={{ flex: 1, fontSize: 14, color: fechaFiltro ? colors.text : colors.muted }}>
+          {fechaFiltro ? formatFechaCorta(fechaFiltro) : t('datePlaceholder')}
+        </span>
+        {fechaFiltro && (
+          <span
+            role="button"
+            aria-label={t('clearAll')}
+            onClick={e => { e.stopPropagation(); onCambiarFecha(null); }}
+            style={{ display: 'flex', cursor: 'pointer' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
               <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
             </svg>
-          </button>
+          </span>
         )}
-      </div>
-      {fechaError && (
-        <p style={{ fontSize: 11, color: colors.danger, marginTop: 5, marginLeft: 2 }}>{t('invalidDate')}</p>
-      )}
+      </button>
 
       {/* Filtrar por servicio — fila de chips, mismo peso visual que
           cliente/fecha/profesional en este sheet. Antes usaba
@@ -439,7 +363,7 @@ function FiltroSheetContent({
           acá se sentía como un componente aparte: traía buscador, chips de
           seleccionados y checkboxes que no aplican a un filtro de selección
           única — correcto para armar un turno, pesado para filtrar. */}
-      <p style={{ ...sectionLabelStyle, marginTop: fechaError ? 12 : 16 }}>
+      <p style={{ ...sectionLabelStyle, marginTop: 16 }}>
         {t('filterByService')}
       </p>
       <div style={{ marginBottom: 20, display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -698,6 +622,11 @@ export default function AgendaPage() {
   // cambios de lógica, solo detrás de una acción explícita en vez de
   // siempre visible en la pantalla principal.
   const elegirFechaSheetRef = useRef<BottomSheetHandle>(null);
+  // El sheet "Elegir fecha" se reusa para dos cosas: navegar a un día (desde
+  // el WeekStrip) y elegir la fecha del filtro de búsqueda (desde el sheet
+  // "Filtrar") — este flag decide a cuál de las dos apunta el próximo tap
+  // sobre un día del calendario (ver handleDayClickEnSheet más abajo).
+  const [elegirFechaParaFiltro, setElegirFechaParaFiltro] = useState(false);
 
   const hayFiltroActivo = !!textoBusqueda || servicioFiltro !== null || fechaFiltro !== null || profesionalFiltroBusqueda !== null;
   const hoy = fechaDeHoy();
@@ -791,6 +720,17 @@ export default function AgendaPage() {
     setProfesionalFiltro(null);
   }, [fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
 
+  // Compartido entre el botón "Limpiar todo" del sheet de filtros y el tap
+  // en un día del WeekStrip (ver handleDayClick) — las dos acciones tienen
+  // que volver exactamente al mismo estado "sin filtro".
+  const limpiarTodosLosFiltros = useCallback(() => {
+    setTextoBusqueda('');
+    setServicioFiltro(null);
+    setFechaFiltro(null);
+    setProfesionalFiltroBusqueda(null);
+    limpiarBusqueda();
+  }, [limpiarBusqueda]);
+
   const handleDayClick = useCallback((fecha: string) => {
     const parts     = fecha.split('-');
     const y         = Number(parts[0]);
@@ -802,10 +742,18 @@ export default function AgendaPage() {
       fetchTurnosMes(`${y}-${String(m).padStart(2, '0')}`);
     }
 
+    // Tocar un día en el WeekStrip mientras hay un filtro activo vuelve a
+    // navegación normal por día (Change 2026-10-01) — antes el WeekStrip se
+    // deshabilitaba entero mientras había un filtro, porque la lista de
+    // resultados de "Filtrar" cruza fechas y un tap ahí no tenía ningún
+    // efecto visible. En vez de dejarlo inerte, ahora el tap es una acción
+    // real: cancela el filtro y pasa a ver ese día puntual.
+    if (hayFiltroActivo) limpiarTodosLosFiltros();
+
     setFechaSeleccionada(fecha);
     fetchTurnos(fecha);
     setProfesionalFiltro(null);
-  }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada]);
+  }, [viewDate, fetchTurnos, fetchTurnosMes, setFechaSeleccionada, hayFiltroActivo, limpiarTodosLosFiltros]);
 
   // Flechas de la tira: mismo día de la semana en la semana anterior/
   // siguiente, resuelto por handleDayClick (que ya se ocupa de cambiar de
@@ -815,17 +763,38 @@ export default function AgendaPage() {
     handleDayClick(formatCellDate(new Date(base.getFullYear(), base.getMonth(), base.getDate() + delta * 7)));
   }, [fechaSeleccionada, handleDayClick]);
 
+  const handleCambiarFecha = useCallback((fecha: string | null) => {
+    setFechaFiltro(fecha);
+    buscarPorFecha(fecha);
+  }, [buscarPorFecha]);
+
   const handleAbrirElegirFecha = useCallback(() => {
+    setElegirFechaParaFiltro(false);
+    elegirFechaSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  // Mismo sheet "Elegir fecha" (y mismo tap-para-confirmar, spec del Change
+  // 1), abierto desde el campo de fecha del sheet "Filtrar" en vez del
+  // WeekStrip — ver elegirFechaParaFiltro arriba. Change 2026-10-01: antes
+  // ese campo era texto libre tipeado a mano (DD/MM/AAAA con auto-formato),
+  // lento y propenso a error; ahora reusa el calendario que la app ya tenía.
+  const handleAbrirElegirFechaParaFiltro = useCallback(() => {
+    setElegirFechaParaFiltro(true);
     elegirFechaSheetRef.current?.snapToIndex(0);
   }, []);
 
   // Tocar un día en el sheet "Elegir fecha" ES la confirmación (spec del
   // Change 1) — no hay botón "aplicar" separado, el mismo tap que selecciona
-  // el día también cierra el sheet.
+  // el día también cierra el sheet. Bifurca según para qué se abrió el sheet
+  // (elegirFechaParaFiltro): navegación normal, o fecha del filtro.
   const handleDayClickEnSheet = useCallback((fecha: string) => {
-    handleDayClick(fecha);
+    if (elegirFechaParaFiltro) {
+      handleCambiarFecha(fecha);
+    } else {
+      handleDayClick(fecha);
+    }
     elegirFechaSheetRef.current?.close();
-  }, [handleDayClick]);
+  }, [elegirFechaParaFiltro, handleCambiarFecha, handleDayClick]);
 
   // "Hoy" en el header del sheet — reportado sin función: la versión
   // original solo movía el mes del grid de vuelta al actual sin seleccionar
@@ -897,24 +866,15 @@ export default function AgendaPage() {
     buscarPorServicio(nuevo);
   }, [buscarPorServicio]);
 
-  const handleCambiarFecha = useCallback((fecha: string | null) => {
-    setFechaFiltro(fecha);
-    buscarPorFecha(fecha);
-  }, [buscarPorFecha]);
-
   const handleChangeProfesionalFiltroBusqueda = useCallback((id: number | null) => {
     setProfesionalFiltroBusqueda(id);
     buscarPorProfesional(id);
   }, [buscarPorProfesional]);
 
   const handleLimpiarTodo = useCallback(() => {
-    setTextoBusqueda('');
-    setServicioFiltro(null);
-    setFechaFiltro(null);
-    setProfesionalFiltroBusqueda(null);
-    limpiarBusqueda();
+    limpiarTodosLosFiltros();
     filtroSheetRef.current?.close();
-  }, [limpiarBusqueda]);
+  }, [limpiarTodosLosFiltros]);
 
   const handleAbrirFiltros = useCallback(() => {
     setFiltrosAbiertos(true);
@@ -1021,9 +981,13 @@ export default function AgendaPage() {
       {/* Week strip — reemplaza al grid mensual completo en la pantalla
           principal (Change 1); el grid sigue existiendo sin cambios, ahora
           detrás del sheet "Elegir fecha" que abre el botón de acá adentro.
-          Dimmed and disabled while a filter is active — mismo criterio que
-          tenía el calendario completo antes. */}
-      <div style={{ marginTop: 14, opacity: hayFiltroActivo ? 0.5 : 1, pointerEvents: hayFiltroActivo ? 'none' : 'auto' }}>
+          Ya NO se deshabilita con un filtro activo (Change 2026-10-01): antes
+          quedaba inerte (opacity+pointerEvents:none) porque la lista de
+          "Filtrar" cruza fechas y tocar un día no tenía efecto visible — en
+          vez de dejarlo así, ahora tocar un día cancela el filtro (ver
+          handleDayClick) y vuelve a la navegación normal, un uso real en vez
+          de un control fantasma. */}
+      <div style={{ marginTop: 14 }}>
         <WeekStrip
           dates={getCurrentWeekDates(parseFechaLocal(fechaSeleccionada))}
           fechaSeleccionada={fechaSeleccionada}
@@ -1150,6 +1114,7 @@ export default function AgendaPage() {
           onChangeProfesionalFiltro={handleChangeProfesionalFiltroBusqueda}
           onLimpiarTodo={handleLimpiarTodo}
           onAplicar={() => filtroSheetRef.current?.close()}
+          onAbrirCalendarioFecha={handleAbrirElegirFechaParaFiltro}
         />
       </BottomSheet>
 
@@ -1189,7 +1154,10 @@ export default function AgendaPage() {
         <CalendarioMensual
           viewDate={viewDate}
           onMonthChange={handleMonthChange}
-          fechaSeleccionada={fechaSeleccionada}
+          // Resalta la fecha del filtro cuando el sheet se abrió desde ahí,
+          // no la fecha de navegación normal — son dos selecciones distintas
+          // (ver elegirFechaParaFiltro).
+          fechaSeleccionada={elegirFechaParaFiltro ? (fechaFiltro ?? hoy) : fechaSeleccionada}
           turnosMes={turnosMesParaBadges}
           onDayClick={handleDayClickEnSheet}
         />
