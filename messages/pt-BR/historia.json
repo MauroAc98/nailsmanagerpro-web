@@ -42,7 +42,7 @@
     "couldNotRemoveFixedBackground": "Não foi possível remover o fundo fixo.",
     "noContentToShow": "Sem conteúdo: não há horários livres para mostrar na imagem.",
     "couldNotGenerateImage": "Não foi possível gerar a imagem. Tente novamente.",
-    "shareTitle": "Minha agenda"
+    "shareTitle": "Horários disponíveis"
   },
   "TarjetaPrecios": {
     "header": "Preços",
