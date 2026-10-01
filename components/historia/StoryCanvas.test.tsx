@@ -39,11 +39,15 @@ const variosDias: DisponibilidadDia[] = [
 ];
 
 describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícono', () => {
-  it('modo día, con logoUrl: la foto reemplaza el chip de fecha, en blanco y negro', () => {
+  it('modo día, con logoUrl: la foto reemplaza el chip de fecha', () => {
     renderCanvas('https://cdn.turnetto.com/logo.jpg', unDia);
     const logos = screen.getAllByAltText('').filter(img => (img as HTMLImageElement).src.includes('logo.jpg'));
     expect(logos).toHaveLength(1);
-    expect((logos[0] as HTMLImageElement).style.filter).toContain('grayscale');
+    // Sin `filter: grayscale` en vivo acá a propósito — el blanco y negro ya
+    // viene horneado en los píxeles (desaturarLogo, hooks/useGenerarHistoria.ts).
+    // Un filtro CSS en este árbol es lo que rompía la captura en Safari
+    // (ver StoryCanvas.tsx).
+    expect((logos[0] as HTMLImageElement).style.filter).toBe('');
     // El chip de fecha (el "24" del día) no debe verse duplicado ni convivir
     // con el logo en el header — el logo lo reemplaza, no lo acompaña.
     expect(screen.queryByText('24')).not.toBeInTheDocument();

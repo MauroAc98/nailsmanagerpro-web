@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
-import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
+import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura, desaturarLogo } from '@/lib/historia/captura';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -121,10 +121,45 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // al header). Mismo proxy same-origin (app/api/historia-fondo), que no es
   // específico de "fondo" pese al nombre — solo reescribe el origin.
   const logoUrlCrudo = useAuthStore(s => s.user?.logo_url ?? null);
-  const logoUrl = useMemo(
+  const logoUrlProxiado = useMemo(
     () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
     [logoUrlCrudo]
   );
+  // El proxy de arriba resuelve el CORS, pero no alcanza en Safari: el logo
+  // se mostraba en blanco y negro con `filter: grayscale(1)` en vivo (ver
+  // StoryCanvas), y ese filtro vive dentro del árbol que html-to-image
+  // serializa a un SVG <foreignObject> para rasterizarlo aparte — un
+  // pipeline mucho menos probado que el layout normal del DOM. WebKit falla
+  // ahí al combinar `filter` con esa rasterización y la historia entera sale
+  // negra (no solo el logo), reportado real en prod 2026-10-01 incluso ya
+  // con el proxy de CORS puesto. Horneamos el grayscale en los píxeles acá
+  // (Canvas 2D, un mecanismo totalmente distinto que no pasa por
+  // foreignObject) para que StoryCanvas ya no necesite aplicar `filter` en
+  // vivo.
+  //
+  // Reset sincrónico durante el render (mismo patrón oficial de React que
+  // profesionalSincronizada más abajo, para no disparar un setState dentro
+  // de un efecto): arranca mostrando el logo a color (ya resuelve el CORS,
+  // nunca niega el logo), y el efecto lo sube a blanco y negro apenas
+  // desaturarLogo resuelve. Si falla (offline, proxy caído), se queda en
+  // color — mejor eso que ocultarlo o arriesgar el filtro en vivo.
+  const [logoUrlProxiadoSincronizado, setLogoUrlProxiadoSincronizado] = useState(logoUrlProxiado);
+  const [logoUrl, setLogoUrl] = useState<string | null>(logoUrlProxiado);
+  if (logoUrlProxiadoSincronizado !== logoUrlProxiado) {
+    setLogoUrlProxiadoSincronizado(logoUrlProxiado);
+    setLogoUrl(logoUrlProxiado);
+  }
+  useEffect(() => {
+    if (!logoUrlProxiado) return;
+    let cancelado = false;
+    desaturarLogo(logoUrlProxiado)
+      .then(dataUrl => { if (!cancelado) setLogoUrl(dataUrl); })
+      .catch(() => {
+        // ya quedó en logoUrlProxiado (color) por el reset de arriba, nada
+        // que hacer
+      });
+    return () => { cancelado = true; };
+  }, [logoUrlProxiado]);
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;

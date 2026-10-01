@@ -253,18 +253,22 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   modos — decisión 2026-09-30 tras canvas de diseño: un badge
                   de fecha superpuesto no escala a semana/mes, así que se
                   dropea la fecha del ícono y se apoya solo en el texto de
-                  abajo (que ya la muestra formateada para cada modo). En
-                  blanco y negro para que la marca acompañe sin competir en
-                  color con la foto de fondo. Sin logo, se ve exactamente
-                  igual que siempre (chip de fecha en modo Día, ícono
-                  genérico en Semana/Mes). */}
+                  abajo (que ya la muestra formateada para cada modo). Sin
+                  logo, se ve exactamente igual que siempre (chip de fecha en
+                  modo Día, ícono genérico en Semana/Mes).
+                  logoUrl ya llega en blanco y negro (desaturarLogo en
+                  hooks/useGenerarHistoria.ts) — nada de `filter: grayscale`
+                  en vivo acá: ese filtro vive dentro del árbol que
+                  html-to-image rasteriza como SVG foreignObject aparte, y
+                  WebKit lo combina mal con esa rasterización — la historia
+                  entera salía negra en Safari (real en prod 2026-10-01). */}
               {logoUrl ? (
                 <img
                   src={logoUrl}
                   alt=""
                   style={{
                     flexShrink: 0, width: 44, height: 44, borderRadius: 12,
-                    objectFit: 'cover', filter: 'grayscale(1)',
+                    objectFit: 'cover',
                     border: '1.5px solid rgba(255,255,255,0.6)',
                   }}
                 />
