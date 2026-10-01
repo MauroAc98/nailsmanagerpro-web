@@ -113,7 +113,18 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
   const telefonoEstudio = useAuthStore(s => s.user?.telefono ?? null);
-  const logoUrl = useAuthStore(s => s.user?.logo_url ?? null);
+  // El logo, como fondoFijoGuardado más abajo, es una URL del backend servida
+  // sin Access-Control-Allow-Origin — html-to-image no puede embeberla al
+  // capturar y compartir/guardar falla en silencio (mismo bug ya resuelto
+  // para el fondo, real en prod 2026-10-01: sin esto, cualquier negocio con
+  // logo cargado no podía compartir su historia desde que el logo se sumó
+  // al header). Mismo proxy same-origin (app/api/historia-fondo), que no es
+  // específico de "fondo" pese al nombre — solo reescribe el origin.
+  const logoUrlCrudo = useAuthStore(s => s.user?.logo_url ?? null);
+  const logoUrl = useMemo(
+    () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
+    [logoUrlCrudo]
+  );
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
