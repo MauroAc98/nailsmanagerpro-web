@@ -8,6 +8,7 @@ vi.mock('@/services/adminService', () => ({
   adminService: {
     getToken: vi.fn(),
     getAdminGuardado: vi.fn(() => null),
+    tokenExpirado: vi.fn(() => false),
   },
 }));
 
@@ -16,11 +17,14 @@ import AdminLayout from './layout';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 
 const mockedGetToken = vi.mocked(adminService.getToken);
+const mockedTokenExpirado = vi.mocked(adminService.tokenExpirado);
 
 beforeEach(() => {
   resetNavigationMock();
   useAdminAuthStore.setState({ admin: null, token: null, inicializado: false });
   mockedGetToken.mockReset();
+  mockedTokenExpirado.mockReset();
+  mockedTokenExpirado.mockReturnValue(false);
 });
 
 afterEach(() => {
@@ -70,6 +74,37 @@ describe('AdminLayout — shared resolver', () => {
 
     act(() => {
       window.dispatchEvent(new CustomEvent('admin-session-expired'));
+    });
+
+    await waitFor(() => expect(useAdminAuthStore.getState().token).toBeNull());
+  });
+
+  it('token ya vencido al montar (pestaña nueva después de las 12h) -> nunca pinta admin, va directo a /login', async () => {
+    mockedGetToken.mockReturnValue('admin-tok-viejo');
+    mockedTokenExpirado.mockReturnValue(true);
+    setMockLocation('/');
+
+    render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent('/')}`),
+    );
+    expect(screen.queryByText('ADMIN CONTENT')).toBeNull();
+  });
+
+  it('token vence mientras la pestaña está en background -> al volver a visible, corta sin esperar un request', async () => {
+    mockedGetToken.mockReturnValue('admin-tok');
+    mockedTokenExpirado.mockReturnValue(false);
+    setMockLocation('/');
+    render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+    await screen.findByText('ADMIN CONTENT');
+
+    // El token vence mientras la pestaña está oculta — nadie hizo ningún
+    // request todavía, así que un 401 no es lo que va a avisarnos.
+    mockedTokenExpirado.mockReturnValue(true);
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
     await waitFor(() => expect(useAdminAuthStore.getState().token).toBeNull());

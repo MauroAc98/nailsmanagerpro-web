@@ -124,6 +124,7 @@ export interface MercadoPagoConexionCreada {
 const KEYS = {
   token: 'admin_token',
   admin: 'admin_user',
+  expiresAt: 'admin_token_expires_at',
 };
 
 // Mismos wrappers seguros que authService.ts — ver ese archivo para el
@@ -161,6 +162,7 @@ export const adminService = {
     const response = await adminApi.post<AdminLoginResponse>('/admin/login', { email, password });
     safeSetItem(KEYS.token, response.data.token);
     safeSetItem(KEYS.admin, JSON.stringify(response.data.admin));
+    safeSetItem(KEYS.expiresAt, response.data.expires_at);
     return response.data;
   },
 
@@ -170,6 +172,7 @@ export const adminService = {
     } finally {
       safeRemoveItem(KEYS.token);
       safeRemoveItem(KEYS.admin);
+      safeRemoveItem(KEYS.expiresAt);
     }
   },
 
@@ -275,4 +278,19 @@ export const adminService = {
   },
 
   estaAutenticado: (): boolean => !!safeGetItem(KEYS.token),
+
+  // Chequeo puro client-side contra el expires_at que devuelve /admin/login
+  // (el token admin vence a horas fijas desde el login, ver
+  // AdminAuthController::login en el backend — no "mientras esté activo"
+  // como la sesión del negocio). Permite detectar un token vencido sin
+  // esperar a que un request falle con 401 — ver useAdminAuthStore
+  // .revisarExpiracion, usado al montar y al volver a la pestaña (feedback
+  // 2026-10-02). Sin expiresAt guardado (sesión vieja, de antes de este
+  // campo) nunca cuenta como vencido — fail-open, el 401 real sigue siendo
+  // la red de seguridad.
+  tokenExpirado: (): boolean => {
+    const expiresAt = safeGetItem(KEYS.expiresAt);
+    if (!expiresAt) return false;
+    return new Date(expiresAt).getTime() <= Date.now();
+  },
 };
