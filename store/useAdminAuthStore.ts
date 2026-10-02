@@ -19,9 +19,10 @@ interface AdminAuthState {
   logout: () => Promise<void>;
   inicializar: () => void;
   clearError: () => void;
+  revisarExpiracion: () => void;
 }
 
-export const useAdminAuthStore = create<AdminAuthState>((set) => ({
+export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   admin: null,
   token: null,
   loading: false,
@@ -35,10 +36,29 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
   inicializar: () => {
     try {
       const token = adminService.getToken();
+      // Vencido desde antes de que esta pestaña siquiera montara (ej. la
+      // abrís de nuevo al otro día) — no tiene sentido pintar admin
+      // autenticado un instante para que el próximo request lo tire con un
+      // 401 silencioso (ver revisarExpiracion para el caso de pestaña ya
+      // abierta).
+      if (token && adminService.tokenExpirado()) {
+        set({ token: null, admin: null, inicializado: true });
+        return;
+      }
       const admin = adminService.getAdminGuardado();
       set({ token, admin, inicializado: true });
     } catch {
       set({ inicializado: true });
+    }
+  },
+
+  // Chequeo client-side del expires_at guardado — no espera a que un
+  // request falle con 401. Ver app/(admin)/admin/layout.tsx, que lo llama
+  // al volver la pestaña a visible (feedback 2026-10-02: "que no espere a
+  // una nueva petición, que lo haga apenas vuelva").
+  revisarExpiracion: () => {
+    if (get().token && adminService.tokenExpirado()) {
+      set({ admin: null, token: null, error: null });
     }
   },
 

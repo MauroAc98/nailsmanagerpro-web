@@ -40,6 +40,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('admin-session-expired', onAdminSessionExpired);
   }, []);
 
+  // El token admin vence a horas fijas desde el login (12h, ver
+  // AdminAuthController::login en el backend), no "mientras esté activo" —
+  // sin este chequeo, una pestaña dejada abierta recién se entera de que la
+  // sesión venció cuando el próximo click dispara un request y ese 401
+  // llega (feedback 2026-10-02: "que no espere a una nueva petición, que lo
+  // haga apenas vuelva"). Revisamos el expires_at guardado apenas la
+  // pestaña vuelve a estar visible, sin esperar ningún round-trip de red.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        useAdminAuthStore.getState().revisarExpiracion();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
   // Admin has no `booting` subscription check — status maps straight off the
   // store: not initialized yet -> booting (blank); no token -> unauthenticated;
   // token present -> authenticated. `i18nReady` is always true here (admin i18n

@@ -39,6 +39,7 @@ adminApi.interceptors.response.use(
       try {
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_token_expires_at');
       } catch {
         // sin acceso a localStorage — igual avisamos del logout vía el evento
       }
