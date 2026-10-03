@@ -9,6 +9,7 @@ import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
 import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura, desaturarLogo } from '@/lib/historia/captura';
+import { elegirFotoEncabezado } from '@/lib/historia/fotoEncabezado';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -120,7 +121,12 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // logo cargado no podía compartir su historia desde que el logo se sumó
   // al header). Mismo proxy same-origin (app/api/historia-fondo), que no es
   // específico de "fondo" pese al nombre — solo reescribe el origin.
-  const logoUrlCrudo = useAuthStore(s => s.user?.logo_url ?? null);
+  const logoNegocioCrudo = useAuthStore(s => s.user?.logo_url ?? null);
+  const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
+  // El recuadro del encabezado muestra el logo del negocio por defecto; si el
+  // usuario tilda una profesional que tiene avatar, el de ella (sin avatar,
+  // sigue el logo). Pasa por el mismo proxy y blanco y negro de abajo.
+  const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, selectedProfesionalId, logoNegocioCrudo);
   const logoUrlProxiado = useMemo(
     () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
     [logoUrlCrudo]
@@ -160,7 +166,6 @@ export function useGenerarHistoria(fechaInicial?: string) {
       });
     return () => { cancelado = true; };
   }, [logoUrlProxiado]);
-  const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;
