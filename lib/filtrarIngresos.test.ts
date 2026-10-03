@@ -21,6 +21,7 @@ function ingreso(over: Partial<Ingreso>): Ingreso {
     monto: '1000.00',
     categoria: 'venta_productos',
     descripcion: null,
+    profesional_id: null,
     created_at: '2026-09-10T00:00:00Z',
     updated_at: '2026-09-10T00:00:00Z',
     ...over,
