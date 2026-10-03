@@ -273,3 +273,36 @@ describe('createRealWrites: actualizarDatosReserva, iniciarPago, liberarHold, ge
     expect((pedidos[0].headers['X-Device-Token'] as string).length).toBeGreaterThanOrEqual(32);
   });
 });
+
+describe('createRealWrites: getReservationStatus de un grupo', () => {
+  it('mapea fin, tramos y profesionales cuando el resumen los trae', async () => {
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) =>
+        respuesta(config, 200, {
+          token: TOKEN, estado: 'confirmed', expira_en_ms: 1,
+          resumen: {
+            servicio_ids: [9, 7], profesional_id: 4, fecha: '2026-09-25', hora: '10:00',
+            duracion_total_minutos: 105, deposito: 5000, nota: null, fin: '11:45',
+            tramos: [
+              { profesional_id: 4, hora: '10:00', fin: '11:00', servicio_ids: [9] },
+              { profesional_id: 3, hora: '11:00', fin: '11:45', servicio_ids: [7] },
+            ],
+            profesionales: [{ id: 4, nombre: 'Ana' }, { id: 3, nombre: 'Laura' }],
+          },
+        }),
+    });
+    const { summary } = await createRealWrites(http, { deviceToken: () => 'd'.repeat(32) }).getReservationStatus('ana', TOKEN);
+    expect(summary.fin).toBe('11:45');
+    expect(summary.tramos).toHaveLength(2);
+    expect(summary.tramos?.[1]).toEqual({ profesionalId: 3, hora: '11:00', fin: '11:45', servicioIds: [7] });
+    expect(summary.profesionales).toEqual([{ id: 4, nombre: 'Ana' }, { id: 3, nombre: 'Laura' }]);
+  });
+
+  it('un resumen de un solo tramo no suma campos nuevos (Rule L)', async () => {
+    const { summary } = await nuevo().getReservationStatus('ana', TOKEN);
+    expect(Object.keys(summary).sort()).toEqual(
+      ['deposito', 'duracionTotalMinutos', 'fecha', 'hora', 'nota', 'profesionalId', 'servicioIds'],
+    );
+  });
+});

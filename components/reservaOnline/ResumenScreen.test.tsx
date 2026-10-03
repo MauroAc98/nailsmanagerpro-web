@@ -72,6 +72,20 @@ describe('ResumenScreen', () => {
     expect(screen.getByText('Av. Siempreviva 742')).toBeInTheDocument();
   });
 
+  it('con una sola profesional no aclara hasta cuando ocupa el turno (Rule L)', async () => {
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await screen.findByText('Con Ana');
+    expect(document.body.textContent).not.toContain('Tu turno ocupa');
+  });
+
+  it('con varias profesionales muestra sus nombres y hasta cuando ocupa el turno', async () => {
+    const s = useReservaOnlineStore.getState();
+    s.setHold({ ...s.hold!, fin: '14:45', profesionalIds: [1, 2] });
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    expect(await screen.findByText('Con Ana y Lucía')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('Tu turno ocupa de 13:00 a 14:45.');
+  });
+
   it('NO hay total ni precios por servicio: el unico monto es la sena', async () => {
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await screen.findByText('Seña para reservar');

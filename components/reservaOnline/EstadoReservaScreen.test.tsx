@@ -177,6 +177,36 @@ describe('EstadoReservaScreen', () => {
       await svc.simulatePayment('mock-1');
     });
 
+    it('un turno de una sola profesional no muestra horario de fin ni "Te atienden" (Rule L)', async () => {
+      montar();
+      await screen.findByRole('heading', { name: '¡Turno confirmado!' });
+      expect(screen.getByText('Te atiende')).toBeInTheDocument();
+      expect(document.body.textContent).not.toContain('Tu turno ocupa');
+      expect(screen.queryByText('Te atienden')).toBeNull();
+    });
+
+    it('un turno con varias profesionales muestra a quienes atienden y hasta cuando ocupa', async () => {
+      setServiceParaTests({
+        ...svc,
+        getSalon: async () => ({
+          nombre: 'Studio Demo', logoUrl: null, direccion: null, pagoHabilitado: true,
+          profesionales: [{ id: 1, nombre: 'Ana', avatarUrl: null }, { id: 2, nombre: 'Lucía', avatarUrl: null }],
+        }),
+        getReservationStatus: async (slug, id) => ({
+          ...(await svc.getReservationStatus(slug, id)),
+          summary: {
+            servicioIds: [1, 2], profesionalId: 1, fecha: '2026-09-25', hora: '10:00', deposito: 5000,
+            duracionTotalMinutos: 105, fin: '11:45', profesionales: [{ id: 1, nombre: 'Ana' }, { id: 2, nombre: 'Lucía' }],
+          },
+        }),
+      } as MockReservaOnlineService);
+      montar();
+      expect(await screen.findByText('Ana y Lucía')).toBeInTheDocument();
+      expect(screen.getByText('Te atienden')).toBeInTheDocument();
+      expect(document.body.textContent).toContain('Tu turno ocupa de 10:00 a 11:45.');
+      expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
+    });
+
     it('titulo y detalle', async () => {
       montar();
       expect(await screen.findByRole('heading', { name: '¡Turno confirmado!' })).toBeInTheDocument();
