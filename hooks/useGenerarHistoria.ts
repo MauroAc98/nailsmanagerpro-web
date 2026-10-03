@@ -123,10 +123,14 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // específico de "fondo" pese al nombre — solo reescribe el origin.
   const logoNegocioCrudo = useAuthStore(s => s.user?.logo_url ?? null);
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
-  // El recuadro del encabezado muestra el logo del negocio por defecto; si el
-  // usuario tilda una profesional que tiene avatar, el de ella (sin avatar,
-  // sigue el logo). Siempre a color.
-  const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, selectedProfesionalId, logoNegocioCrudo);
+  // La profesional efectiva (la dueña por defecto, o la que se eligió en el
+  // selector) manda en el encabezado: su avatar si tiene, y si no el logo del
+  // negocio. Siempre a color.
+  const effectiveProfesionalId = useMemo(() => {
+    if (selectedProfesionalId) return selectedProfesionalId;
+    return profesionalJefa(profesionales)?.id ?? null;
+  }, [selectedProfesionalId, profesionales]);
+  const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, effectiveProfesionalId, logoNegocioCrudo);
   const logoUrlProxiado = useMemo(
     () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
     [logoUrlCrudo]
@@ -155,10 +159,6 @@ export function useGenerarHistoria(fechaInicial?: string) {
       });
     return () => { cancelado = true; };
   }, [logoUrlProxiado]);
-  const effectiveProfesionalId = useMemo(() => {
-    if (selectedProfesionalId) return selectedProfesionalId;
-    return profesionalJefa(profesionales)?.id ?? null;
-  }, [selectedProfesionalId, profesionales]);
   const fondoFijoGuardado = useMemo(
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]

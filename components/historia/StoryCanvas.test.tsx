@@ -10,14 +10,14 @@ import { StoryCanvas } from './StoryCanvas';
 // componente): esta prueba solo cubre el reemplazo del chip de fecha /
 // ícono genérico por el logo del negocio, no re-verifica todo el resto del
 // canvas (sin cobertura previa).
-function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string) {
+function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string, telefono: string | null = null) {
   return render(
     <NextIntlClientProvider locale="es" messages={es}>
       <StoryCanvas
         ref={createRef()}
         titulo="24 de sept"
         nombreEstudio="Turnetto"
-        telefonoEstudio={null}
+        telefonoEstudio={telefono}
         profesionalNombre={profesionalNombre}
         logoUrl={logoUrl}
         dias={dias}
@@ -66,66 +66,33 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
   });
 });
 
-describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
-  it('sin profesional elegida: título del negocio, "TURNOS DISPONIBLES" y la fecha, sin línea "con"', () => {
-    renderCanvas(null, unDia);
-    expect(screen.getByText('Turnetto')).toBeInTheDocument();
-    expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
-    expect(screen.getByText('24 de sept')).toBeInTheDocument();
-    expect(screen.queryByText('Turnos disponibles')).not.toBeInTheDocument();
-    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
-  });
-
-  it('con profesional elegida: título "Turnos disponibles" y una sola línea "con Gabriela · fecha"', () => {
+describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
+  it('título "Turnos disponibles" y una sola línea "con Gabriela · fecha"', () => {
     renderCanvas(null, unDia, 'Gabriela');
     expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
     expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
-    // La leyenda en mayúsculas y la fecha suelta ya no van aparte.
+    // Ya no existe el encabezado "solo negocio": ni la leyenda en mayúsculas
+    // ni la fecha suelta.
     expect(screen.queryByText('TURNOS DISPONIBLES')).not.toBeInTheDocument();
     expect(screen.queryByText('24 de sept')).not.toBeInTheDocument();
   });
 
-  it('con profesional elegida el nombre del negocio ya no es el título: baja al pie, en una sola línea', () => {
+  it('sin profesional resuelta, el mismo diseño con solo la fecha (sin "con")', () => {
+    renderCanvas(null, unDia);
+    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
+    expect(screen.getByText('24 de sept')).toBeInTheDocument();
+    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
+  });
+
+  it('el nombre del negocio nunca es el título: va al pie, una sola vez', () => {
     renderCanvas(null, unDia, 'Gabriela');
     const negocio = screen.getAllByText('Turnetto');
     expect(negocio).toHaveLength(1);
-    // Está en el pie: viene después de la línea "con …" en el documento.
     const con = screen.getByText('con Gabriela · 24 de sept');
     expect(con.compareDocumentPosition(negocio[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('con profesional elegida y teléfono, el pie une negocio y teléfono en una sola línea', () => {
-    render(
-      <NextIntlClientProvider locale="es" messages={es}>
-        <StoryCanvas
-          ref={createRef()}
-          titulo="24 de sept"
-          nombreEstudio="Turnetto"
-          telefonoEstudio="5491155551234"
-          profesionalNombre="Gabriela"
-          logoUrl={null}
-          dias={unDia}
-          fondoUri={null}
-          canvasWidth={360}
-          canvasHeight={640}
-          textosLibres={[]}
-          onMoverTexto={() => {}}
-          onResizeTexto={() => {}}
-          onEditarTexto={() => {}}
-        />
-      </NextIntlClientProvider>,
-    );
-    // "Turnetto · [ícono] +54…": el ícono va pegado al teléfono, no al negocio.
-    const negocio = screen.getByText('Turnetto');
-    const telefono = screen.getByText(/^\+/);
-    expect(negocio.parentElement).toBe(telefono.parentElement);
-    expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const glifo = telefono.previousElementSibling;
-    expect(glifo?.tagName.toLowerCase()).toBe('svg');
-    expect(negocio.compareDocumentPosition(glifo as Element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('si el nombre del negocio ya contiene el de la profesional no se repite ("Natalia Acosta Studio" con Natalia)', () => {
+  it('aunque el negocio lleve el nombre de la profesional ("Natalia Acosta Studio" con Natalia) mantiene el mismo diseño', () => {
     render(
       <NextIntlClientProvider locale="es" messages={es}>
         <StoryCanvas
@@ -146,15 +113,18 @@ describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
         />
       </NextIntlClientProvider>,
     );
-    // Header de siempre: negocio de título, leyenda y fecha sueltas, sin "con".
+    expect(screen.getByText('con Natalia · 24 de sept')).toBeInTheDocument();
     expect(screen.getByText('Natalia Acosta Studio')).toBeInTheDocument();
-    expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
-    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
   });
 
-  it('si la profesional se llama igual que el negocio no se repite el nombre', () => {
-    renderCanvas(null, unDia, 'Turnetto');
-    expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
-    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
+  it('con teléfono, el pie une negocio y teléfono en una línea con el ícono pegado al número', () => {
+    renderCanvas(null, unDia, 'Gabriela', '5491155551234');
+    const negocio = screen.getByText('Turnetto');
+    const telefono = screen.getByText(/^\+/);
+    expect(negocio.parentElement).toBe(telefono.parentElement);
+    expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const glifo = telefono.previousElementSibling;
+    expect(glifo?.tagName.toLowerCase()).toBe('svg');
+    expect(negocio.compareDocumentPosition(glifo as Element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

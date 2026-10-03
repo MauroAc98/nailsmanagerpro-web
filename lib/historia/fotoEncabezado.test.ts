@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { elegirFotoEncabezado } from './fotoEncabezado';
+import { elegirFotoEncabezado, profesionalDelEncabezado } from './fotoEncabezado';
 
 const natalia = { id: 1, avatar_url: 'https://cdn/natalia.jpg' };
 const gabriela = { id: 2, avatar_url: null };
@@ -32,5 +32,25 @@ describe('elegirFotoEncabezado', () => {
 
   it('un avatar vacío cuenta como sin avatar', () => {
     expect(elegirFotoEncabezado([{ id: 3, avatar_url: '' }], 3, logo)).toBe(logo);
+  });
+});
+
+describe('profesionalDelEncabezado', () => {
+  it('devuelve la profesional efectiva (la dueña por defecto)', () => {
+    expect(profesionalDelEncabezado([natalia, gabriela], 1)).toBe(natalia);
+  });
+
+  it('devuelve la elegida cuando cambia el selector', () => {
+    expect(profesionalDelEncabezado([natalia, gabriela], 2)).toBe(gabriela);
+  });
+
+  it('con una sola profesional activa también la devuelve (un único diseño para todos)', () => {
+    expect(profesionalDelEncabezado([natalia], 1)).toBe(natalia);
+  });
+
+  it('null si no hay id efectivo o no está entre las activas', () => {
+    expect(profesionalDelEncabezado([natalia], null)).toBeNull();
+    expect(profesionalDelEncabezado([natalia], 99)).toBeNull();
+    expect(profesionalDelEncabezado([], 1)).toBeNull();
   });
 });

@@ -11,7 +11,6 @@ import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
-import { nombreYaEnNegocio } from '@/lib/historia/nombreEnNegocio';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -114,17 +113,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
   const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
 
-  // Header en dos modos. Sin profesional elegida a mano: el nombre del
-  // negocio de título, "TURNOS DISPONIBLES" y la fecha (como siempre). Con
-  // una profesional elegida: "Turnos disponibles" de título y una sola línea
-  // chica "con {nombre} · {fecha}"; el nombre del negocio pasa al pie. Si el
-  // nombre del negocio ya contiene el de la profesional (cuenta donde el
-  // estudio lleva el nombre de la dueña, ej. "Natalia Acosta Studio" con
-  // Natalia) no se repite: queda el header de siempre.
-  const lineaProfesional = profesionalNombre && !nombreYaEnNegocio(profesionalNombre, nombreEstudio)
+  // Un único diseño para todas las cuentas: "Turnos disponibles" de título y
+  // una sola línea chica "con {profesional} · {fecha}" (solo la fecha si no
+  // hay profesional). El nombre del negocio va siempre en el pie, junto al
+  // teléfono.
+  const lineaProfesional = profesionalNombre
     ? t('withProfessional', { nombre: profesionalNombre })
     : null;
-  const tituloPrincipal = lineaProfesional ? t('availableTitle') : nombreEstudio;
+  const tituloPrincipal = t('availableTitle');
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
   // historia con su propio chrome y, en celus más altos que 9:16, recortan
@@ -301,49 +297,26 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               )}
 
               <div style={{ minWidth: 0, flex: 1 }}>
-                {tituloPrincipal && (
-                  // maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
-                  // muy grande al lado de caption/fecha). minFontSize sigue
-                  // por encima del tope de FitText de los turnos en el body
-                  // (maxFontSize 10) — el nombre nunca queda mas chico que la
-                  // info de los turnos.
-                  <FitText
-                    text={tituloPrincipal}
-                    maxFontSize={18}
-                    minFontSize={13}
-                    style={{
-                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-                      letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    }}
-                  />
-                )}
-                {/* Dos líneas separadas, no concatenadas — en modo Semana la
-                    fecha ("17 al 23 de agosto") ya es larga por sí sola, y
-                    sumarle "· TURNOS DISPONIBLES" en el mismo renglón lo
-                    hacía correr y perder orden. */}
-                {lineaProfesional ? (
-                  <span style={{
-                    display: 'block', marginTop: 4, fontSize: 11, fontWeight: 400,
-                    color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                  }}>
-                    {`${lineaProfesional} · ${titulo}`}
-                  </span>
-                ) : (
-                  <>
-                    <span style={{
-                      display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                      color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    }}>
-                      {t('availableAppointments')}
-                    </span>
-                    <span style={{
-                      display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
-                      color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    }}>
-                      {titulo}
-                    </span>
-                  </>
-                )}
+                {/* maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
+                    muy grande al lado de la fecha). minFontSize sigue por
+                    encima del tope de FitText de los turnos en el body
+                    (maxFontSize 10) — el título nunca queda más chico que la
+                    info de los turnos. */}
+                <FitText
+                  text={tituloPrincipal}
+                  maxFontSize={18}
+                  minFontSize={13}
+                  style={{
+                    fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                    letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  }}
+                />
+                <span style={{
+                  display: 'block', marginTop: 4, fontSize: 11, fontWeight: 400,
+                  color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                }}>
+                  {lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo}
+                </span>
               </div>
             </div>
 
@@ -444,18 +417,16 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               }}>
                 {t('reserveCta')}
               </span>
-              {/* Una sola línea. Con profesional elegida el título del header
-                  deja de ser el negocio: su nombre pasa acá, junto al
-                  teléfono ("Negocio · +54…"), para no perder la referencia
-                  (el avatar de la profesional reemplaza al logo). */}
-              {(telefonoEstudio || (lineaProfesional && nombreEstudio)) && (
+              {/* Una sola línea: el negocio (que ya no es el título del
+                  header) y el teléfono con su ícono pegado al número. */}
+              {(telefonoEstudio || nombreEstudio) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                  {lineaProfesional && nombreEstudio && (
+                  {nombreEstudio && (
                     <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                       {nombreEstudio}
                     </span>
                   )}
-                  {lineaProfesional && nombreEstudio && telefonoEstudio && (
+                  {nombreEstudio && telefonoEstudio && (
                     <span aria-hidden style={{ fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
                   )}
                   {telefonoEstudio && (

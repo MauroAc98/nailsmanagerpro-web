@@ -16,3 +16,14 @@ export function elegirFotoEncabezado(
   }
   return logoUrl;
 }
+
+// Profesional que se muestra en el encabezado: la efectiva del selector (la
+// dueña por defecto, o la que se eligió). Un único diseño para todas las
+// cuentas, también con una sola profesional activa.
+export function profesionalDelEncabezado<T extends { id: number }>(
+  activas: T[],
+  efectivaId: number | null,
+): T | null {
+  if (efectivaId === null) return null;
+  return activas.find(p => p.id === efectivaId) ?? null;
+}
