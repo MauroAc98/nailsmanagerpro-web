@@ -32,8 +32,11 @@
     "noListPrice": "Sem preço de tabela",
     "useListPrice": "Usar preço de tabela",
     "loadPrice": "Cadastrar",
-    "loadOneByOne": "Registrar as {count} cobranças, uma por uma",
-    "loadOneByOneHint": "Abre um atendimento por vez para anotar quanto você cobrou",
+    "useListPriceAll": "Usar preço de tabela nos {count} atendimentos",
+    "useListPriceAllHint": "Para quando você cobrou o valor de sempre. Os que mudaram ou não têm preço de tabela, registre com o botão de cada um.",
+    "confirmUseListPriceAll": "Registrar {count} atendimentos pelo preço de tabela ({monto} no total)? Depois só dá para corrigir pelo histórico.",
+    "bulkSaved": "{count, plural, one {# atendimento registrado} other {# atendimentos registrados}}",
+    "bulkPartialError": "Não foi possível registrar todos: {done} de {total} foram salvos. {error}",
     "confirmUseListPrice": "Registrar o agendamento de {cliente} a preço de tabela ({monto})? Depois só é possível corrigir pelo histórico.",
     "confirmUseListPriceButton": "Registrar"
   },

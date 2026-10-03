@@ -177,11 +177,39 @@ export default function PendientesDeCobroPage() {
     );
   };
 
-  const handleCargarDeAUno = async () => {
-    // Snapshot: el store va quitando turnos a medida que se guardan.
-    for (const turno of [...ordenados]) {
-      if (!(await cargarConSheet(turno))) return;
+  // Turnos que se pueden registrar de una a precio de lista: todos sus
+  // servicios tienen precio de lista cargado. Los demás se cargan con su
+  // propio botón "Cargar".
+  const conPrecioDeLista = useMemo(
+    () => ordenados.filter(turno => tienePrecioDeListaCompleto(turno, referencias)),
+    [ordenados, referencias]
+  );
+  const totalDeLista = useMemo(
+    () => conPrecioDeLista.reduce((acc, turno) => acc + estimadoAPrecioDeLista(turno, referencias), 0),
+    [conPrecioDeLista, referencias]
+  );
+
+  const handleUsarListaEnTodos = async () => {
+    const lote = [...conPrecioDeLista]; // snapshot: el store va quitando turnos al guardar
+    const ok = await confirmDialog(
+      t('confirmUseListPriceAll', { count: lote.length, monto: `$${formatMontoCorto(totalDeLista)}` }),
+      { confirmText: t('confirmUseListPriceButton') }
+    );
+    if (!ok) return;
+
+    let hechos = 0;
+    for (const turno of lote) {
+      const result = await actualizarPrecios(
+        turno.id,
+        turno.servicios.map(s => ({ servicio_id: s.id, precio: Number(referencias.get(s.id)) }))
+      );
+      if (!result.success) {
+        await alertDialog(t('bulkPartialError', { done: hechos, total: lote.length, error: result.message ?? t('saveError') }));
+        return;
+      }
+      hechos += 1;
     }
+    showToast(t('bulkSaved', { count: hechos }));
   };
 
   return (
@@ -215,23 +243,23 @@ export default function PendientesDeCobroPage() {
             <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.subtext }}>
               {t('resultCount', { count: ordenados.length })} · {t('summaryEstimated')}
             </p>
-            {/* Cargar los cobros de a uno: botón dentro del resumen (no flotante
-                abajo, que no existe en ninguna otra pantalla), con una frase
-                que explica qué pasa al tocarlo. Con un solo turno no hace
-                falta: su propia tarjeta ya tiene "Cargar". */}
-            {ordenados.length > 1 && (
+            {/* Registrar en bloque a precio de lista: lo que ahorra trabajo con
+                muchos pendientes cuando se cobró lo habitual. Con menos de dos
+                turnos con precio de lista no hace falta: cada tarjeta ya tiene
+                su propio botón. */}
+            {conPrecioDeLista.length > 1 && (
               <div style={{ marginTop: 14 }}>
                 <button
-                  onClick={handleCargarDeAUno}
+                  onClick={handleUsarListaEnTodos}
                   style={{
                     width: '100%', height: 48, borderRadius: 14, border: 'none', cursor: 'pointer',
                     backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 15, fontWeight: 600,
                   }}
                 >
-                  {t('loadOneByOne', { count: ordenados.length })}
+                  {t('useListPriceAll', { count: conPrecioDeLista.length })}
                 </button>
                 <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.subtext, textAlign: 'center' }}>
-                  {t('loadOneByOneHint')}
+                  {t('useListPriceAllHint')}
                 </p>
               </div>
             )}
