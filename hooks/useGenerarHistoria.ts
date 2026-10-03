@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
-import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura, desaturarLogo } from '@/lib/historia/captura';
+import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura, hornearFotoEncabezado } from '@/lib/historia/captura';
 import { elegirFotoEncabezado } from '@/lib/historia/fotoEncabezado';
 
 export type Modo = 'dia' | 'semana' | 'mes';
@@ -125,33 +125,20 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   // El recuadro del encabezado muestra el logo del negocio por defecto; si el
   // usuario tilda una profesional que tiene avatar, el de ella (sin avatar,
-  // sigue el logo). Pasa por el mismo proxy y blanco y negro de abajo.
+  // sigue el logo). Siempre a color.
   const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, selectedProfesionalId, logoNegocioCrudo);
-  // El avatar se muestra a color: solo el logo del negocio se hornea en
-  // blanco y negro (ver el efecto de abajo).
-  const encabezadoEsAvatar = logoUrlCrudo !== null && logoUrlCrudo !== logoNegocioCrudo;
   const logoUrlProxiado = useMemo(
     () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
     [logoUrlCrudo]
   );
-  // El proxy de arriba resuelve el CORS, pero no alcanza en Safari: el logo
-  // se mostraba en blanco y negro con `filter: grayscale(1)` en vivo (ver
-  // StoryCanvas), y ese filtro vive dentro del árbol que html-to-image
-  // serializa a un SVG <foreignObject> para rasterizarlo aparte — un
-  // pipeline mucho menos probado que el layout normal del DOM. WebKit falla
-  // ahí al combinar `filter` con esa rasterización y la historia entera sale
-  // negra (no solo el logo), reportado real en prod 2026-10-01 incluso ya
-  // con el proxy de CORS puesto. Horneamos el grayscale en los píxeles acá
-  // (Canvas 2D, un mecanismo totalmente distinto que no pasa por
-  // foreignObject) para que StoryCanvas ya no necesite aplicar `filter` en
-  // vivo.
-  //
-  // Reset sincrónico durante el render (mismo patrón oficial de React que
-  // profesionalSincronizada más abajo, para no disparar un setState dentro
-  // de un efecto): arranca mostrando el logo a color (ya resuelve el CORS,
-  // nunca niega el logo), y el efecto lo sube a blanco y negro apenas
-  // desaturarLogo resuelve. Si falla (offline, proxy caído), se queda en
-  // color — mejor eso que ocultarlo o arriesgar el filtro en vivo.
+  // El proxy resuelve el CORS, pero Safari además necesita que la foto ya
+  // viaje embebida (data URL) y que no haya ningún `filter` CSS en el árbol
+  // que se captura (reportado real en prod 2026-10-01: la historia entera
+  // salía negra). Mismo camino de antes — foto horneada con Canvas 2D — pero
+  // a color. Reset sincrónico durante el render (patrón oficial de React, sin
+  // setState dentro de un efecto): arranca con la URL proxiada y el efecto la
+  // reemplaza por la imagen embebida apenas está lista. Si falla (offline,
+  // proxy caído) se queda con la URL proxiada: mejor eso que ocultar la foto.
   const [logoUrlProxiadoSincronizado, setLogoUrlProxiadoSincronizado] = useState(logoUrlProxiado);
   const [logoUrl, setLogoUrl] = useState<string | null>(logoUrlProxiado);
   if (logoUrlProxiadoSincronizado !== logoUrlProxiado) {
@@ -159,16 +146,15 @@ export function useGenerarHistoria(fechaInicial?: string) {
     setLogoUrl(logoUrlProxiado);
   }
   useEffect(() => {
-    if (!logoUrlProxiado || encabezadoEsAvatar) return;
+    if (!logoUrlProxiado) return;
     let cancelado = false;
-    desaturarLogo(logoUrlProxiado)
+    hornearFotoEncabezado(logoUrlProxiado)
       .then(dataUrl => { if (!cancelado) setLogoUrl(dataUrl); })
       .catch(() => {
-        // ya quedó en logoUrlProxiado (color) por el reset de arriba, nada
-        // que hacer
+        // ya quedó en logoUrlProxiado por el reset de arriba, nada que hacer
       });
     return () => { cancelado = true; };
-  }, [logoUrlProxiado, encabezadoEsAvatar]);
+  }, [logoUrlProxiado]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;

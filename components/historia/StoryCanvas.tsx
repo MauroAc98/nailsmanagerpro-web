@@ -256,12 +256,11 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   abajo (que ya la muestra formateada para cada modo). Sin
                   logo, se ve exactamente igual que siempre (chip de fecha en
                   modo Día, ícono genérico en Semana/Mes).
-                  logoUrl ya llega en blanco y negro (desaturarLogo en
-                  hooks/useGenerarHistoria.ts) — nada de `filter: grayscale`
-                  en vivo acá: ese filtro vive dentro del árbol que
-                  html-to-image rasteriza como SVG foreignObject aparte, y
-                  WebKit lo combina mal con esa rasterización — la historia
-                  entera salía negra en Safari (real en prod 2026-10-01). */}
+                  La foto va a color y sin `filter` en vivo: ese filtro vive
+                  dentro del árbol que html-to-image rasteriza como SVG
+                  foreignObject aparte, y WebKit lo combina mal con esa
+                  rasterización — la historia entera salía negra en Safari
+                  (real en prod 2026-10-01). */}
               {logoUrl ? (
                 <img
                   src={logoUrl}
