@@ -23,7 +23,8 @@ import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { advertenciaTurno } from '@/lib/turnoAdvertencias';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
-import { resumenMovimiento } from '@/lib/gruposTurnos';
+import { resumenMovimiento, tramosPendientes } from '@/lib/gruposTurnos';
+import { advertenciaDelCombo, tramosAMover } from '@/lib/comboManual';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha } from '@/lib/dateFormat';
 
@@ -73,7 +74,7 @@ export default function EditarTurnoPage() {
   const rawId  = params?.id;
   const turnoId = Number(Array.isArray(rawId) ? rawId[0] : rawId ?? '0');
 
-  const { actualizarTurno, fetchTurno, turnoActual, loadingTurno, errorTurno, turnos, fetchTurnos } = useTurnoStore();
+  const { actualizarTurno, reprogramarGrupo, fetchTurno, turnoActual, loadingTurno, errorTurno, turnos, fetchTurnos } = useTurnoStore();
   const { servicios, fetchServicios }   = useServiciosStore();
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
@@ -89,6 +90,11 @@ export default function EditarTurnoPage() {
   const [clienteBuscar,       setClienteBuscar]       = useState('');
   const [showHoraPicker,      setShowHoraPicker]      = useState(false);
   const [saving,              setSaving]              = useState(false);
+  // Turno de un combo: mover solo este turno (como siempre) o todo el combo. Fecha/hora del
+  // combo = las del primer turno pendiente, hasta que la duena las cambie.
+  const [alcanceHora, setAlcanceHora] = useState<'este' | 'combo'>('este');
+  const [fechaCombo,  setFechaCombo]  = useState<string | null>(null);
+  const [horaCombo,   setHoraCombo]   = useState<Record<string, string> | null>(null);
 
   const now      = new Date();
   const initialH = String(now.getHours()).padStart(2, '0');
@@ -190,6 +196,40 @@ export default function EditarTurnoPage() {
   // slots de la profesional anterior.
   const slotsDesactualizados = mostrarSelectorProfesional && selectedProfesionalId != null
     && (ultimoProfesionalIdSolicitado !== selectedProfesionalId || slotsLoading);
+
+  const pendientesCombo = turnoActual?.grupo_id != null
+    ? [...tramosPendientes(turnoActual)].sort((a, b) => a.turno_id - b.turno_id)
+    : [];
+  const enCombo = alcanceHora === 'combo' && pendientesCombo.length > 0;
+  const fechaComboEf = fechaCombo ?? pendientesCombo[0]?.fecha_hora.slice(0, 10) ?? '';
+  const horaComboEf = horaCombo ?? {
+    hora: pendientesCombo[0]?.fecha_hora.slice(11, 13) ?? '00', minuto: pendientesCombo[0]?.fecha_hora.slice(14, 16) ?? '00',
+  };
+
+  // Mueve el combo entero: el primer turno pendiente arranca en la fecha/hora elegida y los demas
+  // conservan su desfasaje. La duena agenda a cualquier hora; el backend valida cada profesional.
+  const handleMoverCombo = async () => {
+    if (!turnoActual?.grupo_id || !enCombo) return;
+    const nueva = `${horaComboEf.hora}:${horaComboEf.minuto}`;
+    const advertencia = advertenciaDelCombo(tramosAMover(turnoActual, nueva), fechaComboEf, profesionales, bloqueos);
+    if (advertencia && !(await confirmDialog(advertencia))) return;
+
+    setSaving(true);
+    const r = await reprogramarGrupo(turnoActual.grupo_id, `${fechaComboEf} ${nueva}`);
+    setSaving(false);
+    if (!r.success) {
+      if (r.code === 'grupo_en_curso' || r.code === 'grupo_sin_pendientes') {
+        await alertDialog(t(r.code === 'grupo_en_curso' ? 'comboEnCurso' : 'comboSinPendientes'));
+        fetchTurno(turnoId);
+      } else {
+        await alertDialog(r.code === 'slot_held' ? t('comboSlotHeld') : (r.message ?? t('updateError')));
+      }
+      return;
+    }
+    showToast(t('comboMovido'));
+    if (r.notificacion === 'omitida') await alertDialog(t('comboNoAvisado'));
+    router.back();
+  };
 
   const handleGuardar = async () => {
     if (!selectedCliente || selectedServicioIds.length === 0) return;
@@ -316,6 +356,47 @@ export default function EditarTurnoPage() {
 
       <div style={{ padding: '0 20px' }}>
 
+        {/* ─── Turno de un combo: mover solo este o todo el combo ─── */}
+        {pendientesCombo.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+            {(['este', 'combo'] as const).map(op => (
+              <button
+                key={op}
+                onClick={() => setAlcanceHora(op)}
+                aria-pressed={alcanceHora === op}
+                style={{
+                  flex: 1, minWidth: 0, padding: '10px 8px', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${alcanceHora === op ? colors.primaryDeep : colors.border}`,
+                  backgroundColor: alcanceHora === op ? colors.surfaceSubtle : colors.surface, color: colors.text,
+                }}
+              >
+                {op === 'este' ? t('soloEste') : t('todoElCombo')}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {enCombo && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={sectionLabelStyle}>{t('seMueven')}</p>
+            {pendientesCombo.map(p => (
+              <div key={p.turno_id} style={{ fontSize: 14, color: colors.text, padding: '4px 2px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.fecha_hora.slice(11, 16)} · {t('conProfesional', { nombre: p.profesional_nombre ?? '' })}
+              </div>
+            ))}
+            <label htmlFor="fecha-combo" style={{ ...sectionLabelStyle, display: 'block', marginTop: 14 }}>{t('nuevaFechaCombo')}</label>
+            <input
+              id="fecha-combo"
+              type="date"
+              min={new Date().toISOString().slice(0, 10)}
+              value={fechaComboEf}
+              onChange={e => setFechaCombo(e.target.value)}
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+            />
+          </div>
+        )}
+
+        {!enCombo && (<>
         {/* ─── CLIENTE ─── */}
         <p style={sectionLabelStyle}>{t('client')}</p>
         <div style={{ marginBottom: 20, position: 'relative' }}>
@@ -453,32 +534,34 @@ export default function EditarTurnoPage() {
           </div>
         )}
 
+        </>)}
+
         <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
         <div
-          onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
+          onClick={() => { setTempHora(enCombo ? horaComboEf : horaSeleccionada); setShowHoraPicker(true); }}
           style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer', marginBottom: 32 }}
         >
-          {formatHora12(`${horaSeleccionada.hora}:${horaSeleccionada.minuto}`)}
+          {formatHora12(enCombo ? `${horaComboEf.hora}:${horaComboEf.minuto}` : `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`)}
         </div>
 
         {/* ─── Submit ─── */}
         <button
-          onClick={handleGuardar}
-          disabled={
+          onClick={enCombo ? handleMoverCombo : handleGuardar}
+          disabled={enCombo ? saving : (
             saving || !selectedCliente || selectedServicioIds.length === 0 ||
             (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
-          }
+          )}
           style={{
             width: '100%', height: 52, borderRadius: 14,
             backgroundColor: colors.primarySolid, color: colors.primaryFg,
             fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
-            opacity: (
+            opacity: enCombo ? 1 : (
               !selectedCliente || selectedServicioIds.length === 0 ||
               (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
             ) ? 0.5 : 1,
           }}
         >
-          {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('saveChanges')}
+          {enCombo ? (saving ? t('saving') : t('moverCombo')) : slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('saveChanges')}
         </button>
       </div>
 
@@ -508,7 +591,7 @@ export default function EditarTurnoPage() {
               onChange={setTempHora}
             />
             <button
-              onClick={() => { setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
+              onClick={() => { if (enCombo) setHoraCombo(tempHora); else setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
               style={{
                 marginTop: 24, width: '100%', height: 52, borderRadius: 14,
                 backgroundColor: colors.primarySolid, color: colors.primaryFg,

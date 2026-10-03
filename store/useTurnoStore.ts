@@ -21,6 +21,9 @@ interface OperacionResult {
   code?: string;
   // Ids realmente cancelados al cancelar todo el combo.
   cancelados?: number[];
+  // Al reprogramar un combo: si se aviso al cliente, y por que no.
+  notificacion?: 'enviada' | 'omitida';
+  motivo?: string;
 }
 
 interface TurnosState {
@@ -67,6 +70,7 @@ interface TurnosState {
     servicios?: { servicio_id: number; precio: number }[]
   ) => Promise<OperacionResult>;
   cancelarTurno: (id: number, motivoCancelacion: string, alcance?: 'grupo') => Promise<OperacionResult>;
+  reprogramarGrupo: (grupoId: number, fechaHora: string) => Promise<OperacionResult>;
   setFechaSeleccionada: (fecha: string) => void;
 
   buscarPorNombre: (nombre: string) => Promise<void>;
@@ -252,6 +256,22 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
         return { success: true };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  // ─────────────────────────────────────────────
+  // reprogramarGrupo — mueve todo el combo (POST /turnos/grupos/{grupo}/reprogramar)
+  // ─────────────────────────────────────────────
+  reprogramarGrupo: async (grupoId, fechaHora) => {
+    return withGlobalLoader(async () => {
+      try {
+        const r = await turnoService.reprogramarGrupo(grupoId, fechaHora);
+        await refrescarAgenda(get, set, get().fechaSeleccionada);
+        return { success: true, notificacion: r.notificacion, ...(r.motivo ? { motivo: r.motivo } : {}) };
+      } catch (e) {
+        const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
+        return { success: false, message: extraerMensajeError(e), ...(code ? { code } : {}) };
       }
     });
   },

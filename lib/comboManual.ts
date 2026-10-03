@@ -1,7 +1,9 @@
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import type { BloqueoAgenda } from '@/services/bloqueoAgendaService';
+import type { Turno } from '@/services/turnoService';
 import { advertenciaTurno } from '@/lib/turnoAdvertencias';
+import { tramosPendientes } from '@/lib/gruposTurnos';
 
 // Alta manual de una promo con componentes ("combo") desde la agenda. El modo
 // de la promo es interno: aca solo se derivan los horarios que se van a
@@ -43,6 +45,27 @@ export function tramosDelCombo(detalle: Servicio, horaInicio: string): TramoComb
         duracion: c.duracion_minutos,
       };
     });
+}
+
+// Los turnos de un combo que se van a mover (los pendientes), con su horario
+// nuevo: la primera (menor id) arranca en `nuevaHora` y las demas conservan su
+// desfasaje respecto de ella.
+export function tramosAMover(turno: Turno, nuevaHora: string): TramoCombo[] {
+  const pendientes = [...tramosPendientes(turno)].sort((a, b) => a.turno_id - b.turno_id);
+  if (pendientes.length === 0) return [];
+  const hhmmDe = (f: string) => f.replace(' ', 'T').slice(11, 16);
+  const ancla = aMinutos(hhmmDe(pendientes[0].fecha_hora));
+  return pendientes.map((p) => {
+    const inicio = aMinutos(nuevaHora) + aMinutos(hhmmDe(p.fecha_hora)) - ancla;
+    return {
+      servicio: '',
+      profesionalId: p.profesional_id,
+      profesional: p.profesional_nombre ?? '',
+      inicio: aHhmm(inicio),
+      fin: aHhmm(inicio + p.duracion_total_minutos),
+      duracion: p.duracion_total_minutos,
+    };
+  });
 }
 
 // El MISMO aviso que el turno comun (dia no laborable / bloqueo de agenda),

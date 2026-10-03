@@ -90,6 +90,17 @@
     "close": "Cerrar"
   },
   "EditarTurnoPage": {
+    "soloEste": "Solo este turno",
+    "todoElCombo": "Todo el combo",
+    "seMueven": "SE MUEVEN",
+    "conProfesional": "con {nombre}",
+    "nuevaFechaCombo": "Nueva fecha del combo",
+    "moverCombo": "Mover todo el combo",
+    "comboMovido": "Combo reprogramado",
+    "comboEnCurso": "Este combo ya tiene un turno atendido; no se puede mover completo.",
+    "comboSinPendientes": "No queda nada para mover.",
+    "comboSlotHeld": "Alguien está reservando ese horario en este momento. Probá en unos minutos o elegí otro horario.",
+    "comboNoAvisado": "No se avisó al cliente, avisale vos.",
     "soloSeMueve": "Solo se mueve el turno de {turno} ({hora}).",
     "sigueA": "El de {nombre} sigue a las {hora}.",
     "title": "Editar Turno",

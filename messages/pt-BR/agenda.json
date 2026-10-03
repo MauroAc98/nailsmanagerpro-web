@@ -90,6 +90,17 @@
     "close": "Fechar"
   },
   "EditarTurnoPage": {
+    "soloEste": "Só este atendimento",
+    "todoElCombo": "Todo o combo",
+    "seMueven": "SERÃO MOVIDOS",
+    "conProfesional": "com {nombre}",
+    "nuevaFechaCombo": "Nova data do combo",
+    "moverCombo": "Mover todo o combo",
+    "comboMovido": "Combo reagendado",
+    "comboEnCurso": "Este combo já tem um atendimento realizado; não é possível movê-lo inteiro.",
+    "comboSinPendientes": "Não há nada para mover.",
+    "comboSlotHeld": "Alguém está reservando esse horário neste momento. Tente em alguns minutos ou escolha outro horário.",
+    "comboNoAvisado": "O cliente não foi avisado, avise você.",
     "soloSeMueve": "Só muda o atendimento de {turno} ({hora}).",
     "sigueA": "O de {nombre} continua às {hora}.",
     "title": "Editar Agendamento",

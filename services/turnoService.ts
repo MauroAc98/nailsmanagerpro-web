@@ -97,6 +97,14 @@ export interface CreateTurnoDto {
   precio_promo?: number;
 }
 
+// Respuesta de reprogramar un combo entero. `notificacion` = 'omitida' cuando no
+// se pudo avisar al cliente por WhatsApp (`motivo` dice por que).
+export interface ReprogramarGrupoRespuesta {
+  movidos: number[];
+  notificacion: 'enviada' | 'omitida';
+  motivo?: string;
+}
+
 export type UpdateTurnoDto = Partial<CreateTurnoDto>;
 
 export interface SlotDisponibilidad {
@@ -161,6 +169,11 @@ export const turnoService = {
 
   create: async (dto: CreateTurnoDto): Promise<Turno> => {
     const { data } = await api.post<Turno>('/turnos', dto);
+    return data;
+  },
+
+  reprogramarGrupo: async (grupoId: number, fechaHora: string): Promise<ReprogramarGrupoRespuesta> => {
+    const { data } = await api.post<ReprogramarGrupoRespuesta>(`/turnos/grupos/${grupoId}/reprogramar`, { fecha_hora: fechaHora });
     return data;
   },
 
