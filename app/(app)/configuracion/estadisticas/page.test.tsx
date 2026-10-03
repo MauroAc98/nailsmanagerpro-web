@@ -143,7 +143,7 @@ describe('Estadísticas — consejos', () => {
   it('muestra la retención de clientas', async () => {
     getDashboard.mockResolvedValue(dashboard());
     renderWithProviders(<EstadisticasPage />);
-    expect(await screen.findByText(/93% de tus clientas ya había venido antes/)).toBeInTheDocument();
+    expect(await screen.findByText(/93% de tus clientes ya había venido antes/)).toBeInTheDocument();
   });
 });
 
