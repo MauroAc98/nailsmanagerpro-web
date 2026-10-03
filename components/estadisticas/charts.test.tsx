@@ -1,5 +1,5 @@
 import { cloneElement, type ReactElement } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 // ResponsiveContainer mide con ResizeObserver, que jsdom no implementa: sin
@@ -40,6 +40,54 @@ describe('DonutChart', () => {
   it('dibuja un gráfico SVG', () => {
     const { container } = render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
     expect(container.querySelector('svg')).not.toBeNull();
+  });
+
+  // isAnimationActive="auto" respeta "reducir movimiento": se simula para que
+  // jsdom dibuje todas las rebanadas de una vez (sin animación en curso).
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {},
+      addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    }));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  // Dona chica + tarjeta flotante de hasta 220px: el tooltip tapaba la propia
+  // dona. El detalle de la rebanada se muestra en el centro, sin tarjeta flotante.
+  it('no usa tarjeta flotante: no hay ningún tooltip de Recharts', () => {
+    const { container } = render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
+    expect(container.querySelector('.recharts-tooltip-wrapper')).toBeNull();
+  });
+
+  it('al pasar por una rebanada el centro muestra su nombre y su valor, y al salir vuelve al total', () => {
+    const { container } = render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
+    // Recharts redibuja las rebanadas al cambiar el estado: se vuelven a buscar
+    // en cada paso (un nodo viejo queda desconectado y no recibe eventos).
+    const sectores = () => container.querySelectorAll('.recharts-sector');
+    expect(sectores().length).toBe(2);
+
+    fireEvent.mouseEnter(sectores()[1]);
+    const centro = screen.getByTestId('dona-centro');
+    expect(centro).toHaveTextContent('16');
+    expect(centro).toHaveTextContent('Esmaltado semipermanente');
+    expect(centro).not.toHaveTextContent('turnos');
+
+    fireEvent.mouseLeave(sectores()[1]);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('40');
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('turnos');
+  });
+
+  it('al tocar una rebanada (celular) queda fija y al tocarla de nuevo se limpia', () => {
+    const { container } = render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
+    const sectores = () => container.querySelectorAll('.recharts-sector');
+
+    fireEvent.click(sectores()[0]);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('Capping');
+
+    fireEvent.click(sectores()[0]);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('40');
   });
 });
 
