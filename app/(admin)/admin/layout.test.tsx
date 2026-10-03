@@ -21,7 +21,7 @@ const mockedTokenExpirado = vi.mocked(adminService.tokenExpirado);
 
 beforeEach(() => {
   resetNavigationMock();
-  useAdminAuthStore.setState({ admin: null, token: null, inicializado: false });
+  useAdminAuthStore.setState({ admin: null, token: null, inicializado: false, reautenticacionRequerida: false });
   mockedGetToken.mockReset();
   mockedTokenExpirado.mockReset();
   mockedTokenExpirado.mockReturnValue(false);
@@ -66,7 +66,7 @@ describe('AdminLayout — shared resolver', () => {
     expect(routerMock.push).not.toHaveBeenCalled();
   });
 
-  it('admin-session-expired event clears only the admin store, never tenant auth', async () => {
+  it('admin-session-expired event pide reautenticación sin desmontar la pantalla ni tocar tenant auth', async () => {
     mockedGetToken.mockReturnValue('admin-tok');
     setMockLocation('/');
     render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
@@ -76,7 +76,11 @@ describe('AdminLayout — shared resolver', () => {
       window.dispatchEvent(new CustomEvent('admin-session-expired'));
     });
 
-    await waitFor(() => expect(useAdminAuthStore.getState().token).toBeNull());
+    await waitFor(() => expect(useAdminAuthStore.getState().reautenticacionRequerida).toBe(true));
+    // La pantalla (y cualquier formulario sin guardar que tuviera) sigue montada.
+    expect(screen.getByText('ADMIN CONTENT')).toBeInTheDocument();
+    expect(useAdminAuthStore.getState().token).toBe('admin-tok');
+    expect(routerMock.push).not.toHaveBeenCalled();
   });
 
   it('token ya vencido al montar (pestaña nueva después de las 12h) -> nunca pinta admin, va directo a /login', async () => {
@@ -92,7 +96,7 @@ describe('AdminLayout — shared resolver', () => {
     expect(screen.queryByText('ADMIN CONTENT')).toBeNull();
   });
 
-  it('token vence mientras la pestaña está en background -> al volver a visible, corta sin esperar un request', async () => {
+  it('token vence mientras la pestaña está en background -> al volver a visible, pide reautenticación sin esperar un request ni perder la pantalla', async () => {
     mockedGetToken.mockReturnValue('admin-tok');
     mockedTokenExpirado.mockReturnValue(false);
     setMockLocation('/');
@@ -107,6 +111,8 @@ describe('AdminLayout — shared resolver', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    await waitFor(() => expect(useAdminAuthStore.getState().token).toBeNull());
+    await waitFor(() => expect(useAdminAuthStore.getState().reautenticacionRequerida).toBe(true));
+    expect(screen.getByText('ADMIN CONTENT')).toBeInTheDocument();
+    expect(useAdminAuthStore.getState().token).toBe('admin-tok');
   });
 });
