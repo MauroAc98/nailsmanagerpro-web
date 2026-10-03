@@ -117,7 +117,7 @@ describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
     expect(screen.getByText('Natalia Acosta Studio')).toBeInTheDocument();
   });
 
-  it('con teléfono, el pie une negocio y teléfono en una línea con el ícono pegado al número', () => {
+  it('con teléfono, el pie une negocio y teléfono en una línea, sin ícono', () => {
     renderCanvas(null, unDia, 'Gabriela', '5491155551234');
     const negocio = screen.getByText('Turnetto');
     const telefono = screen.getByText(/^\+/);
@@ -125,9 +125,7 @@ describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
     const fila = negocio.parentElement as HTMLElement;
     expect(fila.contains(telefono)).toBe(true);
     expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // El ícono está pegado al número (mismo grupo) y no al negocio.
-    const grupoTelefono = telefono.parentElement as HTMLElement;
-    expect(grupoTelefono.contains(negocio)).toBe(false);
-    expect(telefono.previousElementSibling?.tagName.toLowerCase()).toBe('svg');
+    // Sin ícono de WhatsApp en el pie: solo texto.
+    expect(fila.querySelector('svg')).toBeNull();
   });
 });

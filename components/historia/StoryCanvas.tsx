@@ -6,7 +6,6 @@ import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
-import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
@@ -437,11 +436,8 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     <span aria-hidden style={{ flexShrink: 0, fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
                   )}
                   {telefonoEstudio && (
-                    <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <WhatsappGlyph size={10} color="#fff" />
-                      <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                        +{phoneUtils.formatDisplay(telefonoEstudio)}
-                      </span>
+                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                      +{phoneUtils.formatDisplay(telefonoEstudio)}
                     </span>
                   )}
                 </div>
