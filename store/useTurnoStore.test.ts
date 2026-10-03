@@ -14,6 +14,7 @@ vi.mock('@/services/turnoService', async () => {
       // real buscarPorServicio, que sin esto dispara un GET real vía
       // lib/api (no hay mock de red en este archivo).
       buscarPorServicio: vi.fn().mockResolvedValue([]),
+      delete: vi.fn(),
     },
   };
 });
@@ -109,5 +110,39 @@ describe('limpiarBusqueda', () => {
 
     expect(useTurnoStore.getState().ultimoProfesionalId).toBeNull();
     expect(useTurnoStore.getState().turnosBusqueda).toEqual([]);
+  });
+});
+
+describe('cancelarTurno', () => {
+  const refresco = { fetchTurnos: vi.fn().mockResolvedValue(undefined), fetchTurnosMes: vi.fn().mockResolvedValue(undefined) };
+  beforeEach(() => {
+    vi.mocked(turnoService.delete).mockReset();
+    refresco.fetchTurnos.mockClear();
+    useTurnoStore.setState({ ...refresco, fechaSeleccionada: '2026-09-17' });
+  });
+
+  it('un turno comun se cancela como siempre: sin alcance (Rule L)', async () => {
+    vi.mocked(turnoService.delete).mockResolvedValue({ message: 'ok' });
+    const r = await useTurnoStore.getState().cancelarTurno(5, 'Otro');
+    expect(r).toEqual({ success: true });
+    expect(turnoService.delete).toHaveBeenCalledWith(5, 'Otro');
+  });
+
+  it('todo el combo manda alcance grupo y devuelve los ids cancelados', async () => {
+    vi.mocked(turnoService.delete).mockResolvedValue({ message: 'ok', cancelados: [5, 6] });
+    const r = await useTurnoStore.getState().cancelarTurno(5, 'Otro', 'grupo');
+    expect(turnoService.delete).toHaveBeenCalledWith(5, 'Otro', 'grupo');
+    expect(r).toEqual({ success: true, cancelados: [5, 6] });
+    expect(refresco.fetchTurnos).toHaveBeenCalled();
+  });
+
+  it('sin pendientes: mensaje claro y refresca la agenda', async () => {
+    vi.mocked(turnoService.delete).mockRejectedValue({
+      isAxiosError: true, response: { status: 422, data: { code: 'grupo_sin_pendientes', message: 'x' } },
+    });
+    const r = await useTurnoStore.getState().cancelarTurno(5, 'Otro', 'grupo');
+    expect(r.success).toBe(false);
+    expect(r.message).toBe('No queda nada para cancelar');
+    expect(refresco.fetchTurnos).toHaveBeenCalled();
   });
 });

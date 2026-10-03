@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Turno } from '@/services/turnoService';
-import { barrasDeGrupo, nombresDeLosOtros } from './gruposTurnos';
+import { barrasDeGrupo, etiquetaTramo, nombresDeLosOtros, resumenMovimiento, tramosPendientes } from './gruposTurnos';
 
 type Tramo = NonNullable<Turno['grupo']>['tramos'][number];
 const tramo = (turno_id: number, profesional_id: number, nombre: string, hora: string, dur: number, estado = 'confirmado'): Tramo => ({
@@ -53,5 +53,44 @@ describe('barrasDeGrupo', () => {
 
   it('no une turnos de grupos distintos y los turnos sin grupo no tienen barra', () => {
     expect(barrasDeGrupo([deGrupo(1, '10:00', 60, 7), deGrupo(2, '11:00', 45, 8, 20), turno(3, '12:00')]).size).toBe(0);
+  });
+});
+
+describe('etiquetaTramo y tramosPendientes', () => {
+  const t = (): Turno => ({ ...deGrupo(1, '10:00', 60), servicios: [{ id: 1, nombre: 'Softgel' }] }) as Turno;
+
+  it('nombra el turno con su servicio y su propia profesional', () => {
+    expect(etiquetaTramo(t())).toBe('Softgel · con Ana');
+  });
+
+  it('un turno sin grupo se nombra solo por su servicio', () => {
+    expect(etiquetaTramo({ ...turno(1, '10:00'), servicios: [{ id: 1, nombre: 'Softgel' }] } as Turno)).toBe('Softgel');
+  });
+
+  it('los pendientes son los tramos que no estan cancelados ni completados', () => {
+    const g = t();
+    g.grupo = { ...g.grupo!, tramos: [TRAMOS[0], { ...TRAMOS[1], estado: 'completado' }, tramo(3, 30, 'Sol', '12:00', 30, 'cancelado'), tramo(4, 40, 'Eva', '13:00', 30)] };
+    expect(tramosPendientes(g).map((x) => x.turno_id)).toEqual([1, 4]);
+  });
+});
+
+describe('resumenMovimiento', () => {
+  it('un turno sin grupo no lleva aviso', () => {
+    expect(resumenMovimiento(turno(1, '10:00'), '2026-09-17 15:00:00')).toBeNull();
+  });
+
+  it('solo se mueve el turno editado; los otros siguen a su hora', () => {
+    const t = deGrupo(2, '11:00', 45, 7, 20);
+    expect(resumenMovimiento(t, '2026-09-17 15:00:00')).toEqual({
+      movido: { nombre: 'Laura', hora: '15:00' },
+      quedan: [{ nombre: 'Ana', hora: '10:00' }],
+    });
+  });
+
+  it('sin cambio de horario, o sin otros tramos vigentes, no hay aviso', () => {
+    expect(resumenMovimiento(deGrupo(2, '11:00', 45, 7, 20), '2026-09-17 11:00:00')).toBeNull();
+    const solo = deGrupo(2, '11:00', 45, 7, 20);
+    solo.grupo = { ...solo.grupo!, tramos: [TRAMOS[1], { ...TRAMOS[0], estado: 'cancelado' }] };
+    expect(resumenMovimiento(solo, '2026-09-17 15:00:00')).toBeNull();
   });
 });
