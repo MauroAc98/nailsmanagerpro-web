@@ -1,9 +1,10 @@
 import { createRef } from 'react';
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { es } from '@/messages';
 import type { DisponibilidadDia } from '@/services/turnoService';
+import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { StoryCanvas } from './StoryCanvas';
 
 // StoryCanvas se captura tal cual con html-to-image (ver comentarios del
@@ -127,5 +128,57 @@ describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
     expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // Sin ícono de WhatsApp en el pie: solo texto.
     expect(fila.querySelector('svg')).toBeNull();
+  });
+});
+
+describe('StoryCanvas — franja desenfocada del pie arranca en la línea divisoria', () => {
+  let observadores: Array<() => void> = [];
+  let topLinea = 520;
+  let conLayout = true;
+
+  beforeEach(() => {
+    observadores = [];
+    topLinea = 520;
+    conLayout = true;
+    // jsdom no calcula layout: simulamos ResizeObserver (avisa al observar) y
+    // las posiciones del canvas (640 de alto) y de la línea divisoria.
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private cb: () => void) { observadores.push(cb); }
+      observe() { this.cb(); }
+      unobserve() {}
+      disconnect() {}
+    });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const id = this.getAttribute('data-testid');
+      const rect = (top: number, bottom: number) => ({ top, bottom, height: bottom - top, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+      if (!conLayout) return rect(0, 0);
+      if (id === 'story-raiz') return rect(0, 640);
+      if (id === 'story-linea') return rect(topLinea, topLinea + 1);
+      return rect(0, 0);
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('la franja mide desde la línea hasta el borde inferior del canvas', () => {
+    renderCanvas(null, unDia, 'Gabriela');
+    expect(screen.getByTestId('story-zona-pie').style.height).toBe('120px');
+  });
+
+  it('si el pie crece y la línea sube, la franja la sigue', () => {
+    renderCanvas(null, unDia, 'Gabriela');
+    topLinea = 480;
+    act(() => observadores.forEach(cb => cb()));
+    expect(screen.getByTestId('story-zona-pie').style.height).toBe('160px');
+  });
+
+  it('sin layout real usa el alto por defecto en vez de colapsar la franja', () => {
+    conLayout = false;
+    renderCanvas(null, unDia, 'Gabriela');
+    const porDefecto = safeAreaInsets(640).bottom + Math.round(640 * 0.10);
+    expect(screen.getByTestId('story-zona-pie').style.height).toBe(`${porDefecto}px`);
   });
 });

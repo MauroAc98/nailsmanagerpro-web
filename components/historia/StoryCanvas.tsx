@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
@@ -10,6 +10,7 @@ import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
+import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -143,6 +144,35 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10);
   const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
 
+  // La franja desenfocada del pie tiene que arrancar justo en la línea
+  // divisoria, y esa línea se mueve con el contenido (alto del pie, cuerpo,
+  // tamaño del canvas): se mide en vez de usar un alto fijo. footerZonaAlto
+  // queda solo como valor inicial / sin layout (tests, primer render).
+  const raizRef   = useRef<HTMLDivElement>(null);
+  const cuerpoRef = useRef<HTMLDivElement>(null);
+  const lineaRef  = useRef<HTMLDivElement>(null);
+  const pieRef    = useRef<HTMLDivElement>(null);
+  const [zonaPieMedida, setZonaPieMedida] = useState<number | null>(null);
+  useEffect(() => {
+    const raiz = raizRef.current;
+    const linea = lineaRef.current;
+    if (!raiz || !linea || typeof ResizeObserver === 'undefined') return;
+    const medir = () => {
+      const r = raiz.getBoundingClientRect();
+      const l = linea.getBoundingClientRect();
+      const alto = zonaPieDesdeLinea({
+        bottomRaiz: r.bottom, topLinea: l.top, alturaRenderizada: r.height, alturaCanvas: canvasHeight,
+      });
+      setZonaPieMedida(prev => (alto === null || prev === alto ? prev : alto));
+    };
+    // Observar el canvas, el cuerpo y el pie: si cualquiera cambia de alto, la
+    // línea cambia de lugar. ResizeObserver avisa también al empezar a observar.
+    const ro = new ResizeObserver(medir);
+    [raiz, cuerpoRef.current, pieRef.current].forEach(el => { if (el) ro.observe(el); });
+    return () => ro.disconnect();
+  }, [canvasHeight, canvasWidth]);
+  const zonaPie = zonaPieMedida ?? footerZonaAlto;
+
   // La foto de fondo se sube un poco. La barra de responder/enviar de
   // Instagram y WhatsApp tapa más abajo (safe.bottom) que la barra de
   // perfil arriba (safe.top), así que el centro de lo que el que mira
@@ -170,7 +200,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
     // WhatsApp Status muestran la imagen full-bleed, así que un PNG con
     // esquinas redondeadas se ve como si no llenara el recuadro (era un
     // solo bug con dos síntomas, no dos bugs distintos).
-    <div style={{ width: canvasWidth, height: canvasHeight, margin: '0 auto', borderRadius: 16, overflow: 'hidden' }}>
+    <div ref={raizRef} data-testid="story-raiz" style={{ width: canvasWidth, height: canvasHeight, margin: '0 auto', borderRadius: 16, overflow: 'hidden' }}>
       <div
         ref={ref}
         style={{
@@ -211,11 +241,11 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             style={{ position: 'absolute', top: fondoTop, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
           />
         </div>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerZonaAlto, overflow: 'hidden' }}>
+        <div data-testid="story-zona-pie" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: zonaPie, overflow: 'hidden' }}>
           <img
             src={fondoUri ?? '/default_bg.jpg'}
             alt=""
-            style={{ position: 'absolute', top: footerZonaAlto - fondoAlto, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
+            style={{ position: 'absolute', top: zonaPie - fondoAlto, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
           />
         </div>
 
@@ -320,7 +350,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             </div>
 
             {/* Body */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
+            <div ref={cuerpoRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
@@ -395,7 +425,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 footer de contacto, tal cual la referencia. Margen bajado
                 (14->10) junto con el resto del footer, que ocupaba más
                 lugar del que debería (feedback de diseño 2026-08-17). */}
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }} />
+            <div ref={lineaRef} data-testid="story-linea" style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }} />
 
             {/* Footer — CTA "Reservá tu turno" + WhatsApp con el teléfono,
                 tal cual la referencia. Blanco liso (no primaryRaw): probado
@@ -409,7 +439,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 la app (Recordatorios, botón de turno). Sin teléfono
                 cargado, el CTA solo alcanza — no hace falta un mensaje
                 genérico aparte. */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <div ref={pieRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <span style={{
                 fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 16,
                 color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
