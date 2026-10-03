@@ -727,21 +727,32 @@ function EstadisticasContent() {
                   gastos: ocultarMonto ? '••••' : `$${formatMonto(stats?.gastos ?? 0)}`,
                 })}
               </p>
-              <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+              {/* Una sola franja con divisores (no tres cajitas): en el celular
+                  cada cajita quedaba muy angosta y cortaba el monto y las
+                  etiquetas ("promedio p…"). Monto corto sin decimales y
+                  etiquetas que bajan de renglón en vez de cortarse. */}
+              <div
+                data-testid="hero-kpis"
+                style={{
+                  marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  backgroundColor: colors.surface, borderRadius: 14, overflow: 'hidden',
+                  border: `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
+                }}
+              >
                 {[
                   { value: String(stats?.total_turnos ?? 0), label: t('kpiAppointments') },
                   {
-                    value: ticket === null ? '—' : ocultarMonto ? '••••' : `$${formatMonto(ticket)}`,
+                    value: ticket === null ? '—' : ocultarMonto ? '••••' : `$${formatMontoCorto(ticket)}`,
                     label: t('kpiAverageTicket'),
                   },
                   { value: tasaCancelacion === null ? '—' : `${tasaCancelacion}%`, label: t('kpiCancellations') },
-                ].map(k => (
+                ].map((k, i) => (
                   <div key={k.label} style={{
-                    backgroundColor: colors.surface, borderRadius: 14, padding: '10px 12px', minWidth: 0,
-                    border: `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
+                    minWidth: 0, padding: '10px 6px', textAlign: 'center',
+                    borderLeft: i === 0 ? 'none' : `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
                   }}>
-                    <p style={{ margin: 0, fontSize: 19, fontFamily: agendaFontSerif, color: colors.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.value}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 10.5, color: colors.sub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.label}</p>
+                    <p style={{ margin: 0, fontSize: 17, lineHeight: 1.1, fontFamily: agendaFontSerif, color: colors.strong, overflowWrap: 'anywhere' }}>{k.value}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: 10.5, lineHeight: 1.2, color: colors.sub, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{k.label}</p>
                   </div>
                 ))}
               </div>

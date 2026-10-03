@@ -29,6 +29,13 @@ export default function DonutChart({ data, centerValue, centerLabel, ariaLabel, 
   const [hover, setHover] = useState<number | null>(null);
   const [fijo, setFijo] = useState<number | null>(null);
   const activo = hover ?? fijo;
+  // En el celular un toque dispara también mouseenter y nunca un mouseleave:
+  // el "hover" quedaba pegado y el segundo toque no podía limpiar la rebanada.
+  // El hover solo vale en dispositivos que realmente lo tienen (mouse).
+  const entrar = (i: number) => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches) setHover(i);
+  };
+  const alternar = (i: number) => setFijo(prev => (prev === i ? null : i));
   const rebanada = activo !== null ? data[activo] : undefined;
 
   return (
@@ -38,13 +45,19 @@ export default function DonutChart({ data, centerValue, centerLabel, ariaLabel, 
           <PieChart title={ariaLabel}>
             <Pie
               data={data} dataKey="value" nameKey="name" innerRadius="66%" outerRadius="100%"
-              paddingAngle={data.length > 1 ? 2 : 0} stroke="none" isAnimationActive="auto"
-              onMouseEnter={(_: unknown, i: number) => setHover(i)}
+              paddingAngle={data.length > 1 ? 2 : 0} stroke="none"
+              // Sin animación: cada toque cambia el estado y Recharts volvía a
+              // animar toda la dona (se sentía trabado en el celular).
+              isAnimationActive={false}
+              onMouseEnter={(_: unknown, i: number) => entrar(i)}
               onMouseLeave={() => setHover(null)}
-              onClick={(_: unknown, i: number) => setFijo(prev => (prev === i ? null : i))}
+              onClick={(_: unknown, i: number) => alternar(i)}
             >
               {data.map((d, i) => (
-                <Cell key={d.name} fill={d.color} fillOpacity={activo === null || activo === i ? 1 : 0.35} style={{ cursor: 'pointer' }} />
+                <Cell
+                  key={d.name} fill={d.color} fillOpacity={activo === null || activo === i ? 1 : 0.35}
+                  style={{ cursor: 'pointer', transition: 'fill-opacity 0.15s' }}
+                />
               ))}
             </Pie>
           </PieChart>
@@ -64,15 +77,27 @@ export default function DonutChart({ data, centerValue, centerLabel, ariaLabel, 
           </span>
         </div>
       </div>
-      <ul style={{ flex: 1, minWidth: 0, margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <ul style={{ flex: 1, minWidth: 0, margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {data.map((d, i) => (
-          <li key={d.name} style={{
-            display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, minWidth: 0,
-            color: colors.text, fontWeight: activo === i ? 700 : 400,
-          }}>
-            <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.color, flexShrink: 0 }} />
-            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-            <b style={{ flexShrink: 0 }}>{d.valorLabel}</b>
+          <li key={d.name} style={{ minWidth: 0 }}>
+            {/* Cada fila es un botón: un blanco de toque cómodo en el celular
+                (la dona sola es chica) que hace lo mismo que tocar la rebanada. */}
+            <button
+              type="button"
+              aria-pressed={fijo === i}
+              onClick={() => alternar(i)}
+              onMouseEnter={() => entrar(i)}
+              onMouseLeave={() => setHover(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%', minWidth: 0, minHeight: 32,
+                padding: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+                font: 'inherit', fontSize: 12, color: colors.text, fontWeight: activo === i ? 700 : 400,
+              }}
+            >
+              <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.color, flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+              <b style={{ flexShrink: 0 }}>{d.valorLabel}</b>
+            </button>
           </li>
         ))}
       </ul>

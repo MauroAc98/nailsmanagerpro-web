@@ -83,6 +83,22 @@ describe('Estadísticas — héroe', () => {
     expect(screen.getByText('6%')).toBeInTheDocument();
   });
 
+  // En el celular las tres cajitas separadas quedaban angostas: monto cortado
+  // ("$24.375,0…") y etiquetas con "…" ("promedio p…"). Una sola franja con
+  // divisores, monto corto sin decimales y etiquetas que bajan de renglón.
+  it('los tres datos de contexto van en una sola franja, con monto corto y etiquetas completas', async () => {
+    getDashboard.mockResolvedValue(dashboard());
+    renderWithProviders(<EstadisticasPage />);
+
+    const franja = await screen.findByTestId('hero-kpis');
+    expect(within(franja).getByText('$24.375')).toBeInTheDocument();
+    for (const etiqueta of ['turnos', 'promedio por turno', 'cancelaciones']) {
+      const nodo = within(franja).getByText(etiqueta);
+      expect(nodo.style.whiteSpace).not.toBe('nowrap');
+      expect(nodo.style.textOverflow).not.toBe('ellipsis');
+    }
+  });
+
   it('compara contra el mes anterior pidiendo ese rango al backend', async () => {
     getDashboard.mockImplementation(async (desde: string) =>
       desde === '2026-09-01' ? dashboard({ ganancia_neta: 1000000 }) : dashboard());
