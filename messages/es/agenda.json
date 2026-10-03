@@ -12,8 +12,8 @@
     "cancelError": "No se pudo cancelar el turno."
   },
   "PendientesDeCobroPage": {
-    "title": "Precios por cargar",
-    "subtitle": "Turnos finalizados sin precio registrado",
+    "title": "Cobros por registrar",
+    "subtitle": "Turnos finalizados en los que falta cargar cuánto se cobró",
     "loading": "Cargando...",
     "emptyState": "No tenés turnos pendientes de cobro",
     "searchPlaceholder": "Buscar por nombre de cliente...",
@@ -32,7 +32,11 @@
     "noListPrice": "Sin precio de lista",
     "useListPrice": "Usar precio de lista",
     "loadPrice": "Cargar",
-    "loadOneByOne": "Cargar de a uno · {count} →",
+    "useListPriceAll": "Usar precio de lista en los {count} turnos",
+    "useListPriceAllHint": "Para cuando cobraste lo habitual. Los que cambiaron o no tienen precio de lista, cargalos con su botón \"Cargar\".",
+    "confirmUseListPriceAll": "¿Registrar {count} turnos a precio de lista ({monto} en total)? Después solo se puede corregir desde el historial.",
+    "bulkSaved": "{count, plural, one {# turno registrado} other {# turnos registrados}}",
+    "bulkPartialError": "No se pudieron registrar todos: se guardaron {done} de {total}. {error}",
     "confirmUseListPrice": "¿Registrar el turno de {cliente} a precio de lista ({monto})? Después solo se puede corregir desde el historial.",
     "confirmUseListPriceButton": "Registrar"
   },

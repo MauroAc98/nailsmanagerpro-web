@@ -12,7 +12,7 @@ import {
 const Z_INDEX = 100; // mismo nivel que ConfirmSheetHost/MotivoCancelacionSheetHost — nunca conviven
 
 // Pide el precio final de cada servicio de un turno (al finalizarlo, o después
-// desde "Precios por cargar"), prefilled con el precio de lista del catálogo
+// desde "Cobros por registrar"), prefilled con el precio de lista del catálogo
 // (Servicio.precio) para minimizar tipeo — la profesional solo ajusta si el
 // precio final cambió. También permite registrar el turno sin cobro (precio 0).
 // Mismo patrón imperativo (promesa) que MotivoCancelacionSheetHost.

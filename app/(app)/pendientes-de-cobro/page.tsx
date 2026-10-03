@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { NAV_CLEARANCE, NAV_BUBBLE_POKE } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import { formatMontoCorto } from '@/lib/money';
 import {
   agruparPorSemana,
@@ -177,15 +177,43 @@ export default function PendientesDeCobroPage() {
     );
   };
 
-  const handleCargarDeAUno = async () => {
-    // Snapshot: el store va quitando turnos a medida que se guardan.
-    for (const turno of [...ordenados]) {
-      if (!(await cargarConSheet(turno))) return;
+  // Turnos que se pueden registrar de una a precio de lista: todos sus
+  // servicios tienen precio de lista cargado. Los demás se cargan con su
+  // propio botón "Cargar".
+  const conPrecioDeLista = useMemo(
+    () => ordenados.filter(turno => tienePrecioDeListaCompleto(turno, referencias)),
+    [ordenados, referencias]
+  );
+  const totalDeLista = useMemo(
+    () => conPrecioDeLista.reduce((acc, turno) => acc + estimadoAPrecioDeLista(turno, referencias), 0),
+    [conPrecioDeLista, referencias]
+  );
+
+  const handleUsarListaEnTodos = async () => {
+    const lote = [...conPrecioDeLista]; // snapshot: el store va quitando turnos al guardar
+    const ok = await confirmDialog(
+      t('confirmUseListPriceAll', { count: lote.length, monto: `$${formatMontoCorto(totalDeLista)}` }),
+      { confirmText: t('confirmUseListPriceButton') }
+    );
+    if (!ok) return;
+
+    let hechos = 0;
+    for (const turno of lote) {
+      const result = await actualizarPrecios(
+        turno.id,
+        turno.servicios.map(s => ({ servicio_id: s.id, precio: Number(referencias.get(s.id)) }))
+      );
+      if (!result.success) {
+        await alertDialog(t('bulkPartialError', { done: hechos, total: lote.length, error: result.message ?? t('saveError') }));
+        return;
+      }
+      hechos += 1;
     }
+    showToast(t('bulkSaved', { count: hechos }));
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 110 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 24 }}>
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas), sin el indent de
           48px que alineaba el subtítulo contra el BackButton inline. */}
@@ -215,6 +243,26 @@ export default function PendientesDeCobroPage() {
             <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.subtext }}>
               {t('resultCount', { count: ordenados.length })} · {t('summaryEstimated')}
             </p>
+            {/* Registrar en bloque a precio de lista: lo que ahorra trabajo con
+                muchos pendientes cuando se cobró lo habitual. Con menos de dos
+                turnos con precio de lista no hace falta: cada tarjeta ya tiene
+                su propio botón. */}
+            {conPrecioDeLista.length > 1 && (
+              <div style={{ marginTop: 14 }}>
+                <button
+                  onClick={handleUsarListaEnTodos}
+                  style={{
+                    width: '100%', height: 48, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 15, fontWeight: 600,
+                  }}
+                >
+                  {t('useListPriceAll', { count: conPrecioDeLista.length })}
+                </button>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.subtext, textAlign: 'center' }}>
+                  {t('useListPriceAllHint')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -316,36 +364,6 @@ export default function PendientesDeCobroPage() {
         </div>
       )}
 
-      {!loading && ordenados.length > 1 && (
-        <div
-          style={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: `calc(${NAV_CLEARANCE + NAV_BUBBLE_POKE + 12}px + env(safe-area-inset-bottom))`,
-            padding: '0 20px',
-            zIndex: 10,
-          }}
-        >
-          <button
-            onClick={handleCargarDeAUno}
-            style={{
-              width: '100%',
-              padding: '14px 0',
-              borderRadius: 14,
-              border: 'none',
-              backgroundColor: colors.primarySolid,
-              color: '#FFF',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: shadows.card,
-            }}
-          >
-            {t('loadOneByOne', { count: ordenados.length })}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

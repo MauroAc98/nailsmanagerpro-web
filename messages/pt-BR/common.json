@@ -28,8 +28,10 @@
     "dismiss": "Fechar aviso"
   },
   "PendientesDeCobroBanner": {
-    "title": "Preços por cadastrar",
-    "message": "{count, plural, one {# agendamento com preço pendente} other {# agendamentos com preço pendente}}",
+    "title": "Cobranças a registrar",
+    "messageOne": "Falta registrar quanto você cobrou de {cliente} por {servicios}",
+    "messageOneNoService": "Falta registrar quanto você cobrou de {cliente}",
+    "messageMany": "{count, plural, one {Falta registrar o valor cobrado em # atendimento concluído} other {Falta registrar o valor cobrado em # atendimentos concluídos}}",
     "view": "Ver",
     "checkError": "Não foi possível verificar agendamentos pendentes",
     "retry": "Tentar novamente",
