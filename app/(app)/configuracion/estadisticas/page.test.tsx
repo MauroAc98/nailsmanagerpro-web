@@ -6,7 +6,14 @@ import { setMockLocation, resetNavigationMock } from '@/test/mocks/nextNavigatio
 vi.mock('next/navigation', async () => (await import('@/test/mocks/nextNavigation')).nextNavigationMock);
 // Los gráficos de Recharts viven en chunks dinámicos (ssr:false); acá no se
 // prueban (ver components/estadisticas/charts.test.tsx), solo la página.
-vi.mock('next/dynamic', () => ({ default: () => () => null }));
+// Los mocks capturan las props de TendenciaChart para poder afirmar qué serie recibe.
+const chartProps = vi.hoisted(() => ({ tendencia: null as null | { puntos: { label: string; monto: number | null }[]; previo?: (number | undefined)[] } }));
+vi.mock('next/dynamic', () => ({
+  default: () => function ChartMock(props: { puntos?: { label: string; monto: number | null }[]; previo?: (number | undefined)[] }) {
+    if (props.puntos) chartProps.tendencia = { puntos: props.puntos, previo: props.previo };
+    return null;
+  },
+}));
 vi.mock('@/store/useProfesionalStore', () => ({
   useProfesionalStore: () => ({ profesionales: [], fetchProfesionales: vi.fn() }),
 }));
@@ -40,6 +47,9 @@ function dashboard(over: Partial<DashboardStats> = {}): DashboardStats {
 }
 
 beforeEach(() => {
+  // Fecha fija: 15/11/2026 => octubre ya es un mes CERRADO (comparación contra septiembre completo).
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 10, 15, 12) });
+  chartProps.tendencia = null;
   resetNavigationMock();
   localStorage.clear();
   getDashboard.mockReset();
@@ -134,5 +144,71 @@ describe('Estadísticas — consejos', () => {
     getDashboard.mockResolvedValue(dashboard());
     renderWithProviders(<EstadisticasPage />);
     expect(await screen.findByText(/93% de tus clientas ya había venido antes/)).toBeInTheDocument();
+  });
+});
+
+describe('Estadísticas — mes en curso', () => {
+  beforeEach(() => {
+    // 2/10/2026: octubre está en curso con solo 2 días.
+    vi.setSystemTime(new Date(2026, 9, 2, 12));
+  });
+
+  const diasOctubre = (hasta: number) =>
+    Array.from({ length: hasta }, (_, i) => ({ fecha: `2026-10-0${i + 1}`, monto: 1000 * (i + 1) }));
+
+  it('compara contra el MISMO período del mes anterior (día 1 al día de hoy), no contra septiembre completo', async () => {
+    getDashboard.mockImplementation(async (desde: string, hasta: string) => {
+      if (desde === '2026-09-01' && hasta === '2026-09-02') return dashboard({ ganancia_neta: 1000000 });
+      if (desde === '2026-09-01') return dashboard({ ganancia_neta: 9000000 });
+      return dashboard();
+    });
+    renderWithProviders(<EstadisticasPage />);
+
+    expect(await screen.findByText(/28% vs Septiembre al día 2/)).toBeInTheDocument();
+    expect(getDashboard).toHaveBeenCalledWith('2026-09-01', '2026-09-02', undefined);
+  });
+
+  it('sin base de comparación en el mismo período (previo en 0) oculta la insignia', async () => {
+    getDashboard.mockImplementation(async (desde: string, hasta: string) => {
+      if (desde === '2026-09-01' && hasta === '2026-09-02') return dashboard({ ganancia_neta: 0, ganancias: 0 });
+      if (desde === '2026-09-01') return dashboard({ ganancia_neta: 9000000 });
+      return dashboard();
+    });
+    renderWithProviders(<EstadisticasPage />);
+
+    await screen.findByText(/1\.284\.500/);
+    await waitFor(() => expect(getDashboard).toHaveBeenCalledWith('2026-09-01', '2026-09-02', undefined));
+    expect(screen.queryByText(/vs Septiembre/)).toBeNull();
+  });
+
+  it('la serie del mes en curso se corta hoy: los días futuros van null, no 0', async () => {
+    getDashboard.mockImplementation(async (desde: string) =>
+      desde === '2026-10-01' ? dashboard({ ganancias_por_dia: diasOctubre(2) }) : dashboard({ ganancias_por_dia: [] }));
+    renderWithProviders(<EstadisticasPage />);
+
+    await waitFor(() => expect(chartProps.tendencia).not.toBeNull());
+    const { puntos } = chartProps.tendencia!;
+    expect(puntos).toHaveLength(31);
+    expect(puntos.slice(0, 2).map(p => p.monto)).toEqual([1000, 2000]);
+    expect(puntos.slice(2).every(p => p.monto === null)).toBe(true);
+  });
+
+  it('un día de hoy sin turnos sigue siendo 0 (pasado/presente), solo el futuro es null', async () => {
+    getDashboard.mockImplementation(async (desde: string) =>
+      desde === '2026-10-01' ? dashboard({ ganancias_por_dia: diasOctubre(1) }) : dashboard());
+    renderWithProviders(<EstadisticasPage />);
+
+    await waitFor(() => expect(chartProps.tendencia).not.toBeNull());
+    expect(chartProps.tendencia!.puntos[1].monto).toBe(0);
+    expect(chartProps.tendencia!.puntos[2].monto).toBeNull();
+  });
+
+  it('en un mes cerrado la serie va completa (sin nulls)', async () => {
+    vi.setSystemTime(new Date(2026, 10, 15, 12));
+    getDashboard.mockResolvedValue(dashboard({ ganancias_por_dia: diasOctubre(2) }));
+    renderWithProviders(<EstadisticasPage />);
+
+    await waitFor(() => expect(chartProps.tendencia).not.toBeNull());
+    expect(chartProps.tendencia!.puntos.every(p => p.monto !== null)).toBe(true);
   });
 });

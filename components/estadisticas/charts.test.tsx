@@ -57,6 +57,29 @@ describe('TendenciaChart', () => {
     expect(container.querySelectorAll('.recharts-area-curve').length).toBe(2);
   });
 
+  it('los días futuros (monto null) no se dibujan: la curva termina en el último dato', () => {
+    const base = { previo: [1, 2, 3, 4], previoLabel: 'Agosto', tipo: 'area' as const, ocultarMonto: false, parcialLabel: 'parcial', ariaLabel: 'Ganancias' };
+    const completo = render(
+      <TendenciaChart {...base} puntos={[
+        { label: '1/10', monto: 1000 }, { label: '2/10', monto: 3000 }, { label: '3/10', monto: 2000 }, { label: '4/10', monto: 500 },
+      ]} />,
+    );
+    // Cantidad de puntos de la curva del mes actual (cada comando M/L/C = un punto).
+    const segmentos = (c: HTMLElement) => (c.querySelectorAll('.recharts-area-curve')[1]?.getAttribute('d')?.match(/[MLC]/g) ?? []).length;
+    const completos = segmentos(completo.container);
+    completo.unmount();
+
+    const cortado = render(
+      <TendenciaChart {...base} puntos={[
+        { label: '1/10', monto: 1000 }, { label: '2/10', monto: 3000 }, { label: '3/10', monto: null }, { label: '4/10', monto: null },
+      ]} />,
+    );
+    // Menos puntos que la serie completa (nunca baja a 0), y el mes anterior sigue entero.
+    expect(segmentos(cortado.container)).toBeLessThan(completos);
+    expect(segmentos(cortado.container)).toBe(2);
+    expect(cortado.container.querySelectorAll('.recharts-area-curve').length).toBe(2);
+  });
+
   it('en modo barras monta una barra por bucket', () => {
     const { container } = render(
       <TendenciaChart puntos={[{ label: 'S1', monto: 10, completo: false }, { label: 'S2', monto: 20, completo: true }]}

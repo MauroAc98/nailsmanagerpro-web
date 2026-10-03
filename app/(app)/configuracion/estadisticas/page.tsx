@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Eye, EyeOff, TrendingDown, TrendingUp } from 'lucide-react';
 import { Consejo } from '@/components/estadisticas/Consejo';
 import { diaFlojo, diaPico, franjaLibre, retencion } from '@/lib/estadisticas/insights';
-import { rangoMesAnterior, ticketPromedio, topConOtros, variacionPorcentual } from '@/lib/estadisticas/metricas';
+import { rangoMesAnterior, rangoMesAnteriorMismoPeriodo, ticketPromedio, topConOtros, variacionPorcentual } from '@/lib/estadisticas/metricas';
 import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -169,6 +169,12 @@ function EstadisticasContent() {
   // — mismo patrón que ResumenMesCard.
   const [previo, setPrevio] = useState<{ key: string; stats: DashboardStats } | null>(null);
   const previoKey = `${profesionalFiltro ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
+  // Mes en curso: la insignia compara contra el MISMO tramo del mes anterior
+  // (día 1 al día de hoy). La línea punteada sigue usando el mes entero.
+  const hoy = new Date();
+  const periodoPrevio = modoRango === 'mes' ? rangoMesAnteriorMismoPeriodo(viewDate, hoy) : null;
+  const previoParcialKey = periodoPrevio ? `${previoKey}:${periodoPrevio.dia}` : null;
+  const [previoParcial, setPrevioParcial] = useState<{ key: string; stats: DashboardStats } | null>(null);
 
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
@@ -253,6 +259,18 @@ function EstadisticasContent() {
     return () => { cancelled = true; };
   }, [modoRango, viewDate, profesionalFiltro, retryTick, previoKey]);
 
+  useEffect(() => {
+    if (!periodoPrevio || !previoParcialKey) return;
+    let cancelled = false;
+
+    statsService.getDashboard(periodoPrevio.desde, periodoPrevio.hasta, profesionalFiltro ?? undefined)
+      .then(data => { if (!cancelled) setPrevioParcial({ key: previoParcialKey, stats: data }); })
+      .catch(() => { /* comparación opcional */ });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previoParcialKey, profesionalFiltro, retryTick]);
+
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
   };
@@ -263,7 +281,13 @@ function EstadisticasContent() {
   const montoPorFecha = new Map((stats?.ganancias_por_dia ?? []).map(d => [d.fecha, d.monto]));
   const puntosGananciasPorDia = diasDelRango.map(fechaStr => {
     const fecha = new Date(`${fechaStr}T00:00:00`);
-    return { label: `${fecha.getDate()}/${fecha.getMonth() + 1}`, monto: montoPorFecha.get(fechaStr) ?? 0 };
+    // Mes en curso: los días futuros no existen todavía — null (no se dibujan),
+    // nunca 0, que se vería como un derrumbe. Hoy sin turnos sí es 0.
+    const esFuturo = modoRango === 'mes' && periodoPrevio !== null && fechaStr > formatFecha(hoy);
+    return {
+      label: `${fecha.getDate()}/${fecha.getMonth() + 1}`,
+      monto: esFuturo ? null : (montoPorFecha.get(fechaStr) ?? 0),
+    };
   });
 
   const puntosGananciasChart = granularidadGanancias === 'dia'
@@ -307,7 +331,11 @@ function EstadisticasContent() {
   // Comparación con el mes anterior (solo modo "mes").
   const mesAnteriorDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
   const statsPrevio = modoRango === 'mes' && previo?.key === previoKey ? previo.stats : null;
-  const gananciaNetaPrevia = statsPrevio ? (statsPrevio.ganancia_neta ?? statsPrevio.ganancias) : null;
+  // Base de la insignia: mes en curso -> mismo tramo; mes cerrado -> mes entero.
+  const statsBase = periodoPrevio
+    ? (previoParcial?.key === previoParcialKey ? previoParcial.stats : null)
+    : statsPrevio;
+  const gananciaNetaPrevia = statsBase ? (statsBase.ganancia_neta ?? statsBase.ganancias) : null;
   const variacion = gananciaNetaPrevia !== null ? variacionPorcentual(gananciaNeta, gananciaNetaPrevia) : null;
   // Línea punteada: mismo día del mes, alineada por posición. Sin ingresos el
   // mes anterior sería una recta en 0 — ruido, no comparación.
@@ -617,7 +645,9 @@ function EstadisticasContent() {
                     backgroundColor: withAlpha(colors.primaryFg, '33'), fontSize: 12, fontWeight: 700,
                   }}>
                     {variacion >= 0 ? <TrendingUp size={13} strokeWidth={2.5} /> : <TrendingDown size={13} strokeWidth={2.5} />}
-                    {t('vsPrevious', { pct: Math.abs(variacion), mes: nombreMes(mesAnteriorDate, 'long') })}
+                    {periodoPrevio
+                      ? t('vsPreviousToDay', { pct: Math.abs(variacion), mes: nombreMes(mesAnteriorDate, 'long'), dia: periodoPrevio.dia })
+                      : t('vsPrevious', { pct: Math.abs(variacion), mes: nombreMes(mesAnteriorDate, 'long') })}
                   </span>
                 )}
               </div>

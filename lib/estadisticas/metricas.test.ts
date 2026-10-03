@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { rangoMesAnterior, ticketPromedio, topConOtros, variacionPorcentual } from './metricas';
+import { rangoMesAnterior, rangoMesAnteriorMismoPeriodo, ticketPromedio, topConOtros, variacionPorcentual } from './metricas';
+
+describe('rangoMesAnteriorMismoPeriodo', () => {
+  it('en el mes en curso va del día 1 al mismo día del mes anterior', () => {
+    expect(rangoMesAnteriorMismoPeriodo(new Date(2026, 9, 1), new Date(2026, 9, 2)))
+      .toEqual({ desde: '2026-09-01', hasta: '2026-09-02', dia: 2 });
+  });
+
+  it('se recorta al último día del mes anterior si es más corto', () => {
+    expect(rangoMesAnteriorMismoPeriodo(new Date(2026, 2, 1), new Date(2026, 2, 31)))
+      .toEqual({ desde: '2026-02-01', hasta: '2026-02-28', dia: 28 });
+  });
+
+  it('cruza el año en enero', () => {
+    expect(rangoMesAnteriorMismoPeriodo(new Date(2026, 0, 1), new Date(2026, 0, 10)))
+      .toEqual({ desde: '2025-12-01', hasta: '2025-12-10', dia: 10 });
+  });
+
+  it('es null para un mes ya cerrado', () => {
+    expect(rangoMesAnteriorMismoPeriodo(new Date(2026, 8, 1), new Date(2026, 9, 2))).toBeNull();
+  });
+
+  it('es null para un mes futuro', () => {
+    expect(rangoMesAnteriorMismoPeriodo(new Date(2026, 10, 1), new Date(2026, 9, 2))).toBeNull();
+  });
+});
 
 describe('topConOtros', () => {
   const items = [

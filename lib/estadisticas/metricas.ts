@@ -30,3 +30,19 @@ export function rangoMesAnterior(viewDate: Date): { desde: string; hasta: string
   const hasta = new Date(viewDate.getFullYear(), viewDate.getMonth(), 0);
   return { desde: formatoYMD(desde), hasta: formatoYMD(hasta) };
 }
+
+// Para el mes en curso: comparar los días transcurridos contra el MISMO tramo
+// del mes anterior (día 1 al día de hoy, recortado si el mes anterior es más
+// corto) — contra el mes anterior entero un mes a medio andar siempre parece
+// un derrumbe. Null si `viewDate` no es el mes en curso (meses cerrados o
+// futuros se comparan completos).
+export function rangoMesAnteriorMismoPeriodo(
+  viewDate: Date, hoy: Date,
+): { desde: string; hasta: string; dia: number } | null {
+  if (viewDate.getFullYear() !== hoy.getFullYear() || viewDate.getMonth() !== hoy.getMonth()) return null;
+  const ultimoDiaPrevio = new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate();
+  const dia = Math.min(hoy.getDate(), ultimoDiaPrevio);
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  const hasta = new Date(hoy.getFullYear(), hoy.getMonth() - 1, dia);
+  return { desde: formatoYMD(desde), hasta: formatoYMD(hasta), dia };
+}

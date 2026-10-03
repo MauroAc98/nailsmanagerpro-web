@@ -11,7 +11,8 @@ import { TooltipCard } from './TooltipCard';
 
 export interface PuntoTendencia {
   label: string;
-  monto: number;
+  // null = día futuro del mes en curso: no se dibuja (ni como 0).
+  monto: number | null;
   // false = bucket (semana/mes) que el rango elegido cubre solo en parte.
   completo?: boolean;
 }
@@ -42,6 +43,7 @@ export default function TendenciaChart({
   const tooltip = (props: TooltipContentProps) => {
     if (!props.active || !props.payload?.length) return null;
     const fila = props.payload[0].payload as PuntoTendencia & { previo?: number };
+    if (fila.monto === null) return null;
     const rows = [{ label: fila.label, value: fmt(fila.monto), color: colors.primaryDeep }];
     if (fila.previo !== undefined && previoLabel) {
       rows.push({ label: previoLabel, value: fmt(fila.previo), color: colors.muted });

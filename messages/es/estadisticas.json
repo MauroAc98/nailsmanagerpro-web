@@ -46,6 +46,7 @@
     "earningsChartHint": "Tocá una barra para ver el detalle",
     "heroIncomeExpenses": "Ingresos {ingresos} · gastos {gastos}",
     "vsPrevious": "{pct}% vs {mes}",
+    "vsPreviousToDay": "{pct}% vs {mes} al día {dia}",
     "kpiAppointments": "turnos",
     "kpiAverageTicket": "ticket promedio",
     "kpiCancellations": "cancelaciones",
