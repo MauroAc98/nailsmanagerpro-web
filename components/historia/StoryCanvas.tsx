@@ -444,21 +444,20 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               }}>
                 {t('reserveCta')}
               </span>
-              {telefonoEstudio && (
+              {/* Una sola línea. Con profesional elegida el título del header
+                  deja de ser el negocio: su nombre pasa acá, junto al
+                  teléfono ("Negocio · +54…"), para no perder la referencia
+                  (el avatar de la profesional reemplaza al logo). */}
+              {(telefonoEstudio || (lineaProfesional && nombreEstudio)) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                  <WhatsappGlyph size={10} color="#fff" />
+                  {telefonoEstudio && <WhatsappGlyph size={10} color="#fff" />}
                   <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                    +{phoneUtils.formatDisplay(telefonoEstudio)}
+                    {[
+                      lineaProfesional && nombreEstudio ? nombreEstudio : null,
+                      telefonoEstudio ? `+${phoneUtils.formatDisplay(telefonoEstudio)}` : null,
+                    ].filter(Boolean).join(' · ')}
                   </span>
                 </div>
-              )}
-              {/* Con profesional elegida el título del header deja de ser el
-                  negocio: su nombre pasa acá, para no perder la referencia
-                  (el avatar de la profesional reemplaza al logo). */}
-              {lineaProfesional && nombreEstudio && (
-                <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                  {nombreEstudio}
-                </span>
               )}
             </div>
           </div>

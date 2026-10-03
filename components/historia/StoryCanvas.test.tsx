@@ -85,13 +85,37 @@ describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
     expect(screen.queryByText('24 de sept')).not.toBeInTheDocument();
   });
 
-  it('con profesional elegida el nombre del negocio ya no es el título: baja al pie, una sola vez', () => {
+  it('con profesional elegida el nombre del negocio ya no es el título: baja al pie, en una sola línea', () => {
     renderCanvas(null, unDia, 'Gabriela');
     const negocio = screen.getAllByText('Turnetto');
     expect(negocio).toHaveLength(1);
     // Está en el pie: viene después de la línea "con …" en el documento.
     const con = screen.getByText('con Gabriela · 24 de sept');
     expect(con.compareDocumentPosition(negocio[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('con profesional elegida y teléfono, el pie une negocio y teléfono en una sola línea', () => {
+    render(
+      <NextIntlClientProvider locale="es" messages={es}>
+        <StoryCanvas
+          ref={createRef()}
+          titulo="24 de sept"
+          nombreEstudio="Turnetto"
+          telefonoEstudio="5491155551234"
+          profesionalNombre="Gabriela"
+          logoUrl={null}
+          dias={unDia}
+          fondoUri={null}
+          canvasWidth={360}
+          canvasHeight={640}
+          textosLibres={[]}
+          onMoverTexto={() => {}}
+          onResizeTexto={() => {}}
+          onEditarTexto={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText(/^Turnetto · \+/)).toBeInTheDocument();
   });
 
   it('si el nombre del negocio ya contiene el de la profesional no se repite ("Natalia Acosta Studio" con Natalia)', () => {
