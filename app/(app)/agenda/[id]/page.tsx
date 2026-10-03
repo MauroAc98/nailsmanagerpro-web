@@ -23,6 +23,7 @@ import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { advertenciaTurno } from '@/lib/turnoAdvertencias';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
+import { resumenMovimiento } from '@/lib/gruposTurnos';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha } from '@/lib/dateFormat';
 
@@ -224,6 +225,9 @@ export default function EditarTurnoPage() {
       if (!confirmado) return;
     }
 
+    // Turno de un grupo: solo se mueve este; se avisa cual se mueve y a que hora siguen los otros.
+    const movimiento = turnoActual ? resumenMovimiento(turnoActual, `${fecha} ${hora}`) : null;
+
     setSaving(true);
     const result = await actualizarTurno(turnoId, {
       cliente_id:   selectedCliente.id,
@@ -240,6 +244,12 @@ export default function EditarTurnoPage() {
     setSaving(false);
     if (result.success) {
       showToast(t('updated'));
+      if (movimiento) {
+        await alertDialog([
+          t('soloSeMueve', { turno: movimiento.movido.nombre, hora: movimiento.movido.hora }),
+          ...movimiento.quedan.map(q => t('sigueA', { nombre: q.nombre, hora: q.hora })),
+        ].join(' '));
+      }
       router.back();
     } else {
       await alertDialog(result.message ?? t('updateError'));

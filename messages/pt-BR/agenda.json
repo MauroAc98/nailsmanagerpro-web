@@ -9,7 +9,8 @@
     "finished": "Agendamento finalizado",
     "finishError": "Não foi possível finalizar o agendamento.",
     "cancelled": "Agendamento cancelado",
-    "cancelError": "Não foi possível cancelar o agendamento."
+    "cancelError": "Não foi possível cancelar o agendamento.",
+    "finalizarTramo": "Só o atendimento de {turno} será finalizado. Os demais não mudam."
   },
   "PendientesDeCobroPage": {
     "title": "Preços por cadastrar",
@@ -41,6 +42,9 @@
     "finishNow": "Finalizar agora",
     "inProgress": "EM ANDAMENTO",
     "cancel": "CANCELAR"
+  },
+  "cancelarGrupo": {
+    "sinPendientes": "Não há nada para cancelar"
   },
   "GrupoTurno": {
     "enlace": "Parte de um atendimento com várias profissionais",
@@ -86,6 +90,8 @@
     "close": "Fechar"
   },
   "EditarTurnoPage": {
+    "soloSeMueve": "Só muda o atendimento de {turno} ({hora}).",
+    "sigueA": "O de {nombre} continua às {hora}.",
     "title": "Editar Agendamento",
     "loadingAppointment": "Carregando agendamento...",
     "back": "Voltar",

@@ -9,7 +9,8 @@
     "finished": "Turno finalizado",
     "finishError": "No se pudo finalizar el turno.",
     "cancelled": "Turno cancelado",
-    "cancelError": "No se pudo cancelar el turno."
+    "cancelError": "No se pudo cancelar el turno.",
+    "finalizarTramo": "Se finalizará solo el turno de {turno}. Los demás turnos no cambian."
   },
   "PendientesDeCobroPage": {
     "title": "Precios por cargar",
@@ -41,6 +42,9 @@
     "finishNow": "Finalizar ahora",
     "inProgress": "EN CURSO",
     "cancel": "CANCELAR"
+  },
+  "cancelarGrupo": {
+    "sinPendientes": "No queda nada para cancelar"
   },
   "GrupoTurno": {
     "enlace": "Parte de un turno con varias profesionales",
@@ -86,6 +90,8 @@
     "close": "Cerrar"
   },
   "EditarTurnoPage": {
+    "soloSeMueve": "Solo se mueve el turno de {turno} ({hora}).",
+    "sigueA": "El de {nombre} sigue a las {hora}.",
     "title": "Editar Turno",
     "loadingAppointment": "Cargando turno...",
     "back": "Volver",

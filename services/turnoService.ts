@@ -178,8 +178,13 @@ export const turnoService = {
     return data;
   },
 
-  delete: async (id: number, motivoCancelacion: string): Promise<void> => {
-    await api.delete(`/turnos/${id}`, { data: { motivo_cancelacion: motivoCancelacion } });
+  // `alcance: 'grupo'` cancela todo el combo (solo los tramos que no estan
+  // cancelados ni completados); sin alcance cancela solo este turno, como siempre.
+  delete: async (id: number, motivoCancelacion: string, alcance?: 'grupo'): Promise<{ message: string; cancelados?: number[] }> => {
+    const { data } = await api.delete<{ message: string; cancelados?: number[] }>(`/turnos/${id}`, {
+      data: { motivo_cancelacion: motivoCancelacion, ...(alcance ? { alcance } : {}) },
+    });
+    return data;
   },
 
   pendientesDeCobro: async (): Promise<Turno[]> => {

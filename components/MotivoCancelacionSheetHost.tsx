@@ -18,6 +18,7 @@ const Z_INDEX = 100; // mismo nivel que ConfirmSheetHost — nunca están abiert
 export function MotivoCancelacionSheetHost() {
   const t = useTranslations('common.MotivoCancelacionSheetHost');
   const visible = useMotivoCancelacionStore(state => state.visible);
+  const contexto = useMotivoCancelacionStore(state => state.contexto);
   // MOTIVOS_CANCELACION son los valores canónicos que viajan tal cual al
   // backend (motivo_cancelacion es texto libre, sin enum — ver
   // HistorialClienteSheetHost, que interpola el valor crudo guardado). Este
@@ -32,15 +33,17 @@ export function MotivoCancelacionSheetHost() {
   };
   const [seleccion, setSeleccion] = useState<string>(MOTIVOS_CANCELACION[0]);
   const [otroTexto, setOtroTexto] = useState('');
+  const [alcance, setAlcance] = useState<'tramo' | 'grupo'>('tramo');
 
   const esOtro = seleccion === 'Otro';
   const motivoFinal = esOtro ? otroTexto.trim() : seleccion;
   const puedeConfirmar = motivoFinal.length > 0;
 
   const cerrar = (motivo: string | null) => {
-    resolverMotivoCancelacion(motivo);
+    resolverMotivoCancelacion(motivo, contexto ? alcance : undefined);
     setSeleccion(MOTIVOS_CANCELACION[0]);
     setOtroTexto('');
+    setAlcance('tramo');
   };
 
   return (
@@ -80,6 +83,39 @@ export function MotivoCancelacionSheetHost() {
         <p style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: '0 0 16px' }}>
           {t('title')}
         </p>
+
+        {/* Turno de un grupo: nombra el turno y deja elegir si se cancela solo
+            ese o todo el combo (solo lo que todavia no se atendio). */}
+        {contexto && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: colors.text, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
+              {t('seCancelara', { turno: contexto.esteTurno })}
+            </p>
+            {(['tramo', 'grupo'] as const).map(op => (
+              <button
+                key={op}
+                onClick={() => setAlcance(op)}
+                aria-pressed={alcance === op}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', marginBottom: 8, padding: '10px 14px', borderRadius: 12,
+                  border: `1px solid ${alcance === op ? colors.primaryDeep : colors.border}`,
+                  backgroundColor: alcance === op ? colors.surfaceSubtle : colors.surface,
+                  fontSize: 14, fontWeight: alcance === op ? 600 : 400, color: colors.text, cursor: 'pointer',
+                }}
+              >
+                {op === 'tramo' ? t('soloEste') : t('todoElCombo', { n: contexto.pendientes.length })}
+              </button>
+            ))}
+            {alcance === 'grupo' && (
+              <div style={{ fontSize: 13, color: colors.subtext, paddingLeft: 4 }}>
+                {contexto.pendientes.map(p => (
+                  <div key={p} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p}</div>
+                ))}
+                <div style={{ marginTop: 4 }}>{t('finalizadosNoCambian')}</div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: esOtro ? 12 : 20 }}>
           {MOTIVOS_CANCELACION.map(motivo => (

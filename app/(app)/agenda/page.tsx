@@ -22,13 +22,13 @@ import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
-import { barrasDeGrupo, nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
+import { barrasDeGrupo, etiquetaTramo, nombresDeLosOtros, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
 import { horaDeHora, formatFechaMini, formatCellDate, parseFechaLocal, type ProfesionalLabel } from '@/components/agenda/agendaDateHelpers';
-import { alertDialog } from '@/store/useConfirmStore';
-import { pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
+import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
+import { pedirCancelacionGrupo, pedirMotivoCancelacion } from '@/store/useMotivoCancelacionStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE, NAV_MARGIN } from '@/constants/layout';
@@ -836,6 +836,8 @@ export default function AgendaPage() {
   }, [handleDayClickEnSheet, hoy]);
 
   const handleFinalizar = async (turno: Turno) => {
+    // Turno de un grupo: se finaliza solo este, los otros no cambian (cada uno se finaliza por separado).
+    if (turno.grupo_id != null && !(await confirmDialog(t('finalizarTramo', { turno: etiquetaTramo(turno) })))) return;
     const referencias = new Map(servicios.map(s => [s.id, s.precio]));
     const serviciosAPrecificar = turno.servicios
       .filter(s => s != null)
@@ -860,10 +862,23 @@ export default function AgendaPage() {
     else await alertDialog(result.message ?? t('finishError'));
   };
 
-  const handleCancelar = async (id: number) => {
+  const handleCancelar = async (turno: Turno) => {
+    // Turno de un grupo: se nombra el turno y se puede cancelar solo ese (sin
+    // alcance, como siempre) o todo el combo (solo lo que no esta cancelado ni completado).
+    if (turno.grupo_id != null) {
+      const eleccion = await pedirCancelacionGrupo({
+        esteTurno: etiquetaTramo(turno),
+        pendientes: tramosPendientes(turno).map(p => `${p.fecha_hora.replace(' ', 'T').slice(11, 16)} · con ${p.profesional_nombre ?? ''}`),
+      });
+      if (!eleccion) return;
+      const r = await cancelarTurno(turno.id, eleccion.motivo, eleccion.alcance === 'grupo' ? 'grupo' : undefined);
+      if (r.success) showToast(t('cancelled'));
+      else await alertDialog(r.message ?? t('cancelError'));
+      return;
+    }
     const motivo = await pedirMotivoCancelacion();
     if (!motivo) return;
-    const result = await cancelarTurno(id, motivo);
+    const result = await cancelarTurno(turno.id, motivo);
     if (result.success) showToast(t('cancelled'));
     else await alertDialog(result.message ?? t('cancelError'));
   };
@@ -1109,7 +1124,7 @@ export default function AgendaPage() {
                 <SwipeableTurnoCard
                   key={turno.id}
                   turno={turno}
-                  onCancel={() => handleCancelar(turno.id)}
+                  onCancel={() => handleCancelar(turno)}
                   onFinalizar={cursando ? () => handleFinalizar(turno) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   profesionalLabel={profesionalLabel}

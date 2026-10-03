@@ -8,6 +8,7 @@ import {
   extraerMensajeError,
 } from '@/services/turnoService';
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
+import { tStatic } from '@/store/useLocaleStore';
 import { fechaDeHoy } from '@/lib/dateFormat';
 
 // ─────────────────────────────────────────────
@@ -16,6 +17,8 @@ import { fechaDeHoy } from '@/lib/dateFormat';
 interface OperacionResult {
   success: boolean;
   message?: string;
+  // Ids realmente cancelados al cancelar todo el combo.
+  cancelados?: number[];
 }
 
 interface TurnosState {
@@ -61,7 +64,7 @@ interface TurnosState {
     id: number,
     servicios?: { servicio_id: number; precio: number }[]
   ) => Promise<OperacionResult>;
-  cancelarTurno: (id: number, motivoCancelacion: string) => Promise<OperacionResult>;
+  cancelarTurno: (id: number, motivoCancelacion: string, alcance?: 'grupo') => Promise<OperacionResult>;
   setFechaSeleccionada: (fecha: string) => void;
 
   buscarPorNombre: (nombre: string) => Promise<void>;
@@ -253,13 +256,20 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // ─────────────────────────────────────────────
   // cancelarTurno — maps to DELETE endpoint
   // ─────────────────────────────────────────────
-  cancelarTurno: async (id, motivoCancelacion) => {
+  cancelarTurno: async (id, motivoCancelacion, alcance) => {
     return withGlobalLoader(async () => {
       try {
-        await turnoService.delete(id, motivoCancelacion);
+        const res = alcance
+          ? await turnoService.delete(id, motivoCancelacion, alcance)
+          : await turnoService.delete(id, motivoCancelacion);
         await refrescarAgenda(get, set, get().fechaSeleccionada);
-        return { success: true };
+        return alcance ? { success: true, cancelados: res.cancelados } : { success: true };
       } catch (e) {
+        // Combo sin nada pendiente (ya se atendio o cancelo todo): mensaje claro y la agenda al dia.
+        if ((e as { response?: { data?: { code?: string } } })?.response?.data?.code === 'grupo_sin_pendientes') {
+          await refrescarAgenda(get, set, get().fechaSeleccionada);
+          return { success: false, message: tStatic('agenda.cancelarGrupo.sinPendientes') };
+        }
         return { success: false, message: extraerMensajeError(e) };
       }
     });

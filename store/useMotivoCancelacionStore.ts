@@ -12,13 +12,25 @@ export const MOTIVOS_CANCELACION = [
   'Otro',
 ] as const;
 
+// Turno de un grupo (varias profesionales): `esteTurno` nombra el turno que se
+// toco y `pendientes` lista lo que cancela "todo el combo" (solo lo que no esta
+// cancelado ni completado).
+export interface ContextoCancelacionGrupo {
+  esteTurno: string;
+  pendientes: string[];
+}
+
+export type AlcanceCancelacion = 'tramo' | 'grupo';
+
 interface MotivoCancelacionState {
   visible: boolean;
-  resolve: ((value: string | null) => void) | null;
+  contexto: ContextoCancelacionGrupo | null;
+  resolve: ((motivo: string | null, alcance?: AlcanceCancelacion) => void) | null;
 }
 
 export const useMotivoCancelacionStore = create<MotivoCancelacionState>(() => ({
   visible: false,
+  contexto: null,
   resolve: null,
 }));
 
@@ -26,13 +38,27 @@ export const useMotivoCancelacionStore = create<MotivoCancelacionState>(() => ({
 // el caller debe tratar null como "no cancelar".
 export function pedirMotivoCancelacion(): Promise<string | null> {
   return new Promise(resolve => {
-    useMotivoCancelacionStore.setState({ visible: true, resolve });
+    useMotivoCancelacionStore.setState({ visible: true, contexto: null, resolve: motivo => resolve(motivo) });
   });
 }
 
-export function resolverMotivoCancelacion(motivo: string | null) {
+// Igual, para un turno de un grupo: ademas del motivo devuelve el alcance
+// (solo este turno, o todo el combo). null = no cancelar.
+export function pedirCancelacionGrupo(
+  contexto: ContextoCancelacionGrupo,
+): Promise<{ motivo: string; alcance: AlcanceCancelacion } | null> {
+  return new Promise(resolve => {
+    useMotivoCancelacionStore.setState({
+      visible: true,
+      contexto,
+      resolve: (motivo, alcance = 'tramo') => resolve(motivo === null ? null : { motivo, alcance }),
+    });
+  });
+}
+
+export function resolverMotivoCancelacion(motivo: string | null, alcance?: AlcanceCancelacion) {
   const { resolve } = useMotivoCancelacionStore.getState();
   if (!resolve) return;
   useMotivoCancelacionStore.setState({ visible: false, resolve: null });
-  resolve(motivo);
+  resolve(motivo, alcance);
 }
