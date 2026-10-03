@@ -27,6 +27,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { NoDisponibleAun } from './NoDisponibleAun';
+import { ProfesionalPorServicio } from './ProfesionalPorServicio';
 import { BarraInferior, BotonPrimario, Etiqueta, Hueso, Mensaje, PasoHeader } from './ui';
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
@@ -62,7 +63,9 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const profesionalId = useReservaOnlineStore((s) => s.profesionalId);
   const fechaGuardada = useReservaOnlineStore((s) => s.fecha);
   const horaGuardada = useReservaOnlineStore((s) => s.hora);
+  const asignaciones = useReservaOnlineStore((s) => s.asignaciones);
   const setProfesional = useReservaOnlineStore((s) => s.setProfesional);
+  const setAsignaciones = useReservaOnlineStore((s) => s.setAsignaciones);
   const setHorario = useReservaOnlineStore((s) => s.setHorario);
 
   const [ahoraMs] = useState(() => ahora());
@@ -111,13 +114,43 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const primerDia = primerDiaReservable(ahoraMs, terminos?.anticipacionMinutos ?? 0);
   const ultimoDia = ultimoDiaReservable(hoy);
   const fecha = fechaSel < primerDia ? primerDia : fechaSel > ultimoDia ? ultimoDia : fechaSel;
-  const profesionalQuery = profesionalId === 'any' ? undefined : profesionalId;
+  const profesionalQuery = asignaciones || profesionalId === 'any' ? undefined : profesionalId;
+  // Lo que se le pide al servicio: un unico grupo (servicios + profesional o
+  // "Cualquiera") o, si la clienta reparte los servicios, un grupo por servicio.
+  const consulta = { servicioIds, profesionalId: profesionalQuery, asignaciones: asignaciones ?? undefined };
+  const claveGrupos = `${servicioIds.join(',')}|${profesionalId}|${JSON.stringify(asignaciones)}`;
 
-  const claveDisp = `${slug}|${fecha}|${servicioIds.join(',')}|${profesionalId}|${liberado}`;
+  // Quien hace cada servicio: solo hace falta con 2+ servicios y 2+ profesionales.
+  const variasProfesionales = (salon?.profesionales.length ?? 0) > 1 && servicioIds.length > 1;
+  const { data: ofrecidos } = useCarga(
+    () =>
+      salon && variasProfesionales
+        ? Promise.all(
+            salon.profesionales.map(async (p) => ({
+              id: p.id,
+              servicios: (await getService().getServices(slug, { profesionalId: p.id })).map((x) => x.id),
+            })),
+          )
+        : Promise.resolve(null),
+    `${slug}|ofrecen|${servicioIds.join(',')}|${variasProfesionales}`,
+  );
+  const opciones = useMemo(() => {
+    if (!salon || !ofrecidos) return null;
+    return Object.fromEntries(
+      servicioIds.map((id) => [id, salon.profesionales.filter((p) => ofrecidos.find((o) => o.id === p.id)?.servicios.includes(id))]),
+    );
+  }, [salon, ofrecidos, servicioIds]);
+  // Repartir solo tiene sentido si cada servicio lo hace alguien y hay 2+ profesionales distintas.
+  const puedeDividir =
+    opciones !== null &&
+    servicioIds.every((id) => opciones[id].length > 0) &&
+    new Set(servicioIds.flatMap((id) => opciones[id].map((p) => p.id))).size > 1;
+
+  const claveDisp = `${slug}|${fecha}|${claveGrupos}|${liberado}`;
   const { data: disp, error, cargando, reintentar } = useCarga(
     () =>
       liberado
-        ? getService().getAvailability(slug, { fecha, servicioIds, profesionalId: profesionalQuery })
+        ? getService().getAvailability(slug, { fecha, ...consulta })
         : new Promise<never>(() => {}), // espera a que se suelte el hold anterior
     claveDisp,
   );
@@ -129,11 +162,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       liberado
         ? getService().getDiasConDisponibilidad(slug, {
             fechas: diasReservables(primerDia, ultimoDia),
-            servicioIds,
-            profesionalId: profesionalQuery,
+            ...consulta,
           })
         : new Promise<never>(() => {}),
-    `${slug}|${primerDia}|${servicioIds.join(',')}|${profesionalId}|${liberado}`,
+    `${slug}|${primerDia}|${claveGrupos}|${liberado}`,
   );
 
   const horas = useMemo(() => disp?.slots.map((s) => s.hora) ?? [], [disp]);
@@ -148,8 +180,24 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const horaRueda = horaEnStore && horas.includes(horaEnStore) ? horaEnStore : (horas[0] ?? null);
   const duracion = duracionDeServicios(servicios ?? [], servicioIds);
   const duracionTurno = disp?.duracionTotalMinutos ?? duracion;
-  const profesionalNombre =
-    profesionalId === 'any' ? null : salon?.profesionales.find((p) => p.id === profesionalId)?.nombre;
+  const slotElegido = disp?.slots.find((s) => s.hora === horaRueda);
+  const nombreDe = (id: number) => salon?.profesionales.find((p) => p.id === id)?.nombre ?? '';
+  const profesionalNombre = asignaciones
+    ? [...new Set(asignaciones.map((g) => nombreDe(g.profesionalId ?? 0)))].join(', ')
+    : profesionalId === 'any'
+      ? null
+      : nombreDe(profesionalId);
+
+  // Parte los servicios en un grupo cada uno, con una profesional explicita
+  // (la ya elegida si lo hace, si no la primera que lo hace).
+  const repartir = () =>
+    opciones &&
+    setAsignaciones(
+      servicioIds.map((id) => ({
+        servicioIds: [id],
+        profesionalId: (opciones[id].find((p) => p.id === profesionalId) ?? opciones[id][0]).id,
+      })),
+    );
 
   const noReservable = (f: string): boolean => f < primerDia || f > ultimoDia;
   const semana = semanaDeFecha(fecha);
@@ -191,8 +239,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       const desdeManana = sumarDias(fecha, 1);
       const conLugar = await getService().getDiasConDisponibilidad(slug, {
         fechas: diasReservables(desdeManana, ultimoDia),
-        servicioIds,
-        profesionalId: profesionalQuery,
+        ...consulta,
       });
       if (conLugar !== null) {
         const proximo = [...conLugar].sort().find((f) => f > fecha && !noReservable(f));
@@ -202,7 +249,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       }
       for (let f = desdeManana; f <= ultimoDia; f = sumarDias(f, 1)) {
         try {
-          const dia = await getService().getAvailability(slug, { fecha: f, servicioIds, profesionalId: profesionalQuery });
+          const dia = await getService().getAvailability(slug, { fecha: f, ...consulta });
           if (dia.slots.length > 0) {
             elegirDia(f);
             return;
@@ -228,10 +275,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     setAvisoRetener(null);
     try {
       const retencion = await getService().retenerHorario(slug, {
-        servicioIds,
+        ...consulta,
         fecha,
         hora: horaRueda,
-        profesionalId: profesionalQuery,
+        modo: slotElegido?.modo,
       });
       setHorario(fecha, horaRueda);
       useReservaOnlineStore.getState().setHold({
@@ -274,7 +321,18 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
 
       {/* Mismo selector de la agenda propia (mismos tokens que agenda/historia);
           solo con 2+ profesionales. "Cualquiera" = sin profesional puntual. */}
-      {salon && salon.profesionales.length > 1 && (
+      {salon && salon.profesionales.length > 1 && asignaciones && opciones && (
+        <ProfesionalPorServicio
+          servicios={servicios ?? []}
+          grupos={asignaciones}
+          opciones={opciones}
+          onElegir={(sid, pid) =>
+            setAsignaciones(asignaciones.map((g) => (g.servicioIds[0] === sid ? { ...g, profesionalId: pid } : g)))
+          }
+          onVolver={() => setAsignaciones(null)}
+        />
+      )}
+      {salon && salon.profesionales.length > 1 && !(asignaciones && opciones) && (
         <SelectorProfesional
           label={t('horario.profesional')}
           labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
@@ -286,6 +344,11 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
           unselectedBorderColor={colors.border}
           pillFontWeight={600}
         />
+      )}
+      {puedeDividir && !asignaciones && (
+        <button type="button" onClick={repartir} style={{ ...botonSecundario, padding: '0 0 4px' }}>
+          {t('horario.profesionalPorServicio')}
+        </button>
       )}
 
       {/* La tira de la agenda propia; su padding lateral propio se compensa. */}
@@ -356,7 +419,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
             <p style={{ textAlign: 'center', fontSize: 13, color: colors.sub, margin: '8px 0 0' }}>
               {t.rich('horario.ocupaRango', {
                 inicio: horaRueda,
-                fin: hhmm(aMinutos(horaRueda) + duracionTurno),
+                fin: slotElegido?.fin ?? hhmm(aMinutos(horaRueda) + (duracionTurno ?? 0)),
                 b: (chunks) => <b style={{ color: colors.strong }}>{chunks}</b>,
               })}
             </p>

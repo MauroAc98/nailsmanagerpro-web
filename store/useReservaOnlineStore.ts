@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { FlowData } from '@/lib/reservaOnline/pasoMinimo';
-import type { ClienteInput, Fecha, Hora, HoldFlujo } from '@/lib/reservaOnline/types';
+import type { Asignacion, ClienteInput, Fecha, Hora, HoldFlujo } from '@/lib/reservaOnline/types';
 
 // Estado del flujo publico de reserva (decision D6). Se persiste en
 // sessionStorage con clave POR SLUG (`ro_flow_<slug>`): un refresh o deep link
@@ -15,6 +15,7 @@ export const claveFlujo = (slug: string): string => `ro_flow_${slug}`;
 const vacio = (): FlowData => ({
   servicioIds: [],
   profesionalId: 'any',
+  asignaciones: null,
   fecha: null,
   hora: null,
   cliente: { nombre: '', apellido: '', whatsapp: '' },
@@ -27,6 +28,7 @@ interface FlowState extends FlowData {
   activarSlug: (slug: string) => void;
   setServicios: (ids: number[]) => void;
   setProfesional: (id: number | 'any') => void;
+  setAsignaciones: (grupos: Asignacion[] | null) => void;
   setHorario: (fecha: Fecha, hora: Hora) => void;
   setCliente: (parcial: Partial<ClienteInput>) => void;
   setHold: (hold: HoldFlujo) => void;
@@ -42,6 +44,7 @@ interface FlowState extends FlowData {
 const datosDe = (s: FlowState): FlowData => ({
   servicioIds: s.servicioIds,
   profesionalId: s.profesionalId,
+  asignaciones: s.asignaciones,
   fecha: s.fecha,
   hora: s.hora,
   cliente: s.cliente,
@@ -83,8 +86,9 @@ export const useReservaOnlineStore = create<FlowState>((set, get) => {
     activarSlug: (slug) => set({ slug, ...(leer(slug) ?? vacio()) }),
     // Cambiar servicios o profesional invalida el horario ya elegido: los
     // slots dependen de la duracion total y de quien atiende.
-    setServicios: (ids) => aplicar({ servicioIds: ids, fecha: null, hora: null }),
-    setProfesional: (id) => aplicar({ profesionalId: id, fecha: null, hora: null }),
+    setServicios: (ids) => aplicar({ servicioIds: ids, asignaciones: null, fecha: null, hora: null }),
+    setProfesional: (id) => aplicar({ profesionalId: id, asignaciones: null, fecha: null, hora: null }),
+    setAsignaciones: (grupos) => aplicar({ asignaciones: grupos, fecha: null, hora: null }),
     setHorario: (fecha, hora) => aplicar({ fecha, hora }),
     setCliente: (parcial) => aplicar({ cliente: { ...get().cliente, ...parcial } }),
     setHold: (hold) => aplicar({ hold }),

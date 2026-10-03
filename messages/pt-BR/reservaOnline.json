@@ -47,7 +47,9 @@
     "elegirOtroDia": "Escolher outro dia",
     "buscando": "Procurando o próximo dia com vaga…",
     "sinLugarProximos": "Não há vaga nos próximos 30 dias. Tente com outra profissional ou entre em contato com o negócio.",
-    "reteniendo": "Reservando seu horário…"
+    "reteniendo": "Reservando seu horário…",
+    "profesionalPorServicio": "Escolher uma profissional diferente para cada serviço",
+    "unaSola": "Voltar para uma só profissional"
   },
   "datos": {
     "title": "Seus dados",

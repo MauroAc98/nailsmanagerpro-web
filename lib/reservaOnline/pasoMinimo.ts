@@ -1,5 +1,5 @@
 import { esWhatsappE164 } from './whatsappE164';
-import type { ClienteInput, Fecha, Hora, HoldFlujo } from './types';
+import type { Asignacion, ClienteInput, Fecha, Hora, HoldFlujo } from './types';
 
 export type Paso = 'servicios' | 'horario' | 'datos' | 'resumen';
 
@@ -7,6 +7,9 @@ export type Paso = 'servicios' | 'horario' | 'datos' | 'resumen';
 export interface FlowData {
   servicioIds: number[];
   profesionalId: number | 'any';
+  // Una profesional distinta por servicio (un grupo por servicio, cada uno con
+  // profesional explicita). null = un unico grupo: servicioIds + profesionalId.
+  asignaciones: Asignacion[] | null;
   fecha: Fecha | null;
   hora: Hora | null;
   cliente: ClienteInput;
