@@ -5,7 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { useIngresosStore } from '@/store/useIngresoStore';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { ingresoService, CATEGORIAS_INGRESO } from '@/services/ingresoService';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,11 +47,13 @@ export default function EditarIngresoPage() {
   const id = Number(params.id);
   const { user } = useAuth();
   const { ingresos, actualizarIngreso, eliminarIngreso } = useIngresosStore();
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   const [fecha, setFecha] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [errorMonto, setErrorMonto] = useState('');
   const [loadingIngreso, setLoadingIngreso] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,6 +72,7 @@ export default function EditarIngresoPage() {
         setMonto(g.monto);
         setCategoria(g.categoria);
         setDescripcion(g.descripcion ?? '');
+        setSelectedProfesionalId(g.profesional_id ?? null);
       } catch {
         await alertDialog(t('loadError'));
         router.push('/configuracion/ingresos');
@@ -76,6 +82,19 @@ export default function EditarIngresoPage() {
     };
     if (id) cargar();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (profesionales.length === 0) fetchProfesionales();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Multi-agenda — invisible con ≤1 profesional activa, mismo criterio que
+  // gastos/[id]/page.tsx.
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+
+  const handleSeleccionarProfesional = (pid: number) => {
+    setSelectedProfesionalId(prev => prev === pid ? null : pid);
+  };
 
   // Lista del salón (o set de fábrica) + la categoría ya guardada del
   // ingreso si quedó fuera de esa lista (la borraron) — así el chip sigue
@@ -110,6 +129,9 @@ export default function EditarIngresoPage() {
       // del JSON al serializar y el PUT saldría sin la clave, mismo
       // criterio que gastos/[id]/page.tsx.
       descripcion: descripcion.trim() ? descripcion.trim() : null,
+      // null (no undefined) para poder quitar la profesional. Con el selector
+      // oculto (≤1 activa) no se toca lo que ya tenía guardado.
+      ...(mostrarSelectorProfesional ? { profesional_id: selectedProfesionalId } : {}),
     });
     setSaving(false);
 
@@ -218,6 +240,46 @@ export default function EditarIngresoPage() {
             style={inputStyle}
           />
         </div>
+
+        {/* Profesional — invisible con ≤1 profesional activa. */}
+        {mostrarSelectorProfesional && (
+          <div>
+            <label style={labelStyle}>{t('professionalLabel')}</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {activeProfesionales.map(p => {
+                const selected = selectedProfesionalId === p.id;
+                const color = p.color || colors.primary;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSeleccionarProfesional(p.id)}
+                    style={{ ...chipStyle(selected, color), padding: '4px 16px 4px 4px' }}
+                  >
+                    <span style={{
+                      width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, fontWeight: 800,
+                      backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
+                      color: selected ? '#fff' : color,
+                    }}>
+                      {p.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        inicialesProfesional(p.nombre, p.apellido)
+                      )}
+                    </span>
+                    {p.nombre}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
+              {t('professionalHint')}
+            </p>
+          </div>
+        )}
 
         {/* Button */}
         <button

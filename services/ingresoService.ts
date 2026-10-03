@@ -29,6 +29,9 @@ export interface Ingreso {
   // Texto libre (1..40 chars) — categoría de fábrica o custom del salón.
   categoria: string;
   descripcion: string | null;
+  // Opcional: sin profesional el ingreso queda a nombre del negocio y solo
+  // suma en "Todo el equipo" (mismo criterio que Gasto.profesional_id).
+  profesional_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +41,7 @@ export interface CreateIngresoDto {
   monto: number;
   categoria: string;
   descripcion?: string | null;
+  profesional_id?: number | null;
 }
 
 // Todos los campos "sometimes" en el backend (misma regla que create,

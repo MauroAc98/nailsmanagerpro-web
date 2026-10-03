@@ -11,6 +11,7 @@ function buildIngreso(overrides: Partial<Ingreso> = {}): Ingreso {
     categoria: 'servicio',
     fecha: '2026-09-18',
     descripcion: null,
+    profesional_id: null,
     created_at: '',
     updated_at: '',
     ...overrides,

@@ -194,6 +194,8 @@
     "categoryRequired": "Escolha uma categoria.",
     "descriptionLabel": "Descrição (opcional)",
     "descriptionPlaceholder": "Ex: Venda de kit de esmaltes",
+    "professionalLabel": "Profissional (opcional)",
+    "professionalHint": "Se você não escolher profissional, a receita fica em nome do negócio e aparece em \"Toda a equipe\".",
     "saving": "Salvando...",
     "submit": "Adicionar receita",
     "saveError": "Não foi possível salvar a receita."
@@ -210,6 +212,8 @@
     "categoryRequired": "Escolha uma categoria.",
     "descriptionLabel": "Descrição (opcional)",
     "descriptionPlaceholder": "Ex: Venda de kit de esmaltes",
+    "professionalLabel": "Profissional (opcional)",
+    "professionalHint": "Se você não escolher profissional, a receita fica em nome do negócio e aparece em \"Toda a equipe\".",
     "loadError": "Não foi possível carregar a receita.",
     "saving": "Salvando...",
     "submit": "Salvar alterações",

@@ -194,6 +194,8 @@
     "categoryRequired": "Elegí una categoría.",
     "descriptionLabel": "Descripción (opcional)",
     "descriptionPlaceholder": "Ej: Venta de kit de esmaltes",
+    "professionalLabel": "Profesional (opcional)",
+    "professionalHint": "Si no elegís profesional, el ingreso queda a nombre del negocio y se ve en \"Todo el equipo\".",
     "saving": "Guardando...",
     "submit": "Agregar ingreso",
     "saveError": "No se pudo guardar el ingreso."
@@ -210,6 +212,8 @@
     "categoryRequired": "Elegí una categoría.",
     "descriptionLabel": "Descripción (opcional)",
     "descriptionPlaceholder": "Ej: Venta de kit de esmaltes",
+    "professionalLabel": "Profesional (opcional)",
+    "professionalHint": "Si no elegís profesional, el ingreso queda a nombre del negocio y se ve en \"Todo el equipo\".",
     "loadError": "No se pudo cargar el ingreso.",
     "saving": "Guardando...",
     "submit": "Guardar cambios",
