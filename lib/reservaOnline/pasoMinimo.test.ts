@@ -4,6 +4,7 @@ import { pasoMinimo, type FlowData } from './pasoMinimo';
 const vacio: FlowData = {
   servicioIds: [],
   profesionalId: 'any',
+  asignaciones: null,
   fecha: null,
   hora: null,
   cliente: { nombre: '', apellido: '', whatsapp: '' },

@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
+import type { AvailabilityQuery, RetenerInput } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { HorarioScreen } from './HorarioScreen';
 import { AHORA, flujoHasta, limpiarFlujo, prepararServicio } from './testUtils';
@@ -514,5 +515,83 @@ describe('HorarioScreen', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Elegir otro día' }));
       expect(document.querySelector('[data-calendario-abierto="true"]')).not.toBeNull();
     });
+  });
+});
+
+describe('HorarioScreen: una profesional distinta por servicio', () => {
+  afterEach(() => setServiceParaTests(null));
+  const LINK = 'Elegir una profesional distinta para cada servicio';
+
+  // Registra lo que la pantalla le pide al servicio (sobre el mock con agenda real).
+  function espiar() {
+    const base = prepararServicio();
+    const consultas: AvailabilityQuery[] = [];
+    const holds: RetenerInput[] = [];
+    setServiceParaTests({
+      ...base,
+      getAvailability: async (slug, q) => {
+        consultas.push(q);
+        return base.getAvailability(slug, q);
+      },
+      retenerHorario: async (slug, input) => {
+        holds.push(input);
+        return base.retenerHorario(slug, input);
+      },
+    });
+    return { consultas, holds };
+  }
+  const preparar = async (servicios: number[]) => {
+    limpiarFlujo();
+    await flujoHasta('horario');
+    const s = useReservaOnlineStore.getState();
+    s.setServicios(servicios);
+    s.setProfesional('any');
+  };
+
+  it('por defecto es UN grupo con los servicios juntos y "Cualquiera", como siempre (Rule L)', async () => {
+    const { consultas } = espiar();
+    await preparar([1, 2]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(consultas[0]).toMatchObject({ servicioIds: [1, 2], profesionalId: undefined });
+    expect(consultas[0].asignaciones).toBeUndefined();
+    expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('con un solo servicio no ofrece elegir una profesional por servicio', async () => {
+    espiar();
+    await preparar([1]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(screen.queryByRole('button', { name: LINK })).toBeNull();
+  });
+
+  it('con 2 servicios y 2 profesionales que los hacen, el link divide en un grupo por servicio, cada uno con profesional explicita', async () => {
+    const { consultas, holds } = espiar();
+    await preparar([1, 2]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await userEvent.click(await screen.findByRole('button', { name: LINK }));
+    await waitFor(() => expect(consultas.at(-1)?.asignaciones).toHaveLength(2));
+    const grupos = consultas.at(-1)!.asignaciones!;
+    expect(grupos.map((g) => g.servicioIds)).toEqual([[1], [2]]); // orden de seleccion
+    for (const g of grupos) expect(typeof g.profesionalId).toBe('number');
+    // ya no existe "Cualquiera" y el cliente nunca ve la jerga interna
+    expect(screen.queryByRole('button', { name: /Cualquiera$/ })).toBeNull();
+    expect(screen.queryByText(/tramo|paralelo|secuencia/i)).toBeNull();
+
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    await waitFor(() => expect(holds).toHaveLength(1));
+    expect(holds[0].asignaciones).toEqual(grupos);
+  });
+
+  it('se puede volver a una sola profesional', async () => {
+    const { consultas } = espiar();
+    await preparar([1, 2]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await userEvent.click(await screen.findByRole('button', { name: LINK }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Volver a una sola profesional' }));
+    await waitFor(() => expect(consultas.at(-1)?.asignaciones).toBeUndefined());
+    expect(await screen.findByRole('button', { name: LINK })).toBeInTheDocument();
   });
 });
