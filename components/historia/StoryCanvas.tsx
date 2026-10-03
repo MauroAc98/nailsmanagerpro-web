@@ -419,7 +419,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               {/* Una sola línea: el negocio (que ya no es el título del
                   header) y el teléfono con su ícono pegado al número. */}
               {(telefonoEstudio || nombreEstudio) && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2, maxWidth: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 2, maxWidth: '100%' }}>
                   {nombreEstudio && (
                     // El negocio es lo protagonista del pie: serif y más
                     // grande que el teléfono. Con un nombre largo cede con
@@ -433,7 +433,9 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     </span>
                   )}
                   {nombreEstudio && telefonoEstudio && (
-                    <span aria-hidden style={{ flexShrink: 0, fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
+                    // Divisor fino vertical en vez de un punto suelto: separa
+                    // sin competir con el texto.
+                    <span aria-hidden style={{ flexShrink: 0, width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.6)' }} />
                   )}
                   {telefonoEstudio && (
                     <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
