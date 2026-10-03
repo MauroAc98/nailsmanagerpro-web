@@ -27,6 +27,8 @@ import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
 import { useAuth } from '@/hooks/useAuth';
 import { whatsappHelper } from '@/lib/whatsappHelper';
 import { useAuthStore } from '@/store/useAuthStore';
+import { servicioService, type Servicio } from '@/services/servicioService';
+import { advertenciaDelCombo, tramosDelCombo } from '@/lib/comboManual';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -90,6 +92,9 @@ function NuevoTurnoContent() {
   const [clienteBuscar,        setClienteBuscar]        = useState('');
   const [showHoraPicker,       setShowHoraPicker]       = useState(false);
   const [saving,               setSaving]               = useState(false);
+  // Combo (promo con componentes): detalle de la promo elegida y precio manual opcional.
+  const [comboDetalle, setComboDetalle] = useState<Servicio | null>(null);
+  const [precioPromo,  setPrecioPromo]  = useState('');
   const [turnoCreado, setTurnoCreado] = useState<{
     cliente: Cliente;
     servicios: string;
@@ -146,11 +151,31 @@ function NuevoTurnoContent() {
 
   // Con selector visible, solo se ofrecen los servicios de la profesional
   // elegida (vacío hasta elegir una). Sin selector, comportamiento intacto.
-  const serviciosDisponibles = mostrarSelectorProfesional
+  // Los combos (promo con componentes: `modo_promo` viene en el listado) se
+  // ofrecen siempre: sus profesionales estan fijadas por la propia promo.
+  const combos = servicios.filter(s => s.activo && s.es_promo && s.modo_promo);
+  const serviciosBase = mostrarSelectorProfesional
     ? (profesionalSeleccionado
         ? servicios.filter(s => s.activo && profesionalSeleccionado.servicios.some(ps => ps.id === s.id))
         : [])
     : servicios.filter(s => s.activo);
+  const serviciosDisponibles = [...serviciosBase, ...combos.filter(c => !serviciosBase.some(s => s.id === c.id))];
+
+  const seleccionaCombo = selectedServicioIds.length === 1 && combos.some(c => c.id === selectedServicioIds[0]);
+  const mezclaCombo = selectedServicioIds.length > 1 && selectedServicioIds.some(id => combos.some(c => c.id === id));
+  const esCombo = seleccionaCombo && comboDetalle?.id === selectedServicioIds[0];
+  const horaCombo = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
+  const tramosCombo = esCombo && comboDetalle ? tramosDelCombo(comboDetalle, horaCombo) : [];
+  // `sin_inicios_alineados` solo limita lo que se ofrece online: la duena agenda a cualquier hora.
+  const problemasCombo = esCombo ? (comboDetalle?.problemas ?? []).filter(p => p.codigo !== 'sin_inicios_alineados') : [];
+
+  const handleCambiarServicios = (ids: number[]) => {
+    setSelectedServicioIds(ids);
+    setComboDetalle(null);
+    if (ids.length === 1 && combos.some(c => c.id === ids[0])) {
+      servicioService.getOne(ids[0]).then(d => setComboDetalle(prev => (prev === null ? d : prev))).catch(() => {});
+    }
+  };
 
   // El choque de horario/repetición de servicio está escopeado por
   // profesional en el backend (dos profesionales pueden compartir horario) —
@@ -172,7 +197,32 @@ function NuevoTurnoContent() {
   const slotsDesactualizados = mostrarSelectorProfesional && selectedProfesionalId != null
     && (ultimoProfesionalIdSolicitado !== selectedProfesionalId || slotsLoading);
 
+  // Alta de un combo: un turno por servicio con SU profesional (las fija la promo). La duena
+  // agenda a cualquier hora; el backend valida rango, choques y reservas en curso por profesional.
+  const handleConfirmarCombo = async () => {
+    if (!selectedCliente || !esCombo || problemasCombo.length > 0) return;
+    const advertencia = advertenciaDelCombo(tramosCombo, fecha, profesionales, bloqueos);
+    if (advertencia && !(await confirmDialog(advertencia))) return;
+
+    setSaving(true);
+    const precio = Number(precioPromo);
+    const result = await crearTurno({
+      cliente_id:   selectedCliente.id,
+      servicio_ids: selectedServicioIds,
+      fecha_hora:   `${fecha} ${horaCombo}`,
+      ...(precioPromo.trim() !== '' && Number.isFinite(precio) ? { precio_promo: Math.round(precio) } : {}),
+    });
+    setSaving(false);
+    if (!result.success) {
+      await alertDialog(result.code === 'slot_held' ? t('comboSlotHeld') : (result.message ?? t('createError')));
+      return;
+    }
+    showToast(t('created'));
+    router.back();
+  };
+
   const handleConfirmar = async () => {
+    if (esCombo) return handleConfirmarCombo();
     if (!selectedCliente || selectedServicioIds.length === 0) return;
     if (mostrarSelectorProfesional && !selectedProfesionalId) return;
     if (slotsDesactualizados) return;
@@ -239,6 +289,11 @@ function NuevoTurnoContent() {
       router.back();
     }
   };
+
+  const deshabilitado =
+    saving || !selectedCliente || selectedServicioIds.length === 0 || mezclaCombo || problemasCombo.length > 0 ||
+    (seleccionaCombo && !esCombo) ||
+    (!seleccionaCombo && ((mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados));
 
   const clientesFiltrados = clientes.filter(c =>
     c.activo && normalizarTexto(`${c.nombre} ${c.apellido}`).includes(normalizarTexto(clienteBuscar))
@@ -398,7 +453,7 @@ function NuevoTurnoContent() {
         </div>
 
         {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa) */}
-        {mostrarSelectorProfesional && (
+        {mostrarSelectorProfesional && !seleccionaCombo && (
           <>
             <p style={sectionLabelStyle}>{t('professional')}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
@@ -436,7 +491,7 @@ function NuevoTurnoContent() {
 
         {/* ─── SERVICIOS ─── */}
         <p style={sectionLabelStyle}>{t('services')}</p>
-        {mostrarSelectorProfesional && !profesionalSeleccionado ? (
+        {mostrarSelectorProfesional && !profesionalSeleccionado && serviciosDisponibles.length === 0 ? (
           <p style={{ fontSize: 13, color: colors.subtext, margin: '0 0 20px 2px' }}>
             {t('chooseProfessionalFirst')}
           </p>
@@ -450,7 +505,37 @@ function NuevoTurnoContent() {
               servicios={serviciosDisponibles}
               mode="multi"
               selectedIds={selectedServicioIds}
-              onChange={setSelectedServicioIds}
+              onChange={handleCambiarServicios}
+            />
+          </div>
+        )}
+
+        {/* ─── COMBO: qué se agenda (cada servicio con su profesional) ─── */}
+        {mezclaCombo && (
+          <p style={{ fontSize: 13, color: colors.dangerBorder, margin: '0 0 20px 2px' }}>{t('comboSolo')}</p>
+        )}
+        {esCombo && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={sectionLabelStyle}>{t('comboTitulo')}</p>
+            {tramosCombo.map((tr, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '6px 2px' }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: colors.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {t('comboLinea', { servicio: tr.servicio, profesional: tr.profesional })}
+                </span>
+                <span style={{ flexShrink: 0, fontSize: 13, color: colors.subtext }}>{t('comboRango', { inicio: tr.inicio, fin: tr.fin })}</span>
+              </div>
+            ))}
+            {problemasCombo.map((p, i) => (
+              <p key={i} style={{ fontSize: 13, color: colors.dangerBorder, margin: '6px 2px 0' }}>{p.mensaje}</p>
+            ))}
+            <label style={{ ...sectionLabelStyle, display: 'block', marginTop: 14 }} htmlFor="precio-combo">{t('comboPrecio')}</label>
+            <input
+              id="precio-combo"
+              inputMode="numeric"
+              placeholder={comboDetalle?.precio ? String(Math.round(Number(comboDetalle.precio))) : ''}
+              value={precioPromo}
+              onChange={e => setPrecioPromo(e.target.value.replace(/\D/g, ''))}
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
             />
           </div>
         )}
@@ -467,18 +552,12 @@ function NuevoTurnoContent() {
         {/* ─── Submit ─── */}
         <button
           onClick={handleConfirmar}
-          disabled={
-            saving || !selectedCliente || selectedServicioIds.length === 0 ||
-            (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
-          }
+          disabled={deshabilitado}
           style={{
             width: '100%', height: 52, borderRadius: 14,
             backgroundColor: colors.primarySolid, color: colors.primaryFg,
             fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer',
-            opacity: (
-              !selectedCliente || selectedServicioIds.length === 0 ||
-              (mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados
-            ) ? 0.5 : 1,
+            opacity: deshabilitado && !saving ? 0.5 : 1,
           }}
         >
           {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('confirmAppointment')}

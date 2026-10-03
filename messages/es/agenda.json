@@ -116,6 +116,12 @@
     "confirm": "Confirmar"
   },
   "NuevoTurnoPage": {
+    "comboTitulo": "QUÉ SE AGENDA",
+    "comboLinea": "{servicio} · con {profesional}",
+    "comboRango": "{inicio} a {fin}",
+    "comboPrecio": "Precio del combo (opcional)",
+    "comboSolo": "El combo se agenda solo, sin otros servicios.",
+    "comboSlotHeld": "Alguien está reservando ese horario en este momento. Probá en unos minutos o elegí otro horario.",
     "title": "Nuevo Turno",
     "loading": "Cargando...",
     "selectedDay": "DÍA SELECCIONADO: {fecha}",

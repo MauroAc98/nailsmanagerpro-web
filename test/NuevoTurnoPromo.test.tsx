@@ -185,6 +185,7 @@ describe('NuevoTurnoPage — combo', () => {
 
   it('no se puede combinar el combo con otros servicios en el mismo turno', async () => {
     montar();
+    fireEvent.click(await screen.findByRole('button', { name: /Ana$/ }));
     await elegirClienteYServicio(/^Combo pies y manos/);
     fireEvent.click(await screen.findByRole('button', { name: /^Manicura/ }));
 

@@ -93,6 +93,8 @@ export interface CreateTurnoDto {
   // Opcional — si se omite, el backend resuelve al profesional default de
   // la cuenta. Nunca marcar como requerido (multi-agenda es aditivo).
   profesional_id?: number;
+  // Solo al agendar un combo (promo con componentes): pisa el precio de la promo.
+  precio_promo?: number;
 }
 
 export type UpdateTurnoDto = Partial<CreateTurnoDto>;

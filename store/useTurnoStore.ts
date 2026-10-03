@@ -17,6 +17,8 @@ import { fechaDeHoy } from '@/lib/dateFormat';
 interface OperacionResult {
   success: boolean;
   message?: string;
+  // `code` del 422 del backend cuando lo trae (ej. 'slot_held').
+  code?: string;
   // Ids realmente cancelados al cancelar todo el combo.
   cancelados?: number[];
 }
@@ -218,7 +220,8 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
         await refrescarAgenda(get, set, get().fechaSeleccionada);
         return { success: true };
       } catch (e) {
-        return { success: false, message: extraerMensajeError(e) };
+        const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
+        return { success: false, message: extraerMensajeError(e), ...(code ? { code } : {}) };
       }
     });
   },
