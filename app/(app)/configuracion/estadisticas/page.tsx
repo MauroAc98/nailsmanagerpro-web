@@ -4,7 +4,7 @@ import { Fragment, Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Eye, EyeOff, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { Consejo } from '@/components/estadisticas/Consejo';
 import { acumular, alinearPrevio, diferenciaAcumulada, promedioDiario } from '@/lib/estadisticas/acumulado';
 import { brechaServicio, diaFlojo, diaPico, franjaLibre, retencion } from '@/lib/estadisticas/insights';
@@ -670,17 +670,25 @@ function EstadisticasContent() {
           <>
             {/* Héroe — ganancia neta (lo que importa) + comparación con el mes
                 anterior y tres números de contexto. */}
+            {/* Mismo estilo que ResumenMesCard (Agenda): degradado suave del
+                primario, borde sutil, destellos + etiqueta en mayúsculas. Todo
+                con tokens del tema, así sirve igual en claro y oscuro. */}
             <div style={{
-              backgroundColor: colors.primarySolid, color: colors.primaryFg, borderRadius: 24,
+              background: `linear-gradient(135deg, ${colors.primarySoft}, ${colors.surface})`,
+              border: `1px solid color-mix(in srgb, ${colors.primary} 25%, transparent)`,
+              color: colors.strong, borderRadius: 24,
               padding: 18, boxShadow: shadows.card,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <p style={{
-                  margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, opacity: 0.85,
-                  textTransform: 'uppercase', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {t('netProfit')}{mostrarSelectorProfesional && nombreProfesionalActivo ? ` · ${nombreProfesionalActivo}` : ''}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                  <Sparkles size={14} color={colors.primaryDeep} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                  <p style={{
+                    margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: colors.primaryDeep,
+                    textTransform: 'uppercase', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {t('netProfit')}{mostrarSelectorProfesional && nombreProfesionalActivo ? ` · ${nombreProfesionalActivo}` : ''}
+                  </p>
+                </div>
                 {/* Misma preferencia compartida (useOcultarMonto) que
                     ResumenMesCard en Agenda — privacidad situacional. */}
                 <span
@@ -690,12 +698,12 @@ function EstadisticasContent() {
                   style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4, flexShrink: 0 }}
                 >
                   {ocultarMonto
-                    ? <EyeOff size={16} color={colors.primaryFg} strokeWidth={2} />
-                    : <Eye size={16} color={colors.primaryFg} strokeWidth={2} />}
+                    ? <EyeOff size={16} color={colors.sub} strokeWidth={2} />
+                    : <Eye size={16} color={colors.sub} strokeWidth={2} />}
                 </span>
               </div>
               <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 38, lineHeight: 1, fontFamily: agendaFontSerif, wordBreak: 'break-word' }}>
+                <span style={{ fontSize: 38, lineHeight: 1, fontFamily: agendaFontSerif, color: colors.strong, wordBreak: 'break-word' }}>
                   {ocultarMonto
                     ? <>${' '}<span style={{ fontSize: 28, letterSpacing: 3 }}>●●●●●</span></>
                     : gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
@@ -703,7 +711,8 @@ function EstadisticasContent() {
                 {variacion !== null && (
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999,
-                    backgroundColor: withAlpha(colors.primaryFg, '33'), fontSize: 12, fontWeight: 700,
+                    backgroundColor: variacion >= 0 ? colors.successBg : colors.dangerBg,
+                    color: variacion >= 0 ? colors.success : colors.danger, fontSize: 12, fontWeight: 700,
                   }}>
                     {variacion >= 0 ? <TrendingUp size={13} strokeWidth={2.5} /> : <TrendingDown size={13} strokeWidth={2.5} />}
                     {periodoPrevio
@@ -712,7 +721,7 @@ function EstadisticasContent() {
                   </span>
                 )}
               </div>
-              <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.85 }}>
+              <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.sub }}>
                 {t('heroIncomeExpenses', {
                   ingresos: ocultarMonto ? '••••' : `$${formatMonto(ingresosTotales)}`,
                   gastos: ocultarMonto ? '••••' : `$${formatMonto(stats?.gastos ?? 0)}`,
@@ -727,9 +736,12 @@ function EstadisticasContent() {
                   },
                   { value: tasaCancelacion === null ? '—' : `${tasaCancelacion}%`, label: t('kpiCancellations') },
                 ].map(k => (
-                  <div key={k.label} style={{ backgroundColor: withAlpha(colors.primaryFg, '24'), borderRadius: 14, padding: '10px 12px', minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: 19, fontFamily: agendaFontSerif, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.value}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 10.5, opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.label}</p>
+                  <div key={k.label} style={{
+                    backgroundColor: colors.surface, borderRadius: 14, padding: '10px 12px', minWidth: 0,
+                    border: `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
+                  }}>
+                    <p style={{ margin: 0, fontSize: 19, fontFamily: agendaFontSerif, color: colors.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.value}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 10.5, color: colors.sub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.label}</p>
                   </div>
                 ))}
               </div>
