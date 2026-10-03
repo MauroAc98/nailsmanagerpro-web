@@ -68,3 +68,21 @@ export function agruparPorSemana(turnos: Turno[], hoy: Date = new Date()): Grupo
   }
   return grupos;
 }
+
+export type ResumenBanner =
+  | { tipo: 'uno'; cliente: string; servicios: string }
+  | { tipo: 'varios'; cantidad: number };
+
+// Qué le cuenta el banner a quien lo ve: con un solo turno pendiente, a quién
+// y por qué servicio falta cargar lo cobrado; con varios, solo cuántos.
+export function resumenParaBanner(pendientes: Turno[]): ResumenBanner {
+  if (pendientes.length === 1) {
+    const [t] = pendientes;
+    const cliente = `${t.cliente?.nombre ?? ''} ${t.cliente?.apellido ?? ''}`.trim();
+    if (cliente) {
+      const servicios = (t.servicios ?? []).filter(s => s != null).map(s => s.nombre).join(' + ');
+      return { tipo: 'uno', cliente, servicios };
+    }
+  }
+  return { tipo: 'varios', cantidad: pendientes.length };
+}

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Wallet, ChevronRight, X } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
+import { resumenParaBanner } from '@/lib/pendientesDeCobro';
 
 // Predicado puro — ver el mismo comentario en useSubscriptionWarningVisible
 // (SubscriptionWarningBanner.tsx). Única fuente de verdad de "¿aplicaría
@@ -31,6 +32,17 @@ export function PendientesDeCobroBanner({ onDismiss }: { onDismiss?: () => void 
   if (!visible) return null;
 
   const esError = error && pendientes.length === 0;
+
+  // Dice lo que realmente falta: cargar cuánto se cobró. Con un solo turno,
+  // a quién y por qué servicio; con varios, cuántos.
+  const resumen = resumenParaBanner(pendientes);
+  const mensaje = esError
+    ? t('checkError')
+    : resumen.tipo === 'uno'
+      ? (resumen.servicios
+        ? t('messageOne', { cliente: resumen.cliente, servicios: resumen.servicios })
+        : t('messageOneNoService', { cliente: resumen.cliente }))
+      : t('messageMany', { count: resumen.cantidad });
 
   // `<div role="button">` en vez de `<button>`: necesitamos anidar el ícono
   // de descarte como otro elemento interactivo adentro, y un <button> no
@@ -67,7 +79,7 @@ export function PendientesDeCobroBanner({ onDismiss }: { onDismiss?: () => void 
           {t('title')}
         </span>
         <span style={{ display: 'block', fontSize: 12, color: colors.amberFg, opacity: 0.85 }}>
-          {esError ? t('checkError') : t('message', { count: pendientes.length })}
+          {mensaje}
         </span>
       </span>
       <ChevronRight size={16} color={colors.amberFg} style={{ flexShrink: 0, opacity: 0.7 }} />

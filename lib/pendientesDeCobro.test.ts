@@ -4,6 +4,7 @@ import {
   agruparPorSemana,
   estimadoAPrecioDeLista,
   ordenarPendientes,
+  resumenParaBanner,
   tienePrecioDeListaCompleto,
 } from './pendientesDeCobro';
 
@@ -75,5 +76,44 @@ describe('agruparPorSemana', () => {
   it('el domingo cuenta dentro de la semana de lunes a domingo', () => {
     const grupos = agruparPorSemana([turno(1, '2026-09-13 20:00:00')], hoy); // dom 13 = semana pasada
     expect(grupos[0].grupo).toBe('semanaPasada');
+  });
+});
+
+describe('resumenParaBanner', () => {
+  const conCliente = (id: number, nombre: string, apellido: string, servicios: string[]): Turno =>
+    ({
+      id,
+      cliente: { nombre, apellido },
+      servicios: servicios.map((n, i) => ({ id: i + 1, nombre: n })),
+    }) as unknown as Turno;
+
+  it('con un solo turno nombra a la cliente y el servicio completado', () => {
+    expect(resumenParaBanner([conCliente(1, 'Mica', 'Bochetti', ['Capping'])]))
+      .toEqual({ tipo: 'uno', cliente: 'Mica Bochetti', servicios: 'Capping' });
+  });
+
+  it('une varios servicios del mismo turno con " + "', () => {
+    expect(resumenParaBanner([conCliente(1, 'Mica', 'Bochetti', ['Capping', 'Pedicura'])]))
+      .toEqual({ tipo: 'uno', cliente: 'Mica Bochetti', servicios: 'Capping + Pedicura' });
+  });
+
+  it('con varios turnos devuelve solo la cantidad', () => {
+    expect(resumenParaBanner([
+      conCliente(1, 'Mica', 'Bochetti', ['Capping']),
+      conCliente(2, 'Ana', 'Perez', ['Soft gel']),
+    ])).toEqual({ tipo: 'varios', cantidad: 2 });
+  });
+
+  it('un turno sin nombre de cliente cae a la cantidad', () => {
+    expect(resumenParaBanner([conCliente(1, '', '', ['Capping'])])).toEqual({ tipo: 'varios', cantidad: 1 });
+  });
+
+  it('un turno sin servicios igual nombra a la cliente, sin servicio', () => {
+    expect(resumenParaBanner([conCliente(1, 'Mica', 'Bochetti', [])]))
+      .toEqual({ tipo: 'uno', cliente: 'Mica Bochetti', servicios: '' });
+  });
+
+  it('sin turnos devuelve cantidad 0', () => {
+    expect(resumenParaBanner([])).toEqual({ tipo: 'varios', cantidad: 0 });
   });
 });

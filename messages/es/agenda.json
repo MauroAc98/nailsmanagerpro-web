@@ -12,8 +12,8 @@
     "cancelError": "No se pudo cancelar el turno."
   },
   "PendientesDeCobroPage": {
-    "title": "Precios por cargar",
-    "subtitle": "Turnos finalizados sin precio registrado",
+    "title": "Cobros por registrar",
+    "subtitle": "Turnos finalizados en los que falta cargar cuánto se cobró",
     "loading": "Cargando...",
     "emptyState": "No tenés turnos pendientes de cobro",
     "searchPlaceholder": "Buscar por nombre de cliente...",

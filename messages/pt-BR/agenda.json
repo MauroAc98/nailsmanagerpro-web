@@ -12,8 +12,8 @@
     "cancelError": "Não foi possível cancelar o agendamento."
   },
   "PendientesDeCobroPage": {
-    "title": "Preços por cadastrar",
-    "subtitle": "Agendamentos finalizados sem preço registrado",
+    "title": "Cobranças a registrar",
+    "subtitle": "Atendimentos concluídos em que falta registrar quanto foi cobrado",
     "loading": "Carregando...",
     "emptyState": "Você não tem agendamentos pendentes de cobrança",
     "searchPlaceholder": "Buscar por nome da cliente...",
