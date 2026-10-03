@@ -2,7 +2,7 @@
 
 import { useId } from 'react';
 import {
-  Area, AreaChart, Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, Bar, BarChart, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
   type TooltipContentProps,
 } from 'recharts';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -28,13 +28,17 @@ interface Props {
   ocultarMonto: boolean;
   parcialLabel: string;
   ariaLabel: string;
+  // Promedio por día de los días transcurridos: línea de referencia (solo en
+  // 'area'). La etiqueta lleva el importe, así que con ocultarMonto no se imprime.
+  promedio?: number | null;
+  promedioLabel?: string;
   height?: number;
 }
 
 const MONTO_OCULTO = '$ ●●●●●';
 
 export default function TendenciaChart({
-  puntos, previo, previoLabel, tipo, ocultarMonto, parcialLabel, ariaLabel, height = 150,
+  puntos, previo, previoLabel, tipo, ocultarMonto, parcialLabel, ariaLabel, promedio, promedioLabel, height = 150,
 }: Props) {
   const gradId = useId().replace(/:/g, '');
   const data = puntos.map((p, i) => ({ ...p, previo: previo?.[i] }));
@@ -77,6 +81,12 @@ export default function TendenciaChart({
             {eje}
             <YAxis hide domain={[0, 'auto']} />
             <Tooltip content={tooltip} cursor={{ stroke: colors.primaryDeep, strokeDasharray: '3 3' }} />
+            {promedio != null && promedio > 0 && (
+              <ReferenceLine
+                y={promedio} stroke={colors.amber} strokeDasharray="2 4" strokeWidth={1.2} ifOverflow="extendDomain"
+                label={ocultarMonto || !promedioLabel ? undefined : { value: promedioLabel, position: 'insideTopRight', fontSize: 10, fill: colors.subtext }}
+              />
+            )}
             {previo && (
               <Area
                 dataKey="previo" type="monotone" stroke={colors.muted} strokeWidth={1.5} strokeDasharray="4 4"

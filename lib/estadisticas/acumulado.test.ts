@@ -49,8 +49,9 @@ describe('diferenciaAcumulada', () => {
     expect(diferenciaAcumulada([null, null], [10, 20])).toBeNull();
   });
 
-  it('si el previo es más corto, compara contra su último día disponible', () => {
-    expect(diferenciaAcumulada([100, 200, 300], [100, 150, undefined])).toEqual({ dia: 3, diff: 150 });
+  it('si el previo es más corto, compara ambos en el último día que tienen en común', () => {
+    // día 2: 200 vs 150 (no mezcla el día 3 actual contra el día 2 previo)
+    expect(diferenciaAcumulada([100, 200, 300], [100, 150, undefined])).toEqual({ dia: 2, diff: 50 });
   });
 });
 

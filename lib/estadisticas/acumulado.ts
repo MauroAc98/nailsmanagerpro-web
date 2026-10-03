@@ -18,9 +18,9 @@ export function alinearPrevio(montosPrevio: number[], largo: number): (number | 
 }
 
 // Diferencia del acumulado actual contra el previo A IGUAL DÍA: el último día
-// con dato del mes actual (hoy, o el último del mes si ya cerró). Si el previo
-// es más corto que ese día, se usa su último día disponible. Null sin base de
-// comparación (previo en 0) o sin ningún dato actual.
+// con dato del mes actual (hoy, o el último del mes si ya cerró), recortado al
+// último día que también tiene el mes previo. Null sin base de comparación
+// (previo en 0) o sin ningún dato actual.
 export function diferenciaAcumulada(
   actual: (number | null)[], previo: (number | undefined)[],
 ): { dia: number; diff: number } | null {
@@ -30,12 +30,16 @@ export function diferenciaAcumulada(
   }
   if (idx < 0) return null;
 
-  let base: number | undefined;
+  // Último día en común: si el previo no tiene el día idx (mes más corto), se
+  // retrocede hasta el último que sí tiene y se compara AMBOS a ese día.
+  let comun = -1;
   for (let i = Math.min(idx, previo.length - 1); i >= 0; i--) {
-    if (previo[i] !== undefined) { base = previo[i]; break; }
+    if (previo[i] !== undefined) { comun = i; break; }
   }
-  if (base === undefined || base <= 0) return null;
-  return { dia: idx + 1, diff: (actual[idx] as number) - base };
+  if (comun < 0) return null;
+  const base = previo[comun] as number;
+  if (base <= 0) return null;
+  return { dia: comun + 1, diff: (actual[comun] as number) - base };
 }
 
 // Promedio por día de los días ya transcurridos (ignora los null futuros; los

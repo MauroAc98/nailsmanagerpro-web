@@ -1,6 +1,6 @@
 import { cloneElement, type ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // ResponsiveContainer mide con ResizeObserver, que jsdom no implementa: sin
 // tamaño no dibuja nada. Se le da un tamaño fijo para poder montar el SVG.
@@ -18,6 +18,9 @@ import RitmoSemanaChart from './RitmoSemanaChart';
 import TendenciaChart from './TendenciaChart';
 import { TooltipCard } from './TooltipCard';
 import { Consejo } from './Consejo';
+import AcumuladoChart from './AcumuladoChart';
+import BurbujasChart from './BurbujasChart';
+
 
 describe('DonutChart', () => {
   const data = [
@@ -95,7 +98,7 @@ describe('RitmoSemanaChart', () => {
       dia_semana: i, label: `D${i}`, completados: i, confirmados: 1, cancelados: i === 6 ? 2 : 0,
     }));
     const { container } = render(
-      <RitmoSemanaChart dias={dias} labels={{ completed: 'Completados', confirmed: 'Confirmados', cancelled: 'Cancelados' }} ariaLabel="Ritmo" />,
+      <RitmoSemanaChart dias={dias} labels={{ completed: 'Completados', confirmed: 'Confirmados', cancelled: 'Cancelados' }} ariaLabel="Ritmo" seleccionado={null} onSeleccionar={() => {}} />,
     );
     expect(container.querySelectorAll('.recharts-bar').length).toBe(3);
   });
@@ -113,5 +116,97 @@ describe('Consejo', () => {
   it('es una nota accesible con el texto del consejo', () => {
     render(<Consejo>El sábado concentra el 27% de tus turnos.</Consejo>);
     expect(screen.getByRole('note')).toHaveTextContent('El sábado concentra el 27% de tus turnos.');
+  });
+});
+
+describe('TendenciaChart — promedio diario', () => {
+  const puntos = [{ label: '1', monto: 100 }, { label: '2', monto: 300 }, { label: '3', monto: 200 }];
+  const base = { puntos, tipo: 'area' as const, parcialLabel: 'parcial', ariaLabel: 'Ganancias' };
+
+  it('dibuja una línea de referencia con el promedio y su etiqueta corta', () => {
+    const { container } = render(<TendenciaChart {...base} ocultarMonto={false} promedio={200} promedioLabel='Prom. $200' />);
+    expect(container.querySelectorAll('.recharts-reference-line').length).toBe(1);
+    expect(screen.getByText('Prom. $200')).toBeInTheDocument();
+  });
+
+  it('sin promedio no hay línea', () => {
+    const { container } = render(<TendenciaChart {...base} ocultarMonto={false} />);
+    expect(container.querySelectorAll('.recharts-reference-line').length).toBe(0);
+  });
+
+  it('con ocultar monto no se imprime la etiqueta con el importe', () => {
+    render(<TendenciaChart {...base} ocultarMonto promedio={200} promedioLabel='Prom. $200' />);
+    expect(screen.queryByText('Prom. $200')).toBeNull();
+  });
+});
+
+describe('AcumuladoChart', () => {
+  const labels = { daily: 'Cobros del día', cumulative: 'Acumulado', previous: 'Septiembre' };
+  const completa = [
+    { label: '1', monto: 100, acumulado: 100, previo: 50 },
+    { label: '2', monto: 200, acumulado: 300, previo: 150 },
+    { label: '3', monto: 50, acumulado: 350, previo: 400 },
+  ];
+
+  it('monta barras del día, la línea de acumulado y la punteada del mes anterior', () => {
+    const { container } = render(<AcumuladoChart serie={completa} labels={labels} ocultarMonto={false} ariaLabel='Acumulado' />);
+    expect(container.querySelectorAll('.recharts-bar-rectangle').length).toBe(3);
+    expect(container.querySelectorAll('.recharts-line-curve').length).toBe(2);
+  });
+
+  it('los días futuros (null) no dibujan barra y cortan la línea del acumulado', () => {
+    const cortada = [
+      completa[0], completa[1],
+      { label: '3', monto: null, acumulado: null, previo: 400 },
+    ];
+    const puntos = (c: HTMLElement) => (c.querySelectorAll('.recharts-line-curve')[0]?.getAttribute('d')?.match(/[MLC]/g) ?? []).length;
+    const a = render(<AcumuladoChart serie={completa} labels={labels} ocultarMonto={false} ariaLabel='Acumulado' />);
+    const completos = puntos(a.container);
+    a.unmount();
+    const b = render(<AcumuladoChart serie={cortada} labels={labels} ocultarMonto={false} ariaLabel='Acumulado' />);
+    expect(b.container.querySelectorAll('.recharts-bar-rectangle').length).toBe(2);
+    expect(puntos(b.container)).toBeLessThan(completos);
+    // la punteada del mes anterior sigue entera
+    expect(b.container.querySelectorAll('.recharts-line-curve').length).toBe(2);
+  });
+});
+
+describe('BurbujasChart', () => {
+  const servicios = [
+    { servicio_id: 1, nombre: 'Capping', turnos: 46, ticket: 3000, monto: 138000, color: '#111' },
+    { servicio_id: 2, nombre: 'Soft gel', turnos: 17, ticket: 22000, monto: 374000, color: '#222' },
+    { servicio_id: 3, nombre: 'Semis pies', turnos: 4, ticket: 14000, monto: 56000, color: '#333' },
+  ];
+
+  it('dibuja una burbuja por servicio', () => {
+    const { container } = render(
+      <BurbujasChart servicios={servicios} ejes={{ turnos: 'Turnos', ticket: 'Ticket', monto: 'Total' }} ocultarMonto={false} ariaLabel='Servicios' />,
+    );
+    expect(container.querySelectorAll('.recharts-scatter-symbol').length).toBe(3);
+  });
+});
+
+describe('RitmoSemanaChart — tocar para filtrar', () => {
+  const dias = [1, 2, 3, 4, 5, 6, 7].map(i => ({ dia_semana: i, label: ['L', 'M', 'X', 'J', 'V', 'S', 'D'][i - 1], completados: i, confirmados: 1, cancelados: 0 }));
+  const labels = { completed: 'Completados', confirmed: 'Confirmados', cancelled: 'Cancelados' };
+
+  it('cada día es un botón real; tocarlo avisa cuál (toggle lo resuelve el padre)', () => {
+    const onSeleccionar = vi.fn();
+    render(<RitmoSemanaChart dias={dias} labels={labels} ariaLabel='Ritmo' seleccionado={null} onSeleccionar={onSeleccionar} />);
+    fireEvent.click(screen.getByRole('button', { name: 'S' }));
+    expect(onSeleccionar).toHaveBeenCalledWith(6);
+  });
+
+  it('marca como presionado solo el día elegido', () => {
+    render(<RitmoSemanaChart dias={dias} labels={labels} ariaLabel='Ritmo' seleccionado={6} onSeleccionar={() => {}} />);
+    expect(screen.getByRole('button', { name: 'S' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'L' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('los botones tienen un target cómodo (>=44px de alto) y no bloquean el scroll vertical', () => {
+    render(<RitmoSemanaChart dias={dias} labels={labels} ariaLabel='Ritmo' seleccionado={null} onSeleccionar={() => {}} />);
+    const btn = screen.getByRole('button', { name: 'S' });
+    expect(parseInt(btn.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
+    expect(btn.style.touchAction).toBe('manipulation');
   });
 });
