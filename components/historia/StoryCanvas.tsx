@@ -70,7 +70,8 @@ interface Props {
   // compartida sepa por dónde contactar, sin tener que buscarlo aparte.
   telefonoEstudio?: string | null;
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
-  // Si viene, reemplaza a nombreEstudio como título (ver tituloPrincipal).
+  // Si viene (elegida a mano), la leyenda dice "Turnos disponibles con
+  // {nombre}" (ver leyendaTurnos); el título sigue siendo el del negocio.
   profesionalNombre?: string;
   // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
   // ícono genérico en el header, en los 3 modos (día/semana/mes), para
@@ -111,11 +112,16 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
   const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
 
-  // Con una profesional puntual elegida, su nombre reemplaza al del estudio
-  // en el título — mostrar ambos es redundante (la propia profesional YA
-  // identifica de qué estudio es) y en cuentas donde el nombre del estudio
-  // es el nombre personal de la dueña, quedaba dos veces literal.
-  const tituloPrincipal = profesionalNombre || nombreEstudio;
+  // El título es siempre el nombre del negocio. Con una profesional elegida
+  // a mano, la leyenda de abajo pasa a "Turnos disponibles con {nombre}".
+  // Si la profesional se llama igual que el negocio (cuenta donde el nombre
+  // del estudio es el de la dueña) no se repite: queda la leyenda de siempre.
+  const tituloPrincipal = nombreEstudio;
+  const mismoNombre = !!profesionalNombre && !!nombreEstudio
+    && profesionalNombre.trim().toLowerCase() === nombreEstudio.trim().toLowerCase();
+  const leyendaTurnos = profesionalNombre && !mismoNombre
+    ? t('availableAppointmentsWith', { nombre: profesionalNombre })
+    : t('availableAppointments');
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
   // historia con su propio chrome y, en celus más altos que 9:16, recortan
@@ -316,7 +322,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
                   color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                 }}>
-                  {t('availableAppointments')}
+                  {leyendaTurnos}
                 </span>
                 <span style={{
                   display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,

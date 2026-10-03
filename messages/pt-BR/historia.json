@@ -4,6 +4,7 @@
   },
   "StoryCanvas": {
     "availableAppointments": "HORÁRIOS DISPONÍVEIS",
+    "availableAppointmentsWith": "HORÁRIOS DISPONÍVEIS COM {nombre}",
     "complete": "COMPLETO",
     "reserveCta": "Reserve seu horário"
   },

@@ -10,7 +10,7 @@ import { StoryCanvas } from './StoryCanvas';
 // componente): esta prueba solo cubre el reemplazo del chip de fecha /
 // ícono genérico por el logo del negocio, no re-verifica todo el resto del
 // canvas (sin cobertura previa).
-function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[]) {
+function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string) {
   return render(
     <NextIntlClientProvider locale="es" messages={es}>
       <StoryCanvas
@@ -18,6 +18,7 @@ function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[]) {
         titulo="24 de sept"
         nombreEstudio="Turnetto"
         telefonoEstudio={null}
+        profesionalNombre={profesionalNombre}
         logoUrl={logoUrl}
         dias={dias}
         fondoUri={null}
@@ -62,5 +63,27 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
     const logos = screen.getAllByAltText('').filter(img => (img as HTMLImageElement).src.includes('logo'));
     expect(logos).toHaveLength(0);
     expect(screen.getByText('24')).toBeInTheDocument();
+  });
+});
+
+describe('StoryCanvas — leyenda con la profesional elegida', () => {
+  it('sin profesional elegida: título del negocio y leyenda "Turnos disponibles" sin "con"', () => {
+    renderCanvas(null, unDia);
+    expect(screen.getByText('Turnetto')).toBeInTheDocument();
+    expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
+    expect(screen.queryByText(/TURNOS DISPONIBLES CON/)).not.toBeInTheDocument();
+  });
+
+  it('con profesional elegida: el título sigue siendo el negocio y la leyenda dice "con" y su nombre', () => {
+    renderCanvas(null, unDia, 'Natalia');
+    expect(screen.getByText('Turnetto')).toBeInTheDocument();
+    expect(screen.getByText('TURNOS DISPONIBLES CON Natalia')).toBeInTheDocument();
+    expect(screen.queryByText('Natalia')).not.toBeInTheDocument();
+  });
+
+  it('si la profesional se llama igual que el negocio no se repite el nombre', () => {
+    renderCanvas(null, unDia, 'Turnetto');
+    expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
+    expect(screen.queryByText(/TURNOS DISPONIBLES CON/)).not.toBeInTheDocument();
   });
 });
