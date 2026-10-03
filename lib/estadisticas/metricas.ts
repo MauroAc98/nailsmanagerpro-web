@@ -89,7 +89,7 @@ export function serviciosParaBurbujas(servicios: ServicioUnido[]): ServicioUnido
 // completados (no hay de dónde derivarlo).
 export function ticketDiaSemana(
   gananciasPorDia: { fecha: string; monto: number }[],
-  ritmo: { dia_semana: number; completados: number }[],
+  ritmo: { dia_semana: number; completados: number; confirmados?: number; cancelados?: number }[],
   iso: number,
 ): number | null {
   const completados = ritmo.find(d => d.dia_semana === iso)?.completados ?? 0;

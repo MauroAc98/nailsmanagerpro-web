@@ -4,10 +4,14 @@ import { Fragment, Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Eye, EyeOff, TrendingDown, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { Consejo } from '@/components/estadisticas/Consejo';
-import { diaFlojo, diaPico, franjaLibre, retencion } from '@/lib/estadisticas/insights';
-import { rangoMesAnterior, rangoMesAnteriorMismoPeriodo, ticketPromedio, topConOtros, variacionPorcentual } from '@/lib/estadisticas/metricas';
+import { acumular, alinearPrevio, diferenciaAcumulada, promedioDiario } from '@/lib/estadisticas/acumulado';
+import { brechaServicio, diaFlojo, diaPico, franjaLibre, retencion } from '@/lib/estadisticas/insights';
+import {
+  horaPicoDelDia, rangoMesAnterior, rangoMesAnteriorMismoPeriodo, serviciosParaBurbujas, ticketDiaSemana,
+  ticketPromedio, topConOtros, unirServicios, variacionPorcentual,
+} from '@/lib/estadisticas/metricas';
 import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -18,7 +22,7 @@ import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/
 import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes, nombreDia, diasSemanaCortos, formatoYMD } from '@/lib/dateFormat';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
-import { formatMonto } from '@/lib/money';
+import { formatMonto, formatMontoCorto } from '@/lib/money';
 
 // Recharts pesa ~100KB: se carga solo al entrar a esta pantalla (no en el
 // bundle de Agenda ni del resto), y sin SSR — mide el contenedor con
@@ -34,6 +38,12 @@ const RitmoSemanaChart = dynamic(() => import('@/components/estadisticas/RitmoSe
 });
 const DonutChart = dynamic(() => import('@/components/estadisticas/DonutChart'), {
   ssr: false, loading: () => <ChartSkeleton height={128} />,
+});
+const AcumuladoChart = dynamic(() => import('@/components/estadisticas/AcumuladoChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={170} />,
+});
+const BurbujasChart = dynamic(() => import('@/components/estadisticas/BurbujasChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={230} />,
 });
 
 // Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
@@ -175,6 +185,10 @@ function EstadisticasContent() {
   const periodoPrevio = modoRango === 'mes' ? rangoMesAnteriorMismoPeriodo(viewDate, hoy) : null;
   const previoParcialKey = periodoPrevio ? `${previoKey}:${periodoPrevio.dia}` : null;
   const [previoParcial, setPrevioParcial] = useState<{ key: string; stats: DashboardStats } | null>(null);
+  // Día de la semana ISO elegido tocando el gráfico de ritmo (null = ninguno):
+  // abre el resumen del día y resalta su columna en el heatmap de ocupación.
+  const [diaSeleccionado, setDiaSeleccionado] = useState<number | null>(null);
+  const alternarDia = (iso: number) => setDiaSeleccionado(prev => (prev === iso ? null : iso));
 
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
@@ -349,6 +363,32 @@ function EstadisticasContent() {
     });
   })();
 
+  // Acumulado vs mes anterior (solo modo "mes"): las barras son el cobro del
+  // día, la curva el acumulado. La serie del mes en curso se corta en hoy
+  // (puntosGananciasPorDia ya trae null en los días futuros); la del mes
+  // anterior va entera. Sin cobros el mes anterior no hay base: sin tarjeta.
+  const montosActuales = puntosGananciasPorDia.map(pt => pt.monto);
+  const acumuladoActual = acumular(montosActuales);
+  const montosPrevioDiarios = (() => {
+    if (modoRango !== 'mes' || !statsPrevio) return null;
+    const r = rangoMesAnterior(viewDate);
+    const porFecha = new Map(statsPrevio.ganancias_por_dia.map(d => [d.fecha, d.monto]));
+    return enumerarFechas(r.desde, r.hasta).map(f => porFecha.get(f) ?? 0);
+  })();
+  const acumuladoPrevio = montosPrevioDiarios && montosPrevioDiarios.some(m => m > 0)
+    ? alinearPrevio(montosPrevioDiarios, diasDelRango.length)
+    : null;
+  const ritmoAcumulado = acumuladoPrevio && (stats?.ganancias ?? 0) > 0
+    ? {
+      serie: puntosGananciasPorDia.map((pt, i) => ({
+        label: pt.label, monto: pt.monto, acumulado: acumuladoActual[i], previo: acumuladoPrevio[i],
+      })),
+      diferencia: diferenciaAcumulada(acumuladoActual, acumuladoPrevio),
+    }
+    : null;
+  // Línea de promedio diario: solo de los días ya transcurridos.
+  const promedioDia = granularidadGanancias === 'dia' ? promedioDiario(montosActuales) : null;
+
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
   const totalConCancelados = completados + confirmados + cancelados;
   const tasaCancelacion = totalConCancelados > 0 ? Math.round((cancelados / totalConCancelados) * 100) : null;
@@ -379,6 +419,27 @@ function EstadisticasContent() {
     valorLabel: `${Math.round((s.valor / totalServiciosTurnos) * 100)}%`,
   }));
   const retencionClientas = retencion(stats?.clientes.nuevas ?? 0, stats?.clientes.recurrentes ?? 0);
+
+  // Burbujas: se unen por servicio_id. Ojo: turnos = confirmados + completados
+  // pero monto = solo completados, así que el ticket subestima un poco mientras
+  // haya turnos confirmados sin cobrar (mes en curso).
+  const serviciosUnidos = unirServicios(servicios, gananciasPorServicio);
+  const coloresBurbuja = [colors.primaryDeep, colors.amber, colors.chart1, colors.chart2, colors.primary, colors.muted];
+  const burbujas = serviciosParaBurbujas(serviciosUnidos).map((sv, i) => ({
+    servicio_id: sv.servicio_id, nombre: sv.nombre, turnos: sv.turnos, ticket: sv.ticket as number,
+    monto: sv.monto, color: coloresBurbuja[i % coloresBurbuja.length],
+  }));
+  const brecha = burbujas.length > 0 ? brechaServicio(serviciosUnidos) : null;
+
+  // Resumen del día elegido: todo derivado de datos reales del período.
+  const resumenDia = diaSeleccionado !== null
+    ? {
+      ritmo: ritmoDias.find(d => d.dia_semana === diaSeleccionado)!,
+      horaPico: horaPicoDelDia(ocupacion, diaSeleccionado),
+      ticket: ticketDiaSemana(stats?.ganancias_por_dia ?? [], ritmoDias, diaSeleccionado),
+    }
+    : null;
+  const nombreDiaElegido = diaSeleccionado !== null ? nombreDiaLargoIso(diaSeleccionado) : '';
 
   // Ocupación — grilla hora × día de la semana. Las filas son el rango
   // CONTIGUO de horas observadas en los datos (no un horario fijo asumido),
@@ -707,6 +768,8 @@ function EstadisticasContent() {
                       ocultarMonto={ocultarMonto}
                       parcialLabel={t('earningsPartialBucket')}
                       ariaLabel={t('trendAria')}
+                      promedio={promedioDia}
+                      promedioLabel={promedioDia ? t('avgLabel', { monto: `$${formatMontoCorto(Math.round(promedioDia))}` }) : undefined}
                     />
                     {previoSerie && (
                       <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 11, color: colors.subtext }}>
@@ -732,6 +795,51 @@ function EstadisticasContent() {
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* ¿Cómo vas contra el mes pasado? — barras del día + acumulado,
+                contra el acumulado del mes anterior a igual día. */}
+            {ritmoAcumulado && (
+              <div style={cardStyle}>
+                <h2 style={{ ...tituloCard, marginBottom: 4 }}>{t('paceTitle')}</h2>
+                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 10px' }}>{t('paceSubtitle')}</p>
+                {ritmoAcumulado.diferencia && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999,
+                    marginBottom: 10, fontSize: 12, fontWeight: 700,
+                    backgroundColor: ritmoAcumulado.diferencia.diff >= 0 ? colors.successBg : colors.amberBg,
+                    color: ritmoAcumulado.diferencia.diff >= 0 ? colors.success : colors.amberFg,
+                  }}>
+                    {ritmoAcumulado.diferencia.diff >= 0 ? <TrendingUp size={13} strokeWidth={2.5} /> : <TrendingDown size={13} strokeWidth={2.5} />}
+                    {t(ritmoAcumulado.diferencia.diff >= 0 ? 'paceAbove' : 'paceBelow', {
+                      monto: ocultarMonto ? '••••' : `$${formatMontoCorto(Math.abs(ritmoAcumulado.diferencia.diff))}`,
+                      mes: nombreMes(mesAnteriorDate, 'long'),
+                      dia: ritmoAcumulado.diferencia.dia,
+                    })}
+                  </span>
+                )}
+                <AcumuladoChart
+                  key={`acum-${rangoActivo.desde}-${rangoActivo.hasta}`}
+                  serie={ritmoAcumulado.serie}
+                  labels={{ daily: t('paceDaily'), cumulative: t('paceCumulative'), previous: nombreMes(mesAnteriorDate, 'long') }}
+                  ocultarMonto={ocultarMonto}
+                  ariaLabel={t('paceAria')}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 8, fontSize: 11, color: colors.subtext }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <i style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: colors.primarySoft, display: 'inline-block' }} />
+                    {t('paceDaily')}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <i style={{ width: 14, height: 3, borderRadius: 2, backgroundColor: colors.primaryDeep, display: 'inline-block' }} />
+                    {t('paceCumulative')}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <i style={{ width: 14, borderTop: `2px dashed ${colors.muted}`, display: 'inline-block' }} />
+                    {nombreMes(mesAnteriorDate, 'long')}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -807,6 +915,36 @@ function EstadisticasContent() {
               )}
             </div>
 
+            {/* Qué servicio rinde más — turnos vs. ticket, tamaño = plata total.
+                Solo con >=3 servicios con plata cobrada. */}
+            {burbujas.length > 0 && (
+              <div style={cardStyle}>
+                <h2 style={{ ...tituloCard, marginBottom: 4 }}>{t('bubblesTitle')}</h2>
+                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 12px' }}>{t('bubblesSubtitle')}</p>
+                <BurbujasChart
+                  servicios={burbujas}
+                  ejes={{ turnos: t('bubbleAxisTurnos'), ticket: t('bubbleAxisTicket'), monto: t('bubbleAxisTotal') }}
+                  ocultarMonto={ocultarMonto}
+                  ariaLabel={t('bubblesAria')}
+                />
+                <ul style={{ margin: '12px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {burbujas.map(b => (
+                    <li key={b.servicio_id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: colors.text, minWidth: 0 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: b.color, flexShrink: 0 }} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.nombre}</span>
+                      <span style={{ flexShrink: 0, color: colors.subtext }}>{t('bubblesTurnosCount', { count: b.turnos })}</span>
+                      <b style={{ flexShrink: 0, minWidth: 74, textAlign: 'right' }}>
+                        {ocultarMonto ? '••••' : `${formatMonto(b.monto)}`}
+                      </b>
+                    </li>
+                  ))}
+                </ul>
+                {brecha && (
+                  <Consejo>{t('tipServiceGap', { nombre: brecha.nombre, pctTurnos: brecha.pctTurnos, pctPlata: brecha.pctPlata })}</Consejo>
+                )}
+              </div>
+            )}
+
             {/* Ritmo de turnos — completados/confirmados/cancelados por día
                 de la semana, agregados sobre todo el período elegido. */}
             <div style={cardStyle}>
@@ -827,7 +965,28 @@ function EstadisticasContent() {
                 </p>
               ) : (
                 <>
+                  {/* Tocar un día lo filtra: chip para limpiar o, sin día, la
+                      pista de que se puede tocar. */}
+                  {diaSeleccionado !== null ? (
+                    <button
+                      type="button"
+                      onClick={() => setDiaSeleccionado(null)}
+                      aria-label={t('dayFilterClear', { dia: nombreDiaElegido })}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, padding: '0 12px', marginBottom: 8,
+                        border: 'none', borderRadius: 999, cursor: 'pointer', touchAction: 'manipulation',
+                        backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 12, fontWeight: 700,
+                      }}
+                    >
+                      {nombreDiaElegido.charAt(0).toUpperCase() + nombreDiaElegido.slice(1)}
+                      <X size={13} strokeWidth={2.5} aria-hidden />
+                    </button>
+                  ) : (
+                    <p style={{ fontSize: 11, color: colors.subtext, margin: '0 0 6px' }}>{t('dayFilterHint')}</p>
+                  )}
                   <RitmoSemanaChart
+                    seleccionado={diaSeleccionado}
+                    onSeleccionar={alternarDia}
                     dias={ritmoDias}
                     labels={{ completed: t('completed'), confirmed: t('confirmed'), cancelled: t('cancelled') }}
                     ariaLabel={t('rhythmAria')}
@@ -840,6 +999,24 @@ function EstadisticasContent() {
                       </span>
                     ))}
                   </div>
+                  {resumenDia && (
+                    <div data-testid="resumen-dia" style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                      {[
+                        { value: String(resumenDia.ritmo.completados), label: t('completed') },
+                        { value: String(resumenDia.ritmo.confirmados), label: t('confirmed') },
+                        { value: String(resumenDia.ritmo.cancelados), label: t('cancelled') },
+                        ...(resumenDia.horaPico !== null ? [{ value: t('occupancyPeakHourBadge', { hora: resumenDia.horaPico }), label: t('dayPeakHour') }] : []),
+                        ...(resumenDia.ticket !== null
+                          ? [{ value: ocultarMonto ? '••••' : `$${formatMontoCorto(resumenDia.ticket)}`, label: t('dayTicket') }]
+                          : []),
+                      ].map(k => (
+                        <div key={k.label} style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 14, padding: '10px 12px', minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: 18, fontFamily: agendaFontSerif, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.value}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 10.5, color: colors.subtext, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {tasaCancelacion !== null && (
                     <p style={{ margin: '8px 0 0', fontSize: 12, color: colors.subtext }}>
                       {t('cancellationRate', { pct: tasaCancelacion })}
@@ -898,7 +1075,11 @@ function EstadisticasContent() {
                   <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(7, 1fr)', gap: 5 }}>
                     <span />
                     {[1, 2, 3, 4, 5, 6, 7].map(iso => (
-                      <span key={iso} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: colors.muted }}>
+                      <span key={iso} style={{
+                        textAlign: 'center', fontSize: 9, fontWeight: 700,
+                        color: diaSeleccionado === iso ? colors.primaryDeep : colors.muted,
+                        opacity: diaSeleccionado === null || diaSeleccionado === iso ? 1 : 0.4,
+                      }}>
                         {nombreDiaCortoIso(iso, diasCortos).slice(0, 1)}
                       </span>
                     ))}
@@ -920,6 +1101,8 @@ function EstadisticasContent() {
                               aria-label={t('occupancyCellDetail', { dia: nombreDiaLargoIso(iso), hora, count: cantidad })}
                               style={{
                                 aspectRatio: '1 / 1', borderRadius: 6, backgroundColor: colorCeldaOcupacion(cantidad),
+                                // Con un día elegido en el ritmo, su columna queda resaltada.
+                                opacity: diaSeleccionado === null || diaSeleccionado === iso ? 1 : 0.3,
                                 border: 'none', padding: 0, cursor: 'pointer',
                                 outline: seleccionada ? `1.5px solid ${colors.primaryDeep}` : 'none',
                                 outlineOffset: 1,
