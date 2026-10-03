@@ -121,10 +121,13 @@ describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
     renderCanvas(null, unDia, 'Gabriela', '5491155551234');
     const negocio = screen.getByText('Turnetto');
     const telefono = screen.getByText(/^\+/);
-    expect(negocio.parentElement).toBe(telefono.parentElement);
+    // Misma fila: negocio primero, después el grupo "ícono + teléfono".
+    const fila = negocio.parentElement as HTMLElement;
+    expect(fila.contains(telefono)).toBe(true);
     expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const glifo = telefono.previousElementSibling;
-    expect(glifo?.tagName.toLowerCase()).toBe('svg');
-    expect(negocio.compareDocumentPosition(glifo as Element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // El ícono está pegado al número (mismo grupo) y no al negocio.
+    const grupoTelefono = telefono.parentElement as HTMLElement;
+    expect(grupoTelefono.contains(negocio)).toBe(false);
+    expect(telefono.previousElementSibling?.tagName.toLowerCase()).toBe('svg');
   });
 });

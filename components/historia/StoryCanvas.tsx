@@ -420,22 +420,29 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               {/* Una sola línea: el negocio (que ya no es el título del
                   header) y el teléfono con su ícono pegado al número. */}
               {(telefonoEstudio || nombreEstudio) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2, maxWidth: '100%' }}>
                   {nombreEstudio && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    // El negocio es lo protagonista del pie: serif y más
+                    // grande que el teléfono. Con un nombre largo cede con
+                    // "…" antes de empujar el teléfono fuera de la imagen.
+                    <span style={{
+                      minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontFamily: agendaFontSerif, fontSize: 14, fontWeight: 400, color: '#fff',
+                      textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                    }}>
                       {nombreEstudio}
                     </span>
                   )}
                   {nombreEstudio && telefonoEstudio && (
-                    <span aria-hidden style={{ fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
+                    <span aria-hidden style={{ flexShrink: 0, fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
                   )}
                   {telefonoEstudio && (
-                    <>
+                    <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <WhatsappGlyph size={10} color="#fff" />
                       <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                         +{phoneUtils.formatDisplay(telefonoEstudio)}
                       </span>
-                    </>
+                    </span>
                   )}
                 </div>
               )}
