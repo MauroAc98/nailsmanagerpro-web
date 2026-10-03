@@ -1,5 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { rangoMesAnterior, ticketPromedio, variacionPorcentual } from './metricas';
+import { rangoMesAnterior, ticketPromedio, topConOtros, variacionPorcentual } from './metricas';
+
+describe('topConOtros', () => {
+  const items = [
+    { nombre: 'A', valor: 10 }, { nombre: 'B', valor: 8 }, { nombre: 'C', valor: 5 },
+    { nombre: 'D', valor: 3 }, { nombre: 'E', valor: 2 }, { nombre: 'F', valor: 1 },
+  ];
+
+  it('agrupa lo que excede el top N en "Otros" sumando los valores', () => {
+    expect(topConOtros(items, 4, 'Otros')).toEqual([
+      { nombre: 'A', valor: 10 }, { nombre: 'B', valor: 8 }, { nombre: 'C', valor: 5 }, { nombre: 'D', valor: 3 },
+      { nombre: 'Otros', valor: 3 },
+    ]);
+  });
+
+  it('ordena de mayor a menor antes de cortar', () => {
+    const r = topConOtros([{ nombre: 'x', valor: 1 }, { nombre: 'y', valor: 9 }], 4, 'Otros');
+    expect(r.map(i => i.nombre)).toEqual(['y', 'x']);
+  });
+
+  it('no agrega "Otros" si todo entra en el top', () => {
+    expect(topConOtros(items.slice(0, 3), 4, 'Otros')).toHaveLength(3);
+  });
+
+  it('con un solo excedente igual lo muestra como su propio nombre, no como "Otros"', () => {
+    const r = topConOtros(items.slice(0, 5), 4, 'Otros');
+    expect(r[4]).toEqual({ nombre: 'E', valor: 2 });
+  });
+
+  it('descarta valores en 0', () => {
+    expect(topConOtros([{ nombre: 'z', valor: 0 }, { nombre: 'a', valor: 2 }], 4, 'Otros')).toEqual([{ nombre: 'a', valor: 2 }]);
+  });
+});
 
 describe('variacionPorcentual', () => {
   it('calcula el cambio porcentual redondeado', () => {
