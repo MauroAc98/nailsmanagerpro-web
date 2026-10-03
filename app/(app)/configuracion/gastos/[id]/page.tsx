@@ -279,6 +279,9 @@ export default function EditarGastoPage() {
                 );
               })}
             </div>
+            <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
+              {t('professionalHint')}
+            </p>
           </div>
         )}
 

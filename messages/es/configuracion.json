@@ -133,6 +133,7 @@
     "descriptionLabel": "Descripción (opcional)",
     "descriptionPlaceholder": "Ej: Compra de esmaltes",
     "professionalLabel": "Profesional (opcional)",
+    "professionalHint": "Si no elegís profesional, el gasto queda a nombre del negocio y se ve en \"Todo el equipo\".",
     "saving": "Guardando...",
     "submit": "Agregar gasto",
     "saveError": "No se pudo guardar el gasto."
@@ -150,6 +151,7 @@
     "descriptionLabel": "Descripción (opcional)",
     "descriptionPlaceholder": "Ej: Compra de esmaltes",
     "professionalLabel": "Profesional (opcional)",
+    "professionalHint": "Si no elegís profesional, el gasto queda a nombre del negocio y se ve en \"Todo el equipo\".",
     "loadError": "No se pudo cargar el gasto.",
     "saving": "Guardando...",
     "submit": "Guardar cambios",

@@ -133,6 +133,7 @@
     "descriptionLabel": "Descrição (opcional)",
     "descriptionPlaceholder": "Ex: Compra de esmaltes",
     "professionalLabel": "Profissional (opcional)",
+    "professionalHint": "Se você não escolher profissional, a despesa fica em nome do negócio e aparece em \"Toda a equipe\".",
     "saving": "Salvando...",
     "submit": "Adicionar despesa",
     "saveError": "Não foi possível salvar a despesa."
@@ -150,6 +151,7 @@
     "descriptionLabel": "Descrição (opcional)",
     "descriptionPlaceholder": "Ex: Compra de esmaltes",
     "professionalLabel": "Profissional (opcional)",
+    "professionalHint": "Se você não escolher profissional, a despesa fica em nome do negócio e aparece em \"Toda a equipe\".",
     "loadError": "Não foi possível carregar a despesa.",
     "saving": "Salvando...",
     "submit": "Salvar alterações",
