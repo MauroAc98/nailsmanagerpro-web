@@ -99,6 +99,20 @@ describe('Estadísticas — héroe', () => {
     }
   });
 
+  it('el monto grande y el promedio por turno usan MontoFit (se achican, nunca se cortan ni se parten)', async () => {
+    getDashboard.mockResolvedValue(dashboard());
+    renderWithProviders(<EstadisticasPage />);
+
+    const franja = await screen.findByTestId('hero-kpis');
+    const promedio = within(franja).getByText('$24.375');
+    expect(promedio.style.whiteSpace).toBe('nowrap');
+    expect(promedio.style.overflowWrap).not.toBe('anywhere');
+
+    const grande = screen.getByText(/1\.284\.500/);
+    expect(grande.style.whiteSpace).toBe('nowrap');
+    expect(grande.style.wordBreak).not.toBe('break-word');
+  });
+
   it('compara contra el mes anterior pidiendo ese rango al backend', async () => {
     getDashboard.mockImplementation(async (desde: string) =>
       desde === '2026-09-01' ? dashboard({ ganancia_neta: 1000000 }) : dashboard());

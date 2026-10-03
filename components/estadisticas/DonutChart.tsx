@@ -96,7 +96,7 @@ export default function DonutChart({ data, centerValue, centerLabel, ariaLabel, 
             >
               <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.color, flexShrink: 0 }} />
               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-              <b style={{ flexShrink: 0 }}>{d.valorLabel}</b>
+              <b style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{d.valorLabel}</b>
             </button>
           </li>
         ))}

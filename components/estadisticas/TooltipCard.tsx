@@ -20,7 +20,7 @@ export function TooltipCard({ title, rows }: { title: string; rows: FilaTooltip[
         <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           {r.color && <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color, flexShrink: 0 }} />}
           <span style={{ color: colors.subtext, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</span>
-          <span style={{ marginLeft: 'auto', fontWeight: 700, flexShrink: 0, paddingLeft: 8 }}>{r.value}</span>
+          <span style={{ marginLeft: 'auto', fontWeight: 700, flexShrink: 0, paddingLeft: 8, whiteSpace: 'nowrap' }}>{r.value}</span>
         </div>
       ))}
     </div>

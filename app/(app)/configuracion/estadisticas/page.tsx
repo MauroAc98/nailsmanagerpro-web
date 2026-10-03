@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Eye, EyeOff, Sparkles, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { MontoFit } from '@/components/estadisticas/MontoFit';
 import { Consejo } from '@/components/estadisticas/Consejo';
 import { acumular, alinearPrevio, diferenciaAcumulada, promedioDiario } from '@/lib/estadisticas/acumulado';
 import { brechaServicio, diaFlojo, diaPico, franjaLibre, retencion } from '@/lib/estadisticas/insights';
@@ -107,7 +108,7 @@ function BarraRanking({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
         <span style={{ color: colors.text, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</span>
-        <span style={{ color: colors.subtext, flexShrink: 0 }}>{valorLabel ?? cantidad}</span>
+        <span style={{ color: colors.subtext, flexShrink: 0, whiteSpace: 'nowrap' }}>{valorLabel ?? cantidad}</span>
       </div>
       <div style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceSubtle, overflow: 'hidden' }}>
         <div style={{
@@ -703,11 +704,17 @@ function EstadisticasContent() {
                 </span>
               </div>
               <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 38, lineHeight: 1, fontFamily: agendaFontSerif, color: colors.strong, wordBreak: 'break-word' }}>
-                  {ocultarMonto
-                    ? <>${' '}<span style={{ fontSize: 28, letterSpacing: 3 }}>●●●●●</span></>
-                    : gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
-                </span>
+                {ocultarMonto ? (
+                  <span style={{ fontSize: 38, lineHeight: 1, fontFamily: agendaFontSerif, color: colors.strong }}>
+                    ${' '}<span style={{ fontSize: 28, letterSpacing: 3 }}>●●●●●</span>
+                  </span>
+                ) : (
+                  // El monto se achica para entrar en el ancho; nunca se parte
+                  // dígito por dígito ni se corta, por grande que sea.
+                  <MontoFit maxFontSize={38} minFontSize={18} style={{ lineHeight: 1, fontFamily: agendaFontSerif, color: colors.strong }}>
+                    {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
+                  </MontoFit>
+                )}
                 {variacion !== null && (
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999,
@@ -751,7 +758,9 @@ function EstadisticasContent() {
                     minWidth: 0, padding: '10px 6px', textAlign: 'center',
                     borderLeft: i === 0 ? 'none' : `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
                   }}>
-                    <p style={{ margin: 0, fontSize: 17, lineHeight: 1.1, fontFamily: agendaFontSerif, color: colors.strong, overflowWrap: 'anywhere' }}>{k.value}</p>
+                    <p style={{ margin: 0 }}>
+                      <MontoFit maxFontSize={17} minFontSize={10} style={{ lineHeight: 1.1, fontFamily: agendaFontSerif, color: colors.strong }}>{k.value}</MontoFit>
+                    </p>
                     <p style={{ margin: '3px 0 0', fontSize: 10.5, lineHeight: 1.2, color: colors.sub, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{k.label}</p>
                   </div>
                 ))}
@@ -956,7 +965,7 @@ function EstadisticasContent() {
                       <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: b.color, flexShrink: 0 }} />
                       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.nombre}</span>
                       <span style={{ flexShrink: 0, color: colors.subtext }}>{t('bubblesTurnosCount', { count: b.turnos })}</span>
-                      <b style={{ flexShrink: 0, minWidth: 74, textAlign: 'right' }}>
+                      <b style={{ flexShrink: 0, minWidth: 74, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         {ocultarMonto ? '••••' : `${formatMonto(b.monto)}`}
                       </b>
                     </li>
@@ -1034,8 +1043,10 @@ function EstadisticasContent() {
                           : []),
                       ].map(k => (
                         <div key={k.label} style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 14, padding: '10px 12px', minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: 18, fontFamily: agendaFontSerif, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.value}</p>
-                          <p style={{ margin: '2px 0 0', fontSize: 10.5, color: colors.subtext, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k.label}</p>
+                          <p style={{ margin: 0 }}>
+                            <MontoFit maxFontSize={18} minFontSize={10} style={{ fontFamily: agendaFontSerif, color: colors.textStrong }}>{k.value}</MontoFit>
+                          </p>
+                          <p style={{ margin: '2px 0 0', fontSize: 10.5, lineHeight: 1.2, color: colors.subtext, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{k.label}</p>
                         </div>
                       ))}
                     </div>
