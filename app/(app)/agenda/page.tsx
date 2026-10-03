@@ -21,6 +21,8 @@ import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
+import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
+import { barrasDeGrupo, nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
@@ -96,9 +98,10 @@ const sectionLabelStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────
 // FinalizadoCard — opacity 0.6, no swipe
 // ─────────────────────────────────────────────
-function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesionalLabel?: ProfesionalLabel | null }) {
+function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; profesionalLabel?: ProfesionalLabel | null; barra?: BarraGrupo }) {
   const t = useTranslations('agenda.FinalizadoCard');
   return (
+    <ConBarra barra={barra}>
     <div style={{ opacity: 0.6 }}>
       <div style={{
         backgroundColor: colors.surfaceSubtle, borderRadius: 18,
@@ -139,17 +142,20 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
 
         {/* Sección info central */}
         <div style={{ flex: 1, minWidth: 0, paddingLeft: 15 }}>
-          <p style={{
-            fontSize: 16, fontWeight: 600, color: colors.muted, margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <p style={{
+              fontSize: 16, fontWeight: 600, color: colors.muted, margin: 0, minWidth: 0,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+            </p>
+            {turno.grupo_id != null && <IconoGrupo />}
+          </div>
           <p style={{
             fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
-            {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+            <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
           </p>
         </div>
 
@@ -169,6 +175,7 @@ function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesional
         </div>
       </div>
     </div>
+    </ConBarra>
   );
 }
 
@@ -937,6 +944,8 @@ export default function AgendaPage() {
   // "Todas" (redundante si ya está filtrada a una sola profesional) y solo
   // si hay más de una profesional activa en la cuenta.
   const mostrarEtiquetaProfesionalEnCard = mostrarSelectorProfesional && profesionalFiltro === null;
+  // Barra entre tramos contiguos del mismo grupo (con un filtro de profesional queda solo el suyo, sin barra).
+  const barras = barrasDeGrupo(datosAMostrar);
 
   const cargandoHeader = loading || cargandoBusqueda;
 
@@ -1094,7 +1103,7 @@ export default function AgendaPage() {
                 : undefined;
 
               if (pasado) {
-                return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} />;
+                return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} barra={barras.get(turno.id)} />;
               }
               return (
                 <SwipeableTurnoCard
@@ -1105,6 +1114,7 @@ export default function AgendaPage() {
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   profesionalLabel={profesionalLabel}
                   profesionalNombreWhatsapp={profesionalNombreWhatsapp}
+                  barra={barras.get(turno.id)}
                 />
               );
             })}

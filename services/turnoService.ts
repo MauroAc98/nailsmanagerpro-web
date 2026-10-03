@@ -28,6 +28,22 @@ export interface Turno {
   // Columna `origen` del turno: 'app' (cargado por el salon) o 'web' (reserva
   // online de la clienta). Opcional: respuestas viejas o mocks pueden omitirla.
   origen?: 'app' | 'web';
+  // Turno de un grupo (varias profesionales): `grupo_id` siempre viene (null si
+  // no es de un grupo); `grupo` solo viene en los agrupados e incluye todos los
+  // tramos, cancelados con su estado. `modo` es interno, nunca se muestra.
+  grupo_id?: number | null;
+  grupo?: {
+    id: number;
+    modo: 'paralelo' | 'secuencia' | null;
+    tramos: {
+      turno_id: number;
+      profesional_id: number;
+      profesional_nombre: string | null;
+      fecha_hora: string;
+      duracion_total_minutos: number;
+      estado: 'confirmado' | 'completado' | 'cancelado';
+    }[];
+  };
 }
 
 // Un evento real de WhatsApp automático de hoy (confirmación al agendar,
@@ -37,7 +53,7 @@ export interface Turno {
 // marcado a mano (ver marcarRecordatorioManual).
 export interface NotificacionMensaje {
   id: number;
-  tipo: 'confirmacion' | 'recordatorio';
+  tipo: 'confirmacion' | 'recordatorio' | 'reprogramacion';
   status: 'pending' | 'delivered' | 'read' | 'failed' | 'manual';
   cliente_nombre: string | null;
   cliente_apellido: string | null;

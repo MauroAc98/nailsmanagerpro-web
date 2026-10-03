@@ -42,6 +42,10 @@
     "inProgress": "EM ANDAMENTO",
     "cancel": "CANCELAR"
   },
+  "GrupoTurno": {
+    "enlace": "Parte de um atendimento com várias profissionais",
+    "con": "com {nombres}"
+  },
   "FinalizadoCard": {
     "deletedClient": "Cliente excluído",
     "finished": "FINALIZADO"
@@ -167,6 +171,7 @@
     "title": "Mensagem enviada",
     "subtitleConfirmacion": "CONFIRMAÇÃO DE AGENDAMENTO",
     "subtitleRecordatorio": "LEMBRETE DE AGENDAMENTO",
+    "subtitleReprogramacion": "AVISO DE MUDANÇA DE HORÁRIO",
     "loading": "Carregando...",
     "notFound": "Não encontramos essa mensagem — pode ser de um dia anterior.",
     "clienteDesconocido": "Cliente",

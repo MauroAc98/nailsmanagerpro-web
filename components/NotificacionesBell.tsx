@@ -7,6 +7,7 @@ import { Bell, CalendarDays, ChevronRight, CheckCircle2, XCircle, Clock, Send } 
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import type { NotificacionMensaje } from '@/services/turnoService';
+import { claveTextoNotificacion } from '@/lib/notificacionTexto';
 
 const PANEL_WIDTH_MAX = 300;
 const MARGEN_PANTALLA = 20;
@@ -174,9 +175,7 @@ function NotificacionRow({ mensaje, onClick }: { mensaje: NotificacionMensaje; o
   const Icono = esFallido ? XCircle : mensaje.status === 'manual' ? Send : CheckCircle2;
   const colorIcono = esFallido ? colors.danger : colors.success;
 
-  const textoKey = esFallido
-    ? (mensaje.tipo === 'confirmacion' ? 'confirmacionFallida' : 'recordatorioFallido')
-    : (mensaje.tipo === 'confirmacion' ? 'confirmacionEnviada' : 'recordatorioEnviado');
+  const textoKey = claveTextoNotificacion(mensaje.tipo, mensaje.status);
 
   const tiempo = formatTiempoRelativo(
     mensaje.created_at,

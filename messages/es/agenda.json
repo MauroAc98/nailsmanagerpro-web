@@ -42,6 +42,10 @@
     "inProgress": "EN CURSO",
     "cancel": "CANCELAR"
   },
+  "GrupoTurno": {
+    "enlace": "Parte de un turno con varias profesionales",
+    "con": "con {nombres}"
+  },
   "FinalizadoCard": {
     "deletedClient": "Cliente eliminado",
     "finished": "FINALIZADO"
@@ -167,6 +171,7 @@
     "title": "Mensaje enviado",
     "subtitleConfirmacion": "CONFIRMACIÓN DE TURNO",
     "subtitleRecordatorio": "RECORDATORIO DE TURNO",
+    "subtitleReprogramacion": "AVISO DE CAMBIO DE HORARIO",
     "loading": "Cargando...",
     "notFound": "No encontramos este mensaje — puede ser de un día anterior.",
     "clienteDesconocido": "Cliente",

@@ -54,6 +54,8 @@
     "confirmacionFallida": "Falha ao enviar a confirmação a {cliente}",
     "recordatorioEnviado": "Lembrete enviado a {cliente}",
     "recordatorioFallido": "Falha ao enviar o lembrete a {cliente}",
+    "reprogramacionEnviada": "Aviso de mudança de horário enviado a {cliente}",
+    "reprogramacionFallida": "Falha ao enviar o aviso de mudança de horário a {cliente}",
     "haceUnMomento": "agora mesmo",
     "haceMinutos": "{count, plural, one {há # minuto} other {há # minutos}}",
     "haceHoras": "{count, plural, one {há # hora} other {há # horas}}"

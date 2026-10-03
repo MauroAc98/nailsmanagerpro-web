@@ -9,6 +9,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import type { Turno } from '@/services/turnoService';
+import { nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
+import { ConBarra, IconoGrupo, LineaServicios } from './GrupoTurno';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
 
 // ─────────────────────────────────────────────
@@ -38,6 +40,7 @@ export function SwipeableTurnoCard({
   onPress,
   profesionalLabel,
   profesionalNombreWhatsapp,
+  barra,
 }: {
   turno:                       Turno;
   onCancel?:                   () => void;
@@ -50,6 +53,8 @@ export function SwipeableTurnoCard({
   // cuando el turno tiene profesional asignada — la sustitución del mensaje
   // debe ser correcta sin importar el tamaño de la cuenta.
   profesionalNombreWhatsapp?:  string;
+  // Barra que une este turno con el de arriba/abajo del mismo grupo (vista "Todas").
+  barra?:                      BarraGrupo;
 }) {
   const t = useTranslations('agenda.SwipeableTurnoCard');
   const user = useAuthStore(s => s.user);
@@ -201,12 +206,13 @@ export function SwipeableTurnoCard({
             {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
           </p>
           {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline compacto />}
+          {turno.grupo_id != null && <IconoGrupo />}
         </div>
         <p style={{
           fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: '2px 0 0',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+          <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
         </p>
       </div>
 
@@ -293,16 +299,19 @@ export function SwipeableTurnoCard({
 
   if (!onCancel) {
     return (
-      <div style={outerStyle}>
-        {timeSection}
-        <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
-          {restBody}
+      <ConBarra barra={barra}>
+        <div style={outerStyle}>
+          {timeSection}
+          <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
+            {restBody}
+          </div>
         </div>
-      </div>
+      </ConBarra>
     );
   }
 
   return (
+    <ConBarra barra={barra}>
     <div style={outerStyle}>
       {timeSection}
 
@@ -356,5 +365,6 @@ export function SwipeableTurnoCard({
         </div>
       </div>
     </div>
+    </ConBarra>
   );
 }

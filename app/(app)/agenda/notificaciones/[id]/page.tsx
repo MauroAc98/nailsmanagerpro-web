@@ -62,7 +62,7 @@ export default function DetalleNotificacionPage() {
           fontSize: 11, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 1.5,
           textTransform: 'uppercase', margin: '0 0 4px',
         }}>
-          {mensaje?.tipo === 'recordatorio' ? t('subtitleRecordatorio') : t('subtitleConfirmacion')}
+          {mensaje?.tipo === 'recordatorio' ? t('subtitleRecordatorio') : mensaje?.tipo === 'reprogramacion' ? t('subtitleReprogramacion') : t('subtitleConfirmacion')}
         </p>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
           {t('title')}
