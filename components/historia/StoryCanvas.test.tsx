@@ -129,6 +129,32 @@ describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
     // Sin ícono de WhatsApp en el pie: solo texto.
     expect(fila.querySelector('svg')).toBeNull();
   });
+
+  // Nombre (serif) y teléfono (otra tipografía) en cajas flex distintas se
+  // veían corridos: el nombre quedaba más abajo y fuera de la línea del
+  // teléfono. Como texto corrido en una sola línea (inline) comparten la misma
+  // línea base por construcción, sin depender de cómo cada fuente arma su caja.
+  it('el pie pone nombre, guion y teléfono como texto corrido en la misma línea (no en cajas flex)', () => {
+    renderCanvas(null, unDia, 'Gabriela', '5491155551234');
+    const negocio = screen.getByText('Turnetto');
+    const telefono = screen.getByText(/^\+/);
+    const fila = negocio.parentElement as HTMLElement;
+    const guion = fila.querySelector('[aria-hidden]') as HTMLElement;
+
+    // Misma línea de texto: el contenedor no es flex y los tres son inline.
+    expect(fila.style.display).not.toBe('flex');
+    for (const el of [negocio, guion, telefono]) {
+      expect(el.parentElement).toBe(fila);
+      expect(['', 'inline']).toContain(el.style.display);
+    }
+    // La altura de línea la define la fila, igual para los tres.
+    expect(fila.style.lineHeight).not.toBe('');
+    for (const el of [negocio, guion, telefono]) expect(el.style.lineHeight).toBe('');
+    // El nombre no se recorta con "…" (no overflow hidden) y el teléfono no se parte.
+    expect(negocio.style.overflow).not.toBe('hidden');
+    expect(negocio.style.textOverflow).not.toBe('ellipsis');
+    expect(telefono.style.whiteSpace).toBe('nowrap');
+  });
 });
 
 describe('StoryCanvas — franja desenfocada del pie arranca en la línea divisoria', () => {

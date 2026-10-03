@@ -449,25 +449,23 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               {/* Una sola línea: el negocio (que ya no es el título del
                   header) y el teléfono con su ícono pegado al número. */}
               {(telefonoEstudio || nombreEstudio) && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 2, maxWidth: '100%' }}>
-                  {nombreEstudio && (
-                    // El negocio es lo protagonista del pie: serif y más
-                    // grande que el teléfono. Con un nombre largo cede con
-                    // "…" antes de empujar el teléfono fuera de la imagen.
-                    <span style={{
-                      minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      fontFamily: agendaFontSerif, fontSize: 12, fontWeight: 400, color: '#fff',
-                      textShadow: '0 1px 4px rgba(0,0,0,0.8)',
-                    }}>
-                      {nombreEstudio}
-                    </span>
-                  )}
+                // Texto corrido en UNA línea (no cajas flex): nombre en serif,
+                // guion y teléfono comparten la línea base por construcción,
+                // sin depender de cómo cada tipografía arma su caja (con flex
+                // el nombre quedaba más abajo y fuera de la línea del teléfono).
+                // Un nombre muy largo baja de renglón antes que cortarse, y el
+                // teléfono nunca se parte.
+                <div style={{
+                  textAlign: 'center', maxWidth: '100%', marginTop: 2, fontSize: 12, lineHeight: '16px',
+                  color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                }}>
+                  {nombreEstudio && <span style={{ fontFamily: agendaFontSerif }}>{nombreEstudio}</span>}
                   {nombreEstudio && telefonoEstudio && (
                     // Guion largo: se lee como una firma ("Negocio — teléfono").
-                    <span aria-hidden style={{ flexShrink: 0, fontSize: 12, color: 'rgba(255,255,255,0.75)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>—</span>
+                    <span aria-hidden style={{ margin: '0 8px', color: 'rgba(255,255,255,0.75)' }}>—</span>
                   )}
                   {telefonoEstudio && (
-                    <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
                       +{phoneUtils.formatDisplay(telefonoEstudio)}
                     </span>
                   )}
