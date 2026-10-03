@@ -89,3 +89,36 @@ describe('SwipeableTurnoCard — badge "Reserva online"', () => {
     expect(screen.queryByLabelText('Reserva online')).toBeNull();
   });
 });
+
+describe('SwipeableTurnoCard — turno de un grupo', () => {
+  const grupo = {
+    id: 7, modo: 'secuencia' as const,
+    tramos: [
+      { turno_id: 1, profesional_id: 10, profesional_nombre: 'Ana', fecha_hora: '2026-09-17T10:00:00', duracion_total_minutos: 60, estado: 'confirmado' as const },
+      { turno_id: 2, profesional_id: 20, profesional_nombre: 'Laura', fecha_hora: '2026-09-17T11:00:00', duracion_total_minutos: 45, estado: 'confirmado' as const },
+    ],
+  };
+
+  it('un turno sin grupo se ve como siempre: sin icono, sin "con" y sin barra (Rule L)', () => {
+    const { container } = renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ grupo_id: null })} onCancel={vi.fn()} />);
+    expect(screen.queryByLabelText('Parte de un turno con varias profesionales')).toBeNull();
+    expect(screen.getByText('Manicura').textContent).toBe('Manicura');
+    expect(container.querySelector('[data-grupo-barra]')).toBeNull();
+  });
+
+  it('muestra el icono de enlace y "con" la otra profesional', () => {
+    renderWithProviders(
+      <SwipeableTurnoCard turno={buildTurno({ grupo_id: 7, profesional_id: 10, grupo })} onCancel={vi.fn()} />,
+    );
+    expect(screen.getByLabelText('Parte de un turno con varias profesionales')).toBeInTheDocument();
+    expect(screen.getByText('con Laura')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
+  });
+
+  it('dibuja la barra de union cuando se lo piden', () => {
+    const { container } = renderWithProviders(
+      <SwipeableTurnoCard turno={buildTurno({ grupo_id: 7, profesional_id: 10, grupo })} onCancel={vi.fn()} barra={{ arriba: false, abajo: true }} />,
+    );
+    expect(container.querySelector('[data-grupo-barra]')).not.toBeNull();
+  });
+});
