@@ -73,3 +73,27 @@ export function retencion(nuevas: number, recurrentes: number): { pct: number } 
   if (total < MIN_CLIENTAS) return null;
   return { pct: Math.round((recurrentes / total) * 100) };
 }
+
+const MIN_BRECHA = 10;
+
+// "X es el p% de tus turnos pero el q% de la plata": el servicio cuyo peso en
+// plata más supera a su peso en turnos, solo si la brecha es de al menos 10
+// puntos (si no, es ruido). Los porcentajes se calculan sobre todos los
+// servicios recibidos.
+export function brechaServicio(
+  servicios: { nombre: string; turnos: number; monto: number }[],
+): { nombre: string; pctTurnos: number; pctPlata: number } | null {
+  const totalTurnos = servicios.reduce((a, s) => a + s.turnos, 0);
+  const totalMonto = servicios.reduce((a, s) => a + s.monto, 0);
+  if (totalTurnos < MIN_TURNOS || totalMonto <= 0) return null;
+
+  let mejor: { nombre: string; pctTurnos: number; pctPlata: number; brecha: number } | null = null;
+  for (const s of servicios) {
+    if (s.turnos <= 0 || s.monto <= 0) continue;
+    const pctTurnos = Math.round((s.turnos / totalTurnos) * 100);
+    const pctPlata = Math.round((s.monto / totalMonto) * 100);
+    const brecha = pctPlata - pctTurnos;
+    if (brecha >= MIN_BRECHA && (!mejor || brecha > mejor.brecha)) mejor = { nombre: s.nombre, pctTurnos, pctPlata, brecha };
+  }
+  return mejor ? { nombre: mejor.nombre, pctTurnos: mejor.pctTurnos, pctPlata: mejor.pctPlata } : null;
+}

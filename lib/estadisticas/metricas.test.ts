@@ -1,5 +1,92 @@
 import { describe, expect, it } from 'vitest';
-import { rangoMesAnterior, rangoMesAnteriorMismoPeriodo, ticketPromedio, topConOtros, variacionPorcentual } from './metricas';
+import {
+  horaPicoDelDia, rangoMesAnterior, rangoMesAnteriorMismoPeriodo, serviciosParaBurbujas, ticketDiaSemana, ticketPromedio,
+  topConOtros, unirServicios, variacionPorcentual,
+} from './metricas';
+
+describe('unirServicios', () => {
+  it('une por servicio_id y calcula el ticket (monto ÷ turnos)', () => {
+    const r = unirServicios(
+      [{ servicio_id: 1, nombre: 'Capping', cantidad: 10 }, { servicio_id: 2, nombre: 'Soft gel', cantidad: 4 }],
+      [{ servicio_id: 2, nombre: 'Soft gel', monto: 88000 }, { servicio_id: 1, nombre: 'Capping', monto: 30000 }],
+    );
+    expect(r).toEqual([
+      { servicio_id: 2, nombre: 'Soft gel', turnos: 4, monto: 88000, ticket: 22000 },
+      { servicio_id: 1, nombre: 'Capping', turnos: 10, monto: 30000, ticket: 3000 },
+    ]);
+  });
+
+  it('un servicio sin monto cobrado (solo confirmados) queda con ticket null', () => {
+    const r = unirServicios([{ servicio_id: 1, nombre: 'A', cantidad: 3 }], []);
+    expect(r).toEqual([{ servicio_id: 1, nombre: 'A', turnos: 3, monto: 0, ticket: null }]);
+  });
+
+  it('un servicio que solo aparece en ganancias (sin turnos listados) no inventa ticket', () => {
+    const r = unirServicios([], [{ servicio_id: 9, nombre: 'Z', monto: 500 }]);
+    expect(r[0]).toMatchObject({ turnos: 0, monto: 500, ticket: null });
+  });
+});
+
+describe('serviciosParaBurbujas', () => {
+  const s = (id: number, turnos: number, monto: number) => ({
+    servicio_id: id, nombre: 'S' + id, turnos, monto, ticket: monto > 0 && turnos > 0 ? monto / turnos : null,
+  });
+
+  it('con menos de 3 servicios con plata no muestra burbujas', () => {
+    expect(serviciosParaBurbujas([s(1, 5, 100), s(2, 5, 100)])).toEqual([]);
+  });
+
+  it('ignora servicios sin plata cobrada al contar el mínimo', () => {
+    expect(serviciosParaBurbujas([s(1, 5, 100), s(2, 5, 100), s(3, 5, 0)])).toEqual([]);
+  });
+
+  it('se queda con el top 6 por plata', () => {
+    const lista = Array.from({ length: 8 }, (_, i) => s(i + 1, 5, (i + 1) * 100));
+    const r = serviciosParaBurbujas(lista);
+    expect(r).toHaveLength(6);
+    expect(r[0].servicio_id).toBe(8);
+    expect(r[5].servicio_id).toBe(3);
+  });
+});
+
+describe('ticketDiaSemana', () => {
+  const ritmo = [
+    { dia_semana: 6, completados: 4, confirmados: 0, cancelados: 0 },
+    { dia_semana: 1, completados: 0, confirmados: 2, cancelados: 0 },
+  ];
+  // 2026-10-03 y 2026-10-10 son sábados; 2026-10-05 es lunes.
+  const ganancias = [
+    { fecha: '2026-10-03', monto: 60000 }, { fecha: '2026-10-10', monto: 40000 }, { fecha: '2026-10-05', monto: 9999 },
+  ];
+
+  it('suma lo cobrado en los sábados y divide por los turnos completados de sábado', () => {
+    expect(ticketDiaSemana(ganancias, ritmo, 6)).toBe(25000);
+  });
+
+  it('es null si ese día no tiene turnos completados (nada cobrado para derivar)', () => {
+    expect(ticketDiaSemana(ganancias, ritmo, 1)).toBeNull();
+  });
+
+  it('el domingo es ISO 7', () => {
+    expect(ticketDiaSemana([{ fecha: '2026-10-04', monto: 500 }], [{ dia_semana: 7, completados: 1, confirmados: 0, cancelados: 0 }], 7)).toBe(500);
+  });
+});
+
+describe('horaPicoDelDia', () => {
+  const oc = [
+    { dia_semana: 6, hora: 10, cantidad: 3 }, { dia_semana: 6, hora: 11, cantidad: 7 },
+    { dia_semana: 2, hora: 15, cantidad: 9 },
+  ];
+
+  it('devuelve la hora con más turnos de ESE día', () => {
+    expect(horaPicoDelDia(oc, 6)).toBe(11);
+    expect(horaPicoDelDia(oc, 2)).toBe(15);
+  });
+
+  it('es null si ese día no tiene turnos', () => {
+    expect(horaPicoDelDia(oc, 4)).toBeNull();
+  });
+});
 
 describe('rangoMesAnteriorMismoPeriodo', () => {
   it('en el mes en curso va del día 1 al mismo día del mes anterior', () => {

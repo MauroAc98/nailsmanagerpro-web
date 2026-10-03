@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { diaFlojo, diaPico, franjaLibre, retencion, type DiaRitmo } from './insights';
+import { brechaServicio, diaFlojo, diaPico, franjaLibre, retencion, type DiaRitmo } from './insights';
+
+describe('brechaServicio', () => {
+  const s = (id: number, nombre: string, turnos: number, monto: number) => ({ servicio_id: id, nombre, turnos, monto, ticket: monto / turnos });
+
+  it('detecta el servicio que pesa mucho más en plata que en turnos', () => {
+    // Soft gel: 25% de los turnos pero 55% de la plata
+    const r = brechaServicio([s(1, 'Capping', 30, 45000), s(2, 'Soft gel', 10, 55000)]);
+    expect(r).toEqual({ nombre: 'Soft gel', pctTurnos: 25, pctPlata: 55 });
+  });
+
+  it('no da consejo si la brecha no es significativa (<10 puntos)', () => {
+    expect(brechaServicio([s(1, 'A', 20, 50000), s(2, 'B', 20, 52000)])).toBeNull();
+  });
+
+  it('no da consejo con pocos turnos', () => {
+    expect(brechaServicio([s(1, 'A', 2, 1000), s(2, 'B', 1, 9000)])).toBeNull();
+  });
+
+  it('no da consejo sin plata cobrada', () => {
+    expect(brechaServicio([s(1, 'A', 10, 0), s(2, 'B', 10, 0)])).toBeNull();
+  });
+});
 
 const semana = (vals: number[], cancelados = 0): DiaRitmo[] =>
   vals.map((completados, i) => ({ dia_semana: i + 1, completados, confirmados: 0, cancelados }));

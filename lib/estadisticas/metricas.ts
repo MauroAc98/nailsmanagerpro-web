@@ -46,3 +46,68 @@ export function rangoMesAnteriorMismoPeriodo(
   const hasta = new Date(hoy.getFullYear(), hoy.getMonth() - 1, dia);
   return { desde: formatoYMD(desde), hasta: formatoYMD(hasta), dia };
 }
+
+export interface ServicioUnido {
+  servicio_id: number;
+  nombre: string;
+  turnos: number;
+  monto: number;
+  // monto ÷ turnos. Null cuando no hay plata cobrada o turnos que lo respalden.
+  ticket: number | null;
+}
+
+// Une servicios_mas_pedidos (cantidad = turnos confirmados + completados) con
+// ganancias_por_servicio (monto = solo completados) por servicio_id. Ojo: el
+// ticket mezcla ambas poblaciones, así que subestima un poco mientras haya
+// turnos confirmados sin cobrar (mes en curso).
+export function unirServicios(
+  masPedidos: { servicio_id: number; nombre: string; cantidad: number }[],
+  ganancias: { servicio_id: number; nombre: string; monto: number }[],
+): ServicioUnido[] {
+  const mapa = new Map<number, ServicioUnido>();
+  for (const s of masPedidos) {
+    mapa.set(s.servicio_id, { servicio_id: s.servicio_id, nombre: s.nombre, turnos: s.cantidad, monto: 0, ticket: null });
+  }
+  for (const g of ganancias) {
+    const previo = mapa.get(g.servicio_id);
+    mapa.set(g.servicio_id, { servicio_id: g.servicio_id, nombre: previo?.nombre ?? g.nombre, turnos: previo?.turnos ?? 0, monto: g.monto, ticket: null });
+  }
+  return [...mapa.values()]
+    .map(s => ({ ...s, ticket: s.monto > 0 && s.turnos > 0 ? s.monto / s.turnos : null }))
+    .sort((a, b) => b.monto - a.monto);
+}
+
+// Burbujas: top 6 por plata, y solo si hay al menos 3 servicios con plata
+// cobrada (con menos, un gráfico de dispersión no dice nada).
+export function serviciosParaBurbujas(servicios: ServicioUnido[]): ServicioUnido[] {
+  const conPlata = servicios.filter(s => s.monto > 0 && s.ticket !== null).sort((a, b) => b.monto - a.monto);
+  return conPlata.length >= 3 ? conPlata.slice(0, 6) : [];
+}
+
+// Ticket de un día de la semana (ISO 1..7): lo cobrado en las fechas de ese
+// día ÷ turnos completados de ese día, ambos del mismo período. Null si no hay
+// completados (no hay de dónde derivarlo).
+export function ticketDiaSemana(
+  gananciasPorDia: { fecha: string; monto: number }[],
+  ritmo: { dia_semana: number; completados: number }[],
+  iso: number,
+): number | null {
+  const completados = ritmo.find(d => d.dia_semana === iso)?.completados ?? 0;
+  if (completados <= 0) return null;
+  const monto = gananciasPorDia
+    .filter(g => {
+      const d = new Date(`${g.fecha}T00:00:00`).getDay();
+      return (d === 0 ? 7 : d) === iso;
+    })
+    .reduce((a, g) => a + g.monto, 0);
+  return monto > 0 ? Math.round(monto / completados) : null;
+}
+
+// Hora con más turnos dentro de UN día de la semana (ISO 1..7).
+export function horaPicoDelDia(
+  ocupacion: { dia_semana: number; hora: number; cantidad: number }[], iso: number,
+): number | null {
+  const delDia = ocupacion.filter(b => b.dia_semana === iso && b.cantidad > 0);
+  if (delDia.length === 0) return null;
+  return delDia.reduce((best, b) => (b.cantidad > best.cantidad ? b : best), delDia[0]).hora;
+}
