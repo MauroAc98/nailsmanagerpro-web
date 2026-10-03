@@ -70,8 +70,9 @@ interface Props {
   // compartida sepa por dónde contactar, sin tener que buscarlo aparte.
   telefonoEstudio?: string | null;
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
-  // Si viene (elegida a mano), la leyenda dice "Turnos disponibles con
-  // {nombre}" (ver leyendaTurnos); el título sigue siendo el del negocio.
+  // Si viene (elegida a mano), el header suma la línea "con {nombre}" entre
+  // "Turnos disponibles" y la fecha (ver lineaProfesional); el título sigue
+  // siendo el del negocio.
   profesionalNombre?: string;
   // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
   // ícono genérico en el header, en los 3 modos (día/semana/mes), para
@@ -113,15 +114,18 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
 
   // El título es siempre el nombre del negocio. Con una profesional elegida
-  // a mano, la leyenda de abajo pasa a "Turnos disponibles con {nombre}".
-  // Si la profesional se llama igual que el negocio (cuenta donde el nombre
-  // del estudio es el de la dueña) no se repite: queda la leyenda de siempre.
+  // a mano, debajo de "Turnos disponibles" se suma una línea "con {nombre}"
+  // y recién después la fecha. Si la profesional se llama igual que el
+  // negocio (cuenta donde el nombre del estudio es el de la dueña) no se
+  // repite: queda el header de siempre.
   const tituloPrincipal = nombreEstudio;
   const mismoNombre = !!profesionalNombre && !!nombreEstudio
     && profesionalNombre.trim().toLowerCase() === nombreEstudio.trim().toLowerCase();
-  const leyendaTurnos = profesionalNombre && !mismoNombre
-    ? t('availableAppointmentsWith', { nombre: profesionalNombre })
-    : t('availableAppointments');
+  const lineaProfesional = profesionalNombre && !mismoNombre
+    ? t('withProfessional', { nombre: profesionalNombre })
+    : null;
+  // Alto extra que ocupa esa línea en el header (aprox., no medido en vivo).
+  const lineaProfesionalAlto = lineaProfesional ? 14 : 0;
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
   // historia con su propio chrome y, en celus más altos que 9:16, recortan
@@ -142,7 +146,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // Ahora arrancan/terminan en el borde del canvas pero llegan hasta pasado
   // el header/footer ya corridos hacia adentro por la safe area — el blur
   // extra cae detrás del chrome de la plataforma, así que no se ve de más.
-  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10);
+  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10) + lineaProfesionalAlto;
   const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
 
   // La foto de fondo se sube un poco. La barra de responder/enviar de
@@ -162,7 +166,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  const bodyMargenTop = Math.round(canvasHeight * 0.06);
+  const bodyMargenTop = Math.round(canvasHeight * 0.06) + lineaProfesionalAlto;
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -322,8 +326,16 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
                   color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                 }}>
-                  {leyendaTurnos}
+                  {t('availableAppointments')}
                 </span>
+                {lineaProfesional && (
+                  <span style={{
+                    display: 'block', marginTop: 2, fontSize: 11, fontWeight: 600,
+                    color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  }}>
+                    {lineaProfesional}
+                  </span>
+                )}
                 <span style={{
                   display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
                   color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',

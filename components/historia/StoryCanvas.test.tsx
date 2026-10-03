@@ -66,24 +66,30 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
   });
 });
 
-describe('StoryCanvas — leyenda con la profesional elegida', () => {
-  it('sin profesional elegida: título del negocio y leyenda "Turnos disponibles" sin "con"', () => {
+describe('StoryCanvas — línea "con {profesional}" en el header', () => {
+  it('sin profesional elegida: título del negocio, "Turnos disponibles" y la fecha, sin línea "con"', () => {
     renderCanvas(null, unDia);
     expect(screen.getByText('Turnetto')).toBeInTheDocument();
     expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
-    expect(screen.queryByText(/TURNOS DISPONIBLES CON/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
   });
 
-  it('con profesional elegida: el título sigue siendo el negocio y la leyenda dice "con" y su nombre', () => {
+  it('con profesional elegida: título, "Turnos disponibles", "con Natalia" y la fecha, en ese orden', () => {
     renderCanvas(null, unDia, 'Natalia');
     expect(screen.getByText('Turnetto')).toBeInTheDocument();
-    expect(screen.getByText('TURNOS DISPONIBLES CON Natalia')).toBeInTheDocument();
+    const leyenda = screen.getByText('TURNOS DISPONIBLES');
+    const con = screen.getByText('con Natalia');
+    const fecha = screen.getByText('24 de sept');
+    // DOCUMENT_POSITION_FOLLOWING (4): el segundo nodo viene después del primero.
+    expect(leyenda.compareDocumentPosition(con) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(con.compareDocumentPosition(fecha) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // El nombre no pasa a ser el título grande.
     expect(screen.queryByText('Natalia')).not.toBeInTheDocument();
   });
 
   it('si la profesional se llama igual que el negocio no se repite el nombre', () => {
     renderCanvas(null, unDia, 'Turnetto');
     expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
-    expect(screen.queryByText(/TURNOS DISPONIBLES CON/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
   });
 });

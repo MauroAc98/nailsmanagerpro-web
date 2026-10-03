@@ -4,7 +4,7 @@
   },
   "StoryCanvas": {
     "availableAppointments": "TURNOS DISPONIBLES",
-    "availableAppointmentsWith": "TURNOS DISPONIBLES CON {nombre}",
+    "withProfessional": "con {nombre}",
     "complete": "COMPLETO",
     "reserveCta": "Reservá tu turno"
   },
