@@ -11,6 +11,7 @@ import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
+import { nombreYaEnNegocio } from '@/lib/historia/nombreEnNegocio';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -115,13 +116,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 
   // El título es siempre el nombre del negocio. Con una profesional elegida
   // a mano, debajo de "Turnos disponibles" se suma una línea "con {nombre}"
-  // y recién después la fecha. Si la profesional se llama igual que el
-  // negocio (cuenta donde el nombre del estudio es el de la dueña) no se
-  // repite: queda el header de siempre.
+  // y recién después la fecha. Si el nombre del negocio ya contiene el de la
+  // profesional (cuenta donde el estudio lleva el nombre de la dueña, ej.
+  // "Natalia Acosta Studio" con Natalia) no se repite: queda el header de
+  // siempre.
   const tituloPrincipal = nombreEstudio;
-  const mismoNombre = !!profesionalNombre && !!nombreEstudio
-    && profesionalNombre.trim().toLowerCase() === nombreEstudio.trim().toLowerCase();
-  const lineaProfesional = profesionalNombre && !mismoNombre
+  const lineaProfesional = profesionalNombre && !nombreYaEnNegocio(profesionalNombre, nombreEstudio)
     ? t('withProfessional', { nombre: profesionalNombre })
     : null;
   // Alto extra que ocupa esa línea en el header (aprox., no medido en vivo).

@@ -87,6 +87,30 @@ describe('StoryCanvas — línea "con {profesional}" en el header', () => {
     expect(screen.queryByText('Natalia')).not.toBeInTheDocument();
   });
 
+  it('si el nombre del negocio ya contiene el de la profesional no se repite ("Natalia Acosta Studio" con Natalia)', () => {
+    render(
+      <NextIntlClientProvider locale="es" messages={es}>
+        <StoryCanvas
+          ref={createRef()}
+          titulo="24 de sept"
+          nombreEstudio="Natalia Acosta Studio"
+          telefonoEstudio={null}
+          profesionalNombre="Natalia"
+          logoUrl={null}
+          dias={unDia}
+          fondoUri={null}
+          canvasWidth={360}
+          canvasHeight={640}
+          textosLibres={[]}
+          onMoverTexto={() => {}}
+          onResizeTexto={() => {}}
+          onEditarTexto={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByText('con Natalia')).not.toBeInTheDocument();
+  });
+
   it('si la profesional se llama igual que el negocio no se repite el nombre', () => {
     renderCanvas(null, unDia, 'Turnetto');
     expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
