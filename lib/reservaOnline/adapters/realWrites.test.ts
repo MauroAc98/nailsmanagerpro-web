@@ -101,13 +101,65 @@ describe('createRealWrites: retenerHorario', () => {
     expect(pedidos[0].url).toBe('/public/ana/reservas/holds');
     expect(pedidos[0].headers['X-Device-Token']).toBe('device-de-prueba-0123456789abcdef');
     expect(pedidos[0].headers['Idempotency-Key']).toBe('key-1');
-    expect(pedidos[0].body).toEqual({ servicio_ids: [7, 9], profesional_id: 3, fecha: '2026-09-25', hora: '10:00' });
+    expect(pedidos[0].body).toEqual({
+      asignaciones: [{ servicio_ids: [7, 9], profesional_id: 3 }],
+      fecha: '2026-09-25',
+      hora: '10:00',
+    });
   });
 
   it('omite profesional_id cuando la clienta eligio "Cualquiera"', async () => {
     const pedidos: Pedido[] = [];
     await nuevo(pedidos).retenerHorario('ana', { servicioIds: [7], fecha: '2026-09-25', hora: '11:00' });
-    expect(pedidos[0].body).not.toHaveProperty('profesional_id');
+    expect(pedidos[0].body).toEqual({ asignaciones: [{ servicio_ids: [7] }], fecha: '2026-09-25', hora: '11:00' });
+    expect(pedidos[0].body).not.toHaveProperty('modo');
+  });
+
+  it('manda varios grupos en orden y el modo del inicio elegido', async () => {
+    const pedidos: Pedido[] = [];
+    await nuevo(pedidos).retenerHorario('ana', {
+      servicioIds: [9, 7],
+      asignaciones: [
+        { servicioIds: [9], profesionalId: 4 },
+        { servicioIds: [7], profesionalId: 3 },
+      ],
+      modo: 'secuencia',
+      fecha: '2026-09-25',
+      hora: '10:00',
+    });
+    expect(pedidos[0].body).toEqual({
+      asignaciones: [
+        { servicio_ids: [9], profesional_id: 4 },
+        { servicio_ids: [7], profesional_id: 3 },
+      ],
+      modo: 'secuencia',
+      fecha: '2026-09-25',
+      hora: '10:00',
+    });
+  });
+
+  it('un hold multi-tramo devuelve fin y tramos; el legacy no los trae', async () => {
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) =>
+        respuesta(config, 201, {
+          token: TOKEN, estado: 'held', expira_en_ms: 1, profesional_id: 4, fecha: '2026-09-25', hora: '10:00',
+          duracion_total_minutos: 105, fin: '11:45',
+          tramos: [
+            { profesional_id: 4, hora: '10:00', fin: '11:00', servicio_ids: [9] },
+            { profesional_id: 3, hora: '11:00', fin: '11:45', servicio_ids: [7] },
+          ],
+        }),
+    });
+    const r = await createRealWrites(http, { deviceToken: () => 'd'.repeat(32) }).retenerHorario('ana', {
+      servicioIds: [9, 7], fecha: '2026-09-25', hora: '10:00',
+    });
+    expect(r.fin).toBe('11:45');
+    expect(r.tramos).toEqual([
+      { profesionalId: 4, hora: '10:00', fin: '11:00', servicioIds: [9] },
+      { profesionalId: 3, hora: '11:00', fin: '11:45', servicioIds: [7] },
+    ]);
+    expect(await nuevo().retenerHorario('ana', { servicioIds: [7], fecha: '2026-09-25', hora: '10:00' })).not.toHaveProperty('tramos');
   });
 
   it('un slot ocupado falla con slot_taken', async () => {

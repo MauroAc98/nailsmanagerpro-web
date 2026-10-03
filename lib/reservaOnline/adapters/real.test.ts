@@ -45,8 +45,8 @@ export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
     if (recurso === 'terminos') return respuesta(config, 200, TERMINOS);
     if (recurso === 'servicios') return respuesta(config, 200, SERVICIOS);
     if (recurso === 'disponibilidad' && sub === 'dias') {
-      const p = config.params as { desde: string; hasta: string; servicio_ids?: number[] };
-      if (!p.servicio_ids?.length || p.hasta < p.desde) return respuesta(config, 422, { message: 'invalido' });
+      const p = config.params as { desde: string; hasta: string; asignaciones?: { servicio_ids: number[] }[] };
+      if (!p.asignaciones?.[0]?.servicio_ids?.length || p.hasta < p.desde) return respuesta(config, 422, { message: 'invalido' });
       // Contrato del backend: solo dias con al menos un inicio libre.
       return respuesta(config, 200, {
         dias: [
@@ -56,8 +56,8 @@ export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
       });
     }
     if (recurso === 'disponibilidad') {
-      const p = config.params as { fecha: string; servicio_ids?: number[] };
-      if (!p.servicio_ids?.length || p.fecha < '2026-09-19') {
+      const p = config.params as { fecha: string; asignaciones?: { servicio_ids: number[] }[] };
+      if (!p.asignaciones?.[0]?.servicio_ids?.length || p.fecha < '2026-09-19') {
         return respuesta(config, 422, { message: 'invalido' });
       }
       return respuesta(config, 200, {
@@ -111,7 +111,7 @@ describe('real: mapeo', () => {
     expect(d.slots[1]).toEqual({ hora: '10:30', profesionalIds: [3, 4] });
   });
 
-  it('serializa servicio_ids[] y omite profesional_id cuando no se pasa', async () => {
+  it('un solo grupo viaja como asignaciones y omite profesional_id con "Cualquiera" (Rule L)', async () => {
     let capturado = '';
     const http = crearPublicHttp({
       baseURL: 'https://api.test/api',
@@ -122,14 +122,70 @@ describe('real: mapeo', () => {
     });
     await createRealReads(http).getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
     expect(decodeURIComponent(capturado)).toBe(
-      'https://api.test/api/public/ana/disponibilidad?fecha=2026-09-25&servicio_ids[]=7&servicio_ids[]=9',
+      'https://api.test/api/public/ana/disponibilidad?fecha=2026-09-25&asignaciones[0][servicio_ids][0]=7&asignaciones[0][servicio_ids][1]=9',
     );
     await createRealReads(http).getAvailability('ana', {
       fecha: '2026-09-25',
       servicioIds: [7],
       profesionalId: 3,
     });
-    expect(decodeURIComponent(capturado)).toContain('profesional_id=3');
+    expect(decodeURIComponent(capturado)).toContain('asignaciones[0][profesional_id]=3');
+  });
+
+  it('varios grupos viajan en orden, cada uno con su profesional', async () => {
+    let capturado = '';
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) => {
+        capturado = http.getUri(config);
+        return respuesta(config, 200, { fecha: '2026-09-25', slots: [] });
+      },
+    });
+    await createRealReads(http).getAvailability('ana', {
+      fecha: '2026-09-25',
+      servicioIds: [9, 7],
+      asignaciones: [
+        { servicioIds: [9], profesionalId: 4 },
+        { servicioIds: [7], profesionalId: 3 },
+      ],
+    });
+    expect(decodeURIComponent(capturado)).toBe(
+      'https://api.test/api/public/ana/disponibilidad?fecha=2026-09-25&asignaciones[0][servicio_ids][0]=9&asignaciones[0][profesional_id]=4&asignaciones[1][servicio_ids][0]=7&asignaciones[1][profesional_id]=3',
+    );
+  });
+
+  it('un slot de plan trae fin, modo y tramos, y la respuesta puede no traer duracion_total_minutos', async () => {
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) =>
+        respuesta(config, 200, {
+          fecha: '2026-09-25',
+          slots: [
+            {
+              hora: '10:00',
+              fin: '11:45',
+              profesional_ids: [3, 4],
+              modo: 'secuencia',
+              tramos: [
+                { profesional_id: 3, offset_minutos: 0, duracion_minutos: 60, servicio_ids: [7], precio_sugerido: null },
+                { profesional_id: 4, offset_minutos: 60, duracion_minutos: 45, servicio_ids: [9], precio_sugerido: null },
+              ],
+            },
+          ],
+        }),
+    });
+    const d = await createRealReads(http).getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
+    expect(d.duracionTotalMinutos).toBeUndefined();
+    expect(d.slots[0]).toEqual({
+      hora: '10:00',
+      profesionalIds: [3, 4],
+      fin: '11:45',
+      modo: 'secuencia',
+      tramos: [
+        { profesionalId: 3, offsetMinutos: 0, duracionMinutos: 60, servicioIds: [7] },
+        { profesionalId: 4, offsetMinutos: 60, duracionMinutos: 45, servicioIds: [9] },
+      ],
+    });
   });
 
   it('getServices pasa profesional_id solo si se indica', async () => {
@@ -179,7 +235,7 @@ describe('real: fotos y avatar', () => {
     });
     expect(dias).toEqual(['2026-09-22', '2026-09-25']);
     expect(pedidos).toEqual([
-      '/public/ana/disponibilidad/dias?{"desde":"2026-09-21","hasta":"2026-09-25","servicio_ids":[7,9],"profesional_id":3}',
+      '/public/ana/disponibilidad/dias?{"desde":"2026-09-21","hasta":"2026-09-25","asignaciones":[{"servicio_ids":[7,9],"profesional_id":3}]}',
     ]);
   });
 
