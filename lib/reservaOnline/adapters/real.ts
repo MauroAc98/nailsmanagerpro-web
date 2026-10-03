@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type { ReservaOnlineReads } from '../service';
-import type { Availability, BookableService, Fecha, ReservationTerms, SalonInfo } from '../types';
+import { asignacionesAWire, asignacionesDe } from '../asignaciones';
+import type { Availability, BookableService, Fecha, ModoPlan, ReservationTerms, SalonInfo } from '../types';
 import { traducirErrorHttp } from './errores';
 
 // Adapter real de las 3 lecturas publicas (/api/public/{slug}), tarea 2.8.
@@ -26,8 +27,20 @@ interface ServicioDto {
 }
 interface DisponibilidadDto {
   fecha: string;
-  duracion_total_minutos: number;
-  slots: { hora: string; profesional_ids: number[] }[];
+  // Ausente en horarios de varias profesionales: cada slot trae su `fin`.
+  duracion_total_minutos?: number;
+  slots: {
+    hora: string;
+    profesional_ids: number[];
+    fin?: string;
+    modo?: ModoPlan;
+    tramos?: {
+      profesional_id: number;
+      offset_minutos: number;
+      duracion_minutos: number;
+      servicio_ids: number[];
+    }[];
+  }[];
 }
 
 interface DiasDto {
@@ -64,7 +77,22 @@ const aServicio = (d: ServicioDto): BookableService => ({
 const aDisponibilidad = (d: DisponibilidadDto): Availability => ({
   fecha: d.fecha,
   duracionTotalMinutos: d.duracion_total_minutos,
-  slots: d.slots.map((s) => ({ hora: s.hora, profesionalIds: s.profesional_ids })),
+  slots: d.slots.map((s) => ({
+    hora: s.hora,
+    profesionalIds: s.profesional_ids,
+    ...(s.fin ? { fin: s.fin } : {}),
+    ...(s.modo ? { modo: s.modo } : {}),
+    ...(s.tramos
+      ? {
+          tramos: s.tramos.map((t) => ({
+            profesionalId: t.profesional_id,
+            offsetMinutos: t.offset_minutos,
+            duracionMinutos: t.duracion_minutos,
+            servicioIds: t.servicio_ids,
+          })),
+        }
+      : {}),
+  })),
 });
 
 const aTerminos = (d: TerminosDto): ReservationTerms => ({
@@ -112,12 +140,7 @@ export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
           const desde = pedidas[i];
           let j = i;
           while (j + 1 < pedidas.length && diasEntre(desde, pedidas[j + 1]) <= MAX_DIAS_POR_PEDIDO) j++;
-          const params: Record<string, unknown> = {
-            desde,
-            hasta: pedidas[j],
-            servicio_ids: query.servicioIds,
-          };
-          if (query.profesionalId) params.profesional_id = query.profesionalId;
+          const params = { desde, hasta: pedidas[j], asignaciones: asignacionesAWire(asignacionesDe(query)) };
           const data = await pedir(() => http.get<DiasDto>(`${base(slug)}/disponibilidad/dias`, { params }));
           for (const d of data.dias) conLugar.add(d.fecha);
           i = j + 1;
@@ -128,11 +151,7 @@ export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
       return pedidas.filter((f) => conLugar.has(f));
     },
     async getAvailability(slug, query) {
-      const params: Record<string, unknown> = {
-        fecha: query.fecha,
-        servicio_ids: query.servicioIds,
-      };
-      if (query.profesionalId) params.profesional_id = query.profesionalId;
+      const params = { fecha: query.fecha, asignaciones: asignacionesAWire(asignacionesDe(query)) };
       return aDisponibilidad(
         await pedir(() => http.get<DisponibilidadDto>(`${base(slug)}/disponibilidad`, { params })),
       );

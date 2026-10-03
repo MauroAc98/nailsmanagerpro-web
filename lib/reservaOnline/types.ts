@@ -50,15 +50,38 @@ export interface BookableService {
   fotos: string[];
 }
 
+// Un grupo de servicios con su profesional (sin profesional = "Cualquiera").
+export interface Asignacion {
+  servicioIds: number[];
+  profesionalId?: number;
+}
+
+// Como se encadenan los tramos de un horario de varias profesionales: el
+// backend lo devuelve con el horario y hay que mandarlo de vuelta al retener.
+// Interno: nunca se muestra.
+export type ModoPlan = 'paralelo' | 'secuencia';
+
+export interface TramoPlan {
+  profesionalId: number;
+  offsetMinutos: number;
+  duracionMinutos: number;
+  servicioIds: number[];
+}
+
 export interface AvailabilitySlot {
   hora: Hora;
   // Profesionales que pueden tomar ese horario (solo libres).
   profesionalIds: number[];
+  // Solo en horarios de varias profesionales o promo: cuando termina el turno.
+  fin?: Hora;
+  modo?: ModoPlan;
+  tramos?: TramoPlan[];
 }
 
 export interface Availability {
   fecha: Fecha;
-  duracionTotalMinutos: number;
+  // Ausente cuando cada horario trae su propio `fin` (varias profesionales).
+  duracionTotalMinutos?: number;
   slots: AvailabilitySlot[];
 }
 
@@ -66,6 +89,9 @@ export interface AvailabilityQuery {
   fecha: Fecha;
   servicioIds: number[];
   profesionalId?: number;
+  // Varios grupos (una profesional por servicio): si viene, manda sobre
+  // servicioIds/profesionalId, que describen el unico grupo de siempre.
+  asignaciones?: Asignacion[];
 }
 
 // Dias (fechas) entre `fechas` en los que hay al menos un horario libre.
@@ -73,6 +99,7 @@ export interface DiasQuery {
   fechas: Fecha[];
   servicioIds: number[];
   profesionalId?: number;
+  asignaciones?: Asignacion[];
 }
 
 export interface ServicesQuery {
@@ -99,8 +126,18 @@ export interface RetenerInput {
   // Omitido cuando la clienta elige "Cualquiera": el backend asigna la primera
   // profesional libre en ese momento (la lista de horarios puede estar vieja).
   profesionalId?: number;
+  asignaciones?: Asignacion[];
+  // El `modo` del horario elegido, si el horario lo traia (varias profesionales).
+  modo?: ModoPlan;
   fecha: Fecha;
   hora: Hora;
+}
+
+export interface TramoRetenido {
+  profesionalId: number;
+  hora: Hora;
+  fin: Hora;
+  servicioIds: number[];
 }
 
 export interface Retencion {
@@ -108,6 +145,9 @@ export interface Retencion {
   expiresAtMs: number;
   // Profesional resuelta al retener (la elegida o, con "Cualquiera", la primera libre).
   profesionalId: number;
+  // Solo si el hold es de varias profesionales.
+  fin?: Hora;
+  tramos?: TramoRetenido[];
 }
 
 // Retencion vigente del flujo (se persiste por slug junto con lo elegido).

@@ -1,5 +1,6 @@
 import { ReservaOnlineError, type ReservaOnlineReads, type ReservaOnlineService } from '../service';
 import type {
+  Asignacion,
   Availability,
   AvailabilityQuery,
   DiasQuery,
@@ -254,7 +255,19 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     });
   };
 
-  const getAvailability = async (slug: string, q: AvailabilityQuery): Promise<Availability> => {
+  // El mock no simula varias profesionales: con 2+ grupos suma todos los
+  // servicios y deja "Cualquiera" (como si fuera un unico grupo).
+  const unGrupo = <T extends { servicioIds: number[]; profesionalId?: number; asignaciones?: Asignacion[] }>(q: T): T =>
+    q.asignaciones
+      ? {
+          ...q,
+          servicioIds: q.asignaciones.flatMap((g) => g.servicioIds),
+          profesionalId: q.asignaciones.length === 1 ? q.asignaciones[0].profesionalId : undefined,
+        }
+      : q;
+
+  const getAvailability = async (slug: string, consulta: AvailabilityQuery): Promise<Availability> => {
+    const q = unGrupo(consulta);
     const s = salon(slug);
     const servicios = resolverServicios(s, q.servicioIds);
     const hoy = paredDelSalon(now());
@@ -316,7 +329,8 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     };
   };
 
-  const retenerHorario = async (slug: string, input: RetenerInput): Promise<Retencion> => {
+  const retenerHorario = async (slug: string, pedido: RetenerInput): Promise<Retencion> => {
+    const input = unGrupo(pedido);
     const consulta = {
       fecha: input.fecha,
       servicioIds: input.servicioIds,
@@ -355,7 +369,7 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       fecha: input.fecha,
       hora: input.hora,
       clienteNombre: '',
-      duracionTotalMinutos: disp.duracionTotalMinutos,
+      duracionTotalMinutos: disp.duracionTotalMinutos ?? 0,
       deposito: p.settings.deposito,
       createdAtMs,
       expiresAtMs,

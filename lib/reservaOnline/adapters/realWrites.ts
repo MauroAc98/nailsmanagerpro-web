@@ -1,4 +1,5 @@
 import type { AxiosInstance } from 'axios';
+import { asignacionesAWire, asignacionesDe } from '../asignaciones';
 import { getDeviceToken } from '../deviceToken';
 import type { ReservaOnlineWrites } from '../service';
 import type {
@@ -29,6 +30,9 @@ interface HoldDto {
   fecha: string;
   hora: string;
   duracion_total_minutos: number;
+  // Solo en holds de varias profesionales.
+  fin?: string;
+  tramos?: { profesional_id: number; hora: string; fin: string; servicio_ids: number[] }[];
 }
 interface BasicoDto {
   token: string;
@@ -78,7 +82,7 @@ export function createRealWrites(http: AxiosInstance, opts: RealWritesOptions = 
   // fallar con slot_taken; un pick distinto genera una key nueva (decision A4).
   let ultimoIntento: { firma: string; key: string } | null = null;
   const idempotencyKeyPara = (slug: string, input: RetenerInput): string => {
-    const firma = JSON.stringify([slug, input.servicioIds, input.profesionalId ?? null, input.fecha, input.hora]);
+    const firma = JSON.stringify([slug, asignacionesAWire(asignacionesDe(input)), input.modo ?? null, input.fecha, input.hora]);
     if (ultimoIntento?.firma === firma) return ultimoIntento.key;
     const key = generarKey();
     ultimoIntento = { firma, key };
@@ -103,15 +107,30 @@ export function createRealWrites(http: AxiosInstance, opts: RealWritesOptions = 
         http.post<HoldDto>(
           `${base(slug)}/holds`,
           {
-            servicio_ids: input.servicioIds,
-            profesional_id: input.profesionalId,
+            asignaciones: asignacionesAWire(asignacionesDe(input)),
+            ...(input.modo ? { modo: input.modo } : {}),
             fecha: input.fecha,
             hora: input.hora,
           },
           { headers: { ...headers(), 'Idempotency-Key': key } },
         ),
       );
-      return { reservaId: data.token, expiresAtMs: data.expira_en_ms, profesionalId: data.profesional_id };
+      return {
+        reservaId: data.token,
+        expiresAtMs: data.expira_en_ms,
+        profesionalId: data.profesional_id,
+        ...(data.tramos
+          ? {
+              fin: data.fin,
+              tramos: data.tramos.map((t) => ({
+                profesionalId: t.profesional_id,
+                hora: t.hora,
+                fin: t.fin,
+                servicioIds: t.servicio_ids,
+              })),
+            }
+          : {}),
+      };
     },
 
     async actualizarDatosReserva(slug, reservaId, datos: DatosReserva): Promise<void> {
