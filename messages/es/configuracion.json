@@ -492,9 +492,7 @@
       },
       "pendingPayments": {
         "title": "Pendientes de cobro",
-        "text": "Se accede desde el numerito en la barra de navegación de abajo, o desde el aviso que aparece arriba de la Agenda.\n\nAcá aparecen los turnos que la app marcó como completados sola (porque pasó la hora) pero sin precio cargado — pasa cuando no llegaste a finalizarlos a mano desde la Agenda. Buscá el turno en la lista y tocá \"Cargar precio\" para completarlo; una vez cargado, sale de esta lista y pasa a contar en Estadísticas.
-
-Si en varios turnos cobraste el precio de lista, tocá \"Usar precio de lista en los N turnos\" arriba para registrarlos todos de una vez (te pide confirmación). Los que cambiaron de precio o no tienen precio de lista se cargan con su propio botón."
+        "text": "Se accede desde el numerito en la barra de navegación de abajo, o desde el aviso que aparece arriba de la Agenda.\n\nAcá aparecen los turnos que la app marcó como completados sola (porque pasó la hora) pero sin precio cargado — pasa cuando no llegaste a finalizarlos a mano desde la Agenda. Buscá el turno en la lista y tocá \"Cargar precio\" para completarlo; una vez cargado, sale de esta lista y pasa a contar en Estadísticas.\n\nSi en varios turnos cobraste el precio de lista, tocá \"Usar precio de lista en los N turnos\" arriba para registrarlos todos de una vez (te pide confirmación). Los que cambiaron de precio o no tienen precio de lista se cargan con su propio botón."
       },
       "incomes": {
         "title": "Ingresos",

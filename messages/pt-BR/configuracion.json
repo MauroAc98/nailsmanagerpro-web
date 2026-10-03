@@ -492,9 +492,7 @@
       },
       "pendingPayments": {
         "title": "Pendentes de cobrança",
-        "text": "Você acessa pelo numerozinho na barra de navegação de baixo, ou pelo aviso que aparece acima da Agenda.\n\nAqui aparecem os agendamentos que o app marcou como concluídos sozinho (porque o horário passou) mas sem preço cadastrado — acontece quando você não chega a finalizá-los manualmente pela Agenda. Procure o agendamento na lista e toque em \"Cadastrar preço\" para completá-lo; depois de cadastrado, ele sai desta lista e passa a contar nas Estatísticas.
-
-Se em vários atendimentos você cobrou o preço de tabela, toque em \"Usar preço de tabela nos N atendimentos\" acima para registrá-los todos de uma vez (o app pede confirmação). Os que mudaram de preço ou não têm preço de tabela são registrados com o botão de cada um."
+        "text": "Você acessa pelo numerozinho na barra de navegação de baixo, ou pelo aviso que aparece acima da Agenda.\n\nAqui aparecem os agendamentos que o app marcou como concluídos sozinho (porque o horário passou) mas sem preço cadastrado — acontece quando você não chega a finalizá-los manualmente pela Agenda. Procure o agendamento na lista e toque em \"Cadastrar preço\" para completá-lo; depois de cadastrado, ele sai desta lista e passa a contar nas Estatísticas.\n\nSe em vários atendimentos você cobrou o preço de tabela, toque em \"Usar preço de tabela nos N atendimentos\" acima para registrá-los todos de uma vez (o app pede confirmação). Os que mudaram de preço ou não têm preço de tabela são registrados com o botão de cada um."
       },
       "incomes": {
         "title": "Receitas",
