@@ -3,7 +3,8 @@
     "placeholder": "Agregá un texto a tu historia..."
   },
   "StoryCanvas": {
-    "availableAppointments": "TURNOS DISPONIBLES",
+    "availableTitle": "Turnos disponibles",
+    "withProfessional": "con {nombre}",
     "complete": "COMPLETO",
     "reserveCta": "Reservá tu turno"
   },

@@ -16,6 +16,7 @@ import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
 
 type SeccionEditor = 'agenda' | 'texto' | 'fondo';
@@ -96,7 +97,9 @@ function HistoriaContent() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
-  const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
+  // La profesional del encabezado es la efectiva del selector (la dueña por
+  // defecto al recargar, o la que se eligió): un único diseño para todas.
+  const profesionalSeleccionada    = profesionalDelEncabezado(activeProfesionales, effectiveProfesionalId);
 
   // Cantidad de horarios que efectivamente van a la imagen — mismo dato que
   // ya excluye días/slots ocultados manualmente (diasAMostrar), solo para el

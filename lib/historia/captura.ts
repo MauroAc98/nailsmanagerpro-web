@@ -94,28 +94,22 @@ export function resizeFondoFile(file: File): Promise<{ dataUrl: string; file: Fi
 }
 
 // ─────────────────────────────────────────────
-// desaturarLogo — convierte el logo del negocio a escala de grises
-// HORNEANDO el filtro en los píxeles con Canvas 2D, en vez de aplicarlo como
-// `filter: grayscale(1)` en vivo sobre el <img> (como hacía StoryCanvas
-// hasta 2026-10-01). Ese <img> es parte del árbol que html-to-image
-// serializa a un SVG <foreignObject> para rasterizarlo aparte — un pipeline
-// mucho menos probado que el layout normal del DOM — y WebKit falla ahí al
-// combinar `filter` con esa rasterización: la historia entera salía negra
-// en Safari (no solo el logo), incluso ya con el logo servido desde nuestro
-// proxy same-origin (el proxy resuelve el CORS, pero esto es un problema
-// distinto, de renderizado, no de origen). El filtro de Canvas 2D
-// (ctx.filter) es un mecanismo totalmente aparte que no pasa por
-// foreignObject, así que hornear el grayscale acá elimina el riesgo sin
-// depender de que WebKit lo soporte en el pipeline de captura.
+// hornearFotoEncabezado — baja la foto del encabezado (logo del negocio o
+// avatar de la profesional) a una imagen embebida (data URL) dibujándola en
+// Canvas 2D, a color y sin ningún filtro. Mismo camino que arregló el
+// compartir en Safari (2026-10-01): la foto ya viaja dentro de la página y
+// html-to-image no tiene que bajarla ni rasterizarla con CSS al capturar. Lo
+// que rompía Safari era `filter: grayscale()` dentro de la captura, no la
+// foto: acá no hay filtro.
 // ─────────────────────────────────────────────
-const LOGO_MAX_EDGE = 200;
+const FOTO_ENCABEZADO_MAX_EDGE = 200;
 
-export function desaturarLogo(url: string): Promise<string> {
+export function hornearFotoEncabezado(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const longEdge = Math.max(img.naturalWidth, img.naturalHeight);
-      const scale    = longEdge > LOGO_MAX_EDGE ? LOGO_MAX_EDGE / longEdge : 1;
+      const scale    = longEdge > FOTO_ENCABEZADO_MAX_EDGE ? FOTO_ENCABEZADO_MAX_EDGE / longEdge : 1;
       const w = Math.max(1, Math.round(img.naturalWidth * scale));
       const h = Math.max(1, Math.round(img.naturalHeight * scale));
 
@@ -124,14 +118,13 @@ export function desaturarLogo(url: string): Promise<string> {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        reject(new Error('desaturarLogo: sin contexto 2d'));
+        reject(new Error('hornearFotoEncabezado: sin contexto 2d'));
         return;
       }
-      ctx.filter = 'grayscale(1)';
       ctx.drawImage(img, 0, 0, w, h);
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => reject(new Error('desaturarLogo: no se pudo cargar el logo'));
+    img.onerror = () => reject(new Error('hornearFotoEncabezado: no se pudo cargar la foto'));
     img.src = url;
   });
 }

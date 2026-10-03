@@ -3,7 +3,8 @@
     "placeholder": "Adicione um texto ao seu story..."
   },
   "StoryCanvas": {
-    "availableAppointments": "HORÁRIOS DISPONÍVEIS",
+    "availableTitle": "Horários disponíveis",
+    "withProfessional": "com {nombre}",
     "complete": "COMPLETO",
     "reserveCta": "Reserve seu horário"
   },
