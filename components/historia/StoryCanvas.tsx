@@ -450,13 +450,22 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   (el avatar de la profesional reemplaza al logo). */}
               {(telefonoEstudio || (lineaProfesional && nombreEstudio)) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                  {telefonoEstudio && <WhatsappGlyph size={10} color="#fff" />}
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                    {[
-                      lineaProfesional && nombreEstudio ? nombreEstudio : null,
-                      telefonoEstudio ? `+${phoneUtils.formatDisplay(telefonoEstudio)}` : null,
-                    ].filter(Boolean).join(' · ')}
-                  </span>
+                  {lineaProfesional && nombreEstudio && (
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                      {nombreEstudio}
+                    </span>
+                  )}
+                  {lineaProfesional && nombreEstudio && telefonoEstudio && (
+                    <span aria-hidden style={{ fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
+                  )}
+                  {telefonoEstudio && (
+                    <>
+                      <WhatsappGlyph size={10} color="#fff" />
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                        +{phoneUtils.formatDisplay(telefonoEstudio)}
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </div>

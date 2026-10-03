@@ -115,7 +115,14 @@ describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByText(/^Turnetto · \+/)).toBeInTheDocument();
+    // "Turnetto · [ícono] +54…": el ícono va pegado al teléfono, no al negocio.
+    const negocio = screen.getByText('Turnetto');
+    const telefono = screen.getByText(/^\+/);
+    expect(negocio.parentElement).toBe(telefono.parentElement);
+    expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const glifo = telefono.previousElementSibling;
+    expect(glifo?.tagName.toLowerCase()).toBe('svg');
+    expect(negocio.compareDocumentPosition(glifo as Element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('si el nombre del negocio ya contiene el de la profesional no se repite ("Natalia Acosta Studio" con Natalia)', () => {
