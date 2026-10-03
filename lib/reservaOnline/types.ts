@@ -155,6 +155,9 @@ export interface HoldFlujo {
   reservaId: string;
   expiraMs: number;
   profesionalId: number;
+  // Solo si el hold es de varias profesionales: cuando termina y quienes atienden.
+  fin?: Hora;
+  profesionalIds?: number[];
 }
 
 // Datos que se guardan sobre el hold al salir del paso "Tus datos".
@@ -182,6 +185,10 @@ export interface ReservationSummary {
   deposito: number;
   duracionTotalMinutos: number;
   nota?: string;
+  // Solo en reservas de varias profesionales.
+  fin?: Hora;
+  tramos?: TramoRetenido[];
+  profesionales?: { id: number; nombre: string }[];
 }
 
 export interface ReservationStatus {

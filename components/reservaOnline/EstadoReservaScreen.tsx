@@ -8,6 +8,7 @@ import { linkComoLlegar, linkGoogleCalendar } from '@/lib/reservaOnline/calendar
 import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
 import { formatearRestante } from '@/lib/reservaOnline/cuentaRegresiva';
 import { diaLargoCorto, fechaLarga } from '@/lib/reservaOnline/formatoFecha';
+import { listaDeNombres } from '@/lib/reservaOnline/listaDeNombres';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import { formatMontoCorto } from '@/lib/money';
@@ -172,7 +173,8 @@ export function EstadoReservaScreen({
   const resumen = estado.summary;
   const nombresServicios = servicios.filter((s) => resumen.servicioIds.includes(s.id)).map((s) => s.nombre).join(' + ');
   const profesionalObj = salon.profesionales.find((p) => p.id === resumen.profesionalId);
-  const profesional = profesionalObj?.nombre;
+  const equipo = (resumen.profesionales ?? []).map((p) => p.nombre);
+  const profesional = equipo.length > 1 ? listaDeNombres(equipo, locale) : profesionalObj?.nombre;
 
   if (estado.status === 'confirmed') {
     return (
@@ -222,9 +224,11 @@ export function EstadoReservaScreen({
                 <Avatar nombre={profesional} size={48} fotoUrl={profesionalObj?.avatarUrl} />
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.sub }}>
-                    {t('estado.teAtiende')}
+                    {t(equipo.length > 1 ? 'estado.teAtienden' : 'estado.teAtiende')}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: colors.strong, marginTop: 1 }}>{profesional}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: colors.strong, marginTop: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+                    {profesional}
+                  </div>
                 </div>
               </div>
             )}
@@ -233,6 +237,15 @@ export function EstadoReservaScreen({
               <div style={{ color: colors.sub, marginTop: 2 }}>
                 {salon.direccion ? `${salon.nombre} · ${salon.direccion}` : salon.nombre}
               </div>
+              {resumen.fin && (
+                <div style={{ color: colors.sub, marginTop: 2 }}>
+                  {t.rich('horario.ocupaRango', {
+                    inicio: resumen.hora,
+                    fin: resumen.fin,
+                    b: (chunks) => <b style={{ color: colors.strong }}>{chunks}</b>,
+                  })}
+                </div>
+              )}
             </div>
             <div style={{ borderTop: `2px dashed ${colors.border}`, margin: '0 14px' }} />
             <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>

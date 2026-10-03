@@ -285,6 +285,9 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         reservaId: retencion.reservaId,
         expiraMs: retencion.expiresAtMs,
         profesionalId: retencion.profesionalId,
+        ...(retencion.tramos
+          ? { fin: retencion.fin, profesionalIds: [...new Set(retencion.tramos.map((x) => x.profesionalId))] }
+          : {}),
       });
       ir(rutaPaso(slug, 'datos'));
     } catch (e) {

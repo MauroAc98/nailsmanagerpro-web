@@ -49,6 +49,10 @@ interface EstadoDto extends BasicoDto {
     duracion_total_minutos: number;
     deposito: number;
     nota: string | null;
+    // Solo en reservas de varias profesionales.
+    fin?: string;
+    tramos?: { profesional_id: number; hora: string; fin: string; servicio_ids: number[] }[];
+    profesionales?: { id: number; nombre: string }[];
   };
 }
 
@@ -179,6 +183,18 @@ export function createRealWrites(http: AxiosInstance, opts: RealWritesOptions = 
           deposito: data.resumen.deposito,
           duracionTotalMinutos: data.resumen.duracion_total_minutos,
           nota: data.resumen.nota ?? undefined,
+          ...(data.resumen.tramos
+            ? {
+                fin: data.resumen.fin,
+                tramos: data.resumen.tramos.map((t) => ({
+                  profesionalId: t.profesional_id,
+                  hora: t.hora,
+                  fin: t.fin,
+                  servicioIds: t.servicio_ids,
+                })),
+                profesionales: data.resumen.profesionales,
+              }
+            : {}),
         },
       };
     },

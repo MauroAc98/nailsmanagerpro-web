@@ -6,6 +6,7 @@ import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { getService } from '@/lib/reservaOnline';
 import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
 import { fechaLarga } from '@/lib/reservaOnline/formatoFecha';
+import { listaDeNombres } from '@/lib/reservaOnline/listaDeNombres';
 import { rutaPaso, rutaReserva } from '@/lib/reservaOnline/rutas';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { duracionDeServicios, formatearDuracion } from '@/lib/reservaOnline/totales';
@@ -136,6 +137,11 @@ export function ResumenScreen({
   const elegidos = servicios.filter((s) => servicioIds.includes(s.id));
   const duracion = duracionDeServicios(servicios, servicioIds);
   const profesional = salon.profesionales.find((p) => p.id === hold.profesionalId);
+  // Varias profesionales: "Con Ana y Laura" (en el orden de los servicios).
+  const nombresProfesionales = (hold.profesionalIds ?? [])
+    .map((id) => salon.profesionales.find((p) => p.id === id)?.nombre)
+    .filter((n): n is string => !!n);
+  const conQuienes = nombresProfesionales.length > 1 ? listaDeNombres(nombresProfesionales, locale) : profesional?.nombre;
 
   const pagar = async () => {
     setEnviando(true);
@@ -188,10 +194,19 @@ export function ResumenScreen({
             titulo={`${fechaLarga(fecha, locale)} · ${hora}`}
             detalle={t('resumen.duracion', { duracion: formatearDuracion(duracion) })}
           />
+          {hold.fin && (
+            <div style={{ fontSize: 13, color: colors.sub, marginTop: -8 }}>
+              {t.rich('horario.ocupaRango', {
+                inicio: hora,
+                fin: hold.fin,
+                b: (chunks) => <b style={{ color: colors.strong }}>{chunks}</b>,
+              })}
+            </div>
+          )}
           <Fila
             icono={<IcoBrillo color={colors.primaryDeep} />}
             titulo={elegidos.map((s) => s.nombre).join(' + ')}
-            detalle={profesional ? t('resumen.conProfesional', { profesional: profesional.nombre }) : undefined}
+            detalle={conQuienes ? t('resumen.conProfesional', { profesional: conQuienes }) : undefined}
           />
           <Fila
             icono={<IcoPin color={colors.primaryDeep} />}
