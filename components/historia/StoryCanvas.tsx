@@ -426,7 +426,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     // "…" antes de empujar el teléfono fuera de la imagen.
                     <span style={{
                       minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      fontFamily: agendaFontSerif, fontSize: 14, fontWeight: 400, color: '#fff',
+                      fontFamily: agendaFontSerif, fontSize: 12, fontWeight: 400, color: '#fff',
                       textShadow: '0 1px 4px rgba(0,0,0,0.8)',
                     }}>
                       {nombreEstudio}
@@ -438,7 +438,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     <span aria-hidden style={{ flexShrink: 0, width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.6)' }} />
                   )}
                   {telefonoEstudio && (
-                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                       +{phoneUtils.formatDisplay(telefonoEstudio)}
                     </span>
                   )}
