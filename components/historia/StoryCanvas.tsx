@@ -433,9 +433,8 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     </span>
                   )}
                   {nombreEstudio && telefonoEstudio && (
-                    // Divisor fino vertical en vez de un punto suelto: separa
-                    // sin competir con el texto.
-                    <span aria-hidden style={{ flexShrink: 0, width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.6)' }} />
+                    // Guion largo: se lee como una firma ("Negocio — teléfono").
+                    <span aria-hidden style={{ flexShrink: 0, fontSize: 12, color: 'rgba(255,255,255,0.75)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>—</span>
                   )}
                   {telefonoEstudio && (
                     <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
