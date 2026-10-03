@@ -42,16 +42,15 @@ describe('DonutChart', () => {
     expect(container.querySelector('svg')).not.toBeNull();
   });
 
-  // isAnimationActive="auto" respeta "reducir movimiento": se simula para que
-  // jsdom dibuje todas las rebanadas de una vez (sin animación en curso).
-  beforeEach(() => {
+  // Cuál es el dispositivo: con mouse (hover: hover) o táctil (sin hover).
+  const dispositivo = (conHover: boolean) =>
     vi.stubGlobal('matchMedia', (query: string) => ({
-      matches: query.includes('prefers-reduced-motion'),
+      matches: conHover && query.includes('hover: hover'),
       media: query, onchange: null,
       addEventListener: () => {}, removeEventListener: () => {},
       addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
     }));
-  });
+  beforeEach(() => dispositivo(true));
   afterEach(() => vi.unstubAllGlobals());
 
   // Dona chica + tarjeta flotante de hasta 220px: el tooltip tapaba la propia
@@ -77,6 +76,40 @@ describe('DonutChart', () => {
     fireEvent.mouseLeave(sectores()[1]);
     expect(screen.getByTestId('dona-centro')).toHaveTextContent('40');
     expect(screen.getByTestId('dona-centro')).toHaveTextContent('turnos');
+  });
+
+  // En el celular un toque dispara también mouseenter y nunca un mouseleave:
+  // el "hover" quedaba pegado y el segundo toque no podía limpiar la rebanada.
+  it('en un dispositivo táctil (sin hover) el paso del mouse no cambia nada y el toque sí', () => {
+    dispositivo(false);
+    const { container } = render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
+    const sectores = () => container.querySelectorAll('.recharts-sector');
+
+    fireEvent.mouseEnter(sectores()[0]);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('40');
+
+    fireEvent.click(sectores()[0]);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('Capping');
+    fireEvent.click(sectores()[0]);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('40');
+  });
+
+  it('cada fila de la leyenda es un botón que fija esa rebanada (blanco de toque grande)', () => {
+    render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
+    const fila = screen.getByRole('button', { name: /Esmaltado semipermanente/ });
+
+    fireEvent.click(fila);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('Esmaltado semipermanente');
+    expect(fila).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(fila);
+    expect(screen.getByTestId('dona-centro')).toHaveTextContent('40');
+    expect(fila).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('no se re-anima al tocar: dibuja todas las rebanadas desde el primer render', () => {
+    const { container } = render(<DonutChart data={data} centerValue={40} centerLabel="turnos" ariaLabel="Servicios" />);
+    expect(container.querySelectorAll('.recharts-sector').length).toBe(2);
   });
 
   it('al tocar una rebanada (celular) queda fija y al tocarla de nuevo se limpia', () => {

@@ -55,7 +55,7 @@ export default function BurbujasChart({ servicios, ejes, ocultarMonto, ariaLabel
             tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: colors.muted }}
           />
           <YAxis
-            type="number" dataKey="ticket" name={ejes.ticket} width={ocultarMonto ? 8 : 44} domain={[0, 'auto']}
+            type="number" dataKey="ticket" name={ejes.ticket} width={ocultarMonto ? 8 : 'auto'} domain={[0, 'auto']}
             tickLine={false} axisLine={false} tick={ocultarMonto ? false : { fontSize: 10, fill: colors.muted }}
             tickFormatter={(v: number) => `$${formatMonto(v).replace(/,\d+$/, '')}`}
           />
