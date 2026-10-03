@@ -444,29 +444,49 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               }}>
                 {t('reserveCta')}
               </span>
-              {/* Una sola línea. Con profesional elegida el título del header
-                  deja de ser el negocio: su nombre pasa acá, junto al
-                  teléfono ("Negocio · +54…"), para no perder la referencia
-                  (el avatar de la profesional reemplaza al logo). */}
-              {(telefonoEstudio || (lineaProfesional && nombreEstudio)) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                  {lineaProfesional && nombreEstudio && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+              {lineaProfesional && (nombreEstudio || telefonoEstudio) ? (
+                // Con profesional elegida el título del header deja de ser el
+                // negocio: su nombre pasa acá, a la izquierda, y el teléfono
+                // con su ícono a la derecha, separados del CTA por una línea
+                // fina (el avatar de la profesional reemplaza al logo).
+                <div style={{
+                  alignSelf: 'stretch', marginTop: 6, paddingTop: 7,
+                  borderTop: '1px solid rgba(255,255,255,0.25)',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: nombreEstudio ? 'space-between' : 'center', gap: 8,
+                }}>
+                  {nombreEstudio && (
+                    <span style={{
+                      minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontFamily: agendaFontSerif, fontSize: 12, color: '#fff',
+                      textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                    }}>
                       {nombreEstudio}
                     </span>
                   )}
-                  {lineaProfesional && nombreEstudio && telefonoEstudio && (
-                    <span aria-hidden style={{ fontSize: 10, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>·</span>
-                  )}
                   {telefonoEstudio && (
-                    <>
-                      <WhatsappGlyph size={10} color="#fff" />
-                      <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{
+                        width: 16, height: 16, borderRadius: 8, backgroundColor: '#25D366',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <WhatsappGlyph size={10} color="#fff" />
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                         +{phoneUtils.formatDisplay(telefonoEstudio)}
                       </span>
-                    </>
+                    </span>
                   )}
                 </div>
+              ) : (
+                telefonoEstudio && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                    <WhatsappGlyph size={10} color="#fff" />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                      +{phoneUtils.formatDisplay(telefonoEstudio)}
+                    </span>
+                  </div>
+                )
               )}
             </div>
           </div>

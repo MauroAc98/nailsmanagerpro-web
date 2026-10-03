@@ -94,7 +94,7 @@ describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
     expect(con.compareDocumentPosition(negocio[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('con profesional elegida y teléfono, el pie une negocio y teléfono en una sola línea', () => {
+  it('con profesional elegida y teléfono, el pie pone el negocio a la izquierda y el teléfono con ícono a la derecha', () => {
     render(
       <NextIntlClientProvider locale="es" messages={es}>
         <StoryCanvas
@@ -115,14 +115,52 @@ describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
         />
       </NextIntlClientProvider>,
     );
-    // "Turnetto · [ícono] +54…": el ícono va pegado al teléfono, no al negocio.
+    // Pie B: negocio a la izquierda, teléfono con su ícono a la derecha, en
+    // la misma fila (debajo del "Reservá tu turno"), sin ningún "·" suelto.
     const negocio = screen.getByText('Turnetto');
     const telefono = screen.getByText(/^\+/);
-    expect(negocio.parentElement).toBe(telefono.parentElement);
+    const fila = negocio.parentElement as HTMLElement;
+    expect(fila.contains(telefono)).toBe(true);
     expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const glifo = telefono.previousElementSibling;
-    expect(glifo?.tagName.toLowerCase()).toBe('svg');
-    expect(negocio.compareDocumentPosition(glifo as Element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // El ícono vive junto al teléfono (mismo contenedor), no junto al negocio.
+    const grupoTelefono = telefono.parentElement as HTMLElement;
+    expect(grupoTelefono.querySelector('svg')).not.toBeNull();
+    expect(grupoTelefono.contains(negocio)).toBe(false);
+    expect(fila.textContent).not.toContain('·');
+    // La fila viene después del CTA.
+    const cta = screen.getByText(es.historia.StoryCanvas.reserveCta);
+    expect(cta.compareDocumentPosition(fila) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('con profesional elegida y sin teléfono, el pie muestra solo el negocio', () => {
+    renderCanvas(null, unDia, 'Gabriela');
+    expect(screen.getByText('Turnetto')).toBeInTheDocument();
+    expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
+  });
+
+  it('sin profesional elegida el pie no muestra el negocio, solo CTA y teléfono', () => {
+    render(
+      <NextIntlClientProvider locale="es" messages={es}>
+        <StoryCanvas
+          ref={createRef()}
+          titulo="24 de sept"
+          nombreEstudio="Turnetto"
+          telefonoEstudio="5491155551234"
+          logoUrl={null}
+          dias={unDia}
+          fondoUri={null}
+          canvasWidth={360}
+          canvasHeight={640}
+          textosLibres={[]}
+          onMoverTexto={() => {}}
+          onResizeTexto={() => {}}
+          onEditarTexto={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+    // "Turnetto" aparece una sola vez: el título del header.
+    expect(screen.getAllByText('Turnetto')).toHaveLength(1);
+    expect(screen.getByText(/^\+/)).toBeInTheDocument();
   });
 
   it('si el nombre del negocio ya contiene el de la profesional no se repite ("Natalia Acosta Studio" con Natalia)', () => {
