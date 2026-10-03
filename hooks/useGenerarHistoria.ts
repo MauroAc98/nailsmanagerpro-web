@@ -127,6 +127,9 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // usuario tilda una profesional que tiene avatar, el de ella (sin avatar,
   // sigue el logo). Pasa por el mismo proxy y blanco y negro de abajo.
   const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, selectedProfesionalId, logoNegocioCrudo);
+  // El avatar se muestra a color: solo el logo del negocio se hornea en
+  // blanco y negro (ver el efecto de abajo).
+  const encabezadoEsAvatar = logoUrlCrudo !== null && logoUrlCrudo !== logoNegocioCrudo;
   const logoUrlProxiado = useMemo(
     () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
     [logoUrlCrudo]
@@ -156,7 +159,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     setLogoUrl(logoUrlProxiado);
   }
   useEffect(() => {
-    if (!logoUrlProxiado) return;
+    if (!logoUrlProxiado || encabezadoEsAvatar) return;
     let cancelado = false;
     desaturarLogo(logoUrlProxiado)
       .then(dataUrl => { if (!cancelado) setLogoUrl(dataUrl); })
@@ -165,7 +168,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
         // que hacer
       });
     return () => { cancelado = true; };
-  }, [logoUrlProxiado]);
+  }, [logoUrlProxiado, encabezadoEsAvatar]);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;
