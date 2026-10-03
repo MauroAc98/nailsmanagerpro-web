@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { NAV_CLEARANCE, NAV_BUBBLE_POKE } from '@/constants/layout';
+import { NAV_CLEARANCE } from '@/constants/layout';
 import { formatMontoCorto } from '@/lib/money';
 import {
   agruparPorSemana,
@@ -185,7 +185,7 @@ export default function PendientesDeCobroPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 110 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 24 }}>
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas), sin el indent de
           48px que alineaba el subtítulo contra el BackButton inline. */}
@@ -215,6 +215,26 @@ export default function PendientesDeCobroPage() {
             <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.subtext }}>
               {t('resultCount', { count: ordenados.length })} · {t('summaryEstimated')}
             </p>
+            {/* Cargar los cobros de a uno: botón dentro del resumen (no flotante
+                abajo, que no existe en ninguna otra pantalla), con una frase
+                que explica qué pasa al tocarlo. Con un solo turno no hace
+                falta: su propia tarjeta ya tiene "Cargar". */}
+            {ordenados.length > 1 && (
+              <div style={{ marginTop: 14 }}>
+                <button
+                  onClick={handleCargarDeAUno}
+                  style={{
+                    width: '100%', height: 48, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 15, fontWeight: 600,
+                  }}
+                >
+                  {t('loadOneByOne', { count: ordenados.length })}
+                </button>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.subtext, textAlign: 'center' }}>
+                  {t('loadOneByOneHint')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -316,36 +336,6 @@ export default function PendientesDeCobroPage() {
         </div>
       )}
 
-      {!loading && ordenados.length > 1 && (
-        <div
-          style={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: `calc(${NAV_CLEARANCE + NAV_BUBBLE_POKE + 12}px + env(safe-area-inset-bottom))`,
-            padding: '0 20px',
-            zIndex: 10,
-          }}
-        >
-          <button
-            onClick={handleCargarDeAUno}
-            style={{
-              width: '100%',
-              padding: '14px 0',
-              borderRadius: 14,
-              border: 'none',
-              backgroundColor: colors.primarySolid,
-              color: '#FFF',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: shadows.card,
-            }}
-          >
-            {t('loadOneByOne', { count: ordenados.length })}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

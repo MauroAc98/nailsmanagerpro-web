@@ -32,7 +32,8 @@
     "noListPrice": "Sem preço de tabela",
     "useListPrice": "Usar preço de tabela",
     "loadPrice": "Cadastrar",
-    "loadOneByOne": "Cadastrar um a um · {count} →",
+    "loadOneByOne": "Registrar as {count} cobranças, uma por uma",
+    "loadOneByOneHint": "Abre um atendimento por vez para anotar quanto você cobrou",
     "confirmUseListPrice": "Registrar o agendamento de {cliente} a preço de tabela ({monto})? Depois só é possível corrigir pelo histórico.",
     "confirmUseListPriceButton": "Registrar"
   },

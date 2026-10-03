@@ -32,7 +32,8 @@
     "noListPrice": "Sin precio de lista",
     "useListPrice": "Usar precio de lista",
     "loadPrice": "Cargar",
-    "loadOneByOne": "Cargar de a uno · {count} →",
+    "loadOneByOne": "Cargar los {count} cobros, uno por uno",
+    "loadOneByOneHint": "Se abre un turno por vez para anotar cuánto cobraste",
     "confirmUseListPrice": "¿Registrar el turno de {cliente} a precio de lista ({monto})? Después solo se puede corregir desde el historial.",
     "confirmUseListPriceButton": "Registrar"
   },
