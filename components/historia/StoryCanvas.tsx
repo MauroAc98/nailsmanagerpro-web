@@ -71,9 +71,9 @@ interface Props {
   // compartida sepa por dónde contactar, sin tener que buscarlo aparte.
   telefonoEstudio?: string | null;
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
-  // Si viene (elegida a mano), el header suma la línea "con {nombre}" entre
-  // "Turnos disponibles" y la fecha (ver lineaProfesional); el título sigue
-  // siendo el del negocio.
+  // Si viene (elegida a mano), el header pasa a "Turnos disponibles" y una
+  // línea "con {nombre} · {fecha}" (ver lineaProfesional); el nombre del
+  // negocio baja al pie.
   profesionalNombre?: string;
   // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
   // ícono genérico en el header, en los 3 modos (día/semana/mes), para
@@ -114,18 +114,17 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
   const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
 
-  // El título es siempre el nombre del negocio. Con una profesional elegida
-  // a mano, debajo de "Turnos disponibles" se suma una línea "con {nombre}"
-  // y recién después la fecha. Si el nombre del negocio ya contiene el de la
-  // profesional (cuenta donde el estudio lleva el nombre de la dueña, ej.
-  // "Natalia Acosta Studio" con Natalia) no se repite: queda el header de
-  // siempre.
-  const tituloPrincipal = nombreEstudio;
+  // Header en dos modos. Sin profesional elegida a mano: el nombre del
+  // negocio de título, "TURNOS DISPONIBLES" y la fecha (como siempre). Con
+  // una profesional elegida: "Turnos disponibles" de título y una sola línea
+  // chica "con {nombre} · {fecha}"; el nombre del negocio pasa al pie. Si el
+  // nombre del negocio ya contiene el de la profesional (cuenta donde el
+  // estudio lleva el nombre de la dueña, ej. "Natalia Acosta Studio" con
+  // Natalia) no se repite: queda el header de siempre.
   const lineaProfesional = profesionalNombre && !nombreYaEnNegocio(profesionalNombre, nombreEstudio)
     ? t('withProfessional', { nombre: profesionalNombre })
     : null;
-  // Alto extra que ocupa esa línea en el header (aprox., no medido en vivo).
-  const lineaProfesionalAlto = lineaProfesional ? 14 : 0;
+  const tituloPrincipal = lineaProfesional ? t('availableTitle') : nombreEstudio;
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
   // historia con su propio chrome y, en celus más altos que 9:16, recortan
@@ -146,7 +145,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // Ahora arrancan/terminan en el borde del canvas pero llegan hasta pasado
   // el header/footer ya corridos hacia adentro por la safe area — el blur
   // extra cae detrás del chrome de la plataforma, así que no se ve de más.
-  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10) + lineaProfesionalAlto;
+  const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10);
   const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
 
   // La foto de fondo se sube un poco. La barra de responder/enviar de
@@ -166,7 +165,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  const bodyMargenTop = Math.round(canvasHeight * 0.06) + lineaProfesionalAlto;
+  const bodyMargenTop = Math.round(canvasHeight * 0.06);
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -322,26 +321,29 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     fecha ("17 al 23 de agosto") ya es larga por sí sola, y
                     sumarle "· TURNOS DISPONIBLES" en el mismo renglón lo
                     hacía correr y perder orden. */}
-                <span style={{
-                  display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                  color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                }}>
-                  {t('availableAppointments')}
-                </span>
-                {lineaProfesional && (
+                {lineaProfesional ? (
                   <span style={{
-                    display: 'block', marginTop: 2, fontSize: 11, fontWeight: 600,
-                    color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    display: 'block', marginTop: 4, fontSize: 11, fontWeight: 400,
+                    color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                   }}>
-                    {lineaProfesional}
+                    {`${lineaProfesional} · ${titulo}`}
                   </span>
+                ) : (
+                  <>
+                    <span style={{
+                      display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                      color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    }}>
+                      {t('availableAppointments')}
+                    </span>
+                    <span style={{
+                      display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
+                      color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    }}>
+                      {titulo}
+                    </span>
+                  </>
                 )}
-                <span style={{
-                  display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
-                  color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                }}>
-                  {titulo}
-                </span>
               </div>
             </div>
 
@@ -449,6 +451,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     +{phoneUtils.formatDisplay(telefonoEstudio)}
                   </span>
                 </div>
+              )}
+              {/* Con profesional elegida el título del header deja de ser el
+                  negocio: su nombre pasa acá, para no perder la referencia
+                  (el avatar de la profesional reemplaza al logo). */}
+              {lineaProfesional && nombreEstudio && (
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                  {nombreEstudio}
+                </span>
               )}
             </div>
           </div>

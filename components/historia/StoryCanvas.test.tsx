@@ -66,25 +66,32 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
   });
 });
 
-describe('StoryCanvas — línea "con {profesional}" en el header', () => {
-  it('sin profesional elegida: título del negocio, "Turnos disponibles" y la fecha, sin línea "con"', () => {
+describe('StoryCanvas — header con profesional elegida (diseño A)', () => {
+  it('sin profesional elegida: título del negocio, "TURNOS DISPONIBLES" y la fecha, sin línea "con"', () => {
     renderCanvas(null, unDia);
     expect(screen.getByText('Turnetto')).toBeInTheDocument();
     expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
+    expect(screen.getByText('24 de sept')).toBeInTheDocument();
+    expect(screen.queryByText('Turnos disponibles')).not.toBeInTheDocument();
     expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
   });
 
-  it('con profesional elegida: título, "Turnos disponibles", "con Natalia" y la fecha, en ese orden', () => {
-    renderCanvas(null, unDia, 'Natalia');
-    expect(screen.getByText('Turnetto')).toBeInTheDocument();
-    const leyenda = screen.getByText('TURNOS DISPONIBLES');
-    const con = screen.getByText('con Natalia');
-    const fecha = screen.getByText('24 de sept');
-    // DOCUMENT_POSITION_FOLLOWING (4): el segundo nodo viene después del primero.
-    expect(leyenda.compareDocumentPosition(con) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(con.compareDocumentPosition(fecha) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // El nombre no pasa a ser el título grande.
-    expect(screen.queryByText('Natalia')).not.toBeInTheDocument();
+  it('con profesional elegida: título "Turnos disponibles" y una sola línea "con Gabriela · fecha"', () => {
+    renderCanvas(null, unDia, 'Gabriela');
+    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
+    expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
+    // La leyenda en mayúsculas y la fecha suelta ya no van aparte.
+    expect(screen.queryByText('TURNOS DISPONIBLES')).not.toBeInTheDocument();
+    expect(screen.queryByText('24 de sept')).not.toBeInTheDocument();
+  });
+
+  it('con profesional elegida el nombre del negocio ya no es el título: baja al pie, una sola vez', () => {
+    renderCanvas(null, unDia, 'Gabriela');
+    const negocio = screen.getAllByText('Turnetto');
+    expect(negocio).toHaveLength(1);
+    // Está en el pie: viene después de la línea "con …" en el documento.
+    const con = screen.getByText('con Gabriela · 24 de sept');
+    expect(con.compareDocumentPosition(negocio[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('si el nombre del negocio ya contiene el de la profesional no se repite ("Natalia Acosta Studio" con Natalia)', () => {
@@ -108,7 +115,10 @@ describe('StoryCanvas — línea "con {profesional}" en el header', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.queryByText('con Natalia')).not.toBeInTheDocument();
+    // Header de siempre: negocio de título, leyenda y fecha sueltas, sin "con".
+    expect(screen.getByText('Natalia Acosta Studio')).toBeInTheDocument();
+    expect(screen.getByText('TURNOS DISPONIBLES')).toBeInTheDocument();
+    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
   });
 
   it('si la profesional se llama igual que el negocio no se repite el nombre', () => {
