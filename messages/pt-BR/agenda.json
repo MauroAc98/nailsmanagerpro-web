@@ -17,7 +17,7 @@
     "subtitle": "Atendimentos concluídos em que falta registrar quanto foi cobrado",
     "loading": "Carregando...",
     "emptyState": "Você não tem agendamentos pendentes de cobrança",
-    "searchPlaceholder": "Buscar por nome da cliente...",
+    "searchPlaceholder": "Buscar por nome do cliente...",
     "noResults": "Nenhum agendamento encontrado",
     "resultCount": "{count, plural, one {# agendamento} other {# agendamentos}}",
     "saved": "Preço salvo",
@@ -71,7 +71,7 @@
     "title": "Filtros",
     "clearAll": "Limpar tudo",
     "searchClient": "Buscar cliente",
-    "clientNamePlaceholder": "Nome da cliente...",
+    "clientNamePlaceholder": "Nome do cliente...",
     "searchByDate": "Buscar por data",
     "datePlaceholder": "Escolher data",
     "filterByService": "Filtrar por serviço",
@@ -84,7 +84,7 @@
     "all": "Toda a equipe"
   },
   "AltaClienteRapidaSheet": {
-    "title": "Nova cliente",
+    "title": "Novo cliente",
     "nameLabel": "Nome *",
     "namePlaceholder": "Ex: Carla",
     "nameRequired": "O nome é obrigatório",
@@ -96,7 +96,7 @@
     "phoneRequired": "O telefone é obrigatório",
     "saving": "Salvando...",
     "submit": "Adicionar e selecionar",
-    "saveError": "Não foi possível salvar a cliente."
+    "saveError": "Não foi possível salvar o cliente."
   },
   "WeekStrip": {
     "previousWeek": "Semana anterior",
@@ -134,11 +134,11 @@
     "loadingClients": "Carregando clientes...",
     "retry": "Tentar novamente",
     "noClientsFound": "Nenhum cliente encontrado.",
-    "newClientOption": "+ Adicionar nova cliente",
+    "newClientOption": "+ Adicionar novo cliente",
     "professional": "PROFISSIONAL",
     "services": "SERVIÇOS",
-    "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
-    "noServicesAssigned": "Essa profissional não tem serviços atribuídos.",
+    "chooseProfessionalFirst": "Escolha quem atende para ver os serviços.",
+    "noServicesAssigned": "Essa pessoa não tem serviços atribuídos.",
     "appointmentTime": "HORÁRIO DO AGENDAMENTO",
     "saving": "Salvando...",
     "loadingSchedule": "Carregando horários...",
@@ -164,11 +164,11 @@
     "loadingClients": "Carregando clientes...",
     "retry": "Tentar novamente",
     "noClientsFound": "Nenhum cliente encontrado.",
-    "newClientOption": "+ Adicionar nova cliente",
+    "newClientOption": "+ Adicionar novo cliente",
     "professional": "PROFISSIONAL",
     "services": "SERVIÇOS",
-    "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
-    "noServicesAssigned": "Essa profissional não tem serviços atribuídos.",
+    "chooseProfessionalFirst": "Escolha quem atende para ver os serviços.",
+    "noServicesAssigned": "Essa pessoa não tem serviços atribuídos.",
     "appointmentTime": "HORÁRIO DO AGENDAMENTO",
     "saving": "Salvando...",
     "loadingSchedule": "Carregando horários...",
@@ -178,7 +178,7 @@
     "timeModalTitle": "Horário do agendamento",
     "confirm": "Confirmar",
     "appointmentCreatedTitle": "Agendamento criado",
-    "manualConfirmationNotice": "O envio automático de confirmação não está disponível no momento para o seu WhatsApp. Envie você mesma:",
+    "manualConfirmationNotice": "O envio automático de confirmação não está disponível no momento para o seu WhatsApp. Envie manualmente:",
     "sendConfirmationWhatsapp": "Enviar confirmação via WhatsApp",
     "readyButton": "Pronto"
   },
@@ -187,7 +187,7 @@
     "statsOfMonth": "Estatísticas de {mes}",
     "appointmentsCompleted": "{count, plural, one {# agendamento concluído} other {# agendamentos concluídos}}",
     "topServiceLabel": "serviço top",
-    "newClientsThisMonth": "{count, plural, one {# cliente nova este mês} other {# clientes novas este mês}}",
+    "newClientsThisMonth": "{count, plural, one {# cliente novo este mês} other {# clientes novos este mês}}",
     "hideAmount": "Ocultar valor",
     "showAmount": "Mostrar valor"
   },
@@ -224,7 +224,7 @@
     "estadoEnviado": "Enviado",
     "estadoManual": "Enviado manualmente",
     "estadoFallido": "Falha no envio",
-    "mensajeEnviado": "Foi isso que ela recebeu",
+    "mensajeEnviado": "Foi isso que a pessoa recebeu",
     "mensajeFallido": "Foi isso que tentamos enviar"
   }
 }

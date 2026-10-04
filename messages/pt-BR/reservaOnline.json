@@ -32,7 +32,7 @@
   },
   "horario": {
     "title": "Quando você vem?",
-    "cualquiera": "Qualquer uma",
+    "cualquiera": "Qualquer pessoa",
     "sinHorarios": "Não há horários livres neste dia. Tente outro.",
     "errorCarga": "Não conseguimos carregar os horários.",
     "subtitulo": "Seu atendimento dura {duracion}.",
@@ -46,7 +46,7 @@
     "irProximoDia": "Ir para o próximo dia com vaga",
     "elegirOtroDia": "Escolher outro dia",
     "buscando": "Procurando o próximo dia com vaga…",
-    "sinLugarProximos": "Não há vaga nos próximos 30 dias. Tente com outra profissional ou entre em contato com o negócio.",
+    "sinLugarProximos": "Não há vaga nos próximos 30 dias. Tente com outra pessoa da equipe ou entre em contato com o negócio.",
     "reteniendo": "Reservando seu horário…",
     "profesionalPorServicio": "Escolher quem atende cada serviço",
     "unaSola": "Voltar a uma só pessoa para tudo"
@@ -123,7 +123,7 @@
   },
   "settings": {
     "title": "Reservas online",
-    "subtitle": "Suas clientes reservam sozinhas e pagam o sinal",
+    "subtitle": "Seus clientes reservam por conta própria e pagam o sinal",
     "aceptar": "Aceitar reservas online",
     "activo": "Ativo",
     "inactivo": "Inativo",
@@ -185,7 +185,7 @@
   },
   "fotos": {
     "titulo": "Fotos dos seus trabalhos",
-    "ayuda": "As clientes as veem ao escolher este serviço. A primeira é a capa.",
+    "ayuda": "Quem reserva as vê ao escolher este serviço. A primeira é a capa.",
     "portada": "Capa",
     "agregar": "Adicionar",
     "agregarAria": "Adicionar fotos",

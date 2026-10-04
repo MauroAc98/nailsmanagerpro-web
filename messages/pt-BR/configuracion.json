@@ -314,20 +314,20 @@
   },
   "ProfesionalesPage": {
     "title": "Profissionais",
-    "disclaimer": "Desativar uma profissional não apaga o histórico de agendamentos dela — só deixa de aparecer para novos agendamentos.",
+    "disclaimer": "Desativar alguém da equipe não apaga o histórico de agendamentos dessa pessoa — só deixa de aparecer para novos agendamentos.",
     "loading": "Carregando profissionais...",
-    "emptyState": "Cadastre sua primeira profissional!",
+    "emptyState": "Cadastre a primeira pessoa da sua equipe!",
     "noServices": "Sem serviços atribuídos",
     "serviceCount": "{count, plural, one {# serviço} other {# serviços}}",
     "paraleloTitle": "Atende em paralelo",
     "paraleloHint": "Permite criar promoções em que duas ou mais profissionais atendem ao mesmo tempo.",
     "allDays": "Todos os dias",
     "dayRangeConnector": "a",
-    "inactiveLabel": "Inativa",
-    "jefaBadge": "Chefa"
+    "inactiveLabel": "Inativo",
+    "jefaBadge": "Titular"
   },
   "NuevoProfesionalPage": {
-    "title": "Nova profissional",
+    "title": "Cadastro de profissional",
     "identitySection": "Identidade",
     "availabilitySection": "Disponibilidade",
     "nameLabel": "Nome *",
@@ -338,22 +338,22 @@
     "colorLabel": "Cor de identificação",
     "workingDaysLabel": "Dias de atendimento",
     "workingDaysHint": "Sem seleção = atende todos os dias.",
-    "servicesLabel": "Serviços que ela pode realizar",
-    "duplicateActive": "Já existe uma profissional com esse nome.",
-    "duplicateInactive": "Você já tem uma profissional com esse nome (inativa). Reative-a na lista em vez de criar uma nova.",
+    "servicesLabel": "Serviços que a pessoa pode realizar",
+    "duplicateActive": "Já existe um perfil com esse nome.",
+    "duplicateInactive": "Você já tem um perfil com esse nome (inativo). Reative-o na lista em vez de criar outro.",
     "saving": "Salvando...",
     "submit": "Adicionar profissional",
-    "saveError": "Não foi possível salvar a profissional."
+    "saveError": "Não foi possível salvar o perfil."
   },
   "EditarProfesionalPage": {
     "title": "Editar profissional",
     "loading": "Carregando...",
     "identitySection": "Identidade",
     "availabilitySection": "Disponibilidade",
-    "avatarChange": "Alterar foto da profissional",
-    "avatarRemove": "Remover foto da profissional",
+    "avatarChange": "Alterar foto de perfil",
+    "avatarRemove": "Remover foto de perfil",
     "avatarTooLarge": "A imagem não pode ter mais de 5MB.",
-    "avatarRemoveConfirm": "Remover a foto desta profissional?",
+    "avatarRemoveConfirm": "Remover a foto deste perfil?",
     "avatarRemoveConfirmButton": "Remover",
     "nameLabel": "Nome *",
     "namePlaceholder": "Ex: Sofía",
@@ -361,22 +361,22 @@
     "lastNameLabel": "Sobrenome",
     "lastNamePlaceholder": "Ex: Gómez",
     "colorLabel": "Cor de identificação",
-    "activeLabel": "Ativa",
+    "activeLabel": "Ativo",
     "activeSubtitleOn": "Disponível para novos agendamentos",
     "activeSubtitleOff": "Não aparece para novos agendamentos",
     "workingDaysLabel": "Dias de atendimento",
     "workingDaysHint": "Sem seleção = atende todos os dias.",
-    "servicesLabel": "Serviços que ela pode realizar",
-    "loadError": "Não foi possível carregar a profissional.",
-    "duplicateActive": "Já existe uma profissional com esse nome.",
-    "duplicateInactive": "Você já tem uma profissional com esse nome (inativa). Reative-a na lista em vez de criar uma nova.",
+    "servicesLabel": "Serviços que a pessoa pode realizar",
+    "loadError": "Não foi possível carregar o perfil.",
+    "duplicateActive": "Já existe um perfil com esse nome.",
+    "duplicateInactive": "Você já tem um perfil com esse nome (inativo). Reative-o na lista em vez de criar outro.",
     "saving": "Salvando...",
     "submit": "Salvar alterações",
-    "saveError": "Não foi possível salvar a profissional."
+    "saveError": "Não foi possível salvar o perfil."
   },
   "BloqueosPage": {
     "title": "Bloqueios",
-    "subtitle": "Feche datas ou horários específicos: suas clientes não vão poder reservá-los online, e sua agenda avisa se você mesma agendar ali.",
+    "subtitle": "Feche datas ou horários específicos: seus clientes não vão poder reservá-los online, e sua agenda avisa se você agendar ali mesmo.",
     "loading": "Carregando bloqueios...",
     "emptyTitle": "Você não tem nenhum bloqueio cadastrado.",
     "emptyText": "Use-os para fechar férias, feriados ou qualquer dia ou horário em que o negócio não atende.",
@@ -424,7 +424,7 @@
   },
   "SlotsPage": {
     "title": "Horários Disponíveis",
-    "subtitle": "Estes são os horários em que suas clientes podem reservar agendamentos.",
+    "subtitle": "Estes são os horários em que seus clientes podem reservar agendamentos.",
     "loading": "Carregando horários...",
     "emptyState": "Nenhum horário cadastrado. Toque em + para adicionar um.",
     "available": "Disponível",
@@ -458,23 +458,23 @@
     "sections": {
       "gettingStarted": {
         "title": "Primeiros passos",
-        "text": "Entre com o e-mail e a senha provisória que você recebeu por e-mail quando sua conta foi criada. Na primeira vez, o app vai pedir que você a troque por uma nova antes de deixar você entrar — é um passo obrigatório, só uma vez.\n\nDepois de entrar, o app funciona com 4 seções fixas na parte de baixo da tela:\n\n- Agenda: seus agendamentos, dia a dia. É a tela principal.\n- Clientes: a lista das suas clientes.\n- Ajustes: serviços, horários, profissionais e bloqueios — o que precisa estar cadastrado antes de conseguir agendar.\n- Negócio: os dados do seu negócio, WhatsApp automático e sinal, finanças, aparência, sua assinatura e esta Ajuda."
+        "text": "Entre com o e-mail e a senha provisória que você recebeu por e-mail quando sua conta foi criada. Na primeira vez, o app vai pedir que você a troque por uma nova antes de deixar você entrar — é um passo obrigatório, só uma vez.\n\nDepois de entrar, o app funciona com 4 seções fixas na parte de baixo da tela:\n\n- Agenda: seus agendamentos, dia a dia. É a tela principal.\n- Clientes: a lista dos seus clientes.\n- Ajustes: serviços, horários, profissionais e bloqueios — o que precisa estar cadastrado antes de conseguir agendar.\n- Negócio: os dados do seu negócio, WhatsApp automático e sinal, finanças, aparência, sua assinatura e esta Ajuda."
       },
       "initialSetup": {
         "title": "Antes de começar: o que configurar primeiro",
-        "text": "Para conseguir criar seu primeiro agendamento, você precisa, nesta ordem:\n\n1. Pelo menos um serviço ativo (Ajustes → Serviços) — sem isso você não consegue escolher o que vai ser feito na cliente.\n2. Pelo menos um horário de atendimento ativo (Ajustes → Horários Disponíveis) — sem isso o app não deixa você salvar nenhum agendamento, e avisa \"Você não tem horários de atendimento configurados\".\n3. Pelo menos uma cliente cadastrada (aba Clientes) — os agendamentos sempre são atribuídos a uma cliente já cadastrada, não dá para digitar o nome na hora direto na agenda.\n\nCom esses três passos você já pode criar agendamentos."
+        "text": "Para conseguir criar seu primeiro agendamento, você precisa, nesta ordem:\n\n1. Pelo menos um serviço ativo (Ajustes → Serviços) — sem isso você não consegue escolher o que vai ser feito no cliente.\n2. Pelo menos um horário de atendimento ativo (Ajustes → Horários Disponíveis) — sem isso o app não deixa você salvar nenhum agendamento, e avisa \"Você não tem horários de atendimento configurados\".\n3. Pelo menos um cliente cadastrado (aba Clientes) — os agendamentos sempre são atribuídos a um cliente já cadastrado, não dá para digitar o nome na hora direto na agenda.\n\nCom esses três passos você já pode criar agendamentos."
       },
       "bookingAppointment": {
         "title": "Como fazer um agendamento",
-        "text": "1. Vá em Agenda e toque no botão + (embaixo à direita, em um dia que não seja passado).\n2. Escolha a cliente buscando pelo nome.\n3. Se você trabalha com mais de uma profissional, escolha quem vai atender — os serviços mostrados depois são filtrados pelo que essa pessoa sabe fazer.\n4. Escolha um ou mais serviços.\n5. Escolha o horário. O app valida sozinho: não deixa você escolher um horário fora do seu horário de atendimento, nem um que se sobreponha a outro agendamento do dia.\n6. Toque em \"Confirmar Agendamento\".\n\nPara cancelar um agendamento: deslize para a esquerda na lista da agenda e toque em \"Cancelar\". Para editá-lo: toque diretamente nele.\n\nEnquanto está sendo atendido, o cartão mostra \"EM ANDAMENTO\" com um botão para finalizar manualmente; depois que o horário passa, ele é marcado sozinho como finalizado e aparece esmaecido. Para procurar um agendamento específico (por cliente, serviço ou data), use o botão \"Filtrar\" acima da lista — o campo de data ali abre o mesmo calendário que você vê na Agenda, não precisa digitá-la.\n\nSe você trabalha com mais de uma profissional, acima da lista do dia vão aparecer chips com os nomes das que têm agendamento naquele dia específico — toque em um para ver só os agendamentos dela, ou em \"Todas\" para ver todos juntos. Isso muda de acordo com o dia que você está vendo no calendário: se uma profissional não tem nada agendado naquele dia, ela não aparece como opção."
+        "text": "1. Vá em Agenda e toque no botão + (embaixo à direita, em um dia que não seja passado).\n2. Escolha o cliente buscando pelo nome.\n3. Se você trabalha com mais de uma pessoa, escolha quem vai atender — os serviços mostrados depois são filtrados pelo que essa pessoa sabe fazer.\n4. Escolha um ou mais serviços.\n5. Escolha o horário. O app valida sozinho: não deixa você escolher um horário fora do seu horário de atendimento, nem um que se sobreponha a outro agendamento do dia.\n6. Toque em \"Confirmar Agendamento\".\n\nPara cancelar um agendamento: deslize para a esquerda na lista da agenda e toque em \"Cancelar\". Para editá-lo: toque diretamente nele.\n\nEnquanto está sendo atendido, o cartão mostra \"EM ANDAMENTO\" com um botão para finalizar manualmente; depois que o horário passa, ele é marcado sozinho como finalizado e aparece esmaecido. Para procurar um agendamento específico (por cliente, serviço ou data), use o botão \"Filtrar\" acima da lista — o campo de data ali abre o mesmo calendário que você vê na Agenda, não precisa digitá-la.\n\nSe você trabalha com mais de uma pessoa, acima da lista do dia vão aparecer chips com os nomes de quem tem agendamento naquele dia específico — toque em um para ver só os agendamentos dessa pessoa, ou em \"Toda a equipe\" para ver todos juntos. Isso muda de acordo com o dia que você está vendo no calendário: se alguém da equipe não tem nada agendado naquele dia, essa pessoa não aparece como opção."
       },
       "bloqueos": {
         "title": "Bloqueios",
-        "text": "Ajustes → Bloqueios.\n\nFeche uma data inteira, ou só um horário específico dentro de um dia (por exemplo uma tarde livre), para todo o negócio ou para uma profissional em particular — útil para férias, feriados, ou qualquer período em que você não atende.\n\n1. Toque em + e escolha a data.\n2. Escolha quem é afetado: todo o negócio, ou uma profissional específica.\n3. Escolha se vai bloquear o dia inteiro ou só um horário (\"De\"/\"Até\").\n4. Opcional: anote um motivo, por exemplo \"Férias\".\n\nUm bloqueio não impede você de criar um agendamento manualmente ali se realmente precisar — o app avisa que aquele horário está bloqueado, mas a decisão final é sua."
+        "text": "Ajustes → Bloqueios.\n\nFeche uma data inteira, ou só um horário específico dentro de um dia (por exemplo uma tarde livre), para todo o negócio ou para uma pessoa da equipe em particular — útil para férias, feriados, ou qualquer período em que você não atende.\n\n1. Toque em + e escolha a data.\n2. Escolha quem é afetado: todo o negócio, ou uma pessoa específica.\n3. Escolha se vai bloquear o dia inteiro ou só um horário (\"De\"/\"Até\").\n4. Opcional: anote um motivo, por exemplo \"Férias\".\n\nUm bloqueio não impede você de criar um agendamento manualmente ali se realmente precisar — o app avisa que aquele horário está bloqueado, mas a decisão final é sua."
       },
       "instagramStory": {
         "title": "Story de disponibilidade: todas as opções",
-        "text": "Abre a partir do botão COMPARTILHAR, no canto superior direito da Agenda.\n\n- Período: escolha Dia, Semana ou Mês. Em Mês você também escolhe a primeira quinzena (1 a 15) ou a segunda (16 ao fim).\n- Logo: se você enviou o logo do seu negócio em Meu negócio, ele aparece no cabeçalho da imagem — não precisa escolher nada aqui. Se você escolher uma profissional que tem foto de perfil, a foto dela aparece no lugar; se não tiver, fica o logo. Sem logo cadastrado, fica como sempre foi.\n- Profissional: se você trabalha com mais de uma, escolha de quem mostrar a disponibilidade — ao abrir a tela a dona já fica escolhida, e o nome e a foto dela aparecem no cabeçalho da imagem (\"com …\"). O nome do negócio vai no rodapé, junto ao telefone.\n- Fundo: botão \"Fundo\" para enviar uma foto de fundo para a imagem. Ao escolhê-la, o app pergunta se você quer salvá-la como fundo fixo (é reutilizada sozinha na próxima vez que você gerar um story) ou usá-la só desta vez. Se você salvou uma, aparece um link \"Remover fundo fixo salvo\" para tirá-la quando quiser.\n- Texto livre: escreva um texto e toque em + para adicioná-lo à imagem. Você pode colocar emojis, arrastá-lo para a posição que quiser dentro da imagem, e aumentar ou diminuir com os botões A- / A+ (ou a alça no canto, tocando e arrastando).\n- Editar o que é mostrado: toque em um horário avulso na lista abaixo para tirá-lo da imagem, ou no ícone do olho em um dia para ocultá-lo por completo.\n- No final: \"Salvar\" baixa a imagem no seu dispositivo, \"Compartilhar\" abre o menu para enviá-la direto (por exemplo para o Instagram ou WhatsApp)."
+        "text": "Abre a partir do botão COMPARTILHAR, no canto superior direito da Agenda.\n\n- Período: escolha Dia, Semana ou Mês. Em Mês você também escolhe a primeira quinzena (1 a 15) ou a segunda (16 ao fim).\n- Logo: se você enviou o logo do seu negócio em Meu negócio, ele aparece no cabeçalho da imagem — não precisa escolher nada aqui. Se você escolher alguém que tem foto de perfil, essa foto aparece no lugar; se não tiver, fica o logo. Sem logo cadastrado, fica como sempre foi.\n- Profissional: se você trabalha com mais de uma, escolha de quem mostrar a disponibilidade — ao abrir a tela a pessoa titular já fica escolhida, e o nome e a foto aparecem no cabeçalho da imagem (\"com …\"). O nome do negócio vai no rodapé, junto ao telefone.\n- Fundo: botão \"Fundo\" para enviar uma foto de fundo para a imagem. Ao escolhê-la, o app pergunta se você quer salvá-la como fundo fixo (é reutilizada sozinha na próxima vez que você gerar um story) ou usá-la só desta vez. Se você salvou uma, aparece um link \"Remover fundo fixo salvo\" para tirá-la quando quiser.\n- Texto livre: escreva um texto e toque em + para adicioná-lo à imagem. Você pode colocar emojis, arrastá-lo para a posição que quiser dentro da imagem, e aumentar ou diminuir com os botões A- / A+ (ou a alça no canto, tocando e arrastando).\n- Editar o que é mostrado: toque em um horário avulso na lista abaixo para tirá-lo da imagem, ou no ícone do olho em um dia para ocultá-lo por completo.\n- No final: \"Salvar\" baixa a imagem no seu dispositivo, \"Compartilhar\" abre o menu para enviá-la direto (por exemplo para o Instagram ou WhatsApp)."
       },
       "services": {
         "title": "Serviços",
@@ -486,31 +486,31 @@
       },
       "priceStory": {
         "title": "Story de preços",
-        "text": "Abre a partir do botão \"Story de preços\", acima da lista em Ajustes → Serviços (aparece assim que você tiver pelo menos um serviço cadastrado).\n\nJá não há mais abas separadas: o cartão mostra seus serviços e suas promoções juntos (os que você marcou com \"É promoção\" em Serviços — veja essa seção) em uma única imagem. Se você tiver os dois tipos cadastrados, eles aparecem separados com seu próprio título dentro do cartão; se tiver só um, aparece sem esse título a mais.\n\n\"Escolha seu design\" mostra 8 modelos fixos, cada um com sua própria composição de fotos (de 1 a 4) e estilo. Um modelo fica bloqueado se você não enviou fotos suficientes para ele — o app diz quantas faltam — e ele se desbloqueia sozinho assim que você envia as que faltam.\n\nMais abaixo, em \"Fotos\", você envia as imagens de fundo dedicadas a este story — são fotos próprias desta tela, não as mesmas usadas no Story do Instagram de disponibilidade (veja essa seção). Você pode enviar várias, reordená-las arrastando o ícone de pontinhos, e apagá-las quando quiser.\n\nSe você trabalha com mais de uma profissional, em cima dá para escolher de quem mostrar os preços. Mais abaixo dá para adicionar um texto extra (por exemplo uma observação sobre sinal ou forma de pagamento) e escolher seu alinhamento.\n\nNo final, \"Salvar\" baixa a imagem no seu dispositivo e \"Compartilhar\" abre o menu para enviá-la direto."
+        "text": "Abre a partir do botão \"Story de preços\", acima da lista em Ajustes → Serviços (aparece assim que você tiver pelo menos um serviço cadastrado).\n\nJá não há mais abas separadas: o cartão mostra seus serviços e suas promoções juntos (os que você marcou com \"É promoção\" em Serviços — veja essa seção) em uma única imagem. Se você tiver os dois tipos cadastrados, eles aparecem separados com seu próprio título dentro do cartão; se tiver só um, aparece sem esse título a mais.\n\n\"Escolha seu design\" mostra 8 modelos fixos, cada um com sua própria composição de fotos (de 1 a 4) e estilo. Um modelo fica bloqueado se você não enviou fotos suficientes para ele — o app diz quantas faltam — e ele se desbloqueia sozinho assim que você envia as que faltam.\n\nMais abaixo, em \"Fotos\", você envia as imagens de fundo dedicadas a este story — são fotos próprias desta tela, não as mesmas usadas no Story do Instagram de disponibilidade (veja essa seção). Você pode enviar várias, reordená-las arrastando o ícone de pontinhos, e apagá-las quando quiser.\n\nSe você trabalha com mais de uma pessoa, em cima dá para escolher de quem mostrar os preços. Mais abaixo dá para adicionar um texto extra (por exemplo uma observação sobre sinal ou forma de pagamento) e escolher seu alinhamento.\n\nNo final, \"Salvar\" baixa a imagem no seu dispositivo e \"Compartilhar\" abre o menu para enviá-la direto."
       },
       "clients": {
         "title": "Clientes",
-        "text": "Aba Clientes.\n\nAli você cadastra nome, sobrenome e telefone de cada uma. O telefone é usado no botão de WhatsApp que aparece em cada agendamento e nas mensagens automáticas.\n\nVocê pode buscá-las pelo nome e ver o histórico de agendamentos delas. O interruptor em cada cartão desativa a cliente sem apagá-la (por exemplo, se ela parou de vir) — os agendamentos anteriores dela ficam intactos, e você pode reativá-la a qualquer momento com o mesmo interruptor."
+        "text": "Aba Clientes.\n\nAli você cadastra nome, sobrenome e telefone de cada cliente. O telefone é usado no botão de WhatsApp que aparece em cada agendamento e nas mensagens automáticas.\n\nVocê pode buscar clientes pelo nome e ver o histórico de agendamentos. O interruptor em cada cartão desativa o perfil sem apagá-lo (por exemplo, se parou de vir) — os agendamentos anteriores ficam intactos, e você pode reativá-lo a qualquer momento com o mesmo interruptor."
       },
       "professionals": {
-        "title": "Profissionais: como adicionar uma nova",
-        "text": "Esta seção só é importante se você trabalha com mais de uma pessoa no negócio. Se você trabalha sozinha, não precisa mexer em nada aqui.\n\n1. Ajustes → Profissionais → botão +.\n2. Digite o nome dela e escolha uma cor para diferenciá-la na agenda.\n3. Marque os serviços que ela sabe fazer — isso filtra o que pode ser atribuído a ela ao criar um agendamento.\n4. Salve.\n5. Importante: vá em Ajustes → Horários Disponíveis, escolha o nome dela no seletor no topo, e cadastre os horários de atendimento próprios dela (veja \"Horários Disponíveis\"). Sem isso ela não vai ter nenhum horário disponível para agendar, mesmo já tendo sido criada.\n\nEm Editar profissional você também pode enviar a foto real dela (substitui as iniciais em todos os seletores de profissional do app) e escolher quais dias da semana ela atende, por exemplo se ela não trabalha aos domingos. Isso é diferente dos horários: os dias decidem EM QUE DIAS ela trabalha, os horários decidem A QUE HORA dentro desses dias.\n\nPara desativar uma profissional sem perder o histórico de agendamentos dela, desative-a na lista (o interruptor) em vez de apagá-la."
+        "title": "Profissionais: como adicionar alguém",
+        "text": "Esta seção só é importante se você trabalha com mais de uma pessoa no negócio. Se você trabalha sem equipe, não precisa mexer em nada aqui.\n\n1. Ajustes → Profissionais → botão +.\n2. Digite o nome e escolha uma cor para identificar os agendamentos na agenda.\n3. Marque os serviços que a pessoa sabe fazer — isso filtra o que pode ser atribuído ao criar um agendamento com ela.\n4. Salve.\n5. Importante: vá em Ajustes → Horários Disponíveis, escolha o nome no seletor no topo, e cadastre os horários de atendimento próprios (veja \"Horários Disponíveis\"). Sem isso não vai haver nenhum horário disponível para agendar, mesmo com o perfil já criado.\n\nEm Editar profissional você também pode enviar a foto real (substitui as iniciais em todos os seletores de profissional do app) e escolher quais dias da semana a pessoa atende, por exemplo se não trabalha aos domingos. Isso é diferente dos horários: os dias decidem EM QUE DIAS a pessoa trabalha, os horários decidem A QUE HORA dentro desses dias.\n\nPara desativar alguém da equipe sem perder o histórico de agendamentos, desative o perfil na lista (o interruptor) em vez de apagá-lo."
       },
       "availableSlots": {
         "title": "Horários Disponíveis",
-        "text": "Ajustes → Horários Disponíveis.\n\nÉ a lista de horários em que é possível reservar (por exemplo 09:00, 09:30, 10:00...). Toque em + para adicionar um novo horário, e use o interruptor para ativá-lo ou desativá-lo sem apagá-lo.\n\nEsse passo é obrigatório: sem nenhum horário ativo, o app não deixa você criar agendamentos.\n\nSe você trabalha com mais de uma profissional, cada uma tem seu próprio horário — escolha o nome dela na linha no topo desta tela antes de cadastrar os horários dela (veja a seção \"Profissionais\" para mais detalhes). Isso é diferente dos dias que ela atende (configurados em Editar profissional): aqui você escolhe os horários específicos dentro dos dias em que ela realmente trabalha."
+        "text": "Ajustes → Horários Disponíveis.\n\nÉ a lista de horários em que é possível reservar (por exemplo 09:00, 09:30, 10:00...). Toque em + para adicionar um novo horário, e use o interruptor para ativá-lo ou desativá-lo sem apagá-lo.\n\nEsse passo é obrigatório: sem nenhum horário ativo, o app não deixa você criar agendamentos.\n\nSe você trabalha com mais de uma pessoa, cada pessoa tem seu próprio horário — escolha o nome na linha no topo desta tela antes de cadastrar os horários (veja a seção \"Profissionais\" para mais detalhes). Isso é diferente dos dias de atendimento (configurados em Editar profissional): aqui você escolhe os horários específicos dentro dos dias em que ela realmente trabalha."
       },
       "whatsappLink": {
         "title": "WhatsApp automático",
-        "text": "Não há nada para vincular nem nenhum código QR para escanear: as mensagens de confirmação e lembrete são enviadas sozinhas por WhatsApp assim que você ativa cada uma separadamente em Negócio → Mensagens automáticas (\"Confirmação automática\" e \"Lembrete automático\").\n\nPara conseguir ativá-las você precisa ter cadastrado seu telefone, seu endereço e sua localização no mapa (Negócio → Dados do negócio) — enquanto faltar algum dos três, o interruptor fica bloqueado.\n\nMesmo com tudo cadastrado e ativado, o app passa para o modo manual se a sua conta estiver em português (por enquanto o envio automático não está disponível nesse idioma), ou se houver um problema pontual do nosso lado com a conexão do WhatsApp: depois de criar um agendamento, aparece um botão para você mesma enviar a confirmação pelo WhatsApp, e os lembretes pendentes de envio ficam listados para você enviar manualmente (veja \"Mensagens de WhatsApp\")."
+        "text": "Não há nada para vincular nem nenhum código QR para escanear: as mensagens de confirmação e lembrete são enviadas sozinhas por WhatsApp assim que você ativa cada uma separadamente em Negócio → Mensagens automáticas (\"Confirmação automática\" e \"Lembrete automático\").\n\nPara conseguir ativá-las você precisa ter cadastrado seu telefone, seu endereço e sua localização no mapa (Negócio → Dados do negócio) — enquanto faltar algum dos três, o interruptor fica bloqueado.\n\nMesmo com tudo cadastrado e ativado, o app passa para o modo manual se a sua conta estiver em português (por enquanto o envio automático não está disponível nesse idioma), ou se houver um problema pontual do nosso lado com a conexão do WhatsApp: depois de criar um agendamento, aparece um botão para enviar a confirmação manualmente pelo WhatsApp, e os lembretes pendentes de envio ficam listados para você enviar manualmente (veja \"Mensagens de WhatsApp\")."
       },
       "whatsappMessages": {
         "title": "Mensagens de WhatsApp",
-        "text": "\"Confirmação\" é enviada sozinha assim que você cria um novo agendamento — exceto se a sua conta estiver em modo manual (veja \"WhatsApp automático\"), caso em que aparece um botão para você mesma enviá-la depois de criar o agendamento. Se você ativou \"Pedir sinal para confirmar agendamentos\" em Negócio → Mensagens automáticas, essa mesma mensagem inclui o valor e os dados para pagá-lo (veja \"Meu negócio\").\n\n\"Lembrete\" tem dois caminhos: se você ativou \"Lembrete automático\" no Negócio, o app o envia sozinho um dia antes, no horário que você escolheu, para cada cliente com agendamento confirmado; e além disso você pode enviá-lo manualmente a qualquer momento, tocando no ícone do WhatsApp em um cartão de agendamento.\n\nO texto das mensagens é fixo (não pode ser editado) — inclui o nome da cliente, o seu negócio, a data, o horário, o serviço e o seu telefone de contato.\n\nSe a sua conta estiver em modo manual, ou se um envio automático pontual não puder ser feito, o agendamento vai aparecer em \"Lembretes pendentes\" para você enviar manualmente — e você também recebe um e-mail toda manhã com a lista dos que ficaram pendentes para aquele dia."
+        "text": "\"Confirmação\" é enviada sozinha assim que você cria um novo agendamento — exceto se a sua conta estiver em modo manual (veja \"WhatsApp automático\"), caso em que aparece um botão para enviá-la manualmente depois de criar o agendamento. Se você ativou \"Pedir sinal para confirmar agendamentos\" em Negócio → Mensagens automáticas, essa mesma mensagem inclui o valor e os dados para pagá-lo (veja \"Meu negócio\").\n\n\"Lembrete\" tem dois caminhos: se você ativou \"Lembrete automático\" no Negócio, o app o envia sozinho um dia antes, no horário que você escolheu, para cada cliente com agendamento confirmado; e além disso você pode enviá-lo manualmente a qualquer momento, tocando no ícone do WhatsApp em um cartão de agendamento.\n\nO texto das mensagens é fixo (não pode ser editado) — inclui o nome do cliente, o seu negócio, a data, o horário, o serviço e o seu telefone de contato.\n\nSe a sua conta estiver em modo manual, ou se um envio automático pontual não puder ser feito, o agendamento vai aparecer em \"Lembretes pendentes\" para você enviar manualmente — e você também recebe um e-mail toda manhã com a lista dos que ficaram pendentes para aquele dia."
       },
       "statistics": {
         "title": "Estatísticas",
-        "text": "Negócio → Finanças → Estatísticas. Também há um cartão resumo bem no topo da Agenda (agora inclui quanto você faturou naquele mês) — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas, ou toque em \"Período personalizado\" se precisar de um período específico (por exemplo, uma semana pontual). Se você trabalha com mais de uma profissional, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Receita: o total do período — o que você faturou com agendamentos, mais qualquer receita que você tenha cadastrado manualmente em Finanças → Receitas (detalhada à parte por categoria) —, o detalhamento por serviço, e um gráfico de tendência que se ajusta sozinho (dia a dia se o período for curto, por semana ou por mês se for mais longo — não precisa escolher).\n- Lucro líquido: todas as receitas (agendamentos + as cadastradas manualmente) menos as despesas que você cadastrou em Finanças → Despesas — é o lucro real do período.\n- Clientes novas vs. recorrentes: \"nova\" é a que teve o primeiro agendamento dela dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para receita, lucro líquido, clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das cinco que os mostra.\n\nSe um agendamento passa do horário sem que você o tenha finalizado manualmente, o sistema o marca como concluído sozinho, mas sem preço cadastrado. Esses casos aparecem em \"Pendentes de cobrança\" — acessível pelo numerozinho na barra de navegação ou pelo aviso acima da Agenda."
+        "text": "Negócio → Finanças → Estatísticas. Também há um cartão resumo bem no topo da Agenda (agora inclui quanto você faturou naquele mês) — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas, ou toque em \"Período personalizado\" se precisar de um período específico (por exemplo, uma semana pontual). Se você trabalha com mais de uma pessoa, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Receita: o total do período — o que você faturou com agendamentos, mais qualquer receita que você tenha cadastrado manualmente em Finanças → Receitas (detalhada à parte por categoria) —, o detalhamento por serviço, e um gráfico de tendência que se ajusta sozinho (dia a dia se o período for curto, por semana ou por mês se for mais longo — não precisa escolher).\n- Lucro líquido: todas as receitas (agendamentos + as cadastradas manualmente) menos as despesas que você cadastrou em Finanças → Despesas — é o lucro real do período.\n- Clientes novos vs. recorrentes: \"novo\" é quem teve o primeiro agendamento dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para receita, lucro líquido, clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das cinco que os mostra.\n\nSe um agendamento passa do horário sem que você o tenha finalizado manualmente, o sistema o marca como concluído sozinho, mas sem preço cadastrado. Esses casos aparecem em \"Pendentes de cobrança\" — acessível pelo numerozinho na barra de navegação ou pelo aviso acima da Agenda."
       },
       "pendingPayments": {
         "title": "Pendentes de cobrança",

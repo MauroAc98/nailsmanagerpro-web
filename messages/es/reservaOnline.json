@@ -46,7 +46,7 @@
     "irProximoDia": "Ir al próximo día con lugar",
     "elegirOtroDia": "Elegir otro día",
     "buscando": "Buscando el próximo día con lugar…",
-    "sinLugarProximos": "No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al negocio.",
+    "sinLugarProximos": "No hay lugar en los próximos 30 días. Probá con alguien más del equipo o contactá al negocio.",
     "reteniendo": "Reservando tu horario…",
     "profesionalPorServicio": "Elegir quién atiende cada servicio",
     "unaSola": "Volver a una sola persona para todo"
@@ -123,7 +123,7 @@
   },
   "settings": {
     "title": "Reservas online",
-    "subtitle": "Tus clientas reservan solas y pagan la seña",
+    "subtitle": "Tus clientes reservan por su cuenta y pagan la seña",
     "aceptar": "Aceptar reservas online",
     "activo": "Activo",
     "inactivo": "Inactivo",
@@ -185,7 +185,7 @@
   },
   "fotos": {
     "titulo": "Fotos de tus trabajos",
-    "ayuda": "Las clientas las ven al elegir este servicio. La primera es la portada.",
+    "ayuda": "Quienes reservan las ven al elegir este servicio. La primera es la portada.",
     "portada": "Portada",
     "agregar": "Agregar",
     "agregarAria": "Agregar fotos",
