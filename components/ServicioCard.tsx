@@ -9,7 +9,6 @@ import { withAlpha } from '@/theme/colors';
 import { Servicio } from '@/services/servicioService';
 import { formatMontoCorto } from '@/lib/money';
 import PillToggle from '@/components/PillToggle';
-import { NombreExpandible } from '@/components/ui/NombreExpandible';
 
 // Mismos valores que agenda/page.tsx (SwipeableTurnoCard) — mismo gesto,
 // mismo feel. No se importa desde ahí a propósito: ese archivo es solo
@@ -168,18 +167,19 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
             en la fila nombre+badge: minWidth:0 en el nombre, flexShrink:0 en
             el badge PROMO, así un nombre largo no lo empuja fuera. */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Fila 1: el nombre manda, a todo el ancho (menos el grip). Hasta 2
-              líneas; si aun así se corta, tocar el nombre abre un popover con
-              el nombre completo (no hay hover en la PWA). */}
+          {/* Fila 1: el nombre manda, a todo el ancho (menos el grip), y se parte
+              en las lineas que haga falta: nunca se recorta, asi que no hace
+              falta popover. */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
-            <NombreExpandible
-              texto={servicio.nombre}
-              lineas={2}
+            <p
               style={{
-                flex: 1, fontSize: 16, fontWeight: 700, lineHeight: 1.3,
+                margin: 0, flex: 1, minWidth: 0, fontSize: 16, fontWeight: 700, lineHeight: 1.3,
+                overflowWrap: 'anywhere',
                 color: servicio.activo ? colors.text : colors.placeholder,
               }}
-            />
+            >
+              {servicio.nombre}
+            </p>
             {draggable && (
               // Handle de drag-and-kit — su propio gesto (pointer events, vía
               // listeners) empieza en este mismo nodo. Sin cortar la propagación
