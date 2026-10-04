@@ -124,10 +124,12 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   // Promo con profesional fija por componente: la agenda la resuelve el backend,
   // no hay nada que elegir ni repartir.
   const hayPromoFija = servicioIds.some((id) => servicios?.find((x) => x.id === id)?.promoComponentizada);
-  const variasProfesionales = !hayPromoFija && (salon?.profesionales.length ?? 0) > 1 && servicioIds.length > 1;
+  // Quien ofrece cada servicio se consulta siempre que haya 2+ profesionales (aun
+  // con un servicio suelto): el selector solo debe listar a quienes lo hacen.
+  const consultarOfrecen = !!servicios && !hayPromoFija && (salon?.profesionales.length ?? 0) > 1 && servicioIds.length > 0;
   const { data: ofrecidos } = useCarga(
     () =>
-      salon && variasProfesionales
+      salon && consultarOfrecen
         ? Promise.all(
             salon.profesionales.map(async (p) => ({
               id: p.id,
@@ -135,7 +137,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
             })),
           )
         : Promise.resolve(null),
-    `${slug}|ofrecen|${servicioIds.join(',')}|${variasProfesionales}`,
+    `${slug}|ofrecen|${servicioIds.join(',')}|${consultarOfrecen}`,
   );
   const opciones = useMemo(() => {
     if (!salon || !ofrecidos) return null;
@@ -143,8 +145,22 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       servicioIds.map((id) => [id, salon.profesionales.filter((p) => ofrecidos.find((o) => o.id === p.id)?.servicios.includes(id))]),
     );
   }, [salon, ofrecidos, servicioIds]);
-  // Repartir solo tiene sentido si cada servicio lo hace alguien y hay 2+ profesionales distintas.
+  // Quienes hacen TODOS los servicios elegidos juntos: son las unicas que se
+  // pueden elegir como "una sola profesional". Elegir otra daba un 422 que la
+  // pantalla mostraba como "no hay horarios libres".
+  const compatibles = useMemo(() => {
+    if (!salon || !opciones) return null;
+    return salon.profesionales.filter((p) => servicioIds.every((id) => opciones[id]?.some((o) => o.id === p.id)));
+  }, [salon, opciones, servicioIds]);
+  // Una profesional elegida antes (otro servicio) que ya no los ofrece: vuelve a "Cualquiera".
+  useEffect(() => {
+    if (compatibles && !asignaciones && typeof profesionalId === 'number' && !compatibles.some((p) => p.id === profesionalId)) {
+      setProfesional('any');
+    }
+  }, [compatibles, asignaciones, profesionalId, setProfesional]);
+  // Repartir solo tiene sentido con 2+ servicios, si cada uno lo hace alguien y hay 2+ profesionales distintas.
   const puedeDividir =
+    servicioIds.length > 1 &&
     opciones !== null &&
     servicioIds.every((id) => opciones[id].length > 0) &&
     new Set(servicioIds.flatMap((id) => opciones[id].map((p) => p.id))).size > 1;
@@ -343,12 +359,12 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       )}
       {/* Sin `servicios` no se sabe si lo elegido es una promo con profesional
           fija: esperar evita que el selector aparezca un instante y se vaya. */}
-      {salon && servicios && salon.profesionales.length > 1 && !hayPromoFija && !(asignaciones && opciones) && (
+      {salon && servicios && compatibles && compatibles.length > 0 && !hayPromoFija && !(asignaciones && opciones) && (
         <SelectorProfesional
           label={t('horario.profesional')}
           labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
           todasLabel={t('horario.cualquiera')}
-          profesionales={salon.profesionales}
+          profesionales={compatibles}
           selectedId={profesionalId === 'any' ? null : profesionalId}
           onSelect={(id) => setProfesional(id ?? 'any')}
           selectedFg={colors.primaryFg}

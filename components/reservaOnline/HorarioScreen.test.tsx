@@ -339,6 +339,44 @@ describe('HorarioScreen', () => {
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // Reportado: con un servicio suelto el selector ofrecia a profesionales que no
+  // lo hacen, y el error decia "no hay horarios libres este dia" (era un 422).
+  describe('profesionales que no ofrecen el servicio elegido', () => {
+    const lucíaNoHaceElServicio1 = () =>
+      setServiceParaTests({
+        ...svc,
+        getServices: async (slug: string, q?: { profesionalId?: number }) => {
+          const todos = await svc.getServices(slug, q);
+          return q?.profesionalId === 2 ? todos.filter((s) => s.id !== 1) : todos;
+        },
+      });
+
+    it('con un servicio suelto, el selector solo lista a quienes lo ofrecen', async () => {
+      useReservaOnlineStore.getState().setServicios([1]);
+      lucíaNoHaceElServicio1();
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByRole('button', { name: /Ana$/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
+    });
+
+    it('si la profesional elegida antes ya no ofrece el servicio, vuelve a "Cualquiera"', async () => {
+      useReservaOnlineStore.getState().setServicios([1]);
+      useReservaOnlineStore.getState().setProfesional(2);
+      lucíaNoHaceElServicio1();
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await screen.findByRole('button', { name: /Ana$/ });
+      await waitFor(() => expect(useReservaOnlineStore.getState().profesionalId).toBe('any'));
+    });
+
+    it('con 2 servicios, solo aparecen las que ofrecen AMBOS', async () => {
+      useReservaOnlineStore.getState().setServicios([1, 2]);
+      lucíaNoHaceElServicio1();
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByRole('button', { name: /Ana$/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
+    });
+  });
+
   // Flash reportado: hasta que llegan los servicios no se sabe si lo elegido es
   // una promo con profesional fija, y el selector se dibujaba un instante.
   it('no muestra el selector de profesional hasta que cargaron los servicios', async () => {
