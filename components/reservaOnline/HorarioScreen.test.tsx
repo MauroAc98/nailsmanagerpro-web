@@ -594,4 +594,13 @@ describe('HorarioScreen: una profesional distinta por servicio', () => {
     await waitFor(() => expect(consultas.at(-1)?.asignaciones).toBeUndefined());
     expect(await screen.findByRole('button', { name: LINK })).toBeInTheDocument();
   });
+  it('con una promo de profesional fija no se ofrece elegir profesional ni repartir', async () => {
+    espiar();
+    await preparar([5]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(screen.queryByText('Profesional')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cualquiera' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Elegir quién atiende cada servicio' })).toBeNull();
+  });
 });

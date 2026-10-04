@@ -137,8 +137,14 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
     ...(hayOtros ? [{ clave: 'otros' as const, texto: t('servicios.filtroOtros') }] : []),
   ];
 
-  const alternar = (id: number) =>
-    setServicios(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id]);
+  // Una promo con profesional fija se reserva sola: elegirla suelta lo demas, y
+  // elegir otra cosa suelta la promo.
+  const esPromoFija = (id: number) => servicios?.find((x) => x.id === id)?.promoComponentizada === true;
+  const alternar = (id: number) => {
+    if (seleccion.includes(id)) return setServicios(seleccion.filter((x) => x !== id));
+    if (esPromoFija(id)) return setServicios([id]);
+    setServicios([...seleccion.filter((x) => !esPromoFija(x)), id]);
+  };
 
   return (
     <div>

@@ -48,6 +48,9 @@ export interface BookableService {
   // ordenadas (la primera es la portada). El adapter real las mapea
   // directamente desde GET /api/public/{slug}/servicios.
   fotos: string[];
+  // Promo con componentes: cada servicio ya trae su profesional fija. Se reserva
+  // sola (no se combina con otros servicios) y la clienta no elige profesional.
+  promoComponentizada?: boolean;
 }
 
 // Un grupo de servicios con su profesional (sin profesional = "Cualquiera").

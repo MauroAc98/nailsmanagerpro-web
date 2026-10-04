@@ -32,7 +32,7 @@ const SERVICIOS = [
     id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000,
     categoria: { id: 2, nombre: 'Manicura' }, fotos: ['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg'],
   },
-  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null, fotos: [] },
+  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null, fotos: [], es_promo_componentizada: true },
 ];
 
 export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
@@ -99,7 +99,9 @@ describe('real: mapeo', () => {
       precio: 12000,
       categoria: { id: 2, nombre: 'Manicura' },
       fotos: ['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg'],
+      promoComponentizada: false,
     });
+    expect((await r.getServices('ana'))[1].promoComponentizada).toBe(true);
     expect(await r.getTerms('ana')).toEqual({
       deposito: 10000,
       ventanaPagoMinutos: 15,

@@ -227,4 +227,21 @@ describe('ServiciosScreen', () => {
       expect(screen.queryByText('Manicura')).toBeNull();
     });
   });
+  // Una promo con profesionales fijas por componente se reserva sola: no se
+  // combina con otros servicios (el backend la resuelve en su propio grupo).
+  describe('promo con profesional fija', () => {
+    it('elegir la promo desmarca los demas servicios', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.click(await screen.findByRole('checkbox', { name: /Esmaltado semipermanente/ }));
+      await userEvent.click(await screen.findByRole('checkbox', { name: /Combo mani \+ pedi/ }));
+      expect(useReservaOnlineStore.getState().servicioIds).toEqual([5]);
+    });
+
+    it('elegir otro servicio con la promo marcada desmarca la promo', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.click(await screen.findByRole('checkbox', { name: /Combo mani \+ pedi/ }));
+      await userEvent.click(await screen.findByRole('checkbox', { name: /Esmaltado semipermanente/ }));
+      expect(useReservaOnlineStore.getState().servicioIds).toEqual([1]);
+    });
+  });
 });

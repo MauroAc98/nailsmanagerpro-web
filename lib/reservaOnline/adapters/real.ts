@@ -24,6 +24,7 @@ interface ServicioDto {
   // GET /api/public/{slug}/servicios (distinta de la forma autenticada
   // {id,url,orden} que usa el editor de fotos, ver servicioService).
   fotos: string[];
+  es_promo_componentizada?: boolean;
 }
 interface DisponibilidadDto {
   fecha: string;
@@ -72,6 +73,7 @@ const aServicio = (d: ServicioDto): BookableService => ({
   precio: Number(d.precio),
   categoria: d.categoria ? { id: d.categoria.id, nombre: d.categoria.nombre } : null,
   fotos: d.fotos,
+  promoComponentizada: d.es_promo_componentizada ?? false,
 });
 
 const aDisponibilidad = (d: DisponibilidadDto): Availability => ({

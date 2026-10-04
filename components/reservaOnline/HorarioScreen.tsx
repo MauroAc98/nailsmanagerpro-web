@@ -121,7 +121,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const claveGrupos = `${servicioIds.join(',')}|${profesionalId}|${JSON.stringify(asignaciones)}`;
 
   // Quien hace cada servicio: solo hace falta con 2+ servicios y 2+ profesionales.
-  const variasProfesionales = (salon?.profesionales.length ?? 0) > 1 && servicioIds.length > 1;
+  // Promo con profesional fija por componente: la agenda la resuelve el backend,
+  // no hay nada que elegir ni repartir.
+  const hayPromoFija = servicioIds.some((id) => servicios?.find((x) => x.id === id)?.promoComponentizada);
+  const variasProfesionales = !hayPromoFija && (salon?.profesionales.length ?? 0) > 1 && servicioIds.length > 1;
   const { data: ofrecidos } = useCarga(
     () =>
       salon && variasProfesionales
@@ -182,7 +185,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const duracionTurno = disp?.duracionTotalMinutos ?? duracion;
   const slotElegido = disp?.slots.find((s) => s.hora === horaRueda);
   const nombreDe = (id: number) => salon?.profesionales.find((p) => p.id === id)?.nombre ?? '';
-  const profesionalNombre = asignaciones
+  // Promo: quienes la hacen son las del horario elegido (las fija la promo).
+  const profesionalNombre = hayPromoFija
+    ? slotElegido?.profesionalIds.map(nombreDe).join(', ') || null
+    : asignaciones
     ? [...new Set(asignaciones.map((g) => nombreDe(g.profesionalId ?? 0)))].join(', ')
     : profesionalId === 'any'
       ? null
@@ -335,7 +341,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
           onVolver={() => setAsignaciones(null)}
         />
       )}
-      {salon && salon.profesionales.length > 1 && !(asignaciones && opciones) && (
+      {salon && salon.profesionales.length > 1 && !hayPromoFija && !(asignaciones && opciones) && (
         <SelectorProfesional
           label={t('horario.profesional')}
           labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
