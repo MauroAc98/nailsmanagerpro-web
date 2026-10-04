@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { Suspense, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Camera, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
@@ -37,6 +37,7 @@ import { NAV_CLEARANCE, NAV_MARGIN } from '@/constants/layout';
 import { nombreDia, nombreMes, fechaDeHoy, formatoYMD } from '@/lib/dateFormat';
 import { pickVisibleBanner, type BannerKey } from '@/lib/bannerPriority';
 import { ordenarTurnosBusqueda } from '@/lib/ordenarTurnosBusqueda';
+import { fechaValidaDeQuery } from '@/lib/fechaDesdeQuery';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -591,8 +592,12 @@ function SelectorProfesionalDia({
 // ─────────────────────────────────────────────
 // AgendaPage
 // ─────────────────────────────────────────────
-export default function AgendaPage() {
+function AgendaContent() {
   const router = useRouter();
+  // Deep link de las notificaciones (`/agenda?fecha=YYYY-MM-DD`). Se lee una
+  // sola vez al montar; un valor inválido se ignora y rige el default (hoy).
+  const searchParams = useSearchParams();
+  const [fechaInicial] = useState(() => fechaValidaDeQuery(searchParams.get('fecha')) ?? fechaDeHoy());
   const t = useTranslations('agenda.AgendaPage');
   const tElegirFecha = useTranslations('agenda.ElegirFechaSheet');
 
@@ -627,8 +632,8 @@ export default function AgendaPage() {
   const [profesionalFiltroBusqueda, setProfesionalFiltroBusqueda] = useState<number | null>(null);
   const [turnosMesFiltrado, setTurnosMesFiltrado] = useState<TurnoMes[]>([]);
   const [viewDate,        setViewDate]        = useState<Date>(() => {
-    const t = new Date();
-    return new Date(t.getFullYear(), t.getMonth(), 1);
+    const [y, m] = fechaInicial.split('-').map(Number);
+    return new Date(y, m - 1, 1);
   });
 
   const bottomSheetRef = useRef<BottomSheetHandle>(null);
@@ -707,9 +712,9 @@ export default function AgendaPage() {
     ? turnosMesFiltrado
     : turnosMes;
 
-  // Mount: load today's data
+  // Mount: load today's data (o el día del deep link `?fecha=`)
   useEffect(() => {
-    const today = fechaDeHoy();
+    const today = fechaInicial;
     setFechaSeleccionada(today);
     fetchTurnos(today);
     fetchTurnosMes(today.slice(0, 7));
@@ -1215,5 +1220,14 @@ export default function AgendaPage() {
         </button>
       )}
     </div>
+  );
+}
+
+// useSearchParams exige Suspense (mismo patrón que configuracion/slots).
+export default function AgendaPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgendaContent />
+    </Suspense>
   );
 }
