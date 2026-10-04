@@ -15,6 +15,7 @@ import PillToggle from '@/components/PillToggle';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { consumirBorrador, guardarBorrador, limpiarBorrador } from '@/lib/servicioBorrador';
 import {
   duracionDerivada, hayFilaIncompleta, paraleloDisponible, resumenComponentes, serviciosComponibles,
   type ComponenteDraft,
@@ -35,6 +36,12 @@ const labelStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────
 // Inner component (uses useSearchParams)
 // ─────────────────────────────────────────────
+interface BorradorNuevo {
+  categoriaId: number | null; nombre: string; duracion: number; precio: string; esPromo: boolean;
+  componentes: ComponenteDraft[]; modoPromo: ModoPromo; precioComponentes: string;
+}
+const CLAVE_BORRADOR = 'nuevo';
+
 function NuevoServicioContent() {
   const t = useTranslations('configuracion.NuevoServicioPage');
   const router = useRouter();
@@ -51,15 +58,19 @@ function NuevoServicioContent() {
   // efecto pisaría los taps posteriores del usuario en el selector. El
   // quick-add por categoría (Slice B, CategoriaHeader) es el único origen
   // que manda este param; el FAB global abre sin él.
+  // Borrador de la ida a Horarios: se consume una sola vez al montar (si el
+  // usuario vuelve de ahí); gana sobre la seed de la URL.
+  const [borrador] = useState<BorradorNuevo | null>(() => consumirBorrador<BorradorNuevo>(CLAVE_BORRADOR));
   const [categoriaId, setCategoriaId] = useState<number | null>(() => {
+    if (borrador) return borrador.categoriaId;
     const raw = searchParams.get('categoria');
     return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
   });
 
-  const [nombre,  setNombre]  = useState('');
-  const [duracion, setDuracion] = useState(30);
-  const [precio,  setPrecio]  = useState('');
-  const [esPromo, setEsPromo] = useState(false);
+  const [nombre,  setNombre]  = useState(borrador?.nombre ?? '');
+  const [duracion, setDuracion] = useState(borrador?.duracion ?? 30);
+  const [precio,  setPrecio]  = useState(borrador?.precio ?? '');
+  const [esPromo, setEsPromo] = useState(borrador?.esPromo ?? false);
   const [errorNombre, setErrorNombre] = useState('');
   const [saving,  setSaving]  = useState(false);
 
@@ -68,9 +79,9 @@ function NuevoServicioContent() {
   // Los componentes se guardan DESPUÉS de crear el servicio (necesitan su id).
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { user } = useAuthStore();
-  const [componentes, setComponentes] = useState<ComponenteDraft[]>([]);
-  const [modoPromo, setModoPromo] = useState<ModoPromo>('secuencia');
-  const [precioComponentes, setPrecioComponentes] = useState('');
+  const [componentes, setComponentes] = useState<ComponenteDraft[]>(borrador?.componentes ?? []);
+  const [modoPromo, setModoPromo] = useState<ModoPromo>(borrador?.modoPromo ?? 'secuencia');
+  const [precioComponentes, setPrecioComponentes] = useState(borrador?.precioComponentes ?? '');
   const [modoError, setModoError] = useState('');
 
   useEffect(() => {
@@ -93,6 +104,10 @@ function NuevoServicioContent() {
   const { aGuardar, tieneComponentes, sumaActual, precioOverride } =
     resumenComponentes(componentes, servicios, precioComponentes);
   const paraleloHabilitado = paraleloDisponible(user?.atiende_en_paralelo, activas);
+
+  const guardarBorradorActual = () => guardarBorrador(CLAVE_BORRADOR, {
+    categoriaId, nombre, duracion, precio, esPromo, componentes, modoPromo, precioComponentes,
+  } satisfies BorradorNuevo);
 
   const handleGuardar = async () => {
     setModoError('');
@@ -147,6 +162,7 @@ function NuevoServicioContent() {
     setSaving(false);
 
     if (result.success) {
+      limpiarBorrador(CLAVE_BORRADOR);
       router.push('/configuracion/servicios');
     } else {
       await alertDialog(result.message ?? t('saveError'));
@@ -160,7 +176,7 @@ function NuevoServicioContent() {
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas). */}
       <div style={{ padding: '20px 20px 4px' }}>
-        <BackButton />
+        <BackButton onClick={() => { limpiarBorrador(CLAVE_BORRADOR); router.back(); }} />
       </div>
       <div style={{ padding: '4px 20px 16px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
@@ -237,6 +253,7 @@ function NuevoServicioContent() {
             sumaComponentes={sumaActual}
             precioComponentes={precioComponentes}
             onPrecioComponentesChange={setPrecioComponentes}
+            onBeforeNavigate={guardarBorradorActual}
           />
         )}
 

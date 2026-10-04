@@ -321,7 +321,7 @@ describe('EditarServicioPage — online reservation status card', () => {
 describe('EditarServicioPage — unsaved component edits survive the round-trip to Horarios', () => {
   const detalle = {
     componentes: [comp(1, 1, 1), comp(2, 2, 2)],
-    problemas: [{ codigo: 'sin_inicios_alineados', orden: null, profesional_id: null, servicio_id: null, mensaje: 'x' }],
+    problemas: [{ codigo: 'sin_inicios_alineados' as const, orden: null, profesional_id: null, servicio_id: null, mensaje: 'x' }],
     alineacion_slots: { inicios_validos: [], descartados: [] },
   };
   const quitar = () => screen.getAllByRole('button', { name: 'Quitar servicio' });

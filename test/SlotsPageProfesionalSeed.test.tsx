@@ -17,7 +17,7 @@ import { setMockLocation, resetNavigationMock } from '@/test/mocks/nextNavigatio
 import SlotsPage from '@/app/(app)/configuracion/slots/page';
 
 const prof = (id: number, nombre: string, activo = true): Profesional =>
-  ({ id, user_id: 1, nombre, apellido: null, nombre_completo: nombre, color: null, activo, servicios: [] } as Profesional);
+  ({ id, user_id: 1, nombre, apellido: null, nombre_completo: nombre, color: null, activo, servicios: [] } as unknown as Profesional);
 
 const ana = prof(1, 'Ana');
 const laura = prof(2, 'Laura');

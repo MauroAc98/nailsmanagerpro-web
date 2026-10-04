@@ -38,6 +38,8 @@ interface Props {
   sumaComponentes: number;
   precioComponentes: string;
   onPrecioComponentesChange: (value: string) => void;
+  // Called right before leaving to Horarios, so the page can keep its draft.
+  onBeforeNavigate?: () => void;
 }
 
 // "Servicios que incluye" section of a promo. Controlled and presentational:
@@ -46,7 +48,7 @@ interface Props {
 // bottom sheets opened off each card.
 export default function ComponentesPromoSection({
   componentes, onChange, servicios, profesionales, problemas, modo, onModoChange, paraleloHabilitado, modoError,
-  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange,
+  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange, onBeforeNavigate,
 }: Props) {
   const t = useTranslations('configuracion.ComponentesPromoSection');
   const locale = useLocale();
@@ -274,7 +276,7 @@ export default function ComponentesPromoSection({
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: colors.text }}>{t('noHorariosTitle', { nombre: persona.nombre })}</p>
                     <p style={{ margin: '3px 0 0', fontSize: 12.5, color: colors.subtext, lineHeight: 1.4 }}>{t('noHorariosBody')}</p>
-                    <button type="button" onClick={() => router.push('/configuracion/slots')} style={{ ...enlaceStyle, marginTop: 7, fontWeight: 700 }}>
+                    <button type="button" onClick={() => { onBeforeNavigate?.(); router.push(`/configuracion/slots?profesional=${persona.id}`); }} style={{ ...enlaceStyle, marginTop: 7, fontWeight: 700 }}>
                       {t('loadHorarios')}
                     </button>
                   </div>

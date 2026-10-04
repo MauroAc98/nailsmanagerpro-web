@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
@@ -18,8 +19,16 @@ import { SlotCard } from '@/components/configuracion/SlotCard';
 const HORAS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
-export default function SlotsPage() {
+function SlotsContent() {
   const t = useTranslations('configuracion.SlotsPage');
+  // `?profesional={id}` es una SEED, no un binding: se lee una sola vez acá,
+  // en el inicializador (nunca en un efecto). Solo vale si es una profesional
+  // ACTIVA — se valida abajo, cuando la lista ya cargó.
+  const searchParams = useSearchParams();
+  const [profesionalSeed] = useState<number | null>(() => {
+    const raw = searchParams.get('profesional');
+    return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+  });
   const { slots, loading, error, fetchSlots, agregarSlot, toggleSlot, eliminarSlot } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -43,8 +52,8 @@ export default function SlotsPage() {
   // efecto): la propia condición `selectedProfesionalId === null` se
   // vuelve falsa apenas se setea, así que converge en un solo render extra.
   if (mostrarSelectorProfesional && selectedProfesionalId === null) {
-    const jefa = profesionalJefa(profesionales);
-    if (jefa) setSelectedProfesionalId(jefa.id);
+    const inicial = activeProfesionales.find(p => p.id === profesionalSeed) ?? profesionalJefa(profesionales);
+    if (inicial) setSelectedProfesionalId(inicial.id);
   }
 
   // Sin selector (≤1 profesional activa): comportamiento intacto, fetch
@@ -239,5 +248,14 @@ export default function SlotsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// useSearchParams exige Suspense (mismo patrón que servicios/nuevo).
+export default function SlotsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SlotsContent />
+    </Suspense>
   );
 }

@@ -18,6 +18,7 @@ import EstadoReservaOnlineCard from '@/components/servicios/EstadoReservaOnlineC
 import { estadoReservaOnline } from '@/lib/promoEstadoOnline';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { consumirBorrador, guardarBorrador, limpiarBorrador } from '@/lib/servicioBorrador';
 import {
   draftsDesdeDetalle, duracionDerivada, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
   payloadComponentes, precioAGuardar, precioInicialComponentes, resumenComponentes, serviciosComponibles, sumaComponentes,
@@ -36,17 +37,23 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
 
+interface BorradorEditar { componentes: ComponenteDraft[]; modoPromo: ModoPromo; precioComponentes: string }
+
 export default function EditarServicioPage() {
   const t = useTranslations('configuracion.EditarServicioPage');
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
+  const claveBorrador = `editar-${id}`;
   const { servicios, actualizarServicio } = useServiciosStore();
   // El selector (SelectorCategoriaServicio) es dueño de su propio fetch de
   // categorías (design D4) — esta página solo sigue leyendo `loading` para
   // el guard de submit compartido (mismo criterio que nuevo/page.tsx).
   const { loading: categoriasLoading } = useCategoriasServicioStore();
 
+  // Ediciones sin guardar de los componentes, de la ida a Horarios: se
+  // consumen una sola vez al montar y se aplican sobre lo cargado del backend.
+  const [borrador] = useState<BorradorEditar | null>(() => consumirBorrador<BorradorEditar>(claveBorrador));
   const [nombre,   setNombre]   = useState('');
   const [duracion, setDuracion] = useState(30);
   const [precio,   setPrecio]   = useState('');
@@ -100,6 +107,11 @@ export default function EditarServicioPage() {
           const precioInicial = precioInicialComponentes(detalle);
           setPrecioComponentes(precioInicial);
           setPrecioComponentesInicial(precioInicial);
+          if (borrador) {
+            setComponentes(borrador.componentes);
+            setModoPromo(borrador.modoPromo);
+            setPrecioComponentes(borrador.precioComponentes);
+          }
         }
       } catch {
         await alertDialog(t('loadError'));
@@ -143,6 +155,10 @@ export default function EditarServicioPage() {
   // Estado de la reserva online, armado desde datos estructurados del último
   // guardado (nunca desde el `mensaje` del backend).
   const estadoOnline = estadoReservaOnline({ componentes: iniciales, profesionales, servicios, problemas, alineacion });
+
+  const guardarBorradorActual = () => guardarBorrador(claveBorrador, {
+    componentes, modoPromo, precioComponentes,
+  } satisfies BorradorEditar);
 
   const handleGuardar = async () => {
     setErroresFila({});
@@ -225,6 +241,7 @@ export default function EditarServicioPage() {
     setSaving(false);
 
     if (result.success) {
+      limpiarBorrador(claveBorrador);
       router.push('/configuracion/servicios');
     } else {
       await alertDialog(result.message ?? t('saveError'));
@@ -246,7 +263,7 @@ export default function EditarServicioPage() {
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas). */}
       <div style={{ padding: '20px 20px 4px' }}>
-        <BackButton />
+        <BackButton onClick={() => { limpiarBorrador(claveBorrador); router.back(); }} />
       </div>
       <div style={{ padding: '4px 20px 16px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
@@ -310,7 +327,7 @@ export default function EditarServicioPage() {
         </div>
 
         {mostrarComponentes && estadoOnline && (
-          <EstadoReservaOnlineCard estado={estadoOnline} onIrAHorarios={() => router.push('/configuracion/slots')} />
+          <EstadoReservaOnlineCard estado={estadoOnline} onIrAHorarios={() => { guardarBorradorActual(); router.push('/configuracion/slots'); }} />
         )}
 
         {mostrarComponentes && (
@@ -328,6 +345,7 @@ export default function EditarServicioPage() {
             sumaComponentes={sumaActual}
             precioComponentes={precioComponentes}
             onPrecioComponentesChange={setPrecioComponentes}
+            onBeforeNavigate={guardarBorradorActual}
           />
         )}
 
