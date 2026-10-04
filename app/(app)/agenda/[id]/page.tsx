@@ -29,6 +29,11 @@ import { resumenMovimiento, tramosPendientes } from '@/lib/gruposTurnos';
 import { advertenciaDelCombo, tramosAMover } from '@/lib/comboManual';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha } from '@/lib/dateFormat';
+import { MontoFit } from '@/components/estadisticas/MontoFit';
+import { formatMontoCorto } from '@/lib/money';
+import { filaDePago } from '@/lib/cobros';
+import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
+import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -61,6 +66,8 @@ const sectionLabelStyle: React.CSSProperties = {
   textTransform: 'uppercase', marginBottom: 8,
 };
 
+const monto = (n: number) => `$${formatMontoCorto(n)}`;
+
 const inputStyle: React.CSSProperties = {
   backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
   borderRadius: 12, padding: '14px 16px', fontSize: 15, color: colors.text,
@@ -82,6 +89,7 @@ export default function EditarTurnoPage() {
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
+  const { actualizarPrecios } = usePendientesDeCobroStore();
 
   const altaClienteRef = useRef<AltaClienteRapidaHandle>(null);
 
@@ -235,6 +243,33 @@ export default function EditarTurnoPage() {
     router.back();
   };
 
+  // Bloque "Pago": misma derivación que la pantalla de Cobros (lib/cobros).
+  const referencias = new Map(servicios.map(s => [s.id, s.precio]));
+  const pago = turnoActual ? filaDePago(turnoActual, referencias) : null;
+
+  const handleCargarPrecio = async () => {
+    if (!turnoActual) return;
+    const precios = await pedirPreciosServicios(
+      turnoActual.servicios.map(s => {
+        const ref = referencias.get(s.id);
+        return { servicio_id: s.id, nombre: s.nombre, precioReferencia: ref != null && ref !== '' ? Number(ref) : null };
+      }),
+      {
+        cliente: `${turnoActual.cliente.nombre} ${turnoActual.cliente.apellido}`.trim(),
+        fechaHora: turnoActual.fecha_hora,
+        modo: 'cargar',
+      },
+    );
+    if (!precios) return;
+    const result = await actualizarPrecios(turnoActual.id, precios);
+    if (result.success) {
+      showToast(t('pagoGuardado'));
+      fetchTurno(turnoId, { silent: true });
+    } else {
+      await alertDialog(result.message ?? t('pagoGuardarError'));
+    }
+  };
+
   const handleGuardar = async () => {
     if (!selectedCliente || selectedServicioIds.length === 0) return;
     if (mostrarSelectorProfesional && !selectedProfesionalId) return;
@@ -362,6 +397,64 @@ export default function EditarTurnoPage() {
 
         {/* Idea que el cliente escribio al reservar online (solo lectura). */}
         <IdeaDelTurno notas={turnoActual?.notas} origenWeb={turnoActual?.origen === 'web'} />
+
+        {/* ─── PAGO ─── (solo lectura; misma regla que Cobros) */}
+        {pago && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={sectionLabelStyle}>{t('pagoTitle')}</p>
+            <div style={{
+              backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: shadows.card,
+              borderRadius: 14, padding: '4px 14px',
+            }}>
+              {(() => {
+                const filas: { label: string; valor: string | null; destacado?: boolean }[] = [];
+                if (pago.pago === 'sinprecio') {
+                  filas.push({ label: t('pagoServicios'), valor: null });
+                } else {
+                  filas.push({ label: t('pagoServicios'), valor: pago.precio != null ? monto(pago.precio) : null });
+                }
+                if (pago.sena > 0) {
+                  filas.push({ label: pago.senaCompartida ? t('pagoSenaGrupo') : t('pagoSena'), valor: monto(pago.sena) });
+                }
+                if (pago.finalizado && pago.pago !== 'sinprecio') {
+                  filas.push({ label: t('pagoCobrado'), valor: monto(pago.cobrado ?? 0), destacado: true });
+                } else if (!pago.finalizado && pago.faltaFila != null) {
+                  filas.push({ label: t('pagoFalta'), valor: monto(pago.faltaFila), destacado: true });
+                }
+                return filas.map((f, i) => (
+                  <div
+                    key={f.label}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0',
+                      borderTop: i === 0 ? 'none' : `1px solid ${colors.hairline}`,
+                    }}
+                  >
+                    <span style={{ minWidth: 0, flex: 1, fontSize: 14, color: colors.subtext, fontWeight: f.destacado ? 700 : 500 }}>{f.label}</span>
+                    {f.valor != null && (
+                      <span style={{ flexShrink: 0, maxWidth: '60%', fontFamily: agendaFontSerif, color: colors.textStrong, textAlign: 'right', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                        <MontoFit maxFontSize={f.destacado ? 19 : 16} minFontSize={11}>{f.valor}</MontoFit>
+                      </span>
+                    )}
+                  </div>
+                ));
+              })()}
+            </div>
+            {pago.pago === 'sinprecio' && (
+              <div style={{ marginTop: 10, backgroundColor: colors.amberBg, color: colors.amberFg, borderRadius: 12, padding: '10px 12px', fontSize: 13, lineHeight: 1.4 }}>
+                <b>{t('pagoSinPrecio')}</b>
+                <button
+                  onClick={handleCargarPrecio}
+                  style={{
+                    display: 'block', width: '100%', marginTop: 8, padding: '9px 12px', borderRadius: 10, border: 'none',
+                    backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  {t('pagoCargar')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ─── Turno de un combo: mover solo este o todo el combo ─── */}
         {pendientesCombo.length > 0 && (
