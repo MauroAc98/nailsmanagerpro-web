@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { servicioService, type AlineacionDescarte, type ModoPromo } from '@/services/servicioService';
+import { servicioService, type AlineacionSlots, type ModoPromo, type ProblemaPromo } from '@/services/servicioService';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
@@ -14,6 +14,8 @@ import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
+import EstadoReservaOnlineCard from '@/components/servicios/EstadoReservaOnlineCard';
+import { estadoReservaOnline } from '@/lib/promoEstadoOnline';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -70,8 +72,8 @@ export default function EditarServicioPage() {
   const [precioComponentesInicial, setPrecioComponentesInicial] = useState('');
   // Problemas de configuración guardados (inactiva/desvinculado) más los que
   // devuelve un intento de guardado fallido, unidos por fila (item 3 + 4).
-  const [problemas, setProblemas] = useState<ProblemaFila[]>([]);
-  const [avisosAlineacion, setAvisosAlineacion] = useState<AlineacionDescarte[]>([]);
+  const [problemas, setProblemas] = useState<ProblemaPromo[]>([]);
+  const [alineacion, setAlineacion] = useState<AlineacionSlots>({ inicios_validos: [], descartados: [] });
   const [erroresFila, setErroresFila] = useState<Record<number, string>>({});
   const [modoError, setModoError] = useState('');
 
@@ -94,7 +96,7 @@ export default function EditarServicioPage() {
           setModoPromo(detalle.modo_promo ?? 'secuencia');
           setModoInicial(detalle.modo_promo ?? 'secuencia');
           setProblemas(detalle.problemas ?? []);
-          setAvisosAlineacion(detalle.alineacion_slots?.descartados ?? []);
+          setAlineacion(detalle.alineacion_slots ?? { inicios_validos: [], descartados: [] });
           const precioInicial = precioInicialComponentes(detalle);
           setPrecioComponentes(precioInicial);
           setPrecioComponentesInicial(precioInicial);
@@ -134,11 +136,13 @@ export default function EditarServicioPage() {
   // backend exige que el servicio siga siendo es_promo mientras corre el
   // PUT que los vacía, así que ese PUT debe ir ANTES de apagar es_promo.
   const apagandoPromoConComponentes = !esPromo && iniciales.length > 0;
-  // Backend problemas + errores del último intento de guardado, por fila.
-  const problemasCombinados: ProblemaFila[] = [
-    ...problemas,
-    ...Object.entries(erroresFila).map(([idx, mensaje]) => ({ orden: Number(idx) + 1, mensaje })),
-  ];
+  // Errores del último intento de guardado, por fila (la sección solo
+  // muestra una línea neutra: nunca el texto crudo del backend).
+  const problemasFila: ProblemaFila[] = Object.entries(erroresFila)
+    .map(([idx, mensaje]) => ({ orden: Number(idx) + 1, mensaje }));
+  // Estado de la reserva online, armado desde datos estructurados del último
+  // guardado (nunca desde el `mensaje` del backend).
+  const estadoOnline = estadoReservaOnline({ componentes: iniciales, profesionales, servicios, problemas, alineacion });
 
   const handleGuardar = async () => {
     setErroresFila({});
@@ -305,13 +309,17 @@ export default function EditarServicioPage() {
           <PillToggle value={esPromo} onChange={setEsPromo} />
         </div>
 
+        {mostrarComponentes && estadoOnline && (
+          <EstadoReservaOnlineCard estado={estadoOnline} onIrAHorarios={() => router.push('/configuracion/slots')} />
+        )}
+
         {mostrarComponentes && (
           <ComponentesPromoSection
             componentes={componentes}
             onChange={setComponentes}
             servicios={serviciosComponibles(servicios, id)}
             profesionales={profesionales}
-            problemas={problemasCombinados}
+            problemas={problemasFila}
             modo={modoPromo}
             onModoChange={setModoPromo}
             paraleloHabilitado={paraleloHabilitado}
@@ -320,7 +328,6 @@ export default function EditarServicioPage() {
             sumaComponentes={sumaActual}
             precioComponentes={precioComponentes}
             onPrecioComponentesChange={setPrecioComponentes}
-            avisosAlineacion={avisosAlineacion}
           />
         )}
 

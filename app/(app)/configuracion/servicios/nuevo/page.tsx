@@ -237,7 +237,6 @@ function NuevoServicioContent() {
             sumaComponentes={sumaActual}
             precioComponentes={precioComponentes}
             onPrecioComponentesChange={setPrecioComponentes}
-            avisosAlineacion={[]}
           />
         )}
 

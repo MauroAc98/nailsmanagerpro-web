@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, Plus, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { formatMontoCorto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
+import { useHorariosCargados } from '@/hooks/useHorariosCargados';
 import { ElegirPersonaSheet, ElegirServicioSheet, PersonaAvatar } from '@/components/servicios/ComponentesPromoSheets';
-import type { AlineacionDescarte, ModoPromo, Servicio } from '@/services/servicioService';
+import type { ModoPromo, Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
-import { moverFila, problemasDeFila, problemasDePromo, profesionalesQueOfrecen, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
+import { moverFila, problemasDeFila, profesionalesQueOfrecen, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
 
 interface Props {
   componentes: ComponenteDraft[];
@@ -17,8 +19,8 @@ interface Props {
   // Already filtered by the caller to the services that can be components.
   servicios: Servicio[];
   profesionales: Profesional[];
-  // Merges backend problemas with save-time 422 mapping — the page owns
-  // that union, this component only renders whatever lands on each row.
+  // Save-time 422 errors by row — the page owns the mapping. Only a neutral
+  // line is shown per row: the backend text is never printed.
   problemas: ProblemaFila[];
   modo: ModoPromo;
   onModoChange: (modo: ModoPromo) => void;
@@ -36,9 +38,6 @@ interface Props {
   sumaComponentes: number;
   precioComponentes: string;
   onPrecioComponentesChange: (value: string) => void;
-  // Discarded lead-tramo starts from the slot-alignment analysis (PR 2d).
-  // Non-blocking: the promo still saves, this is purely informational.
-  avisosAlineacion?: AlineacionDescarte[];
 }
 
 // "Servicios que incluye" section of a promo. Controlled and presentational:
@@ -47,15 +46,25 @@ interface Props {
 // bottom sheets opened off each card.
 export default function ComponentesPromoSection({
   componentes, onChange, servicios, profesionales, problemas, modo, onModoChange, paraleloHabilitado, modoError,
-  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange, avisosAlineacion = [],
+  duracionDerivada, sumaComponentes, precioComponentes, onPrecioComponentesChange,
 }: Props) {
   const t = useTranslations('configuracion.ComponentesPromoSection');
   const locale = useLocale();
-  const problemasPromo = problemasDePromo(problemas);
+  const router = useRouter();
   // Which card has a picker sheet open (index), and the price override input.
   const [sheetServicio, setSheetServicio] = useState<number | null>(null);
   const [sheetPersona, setSheetPersona] = useState<number | null>(null);
   const [editarPrecio, setEditarPrecio] = useState(false);
+
+  // Persons with no active horarios loaded: shown as a calm note, never blocking.
+  const idsPersonas = [
+    ...componentes.flatMap(c => (c.profesionalId === null ? [] : [c.profesionalId])),
+    ...(sheetPersona !== null && componentes[sheetPersona]
+      ? profesionalesQueOfrecen(componentes[sheetPersona].servicioId, profesionales).map(p => p.id)
+      : []),
+  ];
+  const horariosCargados = useHorariosCargados(idsPersonas);
+  const sinHorarios = (id: number | null) => id !== null && horariosCargados[id] === false;
 
   const servicioDe = (id: number | null) => (id === null ? undefined : servicios.find(s => s.id === id));
   const personaDe = (id: number | null) => (id === null ? undefined : profesionales.find(p => p.id === id));
@@ -106,19 +115,6 @@ export default function ComponentesPromoSection({
       </label>
       <p style={{ margin: '0 0 10px 2px', fontSize: 12.5, color: colors.subtext, lineHeight: 1.4 }}>{t('intro')}</p>
 
-      {/* Problema de la promo entera (ej. sin_inicios_alineados): mismo peso
-          visual que los problemas por fila (dangerBorder), pero en su propio
-          bloque porque no pertenece a ninguna fila puntual. */}
-      {problemasPromo.length > 0 && (
-        <div style={{
-          backgroundColor: colors.dangerBg, borderRadius: 10, padding: '10px 12px', marginBottom: 12,
-        }}>
-          {problemasPromo.map((p, i) => (
-            <p key={i} style={{ margin: 0, fontSize: 12.5, color: colors.dangerBorder, lineHeight: 1.4 }}>{p.mensaje}</p>
-          ))}
-        </div>
-      )}
-
       {/* Modo: control segmentado; paralelo solo si el ajuste del salón lo habilita. */}
       <div style={{ display: 'flex', backgroundColor: colors.surface2, borderRadius: 12, padding: 3, marginBottom: 6 }}>
         {(['secuencia', 'paralelo'] as const).map(m => {
@@ -159,16 +155,6 @@ export default function ComponentesPromoSection({
       )}
       {modoError && (
         <p style={{ margin: '0 0 10px 2px', fontSize: 12, color: colors.dangerBorder }}>{modoError}</p>
-      )}
-
-      {/* Avisos de desalineación de horarios (PR 2d): no bloquean el guardado,
-          solo explican por qué algunos inicios no se ofrecen online. */}
-      {avisosAlineacion.length > 0 && (
-        <div style={{ margin: '0 0 10px 2px' }}>
-          {avisosAlineacion.map((a, i) => (
-            <p key={i} style={{ margin: '0 0 4px', fontSize: 12, color: colors.warningFg }}>{a.mensaje}</p>
-          ))}
-        </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -282,9 +268,21 @@ export default function ComponentesPromoSection({
                   </div>
                 </>
               )}
-              {problemasFila.map((p, i) => (
-                <p key={i} style={{ margin: '12px 0 0', fontSize: 12, color: colors.dangerBorder }}>{p.mensaje}</p>
-              ))}
+              {persona && sinHorarios(persona.id) && (
+                <div style={{ display: 'flex', gap: 10, backgroundColor: colors.surface2, borderRadius: 10, padding: '11px 12px', marginTop: 12 }}>
+                  <Info size={18} color={colors.subtext} style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: colors.text }}>{t('noHorariosTitle', { nombre: persona.nombre })}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: 12.5, color: colors.subtext, lineHeight: 1.4 }}>{t('noHorariosBody')}</p>
+                    <button type="button" onClick={() => router.push('/configuracion/slots')} style={{ ...enlaceStyle, marginTop: 7, fontWeight: 700 }}>
+                      {t('loadHorarios')}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {problemasFila.length > 0 && (
+                <p style={{ margin: '12px 0 0', fontSize: 12, color: colors.dangerBorder }}>{t('rowError')}</p>
+              )}
             </div>
           );
         })}
@@ -359,6 +357,7 @@ export default function ComponentesPromoSection({
           servicio={servicioDeSheetPersona}
           personas={profesionalesQueOfrecen(sheetPersonaAbierto.servicioId, profesionales)}
           selectedId={sheetPersonaAbierto.profesionalId}
+          sinHorarios={id => sinHorarios(id)}
           onSelect={id => {
             actualizar(sheetPersona, { ...sheetPersonaAbierto, profesionalId: id });
             setSheetPersona(null);

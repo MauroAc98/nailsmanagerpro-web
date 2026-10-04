@@ -79,8 +79,8 @@ export function ElegirServicioSheet({ servicios, selectedId, onSelect, onClose }
   );
 }
 
-export function ElegirPersonaSheet({ servicio, personas, selectedId, onSelect, onClose }: {
-  servicio: Servicio; personas: Profesional[]; selectedId: number | null;
+export function ElegirPersonaSheet({ servicio, personas, selectedId, sinHorarios, onSelect, onClose }: {
+  servicio: Servicio; personas: Profesional[]; selectedId: number | null; sinHorarios: (id: number) => boolean;
   onSelect: (id: number) => void; onClose: () => void;
 }) {
   const t = useTranslations('configuracion.ComponentesPromoSection');
@@ -111,11 +111,20 @@ export function ElegirPersonaSheet({ servicio, personas, selectedId, onSelect, o
                   {formatearDiasAtencion(p.dias_atencion ?? null, abreviaturas, tProf('allDays'), tProf('dayRangeConnector'))}
                 </span>
               </span>
+              {sinHorarios(p.id) && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: colors.subtext, backgroundColor: colors.surface2,
+                  borderRadius: 10, padding: '4px 9px', whiteSpace: 'nowrap',
+                }}>
+                  {t('noHorariosTag')}
+                </span>
+              )}
               {selected && <Check size={20} strokeWidth={3} color={colors.primarySolid} />}
             </button>
           );
         })}
       </div>
+      <p style={{ margin: '14px 2px 0', fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('noHorariosFootnote')}</p>
     </Sheet>
   );
 }
