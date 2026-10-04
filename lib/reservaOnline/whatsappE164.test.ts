@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { esWhatsappE164, localDeWhatsapp, normalizarWhatsappE164, whatsappArgentino } from './whatsappE164';
+import {
+  esWhatsappCompleto, esWhatsappE164, localDeWhatsapp, normalizarWhatsappE164, separarWhatsapp, whatsappArgentino, whatsappConPais,
+} from './whatsappE164';
 
 describe('esWhatsappE164', () => {
   it('acepta un numero AR valido con +', () => {
@@ -67,5 +69,46 @@ describe('localDeWhatsapp', () => {
   it('un valor que no es +549 se muestra tal cual', () => {
     expect(localDeWhatsapp('+5511987654321')).toBe('+5511987654321');
     expect(localDeWhatsapp('')).toBe('');
+  });
+});
+
+describe('whatsappConPais (selector de pais)', () => {
+  it('con +54 conserva el 9 de los celulares argentinos', () => {
+    expect(whatsappConPais('376 512-3456', '54')).toBe('+5493765123456');
+  });
+  it('con otro pais arma +codigo + numero, sin el 0 inicial', () => {
+    expect(whatsappConPais('11 98765-4321', '55')).toBe('+5511987654321');
+    expect(whatsappConPais('099 123 456', '598')).toBe('+59899123456');
+  });
+  it('si pega el numero ya con el codigo del pais no lo duplica', () => {
+    expect(whatsappConPais('+55 11 98765-4321', '55')).toBe('+5511987654321');
+  });
+  it('vacio si no hay digitos', () => {
+    expect(whatsappConPais(' - ', '55')).toBe('');
+  });
+});
+
+describe('separarWhatsapp', () => {
+  it('Argentina: devuelve el local sin el +54 9', () => {
+    expect(separarWhatsapp('+5493765123456')).toEqual({ codigo: '54', local: '3765123456' });
+  });
+  it('otro pais conocido: codigo y resto', () => {
+    expect(separarWhatsapp('+5511987654321')).toEqual({ codigo: '55', local: '11987654321' });
+    expect(separarWhatsapp('+59899123456')).toEqual({ codigo: '598', local: '99123456' });
+  });
+  it('vacio: Argentina por defecto', () => {
+    expect(separarWhatsapp('')).toEqual({ codigo: '54', local: '' });
+  });
+});
+
+describe('esWhatsappCompleto', () => {
+  it('Argentina exige 10 digitos despues del +54 9 (area + numero)', () => {
+    expect(esWhatsappCompleto('+5493765123456')).toBe(true);
+    expect(esWhatsappCompleto('+54937615512345')).toBe(false); // con el 15
+    expect(esWhatsappCompleto('+549376512')).toBe(false);
+  });
+  it('otros paises: alcanza con ser E.164 valido', () => {
+    expect(esWhatsappCompleto('+5511987654321')).toBe(true);
+    expect(esWhatsappCompleto('+5511')).toBe(false);
   });
 });

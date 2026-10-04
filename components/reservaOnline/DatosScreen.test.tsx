@@ -178,10 +178,46 @@ describe('DatosScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
   });
 
-  it('el prefijo +54 9 es fijo (no editable) y el numero se tipea local', async () => {
+  it('el selector de pais arranca en +54 y el numero se tipea local', async () => {
     renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-    expect(await screen.findByText('+54 9')).toBeInTheDocument();
+    const pais = await screen.findByRole('combobox', { name: 'Código de país' });
+    expect(pais).toHaveValue('54');
     expect(screen.getByLabelText('WhatsApp')).toHaveValue('');
+  });
+
+  it('elegir otro pais arma el E.164 con ese codigo', async () => {
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('WhatsApp'), '11 98765 4321');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Código de país' }), '55');
+    expect(useReservaOnlineStore.getState().cliente.whatsapp).toBe('+5511987654321');
+  });
+
+  it('pegar un numero completo con + elige el pais solo', async () => {
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    const campo = await screen.findByLabelText('WhatsApp');
+    await userEvent.click(campo);
+    await userEvent.paste('+598 99 123 456');
+    expect(screen.getByRole('combobox', { name: 'Código de país' })).toHaveValue('598');
+    expect(useReservaOnlineStore.getState().cliente.whatsapp).toBe('+59899123456');
+    expect(campo).toHaveValue('99123456');
+  });
+
+  it.each([
+    ['+54 376 512 3456', '+5493765123456'], // tipeado con +54 y sin el 9
+    ['5493765123456', '+5493765123456'], // codigo pegado sin +
+    ['0376 512 3456', '+5493765123456'], // con 0 de area
+  ])('tipeado o pegado "%s" queda como %s', async (entrada, esperado) => {
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('WhatsApp'), entrada);
+    expect(useReservaOnlineStore.getState().cliente.whatsapp).toBe(esperado);
+  });
+
+  it('con el 15 (12 digitos) lo marca invalido y no deja continuar', async () => {
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Lu');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Paz');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 15 512345');
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
   it('si pega el numero completo con +54 9 no se duplica el prefijo', async () => {

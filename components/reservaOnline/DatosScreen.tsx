@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ClipboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import { PAISES, phoneUtils } from '@/lib/phoneUtils';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
-import { esWhatsappE164, localDeWhatsapp, whatsappArgentino } from '@/lib/reservaOnline/whatsappE164';
+import { esWhatsappCompleto, separarWhatsapp, whatsappConPais } from '@/lib/reservaOnline/whatsappE164';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useGuardaPaso, useHold, type Ir } from './hooks';
@@ -30,8 +31,9 @@ const campo = { ...cajaCampo, height: 52 };
 const etiqueta = { display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 };
 const ayuda = { fontSize: 12, color: colors.sub, marginTop: 6, lineHeight: 1.4 };
 
-// Pantalla 4: datos de la clienta. El WhatsApp es de Argentina con prefijo fijo
-// "+54 9": ella tipea el numero local y se guarda normalizado (E.164). "Contanos
+// Pantalla 4: datos de la clienta. El WhatsApp lleva un selector de pais (Argentina
+// por defecto, con el "9" de los celulares): ella tipea el numero local y se guarda
+// normalizado (E.164). Si pega el numero completo con "+" se detecta el pais. "Contanos
 // tu idea" es opcional. Al continuar los datos se guardan sobre el hold; si el
 // hold vencio se muestra "Se liberó tu horario". `ahora`/`cadaMs` inyectables.
 export function DatosScreen({
@@ -54,6 +56,7 @@ export function DatosScreen({
   const { hold, restanteMs, vencido } = useHold(ahora, cadaMs);
   // Lo tipeado (con espacios); null = todavia no toco el campo, se deriva del store.
   const [whatsappCrudo, setWhatsappCrudo] = useState<string | null>(null);
+  const [codigoPais, setCodigoPais] = useState(() => separarWhatsapp(cliente.whatsapp).codigo);
   const [enviando, setEnviando] = useState(false);
   const [holdPerdido, setHoldPerdido] = useState(false);
   const [errorGuardar, setErrorGuardar] = useState(false);
@@ -68,10 +71,36 @@ export function DatosScreen({
   if (noDisponible) return <NoDisponibleAun />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
 
-  const whatsappVisible = whatsappCrudo ?? localDeWhatsapp(cliente.whatsapp);
-  const whatsappValido = esWhatsappE164(cliente.whatsapp);
+  const whatsappVisible = whatsappCrudo ?? separarWhatsapp(cliente.whatsapp).local;
+  const whatsappValido = esWhatsappCompleto(cliente.whatsapp);
   const mostrarError = whatsappVisible.length > 0 && !whatsappValido;
   const completo = cliente.nombre.trim() !== '' && cliente.apellido.trim() !== '' && whatsappValido;
+
+  const aplicarWhatsapp = (visible: string, codigo: string) => {
+    setWhatsappCrudo(visible);
+    setCliente({ whatsapp: whatsappConPais(visible, codigo) });
+  };
+
+  // Igual que el alta de clientes: el campo solo guarda digitos y, si lo tipeado o
+  // pegado ya trae el codigo de pais ("+" o mas largo que un numero local), lo separa
+  // y elige el pais. En Argentina se descarta el 9 del celular (ningun area empieza con 9; el prefijo lo arma el selector).
+  const ingresarWhatsapp = (crudo: string) => {
+    const detectado = phoneUtils.detectarCodigoPaisEmbebido(crudo);
+    if (!detectado) return aplicarWhatsapp(phoneUtils.clean(crudo), codigoPais);
+    const numero =
+      detectado.codigo === '54' && detectado.numero.startsWith('9')
+        ? detectado.numero.slice(1)
+        : detectado.numero;
+    setCodigoPais(detectado.codigo);
+    aplicarWhatsapp(numero, detectado.codigo);
+  };
+
+  const pegarWhatsapp = (e: ClipboardEvent<HTMLInputElement>) => {
+    const pegado = e.clipboardData.getData('text');
+    if (!phoneUtils.clean(pegado)) return;
+    e.preventDefault();
+    ingresarWhatsapp(pegado);
+  };
 
   const continuar = async () => {
     if (!hold) return;
@@ -137,27 +166,30 @@ export function DatosScreen({
       </div>
       <div style={{ marginBottom: 16 }}>
         <label htmlFor="ro-whatsapp" style={etiqueta}>{t('datos.whatsapp')}</label>
-        <div style={{ ...cajaCampo, display: 'flex', alignItems: 'center' }}>
-          <span
-            style={{
-              paddingRight: 10, marginRight: 10, borderRight: `1px solid ${colors.border}`,
-              fontSize: 15, fontWeight: 600, color: colors.strong, whiteSpace: 'nowrap',
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select
+            aria-label={t('datos.codigoPais')}
+            value={codigoPais}
+            onChange={(e) => {
+              setCodigoPais(e.target.value);
+              aplicarWhatsapp(whatsappVisible, e.target.value);
             }}
+            style={{ ...campo, width: 'auto', flexShrink: 0, padding: '0 10px', fontSize: 15, cursor: 'pointer', outline: 'none' }}
           >
-            +54 9
-          </span>
+            {PAISES.map((p) => (
+              <option key={p.codigo} value={p.codigo}>{p.label}</option>
+            ))}
+          </select>
           <input
             id="ro-whatsapp"
             type="tel"
             inputMode="tel"
             autoComplete="tel-national"
-            placeholder="376 512 3456"
-            style={{ flex: 1, minWidth: 0, height: 50, border: 'none', outline: 'none', background: 'transparent', fontSize: 16, color: colors.strong }}
+            placeholder={codigoPais === '54' ? '376 512 3456' : ''}
+            style={{ ...campo, flex: 1, minWidth: 0 }}
             value={whatsappVisible}
-            onChange={(e) => {
-              setWhatsappCrudo(e.target.value);
-              setCliente({ whatsapp: whatsappArgentino(e.target.value) });
-            }}
+            onChange={(e) => ingresarWhatsapp(e.target.value)}
+            onPaste={pegarWhatsapp}
           />
         </div>
         {mostrarError ? (
