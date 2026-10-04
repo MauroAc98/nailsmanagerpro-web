@@ -52,7 +52,7 @@
     "sinPendientes": "Não há nada para cancelar"
   },
   "GrupoTurno": {
-    "enlace": "Parte de um atendimento com várias profissionais",
+    "enlace": "Parte de um atendimento feito por várias pessoas",
     "con": "com {nombres}"
   },
   "FinalizadoCard": {

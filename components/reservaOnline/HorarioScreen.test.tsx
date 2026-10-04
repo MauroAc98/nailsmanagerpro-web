@@ -520,7 +520,7 @@ describe('HorarioScreen', () => {
 
 describe('HorarioScreen: una profesional distinta por servicio', () => {
   afterEach(() => setServiceParaTests(null));
-  const LINK = 'Elegir una profesional distinta para cada servicio';
+  const LINK = 'Elegir quién atiende cada servicio';
 
   // Registra lo que la pantalla le pide al servicio (sobre el mock con agenda real).
   function espiar() {
@@ -590,7 +590,7 @@ describe('HorarioScreen: una profesional distinta por servicio', () => {
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await userEvent.click(await screen.findByRole('button', { name: LINK }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Volver a una sola profesional' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Volver a una sola persona para todo' }));
     await waitFor(() => expect(consultas.at(-1)?.asignaciones).toBeUndefined());
     expect(await screen.findByRole('button', { name: LINK })).toBeInTheDocument();
   });

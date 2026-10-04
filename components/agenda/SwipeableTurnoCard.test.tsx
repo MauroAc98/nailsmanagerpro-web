@@ -164,7 +164,7 @@ describe('SwipeableTurnoCard — turno de un grupo', () => {
 
   it('un turno sin grupo se ve como siempre: sin icono, sin "con" y sin barra (Rule L)', () => {
     const { container } = renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ grupo_id: null })} onCancel={vi.fn()} />);
-    expect(screen.queryByLabelText('Parte de un turno con varias profesionales')).toBeNull();
+    expect(screen.queryByLabelText('Parte de un turno que atienden varias personas')).toBeNull();
     expect(screen.getByText('Manicura').textContent).toBe('Manicura');
     expect(container.querySelector('[data-grupo-barra]')).toBeNull();
   });
@@ -173,7 +173,7 @@ describe('SwipeableTurnoCard — turno de un grupo', () => {
     renderWithProviders(
       <SwipeableTurnoCard turno={buildTurno({ grupo_id: 7, profesional_id: 10, grupo })} onCancel={vi.fn()} />,
     );
-    expect(screen.getByLabelText('Parte de un turno con varias profesionales')).toBeInTheDocument();
+    expect(screen.getByLabelText('Parte de un turno que atienden varias personas')).toBeInTheDocument();
     expect(screen.getByText('con Laura')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
   });

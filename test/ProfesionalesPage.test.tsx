@@ -51,7 +51,7 @@ describe('ProfesionalesPage — ajuste "atiende en paralelo" (PR 2d)', () => {
     montar([profesional(1, 'Ana'), profesional(2, 'Laura')], false);
     const toggle = await screen.findByRole('switch', { name: 'Atiende en paralelo' });
     expect(toggle).toHaveAttribute('aria-checked', 'false');
-    expect(screen.getByText('Permite armar promos donde dos profesionales atienden a la clienta a la vez.')).toBeInTheDocument();
+    expect(screen.getByText('Permite armar promos donde dos o más profesionales atienden a la vez.')).toBeInTheDocument();
   });
 
   it('appears once a second professional becomes active, still OFF', async () => {

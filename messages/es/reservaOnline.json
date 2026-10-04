@@ -48,8 +48,8 @@
     "buscando": "Buscando el próximo día con lugar…",
     "sinLugarProximos": "No hay lugar en los próximos 30 días. Probá con otra profesional o contactá al negocio.",
     "reteniendo": "Reservando tu horario…",
-    "profesionalPorServicio": "Elegir una profesional distinta para cada servicio",
-    "unaSola": "Volver a una sola profesional"
+    "profesionalPorServicio": "Elegir quién atiende cada servicio",
+    "unaSola": "Volver a una sola persona para todo"
   },
   "datos": {
     "title": "Tus datos",
