@@ -294,18 +294,18 @@
   },
   "ProfesionalesPage": {
     "title": "Profesionales",
-    "disclaimer": "Desactivar una profesional no borra su historial de turnos — solo deja de aparecer para agendar nuevos.",
+    "disclaimer": "Desactivar a alguien del equipo no borra su historial de turnos — solo deja de aparecer para agendar nuevos.",
     "loading": "Cargando profesionales...",
-    "emptyState": "¡Cargá tu primera profesional!",
+    "emptyState": "¡Cargá a la primera persona de tu equipo!",
     "noServices": "Sin servicios asignados",
     "serviceCount": "{count, plural, one {# servicio} other {# servicios}}",
     "allDays": "Todos los días",
     "dayRangeConnector": "a",
-    "inactiveLabel": "Inactiva",
-    "jefaBadge": "Jefa"
+    "inactiveLabel": "Inactivo",
+    "jefaBadge": "Titular"
   },
   "NuevoProfesionalPage": {
-    "title": "Nueva profesional",
+    "title": "Alta de profesional",
     "identitySection": "Identidad",
     "availabilitySection": "Disponibilidad",
     "nameLabel": "Nombre *",
@@ -317,21 +317,21 @@
     "workingDaysLabel": "Días que atiende",
     "workingDaysHint": "Sin selección = atiende todos los días.",
     "servicesLabel": "Servicios que puede realizar",
-    "duplicateActive": "Ya existe una profesional con ese nombre.",
-    "duplicateInactive": "Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.",
+    "duplicateActive": "Ya existe un perfil con ese nombre.",
+    "duplicateInactive": "Ya tenés un perfil con ese nombre (inactivo). Reactivalo desde el listado en vez de crear uno nuevo.",
     "saving": "Guardando...",
     "submit": "Agregar profesional",
-    "saveError": "No se pudo guardar la profesional."
+    "saveError": "No se pudo guardar el perfil."
   },
   "EditarProfesionalPage": {
     "title": "Editar profesional",
     "loading": "Cargando...",
     "identitySection": "Identidad",
     "availabilitySection": "Disponibilidad",
-    "avatarChange": "Cambiar foto de la profesional",
-    "avatarRemove": "Quitar foto de la profesional",
+    "avatarChange": "Cambiar foto de perfil",
+    "avatarRemove": "Quitar foto de perfil",
     "avatarTooLarge": "La imagen no puede pesar más de 5MB.",
-    "avatarRemoveConfirm": "¿Quitar la foto de esta profesional?",
+    "avatarRemoveConfirm": "¿Quitar la foto de este perfil?",
     "avatarRemoveConfirmButton": "Quitar",
     "nameLabel": "Nombre *",
     "namePlaceholder": "Ej: Sofía",
@@ -339,22 +339,22 @@
     "lastNameLabel": "Apellido",
     "lastNamePlaceholder": "Ej: Gómez",
     "colorLabel": "Color de identificación",
-    "activeLabel": "Activa",
+    "activeLabel": "Activo",
     "activeSubtitleOn": "Disponible para agendar turnos",
     "activeSubtitleOff": "No aparece para agendar nuevos turnos",
     "workingDaysLabel": "Días que atiende",
     "workingDaysHint": "Sin selección = atiende todos los días.",
     "servicesLabel": "Servicios que puede realizar",
-    "loadError": "No se pudo cargar la profesional.",
-    "duplicateActive": "Ya existe una profesional con ese nombre.",
-    "duplicateInactive": "Ya tenés una profesional con ese nombre (inactiva). Reactivala desde el listado en vez de crear una nueva.",
+    "loadError": "No se pudo cargar el perfil.",
+    "duplicateActive": "Ya existe un perfil con ese nombre.",
+    "duplicateInactive": "Ya tenés un perfil con ese nombre (inactivo). Reactivalo desde el listado en vez de crear uno nuevo.",
     "saving": "Guardando...",
     "submit": "Guardar cambios",
-    "saveError": "No se pudo guardar la profesional."
+    "saveError": "No se pudo guardar el perfil."
   },
   "BloqueosPage": {
     "title": "Bloqueos",
-    "subtitle": "Cerrá fechas u horarios puntuales: tus clientas no van a poder reservarlos online, y tu agenda te avisa si igual agendás ahí.",
+    "subtitle": "Cerrá fechas u horarios puntuales: tus clientes no van a poder reservarlos online, y tu agenda te avisa si igual agendás ahí.",
     "loading": "Cargando bloqueos...",
     "emptyTitle": "No tenés ningún bloqueo cargado.",
     "emptyText": "Usalos para cerrar vacaciones, feriados o cualquier día u horario en el que el negocio no atiende.",
@@ -444,15 +444,15 @@
       },
       "bookingAppointment": {
         "title": "Cómo agendar un turno",
-        "text": "1. Entrá a Agenda y tocá el botón + (abajo a la derecha, en un día que no sea pasado).\n2. Elegí el cliente buscándolo por nombre.\n3. Si trabajás con más de una profesional, elegí quién lo va a atender — los servicios que se muestran después se filtran a lo que esa persona sabe hacer.\n4. Elegí uno o más servicios.\n5. Elegí la hora. La app valida sola: no te deja elegir un horario fuera de tu horario de atención, ni uno que se superponga con otro turno del día.\n6. Tocá \"Confirmar Turno\".\n\nPara cancelar un turno: deslizalo hacia la izquierda en la lista de la agenda y tocá \"Cancelar\". Para editarlo: tocalo directamente.\n\nMientras se está atendiendo, la tarjeta muestra \"EN CURSO\" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por cliente, servicio o fecha), usá el botón \"Filtrar\" arriba de la lista — el campo de fecha ahí abre el mismo calendario que ves en la Agenda, no hace falta tipearla.\n\nSi trabajás con más de una profesional, arriba de la lista del día vas a ver chips con los nombres de las que tienen turno ese día puntual — tocá uno para ver solo sus turnos, o \"Todas\" para verlos juntos. Cambia según el día que estés mirando en el calendario: si una profesional no tiene nada agendado ese día, no aparece como opción."
+        "text": "1. Entrá a Agenda y tocá el botón + (abajo a la derecha, en un día que no sea pasado).\n2. Elegí el cliente buscándolo por nombre.\n3. Si trabajás con más de una persona, elegí quién lo va a atender — los servicios que se muestran después se filtran a lo que esa persona sabe hacer.\n4. Elegí uno o más servicios.\n5. Elegí la hora. La app valida sola: no te deja elegir un horario fuera de tu horario de atención, ni uno que se superponga con otro turno del día.\n6. Tocá \"Confirmar Turno\".\n\nPara cancelar un turno: deslizalo hacia la izquierda en la lista de la agenda y tocá \"Cancelar\". Para editarlo: tocalo directamente.\n\nMientras se está atendiendo, la tarjeta muestra \"EN CURSO\" con un botón para finalizarlo a mano; una vez pasada la hora, se marca sola como finalizada y se ve atenuada. Para buscar un turno puntual (por cliente, servicio o fecha), usá el botón \"Filtrar\" arriba de la lista — el campo de fecha ahí abre el mismo calendario que ves en la Agenda, no hace falta tipearla.\n\nSi trabajás con más de una persona, arriba de la lista del día vas a ver chips con los nombres de quienes tienen turno ese día puntual — tocá uno para ver solo sus turnos, o \"Todas\" para verlos juntos. Cambia según el día que estés mirando en el calendario: si alguien del equipo no tiene nada agendado ese día, no aparece como opción."
       },
       "bloqueos": {
         "title": "Bloqueos",
-        "text": "Ajustes → Bloqueos.\n\nCerrá una fecha completa, o solo un horario puntual dentro de un día (por ejemplo una tarde libre), para todo el negocio o para una profesional en particular — útil para vacaciones, feriados, o cualquier rato en el que no atendés.\n\n1. Tocá + y elegí la fecha.\n2. Elegí a quién afecta: todo el negocio, o una profesional puntual.\n3. Elegí si bloqueás el día completo o solo un horario (\"Desde\"/\"Hasta\").\n4. Opcional: anotá un motivo, por ejemplo \"Vacaciones\".\n\nUn bloqueo no te impide cargar un turno a mano ahí si de verdad lo necesitás — la app te avisa que ese horario está bloqueado, pero la decisión final es tuya."
+        "text": "Ajustes → Bloqueos.\n\nCerrá una fecha completa, o solo un horario puntual dentro de un día (por ejemplo una tarde libre), para todo el negocio o para una persona del equipo en particular — útil para vacaciones, feriados, o cualquier rato en el que no atendés.\n\n1. Tocá + y elegí la fecha.\n2. Elegí a quién afecta: todo el negocio, o una persona puntual.\n3. Elegí si bloqueás el día completo o solo un horario (\"Desde\"/\"Hasta\").\n4. Opcional: anotá un motivo, por ejemplo \"Vacaciones\".\n\nUn bloqueo no te impide cargar un turno a mano ahí si de verdad lo necesitás — la app te avisa que ese horario está bloqueado, pero la decisión final es tuya."
       },
       "instagramStory": {
         "title": "Historia de disponibilidad: todas las opciones",
-        "text": "Se abre desde el botón COMPARTIR, arriba a la derecha en Agenda.\n\n- Período: elegí Día, Semana o Mes. En Mes además elegís primera quincena (1 al 15) o segunda (16 al fin).\n- Logo: si subiste el logo de tu negocio en Mi negocio, aparece en el encabezado de la imagen — no hace falta elegir nada acá. Si elegís una profesional que tiene foto de perfil, aparece la foto de ella en su lugar; si no tiene, queda el logo. Sin logo cargado, se ve como siempre.\n- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — al abrir la pantalla queda elegida la dueña, y su nombre y su foto aparecen en el encabezado de la imagen (\"con …\"). El nombre del negocio va en el pie, junto al teléfono.\n- Fondo: botón \"Fondo\" para subir una foto de fondo para la imagen. Al elegirla, te pregunta si la querés guardar como fondo fijo (se reusa sola la próxima vez que generes una historia) o usarla solo por esta vez. Si guardaste una, aparece un link \"Quitar fondo fijo guardado\" para sacarla cuando quieras.\n- Texto libre: escribí un texto y tocá + para agregarlo a la imagen. Podés ponerle emojis, arrastrarlo a la posición que quieras dentro de la imagen, y agrandarlo o achicarlo con los botones A- / A+ (o el tirador en la esquina, tocando y arrastrando).\n- Editar qué se muestra: tocá un horario suelto en la lista de abajo para sacarlo de la imagen, o el ícono del ojo en un día para ocultarlo completo.\n- Al final: \"Guardar\" descarga la imagen a tu dispositivo, \"Compartir\" abre el menú para mandarla directo (por ejemplo a Instagram o WhatsApp)."
+        "text": "Se abre desde el botón COMPARTIR, arriba a la derecha en Agenda.\n\n- Período: elegí Día, Semana o Mes. En Mes además elegís primera quincena (1 al 15) o segunda (16 al fin).\n- Logo: si subiste el logo de tu negocio en Mi negocio, aparece en el encabezado de la imagen — no hace falta elegir nada acá. Si elegís a alguien que tiene foto de perfil, aparece esa foto en su lugar; si no tiene, queda el logo. Sin logo cargado, se ve como siempre.\n- Profesional: si trabajás con más de una, elegí de quién mostrar la disponibilidad — al abrir la pantalla queda elegida la persona titular, y su nombre y su foto aparecen en el encabezado de la imagen (\"con …\"). El nombre del negocio va en el pie, junto al teléfono.\n- Fondo: botón \"Fondo\" para subir una foto de fondo para la imagen. Al elegirla, te pregunta si la querés guardar como fondo fijo (se reusa sola la próxima vez que generes una historia) o usarla solo por esta vez. Si guardaste una, aparece un link \"Quitar fondo fijo guardado\" para sacarla cuando quieras.\n- Texto libre: escribí un texto y tocá + para agregarlo a la imagen. Podés ponerle emojis, arrastrarlo a la posición que quieras dentro de la imagen, y agrandarlo o achicarlo con los botones A- / A+ (o el tirador en la esquina, tocando y arrastrando).\n- Editar qué se muestra: tocá un horario suelto en la lista de abajo para sacarlo de la imagen, o el ícono del ojo en un día para ocultarlo completo.\n- Al final: \"Guardar\" descarga la imagen a tu dispositivo, \"Compartir\" abre el menú para mandarla directo (por ejemplo a Instagram o WhatsApp)."
       },
       "services": {
         "title": "Servicios",
@@ -464,31 +464,31 @@
       },
       "priceStory": {
         "title": "Historia de precios",
-        "text": "Se abre desde el botón \"Historia de precios\", arriba de la lista en Ajustes → Servicios (aparece una vez que tengas al menos un servicio cargado).\n\nYa no hay pestañas separadas: la tarjeta muestra tus servicios y tus promociones juntos (los que marcaste con \"Es promoción\" en Servicios — ver esa sección) en una sola imagen. Si tenés los dos tipos cargados, aparecen separados con su propio título dentro de la tarjeta; si solo tenés uno, se muestra sin ese título de más.\n\n\"Elegí tu diseño\" te muestra 8 plantillas fijas, cada una con su propia composición de fotos (de 1 a 4) y estilo. Una plantilla se bloquea si no subiste suficientes fotos para ella — te dice cuántas faltan — y se desbloquea sola apenas subís las que necesita.\n\nMás abajo, en \"Fotos\", subís las imágenes de fondo dedicadas a esta historia — son fotos propias de esta pantalla, no las mismas que usás en la Historia de Instagram de disponibilidad (ver esa sección). Podés subir varias, reordenarlas arrastrando el ícono de puntitos, y borrarlas cuando quieras.\n\nSi trabajás con más de una profesional, arriba podés elegir de quién mostrar los precios. Más abajo podés sumar un texto adicional (por ejemplo una aclaración sobre seña o forma de pago) y elegir su alineación.\n\nAl final, \"Guardar\" descarga la imagen a tu dispositivo y \"Compartir\" abre el menú para mandarla directo."
+        "text": "Se abre desde el botón \"Historia de precios\", arriba de la lista en Ajustes → Servicios (aparece una vez que tengas al menos un servicio cargado).\n\nYa no hay pestañas separadas: la tarjeta muestra tus servicios y tus promociones juntos (los que marcaste con \"Es promoción\" en Servicios — ver esa sección) en una sola imagen. Si tenés los dos tipos cargados, aparecen separados con su propio título dentro de la tarjeta; si solo tenés uno, se muestra sin ese título de más.\n\n\"Elegí tu diseño\" te muestra 8 plantillas fijas, cada una con su propia composición de fotos (de 1 a 4) y estilo. Una plantilla se bloquea si no subiste suficientes fotos para ella — te dice cuántas faltan — y se desbloquea sola apenas subís las que necesita.\n\nMás abajo, en \"Fotos\", subís las imágenes de fondo dedicadas a esta historia — son fotos propias de esta pantalla, no las mismas que usás en la Historia de Instagram de disponibilidad (ver esa sección). Podés subir varias, reordenarlas arrastrando el ícono de puntitos, y borrarlas cuando quieras.\n\nSi trabajás con más de una persona, arriba podés elegir de quién mostrar los precios. Más abajo podés sumar un texto adicional (por ejemplo una aclaración sobre seña o forma de pago) y elegir su alineación.\n\nAl final, \"Guardar\" descarga la imagen a tu dispositivo y \"Compartir\" abre el menú para mandarla directo."
       },
       "clients": {
         "title": "Clientes",
-        "text": "Pestaña Clientes.\n\nAhí cargás nombre, apellido y teléfono de cada una. El teléfono es el que se usa para el botón de WhatsApp que aparece en cada turno y para los mensajes automáticos.\n\nPodés buscarlas por nombre y ver su historial de turnos. El interruptor en cada tarjeta la desactiva sin borrarla (por ejemplo si dejó de venir) — sus turnos anteriores quedan intactos, y podés reactivarla en cualquier momento con el mismo interruptor."
+        "text": "Pestaña Clientes.\n\nAhí cargás nombre, apellido y teléfono de cada cliente. El teléfono es el que se usa para el botón de WhatsApp que aparece en cada turno y para los mensajes automáticos.\n\nPodés buscar clientes por nombre y ver su historial de turnos. El interruptor en cada tarjeta desactiva el perfil sin borrarlo (por ejemplo si dejó de venir) — sus turnos anteriores quedan intactos, y podés reactivarlo en cualquier momento con el mismo interruptor."
       },
       "professionals": {
-        "title": "Profesionales: cómo agregar una nueva",
-        "text": "Esta sección solo importa si trabajás con más de una persona en el negocio. Si trabajás sola, no hace falta tocar nada acá.\n\n1. Ajustes → Profesionales → botón +.\n2. Escribí su nombre y elegí un color para distinguirla en la agenda.\n3. Tildá los servicios que sabe hacer — eso filtra lo que se le puede asignar al crear un turno para ella.\n4. Guardá.\n5. Importante: andá a Ajustes → Horarios Disponibles, elegí su nombre en el selector de arriba, y cargale sus propios horarios de atención (ver \"Horarios Disponibles\"). Sin esto no va a tener ninguna hora disponible para agendar, aunque ya la hayas creado.\n\nDesde Editar profesional podés además subir su foto real (reemplaza las iniciales en todos los selectores de profesional de la app) y elegir qué días de la semana atiende, por ejemplo si no trabaja los domingos. Esto es distinto de los horarios: los días deciden QUÉ días trabaja, los horarios deciden A QUÉ HORA dentro de esos días.\n\nPara dar de baja a una profesional sin perder su historial de turnos, desactivala desde el listado (el interruptor) en vez de borrarla."
+        "title": "Profesionales: cómo sumar a alguien más",
+        "text": "Esta sección solo importa si trabajás con más de una persona en el negocio. Si trabajás sin equipo, no hace falta tocar nada acá.\n\n1. Ajustes → Profesionales → botón +.\n2. Escribí su nombre y elegí un color para identificar sus turnos en la agenda.\n3. Tildá los servicios que sabe hacer — eso filtra lo que se le puede asignar al crear un turno con esa persona.\n4. Guardá.\n5. Importante: andá a Ajustes → Horarios Disponibles, elegí su nombre en el selector de arriba, y cargale sus propios horarios de atención (ver \"Horarios Disponibles\"). Sin esto no va a tener ninguna hora disponible para agendar, aunque ya hayas creado el perfil.\n\nDesde Editar profesional podés además subir su foto real (reemplaza las iniciales en todos los selectores de profesional de la app) y elegir qué días de la semana atiende, por ejemplo si no trabaja los domingos. Esto es distinto de los horarios: los días deciden QUÉ días trabaja, los horarios deciden A QUÉ HORA dentro de esos días.\n\nPara dar de baja a alguien del equipo sin perder su historial de turnos, desactivá su perfil desde el listado (el interruptor) en vez de borrarlo."
       },
       "availableSlots": {
         "title": "Horarios Disponibles",
-        "text": "Ajustes → Horarios Disponibles.\n\nEs la lista de horas en las que se puede reservar (por ejemplo 09:00, 09:30, 10:00...). Tocá + para agregar una hora nueva, y usá el interruptor para activarla o desactivarla sin borrarla.\n\nEste paso es obligatorio: sin ningún horario activo, la app no te deja cargar turnos.\n\nSi trabajás con más de una profesional, cada una tiene su propio horario — elegí su nombre en la fila de arriba de esta pantalla antes de cargar sus horas (ver la sección \"Profesionales\" para más detalle). Esto es distinto de los días que atiende (que se configuran en Editar profesional): acá elegís las horas puntuales dentro de los días que sí trabaja."
+        "text": "Ajustes → Horarios Disponibles.\n\nEs la lista de horas en las que se puede reservar (por ejemplo 09:00, 09:30, 10:00...). Tocá + para agregar una hora nueva, y usá el interruptor para activarla o desactivarla sin borrarla.\n\nEste paso es obligatorio: sin ningún horario activo, la app no te deja cargar turnos.\n\nSi trabajás con más de una persona, cada persona tiene su propio horario — elegí su nombre en la fila de arriba de esta pantalla antes de cargar sus horas (ver la sección \"Profesionales\" para más detalle). Esto es distinto de los días que atiende (que se configuran en Editar profesional): acá elegís las horas puntuales dentro de los días que sí trabaja."
       },
       "whatsappLink": {
         "title": "WhatsApp automático",
-        "text": "No hay nada que vincular ni ningún código QR que escanear: los mensajes de confirmación y recordatorio se mandan solos por WhatsApp una vez que activás cada uno por separado en Negocio → Mensajes automáticos (\"Confirmación automática\" y \"Recordatorio automático\").\n\nPara poder activarlos necesitás tener cargados tu teléfono, tu dirección y tu ubicación en el mapa (Negocio → Datos del negocio) — mientras falte alguno de los tres, el interruptor queda bloqueado.\n\nAunque esté todo cargado y activado, la app pasa a modo manual si tu cuenta está en portugués (por ahora el envío automático no está disponible en ese idioma), o si hay un problema puntual de nuestro lado con la conexión de WhatsApp: después de cargar un turno te muestra un botón para mandar la confirmación vos misma por WhatsApp, y los recordatorios pendientes de mandar quedan listados para que los envíes a mano (ver \"Mensajes de WhatsApp\")."
+        "text": "No hay nada que vincular ni ningún código QR que escanear: los mensajes de confirmación y recordatorio se mandan solos por WhatsApp una vez que activás cada uno por separado en Negocio → Mensajes automáticos (\"Confirmación automática\" y \"Recordatorio automático\").\n\nPara poder activarlos necesitás tener cargados tu teléfono, tu dirección y tu ubicación en el mapa (Negocio → Datos del negocio) — mientras falte alguno de los tres, el interruptor queda bloqueado.\n\nAunque esté todo cargado y activado, la app pasa a modo manual si tu cuenta está en portugués (por ahora el envío automático no está disponible en ese idioma), o si hay un problema puntual de nuestro lado con la conexión de WhatsApp: después de cargar un turno te muestra un botón para mandar la confirmación a mano por WhatsApp, y los recordatorios pendientes de mandar quedan listados para que los envíes a mano (ver \"Mensajes de WhatsApp\")."
       },
       "whatsappMessages": {
         "title": "Mensajes de WhatsApp",
-        "text": "\"Confirmación\" se manda sola apenas cargás un turno nuevo — salvo que tu cuenta esté en modo manual (ver \"WhatsApp automático\"), en cuyo caso te aparece un botón para mandarla vos misma después de crear el turno. Si activaste \"Pedir seña para confirmar turnos\" en Negocio → Mensajes automáticos, ese mismo mensaje incluye el monto y los datos para pagarla (ver \"Mi negocio\").\n\n\"Recordatorio\" tiene dos caminos: si activaste \"Recordatorio automático\" en Negocio, la app lo manda sola un día antes, a la hora que elegiste, a cada cliente con turno confirmado; y además lo podés mandar vos a mano en cualquier momento tocando el ícono de WhatsApp en una tarjeta de turno.\n\nEl texto de los mensajes es fijo (no se puede editar) — incluye el nombre del cliente, tu negocio, la fecha, la hora, el servicio y tu teléfono de contacto.\n\nSi tu cuenta está en modo manual, o si un envío automático puntual no puede salir, el turno va a aparecer en \"Recordatorios pendientes\" para que lo mandes vos a mano — y además recibís un mail cada mañana con la lista de los que quedaron pendientes para ese día."
+        "text": "\"Confirmación\" se manda sola apenas cargás un turno nuevo — salvo que tu cuenta esté en modo manual (ver \"WhatsApp automático\"), en cuyo caso te aparece un botón para mandarla a mano después de crear el turno. Si activaste \"Pedir seña para confirmar turnos\" en Negocio → Mensajes automáticos, ese mismo mensaje incluye el monto y los datos para pagarla (ver \"Mi negocio\").\n\n\"Recordatorio\" tiene dos caminos: si activaste \"Recordatorio automático\" en Negocio, la app lo manda sola un día antes, a la hora que elegiste, a cada cliente con turno confirmado; y además lo podés mandar vos a mano en cualquier momento tocando el ícono de WhatsApp en una tarjeta de turno.\n\nEl texto de los mensajes es fijo (no se puede editar) — incluye el nombre del cliente, tu negocio, la fecha, la hora, el servicio y tu teléfono de contacto.\n\nSi tu cuenta está en modo manual, o si un envío automático puntual no puede salir, el turno va a aparecer en \"Recordatorios pendientes\" para que lo mandes vos a mano — y además recibís un mail cada mañana con la lista de los que quedaron pendientes para ese día."
       },
       "statistics": {
         "title": "Estadísticas",
-        "text": "Negocio → Finanzas → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda (ahora incluye cuánto facturaste ese mes) — tocala para ir directo a la pantalla completa.\n\nElegí el mes con las flechas, o tocá \"Rango personalizado\" si necesitás un período puntual (por ejemplo, una semana específica). Si trabajás con más de una profesional, filtrá por quién querés ver. Mostrás:\n\n- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.\n- Ingresos: el total del período — lo que facturaste por turnos, más cualquier ingreso que hayas cargado a mano en Finanzas → Ingresos (desglosado aparte por categoría) —, el desglose por servicio, y un gráfico de tendencia que se ajusta solo (día a día si el rango es corto, por semana o por mes si es más largo — no hace falta elegirlo).\n- Ganancia neta: todos los ingresos (turnos + los que cargaste a mano) menos los gastos que cargaste en Finanzas → Gastos — es la ganancia real del período.\n- Clientes nuevas vs. recurrentes: \"nueva\" es la que tuvo su primer turno alguna vez dentro de ese mes; \"recurrente\" ya venía de antes.\n- Servicios más pedidos: ranking de qué se agendó más ese mes.\n\nLos turnos cancelados no cuentan para ingresos, ganancia neta, clientes ni servicios más pedidos — solo aparecen en \"Turnos por estado\", que es la única de las cinco que sí los muestra.\n\nSi un turno pasa su horario sin que lo hayas finalizado a mano, el sistema lo marca completado solo, pero sin precio cargado. Esos casos aparecen en \"Pendientes de cobro\" — accedés desde el numerito en la barra de navegación o desde el aviso arriba de la Agenda."
+        "text": "Negocio → Finanzas → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda (ahora incluye cuánto facturaste ese mes) — tocala para ir directo a la pantalla completa.\n\nElegí el mes con las flechas, o tocá \"Rango personalizado\" si necesitás un período puntual (por ejemplo, una semana específica). Si trabajás con más de una persona, filtrá por quién querés ver. Mostrás:\n\n- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.\n- Ingresos: el total del período — lo que facturaste por turnos, más cualquier ingreso que hayas cargado a mano en Finanzas → Ingresos (desglosado aparte por categoría) —, el desglose por servicio, y un gráfico de tendencia que se ajusta solo (día a día si el rango es corto, por semana o por mes si es más largo — no hace falta elegirlo).\n- Ganancia neta: todos los ingresos (turnos + los que cargaste a mano) menos los gastos que cargaste en Finanzas → Gastos — es la ganancia real del período.\n- Clientes nuevos vs. recurrentes: \"nuevo\" es quien tuvo su primer turno dentro de ese mes; \"recurrente\" ya venía de antes.\n- Servicios más pedidos: ranking de qué se agendó más ese mes.\n\nLos turnos cancelados no cuentan para ingresos, ganancia neta, clientes ni servicios más pedidos — solo aparecen en \"Turnos por estado\", que es la única de las cinco que sí los muestra.\n\nSi un turno pasa su horario sin que lo hayas finalizado a mano, el sistema lo marca completado solo, pero sin precio cargado. Esos casos aparecen en \"Pendientes de cobro\" — accedés desde el numerito en la barra de navegación o desde el aviso arriba de la Agenda."
       },
       "pendingPayments": {
         "title": "Pendientes de cobro",

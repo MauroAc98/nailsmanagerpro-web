@@ -11,7 +11,7 @@
     "emailSubject": "Renovar suscripción Turnetto",
     "sendEmail": "Enviar un email",
     "logout": "Cerrar sesión",
-    "logoutConfirm": "¿Seguro que querés salir?",
+    "logoutConfirm": "¿Querés salir?",
     "logoutConfirmButton": "Salir",
     "verifyFailed": "No pudimos verificar tu suscripción. Revisá tu conexión y probá de nuevo."
   },
@@ -98,7 +98,7 @@
     "reasonAvisoPrevio": "Cliente canceló con aviso",
     "reasonNoShow": "Cliente no se presentó",
     "reasonReprogramar": "Cliente pidió reprogramar",
-    "reasonImprevisto": "Imprevisto de la profesional",
+    "reasonImprevisto": "Imprevisto de quien atiende",
     "reasonOtro": "Otro"
   },
   "PrecioServiciosSheetHost": {
