@@ -30,10 +30,30 @@ describe('ServiciosScreen', () => {
 
   it('lista los servicios con duracion y precio "Desde" (referencia, nunca un precio firme)', async () => {
     renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
-    expect(await screen.findByText('Esmaltado semipermanente')).toBeInTheDocument();
+    expect((await screen.findAllByText('Esmaltado semipermanente'))[0]).toBeInTheDocument();
     expect(screen.getByText('45 min')).toBeInTheDocument();
-    expect(screen.getByText('Desde $12.000')).toBeInTheDocument();
-    expect(screen.queryByText('$12.000')).toBeNull();
+    // "Desde" va como etiqueta chica sobre el monto: nunca un precio firme.
+    expect(screen.getByText('$12.000')).toBeInTheDocument();
+    expect(screen.getAllByText('Desde').length).toBeGreaterThan(0);
+  });
+
+  // La clienta decide con el nombre: en esta pantalla jamas se recorta.
+  it('el nombre del servicio nunca se recorta con puntos suspensivos', async () => {
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    const nombre = (await screen.findAllByText('Esmaltado semipermanente'))[0];
+    expect(nombre.style.textOverflow).toBe('');
+    expect(nombre.style.overflowWrap).toBe('anywhere');
+  });
+
+  it('un servicio sin precio dice "Precio a consultar" en vez de "Desde $0"', async () => {
+    const svc = prepararServicio();
+    const original = svc.getServices.bind(svc);
+    svc.getServices = async (slug, q) =>
+      (await original(slug, q)).map((s) => (s.id === 2 ? { ...s, precio: 0 } : s));
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    await screen.findByText('Retiro de esmalte');
+    expect(screen.getByText('Precio a consultar')).toBeInTheDocument();
+    expect(screen.queryByText('$0')).toBeNull();
   });
 
   // El cliente (a menudo una persona mayor) entiende "1 h 45 min" antes que
@@ -54,9 +74,10 @@ describe('ServiciosScreen', () => {
       await screen.findByText('Combo mani + pedi');
       const lineas = screen.getAllByTestId('promo-componente').map((el) => el.textContent);
       expect(lineas).toEqual([
-        'Esmaltado semipermanente · con Ana',
-        'Pedicura spa · con Lucía',
+        '1Esmaltado semipermanentecon Ana',
+        '2Pedicura spacon Lucía',
       ]);
+      expect(screen.getByText('Incluye')).toBeInTheDocument();
       expect(screen.getByText('Uno después del otro')).toBeInTheDocument();
       expect(screen.queryByText('Al mismo tiempo')).toBeNull();
     });
@@ -80,6 +101,58 @@ describe('ServiciosScreen', () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
       await screen.findByText('Combo mani + pedi');
       expect(screen.getByText('Uno después del otro')).toBeInTheDocument();
+    });
+
+    it('en secuencia numera los pasos; en paralelo no', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Combo mani + pedi');
+      const items = screen.getAllByTestId('promo-componente');
+      expect(items[0]).toHaveTextContent(/^1/);
+      expect(items[1]).toHaveTextContent(/^2/);
+    });
+
+    it('en paralelo los pasos no llevan numero', async () => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      svc.getServices = async (slug, q) =>
+        (await original(slug, q)).map((s) => (s.id === 5 ? { ...s, modoPromo: 'paralelo' as const } : s));
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Combo mani + pedi');
+      const items = screen.getAllByTestId('promo-componente');
+      expect(items[0].textContent).toBe('Esmaltado semipermanentecon Ana');
+    });
+
+    it('la promo muestra la etiqueta PROMO y la duracion "en total"', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Combo mani + pedi');
+      expect(screen.getByText('PROMO')).toBeInTheDocument();
+      expect(screen.getByText('en total')).toBeInTheDocument();
+    });
+
+    describe('promo con mas de 3 servicios', () => {
+      const cinco = (id: number) => ({
+        orden: id, servicioNombre: `Paso ${id}`, profesionalNombre: `Pro ${id}`,
+      });
+      function conCincoComponentes() {
+        const svc = prepararServicio();
+        const original = svc.getServices.bind(svc);
+        svc.getServices = async (slug, q) =>
+          (await original(slug, q)).map((s) =>
+            s.id === 5 ? { ...s, componentes: [1, 2, 3, 4, 5].map(cinco) } as typeof s : s,
+          );
+      }
+
+      it('muestra 3 y un boton "Ver los 2 restantes" que despliega el resto sin seleccionar el servicio', async () => {
+        conCincoComponentes();
+        renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+        await screen.findByText('Combo mani + pedi');
+        expect(screen.getAllByTestId('promo-componente')).toHaveLength(3);
+        await userEvent.click(screen.getByRole('button', { name: 'Ver los 2 restantes' }));
+        expect(screen.getAllByTestId('promo-componente')).toHaveLength(5);
+        expect(useReservaOnlineStore.getState().servicioIds).toEqual([]);
+        await userEvent.click(screen.getByRole('button', { name: 'Ver menos' }));
+        expect(screen.getAllByTestId('promo-componente')).toHaveLength(3);
+      });
     });
 
     it('un servicio comun no muestra detalle de promo', async () => {
@@ -111,8 +184,7 @@ describe('ServiciosScreen', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: /Retiro de esmalte/ }));
     expect(screen.getByRole('button', { name: 'Continuar · 2 servicios' })).toBeEnabled();
     // 12.000 + 8.000 no se suma: solo aparece el "Desde" de cada tarjeta.
-    expect(screen.queryByText('$20.000')).toBeNull();
-    expect(screen.getAllByText('Desde $20.000')).toHaveLength(1); // Kapping gel, su propio precio
+    expect(screen.getAllByText('$20.000')).toHaveLength(1); // Kapping gel, su propio precio
     expect(useReservaOnlineStore.getState().servicioIds).toEqual([1, 2]);
   });
 
@@ -144,11 +216,11 @@ describe('ServiciosScreen', () => {
   });
 
   describe('fotos', () => {
-    it('un servicio con fotos muestra el link "Ver N fotos"', async () => {
+    it('un servicio con fotos muestra la franja "Ver N fotos de muestra"', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
-      await screen.findByText('Esmaltado semipermanente');
-      expect(screen.getByText('Ver 4 fotos ›')).toBeInTheDocument();
-      expect(screen.getByText('Ver 6 fotos ›')).toBeInTheDocument();
+      (await screen.findAllByText('Esmaltado semipermanente'))[0];
+      expect(screen.getByText('Ver 4 fotos de muestra')).toBeInTheDocument();
+      expect(screen.getByText('Ver 6 fotos de muestra')).toBeInTheDocument();
     });
 
     // La foto de origen no pasa por ningun recorte al subirla: forzarla a un
@@ -157,7 +229,7 @@ describe('ServiciosScreen', () => {
     // completo; la foto se ve entera (sin recortar) recien en el detalle/visor.
     it('no muestra ninguna miniatura de foto en la tarjeta', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
-      await screen.findByText('Esmaltado semipermanente');
+      (await screen.findAllByText('Esmaltado semipermanente'))[0];
       expect(screen.queryByRole('img')).toBeNull();
     });
 
@@ -176,7 +248,7 @@ describe('ServiciosScreen', () => {
     it('tocar el nombre o la foto de una tarjeta con fotos selecciona, no navega', async () => {
       const ir = vi.fn();
       renderWithProviders(<ServiciosScreen slug="demo" ir={ir} />);
-      await userEvent.click(await screen.findByText('Esmaltado semipermanente'));
+      await userEvent.click((await screen.findAllByText('Esmaltado semipermanente'))[0]);
       expect(useReservaOnlineStore.getState().servicioIds).toEqual([1]);
       expect(ir).not.toHaveBeenCalled();
     });

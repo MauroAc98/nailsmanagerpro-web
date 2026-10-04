@@ -8,45 +8,181 @@ import { formatMontoCorto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
-import { agendaColors as colors } from '@/theme/agendaColors';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
 const GAP_TARJETA = 14;
 
-// Datos de la tarjeta: nombre, duracion (horas y minutos) y "Desde $X" (precio de referencia: el
-// valor final lo confirma el negocio; el DTO no trae descripcion, asi que no
-// se renderiza ninguna linea de descripcion). Tipografia mas grande que el
-// resto de la app: esta pantalla la usa cualquier clienta, incluidas
-// personas mayores, y es la primera decision de todo el flujo.
-function DatosServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCategoria: boolean }) {
-  const t = useTranslations('reservaOnline.servicios');
+const MAX_PASOS_VISIBLES = 3;
+
+// Etiqueta PROMO: mismo chip que en la lista de configuracion.
+function EtiquetaPromo() {
+  return (
+    <span
+      style={{
+        display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+        color: colors.primaryDeep, backgroundColor: withAlpha(colors.primary, '15'),
+        borderRadius: 6, padding: '2px 6px',
+      }}
+    >
+      PROMO
+    </span>
+  );
+}
+
+// Encabezado de la tarjeta: etiqueta PROMO, nombre y categoria. El nombre NUNCA
+// se recorta: la clienta decide con el, asi que se parte en las lineas que haga
+// falta. Tipografia mas grande que el resto de la app: esta pantalla la usa
+// cualquier clienta, incluidas personas mayores, y es la primera decision de
+// todo el flujo.
+function CabeceraServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCategoria: boolean }) {
   return (
     <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-      <div style={{ fontSize: 17, fontWeight: 700, color: colors.textStrong, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      {s.promoComponentizada && <EtiquetaPromo />}
+      <div
+        style={{
+          fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: colors.textStrong, overflowWrap: 'anywhere',
+          marginTop: s.promoComponentizada ? 5 : 0,
+        }}
+      >
         {s.nombre}
       </div>
       {mostrarCategoria && s.categoria && (
-        <div style={{ fontSize: 12.5, color: colors.muted, marginTop: 2 }}>{s.categoria.nombre}</div>
+        <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 2 }}>{s.categoria.nombre}</div>
       )}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 7, fontSize: 13.5, color: colors.sub }}>
-        <IcoReloj color={colors.muted} size={15} />
-        <span>{formatearDuracion(s.duracionMinutos)}</span>
-        <span aria-hidden="true" style={{ color: colors.border }}>|</span>
-        <b style={{ color: colors.strong, fontWeight: 600 }}>{t('desde', { monto: `$${formatMontoCorto(s.precio)}` })}</b>
-      </div>
-      {s.promoComponentizada && s.componentes && s.componentes.length > 0 && (
-        <div style={{ marginTop: 8, fontSize: 13.5, color: colors.sub, lineHeight: 1.45 }}>
-          {s.componentes.map((c) => (
-            <div key={c.orden} data-testid="promo-componente">
-              {t('componenteLinea', { servicio: c.servicioNombre, profesional: c.profesionalNombre })}
-            </div>
-          ))}
-          <div style={{ marginTop: 2, fontWeight: 600, color: colors.strong }}>
-            {t(s.modoPromo === 'paralelo' ? 'modoParalelo' : 'modoSecuencia')}
-          </div>
+    </div>
+  );
+}
+
+// Modo de la promo como pastilla chica con icono (secuencia = flecha hacia
+// abajo; a la vez = dos barras paralelas). El texto es el vocabulario de la app.
+function PastillaModo({ paralelo }: { paralelo: boolean }) {
+  const t = useTranslations('reservaOnline.servicios');
+  return (
+    <span
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: colors.sub,
+        background: colors.surface, borderRadius: 999, padding: '3px 9px',
+      }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {paralelo ? (
+          <>
+            <line x1="4" y1="8" x2="20" y2="8" />
+            <line x1="4" y1="16" x2="20" y2="16" />
+          </>
+        ) : (
+          <>
+            <line x1="12" y1="4" x2="12" y2="20" />
+            <polyline points="6 14 12 20 18 14" />
+          </>
+        )}
+      </svg>
+      {t(paralelo ? 'modoParalelo' : 'modoSecuencia')}
+    </span>
+  );
+}
+
+// "Incluye": los servicios de la promo con su profesional. En secuencia van
+// numerados y unidos por una linea; a la vez, bajo una barra unica. Desde el
+// 4.o paso se pliegan bajo un boton (44px) para que la tarjeta no crezca sin
+// limite. El boton NO selecciona el servicio (frena el click antes de que
+// llegue a la tarjeta).
+function DetallePromo({ s, expandido, onToggle }: { s: BookableService; expandido: boolean; onToggle: () => void }) {
+  const t = useTranslations('reservaOnline.servicios');
+  const componentes = s.componentes ?? [];
+  const paralelo = s.modoPromo === 'paralelo';
+  const plegable = componentes.length > MAX_PASOS_VISIBLES;
+  const visibles = plegable && !expandido ? componentes.slice(0, MAX_PASOS_VISIBLES) : componentes;
+  const paso = (c: (typeof componentes)[number], i: number) => (
+    <li key={c.orden} data-testid="promo-componente" style={{ position: 'relative', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      {!paralelo && (
+        <span
+          aria-hidden="true"
+          style={{
+            width: 22, height: 22, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', background: colors.primarySolid, color: colors.primaryFg, fontSize: 12, fontWeight: 700,
+          }}
+        >
+          {i + 1}
+        </span>
+      )}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600, lineHeight: 1.25, color: colors.textStrong, overflowWrap: 'anywhere' }}>
+          {c.servicioNombre}
         </div>
+        <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 1, overflowWrap: 'anywhere' }}>
+          {t('conProfesional', { profesional: c.profesionalNombre })}
+        </div>
+      </div>
+    </li>
+  );
+  return (
+    <div style={{ background: colors.surface2, borderRadius: 12, padding: '12px 14px', marginTop: 12, textAlign: 'left' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: colors.sub, textTransform: 'uppercase' }}>
+          {t('incluye')}
+        </span>
+        <PastillaModo paralelo={paralelo} />
+      </div>
+      <ol
+        style={{
+          position: 'relative', listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10,
+          ...(paralelo ? { borderLeft: `2px solid ${colors.primarySolid}`, paddingLeft: 12 } : {}),
+        }}
+      >
+        {!paralelo && visibles.length > 1 && (
+          <div aria-hidden="true" style={{ position: 'absolute', left: 10, top: 12, bottom: 12, width: 2, background: colors.border }} />
+        )}
+        {visibles.map(paso)}
+      </ol>
+      {plegable && (
+        <button
+          type="button"
+          aria-expanded={expandido}
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          style={{
+            width: '100%', minHeight: 44, marginTop: 10, padding: 0, background: 'none', border: 'none',
+            borderTop: `1px solid ${colors.divider}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+            textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: colors.primaryDeep,
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            {expandido ? t('verMenos') : t('verRestantes', { count: componentes.length - MAX_PASOS_VISIBLES })}
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+            style={{ transform: expandido ? 'rotate(180deg)' : undefined }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Pie: duracion a la izquierda (en una promo, "en total") y el precio de
+// REFERENCIA a la derecha: etiqueta "Desde" chica sobre el monto (el valor
+// final lo confirma el negocio). Sin precio cargado: "Precio a consultar" en
+// vez de un "Desde $0".
+function PieServicio({ s }: { s: BookableService }) {
+  const t = useTranslations('reservaOnline.servicios');
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 12, textAlign: 'left' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: colors.sub }}>
+        <IcoReloj color={colors.muted} size={16} />
+        <span>{formatearDuracion(s.duracionMinutos)}</span>
+        {s.promoComponentizada && <span>{t('enTotal')}</span>}
+      </div>
+      {s.precio > 0 ? (
+        <div style={{ textAlign: 'right', lineHeight: 1 }}>
+          <div style={{ fontSize: 11, color: colors.sub, marginBottom: 3 }}>{t('desdeEtiqueta')}</div>
+          <div style={{ fontFamily: agendaFontSerif, fontSize: 21, color: colors.strong }}>{`$${formatMontoCorto(s.precio)}`}</div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 14, fontWeight: 600, color: colors.sub }}>{t('precioAConsultar')}</div>
       )}
     </div>
   );
@@ -115,6 +251,14 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   // Filtro de categoria: 'todos' | id de categoria | 'otros' (sin categoria).
   // Solo cambia lo visible; la seleccion vive en el store y no se toca.
   const [filtro, setFiltro] = useState<'todos' | 'otros' | number>('todos');
+  // Promos con mas de 3 pasos que la clienta desplego (solo UI, no se guarda).
+  const [desplegadas, setDesplegadas] = useState<Set<number>>(new Set());
+  const alternarDesplegada = (id: number) =>
+    setDesplegadas((prev) => {
+      const sig = new Set(prev);
+      if (!sig.delete(id)) sig.add(id);
+      return sig;
+    });
 
   // Pista de que la fila de categorias se puede deslizar: un degrade + flecha
   // sutil en el borde derecho, visible solo mientras queda contenido oculto a
@@ -241,49 +385,60 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
         const conFotos = s.fotos.length > 0;
         const tarjeta = {
           borderRadius: 16, padding: GAP_TARJETA, marginBottom: 12, width: '100%', boxSizing: 'border-box',
+          overflow: 'hidden', cursor: 'pointer',
           background: elegido ? colors.primarySoft : colors.surface,
           border: `${elegido ? 2.5 : 2}px solid ${elegido ? colors.primarySolid : colors.border}`,
         } as const;
 
-        // Una unica regla, siempre: toda la tarjeta selecciona el servicio.
-        // "Ver fotos" (cuando hay) es un link aparte con texto propio, en vez
-        // de compartir la zona de toque con la seleccion.
+        // Una unica regla, siempre: toda la tarjeta selecciona el servicio. El
+        // click lo maneja la tarjeta (los botones internos —desplegar pasos,
+        // "Ver fotos"— frenan el suyo); el checkbox accesible es el encabezado,
+        // que se activa con teclado y burbujea hasta la tarjeta.
         //
         // Sin miniatura: la foto de origen no pasa por ningun recorte al
         // subirla (a diferencia del logo/avatar), asi que forzarla a un
         // cuadrado de 68px con object-fit:cover podia recortarla de forma
-        // fea (una cara cortada rara) — reportado en produccion. En vez de
-        // agregar un cropper nuevo solo para esta miniatura chica, se saca
-        // del todo: el link lleva al detalle/visor, donde la foto se ve
-        // completa (object-fit:contain), sin recortar nada.
+        // fea (una cara cortada rara) — reportado en produccion. El link lleva
+        // al detalle/visor, donde la foto se ve completa (object-fit:contain).
         return (
-          <div key={s.id} style={tarjeta}>
+          <div key={s.id} style={tarjeta} onClick={() => alternar(s.id)}>
             <button
               type="button"
               role="checkbox"
               aria-checked={elegido}
               aria-label={s.nombre}
-              onClick={() => alternar(s.id)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: GAP_TARJETA, padding: 0,
+                width: '100%', display: 'flex', alignItems: 'flex-start', gap: GAP_TARJETA, padding: 0,
                 background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <DatosServicio s={s} mostrarCategoria={filtro === 'todos'} />
+              <CabeceraServicio s={s} mostrarCategoria={filtro === 'todos'} />
               <Circulo elegido={elegido} />
             </button>
+            {s.promoComponentizada && s.componentes && s.componentes.length > 0 && (
+              <DetallePromo s={s} expandido={desplegadas.has(s.id)} onToggle={() => alternarDesplegada(s.id)} />
+            )}
+            <PieServicio s={s} />
             {conFotos && (
               <button
                 type="button"
                 aria-label={t('servicios.verFotos', { nombre: s.nombre })}
-                onClick={() => ir(rutaServicio(slug, s.id))}
+                onClick={(e) => { e.stopPropagation(); ir(rutaServicio(slug, s.id)); }}
                 style={{
-                  display: 'block', marginTop: 8, padding: 0,
-                  background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-                  fontSize: 13, fontWeight: 600, color: colors.primaryDeep, textDecoration: 'underline',
+                  width: `calc(100% + ${GAP_TARJETA * 2}px)`, minHeight: 44, margin: `12px -${GAP_TARJETA}px -${GAP_TARJETA}px`,
+                  padding: `0 ${GAP_TARJETA}px`, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 8,
+                  cursor: 'pointer', textAlign: 'left',
+                  background: colors.surface2, border: 'none', borderTop: `1px solid ${colors.hairline}`,
+                  fontSize: 13.5, fontWeight: 600, color: colors.primaryDeep,
                 }}
               >
-                {t('servicios.verNFotos', { count: s.fotos.length })}
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="6" width="18" height="14" rx="2" /><circle cx="12" cy="13" r="3.5" /><path d="M8 6l1.5-2h5L16 6" />
+                </svg>
+                <span style={{ flex: 1 }}>{t('servicios.verFotosMuestra', { count: s.fotos.length })}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               </button>
             )}
           </div>
