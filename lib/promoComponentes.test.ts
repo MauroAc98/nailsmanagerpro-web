@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, mensajeBloqueoParalelo, moverFila,
+  ahorroPromo, duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, mensajeBloqueoParalelo, moverFila,
   paraleloDisponible, precioAGuardar, precioInicialComponentes, problemasDeFila, problemasDePromo, sumaComponentes,
   type ComponenteDraft,
 } from './promoComponentes';
@@ -141,5 +141,18 @@ describe('promoComponentes — duración y precio derivados', () => {
     expect(precioInicialComponentes({ precio: '22000', precio_componentes: 22000 })).toBe('');
     expect(precioInicialComponentes({ precio: '18000', precio_componentes: 22000 })).toBe('18000');
     expect(precioInicialComponentes({ precio: null, precio_componentes: null })).toBe('');
+  });
+});
+
+describe('promoComponentes — ahorroPromo', () => {
+  it('is the difference when the typed price is below the sum', () => {
+    expect(ahorroPromo(22000, '18000')).toBe(4000);
+  });
+
+  it('is 0 with an empty, invalid, equal or higher price', () => {
+    expect(ahorroPromo(22000, '')).toBe(0);
+    expect(ahorroPromo(22000, 'abc')).toBe(0);
+    expect(ahorroPromo(22000, '22000')).toBe(0);
+    expect(ahorroPromo(22000, '25000')).toBe(0);
   });
 });

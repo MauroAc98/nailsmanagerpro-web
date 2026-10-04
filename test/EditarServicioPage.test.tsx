@@ -246,16 +246,36 @@ describe('EditarServicioPage — derived duration, price override, turn-off clea
     expect(screen.queryByText('Precio (opcional)')).not.toBeInTheDocument();
   });
 
-  it('keeps legacy duration/price visible for a promo with zero components', async () => {
+  it('hides legacy duration/price for a promo with 2+ active professionals even with zero components', async () => {
     montar(promo, [ana, laura], { componentes: [], problemas: [] });
+    await screen.findByRole('button', { name: 'Guardar cambios' });
+    expect(screen.queryByText('Duración *')).not.toBeInTheDocument();
+    expect(screen.queryByText('Precio (opcional)')).not.toBeInTheDocument();
+  });
+
+  it('keeps legacy duration/price for a promo with a single active professional', async () => {
+    montar(promo, [ana], { componentes: [], problemas: [] });
     await screen.findByRole('button', { name: 'Guardar cambios' });
     expect(screen.getByText('Duración *')).toBeInTheDocument();
     expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
   });
 
+  it('orders the promo switch before duration and price', async () => {
+    montar(servicio({}), [ana, laura]);
+    const sw = await screen.findByRole('switch');
+    expect(sw.compareDocumentPosition(screen.getByText('Duración *')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('blocks turning a plain service into a promo with no complete components', async () => {
+    montar(servicio({}), [ana, laura]);
+    fireEvent.click(await screen.findByRole('switch'));
+    guardar();
+    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Elegí al menos un servicio y quién lo hace para guardar la promoción.'));
+    expect(servicioService.update).not.toHaveBeenCalled();
+  });
+
   it('sends the typed override when the price field differs from the component sum', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
-    fireEvent.click(await screen.findByRole('button', { name: 'Cambiar precio' }));
     const precioInput = await screen.findByLabelText('Precio de la promo');
     fireEvent.change(precioInput, { target: { value: '18000' } });
     guardar();

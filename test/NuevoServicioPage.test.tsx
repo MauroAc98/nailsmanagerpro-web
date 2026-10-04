@@ -80,8 +80,8 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
     expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
   });
 
-  it('promo without components: creates the plain promo and never calls components', async () => {
-    montar([ana, laura]);
+  it('promo with a single active professional: creates the plain promo with the normal fields', async () => {
+    montar([ana]);
     await escribirNombre('Combo');
     toggle();
     guardar();
@@ -208,6 +208,71 @@ describe('NuevoServicioPage — person without horarios (assignment time)', () =
     expect(await dialog.findByText('Sin horarios')).toBeInTheDocument();
     fireEvent.click(dialog.getByText('Marta'));
     expect(await screen.findByText('Marta todavía no tiene horarios cargados')).toBeInTheDocument();
+  });
+});
+
+describe('NuevoServicioPage — promo first, duration and price only when they apply', () => {
+  const antes = (a: HTMLElement, b: HTMLElement) =>
+    expect(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+  it('orders the fields category, name, promo switch, then duration and price', async () => {
+    montar([ana, laura]);
+    const nombre = await screen.findByPlaceholderText('Ej: Kapping');
+    antes(nombre, screen.getByRole('switch'));
+    antes(screen.getByRole('switch'), screen.getByText('Duración *'));
+    antes(screen.getByText('Duración *'), screen.getByText('Precio (opcional)'));
+  });
+
+  it('promo off: duration and price are shown', async () => {
+    montar([ana, laura]);
+    expect(await screen.findByText('Duración *')).toBeInTheDocument();
+    expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
+  });
+
+  it('promo on with 2+ active professionals: only the components section, no duration nor price', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    toggle();
+    expect(await screen.findByText('Servicios que incluye')).toBeInTheDocument();
+    expect(screen.queryByText('Duración *')).not.toBeInTheDocument();
+    expect(screen.queryByText('Precio (opcional)')).not.toBeInTheDocument();
+  });
+
+  it('promo on with a single active professional: keeps duration and price', async () => {
+    montar([ana]);
+    await escribirNombre('Combo');
+    toggle();
+    expect(screen.getByText('Duración *')).toBeInTheDocument();
+    expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
+    expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
+  });
+
+  it('blocks saving a promo with no complete components and says why', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    toggle();
+    guardar();
+
+    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Elegí al menos un servicio y quién lo hace para guardar la promoción.'));
+    expect(servicioService.create).not.toHaveBeenCalled();
+  });
+
+  it('prices the promo at the sum by default (placeholder) and shows the saving once it is lowered', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    toggle();
+    await agregarFilaSoftgel();
+    const precio = await screen.findByLabelText('Precio de la promo');
+    expect(precio).toHaveValue(null);
+    expect(precio).toHaveAttribute('placeholder', '13000');
+    expect(screen.getByText(/Suma de los servicios: \$13\.?000/)).toBeInTheDocument();
+    expect(screen.queryByText(/ahorrás/)).not.toBeInTheDocument();
+
+    fireEvent.change(precio, { target: { value: '10000' } });
+    expect(screen.getByText(/Suma \$13\.?000 · ahorrás \$3\.?000/)).toBeInTheDocument();
+    fireEvent.change(precio, { target: { value: '15000' } });
+    expect(screen.queryByText(/ahorrás/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Suma de los servicios: \$13\.?000/)).toBeInTheDocument();
   });
 });
 
