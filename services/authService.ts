@@ -23,6 +23,12 @@ export interface User {
   recordatorio_automatico: boolean;
   hora_recordatorio: string;
   sena_monto: number | null;
+  // Retención de Ingresos Brutos que MP le aplica al negocio (%). Cast
+  // 'float' en el backend: llega como number; 0 = no se suma al cobro.
+  retencion_iibb_porcentaje: number;
+  // Comisión de MP propia del negocio (%, sin IVA). null = usa la tasa
+  // estándar global del panel de admin.
+  comision_mp_porcentaje: number | null;
   // Opt-in por salón para pedir seña en la confirmación de WhatsApp
   // (plantilla `reserva_turno_sena`). Cuando es `true`, el backend exige
   // `sena_monto > 0`, `direccion`, `whatsapp_sena_titular` y (alias o CBU).

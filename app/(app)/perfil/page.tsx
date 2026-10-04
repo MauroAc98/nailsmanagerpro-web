@@ -42,6 +42,15 @@ function parsearSenaMonto(texto: string): { valor: number | undefined } | null {
   return { valor: numero };
 }
 
+// Porcentaje (0-50, mismo tope que el backend). Mismo shape que el monto;
+// null = inválido, undefined = vacío.
+function parsearPorcentaje(texto: string): { valor: number | undefined } | null {
+  const r = parsearSenaMonto(texto);
+  if (!r) return null;
+  if (r.valor !== undefined && r.valor > 50) return null;
+  return r;
+}
+
 function formatFechaCorta(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -257,6 +266,10 @@ export default function PerfilPage() {
     setLongitud(null);
   };
   const [senaMonto, setSenaMonto] = useState('');
+  const [retencionIibb, setRetencionIibb] = useState('');
+  const [comisionMp, setComisionMp] = useState('');
+  const [retencionError, setRetencionError] = useState<string | null>(null);
+  const [comisionError, setComisionError] = useState<string | null>(null);
   const [whatsappPideSena, setWhatsappPideSena] = useState(false);
   const [senaTitular, setSenaTitular] = useState('');
   const [senaEntidad, setSenaEntidad] = useState('');
@@ -292,6 +305,9 @@ export default function PerfilPage() {
     setLongitud(user.longitud);
     setErrorUbicacion(null);
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
+    // 0 se muestra vacío (placeholder "0"): nunca se precarga un valor sugerido.
+    setRetencionIibb(user.retencion_iibb_porcentaje ? String(user.retencion_iibb_porcentaje) : '');
+    setComisionMp(user.comision_mp_porcentaje != null ? String(user.comision_mp_porcentaje) : '');
     setWhatsappPideSena(user.whatsapp_pide_sena ?? false);
     setSenaTitular(user.whatsapp_sena_titular ?? '');
     setSenaEntidad(user.whatsapp_sena_entidad ?? '');
@@ -304,6 +320,8 @@ export default function PerfilPage() {
     setPasswordConfirmation('');
     setPasswordError(null);
     setSenaMontoError(null);
+    setRetencionError(null);
+    setComisionError(null);
     setErroresNegocio({});
     setSheetActivo(sheet);
   };
@@ -347,12 +365,21 @@ export default function PerfilPage() {
     }
 
     let senaMontoParseada: number | undefined;
+    let retencionParseada = 0;
+    let comisionParseada: number | null = null;
     if (sheetActivo === 'senaYPagos') {
       const resultado = parsearSenaMonto(senaMonto);
       if (!resultado) {
         setSenaMontoError(t('depositAmountInvalid'));
         return;
       }
+      const retencion = parsearPorcentaje(retencionIibb);
+      const comision = parsearPorcentaje(comisionMp);
+      setRetencionError(retencion ? null : t('percentInvalid'));
+      setComisionError(comision ? null : t('percentInvalid'));
+      if (!retencion || !comision) return;
+      retencionParseada = retencion.valor ?? 0;
+      comisionParseada = comision.valor ?? null;
       setSenaMontoError(null);
       setErroresNegocio({});
       senaMontoParseada = resultado.valor;
@@ -370,7 +397,11 @@ export default function PerfilPage() {
           longitud,
         });
       } else if (sheetActivo === 'senaYPagos') {
-        await updatePerfil({ sena_monto: senaMontoParseada });
+        await updatePerfil({
+          sena_monto: senaMontoParseada,
+          retencion_iibb_porcentaje: retencionParseada,
+          comision_mp_porcentaje: comisionParseada,
+        });
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
           whatsapp_pide_sena: whatsappPideSena,
@@ -419,7 +450,7 @@ export default function PerfilPage() {
         // el estado final sin importar desde cuál de los dos llegó el 422.
         const errores = (e as { response?: { data?: { errors?: Record<string, string[]> } } })
           .response?.data?.errors ?? {};
-        const campos: SenaCampo[] = ['sena_monto', 'direccion', 'whatsapp_sena_titular', 'whatsapp_sena_alias'];
+        const campos: SenaCampo[] = ['sena_monto', 'retencion_iibb_porcentaje', 'comision_mp_porcentaje', 'direccion', 'whatsapp_sena_titular', 'whatsapp_sena_alias'];
         const mapa: Partial<Record<SenaCampo, string>> = {};
         for (const campo of campos) {
           const primero = errores[campo]?.[0];
@@ -481,6 +512,12 @@ export default function PerfilPage() {
             senaMonto={senaMonto}
             setSenaMonto={setSenaMonto}
             error={senaMontoError}
+            retencion={retencionIibb}
+            setRetencion={setRetencionIibb}
+            comision={comisionMp}
+            setComision={setComisionMp}
+            errorRetencion={retencionError}
+            errorComision={comisionError}
             erroresServidor={erroresNegocio}
             onGuardar={handleGuardar}
             guardando={guardando}

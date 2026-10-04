@@ -9,6 +9,8 @@
 /** Campos del formulario de "Mi negocio" que pueden mostrar un error de seña. */
 export type SenaCampo =
   | 'sena_monto'
+  | 'retencion_iibb_porcentaje'
+  | 'comision_mp_porcentaje'
   | 'direccion'
   | 'whatsapp_sena_titular'
   | 'whatsapp_sena_alias';
