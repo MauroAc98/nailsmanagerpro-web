@@ -168,84 +168,92 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
             en la fila nombre+badge: minWidth:0 en el nombre, flexShrink:0 en
             el badge PROMO, así un nombre largo no lo empuja fuera. */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-            {/* Hasta 2 líneas; si aun así se corta, tocar el nombre abre un
-                popover con el nombre completo (no hay hover en la PWA). */}
+          {/* Fila 1: el nombre manda, a todo el ancho (menos el grip). Hasta 2
+              líneas; si aun así se corta, tocar el nombre abre un popover con
+              el nombre completo (no hay hover en la PWA). */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
             <NombreExpandible
               texto={servicio.nombre}
               lineas={2}
               style={{
-                fontSize: 16, fontWeight: 700,
+                flex: 1, fontSize: 16, fontWeight: 700, lineHeight: 1.3,
                 color: servicio.activo ? colors.text : colors.placeholder,
               }}
             />
-            {showPromoBadge && (
-              <span style={{
-                flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-                color: colors.primaryDeep, backgroundColor: withAlpha(colors.primary, '15'),
-                borderRadius: 6, padding: '2px 6px',
-              }}>
-                {t('promoBadge')}
-              </span>
-            )}
-            {!servicio.activo && (
-              <span style={{
-                flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-                color: colors.amberFg, backgroundColor: colors.amberBg,
-                borderRadius: 6, padding: '2px 6px',
-              }}>
-                {t('pausedBadge')}
-              </span>
+            {draggable && (
+              // Handle de drag-and-kit — su propio gesto (pointer events, vía
+              // listeners) empieza en este mismo nodo. Sin cortar la propagación
+              // de los touch events acá, un touch que arranca sobre el grip
+              // también dispara los handlers de swipe del ancestro (los touch
+              // events burbujean por su cuenta, independientes de los pointer
+              // events que usa dnd-kit) — los dos gestos pelearían por el mismo
+              // toque. onClick ya cortaba esto para el click; ahora se corta
+              // igual para touchstart/move/end, todo el ciclo del gesto.
+              <div
+                ref={setActivatorNodeRef}
+                {...attributes}
+                {...listeners}
+                onClick={e => e.stopPropagation()}
+                onTouchStart={e => e.stopPropagation()}
+                onTouchMove={e => e.stopPropagation()}
+                onTouchEnd={e => e.stopPropagation()}
+                style={{
+                  width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', flexShrink: 0,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={colors.placeholder}>
+                  <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+                  <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                  <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+                </svg>
+              </div>
             )}
           </div>
-          <p style={{
-            margin: '2px 0 0', fontSize: 12, color: colors.subtext,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {servicio.duracion_minutos} min
-          </p>
+
+          {/* Fila 2: a la izquierda etiquetas + duración (pueden pasar a otra
+              línea); a la derecha precio y toggle, que no se achican. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, minWidth: 0 }}>
+            <div style={{
+              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+              fontSize: 13, color: colors.subtext,
+            }}>
+              {showPromoBadge && (
+                <span style={{
+                  flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                  color: colors.primaryDeep, backgroundColor: withAlpha(colors.primary, '15'),
+                  borderRadius: 6, padding: '2px 6px',
+                }}>
+                  {t('promoBadge')}
+                </span>
+              )}
+              {!servicio.activo && (
+                <span style={{
+                  flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                  color: colors.amberFg, backgroundColor: colors.amberBg,
+                  borderRadius: 6, padding: '2px 6px',
+                }}>
+                  {t('pausedBadge')}
+                </span>
+              )}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
+                </svg>
+                {servicio.duracion_minutos} min
+              </span>
+            </div>
+            {precioLabel && (
+              <span style={{
+                flexShrink: 0, fontFamily: agendaFontSerif, fontSize: 19,
+                color: servicio.activo ? colors.textStrong : colors.placeholder,
+              }}>
+                {precioLabel}
+              </span>
+            )}
+            <PillToggle value={servicio.activo} onChange={onToggle} stopPropagation />
+          </div>
         </div>
-
-        {precioLabel && (
-          <span style={{
-            flexShrink: 0, fontFamily: agendaFontSerif, fontSize: 19,
-            color: servicio.activo ? colors.textStrong : colors.placeholder,
-          }}>
-            {precioLabel}
-          </span>
-        )}
-
-        <PillToggle value={servicio.activo} onChange={onToggle} stopPropagation />
-
-        {draggable && (
-          // Handle de drag-and-kit — su propio gesto (pointer events, vía
-          // listeners) empieza en este mismo nodo. Sin cortar la propagación
-          // de los touch events acá, un touch que arranca sobre el grip
-          // también dispara los handlers de swipe del ancestro (los touch
-          // events burbujean por su cuenta, independientes de los pointer
-          // events que usa dnd-kit) — los dos gestos pelearían por el mismo
-          // toque. onClick ya cortaba esto para el click; ahora se corta
-          // igual para touchstart/move/end, todo el ciclo del gesto.
-          <div
-            ref={setActivatorNodeRef}
-            {...attributes}
-            {...listeners}
-            onClick={e => e.stopPropagation()}
-            onTouchStart={e => e.stopPropagation()}
-            onTouchMove={e => e.stopPropagation()}
-            onTouchEnd={e => e.stopPropagation()}
-            style={{
-              width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', flexShrink: 0,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={colors.placeholder}>
-              <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-              <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-              <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-            </svg>
-          </div>
-        )}
 
       </div>
     </div>

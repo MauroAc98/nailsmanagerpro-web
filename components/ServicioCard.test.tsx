@@ -68,6 +68,28 @@ describe('ServicioCard — jerarquía visual', () => {
   });
 });
 
+// El nombre manda: va en su propia fila a todo el ancho; etiqueta, duración,
+// precio y toggle viven en una fila de abajo y ya no le quitan ancho.
+describe('ServicioCard — filas', () => {
+  it('etiqueta PROMO, duración y precio comparten la fila de abajo; el nombre no está en esa fila', () => {
+    renderWithProviders(
+      <ServicioCard servicio={buildServicio({ nombre: 'Combo', es_promo: true })} showPromoBadge onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    const filaMeta = screen.getByText('PROMO').parentElement!.parentElement!;
+    expect(filaMeta).toHaveTextContent('30 min');
+    expect(filaMeta).toHaveTextContent('$100');
+    expect(filaMeta).not.toHaveTextContent('Combo');
+  });
+
+  it('el toggle está en la fila de abajo, junto al precio', () => {
+    renderWithProviders(
+      <ServicioCard servicio={buildServicio()} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    const filaMeta = screen.getByText('$100').parentElement!.parentElement!;
+    expect(filaMeta.querySelector('[role="switch"], button')).not.toBeNull();
+  });
+});
+
 // Un nombre largo se parte en hasta 2 lineas; si aun asi se corta, tocar el
 // nombre abre un popover con el texto completo (no hay hover en la PWA).
 describe('ServicioCard — nombre largo', () => {
