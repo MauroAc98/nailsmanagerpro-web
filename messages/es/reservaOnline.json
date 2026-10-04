@@ -87,6 +87,10 @@
     "pagoSeguro": "Pago seguro. Te llevamos a Mercado Pago.",
     "conProfesional": "Con {profesional}",
     "duracion": "Duración {duracion}",
+    "tuTurno": "Tu turno",
+    "servicios": "Servicios",
+    "conPersona": "con {profesional}",
+    "enTotal": "En total",
     "tuIdea": "Tu idea",
     "tiempoPagar": "Tenés {minutos} minutos para pagar y asegurar el horario",
     "cancelacion": "Cancelación gratis hasta {horas} h antes"

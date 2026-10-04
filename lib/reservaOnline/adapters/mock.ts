@@ -124,8 +124,8 @@ const SEED: Record<string, MockSalon> = {
       { id: 5, nombre: 'Combo mani + pedi', duracionMinutos: 105, precio: 24000, categoria: { id: 3, nombre: 'Promociones' }, fotos: [], profesionalIds: [1, 2], promoComponentizada: true,
         modoPromo: 'secuencia',
         componentes: [
-          { servicioNombre: 'Esmaltado semipermanente', profesionalNombre: 'Ana', orden: 1 },
-          { servicioNombre: 'Pedicura spa', profesionalNombre: 'Lucía', orden: 2 },
+          { servicioNombre: 'Esmaltado semipermanente', duracionMinutos: 45, profesionalNombre: 'Ana', orden: 1 },
+          { servicioNombre: 'Pedicura spa', duracionMinutos: 60, profesionalNombre: 'Lucía', orden: 2 },
         ] },
       { id: 2, nombre: 'Retiro de esmalte', duracionMinutos: 30, precio: 8000, categoria: null, fotos: [], profesionalIds: [1, 2] },
     ],

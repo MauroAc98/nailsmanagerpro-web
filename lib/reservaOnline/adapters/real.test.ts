@@ -36,8 +36,8 @@ const SERVICIOS = [
     id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null, fotos: [], es_promo_componentizada: true,
     modo_promo: 'paralelo',
     componentes: [
-      { servicio_nombre: 'Pedicura spa', profesional_nombre: 'Lucía', orden: 2 },
-      { servicio_nombre: 'Esmaltado', profesional_nombre: 'Ana', orden: 1 },
+      { servicio_nombre: 'Pedicura spa', duracion_minutos: 60, profesional_nombre: 'Lucía', profesional_avatar_url: null, orden: 2 },
+      { servicio_nombre: 'Esmaltado', duracion_minutos: 45, profesional_nombre: 'Ana', profesional_avatar_url: 'https://cdn.test/ana.jpg', orden: 1 },
     ],
   },
 ];
@@ -124,8 +124,8 @@ describe('real: mapeo', () => {
     const [comun, promo] = await nuevo().getServices('ana');
     expect(promo.modoPromo).toBe('paralelo');
     expect(promo.componentes).toEqual([
-      { servicioNombre: 'Esmaltado', profesionalNombre: 'Ana', orden: 1 },
-      { servicioNombre: 'Pedicura spa', profesionalNombre: 'Lucía', orden: 2 },
+      { servicioNombre: 'Esmaltado', duracionMinutos: 45, profesionalNombre: 'Ana', profesionalAvatarUrl: 'https://cdn.test/ana.jpg', orden: 1 },
+      { servicioNombre: 'Pedicura spa', duracionMinutos: 60, profesionalNombre: 'Lucía', profesionalAvatarUrl: null, orden: 2 },
     ]);
     expect(comun.componentes).toBeUndefined();
     expect(comun.modoPromo).toBeUndefined();

@@ -708,11 +708,22 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
   // altura con un esqueleto (si apareciera con todas y despues se achicara,
   // repetiria el parpadeo que ya se corrigio en las promos).
   it('mientras carga quien hace que, muestra un esqueleto del bloque y despues lo reemplaza', async () => {
-    espiar();
+    const base = prepararServicio();
+    // La consulta de "quien hace que" queda retenida hasta soltarla: la ventana del esqueleto es determinista.
+    let soltar: () => void = () => {};
+    const compuerta = new Promise<void>((r) => { soltar = r; });
+    setServiceParaTests({
+      ...base,
+      getServices: async (slug, q) => {
+        if (q?.profesionalId !== undefined) await compuerta;
+        return base.getServices(slug, q);
+      },
+    });
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     expect(await screen.findByTestId('quien-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: UNA_PERSONA })).toBeNull();
+    soltar();
     expect(await screen.findByRole('button', { name: UNA_PERSONA })).toBeInTheDocument();
     expect(screen.queryByTestId('quien-skeleton')).toBeNull();
   });
@@ -736,7 +747,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
       useReservaOnlineStore.getState().setProfesional(2); // Lucia
       renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
       expect(await screen.findByText(AVISO)).toBeInTheDocument();
-      expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
+      await waitFor(() => expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true'));
     });
 
     it('el aviso se va al tocar cualquier opcion', async () => {

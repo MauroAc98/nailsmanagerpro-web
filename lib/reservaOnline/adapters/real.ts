@@ -27,7 +27,14 @@ interface ServicioDto {
   es_promo_componentizada?: boolean;
   // Solo en promos componentizadas.
   modo_promo?: ModoPlan | null;
-  componentes?: { servicio_nombre: string; profesional_nombre: string; orden: number }[];
+  componentes?: {
+    servicio_nombre: string;
+    // Ausentes en un backend anterior a este campo.
+    duracion_minutos?: number;
+    profesional_nombre: string;
+    profesional_avatar_url?: string | null;
+    orden: number;
+  }[];
 }
 interface DisponibilidadDto {
   fecha: string;
@@ -81,7 +88,13 @@ const aServicio = (d: ServicioDto): BookableService => ({
     ? {
         modoPromo: d.modo_promo ?? null,
         componentes: d.componentes
-          .map((c) => ({ servicioNombre: c.servicio_nombre, profesionalNombre: c.profesional_nombre, orden: c.orden }))
+          .map((c) => ({
+            servicioNombre: c.servicio_nombre,
+            ...(c.duracion_minutos !== undefined ? { duracionMinutos: c.duracion_minutos } : {}),
+            profesionalNombre: c.profesional_nombre,
+            ...(c.profesional_avatar_url !== undefined ? { profesionalAvatarUrl: c.profesional_avatar_url } : {}),
+            orden: c.orden,
+          }))
           .sort((a, b) => a.orden - b.orden),
       }
     : {}),

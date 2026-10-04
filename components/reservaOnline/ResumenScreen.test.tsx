@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, screen, waitFor } from '@/test/render';
+import { renderWithProviders, screen, waitFor, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import type { MockReservaOnlineService } from '@/lib/reservaOnline/adapters/mock';
@@ -66,23 +66,34 @@ describe('ResumenScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Revisá y confirmá' })).toBeInTheDocument();
     expect(await screen.findByText('Viernes 25 de septiembre · 13:00')).toBeInTheDocument();
     expect(screen.getByText('Duración 1 h 15 min')).toBeInTheDocument();
-    expect(screen.getByText('Esmaltado semipermanente + Retiro de esmalte')).toBeInTheDocument();
-    expect(screen.getByText('Con Ana')).toBeInTheDocument();
+    // cada servicio en su fila, con su duracion y quien lo hace (ya no un solo texto unido con "+")
+    expect(screen.getByText('Esmaltado semipermanente')).toBeInTheDocument();
+    expect(screen.getByText('Retiro de esmalte')).toBeInTheDocument();
+    expect(screen.queryByText(/ \+ /)).toBeNull();
+    expect(screen.getAllByText('con Ana')).toHaveLength(2);
     expect(screen.getByText('Studio Demo')).toBeInTheDocument();
     expect(screen.getByText('Av. Siempreviva 742')).toBeInTheDocument();
   });
 
   it('con una sola profesional no aclara hasta cuando ocupa el turno (Rule L)', async () => {
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-    await screen.findByText('Con Ana');
+    await screen.findAllByText('con Ana');
     expect(document.body.textContent).not.toContain('Tu turno ocupa');
   });
 
   it('con varias profesionales muestra sus nombres y hasta cuando ocupa el turno', async () => {
     const s = useReservaOnlineStore.getState();
-    s.setHold({ ...s.hold!, fin: '14:45', profesionalIds: [1, 2] });
+    const hold = s.hold!;
+    s.setAsignaciones([
+      { servicioIds: [1], profesionalId: 1 },
+      { servicioIds: [2], profesionalId: 2 },
+    ]);
+    s.setHorario('2026-09-25', '13:00');
+    s.setHold({ ...hold, fin: '14:45', profesionalIds: [1, 2] });
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-    expect(await screen.findByText('Con Ana y Lucía')).toBeInTheDocument();
+    // cada servicio con la persona que lo hace
+    expect(await screen.findByText('con Lucía')).toBeInTheDocument();
+    expect(screen.getByText('con Ana')).toBeInTheDocument();
     expect(document.body.textContent).toContain('Tu turno ocupa de 13:00 a 14:45.');
   });
 
@@ -127,7 +138,88 @@ describe('ResumenScreen', () => {
     s.setHorario('2026-09-25', '13:00');
     s.setHold({ reservaId: s.hold!.reservaId, expiraMs: s.hold!.expiraMs, profesionalId: 2 });
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-    expect(await screen.findByText('Con Lucía')).toBeInTheDocument();
+    expect((await screen.findAllByText('con Lucía')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('con Ana')).toBeNull();
+  });
+
+  it('ordena el resumen en bloques con rotulo: el turno y los servicios', async () => {
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    expect(await screen.findByText('Tu turno')).toBeInTheDocument();
+    expect(screen.getByText('Servicios')).toBeInTheDocument();
+  });
+
+  it('cada servicio muestra su duracion', async () => {
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await screen.findByText('Servicios');
+    expect(screen.getByText('45 min')).toBeInTheDocument(); // Esmaltado semipermanente
+    expect(screen.getByText('30 min')).toBeInTheDocument(); // Retiro de esmalte
+  });
+
+  it('muestra la foto real de la profesional cuando tiene avatarUrl', async () => {
+    setServiceParaTests({
+      ...svc,
+      getSalon: async (slug) => {
+        const salon = await svc.getSalon(slug);
+        return {
+          ...salon,
+          profesionales: salon.profesionales.map((p) =>
+            p.nombre === 'Ana' ? { ...p, avatarUrl: 'https://cdn.test/ana.jpg' } : p,
+          ),
+        };
+      },
+    });
+    renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await screen.findByText('Servicios');
+    expect(document.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
+  });
+
+  describe('una promo con servicios adentro', () => {
+    beforeEach(() => {
+      const s = useReservaOnlineStore.getState();
+      s.setServicios([5]);
+      s.setHorario('2026-09-25', '13:00');
+    });
+
+    it('la lista como una promo con "Incluye": cada paso con su duracion y su profesional', async () => {
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByText('Combo mani + pedi')).toBeInTheDocument();
+      expect(screen.getByText('PROMO')).toBeInTheDocument();
+      expect(screen.getByText('Incluye')).toBeInTheDocument();
+      const pasos = screen.getAllByTestId('promo-componente');
+      expect(pasos).toHaveLength(2);
+      expect(within(pasos[0]).getByText('Esmaltado semipermanente')).toBeInTheDocument();
+      expect(within(pasos[0]).getByText('45 min')).toBeInTheDocument();
+      expect(within(pasos[0]).getByText('con Ana')).toBeInTheDocument();
+      expect(within(pasos[1]).getByText('Pedicura spa')).toBeInTheDocument();
+      expect(within(pasos[1]).getByText('1 h')).toBeInTheDocument();
+      expect(within(pasos[1]).getByText('con Lucía')).toBeInTheDocument();
+    });
+
+    it('muestra el total de la promo', async () => {
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('Incluye');
+      expect(screen.getByText('En total')).toBeInTheDocument();
+      expect(screen.getByText('1 h 45 min')).toBeInTheDocument();
+    });
+
+    it('un backend sin duracion por paso sigue mostrando los pasos (sin duracion)', async () => {
+      setServiceParaTests({
+        ...svc,
+        getServices: async (slug, q) => {
+          const todos = await svc.getServices(slug, q);
+          return todos.map((x) =>
+            x.componentes
+              ? { ...x, componentes: x.componentes.map((c) => ({ servicioNombre: c.servicioNombre, profesionalNombre: c.profesionalNombre, orden: c.orden })) }
+              : x,
+          );
+        },
+      });
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('Incluye');
+      const pasos = screen.getAllByTestId('promo-componente');
+      expect(pasos).toHaveLength(2);
+      expect(within(pasos[0]).queryByText('45 min')).toBeNull();
+    });
   });
 
   it('la barra superior muestra la cuenta regresiva del hold', async () => {

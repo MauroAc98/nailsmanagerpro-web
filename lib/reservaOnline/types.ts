@@ -39,7 +39,10 @@ export interface ServicioCategoria {
 // publico no necesita ids). `orden` = posicion dentro de la promo.
 export interface ComponentePromo {
   servicioNombre: string;
+  // Opcionales: un backend anterior no los manda.
+  duracionMinutos?: number;
   profesionalNombre: string;
+  profesionalAvatarUrl?: string | null;
   orden: number;
 }
 

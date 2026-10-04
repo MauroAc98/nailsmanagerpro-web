@@ -9,29 +9,14 @@ import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
+import { EtiquetaPromo, PasosPromo, PastillaModo } from './PromoIncluye';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
 const GAP_TARJETA = 14;
 
 const MAX_PASOS_VISIBLES = 3;
-
-// Etiqueta PROMO: mismo chip que en la lista de configuracion.
-function EtiquetaPromo() {
-  return (
-    <span
-      style={{
-        display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-        color: colors.primaryDeep, backgroundColor: withAlpha(colors.primary, '15'),
-        borderRadius: 6, padding: '2px 6px',
-      }}
-    >
-      PROMO
-    </span>
-  );
-}
 
 // Encabezado de la tarjeta: etiqueta PROMO, nombre y categoria. El nombre NUNCA
 // se recorta: la clienta decide con el, asi que se parte en las lineas que haga
@@ -57,35 +42,6 @@ function CabeceraServicio({ s, mostrarCategoria }: { s: BookableService; mostrar
   );
 }
 
-// Modo de la promo como pastilla chica con icono (secuencia = flecha hacia
-// abajo; a la vez = dos barras paralelas). El texto es el vocabulario de la app.
-function PastillaModo({ paralelo }: { paralelo: boolean }) {
-  const t = useTranslations('reservaOnline.servicios');
-  return (
-    <span
-      style={{
-        display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: colors.sub,
-        background: colors.surface, borderRadius: 999, padding: '3px 9px',
-      }}
-    >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        {paralelo ? (
-          <>
-            <line x1="4" y1="8" x2="20" y2="8" />
-            <line x1="4" y1="16" x2="20" y2="16" />
-          </>
-        ) : (
-          <>
-            <line x1="12" y1="4" x2="12" y2="20" />
-            <polyline points="6 14 12 20 18 14" />
-          </>
-        )}
-      </svg>
-      {t(paralelo ? 'modoParalelo' : 'modoSecuencia')}
-    </span>
-  );
-}
-
 // "Incluye": los servicios de la promo con su profesional. En secuencia van
 // numerados y unidos por una linea; a la vez, bajo una barra unica. Desde el
 // 4.o paso se pliegan bajo un boton (44px) para que la tarjeta no crezca sin
@@ -97,29 +53,6 @@ function DetallePromo({ s, expandido, onToggle }: { s: BookableService; expandid
   const paralelo = s.modoPromo === 'paralelo';
   const plegable = componentes.length > MAX_PASOS_VISIBLES;
   const visibles = plegable && !expandido ? componentes.slice(0, MAX_PASOS_VISIBLES) : componentes;
-  const paso = (c: (typeof componentes)[number], i: number) => (
-    <li key={c.orden} data-testid="promo-componente" style={{ position: 'relative', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-      {!paralelo && (
-        <span
-          aria-hidden="true"
-          style={{
-            width: 22, height: 22, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', background: colors.primarySolid, color: colors.primaryFg, fontSize: 12, fontWeight: 700,
-          }}
-        >
-          {i + 1}
-        </span>
-      )}
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600, lineHeight: 1.25, color: colors.textStrong, overflowWrap: 'anywhere' }}>
-          {c.servicioNombre}
-        </div>
-        <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 1, overflowWrap: 'anywhere' }}>
-          {t('conProfesional', { profesional: c.profesionalNombre })}
-        </div>
-      </div>
-    </li>
-  );
   return (
     <div style={{ background: colors.surface2, borderRadius: 12, padding: '12px 14px', marginTop: 12, textAlign: 'left' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
@@ -128,17 +61,7 @@ function DetallePromo({ s, expandido, onToggle }: { s: BookableService; expandid
         </span>
         <PastillaModo paralelo={paralelo} />
       </div>
-      <ol
-        style={{
-          position: 'relative', listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10,
-          ...(paralelo ? { borderLeft: `2px solid ${colors.primarySolid}`, paddingLeft: 12 } : {}),
-        }}
-      >
-        {!paralelo && visibles.length > 1 && (
-          <div aria-hidden="true" style={{ position: 'absolute', left: 10, top: 12, bottom: 12, width: 2, background: colors.border }} />
-        )}
-        {visibles.map(paso)}
-      </ol>
+      <PasosPromo componentes={visibles} paralelo={paralelo} />
       {plegable && (
         <button
           type="button"
