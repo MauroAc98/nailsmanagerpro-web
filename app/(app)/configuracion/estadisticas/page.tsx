@@ -1,9 +1,18 @@
 'use client';
 
 import { Fragment, Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Eye, EyeOff, TrendingDown, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { MontoFit } from '@/components/estadisticas/MontoFit';
+import { Consejo } from '@/components/estadisticas/Consejo';
+import { acumular, alinearPrevio, diferenciaAcumulada, promedioDiario } from '@/lib/estadisticas/acumulado';
+import { brechaServicio, diaFlojo, diaPico, franjaLibre, retencion } from '@/lib/estadisticas/insights';
+import {
+  horaPicoDelDia, rangoMesAnterior, rangoMesAnteriorMismoPeriodo, serviciosParaBurbujas, ticketDiaSemana,
+  ticketPromedio, topConOtros, unirServicios, variacionPorcentual,
+} from '@/lib/estadisticas/metricas';
 import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -14,7 +23,29 @@ import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/
 import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes, nombreDia, diasSemanaCortos, formatoYMD } from '@/lib/dateFormat';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
-import { formatMonto } from '@/lib/money';
+import { formatMonto, formatMontoCorto } from '@/lib/money';
+
+// Recharts pesa ~100KB: se carga solo al entrar a esta pantalla (no en el
+// bundle de Agenda ni del resto), y sin SSR — mide el contenedor con
+// ResizeObserver, que no existe en el servidor.
+function ChartSkeleton({ height }: { height: number }) {
+  return <div style={{ height, borderRadius: 12, backgroundColor: colors.surfaceSubtle }} aria-hidden />;
+}
+const TendenciaChart = dynamic(() => import('@/components/estadisticas/TendenciaChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={150} />,
+});
+const RitmoSemanaChart = dynamic(() => import('@/components/estadisticas/RitmoSemanaChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={130} />,
+});
+const DonutChart = dynamic(() => import('@/components/estadisticas/DonutChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={128} />,
+});
+const AcumuladoChart = dynamic(() => import('@/components/estadisticas/AcumuladoChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={170} />,
+});
+const BurbujasChart = dynamic(() => import('@/components/estadisticas/BurbujasChart'), {
+  ssr: false, loading: () => <ChartSkeleton height={230} />,
+});
 
 // Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
 // corre la fecha un día para atrás en husos negativos como ART/BRT
@@ -64,188 +95,6 @@ function nombreDiaLargoIso(iso: number): string {
 }
 
 // ─────────────────────────────────────────────
-// Gráfico de barras compacto — una serie de puntos {label, monto} en una
-// sola fila, todos visibles sin scroll (pensado para "todo el mes junto").
-// Genérico a propósito: sirve igual para día, semana o mes — solo cambia
-// qué datos y labels le pasa el caller. No pinta un label por barra (se
-// pondría ilegible con ~30 puntos); dos labels de referencia (primero/
-// último) alcanzan para orientarse.
-//
-// El monto exacto NO vive solo en el `title` nativo — en mobile (el
-// contexto real de esta app) no hay hover, así que un `title` a secas deja
-// el gráfico ilegible: solo la silueta, sin ningún número. Por eso cada
-// barra es un <button> tocable que fija el detalle (fecha + monto) arriba,
-// y el máximo del período queda siempre visible como referencia de escala
-// — sin eso, una barra al 100% de alto no dice si fue $10 o $10.000.000.
-// ─────────────────────────────────────────────
-function MiniBarChart({
-  puntos, height = 90,
-}: { puntos: { label: string; monto: number; completo?: boolean }[]; height?: number }) {
-  const t = useTranslations('estadisticas.EstadisticasPage');
-  const [seleccionado, setSeleccionado] = useState<number | null>(null);
-  const maxMonto = puntos.reduce((max, p) => Math.max(max, p.monto), 0);
-  if (puntos.length === 0) return null;
-
-  // Con maxMonto=0 las barras quedan en su altura mínima (2%), casi
-  // invisibles — indistinguible de "el gráfico no cargó". Un mensaje
-  // explícito es más honesto que un rectángulo vacío.
-  if (maxMonto === 0) {
-    return (
-      <div style={{
-        backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-        boxShadow: shadows.card, borderRadius: 16, padding: '16px',
-        height, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>{t('earningsChartEmpty')}</p>
-      </div>
-    );
-  }
-
-  const activo = seleccionado != null ? puntos[seleccionado] : null;
-
-  return (
-    <div style={{
-      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 16, padding: '16px',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 11, color: colors.subtext, flexShrink: 0 }}>
-          {t('earningsChartMax', { monto: formatMonto(maxMonto) })}
-        </span>
-        <span style={{
-          fontSize: 12, fontWeight: activo ? 700 : 400,
-          color: activo ? colors.textStrong : colors.subtext,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {activo
-            ? `${activo.label} · $${formatMonto(activo.monto)}${activo.completo === false ? ` (${t('earningsPartialBucket')})` : ''}`
-            : t('earningsChartHint')}
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: 2, height }}>
-        {puntos.map((p, i) => {
-          const pct = maxMonto > 0 ? Math.max((p.monto / maxMonto) * 100, p.monto > 0 ? 4 : 2) : 2;
-          const esParcial = p.completo === false;
-          const esSeleccionado = seleccionado === i;
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setSeleccionado(prev => (prev === i ? null : i))}
-              title={`${p.label}: $${formatMonto(p.monto)}`}
-              aria-label={`${p.label}: $${formatMonto(p.monto)}`}
-              style={{
-                flex: 1, minWidth: 2, height: '100%', padding: 0, border: 'none',
-                background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'flex-end',
-              }}
-            >
-              <span style={{
-                display: 'block', width: '100%', height: `${pct}%`,
-                backgroundColor: p.monto > 0 ? colors.success : colors.surfaceSubtle,
-                opacity: esParcial ? 0.5 : (seleccionado === null || esSeleccionado ? 1 : 0.4),
-                outline: esSeleccionado ? `2px solid ${colors.primaryDeep}` : 'none',
-                outlineOffset: -1,
-                borderRadius: '3px 3px 0 0',
-              }} />
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10, color: colors.subtext }}>
-        <span>{puntos[0].label}</span>
-        {puntos.length > 1 && <span>{puntos[puntos.length - 1].label}</span>}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// Gráfico de ritmo — barras apiladas (completados/confirmados/cancelados)
-// por día de la semana. Mismo criterio táctil que MiniBarChart: en mobile
-// no hay hover, así que el desglose exacto de cada día vive en un `button`
-// tocable con detalle fijado arriba, no en un `title` nativo (invisible sin
-// mouse).
-// ─────────────────────────────────────────────
-function RitmoTurnosChart({
-  dias,
-}: { dias: { dia_semana: number; label: string; completados: number; confirmados: number; cancelados: number }[] }) {
-  const t = useTranslations('estadisticas.EstadisticasPage');
-  const [seleccionado, setSeleccionado] = useState<number | null>(null);
-  const maxTotal = dias.reduce((max, d) => Math.max(max, d.completados + d.confirmados + d.cancelados), 0);
-  const activo = seleccionado != null ? dias[seleccionado] : null;
-
-  return (
-    <div style={{
-      backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 16, padding: 16,
-    }}>
-      <p style={{
-        fontSize: 12, fontWeight: activo ? 700 : 400,
-        color: activo ? colors.textStrong : colors.subtext, margin: '0 0 10px',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>
-        {activo
-          ? `${activo.label} · ${t('completed')}: ${activo.completados} · ${t('confirmed')}: ${activo.confirmados} · ${t('cancelled')}: ${activo.cancelados}`
-          : t('earningsChartHint')}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 112 }}>
-        {dias.map((d, i) => {
-          const total = d.completados + d.confirmados + d.cancelados;
-          const alturaPct = maxTotal > 0 ? Math.max((total / maxTotal) * 100, total > 0 ? 6 : 2) : 2;
-          const esSeleccionado = seleccionado === i;
-          return (
-            <button
-              key={d.dia_semana}
-              type="button"
-              onClick={() => setSeleccionado(prev => (prev === i ? null : i))}
-              aria-label={`${d.label}: ${total}`}
-              style={{
-                flex: 1, minWidth: 2, height: '100%', padding: 0, border: 'none',
-                background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 8, justifyContent: 'flex-end',
-              }}
-            >
-              <div style={{
-                width: '100%', height: `${alturaPct}%`, borderRadius: '6px 6px 0 0', overflow: 'hidden',
-                display: 'flex', flexDirection: 'column', backgroundColor: colors.surfaceSubtle,
-                opacity: seleccionado === null || esSeleccionado ? 1 : 0.4,
-                outline: esSeleccionado ? `2px solid ${colors.primaryDeep}` : 'none', outlineOffset: -1,
-              }}>
-                {total > 0 && (
-                  <>
-                    <span style={{ display: 'block', flexGrow: d.completados || 0, backgroundColor: colors.success }} />
-                    <span style={{ display: 'block', flexGrow: d.confirmados || 0, backgroundColor: colors.primary }} />
-                    <span style={{ display: 'block', flexGrow: d.cancelados || 0, backgroundColor: colors.danger }} />
-                  </>
-                )}
-              </div>
-              <span style={{ fontSize: 9, fontWeight: 700, color: colors.subtext }}>{d.label}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', gap: 14, borderTop: `1px solid ${colors.hairline}`,
-        marginTop: 14, paddingTop: 12, fontSize: 10, color: colors.subtext,
-      }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, display: 'inline-block' }} />
-          {t('completed')}
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, display: 'inline-block' }} />
-          {t('confirmed')}
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger, display: 'inline-block' }} />
-          {t('cancelled')}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
 // Barra de ranking — magnitud de una sola serie (servicios más pedidos).
 // El nombre del servicio ya identifica la barra, así que un solo color
 // (colors.primary) alcanza; la etiqueta de valor va afuera, en tinta de
@@ -257,9 +106,9 @@ function BarraRanking({
   const pct = maxCantidad > 0 ? Math.max((cantidad / maxCantidad) * 100, 4) : 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-        <span style={{ color: colors.text, fontWeight: 600 }}>{nombre}</span>
-        <span style={{ color: colors.subtext }}>{valorLabel ?? cantidad}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
+        <span style={{ color: colors.text, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</span>
+        <span style={{ color: colors.subtext, flexShrink: 0, whiteSpace: 'nowrap' }}>{valorLabel ?? cantidad}</span>
       </div>
       <div style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceSubtle, overflow: 'hidden' }}>
         <div style={{
@@ -270,44 +119,6 @@ function BarraRanking({
     </div>
   );
 }
-
-// ─────────────────────────────────────────────
-// Stat tile — identidad por swatch + etiqueta (nunca color en el número).
-// ─────────────────────────────────────────────
-function StatTile({ label, value, color }: { label: string; value: number | string; color: string }) {
-  return (
-    // minWidth: 0 es necesario para que flex:1 pueda achicar la tarjeta por
-    // debajo del ancho de contenido — sin esto, en filas de 2-3 tiles, en
-    // pantallas angostas (~320px), la última tarjeta se corta y se sale
-    // del contenedor en vez de compartir el espacio en partes iguales.
-    <div style={{
-      flex: 1, minWidth: 0, backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-      boxShadow: shadows.card, borderRadius: 16, padding: '14px 12px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, minWidth: 0 }}>
-        <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, flexShrink: 0 }} />
-        <span style={{
-          fontSize: 12, color: colors.subtext, fontWeight: 600,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {label}
-        </span>
-      </div>
-      {/* wordBreak — un monto largo ($45.678,90) es un solo token sin
-          espacios; sin esto el navegador no tiene dónde cortarlo y desborda
-          la tarjeta en vez de ajustarse (mismo problema de fondo que
-          minWidth: 0 arriba, pero ese solo resuelve el contenedor, no el
-          texto sin espacios adentro). */}
-      <span style={{
-        display: 'block', fontSize: 26, fontWeight: 700, color: colors.textStrong,
-        wordBreak: 'break-word',
-      }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
 // Parsea el query param "mes" (YYYY-MM) que llega desde el card de Agenda.
 // Si falta o es inválido, cae en el mes actual — mismo default que entrar
 // directo desde Configuración.
@@ -363,6 +174,22 @@ function EstadisticasContent() {
   // se usa esta pantalla en la práctica. Clickear la misma celda de nuevo
   // deselecciona (mismo patrón toggle que el resto de la app).
   const [celdaOcupacion, setCeldaOcupacion] = useState<{ iso: number; hora: number; cantidad: number } | null>(null);
+  // Mes anterior (solo modo "mes"): alimenta la insignia de variación y la
+  // línea punteada de la tendencia. Guarda la clave (mes + profesional) que lo
+  // generó para no mostrar el previo de otro período mientras llega el nuevo
+  // — mismo patrón que ResumenMesCard.
+  const [previo, setPrevio] = useState<{ key: string; stats: DashboardStats } | null>(null);
+  const previoKey = `${profesionalFiltro ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
+  // Mes en curso: la insignia compara contra el MISMO tramo del mes anterior
+  // (día 1 al día de hoy). La línea punteada sigue usando el mes entero.
+  const hoy = new Date();
+  const periodoPrevio = modoRango === 'mes' ? rangoMesAnteriorMismoPeriodo(viewDate, hoy) : null;
+  const previoParcialKey = periodoPrevio ? `${previoKey}:${periodoPrevio.dia}` : null;
+  const [previoParcial, setPrevioParcial] = useState<{ key: string; stats: DashboardStats } | null>(null);
+  // Día de la semana ISO elegido tocando el gráfico de ritmo (null = ninguno):
+  // abre el resumen del día y resalta su columna en el heatmap de ocupación.
+  const [diaSeleccionado, setDiaSeleccionado] = useState<number | null>(null);
+  const alternarDia = (iso: number) => setDiaSeleccionado(prev => (prev === iso ? null : iso));
 
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
@@ -435,18 +262,47 @@ function EstadisticasContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangoActivo.desde, rangoActivo.hasta, profesionalFiltro, retryTick, rangoInvalido]);
 
+  useEffect(() => {
+    if (modoRango !== 'mes') return;
+    let cancelled = false;
+    const r = rangoMesAnterior(viewDate);
+
+    statsService.getDashboard(r.desde, r.hasta, profesionalFiltro ?? undefined)
+      .then(data => { if (!cancelled) setPrevio({ key: previoKey, stats: data }); })
+      .catch(() => { /* la comparación es opcional: sin ella la pantalla funciona igual */ });
+
+    return () => { cancelled = true; };
+  }, [modoRango, viewDate, profesionalFiltro, retryTick, previoKey]);
+
+  useEffect(() => {
+    if (!periodoPrevio || !previoParcialKey) return;
+    let cancelled = false;
+
+    statsService.getDashboard(periodoPrevio.desde, periodoPrevio.hasta, profesionalFiltro ?? undefined)
+      .then(data => { if (!cancelled) setPrevioParcial({ key: previoParcialKey, stats: data }); })
+      .catch(() => { /* comparación opcional */ });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previoParcialKey, profesionalFiltro, retryTick]);
+
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
   };
 
   const servicios = stats?.servicios_mas_pedidos ?? [];
-  const maxCantidad = servicios.reduce((max, s) => Math.max(max, s.cantidad), 0);
   const gananciasPorServicio = stats?.ganancias_por_servicio ?? [];
   const maxMonto = gananciasPorServicio.reduce((max, s) => Math.max(max, s.monto), 0);
   const montoPorFecha = new Map((stats?.ganancias_por_dia ?? []).map(d => [d.fecha, d.monto]));
   const puntosGananciasPorDia = diasDelRango.map(fechaStr => {
     const fecha = new Date(`${fechaStr}T00:00:00`);
-    return { label: `${fecha.getDate()}/${fecha.getMonth() + 1}`, monto: montoPorFecha.get(fechaStr) ?? 0 };
+    // Mes en curso: los días futuros no existen todavía — null (no se dibujan),
+    // nunca 0, que se vería como un derrumbe. Hoy sin turnos sí es 0.
+    const esFuturo = modoRango === 'mes' && periodoPrevio !== null && fechaStr > formatFecha(hoy);
+    return {
+      label: `${fecha.getDate()}/${fecha.getMonth() + 1}`,
+      monto: esFuturo ? null : (montoPorFecha.get(fechaStr) ?? 0),
+    };
   });
 
   const puntosGananciasChart = granularidadGanancias === 'dia'
@@ -477,9 +333,62 @@ function EstadisticasContent() {
   const ingresosTotales = ingresosAgenda + ingresosOtros;
   const ingresosOtrosPorCategoria = (stats?.ingresos_otros_por_categoria ?? []).filter(c => c.monto > 0);
   const desglosarIngresos = profesionalFiltro === null && ingresosOtros > 0;
-  // Escala común para las barras del desglose "por origen": la agenda vs.
-  // cada categoría de otros ingresos.
-  const maxOrigenIngreso = ingresosOtrosPorCategoria.reduce((max, c) => Math.max(max, c.monto), ingresosAgenda);
+  const coloresOrigen = [colors.amber, colors.chart1, colors.chart2, colors.muted];
+  const origenIngresos = [
+    { nombre: t('incomeFromWork'), monto: ingresosAgenda, color: colors.primaryDeep },
+    ...ingresosOtrosPorCategoria.map((c, i) => ({
+      nombre: labelCategoriaIngreso(c.categoria, tIngresos),
+      monto: c.monto,
+      color: coloresOrigen[i % coloresOrigen.length],
+    })),
+  ].filter(o => o.monto > 0);
+
+  // Comparación con el mes anterior (solo modo "mes").
+  const mesAnteriorDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+  const statsPrevio = modoRango === 'mes' && previo?.key === previoKey ? previo.stats : null;
+  // Base de la insignia: mes en curso -> mismo tramo; mes cerrado -> mes entero.
+  const statsBase = periodoPrevio
+    ? (previoParcial?.key === previoParcialKey ? previoParcial.stats : null)
+    : statsPrevio;
+  const gananciaNetaPrevia = statsBase ? (statsBase.ganancia_neta ?? statsBase.ganancias) : null;
+  const variacion = gananciaNetaPrevia !== null ? variacionPorcentual(gananciaNeta, gananciaNetaPrevia) : null;
+  // Línea punteada: mismo día del mes, alineada por posición. Sin ingresos el
+  // mes anterior sería una recta en 0 — ruido, no comparación.
+  const previoSerie = (() => {
+    if (granularidadGanancias !== 'dia' || !statsPrevio) return null;
+    if (statsPrevio.ganancias_por_dia.every(d => d.monto <= 0)) return null;
+    const montoPrevioPorFecha = new Map(statsPrevio.ganancias_por_dia.map(d => [d.fecha, d.monto]));
+    return diasDelRango.map((_, i) => {
+      const f = new Date(mesAnteriorDate.getFullYear(), mesAnteriorDate.getMonth(), i + 1);
+      return f.getMonth() === mesAnteriorDate.getMonth() ? (montoPrevioPorFecha.get(formatFecha(f)) ?? 0) : undefined;
+    });
+  })();
+
+  // Acumulado vs mes anterior (solo modo "mes"): las barras son el cobro del
+  // día, la curva el acumulado. La serie del mes en curso se corta en hoy
+  // (puntosGananciasPorDia ya trae null en los días futuros); la del mes
+  // anterior va entera. Sin cobros el mes anterior no hay base: sin tarjeta.
+  const montosActuales = puntosGananciasPorDia.map(pt => pt.monto);
+  const acumuladoActual = acumular(montosActuales);
+  const montosPrevioDiarios = (() => {
+    if (modoRango !== 'mes' || !statsPrevio) return null;
+    const r = rangoMesAnterior(viewDate);
+    const porFecha = new Map(statsPrevio.ganancias_por_dia.map(d => [d.fecha, d.monto]));
+    return enumerarFechas(r.desde, r.hasta).map(f => porFecha.get(f) ?? 0);
+  })();
+  const acumuladoPrevio = montosPrevioDiarios && montosPrevioDiarios.some(m => m > 0)
+    ? alinearPrevio(montosPrevioDiarios, diasDelRango.length)
+    : null;
+  const ritmoAcumulado = acumuladoPrevio && (stats?.ganancias ?? 0) > 0
+    ? {
+      serie: puntosGananciasPorDia.map((pt, i) => ({
+        label: pt.label, monto: pt.monto, acumulado: acumuladoActual[i], previo: acumuladoPrevio[i],
+      })),
+      diferencia: diferenciaAcumulada(acumuladoActual, acumuladoPrevio),
+    }
+    : null;
+  // Línea de promedio diario: solo de los días ya transcurridos.
+  const promedioDia = granularidadGanancias === 'dia' ? promedioDiario(montosActuales) : null;
 
   const { completados = 0, confirmados = 0, cancelados = 0 } = stats?.turnos_por_estado ?? {};
   const totalConCancelados = completados + confirmados + cancelados;
@@ -494,10 +403,44 @@ function EstadisticasContent() {
       ?? { dia_semana: iso, completados: 0, confirmados: 0, cancelados: 0 };
     return { ...d, label: nombreDiaCortoIso(iso, diasCortos) };
   });
-  const maxRitmo = ritmoDias.reduce((max, d) => Math.max(max, d.completados + d.confirmados + d.cancelados), 0);
-  const diaPico = maxRitmo > 0
-    ? ritmoDias.reduce((best, d) => (d.completados + d.confirmados) > (best.completados + best.confirmados) ? d : best, ritmoDias[0])
+  const picoSemana = diaPico(ritmoDias);
+  const flojoSemana = diaFlojo(ritmoDias);
+  const ticket = ticketPromedio(ingresosAgenda, completados);
+
+  // Servicios: top 4 + "Otros" en la dona (más de 5 rebanadas no se leen).
+  const serviciosAgrupados = topConOtros(
+    servicios.map(s => ({ nombre: s.nombre, valor: s.cantidad })), 4, t('topServicesOthers'),
+  );
+  const totalServiciosTurnos = serviciosAgrupados.reduce((a, s) => a + s.valor, 0);
+  const coloresDonut = [colors.primaryDeep, colors.primary, colors.chart1, colors.amber, colors.muted];
+  const donutServicios = serviciosAgrupados.map((s, i) => ({
+    name: s.nombre,
+    value: s.valor,
+    color: coloresDonut[i % coloresDonut.length],
+    valorLabel: `${Math.round((s.valor / totalServiciosTurnos) * 100)}%`,
+  }));
+  const retencionClientas = retencion(stats?.clientes.nuevas ?? 0, stats?.clientes.recurrentes ?? 0);
+
+  // Burbujas: se unen por servicio_id. Ojo: turnos = confirmados + completados
+  // pero monto = solo completados, así que el ticket subestima un poco mientras
+  // haya turnos confirmados sin cobrar (mes en curso).
+  const serviciosUnidos = unirServicios(servicios, gananciasPorServicio);
+  const coloresBurbuja = [colors.primaryDeep, colors.amber, colors.chart1, colors.chart2, colors.primary, colors.muted];
+  const burbujas = serviciosParaBurbujas(serviciosUnidos).map((sv, i) => ({
+    servicio_id: sv.servicio_id, nombre: sv.nombre, turnos: sv.turnos, ticket: sv.ticket as number,
+    monto: sv.monto, color: coloresBurbuja[i % coloresBurbuja.length],
+  }));
+  const brecha = burbujas.length > 0 ? brechaServicio(serviciosUnidos) : null;
+
+  // Resumen del día elegido: todo derivado de datos reales del período.
+  const resumenDia = diaSeleccionado !== null
+    ? {
+      ritmo: ritmoDias.find(d => d.dia_semana === diaSeleccionado)!,
+      horaPico: horaPicoDelDia(ocupacion, diaSeleccionado),
+      ticket: ticketDiaSemana(stats?.ganancias_por_dia ?? [], ritmoDias, diaSeleccionado),
+    }
     : null;
+  const nombreDiaElegido = diaSeleccionado !== null ? nombreDiaLargoIso(diaSeleccionado) : '';
 
   // Ocupación — grilla hora × día de la semana. Las filas son el rango
   // CONTIGUO de horas observadas en los datos (no un horario fijo asumido),
@@ -521,6 +464,16 @@ function EstadisticasContent() {
     if (ratio <= 0.66) return withAlpha(colors.primary, '8C');
     return colors.primaryDeep;
   }
+
+  const hueco = franjaLibre(ocupacion);
+
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+    boxShadow: shadows.card, borderRadius: 20, padding: 16,
+  };
+  const tituloCard: React.CSSProperties = {
+    fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 12px',
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
@@ -675,13 +628,18 @@ function EstadisticasContent() {
                   }}
                 >
                   <span style={{
-                    width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                    width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 9, fontWeight: 800,
                     backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
                     color: selected ? '#fff' : color,
                   }}>
-                    {inicialesProfesional(p.nombre, p.apellido)}
+                    {p.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      inicialesProfesional(p.nombre, p.apellido)
+                    )}
                   </span>
                   {p.nombre}
                 </button>
@@ -711,24 +669,320 @@ function EstadisticasContent() {
           <p style={{ textAlign: 'center', color: colors.subtext, fontSize: 14, marginTop: 40 }}>{t('loading')}</p>
         ) : (
           <>
-            {/* Hero figure — el número que lidera la pantalla */}
-            <div style={{ textAlign: 'center', padding: '4px 0 2px' }}>
-              <span style={{ fontSize: 48, fontWeight: 700, color: colors.textStrong, lineHeight: 1, letterSpacing: -1 }}>
-                {stats?.total_turnos ?? 0}
-              </span>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.subtext }}>
-                {t('period')}{mostrarSelectorProfesional && nombreProfesionalActivo ? ` · ${nombreProfesionalActivo}` : ''}
+            {/* Héroe — ganancia neta (lo que importa) + comparación con el mes
+                anterior y tres números de contexto. */}
+            {/* Mismo estilo que ResumenMesCard (Agenda): degradado suave del
+                primario, borde sutil, destellos + etiqueta en mayúsculas. Todo
+                con tokens del tema, así sirve igual en claro y oscuro. */}
+            <div style={{
+              background: `linear-gradient(135deg, ${colors.primarySoft}, ${colors.surface})`,
+              border: `1px solid color-mix(in srgb, ${colors.primary} 25%, transparent)`,
+              color: colors.strong, borderRadius: 24,
+              padding: 18, boxShadow: shadows.card,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                  <Sparkles size={14} color={colors.primaryDeep} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                  <p style={{
+                    margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: colors.primaryDeep,
+                    textTransform: 'uppercase', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {t('netProfit')}{mostrarSelectorProfesional && nombreProfesionalActivo ? ` · ${nombreProfesionalActivo}` : ''}
+                  </p>
+                </div>
+                {/* Misma preferencia compartida (useOcultarMonto) que
+                    ResumenMesCard en Agenda — privacidad situacional. */}
+                <span
+                  onClick={toggleOcultarMonto}
+                  role="button"
+                  aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
+                  style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4, flexShrink: 0 }}
+                >
+                  {ocultarMonto
+                    ? <EyeOff size={16} color={colors.sub} strokeWidth={2} />
+                    : <Eye size={16} color={colors.sub} strokeWidth={2} />}
+                </span>
+              </div>
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {ocultarMonto ? (
+                  <span style={{ fontSize: 38, lineHeight: 1, fontFamily: agendaFontSerif, color: colors.strong }}>
+                    ${' '}<span style={{ fontSize: 28, letterSpacing: 3 }}>●●●●●</span>
+                  </span>
+                ) : (
+                  // El monto se achica para entrar en el ancho; nunca se parte
+                  // dígito por dígito ni se corta, por grande que sea.
+                  <MontoFit maxFontSize={38} minFontSize={18} style={{ lineHeight: 1, fontFamily: agendaFontSerif, color: colors.strong }}>
+                    {gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
+                  </MontoFit>
+                )}
+                {variacion !== null && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999,
+                    backgroundColor: variacion >= 0 ? colors.successBg : colors.dangerBg,
+                    color: variacion >= 0 ? colors.success : colors.danger, fontSize: 12, fontWeight: 700,
+                  }}>
+                    {variacion >= 0 ? <TrendingUp size={13} strokeWidth={2.5} /> : <TrendingDown size={13} strokeWidth={2.5} />}
+                    {periodoPrevio
+                      ? t('vsPreviousToDay', { pct: Math.abs(variacion), mes: nombreMes(mesAnteriorDate, 'long'), dia: periodoPrevio.dia })
+                      : t('vsPrevious', { pct: Math.abs(variacion), mes: nombreMes(mesAnteriorDate, 'long') })}
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.sub }}>
+                {t('heroIncomeExpenses', {
+                  ingresos: ocultarMonto ? '••••' : `$${formatMonto(ingresosTotales)}`,
+                  gastos: ocultarMonto ? '••••' : `$${formatMonto(stats?.gastos ?? 0)}`,
+                })}
               </p>
+              {/* Una sola franja con divisores (no tres cajitas): en el celular
+                  cada cajita quedaba muy angosta y cortaba el monto y las
+                  etiquetas ("promedio p…"). Monto corto sin decimales y
+                  etiquetas que bajan de renglón en vez de cortarse. */}
+              <div
+                data-testid="hero-kpis"
+                style={{
+                  marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  backgroundColor: colors.surface, borderRadius: 14, overflow: 'hidden',
+                  border: `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
+                }}
+              >
+                {[
+                  { value: String(stats?.total_turnos ?? 0), label: t('kpiAppointments') },
+                  {
+                    value: ticket === null ? '—' : ocultarMonto ? '••••' : `$${formatMontoCorto(ticket)}`,
+                    label: t('kpiAverageTicket'),
+                  },
+                  { value: tasaCancelacion === null ? '—' : `${tasaCancelacion}%`, label: t('kpiCancellations') },
+                ].map((k, i) => (
+                  <div key={k.label} style={{
+                    minWidth: 0, padding: '10px 6px', textAlign: 'center',
+                    borderLeft: i === 0 ? 'none' : `1px solid color-mix(in srgb, ${colors.primary} 15%, transparent)`,
+                  }}>
+                    <p style={{ margin: 0 }}>
+                      <MontoFit maxFontSize={17} minFontSize={10} style={{ lineHeight: 1.1, fontFamily: agendaFontSerif, color: colors.strong }}>{k.value}</MontoFit>
+                    </p>
+                    <p style={{ margin: '3px 0 0', fontSize: 10.5, lineHeight: 1.2, color: colors.sub, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{k.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Tendencia de ganancias. Igual que antes: si el total ya es $0
+                no hay nada que la tendencia agregue; el error de la
+                tendencia sí se muestra porque ahí el problema es el fetch. */}
+            {((stats?.ganancias ?? 0) > 0 || errorPeriodo) && (
+              <div style={cardStyle}>
+                <h2 style={tituloCard}>{t(`earningsTrendLabel_${granularidadGanancias}`)}</h2>
+                {granularidadGanancias !== 'dia' && errorPeriodo ? (
+                  <div style={{
+                    padding: '12px 16px', borderRadius: 16, backgroundColor: colors.dangerBg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                  }}>
+                    <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorPeriodo}</p>
+                    <button
+                      onClick={() => setRetryTick(v => v + 1)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
+                      }}
+                    >
+                      {t('retry')}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <TendenciaChart
+                      key={`${granularidadGanancias}-${rangoActivo.desde}-${rangoActivo.hasta}`}
+                      puntos={puntosGananciasChart}
+                      tipo={granularidadGanancias === 'dia' ? 'area' : 'barras'}
+                      previo={previoSerie ?? undefined}
+                      previoLabel={previoSerie ? nombreMes(mesAnteriorDate, 'long') : undefined}
+                      ocultarMonto={ocultarMonto}
+                      parcialLabel={t('earningsPartialBucket')}
+                      ariaLabel={t('trendAria')}
+                      promedio={promedioDia}
+                      promedioLabel={promedioDia ? t('avgLabel', { monto: `$${formatMontoCorto(Math.round(promedioDia))}` }) : undefined}
+                    />
+                    {previoSerie && (
+                      <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 11, color: colors.subtext }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <i style={{ width: 14, height: 3, borderRadius: 2, backgroundColor: colors.primaryDeep, display: 'inline-block' }} />
+                          {nombreMes(viewDate, 'long')}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <i style={{ width: 14, borderTop: `2px dashed ${colors.muted}`, display: 'inline-block' }} />
+                          {nombreMes(mesAnteriorDate, 'long')}
+                        </span>
+                      </div>
+                    )}
+                    {algunBucketParcial && (
+                      <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
+                        {t('earningsScope_parcial')}
+                      </p>
+                    )}
+                    {truncadoPeriodo && (
+                      <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
+                        {t('earningsScope_truncado')}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ¿Cómo vas contra el mes pasado? — barras del día + acumulado,
+                contra el acumulado del mes anterior a igual día. */}
+            {ritmoAcumulado && (
+              <div style={cardStyle}>
+                <h2 style={{ ...tituloCard, marginBottom: 4 }}>{t('paceTitle')}</h2>
+                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 10px' }}>{t('paceSubtitle')}</p>
+                {ritmoAcumulado.diferencia && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999,
+                    marginBottom: 10, fontSize: 12, fontWeight: 700,
+                    backgroundColor: ritmoAcumulado.diferencia.diff >= 0 ? colors.successBg : colors.amberBg,
+                    color: ritmoAcumulado.diferencia.diff >= 0 ? colors.success : colors.amberFg,
+                  }}>
+                    {ritmoAcumulado.diferencia.diff >= 0 ? <TrendingUp size={13} strokeWidth={2.5} /> : <TrendingDown size={13} strokeWidth={2.5} />}
+                    {t(ritmoAcumulado.diferencia.diff >= 0 ? 'paceAbove' : 'paceBelow', {
+                      monto: ocultarMonto ? '••••' : `$${formatMontoCorto(Math.abs(ritmoAcumulado.diferencia.diff))}`,
+                      mes: nombreMes(mesAnteriorDate, 'long'),
+                      dia: ritmoAcumulado.diferencia.dia,
+                    })}
+                  </span>
+                )}
+                <AcumuladoChart
+                  key={`acum-${rangoActivo.desde}-${rangoActivo.hasta}`}
+                  serie={ritmoAcumulado.serie}
+                  labels={{ daily: t('paceDaily'), cumulative: t('paceCumulative'), previous: nombreMes(mesAnteriorDate, 'long') }}
+                  ocultarMonto={ocultarMonto}
+                  ariaLabel={t('paceAria')}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 8, fontSize: 11, color: colors.subtext }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <i style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: colors.primarySoft, display: 'inline-block' }} />
+                    {t('paceDaily')}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <i style={{ width: 14, height: 3, borderRadius: 2, backgroundColor: colors.primaryDeep, display: 'inline-block' }} />
+                    {t('paceCumulative')}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <i style={{ width: 14, borderTop: `2px dashed ${colors.muted}`, display: 'inline-block' }} />
+                    {nombreMes(mesAnteriorDate, 'long')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* De dónde viene la plata — solo con ingresos manuales y sin
+                filtro de profesional (un ingreso del salón no tiene
+                profesional; el backend lo devuelve en 0 con el filtro). */}
+            {desglosarIngresos && (
+              <div style={cardStyle}>
+                <h2 style={tituloCard}>{t('sourceTitle')}</h2>
+                <div style={{ display: 'flex', height: 14, borderRadius: 999, overflow: 'hidden', gap: 2 }}>
+                  {origenIngresos.map(o => (
+                    <span key={o.nombre} style={{ flex: o.monto, backgroundColor: o.color, minWidth: 4 }} />
+                  ))}
+                </div>
+                <ul style={{ margin: '12px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {origenIngresos.map(o => (
+                    <li key={o.nombre} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: colors.text, minWidth: 0 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: o.color, flexShrink: 0 }} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.nombre}</span>
+                      <b style={{ flexShrink: 0 }}>
+                        {ocultarMonto ? '••••' : `$${formatMonto(o.monto)}`} · {Math.round((o.monto / ingresosTotales) * 100)}%
+                      </b>
+                    </li>
+                  ))}
+                </ul>
+                {(stats?.gastos ?? 0) > 0 && (
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 12, paddingTop: 10,
+                    borderTop: `1px solid ${colors.hairline}`, fontSize: 13, color: colors.danger,
+                  }}>
+                    <span>{t('expenses')}</span>
+                    <b>{ocultarMonto ? '••••' : `-$${formatMonto(stats?.gastos ?? 0)}`}</b>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Servicios — dona por cantidad de turnos + ranking de lo que
+                aportó cada uno en plata. */}
+            <div style={cardStyle}>
+              <h2 style={tituloCard}>{t('topServices')}</h2>
+              {servicios.length === 0 ? (
+                <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
+                  {t('noServicesThisPeriod')}
+                </p>
+              ) : (
+                <>
+                  <DonutChart
+                    data={donutServicios}
+                    centerValue={totalServiciosTurnos}
+                    centerLabel={t('donutAppointments')}
+                    ariaLabel={t('servicesAria')}
+                  />
+                  {gananciasPorServicio.length > 0 && (
+                    <>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '16px 0 8px' }}>
+                        {t('earningsByService')}
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {gananciasPorServicio.map(s => (
+                          <BarraRanking
+                            key={s.servicio_id}
+                            nombre={s.nombre}
+                            cantidad={s.monto}
+                            maxCantidad={maxMonto}
+                            valorLabel={ocultarMonto ? '••••' : `$${formatMonto(s.monto)}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Qué servicio rinde más — turnos vs. ticket, tamaño = plata total.
+                Solo con >=3 servicios con plata cobrada. */}
+            {burbujas.length > 0 && (
+              <div style={cardStyle}>
+                <h2 style={{ ...tituloCard, marginBottom: 4 }}>{t('bubblesTitle')}</h2>
+                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 0 12px' }}>{t('bubblesSubtitle')}</p>
+                <BurbujasChart
+                  servicios={burbujas}
+                  ejes={{ turnos: t('bubbleAxisTurnos'), ticket: t('bubbleAxisTicket'), monto: t('bubbleAxisTotal') }}
+                  ocultarMonto={ocultarMonto}
+                  ariaLabel={t('bubblesAria')}
+                />
+                <ul style={{ margin: '12px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {burbujas.map(b => (
+                    <li key={b.servicio_id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: colors.text, minWidth: 0 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: b.color, flexShrink: 0 }} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.nombre}</span>
+                      <span style={{ flexShrink: 0, color: colors.subtext }}>{t('bubblesTurnosCount', { count: b.turnos })}</span>
+                      <b style={{ flexShrink: 0, minWidth: 74, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {ocultarMonto ? '••••' : `${formatMonto(b.monto)}`}
+                      </b>
+                    </li>
+                  ))}
+                </ul>
+                {brecha && (
+                  <Consejo>{t('tipServiceGap', { nombre: brecha.nombre, pctTurnos: brecha.pctTurnos, pctPlata: brecha.pctPlata })}</Consejo>
+                )}
+              </div>
+            )}
 
             {/* Ritmo de turnos — completados/confirmados/cancelados por día
                 de la semana, agregados sobre todo el período elegido. */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div>
-                  <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: 0 }}>
-                    {t('peakLoad')}
-                  </h2>
+            <div style={cardStyle}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <h2 style={{ ...tituloCard, marginBottom: 0 }}>{t('peakLoad')}</h2>
                   <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>{t('peakLoadSubtitle')}</p>
                 </div>
                 {cancelados > 0 && (
@@ -743,173 +997,70 @@ function EstadisticasContent() {
                 </p>
               ) : (
                 <>
-                  <RitmoTurnosChart dias={ritmoDias} />
-                  {diaPico && (
-                    <p style={{ fontSize: 12, color: colors.subtext, margin: '8px 0 0' }}>
-                      {t('peakDayInsight', { dia: nombreDiaLargoIso(diaPico.dia_semana) })}
-                    </p>
+                  {/* Tocar un día lo filtra: chip para limpiar o, sin día, la
+                      pista de que se puede tocar. */}
+                  {diaSeleccionado !== null ? (
+                    <button
+                      type="button"
+                      onClick={() => setDiaSeleccionado(null)}
+                      aria-label={t('dayFilterClear', { dia: nombreDiaElegido })}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, padding: '0 12px', marginBottom: 8,
+                        border: 'none', borderRadius: 999, cursor: 'pointer', touchAction: 'manipulation',
+                        backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 12, fontWeight: 700,
+                      }}
+                    >
+                      {nombreDiaElegido.charAt(0).toUpperCase() + nombreDiaElegido.slice(1)}
+                      <X size={13} strokeWidth={2.5} aria-hidden />
+                    </button>
+                  ) : (
+                    <p style={{ fontSize: 11, color: colors.subtext, margin: '0 0 6px' }}>{t('dayFilterHint')}</p>
+                  )}
+                  <RitmoSemanaChart
+                    seleccionado={diaSeleccionado}
+                    onSeleccionar={alternarDia}
+                    dias={ritmoDias}
+                    labels={{ completed: t('completed'), confirmed: t('confirmed'), cancelled: t('cancelled') }}
+                    ariaLabel={t('rhythmAria')}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 8, fontSize: 10, color: colors.subtext }}>
+                    {([['completed', colors.success], ['confirmed', colors.primary], ['cancelled', colors.danger]] as const).map(([k, c]) => (
+                      <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <i style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c, display: 'inline-block' }} />
+                        {t(k)}
+                      </span>
+                    ))}
+                  </div>
+                  {resumenDia && (
+                    <div data-testid="resumen-dia" style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                      {[
+                        { value: String(resumenDia.ritmo.completados), label: t('completed') },
+                        { value: String(resumenDia.ritmo.confirmados), label: t('confirmed') },
+                        { value: String(resumenDia.ritmo.cancelados), label: t('cancelled') },
+                        ...(resumenDia.horaPico !== null ? [{ value: t('occupancyPeakHourBadge', { hora: resumenDia.horaPico }), label: t('dayPeakHour') }] : []),
+                        ...(resumenDia.ticket !== null
+                          ? [{ value: ocultarMonto ? '••••' : `$${formatMontoCorto(resumenDia.ticket)}`, label: t('dayTicket') }]
+                          : []),
+                      ].map(k => (
+                        <div key={k.label} style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 14, padding: '10px 12px', minWidth: 0 }}>
+                          <p style={{ margin: 0 }}>
+                            <MontoFit maxFontSize={18} minFontSize={10} style={{ fontFamily: agendaFontSerif, color: colors.textStrong }}>{k.value}</MontoFit>
+                          </p>
+                          <p style={{ margin: '2px 0 0', fontSize: 10.5, lineHeight: 1.2, color: colors.subtext, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{k.label}</p>
+                        </div>
+                      ))}
+                    </div>
                   )}
                   {tasaCancelacion !== null && (
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
+                    <p style={{ margin: '8px 0 0', fontSize: 12, color: colors.subtext }}>
                       {t('cancellationRate', { pct: tasaCancelacion })}
                     </p>
                   )}
-                </>
-              )}
-            </div>
-
-            {/* Ganancias */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 10px' }}>
-                <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: 0 }}>
-                  {t('earnings')}
-                </h2>
-                {/* Mismo ojo/ojo tachado y misma preferencia (localStorage
-                    compartido vía useOcultarMonto) que ResumenMesCard en
-                    Agenda — es privacidad situacional (alguien mirando la
-                    pantalla), no algo que tenga sentido taparlo acá y no
-                    allá según en qué pantalla se esté parado. */}
-                <span
-                  onClick={toggleOcultarMonto}
-                  role="button"
-                  aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
-                  style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4 }}
-                >
-                  {ocultarMonto
-                    ? <EyeOff size={16} color={colors.subtext} strokeWidth={2} />
-                    : <Eye size={16} color={colors.subtext} strokeWidth={2} />}
-                </span>
-              </div>
-              {/* Ganancia neta es el número que importa (ganancias por sí
-                  solas no dicen si el período fue rentable) — extiende el
-                  mismo tratamiento tipográfico del hero figure de arriba
-                  (grande, bold, centrado), un escalón más chico para no
-                  competir con el hero real de la pantalla (total_turnos). */}
-              <div style={{ textAlign: 'center', padding: '4px 0 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{
-                    fontSize: 36, fontWeight: 700, lineHeight: 1, wordBreak: 'break-word',
-                    color: gananciaNeta >= 0 ? colors.success : colors.danger,
-                  }}>
-                    {ocultarMonto
-                      ? <>${' '}<span style={{ fontSize: 26, fontWeight: 400, letterSpacing: 3 }}>●●●●●</span></>
-                      : gananciaNeta < 0 ? `-$${formatMonto(-gananciaNeta)}` : `$${formatMonto(gananciaNeta)}`}
-                  </span>
-                  {!ocultarMonto && (gananciaNeta >= 0
-                    ? <TrendingUp size={20} color={colors.success} strokeWidth={2} />
-                    : <TrendingDown size={20} color={colors.danger} strokeWidth={2} />)}
-                </div>
-                <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{t('netProfit')}</p>
-              </div>
-              {/* Siempre 2 tiles — 3 lado a lado (agenda / otros / gastos)
-                  se amontonan y los montos wrappean en pantallas angostas.
-                  El tile de Ingresos muestra el total (agenda + otros); de
-                  dónde sale ese total va en la lista "Por origen" de abajo. */}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <StatTile
-                  label={t('earnings')}
-                  value={ocultarMonto ? '••••••' : `$${formatMonto(ingresosTotales)}`}
-                  color={colors.success}
-                />
-                <StatTile
-                  label={t('expenses')}
-                  value={ocultarMonto ? '••••••' : `$${formatMonto(stats?.gastos ?? 0)}`}
-                  color={colors.danger}
-                />
-              </div>
-
-              {desglosarIngresos && (
-                <>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
-                    {t('incomeByOrigin')}
-                  </p>
-                  <div style={{
-                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                    boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
-                    flexDirection: 'column', gap: 14,
-                  }}>
-                    <BarraRanking
-                      nombre={t('incomeFromWork')}
-                      cantidad={ingresosAgenda}
-                      maxCantidad={maxOrigenIngreso}
-                      valorLabel={`$${formatMonto(ingresosAgenda)}`}
-                      color={colors.success}
-                    />
-                    {ingresosOtrosPorCategoria.map(c => (
-                      <BarraRanking
-                        key={c.categoria}
-                        nombre={labelCategoriaIngreso(c.categoria, tIngresos)}
-                        cantidad={c.monto}
-                        maxCantidad={maxOrigenIngreso}
-                        valorLabel={`$${formatMonto(c.monto)}`}
-                        color={colors.primary}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-              {gananciasPorServicio.length > 0 && (
-                <>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
-                    {t('earningsByService')}
-                  </p>
-                  <div style={{
-                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                    boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
-                    flexDirection: 'column', gap: 14,
-                  }}>
-                    {gananciasPorServicio.map(s => (
-                      <BarraRanking
-                        key={s.servicio_id}
-                        nombre={s.nombre}
-                        cantidad={s.monto}
-                        maxCantidad={maxMonto}
-                        valorLabel={`$${formatMonto(s.monto)}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-              {/* Igual que "Por servicio" arriba: si el total ya es $0, no hay
-                  nada que la tendencia agregue — mostrar un título "Por día"
-                  seguido de un cartel "sin ganancias" es ruido, no información.
-                  El error de la tendencia sí se muestra aunque el total sea
-                  $0, porque ahí el problema es otro (falló el fetch). */}
-              {((stats?.ganancias ?? 0) > 0 || errorPeriodo) && (
-                <>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: colors.subtext, margin: '14px 0 6px' }}>
-                    {t(`earningsTrendLabel_${granularidadGanancias}`)}
-                  </p>
-                  {granularidadGanancias !== 'dia' && errorPeriodo ? (
-                    <div style={{
-                      padding: '12px 16px', borderRadius: 16, backgroundColor: colors.dangerBg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                    }}>
-                      <p style={{ fontSize: 13, color: colors.danger, margin: 0 }}>{errorPeriodo}</p>
-                      <button
-                        onClick={() => setRetryTick(v => v + 1)}
-                        style={{
-                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                          fontSize: 13, fontWeight: 700, textDecoration: 'underline', color: colors.danger, flexShrink: 0,
-                        }}
-                      >
-                        {t('retry')}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <MiniBarChart key={`${granularidadGanancias}-${rangoActivo.desde}-${rangoActivo.hasta}`} puntos={puntosGananciasChart} />
-                      {algunBucketParcial && (
-                        <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
-                          {t('earningsScope_parcial')}
-                        </p>
-                      )}
-                      {truncadoPeriodo && (
-                        <p style={{ fontSize: 11, color: colors.subtext, margin: '6px 0 0' }}>
-                          {t('earningsScope_truncado')}
-                        </p>
-                      )}
-                    </>
+                  {picoSemana && (
+                    <Consejo>{t('tipPeakDay', { dia: nombreDiaLargoIso(picoSemana.dia_semana), pct: picoSemana.pct })}</Consejo>
+                  )}
+                  {flojoSemana && (
+                    <Consejo>{t('tipQuietDay', { dia: nombreDiaLargoIso(flojoSemana.dia_semana), pct: flojoSemana.pct })}</Consejo>
                   )}
                 </>
               )}
@@ -958,7 +1109,11 @@ function EstadisticasContent() {
                   <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(7, 1fr)', gap: 5 }}>
                     <span />
                     {[1, 2, 3, 4, 5, 6, 7].map(iso => (
-                      <span key={iso} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: colors.muted }}>
+                      <span key={iso} style={{
+                        textAlign: 'center', fontSize: 9, fontWeight: 700,
+                        color: diaSeleccionado === iso ? colors.primaryDeep : colors.muted,
+                        opacity: diaSeleccionado === null || diaSeleccionado === iso ? 1 : 0.4,
+                      }}>
                         {nombreDiaCortoIso(iso, diasCortos).slice(0, 1)}
                       </span>
                     ))}
@@ -980,6 +1135,8 @@ function EstadisticasContent() {
                               aria-label={t('occupancyCellDetail', { dia: nombreDiaLargoIso(iso), hora, count: cantidad })}
                               style={{
                                 aspectRatio: '1 / 1', borderRadius: 6, backgroundColor: colorCeldaOcupacion(cantidad),
+                                // Con un día elegido en el ritmo, su columna queda resaltada.
+                                opacity: diaSeleccionado === null || diaSeleccionado === iso ? 1 : 0.3,
                                 border: 'none', padding: 0, cursor: 'pointer',
                                 outline: seleccionada ? `1.5px solid ${colors.primaryDeep}` : 'none',
                                 outlineOffset: 1,
@@ -1002,55 +1159,34 @@ function EstadisticasContent() {
                       ? t('occupancyCellDetail', { dia: nombreDiaLargoIso(celdaOcupacion.iso), hora: celdaOcupacion.hora, count: celdaOcupacion.cantidad })
                       : t('occupancyFootnote')}
                   </p>
+                  {hueco && (
+                    <Consejo>{t(`tipFreeSlot_${hueco.franja}`, { dia: nombreDiaLargoIso(hueco.dia_semana) })}</Consejo>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Clientes nuevas vs. recurrentes */}
-            <div>
-              <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 10px' }}>
-                {t('clients')}
-              </h2>
+            {/* Clientas nuevas vs. recurrentes */}
+            <div style={cardStyle}>
+              <h2 style={tituloCard}>{t('clients')}</h2>
               {totalClientes === 0 ? (
                 <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
                   {t('noConfirmedAppointmentsThisPeriod')}
                 </p>
               ) : (
                 <>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <StatTile label={t('newClients')} value={stats!.clientes.nuevas} color={colors.chart1} />
-                    <StatTile label={t('returningClients')} value={stats!.clientes.recurrentes} color={colors.chart2} />
-                  </div>
-                  <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 10, gap: 2 }}>
-                    <div style={{ flex: stats!.clientes.nuevas || 0.0001, backgroundColor: colors.chart1, borderRadius: 4 }} />
-                    <div style={{ flex: stats!.clientes.recurrentes || 0.0001, backgroundColor: colors.chart2, borderRadius: 4 }} />
-                  </div>
+                  <DonutChart
+                    data={[
+                      { name: t('newClients'), value: stats!.clientes.nuevas, color: colors.chart1, valorLabel: String(stats!.clientes.nuevas) },
+                      { name: t('returningClients'), value: stats!.clientes.recurrentes, color: colors.chart2, valorLabel: String(stats!.clientes.recurrentes) },
+                    ]}
+                    centerValue={totalClientes}
+                    centerLabel={t('donutClients')}
+                    ariaLabel={t('clientsAria')}
+                    size={110}
+                  />
+                  {retencionClientas && <Consejo>{t('tipRetention', { pct: retencionClientas.pct })}</Consejo>}
                 </>
-              )}
-            </div>
-
-            {/* Servicios más pedidos */}
-            <div>
-              <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, color: colors.textStrong, margin: '0 0 10px' }}>
-                {t('topServices')}
-              </h2>
-              {servicios.length === 0 ? (
-                <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                  {t('noServicesThisPeriod')}
-                </p>
-              ) : (
-                <div style={{
-                  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                  boxShadow: shadows.card, borderRadius: 16, padding: '16px', display: 'flex',
-                  flexDirection: 'column', gap: 14,
-                }}>
-                  {servicios.map(s => (
-                    <BarraRanking
-                      key={s.servicio_id} nombre={s.nombre} cantidad={s.cantidad} maxCantidad={maxCantidad}
-                      color={colors.primaryDeep}
-                    />
-                  ))}
-                </div>
               )}
             </div>
           </>

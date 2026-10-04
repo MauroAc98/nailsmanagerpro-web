@@ -23,8 +23,8 @@ function setup(overrides: Partial<Props> = {}) {
     codigoPais: '54',
     setCodigoPais: vi.fn(),
     telefono: '',
-    setTelefono: vi.fn(),
     onPasteTelefono: vi.fn(),
+    onChangeTelefono: vi.fn(),
     direccion: 'Av. Siempreviva 742',
     setDireccion: vi.fn(),
     latitud: null,
@@ -40,6 +40,19 @@ function setup(overrides: Partial<Props> = {}) {
   renderWithProviders(<SheetDatosPersonales {...props} />);
   return props;
 }
+
+describe('SheetDatosPersonales — teléfono', () => {
+  it('tipear en el campo delega el valor crudo a onChangeTelefono, no a setTelefono directo', () => {
+    // La limpieza de dígitos y la separación de un código de país embebido
+    // las decide quien usa el componente (aplicarTelefonoIngresado en
+    // perfil/page.tsx), igual que para AltaClienteRapidaSheet — este
+    // componente solo reenvía lo que se tipeó, sin decidir el formato.
+    const onChangeTelefono = vi.fn();
+    setup({ onChangeTelefono });
+    fireEvent.change(screen.getByPlaceholderText('Teléfono'), { target: { value: '376 424-0951' } });
+    expect(onChangeTelefono).toHaveBeenCalledWith('376 424-0951');
+  });
+});
 
 describe('SheetDatosPersonales — location card', () => {
   it('empty state: explains the feature and offers "Marcar en el mapa" + "Usar mi ubicación actual"', () => {

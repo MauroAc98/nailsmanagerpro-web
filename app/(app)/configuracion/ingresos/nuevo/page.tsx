@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { withAlpha } from '@/theme/colors';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { useIngresosStore } from '@/store/useIngresoStore';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { CATEGORIAS_INGRESO } from '@/services/ingresoService';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,6 +50,7 @@ export default function NuevoIngresoPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { agregarIngreso } = useIngresosStore();
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   // Lista de chips: la del salón si está cargada, si no el set de fábrica.
   const categorias: readonly string[] = user?.categorias_ingreso ?? CATEGORIAS_INGRESO;
@@ -55,8 +59,22 @@ export default function NuevoIngresoPage() {
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [errorMonto, setErrorMonto] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (profesionales.length === 0) fetchProfesionales();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Multi-agenda — invisible con ≤1 profesional activa, mismo criterio que
+  // gastos/nuevo/page.tsx.
+  const activeProfesionales        = profesionales.filter(p => p.activo);
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+
+  const handleSeleccionarProfesional = (id: number) => {
+    setSelectedProfesionalId(prev => prev === id ? null : id);
+  };
 
   const handleGuardar = async () => {
     if (!fecha) {
@@ -79,6 +97,9 @@ export default function NuevoIngresoPage() {
       monto: montoNumerico,
       categoria,
       descripcion: descripcion.trim() ? descripcion.trim() : undefined,
+      ...(mostrarSelectorProfesional && selectedProfesionalId
+        ? { profesional_id: selectedProfesionalId }
+        : {}),
     });
     setSaving(false);
 
@@ -156,6 +177,47 @@ export default function NuevoIngresoPage() {
             style={inputStyle}
           />
         </div>
+
+        {/* Profesional — invisible con ≤1 profesional activa. Mismo patrón
+            que gastos (chips, tocar de nuevo deselecciona → null). */}
+        {mostrarSelectorProfesional && (
+          <div>
+            <label style={labelStyle}>{t('professionalLabel')}</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {activeProfesionales.map(p => {
+                const selected = selectedProfesionalId === p.id;
+                const color = p.color || colors.primary;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSeleccionarProfesional(p.id)}
+                    style={{ ...chipStyle(selected, color), padding: '4px 16px 4px 4px' }}
+                  >
+                    <span style={{
+                      width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, fontWeight: 800,
+                      backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
+                      color: selected ? '#fff' : color,
+                    }}>
+                      {p.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        inicialesProfesional(p.nombre, p.apellido)
+                      )}
+                    </span>
+                    {p.nombre}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
+              {t('professionalHint')}
+            </p>
+          </div>
+        )}
 
         {/* Button */}
         <button

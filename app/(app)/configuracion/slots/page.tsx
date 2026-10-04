@@ -142,13 +142,18 @@ export default function SlotsPage() {
                 }}
               >
                 <span style={{
-                  width: 22, height: 22, borderRadius: 11, flexShrink: 0,
+                  width: 22, height: 22, borderRadius: 11, flexShrink: 0, overflow: 'hidden',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 9, fontWeight: 800,
                   backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
                   color: selected ? '#fff' : color,
                 }}>
-                  {inicialesProfesional(p.nombre, p.apellido)}
+                  {p.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    inicialesProfesional(p.nombre, p.apellido)
+                  )}
                 </span>
                 {p.nombre}
               </button>

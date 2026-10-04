@@ -3,7 +3,8 @@
     "placeholder": "Agregá un texto a tu historia..."
   },
   "StoryCanvas": {
-    "availableAppointments": "TURNOS DISPONIBLES",
+    "availableTitle": "Turnos disponibles",
+    "withProfessional": "con {nombre}",
     "complete": "COMPLETO",
     "reserveCta": "Reservá tu turno"
   },
@@ -42,7 +43,7 @@
     "couldNotRemoveFixedBackground": "No se pudo quitar el fondo fijo.",
     "noContentToShow": "Sin contenido: No hay slots libres para mostrar en la imagen.",
     "couldNotGenerateImage": "No se pudo generar la imagen. Intentá de nuevo.",
-    "shareTitle": "Mi agenda"
+    "shareTitle": "Turnos disponibles"
   },
   "TarjetaPrecios": {
     "header": "Precios",

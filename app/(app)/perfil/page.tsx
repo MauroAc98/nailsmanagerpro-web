@@ -319,20 +319,22 @@ export default function PerfilPage() {
     }
   };
 
+  const aplicarTelefonoIngresado = (valorCrudo: string) => {
+    const detectado = phoneUtils.detectarCodigoPaisEmbebido(valorCrudo);
+    if (detectado) {
+      setCodigoPais(detectado.codigo);
+      setTelefono(detectado.numero);
+    } else {
+      setTelefono(phoneUtils.clean(valorCrudo));
+    }
+  };
+
   const handlePasteTelefono = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pegado = e.clipboardData.getData('text');
     const soloDigitos = phoneUtils.clean(pegado);
     if (!soloDigitos) return;
     e.preventDefault();
-
-    const traeCodigoPais = pegado.trim().startsWith('+') || soloDigitos.length > 11;
-    if (traeCodigoPais) {
-      const { codigo, numero } = phoneUtils.splitCodigoPais(soloDigitos);
-      setCodigoPais(codigo);
-      setTelefono(numero);
-    } else {
-      setTelefono(soloDigitos);
-    }
+    aplicarTelefonoIngresado(pegado);
   };
 
   const handleGuardar = async () => {
@@ -458,8 +460,8 @@ export default function PerfilPage() {
             codigoPais={codigoPais}
             setCodigoPais={setCodigoPais}
             telefono={telefono}
-            setTelefono={setTelefono}
             onPasteTelefono={handlePasteTelefono}
+            onChangeTelefono={aplicarTelefonoIngresado}
             direccion={direccion}
             setDireccion={setDireccion}
             latitud={latitud}

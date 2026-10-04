@@ -16,6 +16,14 @@ interface OperacionResult {
   message?: string;
 }
 
+// crearCliente-específico: además de success/message, devuelve el cliente
+// recién creado — lo necesita el alta rápida desde el picker de Agenda
+// (nuevo/editar turno) para seleccionarlo apenas se guarda, sin tener que
+// buscarlo de nuevo en la lista por nombre (frágil si hay homónimos).
+interface CrearClienteResult extends OperacionResult {
+  cliente?: Cliente;
+}
+
 interface ClientesState {
   clientes: Cliente[];
   loading: boolean;
@@ -37,7 +45,7 @@ interface ClientesState {
   buscarActivo: string;
 
   fetchClientes: () => Promise<void>;
-  crearCliente: (dto: CreateClienteDto) => Promise<OperacionResult>;
+  crearCliente: (dto: CreateClienteDto) => Promise<CrearClienteResult>;
   actualizarCliente: (id: number, dto: UpdateClienteDto) => Promise<OperacionResult>;
   eliminarCliente: (id: number) => Promise<OperacionResult>;
   toggleCliente: (id: number, activo: boolean) => Promise<OperacionResult>;
@@ -89,7 +97,7 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
       try {
         const nuevo = await clienteService.create(dto);
         set(state => ({ clientes: [...state.clientes, nuevo] }));
-        return { success: true };
+        return { success: true, cliente: nuevo };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
       }

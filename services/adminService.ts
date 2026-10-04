@@ -117,6 +117,77 @@ export interface MercadoPagoConexionCreada {
 }
 
 // ─────────────────────────────────────────────
+// Tablero de uso — supervisión de cuánto usa cada negocio la app (turnos
+// agendados y mensajes automáticos, desglosados por tipo y por si fallaron).
+// Ver AdminController::usoResumenPorNegocio/usoDetalleNegocio/
+// usoDetalleNegocioPorDia en el backend.
+// ─────────────────────────────────────────────
+export interface UsoNegocioResumen {
+  user_id: number;
+  nombre: string | null;
+  turnos: number;
+  confirmaciones: number;
+  recordatorios: number;
+  fallos: number;
+}
+
+export interface UsoResumenResponse {
+  desde: string;
+  hasta: string;
+  negocios: UsoNegocioResumen[];
+}
+
+export interface UsoDia {
+  fecha: string;
+  turnos: number;
+  confirmaciones: number;
+  recordatorios: number;
+  fallos: number;
+}
+
+export type UsoMensajeTipo = 'confirmacion' | 'recordatorio';
+export type UsoFalloOrigen = 'meta' | 'nuestro';
+
+export interface UsoFalloReciente {
+  fecha: string;
+  tipo: UsoMensajeTipo;
+  origen: UsoFalloOrigen;
+  motivo: string;
+  codigo: number | null;
+}
+
+export interface UsoTotales {
+  turnos: number;
+  confirmaciones: number;
+  recordatorios: number;
+  fallos: number;
+}
+
+export interface UsoDetalleNegocioResponse {
+  user_id: number;
+  nombre: string | null;
+  desde: string;
+  hasta: string;
+  totales: UsoTotales;
+  dias: UsoDia[];
+  fallos_recientes: UsoFalloReciente[];
+}
+
+export interface UsoHora {
+  hora: number;
+  turnos: number;
+  confirmaciones: number;
+  recordatorios: number;
+  fallos: number;
+}
+
+export interface UsoDetalleNegocioPorDiaResponse {
+  user_id: number;
+  fecha: string;
+  horas: UsoHora[];
+}
+
+// ─────────────────────────────────────────────
 // Keys de localStorage — deliberadamente distintas de KEYS en
 // services/authService.ts (auth_token/auth_user), ver design admin-panel
 // decisión #7.
@@ -124,6 +195,7 @@ export interface MercadoPagoConexionCreada {
 const KEYS = {
   token: 'admin_token',
   admin: 'admin_user',
+  expiresAt: 'admin_token_expires_at',
 };
 
 // Mismos wrappers seguros que authService.ts — ver ese archivo para el
@@ -161,6 +233,7 @@ export const adminService = {
     const response = await adminApi.post<AdminLoginResponse>('/admin/login', { email, password });
     safeSetItem(KEYS.token, response.data.token);
     safeSetItem(KEYS.admin, JSON.stringify(response.data.admin));
+    safeSetItem(KEYS.expiresAt, response.data.expires_at);
     return response.data;
   },
 
@@ -170,6 +243,7 @@ export const adminService = {
     } finally {
       safeRemoveItem(KEYS.token);
       safeRemoveItem(KEYS.admin);
+      safeRemoveItem(KEYS.expiresAt);
     }
   },
 
@@ -264,6 +338,23 @@ export const adminService = {
     return response.data;
   },
 
+  // Tablero de uso — ver interfaces arriba. desde/hasta son 'YYYY-MM-DD',
+  // omitidos el backend defaultea a los últimos 30 días.
+  obtenerUsoResumen: async (desde?: string, hasta?: string): Promise<UsoResumenResponse> => {
+    const response = await adminApi.get<UsoResumenResponse>('/admin/uso/negocios', { params: { desde, hasta } });
+    return response.data;
+  },
+
+  obtenerUsoDetalleNegocio: async (userId: number, desde?: string, hasta?: string): Promise<UsoDetalleNegocioResponse> => {
+    const response = await adminApi.get<UsoDetalleNegocioResponse>(`/admin/uso/negocios/${userId}`, { params: { desde, hasta } });
+    return response.data;
+  },
+
+  obtenerUsoDetalleNegocioPorDia: async (userId: number, fecha: string): Promise<UsoDetalleNegocioPorDiaResponse> => {
+    const response = await adminApi.get<UsoDetalleNegocioPorDiaResponse>(`/admin/uso/negocios/${userId}/dia`, { params: { fecha } });
+    return response.data;
+  },
+
   // ─────────────────────────────────────────────
   // Helpers de storage — síncronos en web
   // ─────────────────────────────────────────────
@@ -275,4 +366,19 @@ export const adminService = {
   },
 
   estaAutenticado: (): boolean => !!safeGetItem(KEYS.token),
+
+  // Chequeo puro client-side contra el expires_at que devuelve /admin/login
+  // (el token admin vence a horas fijas desde el login, ver
+  // AdminAuthController::login en el backend — no "mientras esté activo"
+  // como la sesión del negocio). Permite detectar un token vencido sin
+  // esperar a que un request falle con 401 — ver useAdminAuthStore
+  // .revisarExpiracion, usado al montar y al volver a la pestaña (feedback
+  // 2026-10-02). Sin expiresAt guardado (sesión vieja, de antes de este
+  // campo) nunca cuenta como vencido — fail-open, el 401 real sigue siendo
+  // la red de seguridad.
+  tokenExpirado: (): boolean => {
+    const expiresAt = safeGetItem(KEYS.expiresAt);
+    if (!expiresAt) return false;
+    return new Date(expiresAt).getTime() <= Date.now();
+  },
 };

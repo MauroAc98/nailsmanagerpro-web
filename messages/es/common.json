@@ -28,8 +28,10 @@
     "dismiss": "Cerrar aviso"
   },
   "PendientesDeCobroBanner": {
-    "title": "Precios por cargar",
-    "message": "{count, plural, one {# turno sin precio cargado} other {# turnos sin precio cargado}}",
+    "title": "Cobros por registrar",
+    "messageOne": "Falta cargar cuánto cobraste a {cliente} por {servicios}",
+    "messageOneNoService": "Falta cargar cuánto cobraste a {cliente}",
+    "messageMany": "{count, plural, one {Falta cargar lo cobrado en # turno finalizado} other {Falta cargar lo cobrado en # turnos finalizados}}",
     "view": "Ver",
     "checkError": "No pudimos verificar turnos pendientes de cobro",
     "retry": "Reintentar",

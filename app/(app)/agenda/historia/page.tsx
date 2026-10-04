@@ -16,6 +16,7 @@ import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
 
 type SeccionEditor = 'agenda' | 'texto' | 'fondo';
@@ -85,7 +86,7 @@ function HistoriaContent() {
     agregarTexto, iniciarEdicion, cancelarEdicion,
     actualizarPosicion, eliminarTexto, cambiarFontSize, redimensionarTexto,
     elegirFoto, quitarFondoFijo, descargarImagen, compartirImagen, fondoUri, fondoFijoGuardado,
-    nombreEstudio, telefonoEstudio,
+    nombreEstudio, telefonoEstudio, logoUrl,
   } = useGenerarHistoria(fechaInicial);
 
   // Multi-agenda — invisible con ≤1 profesional activa, mismo criterio que
@@ -96,7 +97,9 @@ function HistoriaContent() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
-  const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
+  // La profesional del encabezado es la efectiva del selector (la dueña por
+  // defecto al recargar, o la que se eligió): un único diseño para todas.
+  const profesionalSeleccionada    = profesionalDelEncabezado(activeProfesionales, effectiveProfesionalId);
 
   // Cantidad de horarios que efectivamente van a la imagen — mismo dato que
   // ya excluye días/slots ocultados manualmente (diasAMostrar), solo para el
@@ -189,7 +192,12 @@ function HistoriaContent() {
           <SelectorProfesional
             label={t('showScheduleOf')}
             labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
-            profesionales={activeProfesionales}
+            // avatarUrl != avatar_url (ProfesionalOption vs Profesional) —
+            // sin este mapeo, Profesional pasa el typecheck (prop opcional)
+            // pero nunca muestra la foto real, solo iniciales (bug real
+            // 2026-10-01, mismo en otras 8 pantallas con selector de
+            // profesional).
+            profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
             selectedId={selectedProfesionalId ?? effectiveProfesionalId}
             onSelect={setSelectedProfesionalId}
             selectedFg={colors.primaryFg}
@@ -237,6 +245,7 @@ function HistoriaContent() {
               titulo={titulo}
               nombreEstudio={nombreEstudio}
               telefonoEstudio={telefonoEstudio}
+              logoUrl={logoUrl}
               profesionalNombre={profesionalSeleccionada?.nombre}
               dias={diasAMostrar}
               fondoUri={fondoUri}

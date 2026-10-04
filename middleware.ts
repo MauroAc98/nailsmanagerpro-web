@@ -48,6 +48,8 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
 
 // Único lugar que define qué URLs limpias existen en el panel — si se
 // agrega una página nueva bajo app/(admin)/admin/, sumarla acá también.
+// Excepción: /uso y sus sub-rutas con id de negocio, que no son páginas
+// literales — ver esRutaUso más abajo.
 const ADMIN_PAGES = new Set([
   '/',
   '/login',
@@ -63,6 +65,15 @@ const ADMIN_PAGES = new Set([
 // rutas bajo /admin, son archivos hermanos con ese prefijo).
 function esRutaAdminVieja(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
+// Único rincón de ADMIN_PAGES que necesita un segmento dinámico (el id del
+// negocio) — un Set de strings literales no puede listarlo. Regex acotada a
+// las 3 formas reales (/uso, /uso/:id, /uso/:id/dia) en vez de un prefijo
+// `startsWith('/uso')` a secas, mismo criterio que esRutaAdminVieja: no
+// matchear de más.
+function esRutaUso(pathname: string): boolean {
+  return /^\/uso(\/\d+(\/dia)?)?$/.test(pathname);
 }
 
 export function middleware(request: NextRequest) {
@@ -125,7 +136,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  if (ADMIN_PAGES.has(pathname)) {
+  if (ADMIN_PAGES.has(pathname) || esRutaUso(pathname)) {
     const url = request.nextUrl.clone();
     url.protocol = 'http:';
     url.pathname = pathname === '/' ? '/admin' : `/admin${pathname}`;

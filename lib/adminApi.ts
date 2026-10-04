@@ -29,19 +29,21 @@ adminApi.interceptors.request.use((config) => {
 });
 
 // 'admin-session-expired' es un evento propio, distinto de 'session-expired'
-// (lib/api.ts). app/(admin)/admin/layout.tsx escucha este y solo limpia
-// useAdminAuthStore — nunca useAuthStore/auth_token. Un 401 admin no debe
-// poder disparar el logout tenant bajo ninguna circunstancia.
+// (lib/api.ts). app/(admin)/admin/layout.tsx escucha este y pide
+// reautenticación en useAdminAuthStore — nunca toca useAuthStore/auth_token.
+// Un 401 admin no debe poder disparar el logout tenant bajo ninguna
+// circunstancia.
+//
+// Deliberadamente NO borra admin_token/admin_user de localStorage acá
+// (a diferencia de antes) — el store mantiene el token/admin en memoria para
+// que la pantalla actual (y cualquier formulario sin guardar) siga montada
+// mientras se pide reautenticación; ver useAdminAuthStore.reautenticacionRequerida.
+// Un reingreso exitoso sobreescribe el token guardado; un logout explícito
+// (botón "Cerrar sesión" del modal) limpia localStorage por su cuenta.
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      try {
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
-      } catch {
-        // sin acceso a localStorage — igual avisamos del logout vía el evento
-      }
       window.dispatchEvent(new CustomEvent('admin-session-expired'));
     }
     return Promise.reject(error);

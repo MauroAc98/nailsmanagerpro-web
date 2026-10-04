@@ -13,8 +13,8 @@
     "finalizarTramo": "Só o atendimento de {turno} será finalizado. Os demais não mudam."
   },
   "PendientesDeCobroPage": {
-    "title": "Preços por cadastrar",
-    "subtitle": "Agendamentos finalizados sem preço registrado",
+    "title": "Cobranças a registrar",
+    "subtitle": "Atendimentos concluídos em que falta registrar quanto foi cobrado",
     "loading": "Carregando...",
     "emptyState": "Você não tem agendamentos pendentes de cobrança",
     "searchPlaceholder": "Buscar por nome da cliente...",
@@ -33,7 +33,11 @@
     "noListPrice": "Sem preço de tabela",
     "useListPrice": "Usar preço de tabela",
     "loadPrice": "Cadastrar",
-    "loadOneByOne": "Cadastrar um a um · {count} →",
+    "useListPriceAll": "Usar preço de tabela nos {count} atendimentos",
+    "useListPriceAllHint": "Para quando você cobrou o valor de sempre. Os que mudaram ou não têm preço de tabela, registre com o botão de cada um.",
+    "confirmUseListPriceAll": "Registrar {count} atendimentos pelo preço de tabela ({monto} no total)? Depois só dá para corrigir pelo histórico.",
+    "bulkSaved": "{count, plural, one {# atendimento registrado} other {# atendimentos registrados}}",
+    "bulkPartialError": "Não foi possível registrar todos: {done} de {total} foram salvos. {error}",
     "confirmUseListPrice": "Registrar o agendamento de {cliente} a preço de tabela ({monto})? Depois só é possível corrigir pelo histórico.",
     "confirmUseListPriceButton": "Registrar"
   },
@@ -41,7 +45,8 @@
     "deletedClient": "Cliente excluído",
     "finishNow": "Finalizar agora",
     "inProgress": "EM ANDAMENTO",
-    "cancel": "CANCELAR"
+    "cancel": "CANCELAR",
+    "withProfesional": "com {nombre}"
   },
   "cancelarGrupo": {
     "sinPendientes": "Não há nada para cancelar"
@@ -52,7 +57,8 @@
   },
   "FinalizadoCard": {
     "deletedClient": "Cliente excluído",
-    "finished": "FINALIZADO"
+    "finished": "FINALIZADO",
+    "withProfesional": "com {nombre}"
   },
   "AgendaListHeader": {
     "results": "Resultados",
@@ -67,8 +73,7 @@
     "searchClient": "Buscar cliente",
     "clientNamePlaceholder": "Nome da cliente...",
     "searchByDate": "Buscar por data",
-    "datePlaceholder": "DD/MM/AAAA",
-    "invalidDate": "Data inválida",
+    "datePlaceholder": "Escolher data",
     "filterByService": "Filtrar por serviço",
     "allServices": "Todos os serviços",
     "filterByProfesional": "Filtrar por profissional",
@@ -78,11 +83,27 @@
   "SelectorProfesionalDia": {
     "all": "Toda a equipe"
   },
+  "AltaClienteRapidaSheet": {
+    "title": "Nova cliente",
+    "nameLabel": "Nome *",
+    "namePlaceholder": "Ex: Carla",
+    "nameRequired": "O nome é obrigatório",
+    "lastNameLabel": "Sobrenome *",
+    "lastNamePlaceholder": "Ex: Gomez",
+    "lastNameRequired": "O sobrenome é obrigatório",
+    "phoneLabel": "Telefone",
+    "phonePlaceholder": "Número sem código do país",
+    "phoneRequired": "O telefone é obrigatório",
+    "saving": "Salvando...",
+    "submit": "Adicionar e selecionar",
+    "saveError": "Não foi possível salvar a cliente."
+  },
   "WeekStrip": {
     "previousWeek": "Semana anterior",
     "nextWeek": "Próxima semana",
-    "calendarLabel": "Calendário",
-    "openCalendar": "Ver calendário completo"
+    "calendarLabel": "Ver calendário",
+    "openCalendar": "Ver calendário completo",
+    "today": "HOJE"
   },
   "ElegirFechaSheet": {
     "title": "Escolher data",
@@ -113,6 +134,7 @@
     "loadingClients": "Carregando clientes...",
     "retry": "Tentar novamente",
     "noClientsFound": "Nenhum cliente encontrado.",
+    "newClientOption": "+ Adicionar nova cliente",
     "professional": "PROFISSIONAL",
     "services": "SERVIÇOS",
     "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",
@@ -142,6 +164,7 @@
     "loadingClients": "Carregando clientes...",
     "retry": "Tentar novamente",
     "noClientsFound": "Nenhum cliente encontrado.",
+    "newClientOption": "+ Adicionar nova cliente",
     "professional": "PROFISSIONAL",
     "services": "SERVIÇOS",
     "chooseProfessionalFirst": "Escolha uma profissional para ver os serviços dela.",

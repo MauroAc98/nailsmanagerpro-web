@@ -93,6 +93,42 @@ export function resizeFondoFile(file: File): Promise<{ dataUrl: string; file: Fi
   });
 }
 
+// ─────────────────────────────────────────────
+// hornearFotoEncabezado — baja la foto del encabezado (logo del negocio o
+// avatar de la profesional) a una imagen embebida (data URL) dibujándola en
+// Canvas 2D, a color y sin ningún filtro. Mismo camino que arregló el
+// compartir en Safari (2026-10-01): la foto ya viaja dentro de la página y
+// html-to-image no tiene que bajarla ni rasterizarla con CSS al capturar. Lo
+// que rompía Safari era `filter: grayscale()` dentro de la captura, no la
+// foto: acá no hay filtro.
+// ─────────────────────────────────────────────
+const FOTO_ENCABEZADO_MAX_EDGE = 200;
+
+export function hornearFotoEncabezado(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const longEdge = Math.max(img.naturalWidth, img.naturalHeight);
+      const scale    = longEdge > FOTO_ENCABEZADO_MAX_EDGE ? FOTO_ENCABEZADO_MAX_EDGE / longEdge : 1;
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('hornearFotoEncabezado: sin contexto 2d'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('hornearFotoEncabezado: no se pudo cargar la foto'));
+    img.src = url;
+  });
+}
+
 function nextFrame(): Promise<void> {
   return new Promise(resolve => requestAnimationFrame(() => resolve()));
 }

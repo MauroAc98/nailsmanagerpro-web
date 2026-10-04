@@ -8,7 +8,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
-import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
+import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura, hornearFotoEncabezado } from '@/lib/historia/captura';
+import { elegirFotoEncabezado } from '@/lib/historia/fotoEncabezado';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -113,11 +114,51 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
   const telefonoEstudio = useAuthStore(s => s.user?.telefono ?? null);
+  // El logo, como fondoFijoGuardado más abajo, es una URL del backend servida
+  // sin Access-Control-Allow-Origin — html-to-image no puede embeberla al
+  // capturar y compartir/guardar falla en silencio (mismo bug ya resuelto
+  // para el fondo, real en prod 2026-10-01: sin esto, cualquier negocio con
+  // logo cargado no podía compartir su historia desde que el logo se sumó
+  // al header). Mismo proxy same-origin (app/api/historia-fondo), que no es
+  // específico de "fondo" pese al nombre — solo reescribe el origin.
+  const logoNegocioCrudo = useAuthStore(s => s.user?.logo_url ?? null);
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
+  // La profesional efectiva (la dueña por defecto, o la que se eligió en el
+  // selector) manda en el encabezado: su avatar si tiene, y si no el logo del
+  // negocio. Siempre a color.
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;
   }, [selectedProfesionalId, profesionales]);
+  const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, effectiveProfesionalId, logoNegocioCrudo);
+  const logoUrlProxiado = useMemo(
+    () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
+    [logoUrlCrudo]
+  );
+  // El proxy resuelve el CORS, pero Safari además necesita que la foto ya
+  // viaje embebida (data URL) y que no haya ningún `filter` CSS en el árbol
+  // que se captura (reportado real en prod 2026-10-01: la historia entera
+  // salía negra). Mismo camino de antes — foto horneada con Canvas 2D — pero
+  // a color. Reset sincrónico durante el render (patrón oficial de React, sin
+  // setState dentro de un efecto): arranca con la URL proxiada y el efecto la
+  // reemplaza por la imagen embebida apenas está lista. Si falla (offline,
+  // proxy caído) se queda con la URL proxiada: mejor eso que ocultar la foto.
+  const [logoUrlProxiadoSincronizado, setLogoUrlProxiadoSincronizado] = useState(logoUrlProxiado);
+  const [logoUrl, setLogoUrl] = useState<string | null>(logoUrlProxiado);
+  if (logoUrlProxiadoSincronizado !== logoUrlProxiado) {
+    setLogoUrlProxiadoSincronizado(logoUrlProxiado);
+    setLogoUrl(logoUrlProxiado);
+  }
+  useEffect(() => {
+    if (!logoUrlProxiado) return;
+    let cancelado = false;
+    hornearFotoEncabezado(logoUrlProxiado)
+      .then(dataUrl => { if (!cancelado) setLogoUrl(dataUrl); })
+      .catch(() => {
+        // ya quedó en logoUrlProxiado por el reset de arriba, nada que hacer
+      });
+    return () => { cancelado = true; };
+  }, [logoUrlProxiado]);
   const fondoFijoGuardado = useMemo(
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]
@@ -687,7 +728,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
-    fondoFijoGuardado, nombreEstudio, telefonoEstudio,
+    fondoFijoGuardado, nombreEstudio, telefonoEstudio, logoUrl,
 
     // navigation / mode
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,

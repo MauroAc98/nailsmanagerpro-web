@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { resolveAuthRoute, type AuthStatus } from '@/lib/resolveAuthRoute';
 import { classifyAdmin } from '@/lib/authRouteClasses';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
+import { AdminReauthModal } from '@/components/admin/AdminReauthModal';
 import { colors } from '@/theme/colors';
 
 // pathname acá es el que ve el navegador — middleware.ts reescribe
@@ -21,7 +22,7 @@ import { colors } from '@/theme/colors';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token, inicializado, inicializar } = useAdminAuthStore();
+  const { token, inicializado, inicializar, reautenticacionRequerida } = useAdminAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -33,11 +34,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // adminApi ↔ store, mismo patrón que 'session-expired' en
   // app/providers.tsx. Completamente aislado de ese: un 401 admin nunca
   // toca useAuthStore/auth_token, y viceversa.
+  //
+  // Ya NO limpia admin/token acá — eso desmontaba `children` de una,
+  // perdiendo cualquier formulario sin guardar (feedback 2026-10-02:
+  // "completo el alta de un negocio, le doy guardar y me desloguea"). En su
+  // lugar pide reautenticación: la pantalla sigue montada debajo del modal.
   useEffect(() => {
-    const onAdminSessionExpired = () =>
-      useAdminAuthStore.setState({ admin: null, token: null, error: null });
+    const onAdminSessionExpired = () => useAdminAuthStore.getState().requerirReautenticacion();
     window.addEventListener('admin-session-expired', onAdminSessionExpired);
     return () => window.removeEventListener('admin-session-expired', onAdminSessionExpired);
+  }, []);
+
+  // El token admin vence a horas fijas desde el login (12h, ver
+  // AdminAuthController::login en el backend), no "mientras esté activo" —
+  // sin este chequeo, una pestaña dejada abierta recién se entera de que la
+  // sesión venció cuando el próximo click dispara un request y ese 401
+  // llega (feedback 2026-10-02: "que no espere a una nueva petición, que lo
+  // haga apenas vuelva"). Revisamos el expires_at guardado apenas la
+  // pestaña vuelve a estar visible, sin esperar ningún round-trip de red.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        useAdminAuthStore.getState().revisarExpiracion();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
   // Admin has no `booting` subscription check — status maps straight off the
@@ -67,6 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background }}>
       {route.type === 'allow' ? children : null}
+      {route.type === 'allow' && reautenticacionRequerida && <AdminReauthModal />}
     </div>
   );
 }

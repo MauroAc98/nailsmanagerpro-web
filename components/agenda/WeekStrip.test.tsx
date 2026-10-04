@@ -63,9 +63,12 @@ describe('WeekStrip', () => {
     expect(screen.getByText('14 – 20 de sept')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Semana anterior' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Semana siguiente' })).toBeInTheDocument();
+    // Redesign: el rango de fechas y el botón de calendario se fusionan en
+    // un solo botón (etiqueta arriba, "Ver mes completo" abajo) — comparten
+    // el mismo aria-label de siempre, así que la reserva online (que solo
+    // depende del aria-label, no del texto visible) sigue funcionando igual.
     expect(screen.getByRole('button', { name: 'Ver calendario completo' })).toBeInTheDocument();
-    // El botón dice qué hace: lleva la palabra "Calendario", no solo un ícono.
-    expect(screen.getByText('Calendario')).toBeInTheDocument();
+    expect(screen.getByText('Ver calendario')).toBeInTheDocument();
     for (let d = 14; d <= 20; d++) {
       expect(screen.getByTestId(`week-day-${fecha(2026, 9, d)}`)).toBeInTheDocument();
     }
@@ -132,6 +135,41 @@ describe('WeekStrip', () => {
       const turnosDelSeleccionado: TurnoMes[] = [{ fecha: fecha(2026, 9, 17), cantidad: 5 }];
       setup({ turnosMes: turnosDelSeleccionado, fechaSeleccionada: fecha(2026, 9, 17) });
       expect(screen.queryByText('5')).toBeNull();
+    });
+  });
+
+  // Indicador de "hoy" (redesign, selector de semana) — sin esto, al
+  // navegar a otra semana no hay forma de ubicar el día actual de un
+  // vistazo. Solo aparece cuando hoy NO tiene turnos futuros (si los
+  // tiene, el badge de cantidad ya lo señala) y no es el seleccionado.
+  describe('indicador de HOY', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 16)); // "hoy" = miércoles 16/9/2026
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('marca el día de hoy con "HOY" cuando no tiene turnos y no está seleccionado', () => {
+      setup({ turnosMes: [], fechaSeleccionada: fecha(2026, 9, 14) });
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 16)}`)).toHaveTextContent('HOY');
+    });
+
+    it('no marca "HOY" en el día seleccionado (ya se distingue por el resaltado)', () => {
+      setup({ turnosMes: [], fechaSeleccionada: fecha(2026, 9, 16) });
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 16)}`)).not.toHaveTextContent('HOY');
+    });
+
+    it('el badge de cantidad tiene prioridad sobre "HOY" si hoy tiene turnos', () => {
+      const turnosHoy: TurnoMes[] = [{ fecha: fecha(2026, 9, 16), cantidad: 4 }];
+      setup({ turnosMes: turnosHoy, fechaSeleccionada: fecha(2026, 9, 14) });
+      const hoy = screen.getByTestId(`week-day-${fecha(2026, 9, 16)}`);
+      expect(hoy).toHaveTextContent('4');
+      expect(hoy).not.toHaveTextContent('HOY');
+    });
+
+    it('no marca "HOY" en otros días', () => {
+      setup({ turnosMes: [], fechaSeleccionada: fecha(2026, 9, 14) });
+      expect(screen.getByTestId(`week-day-${fecha(2026, 9, 17)}`)).not.toHaveTextContent('HOY');
     });
   });
 

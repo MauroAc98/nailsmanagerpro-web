@@ -239,9 +239,19 @@ body {
   --ag-surface-2: #f6f1ef;
   --ag-text: #4a3f42;
   --ag-strong: #2b2226;
-  --ag-sub: #8a7c80;
-  --ag-muted: #b3a7aa;
-  --ag-border: #e7dcde;
+  /* --ag-sub y --ag-muted bajados (2026-09-30, feedback de contraste) — el
+     tema base (--color-*, arriba en :root) ya había resuelto este mismo
+     problema para su propia paleta (ver el comentario en --color-background)
+     con un borde ~2:1 y texto secundario que pasa AA; esta paleta de Agenda
+     (28 pantallas) es más nueva y no había heredado esa corrección.
+     --ag-sub 8a7c80→7a6b6f: 3.92:1→5.01:1 sobre --ag-surface (pasa AA texto
+     normal). --ag-muted b3a7aa→948689: 2.29:1→3.43:1 (pasa para íconos/UI,
+     sigue sin ser para texto de cuerpo — es placeholder/dato secundario). */
+  --ag-sub: #7a6b6f;
+  --ag-muted: #948689;
+  /* e7dcde→c9b2b6: 1.15:1→1.96:1 sobre --ag-surface, igualando el ~2:1 que
+     ya usa --color-border del tema base (mismo motivo que --ag-sub arriba). */
+  --ag-border: #c9b2b6;
   --ag-hairline: #efe6e7;
   --ag-primary: var(--color-primary);
   --ag-primary-deep: var(--color-primary-deep);

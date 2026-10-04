@@ -27,7 +27,7 @@ import ProfesionalesPage from '@/app/(app)/configuracion/profesionales/page';
 const userConParalelo = (atiende_en_paralelo: boolean): User => ({ atiende_en_paralelo } as unknown as User);
 
 const profesional = (id: number, nombre: string, activo = true): Profesional =>
-  ({ id, user_id: 1, nombre, apellido: null, nombre_completo: nombre, color: null, activo, servicios: [] } as unknown as Profesional);
+  ({ id, user_id: 1, nombre, apellido: null, nombre_completo: nombre, color: null, activo, dias_atencion: null, servicios: [] } as unknown as Profesional);
 
 function montar(profesionales: Profesional[], atiendeEnParalelo = false) {
   useProfesionalStore.setState({ profesionales, loading: false, error: null });

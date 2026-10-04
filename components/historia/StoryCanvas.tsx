@@ -1,16 +1,16 @@
 'use client';
 
-import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
-import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
+import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -70,8 +70,20 @@ interface Props {
   // compartida sepa por dónde contactar, sin tener que buscarlo aparte.
   telefonoEstudio?: string | null;
   // Multi-agenda — nombre de la profesional cuya disponibilidad se muestra.
-  // Si viene, reemplaza a nombreEstudio como título (ver tituloPrincipal).
+  // Si viene (elegida a mano), el header pasa a "Turnos disponibles" y una
+  // línea "con {nombre} · {fecha}" (ver lineaProfesional); el nombre del
+  // negocio baja al pie.
   profesionalNombre?: string;
+  // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
+  // ícono genérico en el header, en los 3 modos (día/semana/mes), para
+  // impulsar la marca del negocio en la imagen que se comparte (pedido
+  // 2026-09-30: "que se vea el perfil en el lugar donde se ve el ícono de
+  // agenda... o el ícono dinámico, según sea el caso"). Sin logo cargado,
+  // el header se ve igual que siempre (chip/ícono) — no hay foto que
+  // inventar. Un badge de fecha superpuesto no escala a semana/mes (no
+  // entra un rango o un mes en una etiqueta chica), así que la fecha/rango
+  // sigue viviendo solo en el texto de abajo, con o sin logo.
+  logoUrl?: string | null;
   dias:           DisponibilidadDia[]; // diasAMostrar
   fondoUri:       string | null;
   canvasWidth:    number;
@@ -87,7 +99,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -101,11 +113,14 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
   const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
 
-  // Con una profesional puntual elegida, su nombre reemplaza al del estudio
-  // en el título — mostrar ambos es redundante (la propia profesional YA
-  // identifica de qué estudio es) y en cuentas donde el nombre del estudio
-  // es el nombre personal de la dueña, quedaba dos veces literal.
-  const tituloPrincipal = profesionalNombre || nombreEstudio;
+  // Un único diseño para todas las cuentas: "Turnos disponibles" de título y
+  // una sola línea chica "con {profesional} · {fecha}" (solo la fecha si no
+  // hay profesional). El nombre del negocio va siempre en el pie, junto al
+  // teléfono.
+  const lineaProfesional = profesionalNombre
+    ? t('withProfessional', { nombre: profesionalNombre })
+    : null;
+  const tituloPrincipal = t('availableTitle');
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
   // historia con su propio chrome y, en celus más altos que 9:16, recortan
@@ -128,6 +143,35 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // extra cae detrás del chrome de la plataforma, así que no se ve de más.
   const tituloZonaAlto = safe.top    + Math.round(canvasHeight * 0.10);
   const footerZonaAlto = safe.bottom + Math.round(canvasHeight * 0.10);
+
+  // La franja desenfocada del pie tiene que arrancar justo en la línea
+  // divisoria, y esa línea se mueve con el contenido (alto del pie, cuerpo,
+  // tamaño del canvas): se mide en vez de usar un alto fijo. footerZonaAlto
+  // queda solo como valor inicial / sin layout (tests, primer render).
+  const raizRef   = useRef<HTMLDivElement>(null);
+  const cuerpoRef = useRef<HTMLDivElement>(null);
+  const lineaRef  = useRef<HTMLDivElement>(null);
+  const pieRef    = useRef<HTMLDivElement>(null);
+  const [zonaPieMedida, setZonaPieMedida] = useState<number | null>(null);
+  useEffect(() => {
+    const raiz = raizRef.current;
+    const linea = lineaRef.current;
+    if (!raiz || !linea || typeof ResizeObserver === 'undefined') return;
+    const medir = () => {
+      const r = raiz.getBoundingClientRect();
+      const l = linea.getBoundingClientRect();
+      const alto = zonaPieDesdeLinea({
+        bottomRaiz: r.bottom, topLinea: l.top, alturaRenderizada: r.height, alturaCanvas: canvasHeight,
+      });
+      setZonaPieMedida(prev => (alto === null || prev === alto ? prev : alto));
+    };
+    // Observar el canvas, el cuerpo y el pie: si cualquiera cambia de alto, la
+    // línea cambia de lugar. ResizeObserver avisa también al empezar a observar.
+    const ro = new ResizeObserver(medir);
+    [raiz, cuerpoRef.current, pieRef.current].forEach(el => { if (el) ro.observe(el); });
+    return () => ro.disconnect();
+  }, [canvasHeight, canvasWidth]);
+  const zonaPie = zonaPieMedida ?? footerZonaAlto;
 
   // La foto de fondo se sube un poco. La barra de responder/enviar de
   // Instagram y WhatsApp tapa más abajo (safe.bottom) que la barra de
@@ -156,7 +200,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
     // WhatsApp Status muestran la imagen full-bleed, así que un PNG con
     // esquinas redondeadas se ve como si no llenara el recuadro (era un
     // solo bug con dos síntomas, no dos bugs distintos).
-    <div style={{ width: canvasWidth, height: canvasHeight, margin: '0 auto', borderRadius: 16, overflow: 'hidden' }}>
+    <div ref={raizRef} data-testid="story-raiz" style={{ width: canvasWidth, height: canvasHeight, margin: '0 auto', borderRadius: 16, overflow: 'hidden' }}>
       <div
         ref={ref}
         style={{
@@ -197,11 +241,11 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             style={{ position: 'absolute', top: fondoTop, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
           />
         </div>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerZonaAlto, overflow: 'hidden' }}>
+        <div data-testid="story-zona-pie" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: zonaPie, overflow: 'hidden' }}>
           <img
             src={fondoUri ?? '/default_bg.jpg'}
             alt=""
-            style={{ position: 'absolute', top: footerZonaAlto - fondoAlto, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
+            style={{ position: 'absolute', top: zonaPie - fondoAlto, left: 0, width: '100%', height: fondoAlto, objectFit: 'cover', filter: 'blur(16px)' }}
           />
         </div>
 
@@ -238,62 +282,75 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-              <span style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
-              }}>
-                {chipDiaNumero !== null ? (
-                  <>
-                    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
-                      {chipDiaLabel}
-                    </span>
-                    <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
-                      {chipDiaNumero}
-                    </span>
-                  </>
-                ) : (
-                  <CalendarDays size={18} color="#fff" strokeWidth={2} />
-                )}
-              </span>
+              {/* Con logo cargado, la foto del negocio ocupa este mismo
+                  recuadro (mismo tamaño/radio que el chip de fecha) en los 3
+                  modos — decisión 2026-09-30 tras canvas de diseño: un badge
+                  de fecha superpuesto no escala a semana/mes, así que se
+                  dropea la fecha del ícono y se apoya solo en el texto de
+                  abajo (que ya la muestra formateada para cada modo). Sin
+                  logo, se ve exactamente igual que siempre (chip de fecha en
+                  modo Día, ícono genérico en Semana/Mes).
+                  La foto va a color y sin `filter` en vivo: ese filtro vive
+                  dentro del árbol que html-to-image rasteriza como SVG
+                  foreignObject aparte, y WebKit lo combina mal con esa
+                  rasterización — la historia entera salía negra en Safari
+                  (real en prod 2026-10-01). */}
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt=""
+                  style={{
+                    flexShrink: 0, width: 44, height: 44, borderRadius: 12,
+                    objectFit: 'cover',
+                    border: '1.5px solid rgba(255,255,255,0.6)',
+                  }}
+                />
+              ) : (
+                <span style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
+                }}>
+                  {chipDiaNumero !== null ? (
+                    <>
+                      <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
+                        {chipDiaLabel}
+                      </span>
+                      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
+                        {chipDiaNumero}
+                      </span>
+                    </>
+                  ) : (
+                    <CalendarDays size={18} color="#fff" strokeWidth={2} />
+                  )}
+                </span>
+              )}
 
               <div style={{ minWidth: 0, flex: 1 }}>
-                {tituloPrincipal && (
-                  // maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
-                  // muy grande al lado de caption/fecha). minFontSize sigue
-                  // por encima del tope de FitText de los turnos en el body
-                  // (maxFontSize 10) — el nombre nunca queda mas chico que la
-                  // info de los turnos.
-                  <FitText
-                    text={tituloPrincipal}
-                    maxFontSize={18}
-                    minFontSize={13}
-                    style={{
-                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-                      letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    }}
-                  />
-                )}
-                {/* Dos líneas separadas, no concatenadas — en modo Semana la
-                    fecha ("17 al 23 de agosto") ya es larga por sí sola, y
-                    sumarle "· TURNOS DISPONIBLES" en el mismo renglón lo
-                    hacía correr y perder orden. */}
+                {/* maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
+                    muy grande al lado de la fecha). minFontSize sigue por
+                    encima del tope de FitText de los turnos en el body
+                    (maxFontSize 10) — el título nunca queda más chico que la
+                    info de los turnos. */}
+                <FitText
+                  text={tituloPrincipal}
+                  maxFontSize={18}
+                  minFontSize={13}
+                  style={{
+                    fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                    letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  }}
+                />
                 <span style={{
-                  display: 'block', marginTop: 6, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                  color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  display: 'block', marginTop: 4, fontSize: 11, fontWeight: 400,
+                  color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                 }}>
-                  {t('availableAppointments')}
-                </span>
-                <span style={{
-                  display: 'block', marginTop: 2, fontSize: 10, fontWeight: 400,
-                  color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                }}>
-                  {titulo}
+                  {lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo}
                 </span>
               </div>
             </div>
 
             {/* Body */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
+            <div ref={cuerpoRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
@@ -368,7 +425,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 footer de contacto, tal cual la referencia. Margen bajado
                 (14->10) junto con el resto del footer, que ocupaba más
                 lugar del que debería (feedback de diseño 2026-08-17). */}
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }} />
+            <div ref={lineaRef} data-testid="story-linea" style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }} />
 
             {/* Footer — CTA "Reservá tu turno" + WhatsApp con el teléfono,
                 tal cual la referencia. Blanco liso (no primaryRaw): probado
@@ -382,19 +439,36 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 la app (Recordatorios, botón de turno). Sin teléfono
                 cargado, el CTA solo alcanza — no hace falta un mensaje
                 genérico aparte. */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <div ref={pieRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <span style={{
                 fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 16,
                 color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
               }}>
                 {t('reserveCta')}
               </span>
-              {telefonoEstudio && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                  <WhatsappGlyph size={10} color="#fff" />
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                    {phoneUtils.formatDisplay(telefonoEstudio)}
-                  </span>
+              {/* Una sola línea: el negocio (que ya no es el título del
+                  header) y el teléfono con su ícono pegado al número. */}
+              {(telefonoEstudio || nombreEstudio) && (
+                // Texto corrido en UNA línea (no cajas flex): nombre en serif,
+                // guion y teléfono comparten la línea base por construcción,
+                // sin depender de cómo cada tipografía arma su caja (con flex
+                // el nombre quedaba más abajo y fuera de la línea del teléfono).
+                // Un nombre muy largo baja de renglón antes que cortarse, y el
+                // teléfono nunca se parte.
+                <div style={{
+                  textAlign: 'center', maxWidth: '100%', marginTop: 2, fontSize: 12, lineHeight: '16px',
+                  color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                }}>
+                  {nombreEstudio && <span style={{ fontFamily: agendaFontSerif }}>{nombreEstudio}</span>}
+                  {nombreEstudio && telefonoEstudio && (
+                    // Guion largo: se lee como una firma ("Negocio — teléfono").
+                    <span aria-hidden style={{ margin: '0 8px', color: 'rgba(255,255,255,0.75)' }}>—</span>
+                  )}
+                  {telefonoEstudio && (
+                    <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      +{phoneUtils.formatDisplay(telefonoEstudio)}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

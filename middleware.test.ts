@@ -47,3 +47,31 @@ describe('middleware — reservar.turnetto.com', () => {
     expect(res.headers.get('x-middleware-rewrite')).toBe('http://admin.turnetto.com/admin');
   });
 });
+
+// /uso es la primera página del panel admin con un segmento dinámico (el id
+// del negocio) — ADMIN_PAGES es un Set de strings literales, no puede
+// listar "cualquier id", así que esRutaUso() la matchea aparte con una
+// regex acotada a las 3 formas reales.
+describe('middleware — admin.turnetto.com /uso (segmento dinámico)', () => {
+  it('reescribe la lista /uso', () => {
+    const res = middleware(requestA('/uso', 'admin.turnetto.com'));
+    expect(res.headers.get('x-middleware-rewrite')).toBe('http://admin.turnetto.com/admin/uso');
+  });
+
+  it('reescribe el detalle de un negocio /uso/:id', () => {
+    const res = middleware(requestA('/uso/42', 'admin.turnetto.com'));
+    expect(res.headers.get('x-middleware-rewrite')).toBe('http://admin.turnetto.com/admin/uso/42');
+  });
+
+  it('reescribe el detalle por hora /uso/:id/dia', () => {
+    const res = middleware(requestA('/uso/42/dia', 'admin.turnetto.com'));
+    expect(res.headers.get('x-middleware-rewrite')).toBe('http://admin.turnetto.com/admin/uso/42/dia');
+  });
+
+  it('no matchea un id no numérico ni una sub-ruta desconocida', () => {
+    for (const path of ['/uso/abc', '/uso/42/otracosa', '/usoalgo']) {
+      const res = middleware(requestA(path, 'admin.turnetto.com'));
+      expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+    }
+  });
+});

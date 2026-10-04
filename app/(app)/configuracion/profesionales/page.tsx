@@ -6,25 +6,48 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { Profesional } from '@/services/profesionalService';
+import { Profesional, profesionalJefa } from '@/services/profesionalService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { alertDialog } from '@/store/useConfirmStore';
 import { mensajeBloqueoParalelo } from '@/lib/promoComponentes';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { formatearDiasAtencion } from '@/lib/formatearDiasAtencion';
+
+// Abreviaturas lunes-primero para el texto de días — reusa las mismas
+// traducciones que WeekdayPicker (`*Full`, recortadas a 3 letras: "Lunes" ->
+// "Lun") en vez de duplicar un set de claves nuevo solo para esto.
+function useAbreviaturasDias(): Record<number, string> {
+  const t = useTranslations('common.WeekdayPicker');
+  return {
+    0: t('sunFull').slice(0, 3),
+    1: t('monFull').slice(0, 3),
+    2: t('tueFull').slice(0, 3),
+    3: t('wedFull').slice(0, 3),
+    4: t('thuFull').slice(0, 3),
+    5: t('friFull').slice(0, 3),
+    6: t('satFull').slice(0, 3),
+  };
+}
 
 function ProfesionalCard({
   profesional,
+  esJefa,
   onEdit,
   onToggle,
 }: {
   profesional: Profesional;
+  esJefa:      boolean;
   onEdit:      () => void;
   onToggle:    (activo: boolean) => void;
 }) {
   const t = useTranslations('configuracion.ProfesionalesPage');
+  const abreviaturasDias = useAbreviaturasDias();
   const color = profesional.color || colors.primary;
   const cantidadServicios = profesional.servicios?.length ?? 0;
+  const textoDias = formatearDiasAtencion(profesional.dias_atencion, abreviaturasDias, t('allDays'), t('dayRangeConnector'));
+  const textoServicios = cantidadServicios === 0 ? t('noServices') : t('serviceCount', { count: cantidadServicios });
 
   return (
     <div
@@ -33,41 +56,80 @@ function ProfesionalCard({
         display: 'flex', alignItems: 'center', gap: 12,
         backgroundColor: profesional.activo ? colors.surface : colors.surfaceSubtle,
         border: `1px solid ${colors.border}`,
-        boxShadow: shadows.card, borderRadius: 14,
-        padding: '14px 16px', cursor: 'pointer',
-        opacity: profesional.activo ? 1 : 0.65,
+        boxShadow: shadows.card, borderRadius: 16,
+        padding: '12px 14px', cursor: 'pointer',
         userSelect: 'none',
       }}
     >
-      <div style={{
-        width: 36, height: 36, borderRadius: 18,
-        backgroundColor: color,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, color: '#FFF', fontSize: 15, fontWeight: 700,
-      }}>
-        {profesional.nombre.trim().charAt(0).toUpperCase() || '?'}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        {profesional.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profesional.avatar_url}
+            alt=""
+            style={{
+              width: 46, height: 46, borderRadius: 23, objectFit: 'cover',
+              border: `1.5px solid ${colors.border}`,
+              filter: profesional.activo ? 'none' : 'grayscale(0.6)',
+              opacity: profesional.activo ? 1 : 0.6,
+            }}
+          />
+        ) : (
+          <div style={{
+            width: 46, height: 46, borderRadius: 23,
+            backgroundColor: color,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#FFF', fontSize: 16, fontWeight: 700, fontFamily: agendaFontSerif,
+            opacity: profesional.activo ? 1 : 0.6,
+          }}>
+            {inicialesProfesional(profesional.nombre, profesional.apellido)}
+          </div>
+        )}
+        {esJefa && (
+          <span
+            aria-label={t('jefaBadge')}
+            title={t('jefaBadge')}
+            style={{
+              position: 'absolute', bottom: -2, right: -2, width: 17, height: 17, borderRadius: 8,
+              backgroundColor: '#E8B84B', border: `1.5px solid ${colors.surface}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="#fff"><path d="M5 16L3 6l6 4 3-6 3 6 6-4-2 10z"/></svg>
+          </span>
+        )}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <p style={{
+            margin: 0, fontSize: 15, fontWeight: 700,
+            color: profesional.activo ? colors.text : colors.placeholder,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0,
+          }}>
+            {profesional.nombre_completo}
+          </p>
+          {!profesional.activo && (
+            <span style={{
+              flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase',
+              color: colors.subtext, backgroundColor: colors.border, padding: '2px 7px', borderRadius: 6,
+            }}>
+              {t('inactiveLabel')}
+            </span>
+          )}
+        </div>
         <p style={{
-          margin: 0, fontSize: 16, fontWeight: 700,
-          color: profesional.activo ? colors.text : colors.placeholder,
+          display: 'flex', alignItems: 'center', gap: 6,
+          margin: '3px 0 0', fontSize: 11.5, color: colors.subtext,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {profesional.nombre_completo}
-        </p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-          {cantidadServicios === 0
-            ? t('noServices')
-            : t('serviceCount', { count: cantidadServicios })}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{textoDias}</span>
+          <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: colors.placeholder, flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{textoServicios}</span>
         </p>
       </div>
 
       <PillToggle value={profesional.activo} onChange={onToggle} stopPropagation />
-
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
     </div>
   );
 }
@@ -178,14 +240,18 @@ export default function ProfesionalesPage() {
               {t('emptyState')}
             </p>
           ) : (
-            profesionales.map(p => (
-              <ProfesionalCard
-                key={p.id}
-                profesional={p}
-                onEdit={() => router.push(`/configuracion/profesionales/${p.id}`)}
-                onToggle={activo => toggleActivo(p.id, activo)}
-              />
-            ))
+            (() => {
+              const jefa = profesionalJefa(profesionales);
+              return profesionales.map(p => (
+                <ProfesionalCard
+                  key={p.id}
+                  profesional={p}
+                  esJefa={jefa?.id === p.id}
+                  onEdit={() => router.push(`/configuracion/profesionales/${p.id}`)}
+                  onToggle={activo => toggleActivo(p.id, activo)}
+                />
+              ));
+            })()
           )}
         </div>
       )}

@@ -13,8 +13,8 @@
     "finalizarTramo": "Se finalizará solo el turno de {turno}. Los demás turnos no cambian."
   },
   "PendientesDeCobroPage": {
-    "title": "Precios por cargar",
-    "subtitle": "Turnos finalizados sin precio registrado",
+    "title": "Cobros por registrar",
+    "subtitle": "Turnos finalizados en los que falta cargar cuánto se cobró",
     "loading": "Cargando...",
     "emptyState": "No tenés turnos pendientes de cobro",
     "searchPlaceholder": "Buscar por nombre de cliente...",
@@ -33,7 +33,11 @@
     "noListPrice": "Sin precio de lista",
     "useListPrice": "Usar precio de lista",
     "loadPrice": "Cargar",
-    "loadOneByOne": "Cargar de a uno · {count} →",
+    "useListPriceAll": "Usar precio de lista en los {count} turnos",
+    "useListPriceAllHint": "Para cuando cobraste lo habitual. Los que cambiaron o no tienen precio de lista, cargalos con su botón \"Cargar\".",
+    "confirmUseListPriceAll": "¿Registrar {count} turnos a precio de lista ({monto} en total)? Después solo se puede corregir desde el historial.",
+    "bulkSaved": "{count, plural, one {# turno registrado} other {# turnos registrados}}",
+    "bulkPartialError": "No se pudieron registrar todos: se guardaron {done} de {total}. {error}",
     "confirmUseListPrice": "¿Registrar el turno de {cliente} a precio de lista ({monto})? Después solo se puede corregir desde el historial.",
     "confirmUseListPriceButton": "Registrar"
   },
@@ -41,7 +45,8 @@
     "deletedClient": "Cliente eliminado",
     "finishNow": "Finalizar ahora",
     "inProgress": "EN CURSO",
-    "cancel": "CANCELAR"
+    "cancel": "CANCELAR",
+    "withProfesional": "con {nombre}"
   },
   "cancelarGrupo": {
     "sinPendientes": "No queda nada para cancelar"
@@ -52,7 +57,8 @@
   },
   "FinalizadoCard": {
     "deletedClient": "Cliente eliminado",
-    "finished": "FINALIZADO"
+    "finished": "FINALIZADO",
+    "withProfesional": "con {nombre}"
   },
   "AgendaListHeader": {
     "results": "Resultados",
@@ -67,8 +73,7 @@
     "searchClient": "Buscar cliente",
     "clientNamePlaceholder": "Nombre del cliente...",
     "searchByDate": "Buscar por fecha",
-    "datePlaceholder": "DD/MM/YYYY",
-    "invalidDate": "Fecha inválida",
+    "datePlaceholder": "Elegir fecha",
     "filterByService": "Filtrar por servicio",
     "allServices": "Todos los servicios",
     "filterByProfesional": "Filtrar por profesional",
@@ -78,11 +83,27 @@
   "SelectorProfesionalDia": {
     "all": "Todo el equipo"
   },
+  "AltaClienteRapidaSheet": {
+    "title": "Nuevo cliente",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Ej: Carla",
+    "nameRequired": "El nombre es obligatorio",
+    "lastNameLabel": "Apellido *",
+    "lastNamePlaceholder": "Ej: Gomez",
+    "lastNameRequired": "El apellido es obligatorio",
+    "phoneLabel": "Teléfono",
+    "phonePlaceholder": "Número sin código de país",
+    "phoneRequired": "El teléfono es obligatorio",
+    "saving": "Guardando...",
+    "submit": "Agregar y seleccionar",
+    "saveError": "No se pudo guardar el cliente."
+  },
   "WeekStrip": {
     "previousWeek": "Semana anterior",
     "nextWeek": "Semana siguiente",
-    "calendarLabel": "Calendario",
-    "openCalendar": "Ver calendario completo"
+    "calendarLabel": "Ver calendario",
+    "openCalendar": "Ver calendario completo",
+    "today": "HOY"
   },
   "ElegirFechaSheet": {
     "title": "Elegir fecha",
@@ -113,6 +134,7 @@
     "loadingClients": "Cargando clientes...",
     "retry": "Reintentar",
     "noClientsFound": "No se encontraron clientes.",
+    "newClientOption": "+ Agregar cliente nuevo",
     "professional": "PROFESIONAL",
     "services": "SERVICIOS",
     "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
@@ -142,6 +164,7 @@
     "loadingClients": "Cargando clientes...",
     "retry": "Reintentar",
     "noClientsFound": "No se encontraron clientes.",
+    "newClientOption": "+ Agregar cliente nuevo",
     "professional": "PROFESIONAL",
     "services": "SERVICIOS",
     "chooseProfessionalFirst": "Elegí una profesional para ver sus servicios.",
