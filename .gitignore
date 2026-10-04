@@ -20,6 +20,7 @@
 # next-pwa — generado en cada build (npm run build --webpack), no versionar
 /public/sw.js
 /public/workbox-*.js
+/public/worker-*.js
 
 # production
 /build
