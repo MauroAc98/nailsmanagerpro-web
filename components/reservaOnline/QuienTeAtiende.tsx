@@ -14,7 +14,7 @@ const tramo = (activo: boolean) =>
     boxShadow: activo ? '0 1px 3px rgba(43, 34, 38, 0.18)' : 'none',
   }) as const;
 
-const icono = { width: 16, height: 16, flexShrink: 0 } as const;
+const icono = { width: 16, height: 16, style: { flexShrink: 0 } } as const;
 
 function IconoUna() {
   return (

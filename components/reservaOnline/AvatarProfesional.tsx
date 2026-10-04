@@ -28,7 +28,7 @@ export function AvatarProfesional({
         width: size, height: size, borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: Math.round(size * 0.36), fontWeight: 800,
-        background: bg ?? colors.primarySoft, color: fg ?? colors.primaryDeep,
+        background: bg ?? colors.primary, color: fg ?? colors.primaryFg,
       }}
     >
       {avatarUrl ? (
