@@ -9,6 +9,7 @@ import { withAlpha } from '@/theme/colors';
 import { Servicio } from '@/services/servicioService';
 import { formatMontoCorto } from '@/lib/money';
 import PillToggle from '@/components/PillToggle';
+import { NombreExpandible } from '@/components/ui/NombreExpandible';
 
 // Mismos valores que agenda/page.tsx (SwipeableTurnoCard) — mismo gesto,
 // mismo feel. No se importa desde ahí a propósito: ese archivo es solo
@@ -168,14 +169,16 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
             el badge PROMO, así un nombre largo no lo empuja fuera. */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-            <p style={{
-              margin: 0, fontSize: 16, fontWeight: 700,
-              color: servicio.activo ? colors.text : colors.placeholder,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              minWidth: 0,
-            }}>
-              {servicio.nombre}
-            </p>
+            {/* Hasta 2 líneas; si aun así se corta, tocar el nombre abre un
+                popover con el nombre completo (no hay hover en la PWA). */}
+            <NombreExpandible
+              texto={servicio.nombre}
+              lineas={2}
+              style={{
+                fontSize: 16, fontWeight: 700,
+                color: servicio.activo ? colors.text : colors.placeholder,
+              }}
+            />
             {showPromoBadge && (
               <span style={{
                 flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,

@@ -23,7 +23,7 @@ import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
 import { barrasDeGrupo, etiquetaTramo, nombresDeLosOtros, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
-import { Tooltip } from '@/components/ui/Tooltip';
+import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
@@ -130,22 +130,18 @@ function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; prof
       {/* Sección info central */}
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <p style={{
-            fontSize: 15.5, fontWeight: 500, color: colors.muted, margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-          </p>
+          <NombreExpandible
+            texto={turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+            style={{ fontSize: 15.5, fontWeight: 500, color: colors.muted }}
+          />
           {turno.grupo_id != null && <IconoGrupo />}
         </div>
-        <Tooltip label={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}>
-          <p style={{
-            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'help',
-          }}>
-            <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
-          </p>
-        </Tooltip>
+        <NombreExpandible
+          texto={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+          style={{ fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}
+        >
+          <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
+        </NombreExpandible>
         {profesionalLabel && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{

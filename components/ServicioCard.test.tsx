@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import ServicioCard from './ServicioCard';
 import type { Servicio } from '@/services/servicioService';
@@ -64,5 +65,51 @@ describe('ServicioCard — jerarquía visual', () => {
       <ServicioCard servicio={buildServicio()} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
     );
     expect(queryByText('PAUSADO')).toBeNull();
+  });
+});
+
+// Un nombre largo se parte en hasta 2 lineas; si aun asi se corta, tocar el
+// nombre abre un popover con el texto completo (no hay hover en la PWA).
+describe('ServicioCard — nombre largo', () => {
+  const NOMBRE_LARGO = 'Esmaltado semipermanente con diseño a mano alzada y pedrería';
+
+  afterEach(() => {
+    for (const p of ['scrollWidth', 'clientWidth', 'scrollHeight', 'clientHeight']) {
+      delete (HTMLParagraphElement.prototype as unknown as Record<string, unknown>)[p];
+    }
+  });
+  const medidas = (m: Record<string, number>) => {
+    for (const [k, v] of Object.entries(m)) {
+      Object.defineProperty(HTMLParagraphElement.prototype, k, { configurable: true, get: () => v });
+    }
+  };
+
+  it('el nombre se muestra en hasta 2 lineas', () => {
+    medidas({ scrollWidth: 100, clientWidth: 120, scrollHeight: 20, clientHeight: 20 });
+    renderWithProviders(
+      <ServicioCard servicio={buildServicio({ nombre: NOMBRE_LARGO })} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect(screen.getByText(NOMBRE_LARGO).style.webkitLineClamp).toBe('2');
+  });
+
+  it('si entra completo, tocar el nombre abre la edicion', () => {
+    medidas({ scrollWidth: 100, clientWidth: 120, scrollHeight: 20, clientHeight: 20 });
+    const onEdit = vi.fn();
+    renderWithProviders(
+      <ServicioCard servicio={buildServicio({ nombre: NOMBRE_LARGO })} onEdit={onEdit} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByText(NOMBRE_LARGO));
+    expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it('si queda recortado, tocar el nombre muestra el nombre completo y NO abre la edicion', () => {
+    medidas({ scrollWidth: 120, clientWidth: 120, scrollHeight: 60, clientHeight: 40 });
+    const onEdit = vi.fn();
+    renderWithProviders(
+      <ServicioCard servicio={buildServicio({ nombre: NOMBRE_LARGO })} onEdit={onEdit} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByText(NOMBRE_LARGO));
+    expect(document.querySelector('[role="dialog"]')).toHaveTextContent(NOMBRE_LARGO);
+    expect(onEdit).not.toHaveBeenCalled();
   });
 });

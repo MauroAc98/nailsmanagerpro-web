@@ -10,7 +10,7 @@ import { whatsappHelper } from '@/lib/whatsappHelper';
 import { useAuthStore } from '@/store/useAuthStore';
 import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
-import { Tooltip } from '@/components/ui/Tooltip';
+import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
 import { nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
 import { ConBarra, IconoGrupo, LineaServicios } from './GrupoTurno';
@@ -174,26 +174,22 @@ export function SwipeableTurnoCard({
             dejaba muy poco ancho al nombre en esta fila tan angosta; el
             texto completo sigue viéndose en la pantalla de editar turno. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <p style={{
-            fontSize: 15.5, fontWeight: 600, color: colors.textStrong, margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
-          </p>
+          <NombreExpandible
+            texto={turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
+            style={{ fontSize: 15.5, fontWeight: 600, color: colors.textStrong }}
+          />
           {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline compacto />}
           {turno.grupo_id != null && <IconoGrupo />}
         </div>
         {/* Servicio(s) — vuelve a una sola línea con ellipsis (cards de
             altura pareja, Change 6); la lista completa queda disponible en
             un tooltip en vez de perderse. */}
-        <Tooltip label={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}>
-          <p style={{
-            fontSize: 13, color: colors.subtext, fontStyle: 'italic', margin: 0, minWidth: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'help',
-          }}>
-            <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
-          </p>
-        </Tooltip>
+        <NombreExpandible
+          texto={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
+          style={{ fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}
+        >
+          <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
+        </NombreExpandible>
         {/* "con {profesional}" — reemplaza el punto de color + nombre que
             antes vivía en la columna de hora (Change 6, canvas aprobado
             2026-09-30): quedaba ambiguo si era la clienta o quien atiende.
