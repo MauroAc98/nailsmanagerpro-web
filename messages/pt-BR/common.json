@@ -28,12 +28,12 @@
     "dismiss": "Fechar aviso"
   },
   "PendientesDeCobroBanner": {
-    "title": "Cobranças a registrar",
+    "title": "Agendamentos a cobrar",
     "messageOne": "Falta registrar quanto você cobrou de {cliente} por {servicios}",
     "messageOneNoService": "Falta registrar quanto você cobrou de {cliente}",
     "messageMany": "{count, plural, one {Falta registrar o valor cobrado em # atendimento concluído} other {Falta registrar o valor cobrado em # atendimentos concluídos}}",
     "view": "Ver",
-    "checkError": "Não foi possível verificar agendamentos pendentes",
+    "checkError": "Não foi possível verificar os agendamentos a cobrar",
     "retry": "Tentar novamente",
     "dismiss": "Fechar aviso"
   },
@@ -109,18 +109,18 @@
   },
   "PrecioServiciosSheetHost": {
     "titleFinalizar": "Finalizar agendamento",
-    "titleCargar": "Cadastrar preço",
+    "titleCargar": "Cobrar agendamento",
     "listPrice": "Preço de tabela {monto}",
     "noListPrice": "Sem preço de tabela",
     "adjusted": "Ajustado {diferencia}",
     "pricePlaceholder": "0",
-    "total": "Total a registrar",
+    "total": "Total a cobrar",
     "noCharge": "Não cobrar este agendamento",
     "charge": "Cobrar",
     "noChargeHint": "É registrado com preço $0.",
     "cancel": "Cancelar",
     "confirmFinalizar": "Finalizar · {total}",
-    "confirmCargar": "Salvar · {total}",
+    "confirmCargar": "Cobrar · {total}",
     "confirmFinalizarSinCobro": "Finalizar sem cobrança",
     "confirmCargarSinCobro": "Salvar sem cobrança"
   },

@@ -4,6 +4,6 @@
     "clientes": "Clientes",
     "config": "Ajustes",
     "perfil": "Negocio",
-    "pendingCobroAriaLabel": "Turnos pendientes de cobro"
+    "pendingCobroAriaLabel": "Turnos por cobrar"
   }
 }

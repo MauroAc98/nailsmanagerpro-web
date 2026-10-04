@@ -187,7 +187,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reservas online' }));
     expect(routerMock.push).toHaveBeenLastCalledWith('/configuracion/reservas-online');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Gastos, ingresos y estadísticas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Gastos, otros ingresos y estadísticas' }));
     expect(routerMock.push).toHaveBeenLastCalledWith('/perfil/finanzas');
 
     fireEvent.click(screen.getByRole('button', { name: 'Apariencia' }));

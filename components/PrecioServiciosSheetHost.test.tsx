@@ -42,8 +42,8 @@ describe('PrecioServiciosSheetHost', () => {
     renderWithProviders(<PrecioServiciosSheetHost />);
     abrir('cargar');
 
-    await esperarArmado(/Guardar · \$22\.500/);
-    expect(screen.getByRole('heading', { name: 'Cargar precio' })).toBeInTheDocument();
+    await esperarArmado(/Cobrar · \$22\.500/);
+    expect(screen.getByRole('heading', { name: 'Cobrar turno' })).toBeInTheDocument();
   });
 
   it('marca como ajustado un precio distinto al de lista y actualiza el total', async () => {

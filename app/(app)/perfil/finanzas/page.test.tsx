@@ -20,7 +20,7 @@ describe('FinanzasPage', () => {
     conRouter(() => {});
     expect(screen.getByRole('button', { name: 'Cobros' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Gastos' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ingresos' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Otros ingresos' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Estadísticas' })).toBeInTheDocument();
   });
 
@@ -37,7 +37,7 @@ describe('FinanzasPage', () => {
   it('navega a la ruta correspondiente al tocar una fila', async () => {
     const push = vi.fn();
     conRouter(push);
-    await userEvent.click(screen.getByRole('button', { name: 'Ingresos' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Otros ingresos' }));
     expect(push).toHaveBeenCalledWith('/configuracion/ingresos');
   });
 });

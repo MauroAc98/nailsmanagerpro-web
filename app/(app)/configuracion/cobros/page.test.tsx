@@ -189,7 +189,7 @@ describe('Cobros — usar precio de lista en todos', () => {
     fireEvent.click(screen.getByRole('button', { name: BOTON_TODOS }));
     await waitFor(() => expect(mocks.actualizar).toHaveBeenCalledTimes(3));
     expect(mocks.actualizar).toHaveBeenCalledWith(3, [{ servicio_id: 1, precio: 18000 }]);
-    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith('3 turnos registrados'));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith('3 turnos cobrados'));
     expect(mocks.toast).toHaveBeenCalledTimes(1);
     expect(mocks.fetchCobros).toHaveBeenCalledTimes(2); // al montar + al terminar
   });

@@ -32,10 +32,10 @@ beforeEach(() => {
 });
 
 describe('PendientesDeCobroBanner — dice lo que falta', () => {
-  it('con un turno: título "Cobros por registrar" y a quién y por qué servicio falta cargar lo cobrado', () => {
+  it('con un turno: título "Turnos por cobrar" y a quién y por qué servicio falta cargar lo cobrado', () => {
     mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping'])];
     renderBanner();
-    expect(screen.getByText('Cobros por registrar')).toBeInTheDocument();
+    expect(screen.getByText('Turnos por cobrar')).toBeInTheDocument();
     expect(screen.getByText('Falta cargar cuánto cobraste a Mica Bochetti por Capping')).toBeInTheDocument();
   });
 
@@ -55,7 +55,7 @@ describe('PendientesDeCobroBanner — dice lo que falta', () => {
   it('al tocarlo abre Cobros con el filtro "falta cargar el precio" ya elegido', () => {
     mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping'])];
     renderBanner();
-    fireEvent.click(screen.getByRole('button', { name: /Cobros por registrar/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Turnos por cobrar/ }));
     expect(mockStore.push).toHaveBeenCalledWith('/configuracion/cobros?pago=sinprecio');
   });
 

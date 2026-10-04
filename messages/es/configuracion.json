@@ -11,7 +11,7 @@
     "bloqueos": "Bloqueos",
     "gastos": "Gastos",
     "reservasOnline": "Reservas online",
-    "ingresos": "Ingresos",
+    "ingresos": "Otros ingresos",
     "estadisticas": "Estadísticas",
     "apariencia": "Apariencia",
     "idioma": "Idioma",
@@ -159,9 +159,9 @@
     "deleteButton": "Eliminar gasto"
   },
   "IngresosPage": {
-    "title": "Ingresos",
-    "loading": "Cargando ingresos...",
-    "emptyState": "Sin ingresos cargados este mes",
+    "title": "Otros ingresos",
+    "loading": "Cargando otros ingresos...",
+    "emptyState": "Sin otros ingresos cargados este mes",
     "totalLabel": "Total del mes",
     "delete": "ELIMINAR",
     "deleteConfirm": "¿Eliminás este ingreso? Vas a modificar la ganancia neta ya reportada de ese período.",
@@ -183,7 +183,7 @@
     "totalFilteredLabel": "Total filtrado",
     "emptyFiltered": "Ningún ingreso coincide con los filtros",
     "manageCategoriesButton": "Gestionar categorías",
-    "manageCategoriesHint": "Creá, editá o eliminá tus categorías de ingresos"
+    "manageCategoriesHint": "Creá, editá o eliminá tus categorías de otros ingresos"
   },
   "NuevoIngresoPage": {
     "title": "Nuevo ingreso",
@@ -227,7 +227,7 @@
     "subtitle": "Definí las categorías que aparecen al cargar un gasto o un ingreso.",
     "loading": "Cargando...",
     "tabGastos": "Gastos",
-    "tabIngresos": "Ingresos",
+    "tabIngresos": "Otros ingresos",
     "addPlaceholder": "Nueva categoría",
     "addButton": "Agregar",
     "editLabel": "Editar",
@@ -235,7 +235,7 @@
     "deleteConfirm": "¿Eliminás la categoría \"{nombre}\"?",
     "deleteConfirmButton": "Eliminar",
     "saved": "Categoría guardada",
-    "historyNote": "Renombrar o borrar una categoría no cambia los gastos ni los ingresos que ya cargaste con el nombre anterior.",
+    "historyNote": "Renombrar o borrar una categoría no cambia los gastos ni los otros ingresos que ya cargaste con el nombre anterior.",
     "error_vacia": "Escribí un nombre para la categoría.",
     "error_duplicada": "Ya existe una categoría con ese nombre.",
     "error_muyLarga": "El nombre no puede tener más de 40 caracteres.",
@@ -544,23 +544,23 @@
       },
       "statistics": {
         "title": "Estadísticas",
-        "text": "Negocio → Finanzas → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda (ahora incluye cuánto facturaste ese mes) — tocala para ir directo a la pantalla completa.\n\nElegí el mes con las flechas, o tocá \"Rango personalizado\" si necesitás un período puntual (por ejemplo, una semana específica). Si trabajás con más de una persona, filtrá por quién querés ver. Mostrás:\n\n- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.\n- Ingresos: el total del período — lo que facturaste por turnos, más cualquier ingreso que hayas cargado a mano en Finanzas → Ingresos (desglosado aparte por categoría) —, el desglose por servicio, y un gráfico de tendencia que se ajusta solo (día a día si el rango es corto, por semana o por mes si es más largo — no hace falta elegirlo).\n- Ganancia neta: todos los ingresos (turnos + los que cargaste a mano) menos los gastos que cargaste en Finanzas → Gastos — es la ganancia real del período.\n- Clientes nuevos vs. recurrentes: \"nuevo\" es quien tuvo su primer turno dentro de ese mes; \"recurrente\" ya venía de antes.\n- Servicios más pedidos: ranking de qué se agendó más ese mes.\n\nLos turnos cancelados no cuentan para ingresos, ganancia neta, clientes ni servicios más pedidos — solo aparecen en \"Turnos por estado\", que es la única de las cinco que sí los muestra.\n\nSi un turno pasa su horario sin que lo hayas finalizado a mano, el sistema lo marca completado solo, pero sin precio cargado. Esos casos aparecen en \"Pendientes de cobro\" — accedés desde el numerito en la barra de navegación o desde el aviso arriba de la Agenda."
+        "text": "Negocio → Finanzas → Estadísticas. También hay una tarjeta resumen arriba de todo en Agenda (ahora incluye cuánto facturaste ese mes) — tocala para ir directo a la pantalla completa.\n\nElegí el mes con las flechas, o tocá \"Rango personalizado\" si necesitás un período puntual (por ejemplo, una semana específica). Si trabajás con más de una persona, filtrá por quién querés ver. Mostrás:\n\n- Turnos por estado: cuántos se completaron, cuántos siguen confirmados y cuántos se cancelaron, más el porcentaje de cancelación del período.\n- Ingresos: el total del período — lo que facturaste por turnos, más cualquier ingreso que hayas cargado a mano en Finanzas → Otros ingresos (desglosado aparte por categoría) —, el desglose por servicio, y un gráfico de tendencia que se ajusta solo (día a día si el rango es corto, por semana o por mes si es más largo — no hace falta elegirlo).\n- Ganancia neta: todos los ingresos (turnos + los que cargaste a mano) menos los gastos que cargaste en Finanzas → Gastos — es la ganancia real del período.\n- Clientes nuevos vs. recurrentes: \"nuevo\" es quien tuvo su primer turno dentro de ese mes; \"recurrente\" ya venía de antes.\n- Servicios más pedidos: ranking de qué se agendó más ese mes.\n\nLos turnos cancelados no cuentan para ingresos, ganancia neta, clientes ni servicios más pedidos — solo aparecen en \"Turnos por estado\", que es la única de las cinco que sí los muestra.\n\nSi un turno pasa su horario sin que lo hayas finalizado a mano, el sistema lo marca completado solo, pero sin precio cargado. Esos casos aparecen en \"Cobros\" — accedés desde el numerito en la barra de navegación o desde el aviso arriba de la Agenda."
       },
       "pendingPayments": {
-        "title": "Pendientes de cobro",
-        "text": "Se accede desde el numerito en la barra de navegación de abajo, o desde el aviso que aparece arriba de la Agenda.\n\nAcá aparecen los turnos que la app marcó como completados sola (porque pasó la hora) pero sin precio cargado — pasa cuando no llegaste a finalizarlos a mano desde la Agenda. Buscá el turno en la lista y tocá \"Cargar precio\" para completarlo; una vez cargado, sale de esta lista y pasa a contar en Estadísticas.\n\nSi en varios turnos cobraste el precio de lista, tocá \"Usar precio de lista en los N turnos\" arriba para registrarlos todos de una vez (te pide confirmación). Los que cambiaron de precio o no tienen precio de lista se cargan con su propio botón."
+        "title": "Cobros",
+        "text": "Negocio → Finanzas → Cobros. También se llega desde el numerito en la barra de navegación de abajo, o desde el aviso que aparece arriba de la Agenda (te lleva directo a los turnos sin precio).\n\nAcá ves tus turnos con su estado de pago: \"Pagó todo\", \"Pagó solo seña\", \"Sin pago\" o \"Falta cargar el precio\". Arriba hay un resumen con la seña cobrada, lo cobrado en turnos finalizados y lo que falta cobrar. Podés filtrar por turno (confirmados o finalizados), por estado de pago, y buscar por nombre de cliente.\n\nLos turnos que la app marcó como completados sola (porque pasó la hora) quedan sin precio: buscalos con el filtro \"Falta cargar el precio\" y tocá \"Cobrar\" para completarlos; una vez cobrados, pasan a contar en Estadísticas.\n\nSi en varios turnos cobraste el precio de lista, tocá \"Usar precio de lista en los N turnos\" arriba para cobrarlos todos de una vez (te pide confirmación). Los que cambiaron de precio o no tienen precio de lista se cobran con su propio botón.\n\nEn el detalle de cada turno también ves el bloque \"Pago\" con el total de servicios, la seña y lo que falta cobrar."
       },
       "incomes": {
-        "title": "Ingresos",
-        "text": "Negocio → Finanzas → Ingresos.\n\nAcá cargás a mano cualquier ingreso que no venga de un turno — por ejemplo la venta de un producto, una propina grande, o cualquier otro dinero que entró al negocio por fuera de la agenda.\n\nCada ingreso lleva un monto, una fecha y una categoría. Se suman al total que ves en \"Ingresos\" y a la \"Ganancia neta\" en Estadísticas, siempre separados del dinero que cobraste por turnos."
+        "title": "Otros ingresos",
+        "text": "Negocio → Finanzas → Otros ingresos.\n\nAcá cargás a mano cualquier ingreso que no venga de un turno — por ejemplo la venta de un producto, una propina grande, o cualquier otro dinero que entró al negocio por fuera de la agenda.\n\nCada ingreso lleva un monto, una fecha y una categoría. Se suman al total que ves en \"Ingresos\" y a la \"Ganancia neta\" en Estadísticas, siempre separados del dinero que cobraste por turnos."
       },
       "expenses": {
         "title": "Gastos",
-        "text": "Negocio → Finanzas → Gastos.\n\nFunciona igual que Ingresos, pero para lo que gasta el negocio — insumos, alquiler, lo que sea. Cada gasto lleva un monto, una fecha y una categoría, y se resta de tu \"Ganancia neta\" en Estadísticas."
+        "text": "Negocio → Finanzas → Gastos.\n\nFunciona igual que Otros ingresos, pero para lo que gasta el negocio — insumos, alquiler, lo que sea. Cada gasto lleva un monto, una fecha y una categoría, y se resta de tu \"Ganancia neta\" en Estadísticas."
       },
       "myProfile": {
         "title": "Mi negocio",
-        "text": "Pestaña Negocio — es el centro de tu negocio, organizado en grupos:\n\n- Datos del negocio: nombre, teléfono, dirección y tu ubicación en el mapa (la marcás una vez, buscando tu dirección o con el GPS del celular). Arriba de todo en esta pantalla también subís el logo de tu negocio (se usa en el header de la Historia de disponibilidad, ver esa sección).\n- Reservas y pagos: acceso a Reservas online (todavía no disponible) y a Seña y pagos — ahí cargás el monto que pedís de seña, y ves la conexión con Mercado Pago como alternativa a la transferencia (en esta primera versión la configura el equipo de Turnetto con vos — escribinos al soporte).\n- Mensajes automáticos: activá \"Pedir seña para confirmar turnos\" y cargá los datos de tu cuenta (titular, alias o CBU), y los interruptores de \"Confirmación automática\" y \"Recordatorio automático\" — ver el detalle completo en \"WhatsApp automático\" y \"Mensajes de WhatsApp\". Los tres piden que ya hayas cargado tu dirección y tu ubicación en el mapa (ver \"Datos del negocio\" arriba).\n- Finanzas: accedés a Gastos, Ingresos y Estadísticas (ver esas secciones).\n- Apariencia e idioma: ver esas dos secciones.\n- Mi cuenta: el estado de tu suscripción (activa, vencida o exenta, con fecha de vencimiento), cambiar tu contraseña, y este mismo módulo de Ayuda."
+        "text": "Pestaña Negocio — es el centro de tu negocio, organizado en grupos:\n\n- Datos del negocio: nombre, teléfono, dirección y tu ubicación en el mapa (la marcás una vez, buscando tu dirección o con el GPS del celular). Arriba de todo en esta pantalla también subís el logo de tu negocio (se usa en el header de la Historia de disponibilidad, ver esa sección).\n- Reservas y pagos: acceso a Reservas online (todavía no disponible) y a Seña y pagos — ahí cargás el monto que pedís de seña, y ves la conexión con Mercado Pago como alternativa a la transferencia (en esta primera versión la configura el equipo de Turnetto con vos — escribinos al soporte).\n- Mensajes automáticos: activá \"Pedir seña para confirmar turnos\" y cargá los datos de tu cuenta (titular, alias o CBU), y los interruptores de \"Confirmación automática\" y \"Recordatorio automático\" — ver el detalle completo en \"WhatsApp automático\" y \"Mensajes de WhatsApp\". Los tres piden que ya hayas cargado tu dirección y tu ubicación en el mapa (ver \"Datos del negocio\" arriba).\n- Finanzas: accedés a Gastos, Otros ingresos y Estadísticas (ver esas secciones).\n- Apariencia e idioma: ver esas dos secciones.\n- Mi cuenta: el estado de tu suscripción (activa, vencida o exenta, con fecha de vencimiento), cambiar tu contraseña, y este mismo módulo de Ayuda."
       },
       "appearance": {
         "title": "Apariencia",

@@ -130,7 +130,7 @@
     "no": "Não",
     "reminderTime": "Horário do lembrete",
     "groupFinanzas": "Finanças",
-    "rowFinanzas": "Despesas, receitas e estatísticas",
+    "rowFinanzas": "Despesas, outras receitas e estatísticas",
     "groupApariencia": "Aparência e idioma",
     "rowApariencia": "Aparência",
     "rowIdioma": "Idioma",
@@ -159,7 +159,7 @@
     "title": "Finanças",
     "cobros": "Cobranças",
     "gastos": "Despesas",
-    "ingresos": "Receitas",
+    "ingresos": "Outras receitas",
     "estadisticas": "Estatísticas"
   },
   "AvisosReservas": {
