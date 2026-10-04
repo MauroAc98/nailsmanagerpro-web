@@ -84,9 +84,15 @@ function NuevoServicioContent() {
   const [precioComponentes, setPrecioComponentes] = useState(borrador?.precioComponentes ?? '');
   const [modoError, setModoError] = useState('');
 
+  // Hasta que el roster responde no se sabe si la promo lleva componentes:
+  // Duración/Precio se ocultan para que no aparezcan y desaparezcan.
+  const [rosterIntentado, setRosterIntentado] = useState(false);
   useEffect(() => {
-    if (esPromo && profesionales.length === 0) fetchProfesionales();
+    if (esPromo && profesionales.length === 0) {
+      Promise.resolve(fetchProfesionales()).finally(() => setRosterIntentado(true));
+    }
   }, [esPromo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const esperandoRoster = esPromo && profesionales.length === 0 && !rosterIntentado;
 
   // Apagar el toggle descarta lo cargado en la sección.
   const handlePromoChange = (value: boolean) => {
@@ -242,7 +248,7 @@ function NuevoServicioContent() {
         {/* Duración y precio: con la promo activa y 2+ personas en actividad se
             arman desde los componentes (la sección muestra la duración derivada
             y el precio), así que no se piden acá. */}
-        {!mostrarComponentes && (<>
+        {!mostrarComponentes && !esperandoRoster && (<>
         <div>
           <label style={labelStyle}>{t('durationLabel')}</label>
           <DuracionPicker value={duracion} onChange={setDuracion} />

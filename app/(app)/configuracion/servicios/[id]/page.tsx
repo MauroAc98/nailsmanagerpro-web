@@ -126,9 +126,15 @@ export default function EditarServicioPage() {
   }, [id]);
 
   // Solo las promos necesitan el roster; una servicio común no paga la llamada.
+  // Hasta que el roster responde no se sabe si la promo lleva componentes:
+  // Duración/Precio se ocultan para que no aparezcan y desaparezcan.
+  const [rosterIntentado, setRosterIntentado] = useState(false);
   useEffect(() => {
-    if (esPromo && profesionales.length === 0) fetchProfesionales();
+    if (esPromo && profesionales.length === 0) {
+      Promise.resolve(fetchProfesionales()).finally(() => setRosterIntentado(true));
+    }
   }, [esPromo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const esperandoRoster = esPromo && profesionales.length === 0 && !rosterIntentado;
 
   // Nada nuevo aparece si no hace falta: con una sola profesional activa la
   // sección queda oculta salvo que la promo ya tenga componentes guardados.
@@ -337,7 +343,7 @@ export default function EditarServicioPage() {
         {/* Duración y precio: con la promo activa y componentes posibles se
             arman desde ellos — ComponentesPromoSection muestra la duración
             derivada (solo lectura) y el precio override en su lugar. */}
-        {!mostrarComponentes && (
+        {!mostrarComponentes && !esperandoRoster && (
           <>
             <div>
               <label style={labelStyle}>{t('durationLabel')}</label>
