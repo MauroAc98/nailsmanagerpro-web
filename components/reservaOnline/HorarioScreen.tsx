@@ -341,7 +341,9 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
           onVolver={() => setAsignaciones(null)}
         />
       )}
-      {salon && salon.profesionales.length > 1 && !hayPromoFija && !(asignaciones && opciones) && (
+      {/* Sin `servicios` no se sabe si lo elegido es una promo con profesional
+          fija: esperar evita que el selector aparezca un instante y se vaya. */}
+      {salon && servicios && salon.profesionales.length > 1 && !hayPromoFija && !(asignaciones && opciones) && (
         <SelectorProfesional
           label={t('horario.profesional')}
           labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}

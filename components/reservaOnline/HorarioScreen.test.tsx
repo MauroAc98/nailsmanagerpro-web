@@ -339,6 +339,26 @@ describe('HorarioScreen', () => {
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // Flash reportado: hasta que llegan los servicios no se sabe si lo elegido es
+  // una promo con profesional fija, y el selector se dibujaba un instante.
+  it('no muestra el selector de profesional hasta que cargaron los servicios', async () => {
+    let liberar!: () => void;
+    const pausa = new Promise<void>((r) => { liberar = r; });
+    setServiceParaTests({
+      ...svc,
+      getServices: async (...args: Parameters<typeof svc.getServices>) => {
+        if (!args[1]) await pausa;
+        return svc.getServices(...args);
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    // El salon ya cargo (se pide en paralelo); los servicios siguen pendientes.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
+    liberar();
+    expect(await screen.findByRole('button', { name: /Lucía$/ })).toBeInTheDocument();
+  });
+
   it('con una sola profesional no se muestra el selector', async () => {
     setServiceParaTests({
       ...svc,
