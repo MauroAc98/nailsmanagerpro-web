@@ -16,11 +16,22 @@ function conRouter(push: (ruta: string) => void) {
 // Agrupa Gastos, Ingresos y Estadísticas en una sola fila de "Mi negocio" —
 // las 3 pantallas de destino no cambian (ver rediseño de Perfil).
 describe('FinanzasPage', () => {
-  it('muestra Gastos, Ingresos y Estadísticas', () => {
+  it('muestra Cobros, Gastos, Ingresos y Estadísticas', () => {
     conRouter(() => {});
+    expect(screen.getByRole('button', { name: 'Cobros' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Gastos' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ingresos' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Estadísticas' })).toBeInTheDocument();
+  });
+
+  it('Cobros es la primera opción y lleva a /configuracion/cobros', async () => {
+    const push = vi.fn();
+    conRouter(push);
+    const cobros = screen.getByRole('button', { name: 'Cobros' });
+    const gastos = screen.getByRole('button', { name: 'Gastos' });
+    expect(cobros.compareDocumentPosition(gastos) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(cobros);
+    expect(push).toHaveBeenCalledWith('/configuracion/cobros');
   });
 
   it('navega a la ruta correspondiente al tocar una fila', async () => {

@@ -2,6 +2,6 @@
 
 import { AgendaThemeScope } from '@/components/AgendaThemeScope';
 
-export default function PendientesDeCobroLayout({ children }: { children: React.ReactNode }) {
+export default function CobrosLayout({ children }: { children: React.ReactNode }) {
   return <AgendaThemeScope>{children}</AgendaThemeScope>;
 }

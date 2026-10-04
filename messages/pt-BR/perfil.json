@@ -52,7 +52,12 @@
     "mpCommission": "Comissão do Mercado Pago (%)",
     "mpCommissionPlaceholder": "Taxa padrão",
     "mpCommissionHelp": "É o que o Mercado Pago cobra conforme o prazo em que você escolheu receber o dinheiro. Escolha o que corresponde à sua conta, em «Dinheiro disponível em». O IVA é somado automaticamente. Se deixar em branco, usa-se a taxa padrão (6,29%).",
-    "mpPlazo": {"instante": "Na hora · {rate}%", "dias10": "10 dias · {rate}%", "dias18": "18 dias · {rate}%", "dias35": "35 dias · {rate}%"},
+    "mpPlazo": {
+      "instante": "Na hora · {rate}%",
+      "dias10": "10 dias · {rate}%",
+      "dias18": "18 dias · {rate}%",
+      "dias35": "35 dias · {rate}%"
+    },
     "iibbRetention": "Retenção de Ingressos Brutos (%)",
     "iibbRetentionHelp": "Se o Mercado Pago retém Ingressos Brutos em cada cobrança, informe a porcentagem aqui: o valor pago pelo cliente aumenta para que o sinal chegue completo até você. Varia conforme a província e a sua situação fiscal, então informe apenas se realmente retiverem (aparece como «Retención Ingresos Brutos» no detalhe de cada cobrança). Se deixar em 0, a retenção é descontada do seu sinal.",
     "depositAmount": "Valor do sinal ($)",
@@ -152,6 +157,7 @@
   },
   "FinanzasPage": {
     "title": "Finanças",
+    "cobros": "Cobranças",
     "gastos": "Despesas",
     "ingresos": "Receitas",
     "estadisticas": "Estatísticas"

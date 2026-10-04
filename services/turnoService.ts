@@ -32,6 +32,12 @@ export interface Turno {
   // no es de un grupo); `grupo` solo viene en los agrupados e incluye todos los
   // tramos, cancelados con su estado. `modo` es interno, nunca se muestra.
   grupo_id?: number | null;
+  // Seña online de la reserva (aditivo; ausente en backends viejos). `monto`
+  // es lo que se le COBRÓ al cliente (incluye comisión/retención de Mercado
+  // Pago), `estado` viene crudo y solo 'aprobado' cuenta como pagada. Es de la
+  // reserva: los turnos de un mismo grupo repiten el mismo objeto, así que al
+  // sumar hay que deduplicar por `reserva_web_id`. null: sin reserva web o sin pago.
+  sena?: { monto: number; estado: string; reserva_web_id: number } | null;
   grupo?: {
     id: number;
     modo: 'paralelo' | 'secuencia' | null;

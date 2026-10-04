@@ -5,9 +5,18 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 
-// Agrupa 3 pantallas que ya existen sin tocarlas (BackButton usa
+// Agrupa 4 pantallas que ya existen sin tocarlas (BackButton usa
 // router.back(), no una ruta fija — ver Finanzas en el rediseño de Perfil).
 const OPCIONES = [
+  {
+    path: '/configuracion/cobros',
+    titleKey: 'cobros',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 12V8H6a2 2 0 0 1 0-4h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+      </svg>
+    ),
+  },
   {
     path: '/configuracion/gastos',
     titleKey: 'gastos',

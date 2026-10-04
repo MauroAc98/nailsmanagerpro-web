@@ -52,7 +52,12 @@
     "mpCommission": "Comisión de Mercado Pago (%)",
     "mpCommissionPlaceholder": "Tasa estándar",
     "mpCommissionHelp": "Es lo que Mercado Pago te cobra según el plazo en que elegiste recibir el dinero. Elegí el que coincide con tu cuenta, en «Dinero disponible en». El IVA se suma solo. Si lo dejás vacío, se usa la tasa estándar (6,29%).",
-    "mpPlazo": {"instante": "Al instante · {rate}%", "dias10": "10 días · {rate}%", "dias18": "18 días · {rate}%", "dias35": "35 días · {rate}%"},
+    "mpPlazo": {
+      "instante": "Al instante · {rate}%",
+      "dias10": "10 días · {rate}%",
+      "dias18": "18 días · {rate}%",
+      "dias35": "35 días · {rate}%"
+    },
     "iibbRetention": "Retención de Ingresos Brutos (%)",
     "iibbRetentionHelp": "Si Mercado Pago te retiene Ingresos Brutos en cada cobro, cargá el porcentaje acá: el monto que paga el cliente sube para que te llegue la seña completa. Varía según la provincia y tu situación impositiva, así que cargalo solo si de verdad te lo retienen (figura como «Retención Ingresos Brutos» en el detalle de cada cobro). Si lo dejás en 0, la retención se descuenta de tu seña.",
     "depositAmount": "Monto de la seña ($)",
@@ -152,6 +157,7 @@
   },
   "FinanzasPage": {
     "title": "Finanzas",
+    "cobros": "Cobros",
     "gastos": "Gastos",
     "ingresos": "Ingresos",
     "estadisticas": "Estadísticas"
