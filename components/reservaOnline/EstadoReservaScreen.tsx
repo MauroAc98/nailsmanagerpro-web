@@ -8,7 +8,6 @@ import { linkComoLlegar, linkGoogleCalendar } from '@/lib/reservaOnline/calendar
 import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
 import { formatearRestante } from '@/lib/reservaOnline/cuentaRegresiva';
 import { diaLargoCorto, fechaLarga } from '@/lib/reservaOnline/formatoFecha';
-import { listaDeNombres } from '@/lib/reservaOnline/listaDeNombres';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import { formatMontoCorto } from '@/lib/money';
@@ -17,7 +16,8 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAhora, useCarga, type Ir } from './hooks';
 import { IcoCalendario, IcoCheck, IcoPin, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
-import { Avatar, BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
+import { ServiciosDelTurno } from './ServiciosDelTurno';
+import { BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
 
@@ -171,10 +171,15 @@ export function EstadoReservaScreen({
 
   const { salon, servicios, terminos } = data;
   const resumen = estado.summary;
-  const nombresServicios = servicios.filter((s) => resumen.servicioIds.includes(s.id)).map((s) => s.nombre).join(' + ');
-  const profesionalObj = salon.profesionales.find((p) => p.id === resumen.profesionalId);
-  const equipo = (resumen.profesionales ?? []).map((p) => p.nombre);
-  const profesional = equipo.length > 1 ? listaDeNombres(equipo, locale) : profesionalObj?.nombre;
+  const elegidos = resumen.servicioIds
+    .map((id) => servicios.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => !!s);
+  // Quien hace cada servicio: la de su tramo (reservas de varias profesionales);
+  // sin tramos, la profesional unica de la reserva.
+  const profesionalDe = (servicioId: number) => {
+    const id = resumen.tramos?.find((x) => x.servicioIds.includes(servicioId))?.profesionalId ?? resumen.profesionalId;
+    return salon.profesionales.find((p) => p.id === id);
+  };
 
   if (estado.status === 'confirmed') {
     return (
@@ -216,25 +221,11 @@ export function EstadoReservaScreen({
                 {formatearDuracion(resumen.duracionTotalMinutos)}
               </div>
             </div>
-            {/* Fila propia, foto grande (48px): la version anterior metia un
-                avatar de 20px pegado al "con Fernanda" del header y quedaba
-                demasiado chico para que valiera la pena. */}
-            {profesional && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderBottom: `1px solid ${colors.border}` }}>
-                <Avatar nombre={profesional} size={48} fotoUrl={profesionalObj?.avatarUrl} />
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.sub }}>
-                    {t(equipo.length > 1 ? 'estado.teAtienden' : 'estado.teAtiende')}
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: colors.strong, marginTop: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {profesional}
-                  </div>
-                </div>
-              </div>
-            )}
+            <div style={{ padding: '16px 18px 0' }}>
+              <ServiciosDelTurno servicios={elegidos} profesionalDe={profesionalDe} />
+            </div>
             <div style={{ padding: '16px 18px', fontSize: 14, color: colors.text, lineHeight: 1.5 }}>
-              <div style={{ fontWeight: 700, color: colors.strong }}>{nombresServicios}</div>
-              <div style={{ color: colors.sub, marginTop: 2 }}>
+              <div style={{ color: colors.sub }}>
                 {salon.direccion ? `${salon.nombre} · ${salon.direccion}` : salon.nombre}
               </div>
               {resumen.fin && (
@@ -284,6 +275,10 @@ export function EstadoReservaScreen({
             {t('estado.cambiarNota', { horas: terminos.ventanaCancelacionHoras })}
           </div>
         </div>
+        {/* La pagina de comprobante no tenia salida: vuelve a la portada de reserva del salon. */}
+        <BarraInferior>
+          <BotonPrimario onClick={() => ir(rutaPaso(slug))}>{t('estado.volverInicio')}</BotonPrimario>
+        </BarraInferior>
       </div>
     );
   }

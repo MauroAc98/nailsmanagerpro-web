@@ -177,12 +177,11 @@ describe('EstadoReservaScreen', () => {
       await svc.simulatePayment('mock-1');
     });
 
-    it('un turno de una sola profesional no muestra horario de fin ni "Te atienden" (Rule L)', async () => {
+    it('un turno de una sola profesional no muestra horario de fin (Rule L) y cada servicio va con ella', async () => {
       montar();
       await screen.findByRole('heading', { name: '¡Turno confirmado!' });
-      expect(screen.getByText('Te atiende')).toBeInTheDocument();
+      expect(screen.getAllByText('con Ana')).toHaveLength(2);
       expect(document.body.textContent).not.toContain('Tu turno ocupa');
-      expect(screen.queryByText('Te atienden')).toBeNull();
     });
 
     it('un turno con varias profesionales muestra a quienes atienden y hasta cuando ocupa', async () => {
@@ -197,12 +196,17 @@ describe('EstadoReservaScreen', () => {
           summary: {
             servicioIds: [1, 2], profesionalId: 1, fecha: '2026-09-25', hora: '10:00', deposito: 5000,
             duracionTotalMinutos: 105, fin: '11:45', profesionales: [{ id: 1, nombre: 'Ana' }, { id: 2, nombre: 'Lucía' }],
+            tramos: [
+              { profesionalId: 1, hora: '10:00', fin: '10:45', servicioIds: [1] },
+              { profesionalId: 2, hora: '10:45', fin: '11:45', servicioIds: [2] },
+            ],
           },
         }),
       } as MockReservaOnlineService);
       montar();
-      expect(await screen.findByText('Ana y Lucía')).toBeInTheDocument();
-      expect(screen.getByText('Te atienden')).toBeInTheDocument();
+      // cada servicio con la persona que lo hace (segun su tramo)
+      expect(await screen.findByText('con Lucía')).toBeInTheDocument();
+      expect(screen.getByText('con Ana')).toBeInTheDocument();
       expect(document.body.textContent).toContain('Tu turno ocupa de 10:00 a 11:45.');
       expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
     });
@@ -221,20 +225,61 @@ describe('EstadoReservaScreen', () => {
       expect(within(ticket).getByText(/1 h 15 min/)).toBeInTheDocument();
     });
 
-    // Fila propia con foto de 48px, separada del header (fecha/hora/duracion)
-    // — una version anterior la metia como texto chico al lado de la
-    // duracion y no se justificaba agregar una foto ahi de tan chica.
-    it('fila "Te atiende" con el nombre y la foto de la profesional', async () => {
+    it('cada servicio con su duracion y la profesional que lo hace', async () => {
       montar();
       const ticket = (await screen.findByText('Viernes 25 de septiembre')).closest('[data-ticket]') as HTMLElement;
-      expect(within(ticket).getByText('Te atiende')).toBeInTheDocument();
-      expect(within(ticket).getByText('Ana')).toBeInTheDocument();
+      expect(within(ticket).getByText('Esmaltado semipermanente')).toBeInTheDocument();
+      expect(within(ticket).getByText('45 min')).toBeInTheDocument();
+      expect(within(ticket).getByText('Retiro de esmalte')).toBeInTheDocument();
+      expect(within(ticket).getByText('30 min')).toBeInTheDocument();
+      expect(within(ticket).getAllByText('con Ana')).toHaveLength(2);
+    });
+
+    it('muestra la foto de la profesional cuando tiene avatarUrl', async () => {
+      setServiceParaTests({
+        ...svc,
+        getSalon: async (slug) => {
+          const salon = await svc.getSalon(slug);
+          return {
+            ...salon,
+            profesionales: salon.profesionales.map((p) => (p.nombre === 'Ana' ? { ...p, avatarUrl: 'https://cdn.test/ana.jpg' } : p)),
+          };
+        },
+      } as MockReservaOnlineService);
+      montar();
+      await screen.findByRole('heading', { name: '¡Turno confirmado!' });
+      expect(document.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
+    });
+
+    it('una promo se ve con su "Incluye": pasos con duracion y profesional, y el total', async () => {
+      setServiceParaTests({
+        ...svc,
+        getReservationStatus: async (slug, id) => ({
+          ...(await svc.getReservationStatus(slug, id)),
+          summary: { servicioIds: [5], profesionalId: 1, fecha: '2026-09-25', hora: '10:00', deposito: 5000, duracionTotalMinutos: 105 },
+        }),
+      } as MockReservaOnlineService);
+      montar();
+      await screen.findByRole('heading', { name: '¡Turno confirmado!' });
+      expect(screen.getByText('Combo mani + pedi')).toBeInTheDocument();
+      expect(screen.getByText('Incluye')).toBeInTheDocument();
+      const pasos = screen.getAllByTestId('promo-componente');
+      expect(pasos).toHaveLength(2);
+      expect(within(pasos[0]).getByText('45 min')).toBeInTheDocument();
+      expect(within(pasos[1]).getByText('con Lucía')).toBeInTheDocument();
+      expect(screen.getByText('En total')).toBeInTheDocument();
+    });
+
+    // Antes la pantalla no tenia salida: la clienta quedaba en el comprobante.
+    it('"Volver al inicio" lleva a la portada de la reserva del salon', async () => {
+      const ir = montar();
+      await userEvent.click(await screen.findByRole('button', { name: 'Volver al inicio' }));
+      expect(ir).toHaveBeenCalledWith('/reservar/demo');
     });
 
     it('cuerpo: servicios, salon con direccion, sena pagada y nota del valor final', async () => {
       montar();
       const ticket = (await screen.findByText('Viernes 25 de septiembre')).closest('[data-ticket]') as HTMLElement;
-      expect(within(ticket).getByText('Esmaltado semipermanente + Retiro de esmalte')).toBeInTheDocument();
       expect(within(ticket).getByText('Studio Demo · Av. Siempreviva 742')).toBeInTheDocument();
       expect(within(ticket).getByText('Seña pagada')).toBeInTheDocument();
       expect(within(ticket).getByText('$5.000')).toBeInTheDocument();
