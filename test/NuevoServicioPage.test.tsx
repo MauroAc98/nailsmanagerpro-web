@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, screen, waitFor, fireEvent } from '@/test/render';
+import { renderWithProviders, screen, waitFor, fireEvent, within } from '@/test/render';
 
 // Page-level tests for "Nuevo servicio". Network boundary = the services
 // (mocked); stores are the real zustand ones so the page wiring is exercised.
@@ -91,12 +91,20 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
 });
 
 
-const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`${nombre}$`) });
+// Service / person pickers are bottom sheets (role=dialog) opened from each card.
+const elegirServicio = (nombre: string) => {
+  fireEvent.click(screen.getByRole('button', { name: 'Elegí un servicio' }));
+  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
+};
+const elegirPersona = (nombre: string) => {
+  fireEvent.click(screen.getByRole('button', { name: 'Elegí quién lo hace' }));
+  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
+};
 
-// Adds one row (Softgel done by Ana) to the components section.
+// Adds one Softgel row; Ana is its only offerer, so she is auto-picked.
 async function agregarFilaSoftgel() {
   fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+  elegirServicio('Softgel');
 }
 
 describe('NuevoServicioPage — components section for a new promo', () => {
@@ -107,7 +115,7 @@ describe('NuevoServicioPage — components section for a new promo', () => {
 
     toggle();
     await agregarFilaSoftgel();
-    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Quitar servicio' })).toHaveLength(1);
 
     toggle();
     expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
@@ -122,7 +130,6 @@ describe('NuevoServicioPage — components section for a new promo', () => {
     await escribirNombre('Combo');
     toggle();
     await agregarFilaSoftgel();
-    fireEvent.click(pill('Ana'));
     guardar();
 
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
@@ -138,7 +145,6 @@ describe('NuevoServicioPage — components section for a new promo', () => {
     await escribirNombre('Combo');
     toggle();
     await agregarFilaSoftgel();
-    fireEvent.click(pill('Ana'));
     guardar();
 
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith(`/configuracion/servicios/${NUEVO_ID}`));

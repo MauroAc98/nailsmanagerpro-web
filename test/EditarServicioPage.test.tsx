@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, screen, waitFor, fireEvent } from '@/test/render';
+import { renderWithProviders, screen, waitFor, fireEvent, within } from '@/test/render';
 
 // Page-level tests for "Editar servicio". Network boundary = the services
 // (mocked); stores are the real zustand ones so the page wiring is exercised.
@@ -102,15 +102,24 @@ const comp = (orden: number, servicio_id: number, profesional_id: number) => ({
   orden, servicio_id, nombre: '', duracion_minutos: 30, precio: '1000', profesional_id, profesional_nombre: '',
 });
 const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-// Pill accessible name = avatar initials + name ("AN Ana").
-const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`${nombre}$`) });
+// Service / person pickers are bottom sheets (role=dialog) opened from each card.
+const elegirServicio = (fila: number, nombre: string) => {
+  fireEvent.click(screen.getAllByRole('button', { name: 'Elegí un servicio' })[fila]);
+  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
+};
+const elegirPersona = (fila: number, nombre: string) => {
+  fireEvent.click(screen.getAllByRole('button', { name: 'Elegí quién lo hace' })[fila]);
+  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
+};
 
 describe('EditarServicioPage — components section (multi-professional promo)', () => {
   it('shows the saved components of a promo with their service and professional', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
-    const selects = await screen.findAllByRole('combobox');
-    expect(selects.map(s => (s as HTMLSelectElement).value)).toEqual(['1', '2']);
-    expect(pill('Ana')).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByText('Softgel')).toBeInTheDocument();
+    expect(screen.getByText('Semis pies')).toBeInTheDocument();
+    expect(screen.getByText('1 h · $13.000')).toBeInTheDocument();
+    expect(screen.getByText('Ana')).toBeInTheDocument();
+    expect(screen.getByText('Laura')).toBeInTheDocument();
   });
 
   it('stays hidden with a single active professional and no components', async () => {
@@ -122,15 +131,17 @@ describe('EditarServicioPage — components section (multi-professional promo)',
   it('picks service and professional per row and saves them in order', async () => {
     montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+    elegirServicio(0, 'Softgel');
     // Ana and Marta both offer Softgel: nothing is auto-picked, Laura is not offered.
-    expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('button', { name: /Laura$/ })).not.toBeInTheDocument();
-    fireEvent.click(pill('Marta'));
+    fireEvent.click(screen.getByRole('button', { name: 'Elegí quién lo hace' }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Ana')).toBeInTheDocument();
+    expect(dialog.queryByText('Laura')).not.toBeInTheDocument();
+    fireEvent.click(dialog.getByText('Marta'));
     fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '2' } });
+    elegirServicio(1, 'Semis pies');
     // Laura is the only one offering Semis pies: auto-picked.
-    expect(pill('Laura')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Laura')).toBeInTheDocument();
     guardar();
     await waitFor(() => expect(routerMock.push).toHaveBeenCalled());
     expect(servicioService.guardarComponentes).toHaveBeenCalledWith(7, {
@@ -141,16 +152,16 @@ describe('EditarServicioPage — components section (multi-professional promo)',
 
   it('removes a row with the X button', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
-    await screen.findAllByRole('combobox');
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
     fireEvent.click(screen.getAllByRole('button', { name: 'Quitar servicio' })[0]);
-    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Quitar servicio' })).toHaveLength(1);
   });
 
   it('refuses to save a half-filled row', async () => {
     montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
     // Ana and Marta both offer Softgel: nothing is auto-picked, row stays half-filled.
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+    elegirServicio(0, 'Softgel');
     guardar();
     await waitFor(() => expect(alertDialog).toHaveBeenCalled());
     expect(servicioService.update).not.toHaveBeenCalled();
@@ -167,8 +178,8 @@ describe('EditarServicioPage — components section (multi-professional promo)',
   it('maps a 422 componentes.{i} error to its row instead of a generic dialog', async () => {
     montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
-    fireEvent.click(pill('Marta'));
+    elegirServicio(0, 'Softgel');
+    elegirPersona(0, 'Marta');
     vi.mocked(servicioService.guardarComponentes).mockRejectedValue({
       response: { data: { message: 'x', errors: { 'componentes.0.profesional_id': ['Marta no ofrece Softgel'] } } },
     });
@@ -197,6 +208,14 @@ describe('EditarServicioPage — mode, reorder, derived duration/price (2b-iii)'
     expect(screen.queryByLabelText('Posición 1')).not.toBeInTheDocument();
   });
 
+  it('explains the mode in one plain sentence naming who attends', async () => {
+    useAuthStore.setState({ user: conAtiendeEnParalelo(true) });
+    montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    expect(await screen.findByText('Primero Ana, después Laura.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'A la vez' }));
+    expect(screen.getByText('Ana y Laura atienden al mismo tiempo.')).toBeInTheDocument();
+  });
+
   it('reorders rows with the down arrow and sends precio null (empty field defaults to the sum)', async () => {
     useAuthStore.setState({ user: conAtiendeEnParalelo(false) });
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
@@ -214,7 +233,7 @@ describe('EditarServicioPage — mode, reorder, derived duration/price (2b-iii)'
 describe('EditarServicioPage — derived duration, price override, turn-off cleanup (2b-iv)', () => {
   it('shows the derived duration and hides the legacy duration/price inputs once a row is fully chosen', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
-    expect(await screen.findByText('Duración calculada: 105 min')).toBeInTheDocument();
+    expect(await screen.findByText('1 h 45 min')).toBeInTheDocument();
     expect(screen.queryByText('Duración *')).not.toBeInTheDocument();
     expect(screen.queryByText('Precio (opcional)')).not.toBeInTheDocument();
   });
@@ -228,6 +247,7 @@ describe('EditarServicioPage — derived duration, price override, turn-off clea
 
   it('sends the typed override when the price field differs from the component sum', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Cambiar precio' }));
     const precioInput = await screen.findByLabelText('Precio de la promo');
     fireEvent.change(precioInput, { target: { value: '18000' } });
     guardar();
@@ -260,7 +280,7 @@ describe('EditarServicioPage — alignment warnings and unbookable notice (PR 2d
       problemas: [],
       alineacion_slots: { inicios_validos: ['10:00'], descartados: [] },
     });
-    await screen.findAllByRole('combobox');
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
     expect(screen.queryByText(/no tiene slot/)).not.toBeInTheDocument();
   });
 
@@ -274,7 +294,7 @@ describe('EditarServicioPage — alignment warnings and unbookable notice (PR 2d
 
   it('sends componentes: [] before turning off es_promo on a promo with saved components', async () => {
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
-    await screen.findAllByRole('combobox');
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
     vi.mocked(servicioService.guardarComponentes).mockResolvedValue(promo);
     fireEvent.click(screen.getByRole('switch'));
     guardar();
