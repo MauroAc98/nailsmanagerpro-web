@@ -11,7 +11,7 @@ import { useHorariosCargados } from '@/hooks/useHorariosCargados';
 import { ElegirPersonaSheet, ElegirServicioSheet, PersonaAvatar } from '@/components/servicios/ComponentesPromoSheets';
 import type { ModoPromo, Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
-import { moverFila, problemasDeFila, profesionalesQueOfrecen, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
+import { ahorroPromo, moverFila, problemasDeFila, profesionalesQueOfrecen, type ComponenteDraft, type ProblemaFila } from '@/lib/promoComponentes';
 
 interface Props {
   componentes: ComponenteDraft[];
@@ -53,10 +53,9 @@ export default function ComponentesPromoSection({
   const t = useTranslations('configuracion.ComponentesPromoSection');
   const locale = useLocale();
   const router = useRouter();
-  // Which card has a picker sheet open (index), and the price override input.
+  // Which card has a picker sheet open (index).
   const [sheetServicio, setSheetServicio] = useState<number | null>(null);
   const [sheetPersona, setSheetPersona] = useState<number | null>(null);
-  const [editarPrecio, setEditarPrecio] = useState(false);
 
   // Persons with no active horarios loaded: shown as a calm note, never blocking.
   const idsPersonas = [
@@ -102,6 +101,7 @@ export default function ComponentesPromoSection({
   const hayServicios = componentes.some(c => c.servicioId !== null);
   const precioMostrado = precioComponentes.trim() && !Number.isNaN(parseFloat(precioComponentes))
     ? parseFloat(precioComponentes) : sumaComponentes;
+  const ahorro = ahorroPromo(sumaComponentes, precioComponentes);
   const enlaceStyle = {
     background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: colors.primaryDeep,
   } as const;
@@ -316,33 +316,33 @@ export default function ComponentesPromoSection({
                 {`$${formatMontoCorto(precioMostrado)}`}
               </p>
               <p style={{ margin: '2px 0 0', fontSize: 11.5, color: colors.subtext }}>
-                {t('priceSumLabel')} · <button type="button" aria-label={t('changePriceAria')} onClick={() => setEditarPrecio(v => !v)} style={{ ...enlaceStyle, fontSize: 11.5 }}>{t('change')}</button>
+                {t('priceSumLabel')}
               </p>
             </div>
           </div>
-          {(editarPrecio || precioComponentes.trim() !== '') && (
-            <div style={{ marginTop: 10 }}>
-              <label htmlFor="precioComponentes" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, marginBottom: 7, display: 'block', marginLeft: 2 }}>
-                {t('priceLabel')}
-              </label>
-              <input
-                id="precioComponentes"
-                type="number"
-                inputMode="decimal"
-                placeholder={t('pricePlaceholder')}
-                value={precioComponentes}
-                onChange={e => onPrecioComponentesChange(e.target.value)}
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                  borderRadius: 10, padding: '10px 12px', fontSize: 14, color: colors.text,
-                }}
-              />
-              <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.subtext }}>
-                {t('priceSumHint', { monto: `$${formatMontoCorto(sumaComponentes)}` })}
-              </p>
-            </div>
-          )}
+          <div style={{ marginTop: 10 }}>
+            <label htmlFor="precioComponentes" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong, marginBottom: 7, display: 'block', marginLeft: 2 }}>
+              {t('priceLabel')}
+            </label>
+            <input
+              id="precioComponentes"
+              type="number"
+              inputMode="decimal"
+              placeholder={String(sumaComponentes)}
+              value={precioComponentes}
+              onChange={e => onPrecioComponentesChange(e.target.value)}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+                borderRadius: 10, padding: '10px 12px', fontSize: 14, color: colors.text,
+              }}
+            />
+            <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.subtext }}>
+              {ahorro > 0
+                ? t('priceSavings', { suma: `$${formatMontoCorto(sumaComponentes)}`, ahorro: `$${formatMontoCorto(ahorro)}` })
+                : t('priceSumOnly', { suma: `$${formatMontoCorto(sumaComponentes)}` })}
+            </p>
+          </div>
         </div>
       )}
 

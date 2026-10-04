@@ -58,6 +58,7 @@ export default function EditarServicioPage() {
   const [duracion, setDuracion] = useState(30);
   const [precio,   setPrecio]   = useState('');
   const [esPromo,  setEsPromo]  = useState(false);
+  const [eraPromo, setEraPromo] = useState(false);
   const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [errorNombre, setErrorNombre] = useState('');
   const [loadingServicio, setLoadingServicio] = useState(true);
@@ -93,6 +94,7 @@ export default function EditarServicioPage() {
         setDuracion(s.duracion_minutos);
         setPrecio(s.precio ?? '');
         setEsPromo(s.es_promo);
+        setEraPromo(s.es_promo);
         setCategoriaId(s.categoria_id);
         if (s.es_promo) {
           // El listado no trae los componentes: solo el GET-one.
@@ -147,6 +149,7 @@ export default function EditarServicioPage() {
   // Se está apagando una promo que YA tenía componentes guardados: el
   // backend exige que el servicio siga siendo es_promo mientras corre el
   // PUT que los vacía, así que ese PUT debe ir ANTES de apagar es_promo.
+  const promoLegacy = eraPromo && iniciales.length === 0;
   const apagandoPromoConComponentes = !esPromo && iniciales.length > 0;
   // Errores del último intento de guardado, por fila (la sección solo
   // muestra una línea neutra: nunca el texto crudo del backend).
@@ -168,12 +171,18 @@ export default function EditarServicioPage() {
       setErrorNombre(t('nameRequired'));
       return;
     }
-    if (duracion <= 0) {
+    if (!mostrarComponentes && duracion <= 0) {
       await alertDialog(t('invalidDuration'));
       return;
     }
     if (mostrarComponentes && hayFilaIncompleta(componentes)) {
       await alertDialog(t('incompleteRow'));
+      return;
+    }
+    // Una promo legacy sin componentes puede seguir guardándose tal cual
+    // (renombrar, etc.); lo que no se permite es convertir/dejar vacía una nueva.
+    if (mostrarComponentes && !tieneComponentes && !promoLegacy) {
+      await alertDialog(t('promoNeedsComponents'));
       return;
     }
 
@@ -288,30 +297,6 @@ export default function EditarServicioPage() {
           {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
-        {/* Duración y precio: ocultos una vez que la promo tiene componentes
-            completos — ComponentesPromoSection muestra la duración derivada
-            (solo lectura) y el precio override en su lugar. */}
-        {!tieneComponentes && (
-          <>
-            <div>
-              <label style={labelStyle}>{t('durationLabel')}</label>
-              <DuracionPicker value={duracion} onChange={setDuracion} />
-            </div>
-
-            <div>
-              <label style={labelStyle}>{t('priceLabel')}</label>
-              <input
-                type="number"
-                placeholder={t('pricePlaceholder')}
-                value={precio}
-                onChange={e => setPrecio(e.target.value)}
-                style={inputStyle}
-                inputMode="decimal"
-              />
-            </div>
-          </>
-        )}
-
         {/* Promo */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -347,6 +332,30 @@ export default function EditarServicioPage() {
             onPrecioComponentesChange={setPrecioComponentes}
             onBeforeNavigate={guardarBorradorActual}
           />
+        )}
+
+        {/* Duración y precio: con la promo activa y componentes posibles se
+            arman desde ellos — ComponentesPromoSection muestra la duración
+            derivada (solo lectura) y el precio override en su lugar. */}
+        {!mostrarComponentes && (
+          <>
+            <div>
+              <label style={labelStyle}>{t('durationLabel')}</label>
+              <DuracionPicker value={duracion} onChange={setDuracion} />
+            </div>
+
+            <div>
+              <label style={labelStyle}>{t('priceLabel')}</label>
+              <input
+                type="number"
+                placeholder={t('pricePlaceholder')}
+                value={precio}
+                onChange={e => setPrecio(e.target.value)}
+                style={inputStyle}
+                inputMode="decimal"
+              />
+            </div>
+          </>
         )}
 
         {/* Fotos de trabajos (reserva online): la fila se oculta con la flag apagada. */}

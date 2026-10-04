@@ -115,13 +115,17 @@ function NuevoServicioContent() {
       setErrorNombre(t('nameRequired'));
       return;
     }
-    if (duracion <= 0) {
+    if (!mostrarComponentes && duracion <= 0) {
       await alertDialog(t('invalidDuration'));
       return;
     }
 
     if (mostrarComponentes && hayFilaIncompleta(componentes)) {
       await alertDialog(t('incompleteRow'));
+      return;
+    }
+    if (mostrarComponentes && !tieneComponentes) {
+      await alertDialog(t('promoNeedsComponents'));
       return;
     }
 
@@ -139,7 +143,7 @@ function NuevoServicioContent() {
     const result = await agregarServicio({
       nombre: nombre.trim(),
       duracion_minutos: duracion,
-      precio: precio && !tieneComponentes ? parseFloat(precio) : undefined,
+      precio: precio && !mostrarComponentes ? parseFloat(precio) : undefined,
       es_promo: esPromo,
       categoria_id: categoriaId,
     });
@@ -202,28 +206,6 @@ function NuevoServicioContent() {
           {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
-        {/* Duración y precio: ocultos una vez que la promo tiene componentes
-            completos (la sección muestra la duración derivada y el precio). */}
-        {!tieneComponentes && (<>
-        <div>
-          <label style={labelStyle}>{t('durationLabel')}</label>
-          <DuracionPicker value={duracion} onChange={setDuracion} />
-        </div>
-
-        {/* Precio */}
-        <div>
-          <label style={labelStyle}>{t('priceLabel')}</label>
-          <input
-            type="number"
-            placeholder={t('pricePlaceholder')}
-            value={precio}
-            onChange={e => setPrecio(e.target.value)}
-            style={inputStyle}
-            inputMode="decimal"
-          />
-        </div>
-        </>)}
-
         {/* Promo */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -256,6 +238,29 @@ function NuevoServicioContent() {
             onBeforeNavigate={guardarBorradorActual}
           />
         )}
+
+        {/* Duración y precio: con la promo activa y 2+ personas en actividad se
+            arman desde los componentes (la sección muestra la duración derivada
+            y el precio), así que no se piden acá. */}
+        {!mostrarComponentes && (<>
+        <div>
+          <label style={labelStyle}>{t('durationLabel')}</label>
+          <DuracionPicker value={duracion} onChange={setDuracion} />
+        </div>
+
+        {/* Precio */}
+        <div>
+          <label style={labelStyle}>{t('priceLabel')}</label>
+          <input
+            type="number"
+            placeholder={t('pricePlaceholder')}
+            value={precio}
+            onChange={e => setPrecio(e.target.value)}
+            style={inputStyle}
+            inputMode="decimal"
+          />
+        </div>
+        </>)}
 
         {/* Button */}
         {/* categoriasLoading también deshabilita: fetchCategorias() (ahora

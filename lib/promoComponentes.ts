@@ -144,6 +144,13 @@ export const precioAGuardar = (precioComponentes: string, suma: number): number 
   return Number.isNaN(n) || n === suma ? null : n;
 };
 
+// How much cheaper the promo is than buying its services one by one: 0 when
+// the field is empty/invalid or the price is not below the sum.
+export const ahorroPromo = (suma: number, precioComponentes: string): number => {
+  const n = parseFloat(precioComponentes);
+  return Number.isNaN(n) || n >= suma ? 0 : suma - n;
+};
+
 // What to preload the dedicated price state with when a promo already has
 // components: empty unless the persisted price differs from the LIVE
 // component sum, in which case it must be an override (or a sum that went

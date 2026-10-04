@@ -260,7 +260,8 @@
     "submit": "Adicionar serviço",
     "saveError": "Não foi possível salvar o serviço.",
     "incompleteRow": "Preencha o serviço e quem faz em cada linha antes de salvar.",
-    "componentsSaveError": "A promoção foi criada, mas não foi possível salvar os serviços incluídos. Revise e salve novamente por aqui."
+    "componentsSaveError": "A promoção foi criada, mas não foi possível salvar os serviços incluídos. Revise e salve novamente por aqui.",
+    "promoNeedsComponents": "Escolha pelo menos um serviço e quem o realiza para salvar a promoção."
   },
   "EditarServicioPage": {
     "title": "Editar serviço",
@@ -280,7 +281,8 @@
     "saving": "Salvando...",
     "submit": "Salvar alterações",
     "saveError": "Não foi possível salvar o serviço.",
-    "incompleteRow": "Preencha o serviço e quem faz em cada linha antes de salvar."
+    "incompleteRow": "Preencha o serviço e quem faz em cada linha antes de salvar.",
+    "promoNeedsComponents": "Escolha pelo menos um serviço e quem o realiza para salvar a promoção."
   },
   "ComponentesPromoSection": {
     "title": "Serviços incluídos",
@@ -297,8 +299,6 @@
     "moveDown": "Descer na ordem",
     "orderLabel": "Posição {n}",
     "priceLabel": "Preço da promoção",
-    "pricePlaceholder": "Soma dos serviços",
-    "priceSumHint": "Por padrão, a soma dos serviços: {monto}",
     "intro": "Adicione os serviços da promoção e escolha quem faz cada um.",
     "serviceSheetTitle": "Escolha um serviço",
     "personSheetTitle": "Quem faz {servicio}?",
@@ -306,7 +306,6 @@
     "choosePerson": "Escolha quem faz",
     "change": "Alterar",
     "changePersonAria": "Alterar quem faz",
-    "changePriceAria": "Alterar preço",
     "modeSequentialSentence": "Primeiro {nombres}.",
     "sequenceSeparator": ", depois ",
     "modeParallelSentence": "{nombres} atendem ao mesmo tempo.",
@@ -331,7 +330,9 @@
     "blockUnlinkedBody": "Escolha outra pessoa para {servicio}, ou associe este serviço novamente em Profissionais.",
     "thisService": "este serviço",
     "thisPerson": "Essa pessoa",
-    "rowError": "Revise esta linha: o serviço ou quem faz não é válido."
+    "rowError": "Revise esta linha: o serviço ou quem faz não é válido.",
+    "priceSavings": "Soma {suma} · você economiza {ahorro}",
+    "priceSumOnly": "Soma dos serviços: {suma}"
   },
   "SelectorCategoriaServicio": {
     "label": "Categoria",
