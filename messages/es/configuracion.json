@@ -286,7 +286,6 @@
   },
   "ComponentesPromoSection": {
     "title": "Servicios que incluye",
-    "serviceLabel": "Servicio",
     "servicePlaceholder": "Elegí un servicio",
     "whoLabel": "Quién lo hace",
     "noProfesional": "Nadie en actividad hace este servicio.",
