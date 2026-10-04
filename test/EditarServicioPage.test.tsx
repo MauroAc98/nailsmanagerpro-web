@@ -17,6 +17,9 @@ vi.mock('@/services/profesionalService', async (orig) => ({
   ...(await orig<typeof import('@/services/profesionalService')>()),
   profesionalService: { getAll: vi.fn() },
 }));
+vi.mock('@/services/slotService', () => ({
+  slotService: { getAll: vi.fn().mockResolvedValue([{ id: 1, user_id: 1, hora: '10:00', activo: true }]) },
+}));
 vi.mock('@/services/categoriaServicioService', () => ({
   categoriaServicioService: { getAll: vi.fn().mockResolvedValue([]) },
 }));
@@ -167,12 +170,14 @@ describe('EditarServicioPage — components section (multi-professional promo)',
     expect(servicioService.update).not.toHaveBeenCalled();
   });
 
-  it('shows a saved problema message inline for its row', async () => {
+  it('shows a blocking problema as a plain top card, never the backend text', async () => {
     montar(promo, [ana, laura], {
       componentes: [comp(1, 1, 1), comp(2, 2, 2)],
-      problemas: [{ codigo: 'profesional_inactiva', orden: 2, profesional_id: 2, servicio_id: 2, mensaje: 'Laura está inactiva' }],
+      problemas: [{ codigo: 'profesional_inactiva', orden: 2, profesional_id: 2, servicio_id: 2, mensaje: 'Laura está inactiva y no puede hacer Semis pies.' }],
     });
-    expect(await screen.findByText('Laura está inactiva')).toBeInTheDocument();
+    expect(await screen.findByText('Laura ya no está en actividad')).toBeInTheDocument();
+    expect(screen.getByText('Elegí a otra persona para Semis pies, o reactivá el perfil en Profesionales.')).toBeInTheDocument();
+    expect(screen.queryByText(/inactiva/)).not.toBeInTheDocument();
   });
 
   it('maps a 422 componentes.{i} error to its row instead of a generic dialog', async () => {
@@ -184,7 +189,9 @@ describe('EditarServicioPage — components section (multi-professional promo)',
       response: { data: { message: 'x', errors: { 'componentes.0.profesional_id': ['Marta no ofrece Softgel'] } } },
     });
     guardar();
-    expect(await screen.findByText('Marta no ofrece Softgel')).toBeInTheDocument();
+    // Unknown field errors never print the raw backend text: a neutral line instead.
+    expect(await screen.findByText('Revisá esta fila: el servicio o quién lo hace no es válido.')).toBeInTheDocument();
+    expect(screen.queryByText('Marta no ofrece Softgel')).not.toBeInTheDocument();
     expect(alertDialog).not.toHaveBeenCalled();
   });
 
@@ -260,36 +267,38 @@ describe('EditarServicioPage — derived duration, price override, turn-off clea
 
 });
 
-describe('EditarServicioPage — alignment warnings and unbookable notice (PR 2d)', () => {
-  it('shows a non-blocking alignment warning under the mode selector, save still enabled', async () => {
+describe('EditarServicioPage — online reservation status card', () => {
+  it('state B: explains in plain words with an example, never printing the backend text (no "slot")', async () => {
     montar(promo, [ana, laura], {
       componentes: [comp(1, 1, 1), comp(2, 2, 2)],
-      problemas: [],
+      problemas: [{ codigo: 'sin_inicios_alineados', orden: null, profesional_id: null, servicio_id: null, mensaje: 'Ningún horario coincide con los slots de todas las profesionales' }],
       alineacion_slots: {
         inicios_validos: [],
-        descartados: [{ hora_inicio: '10:00', profesional_id: 2, profesional_nombre: 'Laura', hora_requerida: '11:00', mensaje: 'Laura no tiene slot a las 11:00, esta promo no se ofrecerá a las 10:00' }],
+        descartados: [{ hora_inicio: '10:00', profesional_id: 2, profesional_nombre: 'Laura', hora_requerida: '11:00', mensaje: 'Laura no tiene slot a las 11:00' }],
       },
     });
-    expect(await screen.findByText('Laura no tiene slot a las 11:00, esta promo no se ofrecerá a las 10:00')).toBeInTheDocument();
+    expect(await screen.findByText('Todavía no se puede reservar online')).toBeInTheDocument();
+    expect(screen.getByText('Cuando Ana empieza a las 10:00, Laura necesita un horario a las 11:00, y todavía no lo tiene. Podés agendarla igual desde la agenda.')).toBeInTheDocument();
+    expect(screen.queryByText(/slot/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar cambios' })).not.toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Ir a Horarios Disponibles' }));
+    expect(routerMock.push).toHaveBeenCalledWith('/configuracion/slots');
   });
 
-  it('hides the alignment warning block when descartados is empty', async () => {
+  it('state A: says it can be booked online when starts line up', async () => {
     montar(promo, [ana, laura], {
       componentes: [comp(1, 1, 1), comp(2, 2, 2)],
       problemas: [],
       alineacion_slots: { inicios_validos: ['10:00'], descartados: [] },
     });
-    await screen.findAllByRole('button', { name: 'Quitar servicio' });
-    expect(screen.queryByText(/no tiene slot/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Se puede reservar online')).toBeInTheDocument();
+    expect(screen.getByText('Los horarios de Ana y Laura coinciden.')).toBeInTheDocument();
   });
 
-  it('shows the sin_inicios_alineados problema prominently, separate from per-row problems', async () => {
-    montar(promo, [ana, laura], {
-      componentes: [comp(1, 1, 1), comp(2, 2, 2)],
-      problemas: [{ codigo: 'sin_inicios_alineados', orden: null, profesional_id: null, servicio_id: null, mensaje: 'Ningún horario de esta promo coincide con los slots de todas las profesionales: no se ofrecerá online.' }],
-    });
-    expect(await screen.findByText(/no se ofrecerá online/)).toBeInTheDocument();
+  it('shows no status card for a promo without components', async () => {
+    montar(promo, [ana, laura], { componentes: [], problemas: [] });
+    await screen.findByRole('button', { name: 'Guardar cambios' });
+    expect(screen.queryByText('Se puede reservar online')).not.toBeInTheDocument();
   });
 
   it('sends componentes: [] before turning off es_promo on a promo with saved components', async () => {

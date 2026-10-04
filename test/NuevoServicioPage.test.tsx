@@ -12,6 +12,7 @@ vi.mock('@/services/profesionalService', async (orig) => ({
   ...(await orig<typeof import('@/services/profesionalService')>()),
   profesionalService: { getAll: vi.fn() },
 }));
+vi.mock('@/services/slotService', () => ({ slotService: { getAll: vi.fn() } }));
 vi.mock('@/services/categoriaServicioService', () => ({
   categoriaServicioService: { getAll: vi.fn().mockResolvedValue([]) },
 }));
@@ -20,6 +21,7 @@ vi.mock('@/store/useConfirmStore', () => ({ alertDialog: vi.fn().mockResolvedVal
 import { alertDialog } from '@/store/useConfirmStore';
 import { servicioService, type Servicio } from '@/services/servicioService';
 import { profesionalService, type Profesional } from '@/services/profesionalService';
+import { slotService } from '@/services/slotService';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -47,6 +49,8 @@ function montar(profesionales: Profesional[] = []) {
   vi.mocked(servicioService.create).mockResolvedValue(servicio({ id: NUEVO_ID, es_promo: true }));
   vi.mocked(profesionalService.getAll).mockResolvedValue(profesionales);
   vi.mocked(servicioService.guardarComponentes).mockReset();
+  // By default every person has active horarios.
+  vi.mocked(slotService.getAll).mockResolvedValue([{ id: 1, user_id: 1, hora: '10:00', activo: true }]);
   return renderWithProviders(<NuevoServicioPage />);
 }
 
@@ -159,5 +163,49 @@ describe('NuevoServicioPage — components section for a new promo', () => {
 
     await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Completá el servicio y quién lo hace en cada fila antes de guardar.'));
     expect(servicioService.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('NuevoServicioPage — person without horarios (assignment time)', () => {
+  const sinHorarios = (idSinHorarios: number) =>
+    vi.mocked(slotService.getAll).mockImplementation(async (id?: number) =>
+      (id === idSinHorarios ? [] : [{ id: 1, user_id: 1, hora: '10:00', activo: true }]));
+
+  it('shows a calm note inside the card, does not block, and links to Horarios Disponibles', async () => {
+    montar([ana, laura]);
+    sinHorarios(2);
+    await escribirNombre('Combo');
+    toggle();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
+    await elegirServicio('Semis pies');
+
+    expect(await screen.findByText('Laura todavía no tiene horarios cargados')).toBeInTheDocument();
+    expect(screen.getByText('Podés agendar esta promo desde la agenda, pero no se va a poder reservar online.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar horarios' }));
+    expect(routerMock.push).toHaveBeenCalledWith('/configuracion/slots');
+  });
+
+  it('shows no note for a person that has active horarios', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    toggle();
+    await agregarFilaSoftgel();
+    await screen.findByText('Ana');
+    expect(screen.queryByText(/todavía no tiene horarios cargados/)).not.toBeInTheDocument();
+  });
+
+  it('tags the person in the picker sheet with "Sin horarios" but still lets you choose them', async () => {
+    const marta = profesional(3, 'Marta', [softgel]);
+    montar([ana, marta]);
+    sinHorarios(3);
+    await escribirNombre('Combo');
+    toggle();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
+    await elegirServicio('Softgel');
+    fireEvent.click(screen.getByRole('button', { name: 'Elegí quién lo hace' }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(await dialog.findByText('Sin horarios')).toBeInTheDocument();
+    fireEvent.click(dialog.getByText('Marta'));
+    expect(await screen.findByText('Marta todavía no tiene horarios cargados')).toBeInTheDocument();
   });
 });
