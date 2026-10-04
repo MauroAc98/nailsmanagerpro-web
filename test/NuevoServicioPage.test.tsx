@@ -64,6 +64,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   resetNavigationMock();
   useAuthStore.setState({ user: null });
+  window.sessionStorage.clear();
 });
 
 describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
@@ -182,7 +183,7 @@ describe('NuevoServicioPage — person without horarios (assignment time)', () =
     expect(await screen.findByText('Laura todavía no tiene horarios cargados')).toBeInTheDocument();
     expect(screen.getByText('Podés agendar esta promo desde la agenda, pero no se va a poder reservar online.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cargar horarios' }));
-    expect(routerMock.push).toHaveBeenCalledWith('/configuracion/slots');
+    expect(routerMock.push).toHaveBeenCalledWith('/configuracion/slots?profesional=2');
   });
 
   it('shows no note for a person that has active horarios', async () => {
@@ -207,5 +208,68 @@ describe('NuevoServicioPage — person without horarios (assignment time)', () =
     expect(await dialog.findByText('Sin horarios')).toBeInTheDocument();
     fireEvent.click(dialog.getByText('Marta'));
     expect(await screen.findByText('Marta todavía no tiene horarios cargados')).toBeInTheDocument();
+  });
+});
+
+describe('NuevoServicioPage — draft survives the round-trip to Horarios', () => {
+  async function irAHorarios() {
+    const vista = montar([ana, laura]);
+    vi.mocked(slotService.getAll).mockImplementation(async (id?: number) =>
+      (id === 2 ? [] : [{ id: 1, user_id: 1, hora: '10:00', activo: true }]));
+    await escribirNombre('Combo');
+    toggle();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
+    await elegirServicio('Semis pies');
+    fireEvent.click(await screen.findByRole('button', { name: 'Cargar horarios' }));
+    vista.unmount();
+  }
+
+  it('restores the form when the user comes back', async () => {
+    await irAHorarios();
+    montar([ana, laura]);
+    expect(await screen.findByPlaceholderText('Ej: Kapping')).toHaveValue('Combo');
+    expect(await screen.findByText('Semis pies')).toBeInTheDocument();
+    expect(screen.getByRole('switch')).toBeChecked();
+  });
+
+  it('a fresh visit after the draft was consumed starts empty', async () => {
+    await irAHorarios();
+    montar([ana, laura]).unmount();
+    montar([ana, laura]);
+    expect(await screen.findByPlaceholderText('Ej: Kapping')).toHaveValue('');
+    expect(screen.getByRole('switch')).not.toBeChecked();
+  });
+
+  it('cancelling with the back control discards a pending draft', async () => {
+    await irAHorarios();
+    montar([ana, laura]);
+    await screen.findByPlaceholderText('Ej: Kapping');
+    window.sessionStorage.setItem('servicioBorrador:nuevo', JSON.stringify({ guardadoEn: Date.now(), datos: { nombre: 'X' } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(window.sessionStorage.getItem('servicioBorrador:nuevo')).toBeNull();
+    expect(routerMock.back).toHaveBeenCalled();
+  });
+
+  it('saving clears any draft', async () => {
+    montar([ana, laura]);
+    window.sessionStorage.setItem('servicioBorrador:nuevo', JSON.stringify({ guardadoEn: Date.now(), datos: { nombre: 'X' } }));
+    await escribirNombre('Nuevo');
+    guardar();
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
+    expect(window.sessionStorage.getItem('servicioBorrador:nuevo')).toBeNull();
+  });
+
+  it('an expired draft is ignored', async () => {
+    window.sessionStorage.setItem('servicioBorrador:nuevo', JSON.stringify({ guardadoEn: Date.now() - 31 * 60 * 1000, datos: { nombre: 'Viejo' } }));
+    montar([ana, laura]);
+    expect(await screen.findByPlaceholderText('Ej: Kapping')).toHaveValue('');
+  });
+
+  it('works without storage', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('denied'); });
+    montar([ana, laura]);
+    expect(await screen.findByPlaceholderText('Ej: Kapping')).toHaveValue('');
+    vi.restoreAllMocks();
   });
 });

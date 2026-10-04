@@ -70,6 +70,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   resetNavigationMock();
   useAuthStore.setState({ user: null });
+  window.sessionStorage.clear();
 });
 
 describe('EditarServicioPage — legacy form is unchanged (Rule L)', () => {
@@ -314,5 +315,64 @@ describe('EditarServicioPage — online reservation status card', () => {
     const guardarOrder = vi.mocked(servicioService.guardarComponentes).mock.invocationCallOrder[0];
     const updateOrder = vi.mocked(servicioService.update).mock.invocationCallOrder[0];
     expect(guardarOrder).toBeLessThan(updateOrder);
+  });
+});
+
+describe('EditarServicioPage — unsaved component edits survive the round-trip to Horarios', () => {
+  const detalle = {
+    componentes: [comp(1, 1, 1), comp(2, 2, 2)],
+    problemas: [{ codigo: 'sin_inicios_alineados', orden: null, profesional_id: null, servicio_id: null, mensaje: 'x' }],
+    alineacion_slots: { inicios_validos: [], descartados: [] },
+  };
+  const quitar = () => screen.getAllByRole('button', { name: 'Quitar servicio' });
+
+  async function quitarUnaFilaEIrAHorarios() {
+    const vista = montar(promo, [ana, laura], detalle);
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
+    fireEvent.click(quitar()[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Ir a Horarios Disponibles' }));
+    vista.unmount();
+  }
+
+  it('restores the unsaved rows on return', async () => {
+    await quitarUnaFilaEIrAHorarios();
+    montar(promo, [ana, laura], detalle);
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
+    expect(quitar()).toHaveLength(1);
+  });
+
+  it('a later fresh visit shows the saved rows again', async () => {
+    await quitarUnaFilaEIrAHorarios();
+    montar(promo, [ana, laura], detalle).unmount();
+    montar(promo, [ana, laura], detalle);
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
+    expect(quitar()).toHaveLength(2);
+  });
+
+  it('saving clears the draft', async () => {
+    montar(promo, [ana, laura], detalle);
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
+    window.sessionStorage.setItem('servicioBorrador:editar-7', JSON.stringify({ guardadoEn: Date.now(), datos: {} }));
+    guardar();
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
+    expect(window.sessionStorage.getItem('servicioBorrador:editar-7')).toBeNull();
+  });
+
+  it('cancelling with the back control clears the draft', async () => {
+    montar(promo, [ana, laura], detalle);
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
+    window.sessionStorage.setItem('servicioBorrador:editar-7', JSON.stringify({ guardadoEn: Date.now(), datos: {} }));
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(window.sessionStorage.getItem('servicioBorrador:editar-7')).toBeNull();
+  });
+
+  it('an expired draft is ignored', async () => {
+    window.sessionStorage.setItem('servicioBorrador:editar-7', JSON.stringify({
+      guardadoEn: Date.now() - 31 * 60 * 1000,
+      datos: { componentes: [], modoPromo: 'secuencia', precioComponentes: '' },
+    }));
+    montar(promo, [ana, laura], detalle);
+    await screen.findAllByRole('button', { name: 'Quitar servicio' });
+    expect(quitar()).toHaveLength(2);
   });
 });
