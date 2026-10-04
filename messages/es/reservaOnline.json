@@ -61,7 +61,11 @@
     "unaPorServicio": "Una por servicio",
     "soloHace": "Solo {nombre} hace este servicio",
     "personasDistintas": "Estos servicios los hacen personas distintas: elegí quién hace cada uno.",
-    "avisoReset": "{nombre} no hace {n, plural, one {este servicio} other {todos estos servicios}}, así que te asignamos a cualquiera."
+    "avisoReset": "{nombre} no hace {n, plural, one {este servicio} other {todos estos servicios}}, así que te asignamos a cualquiera.",
+    "ayudaUnaPersona": "La misma persona hace todos tus servicios, uno después del otro.",
+    "ayudaPorServicio": "Elegí quién hace cada servicio. Se reservan en el mismo turno.",
+    "resumenCon": "Con {nombres}",
+    "resumenCualquiera": "Cualquiera disponible"
   },
   "datos": {
     "title": "Tus datos",

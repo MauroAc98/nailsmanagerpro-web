@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { BottomSheet, type BottomSheetHandle } from '@/components/BottomSheet';
 import { DrumPicker } from '@/components/DrumPicker';
-import SelectorProfesional from '@/components/SelectorProfesional';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
 import { WeekStrip } from '@/components/agenda/WeekStrip';
 import { parseFechaLocal } from '@/components/agenda/agendaDateHelpers';
@@ -26,6 +25,7 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
+import { ElegirPersona } from './ElegirPersona';
 import { NoDisponibleAun } from './NoDisponibleAun';
 import { ProfesionalPorServicio } from './ProfesionalPorServicio';
 import { QuienTeAtiende } from './QuienTeAtiende';
@@ -245,6 +245,19 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       ? null
       : nombreDe(profesionalId);
 
+  // Lo elegido en una linea para el titulo del bloque. Con promo la agenda fija a las
+  // profesionales, asi que el bloque ni se muestra y no hace falta resumen.
+  const nombresElegidos = asignaciones
+    ? [...new Set(asignaciones.map((g) => nombreDe(g.profesionalId ?? 0)))]
+    : profesionalId === 'any'
+      ? []
+      : [nombreDe(profesionalId)];
+  const resumenElegido = nombresElegidos.length
+    ? t('horario.resumenCon', {
+        nombres: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(nombresElegidos),
+      })
+    : t('horario.resumenCualquiera');
+
   // Parte los servicios en un grupo cada uno, con una profesional explicita
   // (la ya elegida si lo hace, si no la primera que lo hace).
   const repartir = () =>
@@ -393,6 +406,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
             if (porServicio) repartir();
             else setAsignaciones(null);
           }}
+          resumen={resumenElegido}
           aviso={avisoReset ? t('horario.avisoReset', { nombre: avisoReset, n: servicioIds.length }) : null}
           sinPersonaUnica={sinPersonaUnica}
         >
@@ -407,19 +421,13 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
               }}
             />
           ) : (
-            <SelectorProfesional
-              label=""
-              labelStyle={{ display: 'none' }}
-              todasLabel={t('horario.cualquiera')}
+            <ElegirPersona
               profesionales={compatibles}
               selectedId={profesionalId === 'any' ? null : profesionalId}
               onSelect={(id) => {
                 setAvisoReset(null);
                 setProfesional(id ?? 'any');
               }}
-              selectedFg={colors.primaryFg}
-              unselectedBorderColor={colors.border}
-              pillFontWeight={600}
             />
           )}
         </QuienTeAtiende>
