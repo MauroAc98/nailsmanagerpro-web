@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     // son código fuente, no tiene sentido lintearlos.
     "public/sw.js",
     "public/workbox-*.js",
+    "public/worker-*.js",
   ]),
 ]);
 

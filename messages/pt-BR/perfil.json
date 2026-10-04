@@ -140,12 +140,26 @@
     "changesSaved": "Alterações salvas",
     "dataSaved": "Dados salvos",
     "passwordsDontMatch": "As senhas não coincidem.",
-    "depositAmountInvalid": "Informe um valor válido (ou deixe em branco para não pedir sinal)."
+    "depositAmountInvalid": "Informe um valor válido (ou deixe em branco para não pedir sinal).",
+    "groupAvisos": "Avisos"
   },
   "FinanzasPage": {
     "title": "Finanças",
     "gastos": "Despesas",
     "ingresos": "Receitas",
     "estadisticas": "Estatísticas"
+  },
+  "AvisosReservas": {
+    "title": "Avisos de reservas online",
+    "subtitleOff": "Receba uma notificação neste celular sempre que alguém reservar um horário.",
+    "subtitleOn": "Avisamos neste celular quando entra uma reserva online.",
+    "toggleLabel": "Avisos de reservas online",
+    "iosNeedsInstall": "No iPhone, primeiro adicione o app à tela de início (Compartilhar > Adicionar à Tela de Início) e abra por lá para ativar os avisos.",
+    "unsupported": "Este navegador ou dispositivo não permite receber avisos. Tente abrir o app pelo Chrome no celular.",
+    "denied": "Você bloqueou as notificações do app. Para ativá-las, habilite nas configurações do celular ou do navegador (permissões do site) e volte aqui.",
+    "loading": "Verificando...",
+    "errorUnavailable": "Os avisos não estão disponíveis no momento. Tente novamente mais tarde.",
+    "errorNetwork": "Não conseguimos conectar. Verifique sua conexão e tente novamente.",
+    "errorGeneric": "Não conseguimos alterar os avisos. Tente novamente."
   }
 }
