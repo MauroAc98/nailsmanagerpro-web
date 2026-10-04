@@ -89,3 +89,71 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
   });
 });
 
+
+const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`${nombre}$`) });
+
+// Adds one row (Softgel done by Ana) to the components section.
+async function agregarFilaSoftgel() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+}
+
+describe('NuevoServicioPage — components section for a new promo', () => {
+  it('hidden until the promo toggle is on, and switching it off discards the rows', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
+
+    toggle();
+    await agregarFilaSoftgel();
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+
+    toggle();
+    expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
+    guardar();
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
+    expect(servicioService.create).toHaveBeenCalledWith(expect.objectContaining({ es_promo: false, duracion_minutos: 30 }));
+    expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
+  });
+
+  it('creates the promo and then saves the components with the new id', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    toggle();
+    await agregarFilaSoftgel();
+    fireEvent.click(pill('Ana'));
+    guardar();
+
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
+    expect(servicioService.create).toHaveBeenCalledWith(expect.objectContaining({ nombre: 'Combo', es_promo: true }));
+    expect(servicioService.guardarComponentes).toHaveBeenCalledWith(NUEVO_ID, {
+      modo_promo: 'secuencia', precio: null, componentes: [{ servicio_id: 1, profesional_id: 1 }],
+    });
+  });
+
+  it('keeps the promo and sends the user to its edit screen when the components call fails', async () => {
+    montar([ana, laura]);
+    vi.mocked(servicioService.guardarComponentes).mockRejectedValue(new Error('boom'));
+    await escribirNombre('Combo');
+    toggle();
+    await agregarFilaSoftgel();
+    fireEvent.click(pill('Ana'));
+    guardar();
+
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith(`/configuracion/servicios/${NUEVO_ID}`));
+    expect(servicioService.create).toHaveBeenCalledTimes(1);
+    expect(alertDialog).toHaveBeenCalledWith(expect.stringContaining('Se creó la promoción'));
+    expect(routerMock.push).not.toHaveBeenCalledWith('/configuracion/servicios');
+  });
+
+  it('refuses to save while a row is half filled', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Combo');
+    toggle();
+    await agregarFilaSoftgel();
+    guardar();
+
+    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Completá el servicio y quién lo hace en cada fila antes de guardar.'));
+    expect(servicioService.create).not.toHaveBeenCalled();
+  });
+});
