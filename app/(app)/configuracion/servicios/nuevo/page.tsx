@@ -1,16 +1,24 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { useServiciosStore } from '@/store/useServicioStore';
+import { servicioService, type ModoPromo } from '@/services/servicioService';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import PillToggle from '@/components/PillToggle';
+import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import {
+  duracionDerivada, hayFilaIncompleta, paraleloDisponible, resumenComponentes, serviciosComponibles,
+  type ComponenteDraft,
+} from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -55,13 +63,50 @@ function NuevoServicioContent() {
   const [errorNombre, setErrorNombre] = useState('');
   const [saving,  setSaving]  = useState(false);
 
+  // Componentes de la promo: la sección arranca vacía y solo se ofrece con
+  // más de una persona activa (mismo criterio que la pantalla de edición).
+  // Los componentes se guardan DESPUÉS de crear el servicio (necesitan su id).
+  const { profesionales, fetchProfesionales } = useProfesionalStore();
+  const { user } = useAuthStore();
+  const [componentes, setComponentes] = useState<ComponenteDraft[]>([]);
+  const [modoPromo, setModoPromo] = useState<ModoPromo>('secuencia');
+  const [precioComponentes, setPrecioComponentes] = useState('');
+  const [modoError, setModoError] = useState('');
+
+  useEffect(() => {
+    if (esPromo && profesionales.length === 0) fetchProfesionales();
+  }, [esPromo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apagar el toggle descarta lo cargado en la sección.
+  const handlePromoChange = (value: boolean) => {
+    setEsPromo(value);
+    if (!value) {
+      setComponentes([]);
+      setModoPromo('secuencia');
+      setPrecioComponentes('');
+      setModoError('');
+    }
+  };
+
+  const activas = profesionales.filter(p => p.activo).length;
+  const mostrarComponentes = esPromo && activas > 1;
+  const { aGuardar, tieneComponentes, sumaActual, precioOverride } =
+    resumenComponentes(componentes, servicios, precioComponentes);
+  const paraleloHabilitado = paraleloDisponible(user?.atiende_en_paralelo, activas);
+
   const handleGuardar = async () => {
+    setModoError('');
     if (!nombre.trim()) {
       setErrorNombre(t('nameRequired'));
       return;
     }
     if (duracion <= 0) {
       await alertDialog(t('invalidDuration'));
+      return;
+    }
+
+    if (mostrarComponentes && hayFilaIncompleta(componentes)) {
+      await alertDialog(t('incompleteRow'));
       return;
     }
 
@@ -79,10 +124,26 @@ function NuevoServicioContent() {
     const result = await agregarServicio({
       nombre: nombre.trim(),
       duracion_minutos: duracion,
-      precio: precio ? parseFloat(precio) : undefined,
+      precio: precio && !tieneComponentes ? parseFloat(precio) : undefined,
       es_promo: esPromo,
       categoria_id: categoriaId,
     });
+
+    if (result.success && mostrarComponentes && tieneComponentes && result.id !== undefined) {
+      try {
+        await servicioService.guardarComponentes(result.id, {
+          modo_promo: modoPromo, precio: precioOverride, componentes: aGuardar,
+        });
+        await useServiciosStore.getState().fetchServicios();
+      } catch {
+        // El servicio ya existe: no se pierde. Se avisa en neutro y se lleva
+        // a su pantalla de edición para reintentar los componentes ahí.
+        setSaving(false);
+        await alertDialog(t('componentsSaveError'));
+        router.push(`/configuracion/servicios/${result.id}`);
+        return;
+      }
+    }
     setSaving(false);
 
     if (result.success) {
@@ -125,7 +186,9 @@ function NuevoServicioContent() {
           {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
         </div>
 
-        {/* Duración */}
+        {/* Duración y precio: ocultos una vez que la promo tiene componentes
+            completos (la sección muestra la duración derivada y el precio). */}
+        {!tieneComponentes && (<>
         <div>
           <label style={labelStyle}>{t('durationLabel')}</label>
           <DuracionPicker value={duracion} onChange={setDuracion} />
@@ -143,6 +206,7 @@ function NuevoServicioContent() {
             inputMode="decimal"
           />
         </div>
+        </>)}
 
         {/* Promo */}
         <div style={{
@@ -155,8 +219,27 @@ function NuevoServicioContent() {
               {t('promoHint')}
             </p>
           </div>
-          <PillToggle value={esPromo} onChange={setEsPromo} />
+          <PillToggle value={esPromo} onChange={handlePromoChange} />
         </div>
+
+        {mostrarComponentes && (
+          <ComponentesPromoSection
+            componentes={componentes}
+            onChange={setComponentes}
+            servicios={serviciosComponibles(servicios, -1)}
+            profesionales={profesionales}
+            problemas={[]}
+            modo={modoPromo}
+            onModoChange={setModoPromo}
+            paraleloHabilitado={paraleloHabilitado}
+            modoError={modoError || undefined}
+            duracionDerivada={duracionDerivada(modoPromo, componentes, servicios)}
+            sumaComponentes={sumaActual}
+            precioComponentes={precioComponentes}
+            onPrecioComponentesChange={setPrecioComponentes}
+            avisosAlineacion={[]}
+          />
+        )}
 
         {/* Button */}
         {/* categoriasLoading también deshabilita: fetchCategorias() (ahora

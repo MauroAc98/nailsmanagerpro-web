@@ -258,7 +258,9 @@
     "promoHint": "Marcá este servicio como promoción",
     "saving": "Guardando...",
     "submit": "Agregar servicio",
-    "saveError": "No se pudo guardar el servicio."
+    "saveError": "No se pudo guardar el servicio.",
+    "incompleteRow": "Completá el servicio y quién lo hace en cada fila antes de guardar.",
+    "componentsSaveError": "Se creó la promoción, pero no se pudieron guardar los servicios que incluye. Revisalos y guardá de nuevo desde acá."
   },
   "EditarServicioPage": {
     "title": "Editar servicio",

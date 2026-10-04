@@ -155,3 +155,14 @@ export const precioInicialComponentes = (servicio: Pick<Servicio, 'precio' | 'pr
   const persistido = servicio.precio !== null ? parseFloat(servicio.precio) : null;
   return persistido !== null && persistido !== suma ? servicio.precio! : '';
 };
+
+// Derived values shared by the new and edit screens: the saveable rows, whether
+// the promo has complete components (which replaces the legacy duration/price
+// fields) and the price override to send (null = use the derived sum).
+export const resumenComponentes = (componentes: ComponenteDraft[], servicios: Servicio[], precioComponentes: string) => {
+  const aGuardar = payloadComponentes(componentes);
+  const tieneComponentes = aGuardar.length > 0;
+  const sumaActual = sumaComponentes(componentes, servicios);
+  const precioOverride = tieneComponentes ? precioAGuardar(precioComponentes, sumaActual) : null;
+  return { aGuardar, tieneComponentes, sumaActual, precioOverride };
+};

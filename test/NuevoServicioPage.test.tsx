@@ -52,7 +52,8 @@ function montar(profesionales: Profesional[] = []) {
 
 const escribirNombre = async (nombre: string) =>
   fireEvent.change(await screen.findByPlaceholderText('Ej: Kapping'), { target: { value: nombre } });
-const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
+// The components section's own "Agregar servicio" button sits above the submit one.
+const guardar = () => fireEvent.click(screen.getAllByRole('button', { name: 'Agregar servicio' }).at(-1)!);
 const toggle = () => fireEvent.click(screen.getByRole('switch'));
 
 beforeEach(() => {
@@ -94,7 +95,7 @@ const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`
 
 // Adds one row (Softgel done by Ana) to the components section.
 async function agregarFilaSoftgel() {
-  fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
   fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
 }
 
@@ -147,7 +148,8 @@ describe('NuevoServicioPage — components section for a new promo', () => {
   });
 
   it('refuses to save while a row is half filled', async () => {
-    montar([ana, laura]);
+    // Two people offer Softgel, so nothing is auto-picked and the row stays half filled.
+    montar([ana, profesional(3, 'Marta', [softgel])]);
     await escribirNombre('Combo');
     toggle();
     await agregarFilaSoftgel();

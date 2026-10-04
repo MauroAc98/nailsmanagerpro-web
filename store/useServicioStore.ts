@@ -27,6 +27,8 @@ const refrescarProfesionales = async () => {
 interface OperacionResult {
   success: boolean;
   message?: string;
+  /** Id of the created record (agregarServicio only). */
+  id?: number;
 }
 
 interface ServiciosState {
@@ -69,7 +71,7 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
   agregarServicio: async (dto) => {
     return withGlobalLoader(async () => {
       try {
-        await servicioService.create(dto);
+        const creado = await servicioService.create(dto);
         const servicios = await servicioService.getAll();
         set({ servicios });
         // Profesional.servicios (relación anidada, ver profesionalService.ts)
@@ -77,7 +79,7 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
         // hasta un F5 — la afecta cualquier consumidor que filtre por
         // pertenencia ahí (useHistoriaPrecios, agenda/nuevo).
         await refrescarProfesionales();
-        return { success: true };
+        return { success: true, id: creado.id };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
       }

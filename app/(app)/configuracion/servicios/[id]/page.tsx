@@ -18,7 +18,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   draftsDesdeDetalle, duracionDerivada, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
-  payloadComponentes, precioAGuardar, precioInicialComponentes, serviciosComponibles, sumaComponentes,
+  payloadComponentes, precioAGuardar, precioInicialComponentes, resumenComponentes, serviciosComponibles, sumaComponentes,
   type ComponenteDraft, type ProblemaFila,
 } from '@/lib/promoComponentes';
 
@@ -118,14 +118,12 @@ export default function EditarServicioPage() {
   // sección queda oculta salvo que la promo ya tenga componentes guardados.
   const activas = profesionales.filter(p => p.activo).length;
   const mostrarComponentes = esPromo && (activas > 1 || componentes.length > 0);
-  const aGuardar = payloadComponentes(componentes);
   // Filas completas (no solo "algún servicio elegido"): recién ahí hay una
   // promo con componentes lista para guardar y para reemplazar los campos
   // legacy de duración/precio de arriba.
-  const tieneComponentes = aGuardar.length > 0;
+  const { aGuardar, tieneComponentes, sumaActual, precioOverride } =
+    resumenComponentes(componentes, servicios, precioComponentes);
   const paraleloHabilitado = paraleloDisponible(user?.atiende_en_paralelo, activas);
-  const sumaActual = sumaComponentes(componentes, servicios);
-  const precioOverride = tieneComponentes ? precioAGuardar(precioComponentes, sumaActual) : null;
   const precioOverrideInicial = iniciales.length > 0
     ? precioAGuardar(precioComponentesInicial, sumaComponentes(iniciales, servicios))
     : null;
