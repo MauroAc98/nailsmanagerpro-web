@@ -8,7 +8,7 @@ export const MOTIVOS_CANCELACION = [
   'Cliente canceló con aviso',
   'Cliente no se presentó',
   'Cliente pidió reprogramar',
-  'Imprevisto de la profesional',
+  'Imprevisto de quien atiende',
   'Otro',
 ] as const;
 

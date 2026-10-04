@@ -44,13 +44,13 @@ describe('ProfesionalesPage — rediseño del card', () => {
       profesional({ id: 2, nombre: 'Lucía', apellido: 'Gómez', nombre_completo: 'Lucía Gómez' }),
     ]);
     renderWithProviders(<ProfesionalesPage />);
-    expect(screen.getAllByLabelText('Jefa')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Titular')).toHaveLength(1);
   });
 
   it('una profesional inactiva muestra el pill "Inactiva"', () => {
     seedProfesionales([profesional({ activo: false })]);
     renderWithProviders(<ProfesionalesPage />);
-    expect(screen.getByText('Inactiva')).toBeInTheDocument();
+    expect(screen.getByText('Inactivo')).toBeInTheDocument();
   });
 
   it('una profesional activa no muestra el pill "Inactiva"', () => {

@@ -41,7 +41,7 @@ describe('FotosServicioEditor', () => {
     montar();
     expect(await screen.findByText('Fotos de tus trabajos')).toBeInTheDocument();
     expect(
-      screen.getByText('Las clientas las ven al elegir este servicio. La primera es la portada.'),
+      screen.getByText('Quienes reservan las ven al elegir este servicio. La primera es la portada.'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Agregar fotos')).toBeInTheDocument();
     expect(screen.queryByText('Portada')).toBeNull();

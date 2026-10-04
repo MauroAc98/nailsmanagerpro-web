@@ -27,7 +27,7 @@ export function MotivoCancelacionSheetHost() {
     'Cliente canceló con aviso': t('reasonAvisoPrevio'),
     'Cliente no se presentó': t('reasonNoShow'),
     'Cliente pidió reprogramar': t('reasonReprogramar'),
-    'Imprevisto de la profesional': t('reasonImprevisto'),
+    'Imprevisto de quien atiende': t('reasonImprevisto'),
     Otro: t('reasonOtro'),
   };
   const [seleccion, setSeleccion] = useState<string>(MOTIVOS_CANCELACION[0]);
