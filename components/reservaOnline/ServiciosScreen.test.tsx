@@ -36,6 +36,60 @@ describe('ServiciosScreen', () => {
     expect(screen.queryByText('$12.000')).toBeNull();
   });
 
+  // El cliente (a menudo una persona mayor) entiende "1 h 45 min" antes que
+  // "105 min": la duracion se muestra en horas y minutos en TODAS las tarjetas.
+  it('muestra la duracion en horas y minutos, no en minutos sueltos', async () => {
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    await screen.findByText('Kapping gel');
+    expect(screen.getByText('1 h 30 min')).toBeInTheDocument(); // Kapping gel, 90
+    expect(screen.getByText('1 h')).toBeInTheDocument(); // Pedicura spa, 60
+    expect(screen.getByText('1 h 45 min')).toBeInTheDocument(); // Combo, 105
+    expect(screen.queryByText('90 min')).toBeNull();
+    expect(screen.queryByText('105 min')).toBeNull();
+  });
+
+  describe('detalle de la promo en la tarjeta', () => {
+    it('lista cada servicio con su profesional, en orden, y dice que van uno despues del otro', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Combo mani + pedi');
+      const lineas = screen.getAllByTestId('promo-componente').map((el) => el.textContent);
+      expect(lineas).toEqual([
+        'Esmaltado semipermanente · con Ana',
+        'Pedicura spa · con Lucía',
+      ]);
+      expect(screen.getByText('Uno después del otro')).toBeInTheDocument();
+      expect(screen.queryByText('Al mismo tiempo')).toBeNull();
+    });
+
+    it('con modo paralelo dice que se hacen al mismo tiempo', async () => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      svc.getServices = async (slug, q) =>
+        (await original(slug, q)).map((s) => (s.id === 5 ? { ...s, modoPromo: 'paralelo' as const } : s));
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Combo mani + pedi');
+      expect(screen.getByText('Al mismo tiempo')).toBeInTheDocument();
+      expect(screen.queryByText('Uno después del otro')).toBeNull();
+    });
+
+    it('sin modo informado (null) rige la secuencia', async () => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      svc.getServices = async (slug, q) =>
+        (await original(slug, q)).map((s) => (s.id === 5 ? { ...s, modoPromo: null } : s));
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Combo mani + pedi');
+      expect(screen.getByText('Uno después del otro')).toBeInTheDocument();
+    });
+
+    it('un servicio comun no muestra detalle de promo', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Kapping gel');
+      expect(screen.getAllByTestId('promo-componente')).toHaveLength(2); // solo las del combo
+      expect(screen.getAllByText(/Uno después del otro|Al mismo tiempo/)).toHaveLength(1);
+    });
+  });
+
   it('titulo con subtitulo y la nota de que los precios son de referencia', async () => {
     renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
     expect(await screen.findByRole('heading', { name: '¿Qué te querés hacer?' })).toBeInTheDocument();

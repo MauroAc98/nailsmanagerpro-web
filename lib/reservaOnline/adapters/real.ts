@@ -25,6 +25,9 @@ interface ServicioDto {
   // {id,url,orden} que usa el editor de fotos, ver servicioService).
   fotos: string[];
   es_promo_componentizada?: boolean;
+  // Solo en promos componentizadas.
+  modo_promo?: ModoPlan | null;
+  componentes?: { servicio_nombre: string; profesional_nombre: string; orden: number }[];
 }
 interface DisponibilidadDto {
   fecha: string;
@@ -74,6 +77,14 @@ const aServicio = (d: ServicioDto): BookableService => ({
   categoria: d.categoria ? { id: d.categoria.id, nombre: d.categoria.nombre } : null,
   fotos: d.fotos,
   promoComponentizada: d.es_promo_componentizada ?? false,
+  ...(d.componentes
+    ? {
+        modoPromo: d.modo_promo ?? null,
+        componentes: d.componentes
+          .map((c) => ({ servicioNombre: c.servicio_nombre, profesionalNombre: c.profesional_nombre, orden: c.orden }))
+          .sort((a, b) => a.orden - b.orden),
+      }
+    : {}),
 });
 
 const aDisponibilidad = (d: DisponibilidadDto): Availability => ({

@@ -120,4 +120,15 @@ describe('mock: lecturas', () => {
     expect(servicios.find((s) => s.id === 1)?.fotos.length).toBeGreaterThan(1);
     expect(servicios.find((s) => s.id === 2)?.fotos).toEqual([]);
   });
+
+  it('el combo sembrado trae modo y componentes con su profesional; un servicio comun no', async () => {
+    const servicios = await nuevo().getServices('demo');
+    const combo = servicios.find((s) => s.id === 5);
+    expect(combo?.modoPromo).toBe('secuencia');
+    expect(combo?.componentes).toEqual([
+      { servicioNombre: 'Esmaltado semipermanente', profesionalNombre: 'Ana', orden: 1 },
+      { servicioNombre: 'Pedicura spa', profesionalNombre: 'Lucía', orden: 2 },
+    ]);
+    expect(servicios.find((s) => s.id === 1)?.componentes).toBeUndefined();
+  });
 });

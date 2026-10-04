@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { formatMontoCorto } from '@/lib/money';
+import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { FotoTile } from './FotoTile';
@@ -153,7 +154,7 @@ export function DetalleServicioScreen({
         </h1>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8, fontSize: 13.5, color: colors.sub }}>
           <IcoReloj color={colors.muted} size={15} />
-          <span>{s.duracionMinutos} min</span>
+          <span>{formatearDuracion(s.duracionMinutos)}</span>
           <span aria-hidden="true" style={{ color: colors.border }}>|</span>
           <b style={{ color: colors.strong }}>{t('servicios.desde', { monto: `$${formatMontoCorto(s.precio)}` })}</b>
         </div>

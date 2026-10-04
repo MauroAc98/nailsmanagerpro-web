@@ -35,6 +35,14 @@ export interface ServicioCategoria {
   nombre: string;
 }
 
+// Un servicio de una promo con su profesional fija (solo nombres: el cliente
+// publico no necesita ids). `orden` = posicion dentro de la promo.
+export interface ComponentePromo {
+  servicioNombre: string;
+  profesionalNombre: string;
+  orden: number;
+}
+
 export interface BookableService {
   id: number;
   nombre: string;
@@ -51,6 +59,10 @@ export interface BookableService {
   // Promo con componentes: cada servicio ya trae su profesional fija. Se reserva
   // sola (no se combina con otros servicios) y la clienta no elige profesional.
   promoComponentizada?: boolean;
+  // Solo en promos componentizadas: como se encadenan los componentes (null =
+  // el backend no guardo modo: rige la secuencia) y el detalle en orden.
+  modoPromo?: ModoPlan | null;
+  componentes?: ComponentePromo[];
 }
 
 // Un grupo de servicios con su profesional (sin profesional = "Cualquiera").

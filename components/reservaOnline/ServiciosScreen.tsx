@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso, rutaServicio } from '@/lib/reservaOnline/rutas';
 import { formatMontoCorto } from '@/lib/money';
+import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -14,7 +15,7 @@ import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
 const GAP_TARJETA = 14;
 
-// Datos de la tarjeta: nombre, duracion y "Desde $X" (precio de referencia: el
+// Datos de la tarjeta: nombre, duracion (horas y minutos) y "Desde $X" (precio de referencia: el
 // valor final lo confirma el negocio; el DTO no trae descripcion, asi que no
 // se renderiza ninguna linea de descripcion). Tipografia mas grande que el
 // resto de la app: esta pantalla la usa cualquier clienta, incluidas
@@ -31,10 +32,22 @@ function DatosServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCat
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 7, fontSize: 13.5, color: colors.sub }}>
         <IcoReloj color={colors.muted} size={15} />
-        <span>{s.duracionMinutos} min</span>
+        <span>{formatearDuracion(s.duracionMinutos)}</span>
         <span aria-hidden="true" style={{ color: colors.border }}>|</span>
         <b style={{ color: colors.strong, fontWeight: 600 }}>{t('desde', { monto: `$${formatMontoCorto(s.precio)}` })}</b>
       </div>
+      {s.promoComponentizada && s.componentes && s.componentes.length > 0 && (
+        <div style={{ marginTop: 8, fontSize: 13.5, color: colors.sub, lineHeight: 1.45 }}>
+          {s.componentes.map((c) => (
+            <div key={c.orden} data-testid="promo-componente">
+              {t('componenteLinea', { servicio: c.servicioNombre, profesional: c.profesionalNombre })}
+            </div>
+          ))}
+          <div style={{ marginTop: 2, fontWeight: 600, color: colors.strong }}>
+            {t(s.modoPromo === 'paralelo' ? 'modoParalelo' : 'modoSecuencia')}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

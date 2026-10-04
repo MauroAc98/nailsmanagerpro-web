@@ -32,7 +32,14 @@ const SERVICIOS = [
     id: 7, nombre: 'Esmaltado', duracion_minutos: 45, precio: 12000,
     categoria: { id: 2, nombre: 'Manicura' }, fotos: ['https://cdn.test/f1.jpg', 'https://cdn.test/f2.jpg'],
   },
-  { id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null, fotos: [], es_promo_componentizada: true },
+  {
+    id: 9, nombre: 'Pedicura', duracion_minutos: 45, precio: 15000, categoria: null, fotos: [], es_promo_componentizada: true,
+    modo_promo: 'paralelo',
+    componentes: [
+      { servicio_nombre: 'Pedicura spa', profesional_nombre: 'Lucía', orden: 2 },
+      { servicio_nombre: 'Esmaltado', profesional_nombre: 'Ana', orden: 1 },
+    ],
+  },
 ];
 
 export function crearBackendFalso(pedidos: string[] = []): AxiosAdapter {
@@ -111,6 +118,22 @@ describe('real: mapeo', () => {
     const d = await r.getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
     expect(d.duracionTotalMinutos).toBe(90);
     expect(d.slots[1]).toEqual({ hora: '10:30', profesionalIds: [3, 4] });
+  });
+
+  it('mapea el detalle de una promo (modo y componentes en orden) y no inventa nada en un servicio comun', async () => {
+    const [comun, promo] = await nuevo().getServices('ana');
+    expect(promo.modoPromo).toBe('paralelo');
+    expect(promo.componentes).toEqual([
+      { servicioNombre: 'Esmaltado', profesionalNombre: 'Ana', orden: 1 },
+      { servicioNombre: 'Pedicura spa', profesionalNombre: 'Lucía', orden: 2 },
+    ]);
+    expect(comun.componentes).toBeUndefined();
+    expect(comun.modoPromo).toBeUndefined();
+  });
+
+  it('un servicio comun sigue idéntico: sin modoPromo ni componentes', async () => {
+    const [comun] = await nuevo().getServices('ana');
+    expect(Object.keys(comun)).not.toContain('componentes');
   });
 
   it('un solo grupo viaja como asignaciones y omite profesional_id con "Cualquiera" (Rule L)', async () => {

@@ -28,6 +28,9 @@
     "filtroTodos": "Todos",
     "filtroOtros": "Outros",
     "filtrosAria": "Filtrar por categoria",
+    "componenteLinea": "{servicio} · com {profesional}",
+    "modoSecuencia": "Um depois do outro",
+    "modoParalelo": "Ao mesmo tempo",
     "continuar": "Continuar · {count, plural, one {# serviço} other {# serviços}}"
   },
   "horario": {

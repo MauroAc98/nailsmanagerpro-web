@@ -121,7 +121,12 @@ const SEED: Record<string, MockSalon> = {
       { id: 1, nombre: 'Esmaltado semipermanente', duracionMinutos: 45, precio: 12000, categoria: { id: 1, nombre: 'Manicura' }, fotos: placeholders(4), profesionalIds: [1, 2] },
       { id: 3, nombre: 'Kapping gel', duracionMinutos: 90, precio: 20000, categoria: { id: 1, nombre: 'Manicura' }, fotos: placeholders(6), profesionalIds: [1] },
       { id: 4, nombre: 'Pedicura spa', duracionMinutos: 60, precio: 14000, categoria: { id: 2, nombre: 'Pedicura' }, fotos: [], profesionalIds: [1, 2] },
-      { id: 5, nombre: 'Combo mani + pedi', duracionMinutos: 105, precio: 24000, categoria: { id: 3, nombre: 'Promociones' }, fotos: [], profesionalIds: [1, 2], promoComponentizada: true },
+      { id: 5, nombre: 'Combo mani + pedi', duracionMinutos: 105, precio: 24000, categoria: { id: 3, nombre: 'Promociones' }, fotos: [], profesionalIds: [1, 2], promoComponentizada: true,
+        modoPromo: 'secuencia',
+        componentes: [
+          { servicioNombre: 'Esmaltado semipermanente', profesionalNombre: 'Ana', orden: 1 },
+          { servicioNombre: 'Pedicura spa', profesionalNombre: 'Lucía', orden: 2 },
+        ] },
       { id: 2, nombre: 'Retiro de esmalte', duracionMinutos: 30, precio: 8000, categoria: null, fotos: [], profesionalIds: [1, 2] },
     ],
     // Ana no atiende a las 09:30, 12:00 ni 15:00 (desactivados); ambas hacen
@@ -242,9 +247,10 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       .servicios.filter(
         (x) => query?.profesionalId === undefined || x.profesionalIds.includes(query.profesionalId),
       )
-      .map(({ id, nombre, duracionMinutos, precio, categoria, fotos, promoComponentizada }) => ({
+      .map(({ id, nombre, duracionMinutos, precio, categoria, fotos, promoComponentizada, modoPromo, componentes }) => ({
         id, nombre, duracionMinutos, precio, categoria: categoria ? { ...categoria } : null, fotos: [...fotos],
         ...(promoComponentizada ? { promoComponentizada } : {}),
+        ...(componentes ? { modoPromo: modoPromo ?? null, componentes: componentes.map((c) => ({ ...c })) } : {}),
       }));
 
   const resolverServicios = (s: MockSalon, ids: number[]): MockServicio[] => {
