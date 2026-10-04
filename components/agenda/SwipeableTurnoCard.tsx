@@ -14,6 +14,7 @@ import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
 import { nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
 import { ConBarra, IconoGrupo, LineaServicios } from './GrupoTurno';
+import { IconoNotaTurno, tieneNotaTurno } from './IconoNotaTurno';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
 
 // ─────────────────────────────────────────────
@@ -179,6 +180,7 @@ export function SwipeableTurnoCard({
             style={{ fontSize: 15.5, fontWeight: 600, color: colors.textStrong }}
           />
           {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline compacto />}
+          {tieneNotaTurno(turno.notas) && <IconoNotaTurno />}
           {turno.grupo_id != null && <IconoGrupo />}
         </div>
         {/* Servicio(s) — vuelve a una sola línea con ellipsis (cards de

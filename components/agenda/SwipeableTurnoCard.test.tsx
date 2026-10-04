@@ -185,3 +185,22 @@ describe('SwipeableTurnoCard — turno de un grupo', () => {
     expect(container.querySelector('[data-grupo-barra]')).not.toBeNull();
   });
 });
+
+describe('SwipeableTurnoCard — idea del cliente (notas)', () => {
+  it('muestra el ícono cuando el turno trae una nota', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ notas: 'Algo minimalista' })} onCancel={vi.fn()} />);
+    expect(screen.getByLabelText('Tiene una idea del cliente')).toBeInTheDocument();
+  });
+
+  it.each([[null], [undefined], [''], ['   ']])('no lo muestra con la nota %j', (notas) => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ notas })} onCancel={vi.fn()} />);
+    expect(screen.queryByLabelText('Tiene una idea del cliente')).toBeNull();
+  });
+
+  it('también en turnos en curso', () => {
+    renderWithProviders(
+      <SwipeableTurnoCard turno={buildTurno({ estado_visual: 'en_curso', notas: 'Algo' })} onCancel={vi.fn()} onFinalizar={vi.fn()} />,
+    );
+    expect(screen.getByLabelText('Tiene una idea del cliente')).toBeInTheDocument();
+  });
+});

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, User } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import { IdeaDelTurno } from '@/components/agenda/IdeaDelTurno';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -358,6 +359,9 @@ export default function EditarTurnoPage() {
       </div>
 
       <div style={{ padding: '0 20px' }}>
+
+        {/* Idea que el cliente escribio al reservar online (solo lectura). */}
+        <IdeaDelTurno notas={turnoActual?.notas} origenWeb={turnoActual?.origen === 'web'} />
 
         {/* ─── Turno de un combo: mover solo este o todo el combo ─── */}
         {pendientesCombo.length > 0 && (

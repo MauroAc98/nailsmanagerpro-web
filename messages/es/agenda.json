@@ -55,6 +55,13 @@
     "enlace": "Parte de un turno que atienden varias personas",
     "con": "con {nombres}"
   },
+  "NotaTurno": {
+    "chip": "Tiene una idea del cliente",
+    "title": "Idea para el turno",
+    "escritaAlReservar": "Escrita al reservar online",
+    "verTodo": "Ver todo",
+    "verMenos": "Ver menos"
+  },
   "FinalizadoCard": {
     "deletedClient": "Cliente eliminado",
     "finished": "FINALIZADO",

@@ -22,6 +22,7 @@ import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
+import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
 import { barrasDeGrupo, etiquetaTramo, nombresDeLosOtros, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
@@ -134,6 +135,7 @@ function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; prof
             texto={turno.cliente ? `${turno.cliente.nombre} ${turno.cliente.apellido}` : t('deletedClient')}
             style={{ fontSize: 15.5, fontWeight: 500, color: colors.muted }}
           />
+          {tieneNotaTurno(turno.notas) && <IconoNotaTurno />}
           {turno.grupo_id != null && <IconoGrupo />}
         </div>
         <NombreExpandible
