@@ -304,7 +304,8 @@ describe('HorarioScreen', () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await screen.findByRole('button', { name: /Lucía$/ });
     const nombres = screen.getAllByRole('button').filter((b) => b.hasAttribute('aria-pressed'));
-    expect(nombres.map((b) => b.textContent)).toEqual(['Cualquiera', 'ANAna', 'LULucía']);
+    // con 2 servicios, el control "Una persona / Una por servicio" va antes de las pastillas
+    expect(nombres.map((b) => b.textContent)).toEqual(['Una persona', 'Una por servicio', 'Cualquiera', 'ANAna', 'LULucía']);
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
     expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
   });
@@ -576,9 +577,10 @@ describe('HorarioScreen', () => {
   });
 });
 
-describe('HorarioScreen: una profesional distinta por servicio', () => {
+describe('HorarioScreen: quién te atiende (una persona / una por servicio)', () => {
   afterEach(() => setServiceParaTests(null));
-  const LINK = 'Elegir quién atiende cada servicio';
+  const UNA_PERSONA = 'Una persona';
+  const UNA_POR_SERVICIO = 'Una por servicio';
 
   // Registra lo que la pantalla le pide al servicio (sobre el mock con agenda real).
   function espiar() {
@@ -616,45 +618,48 @@ describe('HorarioScreen: una profesional distinta por servicio', () => {
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  // Reportado: el link era texto suelto y no se leia como algo tocable; en la
-  // reserva online todo lo tocable tiene que parecerlo.
-  it('el link para elegir quien atiende cada servicio es un boton visible de al menos 44px', async () => {
+  it('con 2 servicios muestra "Quién te atiende" con el control "Una persona" / "Una por servicio" (la primera activa)', async () => {
     espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    const boton = await screen.findByRole('button', { name: LINK });
-    expect(parseInt(boton.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
-    expect(boton.style.border).not.toMatch(/none/);
-    expect(boton.querySelector('svg')).not.toBeNull();
+    expect(await screen.findByText('Quién te atiende')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: UNA_PERSONA })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: UNA_POR_SERVICIO })).toHaveAttribute('aria-pressed', 'false');
+    // el selector viejo y el link largo ya no existen
+    expect(screen.queryByText('Profesional')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Elegir quién atiende cada servicio' })).toBeNull();
   });
 
-  it('el link para volver a "una sola profesional" tambien es un boton visible', async () => {
+  it('las dos opciones del control son botones de al menos 44px', async () => {
     espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: LINK }));
-    const volver = await screen.findByRole('button', { name: /una sola persona/i });
-    expect(parseInt(volver.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
-    expect(volver.style.border).not.toMatch(/none/);
+    for (const nombre of [UNA_PERSONA, UNA_POR_SERVICIO]) {
+      const boton = await screen.findByRole('button', { name: nombre });
+      expect(parseInt(boton.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
+    }
   });
 
-  it('con un solo servicio no ofrece elegir una profesional por servicio', async () => {
+  it('con un solo servicio no hay control: queda el selector de siempre bajo "Quién te atiende"', async () => {
     espiar();
     await preparar([1]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await waitFor(() => expect(hayRueda()).toBe(true));
-    expect(screen.queryByRole('button', { name: LINK })).toBeNull();
+    expect(screen.getByText('Quién te atiende')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: UNA_POR_SERVICIO })).toBeNull();
+    expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('con 2 servicios y 2 profesionales que los hacen, el link divide en un grupo por servicio, cada uno con profesional explicita', async () => {
+  it('"Una por servicio" divide en un grupo por servicio, cada uno con profesional explicita', async () => {
     const { consultas, holds } = espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: LINK }));
+    await userEvent.click(await screen.findByRole('button', { name: UNA_POR_SERVICIO }));
     await waitFor(() => expect(consultas.at(-1)?.asignaciones).toHaveLength(2));
     const grupos = consultas.at(-1)!.asignaciones!;
     expect(grupos.map((g) => g.servicioIds)).toEqual([[1], [2]]); // orden de seleccion
     for (const g of grupos) expect(typeof g.profesionalId).toBe('number');
+    expect(screen.getByRole('button', { name: UNA_POR_SERVICIO })).toHaveAttribute('aria-pressed', 'true');
     // ya no existe "Cualquiera" y el cliente nunca ve la jerga interna
     expect(screen.queryByRole('button', { name: /Cualquiera$/ })).toBeNull();
     expect(screen.queryByText(/tramo|paralelo|secuencia/i)).toBeNull();
@@ -665,22 +670,125 @@ describe('HorarioScreen: una profesional distinta por servicio', () => {
     expect(holds[0].asignaciones).toEqual(grupos);
   });
 
-  it('se puede volver a una sola profesional', async () => {
+  it('"Una persona" vuelve a un solo grupo (control en el mismo lugar, sin link aparte)', async () => {
     const { consultas } = espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await userEvent.click(await screen.findByRole('button', { name: LINK }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Volver a una sola persona para todo' }));
+    await userEvent.click(await screen.findByRole('button', { name: UNA_POR_SERVICIO }));
+    await userEvent.click(await screen.findByRole('button', { name: UNA_PERSONA }));
     await waitFor(() => expect(consultas.at(-1)?.asignaciones).toBeUndefined());
-    expect(await screen.findByRole('button', { name: LINK })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: UNA_PERSONA })).toHaveAttribute('aria-pressed', 'true');
+    expect(pill('Cualquiera')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Volver a una sola persona para todo' })).toBeNull();
   });
+
   it('con una promo de profesional fija no se ofrece elegir profesional ni repartir', async () => {
     espiar();
     await preparar([5]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await waitFor(() => expect(hayRueda()).toBe(true));
-    expect(screen.queryByText('Profesional')).toBeNull();
+    expect(screen.queryByText('Quién te atiende')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Cualquiera' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Elegir quién atiende cada servicio' })).toBeNull();
+    expect(screen.queryByRole('button', { name: UNA_POR_SERVICIO })).toBeNull();
+  });
+
+  // Caso 1 del canvas: si un servicio lo hace una sola persona no hay nada que
+  // elegir; se ve marcada y con el motivo escrito (no es un boton roto).
+  it('si un servicio lo hace una sola persona, queda marcada y dice "Solo X hace este servicio"', async () => {
+    espiar();
+    await preparar([3, 4]); // Kapping gel: solo Ana; Pedicura spa: Ana y Lucía
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await userEvent.click(await screen.findByRole('button', { name: UNA_POR_SERVICIO }));
+    const aviso = await screen.findByText(/^Solo .+ hace este servicio$/);
+    expect(aviso).toBeInTheDocument();
+    expect(screen.getAllByText(/hace este servicio$/)).toHaveLength(1); // solo en el servicio de una sola opcion
+  });
+
+  // Caso 4 del canvas: mientras se sabe quien hace que, el bloque reserva su
+  // altura con un esqueleto (si apareciera con todas y despues se achicara,
+  // repetiria el parpadeo que ya se corrigio en las promos).
+  it('mientras carga quien hace que, muestra un esqueleto del bloque y despues lo reemplaza', async () => {
+    espiar();
+    await preparar([1, 2]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    expect(await screen.findByTestId('quien-skeleton')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: UNA_PERSONA })).toBeNull();
+    expect(await screen.findByRole('button', { name: UNA_PERSONA })).toBeInTheDocument();
+    expect(screen.queryByTestId('quien-skeleton')).toBeNull();
+  });
+
+  it('con una promo de profesional fija no hay esqueleto del bloque', async () => {
+    espiar();
+    await preparar([5]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await waitFor(() => expect(hayRueda()).toBe(true));
+    expect(screen.queryByTestId('quien-skeleton')).toBeNull();
+  });
+
+  // Caso 5 del canvas: la elegida antes ya no hace el servicio. Vuelve a
+  // "Cualquiera" pero avisando, para que no sorprenda ("yo habia elegido a Lucia").
+  describe('cuando la profesional elegida antes no hace el servicio', () => {
+    const AVISO = 'Lucía no hace este servicio, así que te asignamos a cualquiera.';
+
+    it('vuelve a "Cualquiera" y avisa con una linea', async () => {
+      espiar();
+      await preparar([3]); // Kapping gel: solo Ana
+      useReservaOnlineStore.getState().setProfesional(2); // Lucia
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByText(AVISO)).toBeInTheDocument();
+      expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('el aviso se va al tocar cualquier opcion', async () => {
+      espiar();
+      await preparar([3]);
+      useReservaOnlineStore.getState().setProfesional(2);
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await screen.findByText(AVISO);
+      await userEvent.click(pill('Ana'));
+      expect(screen.queryByText(AVISO)).toBeNull();
+    });
+
+    it('sin cambio de elegida no hay aviso', async () => {
+      espiar();
+      await preparar([1, 2]);
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await waitFor(() => expect(hayRueda()).toBe(true));
+      expect(screen.queryByText(/no hace este servicio/)).toBeNull();
+    });
+  });
+
+  // Caso 3 del canvas: ninguna persona hace todo junto. "Una persona" no existe:
+  // el control se oculta y una linea explica por que.
+  describe('cuando ninguna persona hace todos los servicios elegidos', () => {
+    function nadieHaceTodo() {
+      const base = prepararServicio();
+      const consultas: AvailabilityQuery[] = [];
+      setServiceParaTests({
+        ...base,
+        // Kapping gel (3) solo Ana (1); Retiro de esmalte (2) solo Lucía (2)
+        getServices: async (slug, q) => {
+          const todos = await base.getServices(slug, q);
+          if (q?.profesionalId === 1) return todos.filter((s) => s.id !== 2);
+          if (q?.profesionalId === 2) return todos.filter((s) => s.id !== 3);
+          return todos;
+        },
+        getAvailability: async (slug, q) => {
+          consultas.push(q);
+          return base.getAvailability(slug, q);
+        },
+      });
+      return { consultas };
+    }
+
+    it('oculta el control, explica por que y reparte por servicio', async () => {
+      const { consultas } = nadieHaceTodo();
+      await preparar([3, 2]);
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByText('Estos servicios los hacen personas distintas: elegí quién hace cada uno.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: UNA_PERSONA })).toBeNull();
+      expect(screen.queryByRole('button', { name: UNA_POR_SERVICIO })).toBeNull();
+      await waitFor(() => expect(consultas.at(-1)?.asignaciones).toHaveLength(2));
+    });
   });
 });

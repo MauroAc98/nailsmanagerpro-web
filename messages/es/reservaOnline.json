@@ -45,7 +45,7 @@
     "sinHorarios": "No hay horarios libres este día. Probá con otro.",
     "errorCarga": "No pudimos cargar los horarios.",
     "subtitulo": "Tu turno dura {duracion}.",
-    "profesional": "Profesional",
+    "quienAtiende": "Quién te atiende",
     "elegidoCualquiera": "<b>{dia}</b> · {hora} con cualquier profesional",
     "elegidoCon": "<b>{dia}</b> · {hora} con {profesional}",
     "tomado": "Ese horario se acaba de ocupar. Elegí otro.",
@@ -57,8 +57,11 @@
     "buscando": "Buscando el próximo día con lugar…",
     "sinLugarProximos": "No hay lugar en los próximos 30 días. Probá con alguien más del equipo o contactá al negocio.",
     "reteniendo": "Reservando tu horario…",
-    "profesionalPorServicio": "Elegir quién atiende cada servicio",
-    "unaSola": "Volver a una sola persona para todo"
+    "unaPersona": "Una persona",
+    "unaPorServicio": "Una por servicio",
+    "soloHace": "Solo {nombre} hace este servicio",
+    "personasDistintas": "Estos servicios los hacen personas distintas: elegí quién hace cada uno.",
+    "avisoReset": "{nombre} no hace {n, plural, one {este servicio} other {todos estos servicios}}, así que te asignamos a cualquiera."
   },
   "datos": {
     "title": "Tus datos",

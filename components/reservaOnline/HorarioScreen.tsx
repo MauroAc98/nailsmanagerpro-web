@@ -28,8 +28,8 @@ import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { NoDisponibleAun } from './NoDisponibleAun';
 import { ProfesionalPorServicio } from './ProfesionalPorServicio';
-import { IcoPersonas } from './iconos';
-import { BarraInferior, BotonPrimario, BotonSecundario, Etiqueta, Hueso, Mensaje, PasoHeader } from './ui';
+import { QuienTeAtiende } from './QuienTeAtiende';
+import { BarraInferior, BotonPrimario, Etiqueta, Hueso, Mensaje, PasoHeader } from './ui';
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -44,6 +44,22 @@ function HorarioSkeleton() {
         <Hueso w="70%" h={13} style={{ margin: '0 auto 14px' }} />
         <Hueso w="100%" h={132} r={12} />
         <Hueso w="55%" h={13} style={{ margin: '10px auto 0' }} />
+      </div>
+    </div>
+  );
+}
+
+// Reserva la altura del bloque "Quien te atiende" mientras se sabe quien hace
+// que (si apareciera con todas y despues se achicara, parpadearia).
+function QuienSkeleton() {
+  return (
+    <div data-testid="quien-skeleton" style={{ marginBottom: 14 }}>
+      <Hueso w={110} h={11} style={{ marginBottom: 8 }} />
+      <Hueso w="100%" h={52} r={14} style={{ marginBottom: 12 }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Hueso w={112} h={32} r={16} />
+        <Hueso w={84} h={32} r={16} />
+        <Hueso w={90} h={32} r={16} />
       </div>
     </div>
   );
@@ -83,6 +99,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   // dejan seguir reservando, esto no).
   const [noDisponible, setNoDisponible] = useState(false);
   const [avisoRetener, setAvisoRetener] = useState<'rate_limited' | 'challenge_failed' | null>(null);
+  // Nombre de la profesional elegida antes que ya no hace el servicio (aviso de una linea).
+  const [avisoReset, setAvisoReset] = useState<string | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [sinLugarProximos, setSinLugarProximos] = useState(false);
   const [calendarioAbierto, setCalendarioAbierto] = useState(false);
@@ -154,17 +172,33 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     return salon.profesionales.filter((p) => servicioIds.every((id) => opciones[id]?.some((o) => o.id === p.id)));
   }, [salon, opciones, servicioIds]);
   // Una profesional elegida antes (otro servicio) que ya no los ofrece: vuelve a "Cualquiera".
+  const elegidaYaNoHace =
+    !!compatibles && !asignaciones && typeof profesionalId === 'number' && !compatibles.some((p) => p.id === profesionalId);
+  // El aviso se fija durante el render (antes de que el reset cambie la eleccion); no en el effect.
+  if (elegidaYaNoHace && avisoReset === null) {
+    const nombre = salon?.profesionales.find((p) => p.id === profesionalId)?.nombre;
+    if (nombre) setAvisoReset(nombre);
+  }
   useEffect(() => {
-    if (compatibles && !asignaciones && typeof profesionalId === 'number' && !compatibles.some((p) => p.id === profesionalId)) {
-      setProfesional('any');
-    }
-  }, [compatibles, asignaciones, profesionalId, setProfesional]);
+    if (elegidaYaNoHace) setProfesional('any');
+  }, [elegidaYaNoHace, setProfesional]);
   // Repartir solo tiene sentido con 2+ servicios, si cada uno lo hace alguien y hay 2+ profesionales distintas.
   const puedeDividir =
     servicioIds.length > 1 &&
     opciones !== null &&
     servicioIds.every((id) => opciones[id].length > 0) &&
     new Set(servicioIds.flatMap((id) => opciones[id].map((p) => p.id))).size > 1;
+
+  // Nadie hace todos los servicios juntos: "una persona" no existe, asi que se
+  // reparte por servicio (el bloque lo explica con una linea).
+  const sinPersonaUnica = !!compatibles && compatibles.length === 0 && puedeDividir;
+  useEffect(() => {
+    if (sinPersonaUnica && !asignaciones && opciones) {
+      setAsignaciones(
+        servicioIds.map((id) => ({ servicioIds: [id], profesionalId: opciones[id][0].id })),
+      );
+    }
+  }, [sinPersonaUnica, asignaciones, opciones, servicioIds, setAsignaciones]);
 
   const claveDisp = `${slug}|${fecha}|${claveGrupos}|${liberado}`;
   const { data: disp, error, cargando, reintentar } = useCarga(
@@ -345,38 +379,50 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         onVolver={() => ir(rutaPaso(slug, 'servicios'))}
       />
 
-      {/* Mismo selector de la agenda propia (mismos tokens que agenda/historia);
-          solo con 2+ profesionales. "Cualquiera" = sin profesional puntual. */}
-      {salon && salon.profesionales.length > 1 && asignaciones && opciones && (
-        <ProfesionalPorServicio
-          servicios={servicios ?? []}
-          grupos={asignaciones}
-          opciones={opciones}
-          onElegir={(sid, pid) =>
-            setAsignaciones(asignaciones.map((g) => (g.servicioIds[0] === sid ? { ...g, profesionalId: pid } : g)))
-          }
-          onVolver={() => setAsignaciones(null)}
-        />
-      )}
-      {/* Sin `servicios` no se sabe si lo elegido es una promo con profesional
-          fija: esperar evita que el selector aparezca un instante y se vaya. */}
-      {salon && servicios && compatibles && compatibles.length > 0 && !hayPromoFija && !(asignaciones && opciones) && (
-        <SelectorProfesional
-          label={t('horario.profesional')}
-          labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
-          todasLabel={t('horario.cualquiera')}
-          profesionales={compatibles}
-          selectedId={profesionalId === 'any' ? null : profesionalId}
-          onSelect={(id) => setProfesional(id ?? 'any')}
-          selectedFg={colors.primaryFg}
-          unselectedBorderColor={colors.border}
-          pillFontWeight={600}
-        />
-      )}
-      {puedeDividir && !asignaciones && (
-        <BotonSecundario onClick={repartir} icono={<IcoPersonas color={colors.primaryDeep} size={18} />}>
-          {t('horario.profesionalPorServicio')}
-        </BotonSecundario>
+      {/* "Quién te atiende": un solo bloque (selector de la agenda propia o reparto
+          por servicio, segun el modo). Solo con 2+ profesionales. Sin `servicios`
+          no se sabe si lo elegido es una promo con profesional fija: esperar
+          evita que aparezca un instante y se vaya. */}
+      {salon && salon.profesionales.length > 1 && !hayPromoFija && !(opciones && compatibles) && <QuienSkeleton />}
+      {salon && servicios && opciones && compatibles && !hayPromoFija && (asignaciones || compatibles.length > 0) && (
+        <QuienTeAtiende
+          puedeElegirModo={puedeDividir && !sinPersonaUnica}
+          porServicio={!!asignaciones}
+          onModo={(porServicio) => {
+            setAvisoReset(null);
+            if (porServicio) repartir();
+            else setAsignaciones(null);
+          }}
+          aviso={avisoReset ? t('horario.avisoReset', { nombre: avisoReset, n: servicioIds.length }) : null}
+          sinPersonaUnica={sinPersonaUnica}
+        >
+          {asignaciones ? (
+            <ProfesionalPorServicio
+              servicios={servicios}
+              grupos={asignaciones}
+              opciones={opciones}
+              onElegir={(sid, pid) => {
+                setAvisoReset(null);
+                setAsignaciones(asignaciones.map((g) => (g.servicioIds[0] === sid ? { ...g, profesionalId: pid } : g)));
+              }}
+            />
+          ) : (
+            <SelectorProfesional
+              label=""
+              labelStyle={{ display: 'none' }}
+              todasLabel={t('horario.cualquiera')}
+              profesionales={compatibles}
+              selectedId={profesionalId === 'any' ? null : profesionalId}
+              onSelect={(id) => {
+                setAvisoReset(null);
+                setProfesional(id ?? 'any');
+              }}
+              selectedFg={colors.primaryFg}
+              unselectedBorderColor={colors.border}
+              pillFontWeight={600}
+            />
+          )}
+        </QuienTeAtiende>
       )}
 
       {/* La tira de la agenda propia; su padding lateral propio se compensa. */}
