@@ -38,7 +38,7 @@
     "saveFixed": "Salvar como fixo",
     "useOnce": "Usar só desta vez",
     "emptyState": "Não há disponibilidade para mostrar neste período",
-    "noProfessionalForFixedBg": "Não foi possível identificar a profissional para salvar o fundo fixo. Será usado só desta vez.",
+    "noProfessionalForFixedBg": "Não foi possível identificar quem atende para salvar o fundo fixo. Será usado só desta vez.",
     "couldNotSaveFixedBackground": "Não foi possível salvar o fundo fixo. Será usado só desta vez.",
     "couldNotRemoveFixedBackground": "Não foi possível remover o fundo fixo.",
     "noContentToShow": "Sem conteúdo: não há horários livres para mostrar na imagem.",

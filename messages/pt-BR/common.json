@@ -98,7 +98,7 @@
     "reasonAvisoPrevio": "Cliente cancelou com aviso",
     "reasonNoShow": "Cliente não compareceu",
     "reasonReprogramar": "Cliente pediu para remarcar",
-    "reasonImprevisto": "Imprevisto da profissional",
+    "reasonImprevisto": "Imprevisto de quem atende",
     "reasonOtro": "Outro"
   },
   "PrecioServiciosSheetHost": {
