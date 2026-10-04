@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { SheetInput } from './SheetInput';
 import type { SenaCampo } from '@/lib/senaConfig';
+import { COMISIONES_MP_REFERENCIA, coincideConPorcentaje, porcentajeParaInput } from '@/lib/mpComisiones';
 
 interface Props {
   senaMonto: string;
@@ -15,6 +16,14 @@ interface Props {
   // mientras haya una cuenta conectada. Vive acá porque el monto ahora se
   // edita en este sheet, no en Mensajes automáticos.
   erroresServidor?: Partial<Record<SenaCampo, string>>;
+  // Porcentajes por negocio, como texto de input. Vacío en comisión = tasa
+  // estándar; vacío en retención = 0 (la decisión de sumarla es del negocio).
+  retencion: string;
+  setRetencion: (v: string) => void;
+  comision: string;
+  setComision: (v: string) => void;
+  errorRetencion: string | null;
+  errorComision: string | null;
   onGuardar: () => void;
   guardando: boolean;
   onClose: () => void;
@@ -38,10 +47,13 @@ function IconMoney() {
 }
 
 export function SheetSenaYPagos({
-  senaMonto, setSenaMonto, error, erroresServidor, onGuardar, guardando, onClose,
+  senaMonto, setSenaMonto, error, erroresServidor,
+  retencion, setRetencion, comision, setComision, errorRetencion, errorComision, onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetSenaYPagos');
   const errorServidorMonto = erroresServidor?.sena_monto;
+  const errorComisionMostrado = errorComision ?? erroresServidor?.comision_mp_porcentaje;
+  const errorRetencionMostrado = errorRetencion ?? erroresServidor?.retencion_iibb_porcentaje;
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
@@ -70,6 +82,54 @@ export function SheetSenaYPagos({
       )}
       {errorServidorMonto && (
         <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{errorServidorMonto}</p>
+      )}
+
+      <SheetInput
+        label={t('mpCommission')}
+        icon={<IconMoney />}
+        value={comision}
+        onChange={setComision}
+        placeholder={t('mpCommissionPlaceholder')}
+        type="text"
+        inputMode="decimal"
+      />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: -4, marginBottom: 10 }}>
+        {COMISIONES_MP_REFERENCIA.map(c => {
+          const activo = coincideConPorcentaje(comision, c.porcentaje);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={activo}
+              onClick={() => setComision(porcentajeParaInput(c.porcentaje))}
+              style={{
+                borderRadius: 20, padding: '8px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
+                backgroundColor: activo ? colors.primarySolid : colors.border,
+                color: activo ? '#fff' : colors.subtext,
+              }}
+            >
+              {t(`mpPlazo.${c.id}`, { rate: porcentajeParaInput(c.porcentaje) })}
+            </button>
+          );
+        })}
+      </div>
+      <p style={{ fontSize: 12, color: colors.subtext, marginTop: 0, marginBottom: 16, lineHeight: 1.4 }}>{t('mpCommissionHelp')}</p>
+      {errorComisionMostrado && (
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{errorComisionMostrado}</p>
+      )}
+
+      <SheetInput
+        label={t('iibbRetention')}
+        icon={<IconMoney />}
+        value={retencion}
+        onChange={setRetencion}
+        placeholder="0"
+        type="text"
+        inputMode="decimal"
+      />
+      <p style={{ fontSize: 12, color: colors.subtext, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{t('iibbRetentionHelp')}</p>
+      {errorRetencionMostrado && (
+        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{errorRetencionMostrado}</p>
       )}
 
       <div style={{

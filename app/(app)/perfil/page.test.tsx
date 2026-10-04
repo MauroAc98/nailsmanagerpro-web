@@ -28,6 +28,8 @@ const BASE_USER: User = {
   recordatorio_automatico: false,
   hora_recordatorio: '20:00',
   sena_monto: null,
+  retencion_iibb_porcentaje: 0,
+  comision_mp_porcentaje: null,
   whatsapp_pide_sena: false,
   whatsapp_sena_titular: null,
   whatsapp_sena_entidad: null,
@@ -139,7 +141,33 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     renderWithProviders(<PerfilPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({ sena_monto: 5000 }));
+    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
+      sena_monto: 5000, retencion_iibb_porcentaje: 0, comision_mp_porcentaje: null,
+    }));
+  });
+
+  it('guarda retención y comisión propias desde Seña y pagos (vacío = null)', async () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000, retencion_iibb_porcentaje: 4, comision_mp_porcentaje: 4.39 } });
+    renderWithProviders(<PerfilPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
+    expect(screen.getByRole('textbox', { name: 'Retención de Ingresos Brutos (%)' })).toHaveValue('4');
+    expect(screen.getByRole('textbox', { name: 'Comisión de Mercado Pago (%)' })).toHaveValue('4.39');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Comisión de Mercado Pago (%)' }), { target: { value: '' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Retención de Ingresos Brutos (%)' }), { target: { value: '4,5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
+      sena_monto: 5000, retencion_iibb_porcentaje: 4.5, comision_mp_porcentaje: null,
+    }));
+  });
+
+  it('rechaza un porcentaje fuera de rango sin guardar', async () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+    renderWithProviders(<PerfilPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Retención de Ingresos Brutos (%)' }), { target: { value: '51' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByText('Ingresá un porcentaje válido, entre 0 y 50.')).toBeInTheDocument();
+    expect(useAuth().updatePerfil).not.toHaveBeenCalled();
   });
 
   it('guarda desde Mensajes automáticos sin mandar sena_monto', async () => {

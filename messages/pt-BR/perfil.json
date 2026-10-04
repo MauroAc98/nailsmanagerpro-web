@@ -49,6 +49,12 @@
   "SheetSenaYPagos": {
     "title": "Sinal e pagamentos",
     "subtitle": "O valor pedido ao cliente para confirmar um horário — por reserva online ou por WhatsApp.",
+    "mpCommission": "Comissão do Mercado Pago (%)",
+    "mpCommissionPlaceholder": "Taxa padrão",
+    "mpCommissionHelp": "É o que o Mercado Pago cobra conforme o prazo em que você escolheu receber o dinheiro. Escolha o que corresponde à sua conta, em «Dinheiro disponível em». O IVA é somado automaticamente. Se deixar em branco, usa-se a taxa padrão (6,29%).",
+    "mpPlazo": {"instante": "Na hora · {rate}%", "dias10": "10 dias · {rate}%", "dias18": "18 dias · {rate}%", "dias35": "35 dias · {rate}%"},
+    "iibbRetention": "Retenção de Ingressos Brutos (%)",
+    "iibbRetentionHelp": "Se o Mercado Pago retém Ingressos Brutos em cada cobrança, informe a porcentagem aqui: o valor pago pelo cliente aumenta para que o sinal chegue completo até você. Varia conforme a província e a sua situação fiscal, então informe apenas se realmente retiverem (aparece como «Retención Ingresos Brutos» no detalhe de cada cobrança). Se deixar em 0, a retenção é descontada do seu sinal.",
     "depositAmount": "Valor do sinal ($)",
     "mpInfoTitle": "Mercado Pago",
     "mpInfoBody": "Nesta primeira versão, a conexão com o Mercado Pago é configurada pela equipe da Turnetto junto com você. Fale com o suporte para conectar ou trocar a conta.",
@@ -140,6 +146,7 @@
     "changesSaved": "Alterações salvas",
     "dataSaved": "Dados salvos",
     "passwordsDontMatch": "As senhas não coincidem.",
+    "percentInvalid": "Informe uma porcentagem válida, entre 0 e 50.",
     "depositAmountInvalid": "Informe um valor válido (ou deixe em branco para não pedir sinal).",
     "groupAvisos": "Avisos"
   },
