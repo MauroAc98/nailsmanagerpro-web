@@ -24,6 +24,9 @@ interface Props {
   // Recibe siempre el set COMPLETO nuevo, nunca un delta — tanto un tick
   // individual como un bulk-toggle de categoría son mutaciones en bloque.
   onChange:    (nextIds: number[]) => void;
+  // `single` only: omit the "Todos" row when clearing makes no sense (e.g. a
+  // picker that must end with exactly one service).
+  hideAll?:    boolean;
 }
 
 function EstadoCheckbox({ estado }: { estado: EstadoCategoria }) {
@@ -74,7 +77,7 @@ function RadioIndicator({ selected }: { selected: boolean }) {
   );
 }
 
-export function SelectorServicios({ servicios, mode, selectedIds, onChange }: Props) {
+export function SelectorServicios({ servicios, mode, selectedIds, onChange, hideAll }: Props) {
   const t = useTranslations('common.SelectorServicios');
 
   // Mismo patrón que configuracion/servicios/page.tsx: `categoriasReady`
@@ -182,7 +185,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange }: Pr
   // selección (mirror del patrón `filterAll` ya usado en GastosPage /
   // IngresosPage / HistorialClienteSheetHost para "ningún filtro
   // aplicado", con concordancia de género para "servicios").
-  const filaTodos = mode === 'single' && (
+  const filaTodos = mode === 'single' && !hideAll && (
     <button
       onClick={() => onChange([])}
       style={{

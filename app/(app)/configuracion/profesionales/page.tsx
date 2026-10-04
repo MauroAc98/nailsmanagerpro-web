@@ -14,22 +14,7 @@ import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { formatearDiasAtencion } from '@/lib/formatearDiasAtencion';
-
-// Abreviaturas lunes-primero para el texto de días — reusa las mismas
-// traducciones que WeekdayPicker (`*Full`, recortadas a 3 letras: "Lunes" ->
-// "Lun") en vez de duplicar un set de claves nuevo solo para esto.
-function useAbreviaturasDias(): Record<number, string> {
-  const t = useTranslations('common.WeekdayPicker');
-  return {
-    0: t('sunFull').slice(0, 3),
-    1: t('monFull').slice(0, 3),
-    2: t('tueFull').slice(0, 3),
-    3: t('wedFull').slice(0, 3),
-    4: t('thuFull').slice(0, 3),
-    5: t('friFull').slice(0, 3),
-    6: t('satFull').slice(0, 3),
-  };
-}
+import { useAbreviaturasDias } from '@/hooks/useAbreviaturasDias';
 
 function ProfesionalCard({
   profesional,

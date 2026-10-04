@@ -103,9 +103,9 @@ const comp = (orden: number, servicio_id: number, profesional_id: number) => ({
 });
 const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 // Service / person pickers are bottom sheets (role=dialog) opened from each card.
-const elegirServicio = (fila: number, nombre: string) => {
+const elegirServicio = async (fila: number, nombre: string) => {
   fireEvent.click(screen.getAllByRole('button', { name: 'Elegí un servicio' })[fila]);
-  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
+  fireEvent.click(await within(screen.getByRole('dialog')).findByText(nombre));
 };
 const elegirPersona = (fila: number, nombre: string) => {
   fireEvent.click(screen.getAllByRole('button', { name: 'Elegí quién lo hace' })[fila]);
@@ -131,7 +131,7 @@ describe('EditarServicioPage — components section (multi-professional promo)',
   it('picks service and professional per row and saves them in order', async () => {
     montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
-    elegirServicio(0, 'Softgel');
+    await elegirServicio(0, 'Softgel');
     // Ana and Marta both offer Softgel: nothing is auto-picked, Laura is not offered.
     fireEvent.click(screen.getByRole('button', { name: 'Elegí quién lo hace' }));
     const dialog = within(screen.getByRole('dialog'));
@@ -139,7 +139,7 @@ describe('EditarServicioPage — components section (multi-professional promo)',
     expect(dialog.queryByText('Laura')).not.toBeInTheDocument();
     fireEvent.click(dialog.getByText('Marta'));
     fireEvent.click(screen.getByRole('button', { name: 'Agregar servicio' }));
-    elegirServicio(1, 'Semis pies');
+    await elegirServicio(0, 'Semis pies');
     // Laura is the only one offering Semis pies: auto-picked.
     expect(screen.getByText('Laura')).toBeInTheDocument();
     guardar();
@@ -161,7 +161,7 @@ describe('EditarServicioPage — components section (multi-professional promo)',
     montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
     // Ana and Marta both offer Softgel: nothing is auto-picked, row stays half-filled.
-    elegirServicio(0, 'Softgel');
+    await elegirServicio(0, 'Softgel');
     guardar();
     await waitFor(() => expect(alertDialog).toHaveBeenCalled());
     expect(servicioService.update).not.toHaveBeenCalled();
@@ -178,7 +178,7 @@ describe('EditarServicioPage — components section (multi-professional promo)',
   it('maps a 422 componentes.{i} error to its row instead of a generic dialog', async () => {
     montar(promo, [ana, laura, marta], { componentes: [], problemas: [] });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar servicio' }));
-    elegirServicio(0, 'Softgel');
+    await elegirServicio(0, 'Softgel');
     elegirPersona(0, 'Marta');
     vi.mocked(servicioService.guardarComponentes).mockRejectedValue({
       response: { data: { message: 'x', errors: { 'componentes.0.profesional_id': ['Marta no ofrece Softgel'] } } },

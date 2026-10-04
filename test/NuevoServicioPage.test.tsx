@@ -92,19 +92,15 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
 
 
 // Service / person pickers are bottom sheets (role=dialog) opened from each card.
-const elegirServicio = (nombre: string) => {
+const elegirServicio = async (nombre: string) => {
   fireEvent.click(screen.getByRole('button', { name: 'Elegí un servicio' }));
-  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
-};
-const elegirPersona = (nombre: string) => {
-  fireEvent.click(screen.getByRole('button', { name: 'Elegí quién lo hace' }));
-  fireEvent.click(within(screen.getByRole('dialog')).getByText(nombre));
+  fireEvent.click(await within(screen.getByRole('dialog')).findByText(nombre));
 };
 
 // Adds one Softgel row; Ana is its only offerer, so she is auto-picked.
 async function agregarFilaSoftgel() {
   fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
-  elegirServicio('Softgel');
+  await elegirServicio('Softgel');
 }
 
 describe('NuevoServicioPage — components section for a new promo', () => {
