@@ -305,7 +305,7 @@ describe('HorarioScreen', () => {
     await screen.findByRole('button', { name: /Lucía$/ });
     const nombres = screen.getAllByRole('button').filter((b) => b.hasAttribute('aria-pressed'));
     // con 2 servicios, el control "Una persona / Una por servicio" va antes de las pastillas
-    expect(nombres.map((b) => b.textContent)).toEqual(['Una persona', 'Una por servicio', 'Cualquiera', 'ANAna', 'LULucía']);
+    expect(nombres.map((b) => b.textContent)).toEqual(['Una persona', 'Una por servicio', 'ANLUCualquiera', 'ANAna', 'LULucía']);
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
     expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
   });
@@ -326,6 +326,23 @@ describe('HorarioScreen', () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await screen.findByRole('button', { name: /Lucía$/ });
     expect(document.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
+  });
+
+  it('"Cualquiera" apila las fotos de las profesionales que tienen avatarUrl', async () => {
+    setServiceParaTests({
+      ...svc,
+      getSalon: async (s) => {
+        const salon = await svc.getSalon(s);
+        return {
+          ...salon,
+          profesionales: salon.profesionales.map((p) => ({ ...p, avatarUrl: `https://cdn.test/${p.id}.jpg` })),
+        };
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await screen.findByRole('button', { name: /Lucía$/ });
+    const imgs = Array.from(pill('Cualquiera').querySelectorAll('img')).map((i) => i.getAttribute('src'));
+    expect(imgs).toEqual(['https://cdn.test/1.jpg', 'https://cdn.test/2.jpg']);
   });
 
   it('elegir una profesional la marca y tocarla de nuevo vuelve a "Cualquiera"', async () => {

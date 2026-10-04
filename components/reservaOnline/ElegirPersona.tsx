@@ -58,7 +58,7 @@ export function ElegirPersona({
                 border: `2px solid ${cualquiera ? colors.primarySoft : colors.surface2}`, display: 'flex',
               }}
             >
-              <AvatarProfesional nombre={p.nombre} avatarUrl={p.avatarUrl} size={30} sinTexto />
+              <AvatarProfesional nombre={p.nombre} avatarUrl={p.avatarUrl} size={30} />
             </span>
           ))}
         </span>

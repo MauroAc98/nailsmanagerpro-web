@@ -4,20 +4,16 @@ import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { agendaColors as colors } from '@/theme/agendaColors';
 
 // Avatar circular de una profesional: foto si la tiene, si no sus iniciales.
-// `sinTexto` dibuja solo el circulo (sin iniciales) para las pilas decorativas
-// de "Cualquiera", donde el nombre ya lo da el boton.
 export function AvatarProfesional({
   nombre,
   avatarUrl,
   size,
-  sinTexto = false,
   fg,
   bg,
 }: {
   nombre: string;
   avatarUrl: string | null;
   size: number;
-  sinTexto?: boolean;
   fg?: string;
   bg?: string;
 }) {
@@ -34,7 +30,7 @@ export function AvatarProfesional({
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      ) : sinTexto ? null : (
+      ) : (
         inicialesProfesional(nombre)
       )}
     </span>
