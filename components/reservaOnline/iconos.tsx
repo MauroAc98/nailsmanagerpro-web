@@ -87,3 +87,12 @@ export const IcoGlobo = (p: P) => (
     <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
   </Ico>
 );
+
+export const IcoPersonas = (p: P) => (
+  <Ico {...p}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+    <circle cx="17.5" cy="9" r="2.5" />
+    <path d="M17.5 14c2.4 0 4 1.7 4 4.5" />
+  </Ico>
+);

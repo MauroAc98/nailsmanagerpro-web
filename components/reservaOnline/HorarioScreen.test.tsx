@@ -616,6 +616,28 @@ describe('HorarioScreen: una profesional distinta por servicio', () => {
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // Reportado: el link era texto suelto y no se leia como algo tocable; en la
+  // reserva online todo lo tocable tiene que parecerlo.
+  it('el link para elegir quien atiende cada servicio es un boton visible de al menos 44px', async () => {
+    espiar();
+    await preparar([1, 2]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    const boton = await screen.findByRole('button', { name: LINK });
+    expect(parseInt(boton.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
+    expect(boton.style.border).not.toMatch(/none/);
+    expect(boton.querySelector('svg')).not.toBeNull();
+  });
+
+  it('el link para volver a "una sola profesional" tambien es un boton visible', async () => {
+    espiar();
+    await preparar([1, 2]);
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await userEvent.click(await screen.findByRole('button', { name: LINK }));
+    const volver = await screen.findByRole('button', { name: /una sola persona/i });
+    expect(parseInt(volver.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
+    expect(volver.style.border).not.toMatch(/none/);
+  });
+
   it('con un solo servicio no ofrece elegir una profesional por servicio', async () => {
     espiar();
     await preparar([1]);

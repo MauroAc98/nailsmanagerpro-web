@@ -243,3 +243,29 @@ export function HoldPill({ restanteMs }: { restanteMs: number }) {
     </div>
   );
 }
+
+// Accion secundaria con aspecto de boton (borde, 48px, icono a la izquierda y
+// flecha a la derecha): en la reserva online todo lo tocable tiene que
+// parecerlo, un texto suelto no se lee como accion.
+export function BotonSecundario({
+  onClick, icono, children,
+}: { onClick: () => void; icono: ReactNode; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%', minHeight: 48, margin: '0 0 12px', padding: '0 14px', boxSizing: 'border-box',
+        display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left',
+        background: colors.surface, border: `1.5px solid ${colors.border}`, borderRadius: 12,
+        fontSize: 14, fontWeight: 600, color: colors.primaryDeep,
+      }}
+    >
+      <span aria-hidden="true" style={{ display: 'flex', flexShrink: 0 }}>{icono}</span>
+      <span style={{ flex: 1 }}>{children}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  );
+}

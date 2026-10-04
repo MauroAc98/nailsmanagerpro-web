@@ -4,6 +4,8 @@ import { useTranslations } from 'next-intl';
 import SelectorProfesional from '@/components/SelectorProfesional';
 import type { Asignacion, BookableService, ProfesionalPublico } from '@/lib/reservaOnline/types';
 import { agendaColors as colors } from '@/theme/agendaColors';
+import { IcoPersonas } from './iconos';
+import { BotonSecundario } from './ui';
 
 // Una profesional EXPLICITA por servicio (sin "Cualquiera"): el cliente que
 // reparte sus servicios entre profesionales elige quien hace cada uno. El
@@ -45,16 +47,9 @@ export function ProfesionalPorServicio({
           />
         );
       })}
-      <button
-        type="button"
-        onClick={onVolver}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-          color: colors.primaryDeep, padding: '4px 0 10px',
-        }}
-      >
+      <BotonSecundario onClick={onVolver} icono={<IcoPersonas color={colors.primaryDeep} size={18} />}>
         {t('horario.unaSola')}
-      </button>
+      </BotonSecundario>
     </div>
   );
 }

@@ -28,7 +28,8 @@ import { colors as baseColors } from '@/theme/colors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { NoDisponibleAun } from './NoDisponibleAun';
 import { ProfesionalPorServicio } from './ProfesionalPorServicio';
-import { BarraInferior, BotonPrimario, Etiqueta, Hueso, Mensaje, PasoHeader } from './ui';
+import { IcoPersonas } from './iconos';
+import { BarraInferior, BotonPrimario, BotonSecundario, Etiqueta, Hueso, Mensaje, PasoHeader } from './ui';
 
 const capitalizar = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -373,9 +374,9 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         />
       )}
       {puedeDividir && !asignaciones && (
-        <button type="button" onClick={repartir} style={{ ...botonSecundario, padding: '0 0 4px' }}>
+        <BotonSecundario onClick={repartir} icono={<IcoPersonas color={colors.primaryDeep} size={18} />}>
           {t('horario.profesionalPorServicio')}
-        </button>
+        </BotonSecundario>
       )}
 
       {/* La tira de la agenda propia; su padding lateral propio se compensa. */}
