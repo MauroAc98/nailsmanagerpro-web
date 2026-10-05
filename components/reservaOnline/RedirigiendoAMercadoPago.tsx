@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Spinner } from '@/components/Spinner';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 
 // Se muestra en vez de TODA la pantalla de Resumen (header, boton volver,
@@ -13,14 +14,7 @@ export function RedirigiendoAMercadoPago() {
   const t = useTranslations('reservaOnline.resumen');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '90px 12px 0' }}>
-      <div
-        className="loader-spinner"
-        style={{
-          width: 44, height: 44, borderRadius: 22,
-          border: `4px solid ${colors.border}`,
-          borderTopColor: colors.primaryDeep,
-        }}
-      />
+      <Spinner size={44} />
       <h1 style={{ margin: '26px 0 8px', fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 24, color: colors.strong }}>
         {t('redirigiendoTitulo')}
       </h1>

@@ -19,6 +19,7 @@ import { SubscriptionWarningBanner, useSubscriptionWarningVisible } from '@/comp
 import { PendientesDeCobroBanner, usePendientesDeCobroVisible } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from '@/components/RecordatoriosPendientesBanner';
 import { NotificacionesBell } from '@/components/NotificacionesBell';
+import { Spinner } from '@/components/Spinner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
@@ -233,10 +234,7 @@ function AgendaListHeader({
 
       {cargando && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-          <div
-            className="loader-spinner"
-            style={{ width: 20, height: 20, borderRadius: 10, border: `2px solid ${colors.border}`, borderTopColor: colors.primaryDeep }}
-          />
+          <Spinner size={20} />
         </div>
       )}
     </div>

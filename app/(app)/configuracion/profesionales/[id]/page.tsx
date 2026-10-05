@@ -16,6 +16,7 @@ import { SelectorServicios } from '@/components/SelectorServicios';
 import WeekdayPicker from '@/components/WeekdayPicker';
 import { diasAtencionParaGuardar } from '@/lib/diasAtencionParaGuardar';
 import { LogoCropModal } from '@/components/perfil/LogoCropModal';
+import { Spinner } from '@/components/Spinner';
 
 // Mismo límite que valida el backend (`image|max:5120` = 5MB) — mismo
 // criterio y copy que HeroPerfil.MAX_LOGO_BYTES para el logo del negocio.
@@ -267,10 +268,7 @@ export default function EditarProfesionalPage() {
                       position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <div className="loader-spinner" style={{
-                        width: 20, height: 20, borderRadius: '50%',
-                        border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
-                      }} />
+                      <Spinner size={20} variante="sobreOscuro" />
                     </div>
                   )}
                 </div>

@@ -11,8 +11,7 @@
     "emptyState": "¡Cargá a tu primer cliente!",
     "toggleError": "No se pudo actualizar el cliente.",
     "deactivateConfirm": "El cliente va a quedar inactivo: no va a aparecer al agendar nuevos turnos. Podés reactivarlo cuando quieras.",
-    "deactivateConfirmButton": "Inactivar",
-    "loadingMore": "Cargando más..."
+    "deactivateConfirmButton": "Inactivar"
   },
   "NuevoClientePage": {
     "title": "Nuevo cliente",

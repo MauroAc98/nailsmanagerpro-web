@@ -1,6 +1,6 @@
 'use client';
 
-import { colors } from '@/theme/colors';
+import { Spinner } from '@/components/Spinner';
 
 export function Loader({ visible }: { visible: boolean }) {
   if (!visible) return null;
@@ -14,14 +14,8 @@ export function Loader({ visible }: { visible: boolean }) {
         zIndex: 1000,
       }}
     >
-      <div
-        className="loader-spinner"
-        style={{
-          width: 40, height: 40, borderRadius: 20,
-          border: `4px solid ${colors.border}`,
-          borderTopColor: colors.primaryDeep,
-        }}
-      />
+      {/* Paleta base: <Loader> se monta en providers.tsx, fuera del scope de Agenda. */}
+      <Spinner size={40} variante="base" />
     </div>
   );
 }

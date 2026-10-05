@@ -11,8 +11,7 @@
     "emptyState": "Cadastre seu primeiro cliente!",
     "toggleError": "Não foi possível atualizar o cliente.",
     "deactivateConfirm": "O cliente vai ficar inativo: não vai aparecer ao agendar novos horários. Você pode reativá-lo quando quiser.",
-    "deactivateConfirmButton": "Inativar",
-    "loadingMore": "Carregando mais..."
+    "deactivateConfirmButton": "Inativar"
   },
   "NuevoClientePage": {
     "title": "Novo cliente",

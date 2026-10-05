@@ -11,6 +11,7 @@ import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
+import { Spinner } from '@/components/Spinner';
 
 // Altura real de la tarjeta (~70px) + 10px de gap, horneado en la fila
 // porque react-window no soporta gap entre filas absolutas.
@@ -219,10 +220,7 @@ export default function ClientesPage() {
       <div style={{ flex: 1, minHeight: 0, padding: '0 20px' }}>
         {cargandoPagina ? (
           <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
-            <div
-              className="loader-spinner"
-              style={{ width: 32, height: 32, borderRadius: 16, border: `3px solid ${colors.border}`, borderTopColor: colors.primaryDeep }}
-            />
+            <Spinner />
           </div>
         ) : clientesPagina.length === 0 ? (
           <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
@@ -261,9 +259,9 @@ export default function ClientesPage() {
               />
             </div>
             {cargandoMasPagina && (
-              <p style={{ textAlign: 'center', padding: '8px 0', color: colors.subtext, fontSize: 13, flexShrink: 0 }}>
-                {t('loadingMore')}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
+                <Spinner size={24} />
+              </div>
             )}
           </div>
         )}

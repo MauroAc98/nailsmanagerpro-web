@@ -12,6 +12,7 @@ import { FotoHistoria } from '@/services/profesionalService';
 import { resizeFondoFile } from '@/lib/historia/captura';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
+import { Spinner } from '@/components/Spinner';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 
@@ -287,9 +288,8 @@ function FotoTile({
   );
 }
 
-// Overlay de spinner reutilizando la animación CSS global (.loader-spinner,
-// app/globals.css) — mismo mecanismo que components/Loader.tsx pero
-// contenido dentro de un slot puntual en vez de fullscreen.
+// Overlay con spinner contenido dentro de un slot puntual (el <Loader> global
+// es fullscreen).
 function SlotSpinnerOverlay() {
   return (
     <div
@@ -298,14 +298,7 @@ function SlotSpinnerOverlay() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >
-      <div
-        className="loader-spinner"
-        style={{
-          width: 22, height: 22, borderRadius: 11,
-          border: `3px solid ${colors.border}`,
-          borderTopColor: colors.primaryDeep,
-        }}
-      />
+      <Spinner size={22} />
     </div>
   );
 }

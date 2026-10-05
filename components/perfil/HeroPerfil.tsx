@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { LogoCropModal } from '@/components/perfil/LogoCropModal';
+import { Spinner } from '@/components/Spinner';
 
 interface Props {
   user: User;
@@ -95,10 +96,7 @@ export function HeroPerfil({ user }: Props) {
               position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <div className="loader-spinner" style={{
-                width: 18, height: 18, borderRadius: '50%',
-                border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
-              }} />
+              <Spinner size={18} variante="sobreOscuro" />
             </div>
           )}
         </div>
