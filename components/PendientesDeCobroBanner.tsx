@@ -49,7 +49,7 @@ export function PendientesDeCobroBanner({ onDismiss }: { onDismiss?: () => void 
   // puede contener otro <button> (HTML inválido, además de que el navegador
   // colapsa el evento click del hijo). Mismo comportamiento de teclado que
   // un <button> real vía onKeyDown (Enter/Espacio).
-  const activar = () => (esError ? fetchPendientes() : router.push('/pendientes-de-cobro'));
+  const activar = () => (esError ? fetchPendientes() : router.push('/configuracion/cobros?pago=sinprecio'));
 
   return (
     <div

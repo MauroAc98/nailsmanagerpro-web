@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { es } from '@/messages';
 import type { Turno } from '@/services/turnoService';
 
 const mockStore = vi.hoisted(() => ({
+  push: vi.fn(),
   state: { pendientes: [] as unknown[], error: null as string | null, fetchPendientes: vi.fn() },
 }));
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mockStore.push }) }));
 vi.mock('@/store/usePendientesDeCobroStore', () => ({
   usePendientesDeCobroStore: () => mockStore.state,
 }));
@@ -31,10 +32,10 @@ beforeEach(() => {
 });
 
 describe('PendientesDeCobroBanner — dice lo que falta', () => {
-  it('con un turno: título "Cobros por registrar" y a quién y por qué servicio falta cargar lo cobrado', () => {
+  it('con un turno: título "Turnos por cobrar" y a quién y por qué servicio falta cargar lo cobrado', () => {
     mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping'])];
     renderBanner();
-    expect(screen.getByText('Cobros por registrar')).toBeInTheDocument();
+    expect(screen.getByText('Turnos por cobrar')).toBeInTheDocument();
     expect(screen.getByText('Falta cargar cuánto cobraste a Mica Bochetti por Capping')).toBeInTheDocument();
   });
 
@@ -49,6 +50,13 @@ describe('PendientesDeCobroBanner — dice lo que falta', () => {
     renderBanner();
     expect(screen.queryByText(/Precios por cargar/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/sin precio cargado/i)).not.toBeInTheDocument();
+  });
+
+  it('al tocarlo abre Cobros con el filtro "falta cargar el precio" ya elegido', () => {
+    mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping'])];
+    renderBanner();
+    fireEvent.click(screen.getByRole('button', { name: /Turnos por cobrar/ }));
+    expect(mockStore.push).toHaveBeenCalledWith('/configuracion/cobros?pago=sinprecio');
   });
 
   it('sin pendientes ni error no se muestra', () => {

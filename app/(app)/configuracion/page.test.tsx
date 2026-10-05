@@ -31,7 +31,7 @@ describe('ConfiguracionPage — reducida a "preparar mi agenda"', () => {
     conRouter(() => {});
     expect(screen.queryByRole('button', { name: 'Reservas online' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Gastos' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Ingresos' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Otros ingresos' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Estadísticas' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Apariencia' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Idioma' })).toBeNull();

@@ -15,7 +15,7 @@
   },
   "IngresosPage": {
     "manageCategoriesButton": "Manage categories",
-    "manageCategoriesHint": "Create, edit, or delete your income categories"
+    "manageCategoriesHint": "Create, edit, or delete your other income categories"
   },
   "CategoriasPage": {
     "title": "Categories",

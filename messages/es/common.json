@@ -28,12 +28,12 @@
     "dismiss": "Cerrar aviso"
   },
   "PendientesDeCobroBanner": {
-    "title": "Cobros por registrar",
+    "title": "Turnos por cobrar",
     "messageOne": "Falta cargar cuánto cobraste a {cliente} por {servicios}",
     "messageOneNoService": "Falta cargar cuánto cobraste a {cliente}",
     "messageMany": "{count, plural, one {Falta cargar lo cobrado en # turno finalizado} other {Falta cargar lo cobrado en # turnos finalizados}}",
     "view": "Ver",
-    "checkError": "No pudimos verificar turnos pendientes de cobro",
+    "checkError": "No pudimos verificar los turnos por cobrar",
     "retry": "Reintentar",
     "dismiss": "Cerrar aviso"
   },
@@ -109,18 +109,18 @@
   },
   "PrecioServiciosSheetHost": {
     "titleFinalizar": "Finalizar turno",
-    "titleCargar": "Cargar precio",
+    "titleCargar": "Cobrar turno",
     "listPrice": "Precio de lista {monto}",
     "noListPrice": "Sin precio de lista",
     "adjusted": "Ajustado {diferencia}",
     "pricePlaceholder": "0",
-    "total": "Total a registrar",
+    "total": "Total a cobrar",
     "noCharge": "No cobrar este turno",
     "charge": "Cobrar",
     "noChargeHint": "Se registra con precio $0.",
     "cancel": "Cancelar",
     "confirmFinalizar": "Finalizar · {total}",
-    "confirmCargar": "Guardar · {total}",
+    "confirmCargar": "Cobrar · {total}",
     "confirmFinalizarSinCobro": "Finalizar sin cobro",
     "confirmCargarSinCobro": "Guardar sin cobro"
   },

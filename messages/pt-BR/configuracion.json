@@ -11,7 +11,7 @@
     "bloqueos": "Bloqueios",
     "gastos": "Despesas",
     "reservasOnline": "Reservas online",
-    "ingresos": "Receitas",
+    "ingresos": "Outras receitas",
     "estadisticas": "Estatísticas",
     "apariencia": "Aparência",
     "idioma": "Idioma",
@@ -159,9 +159,9 @@
     "deleteButton": "Excluir despesa"
   },
   "IngresosPage": {
-    "title": "Receitas",
-    "loading": "Carregando receitas...",
-    "emptyState": "Nenhuma receita cadastrada neste mês",
+    "title": "Outras receitas",
+    "loading": "Carregando outras receitas...",
+    "emptyState": "Nenhuma outra receita cadastrada neste mês",
     "totalLabel": "Total do mês",
     "delete": "EXCLUIR",
     "deleteConfirm": "Excluir esta receita? Isso vai alterar o lucro líquido já reportado daquele período.",
@@ -183,7 +183,7 @@
     "totalFilteredLabel": "Total filtrado",
     "emptyFiltered": "Nenhuma receita corresponde aos filtros",
     "manageCategoriesButton": "Gerenciar categorias",
-    "manageCategoriesHint": "Crie, edite ou exclua suas categorias de receitas"
+    "manageCategoriesHint": "Crie, edite ou exclua suas categorias de outras receitas"
   },
   "NuevoIngresoPage": {
     "title": "Nova receita",
@@ -227,7 +227,7 @@
     "subtitle": "Defina as categorias que aparecem ao registrar uma despesa ou uma receita.",
     "loading": "Carregando...",
     "tabGastos": "Despesas",
-    "tabIngresos": "Receitas",
+    "tabIngresos": "Outras receitas",
     "addPlaceholder": "Nova categoria",
     "addButton": "Adicionar",
     "editLabel": "Editar",
@@ -235,7 +235,7 @@
     "deleteConfirm": "Excluir a categoria \"{nombre}\"?",
     "deleteConfirmButton": "Excluir",
     "saved": "Categoria salva",
-    "historyNote": "Renomear ou excluir uma categoria não altera as despesas nem as receitas que você já registrou com o nome anterior.",
+    "historyNote": "Renomear ou excluir uma categoria não altera as despesas nem as outras receitas que você já registrou com o nome anterior.",
     "error_vacia": "Escreva um nome para a categoria.",
     "error_duplicada": "Já existe uma categoria com esse nome.",
     "error_muyLarga": "O nome não pode ter mais de 40 caracteres.",
@@ -544,23 +544,23 @@
       },
       "statistics": {
         "title": "Estatísticas",
-        "text": "Negócio → Finanças → Estatísticas. Também há um cartão resumo bem no topo da Agenda (agora inclui quanto você faturou naquele mês) — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas, ou toque em \"Período personalizado\" se precisar de um período específico (por exemplo, uma semana pontual). Se você trabalha com mais de uma pessoa, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Receita: o total do período — o que você faturou com agendamentos, mais qualquer receita que você tenha cadastrado manualmente em Finanças → Receitas (detalhada à parte por categoria) —, o detalhamento por serviço, e um gráfico de tendência que se ajusta sozinho (dia a dia se o período for curto, por semana ou por mês se for mais longo — não precisa escolher).\n- Lucro líquido: todas as receitas (agendamentos + as cadastradas manualmente) menos as despesas que você cadastrou em Finanças → Despesas — é o lucro real do período.\n- Clientes novos vs. recorrentes: \"novo\" é quem teve o primeiro agendamento dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para receita, lucro líquido, clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das cinco que os mostra.\n\nSe um agendamento passa do horário sem que você o tenha finalizado manualmente, o sistema o marca como concluído sozinho, mas sem preço cadastrado. Esses casos aparecem em \"Pendentes de cobrança\" — acessível pelo numerozinho na barra de navegação ou pelo aviso acima da Agenda."
+        "text": "Negócio → Finanças → Estatísticas. Também há um cartão resumo bem no topo da Agenda (agora inclui quanto você faturou naquele mês) — toque nele para ir direto à tela completa.\n\nEscolha o mês com as setas, ou toque em \"Período personalizado\" se precisar de um período específico (por exemplo, uma semana pontual). Se você trabalha com mais de uma pessoa, filtre por quem você quer ver. São mostrados:\n\n- Agendamentos por status: quantos foram concluídos, quantos continuam confirmados e quantos foram cancelados, além da porcentagem de cancelamento do período.\n- Receita: o total do período — o que você faturou com agendamentos, mais qualquer receita que você tenha cadastrado manualmente em Finanças → Outras receitas (detalhada à parte por categoria) —, o detalhamento por serviço, e um gráfico de tendência que se ajusta sozinho (dia a dia se o período for curto, por semana ou por mês se for mais longo — não precisa escolher).\n- Lucro líquido: todas as receitas (agendamentos + as cadastradas manualmente) menos as despesas que você cadastrou em Finanças → Despesas — é o lucro real do período.\n- Clientes novos vs. recorrentes: \"novo\" é quem teve o primeiro agendamento dentro daquele mês; \"recorrente\" já vinha de antes.\n- Serviços mais pedidos: ranking do que foi mais agendado naquele mês.\n\nOs agendamentos cancelados não contam para receita, lucro líquido, clientes nem para serviços mais pedidos — só aparecem em \"Agendamentos por status\", que é a única das cinco que os mostra.\n\nSe um agendamento passa do horário sem que você o tenha finalizado manualmente, o sistema o marca como concluído sozinho, mas sem preço cadastrado. Esses casos aparecem em \"Cobranças\" — acessível pelo numerozinho na barra de navegação ou pelo aviso acima da Agenda."
       },
       "pendingPayments": {
-        "title": "Pendentes de cobrança",
-        "text": "Você acessa pelo numerozinho na barra de navegação de baixo, ou pelo aviso que aparece acima da Agenda.\n\nAqui aparecem os agendamentos que o app marcou como concluídos sozinho (porque o horário passou) mas sem preço cadastrado — acontece quando você não chega a finalizá-los manualmente pela Agenda. Procure o agendamento na lista e toque em \"Cadastrar preço\" para completá-lo; depois de cadastrado, ele sai desta lista e passa a contar nas Estatísticas.\n\nSe em vários atendimentos você cobrou o preço de tabela, toque em \"Usar preço de tabela nos N atendimentos\" acima para registrá-los todos de uma vez (o app pede confirmação). Os que mudaram de preço ou não têm preço de tabela são registrados com o botão de cada um."
+        "title": "Cobranças",
+        "text": "Negócio → Finanças → Cobranças. Também se chega pelo numerozinho na barra de navegação de baixo, ou pelo aviso que aparece acima da Agenda (leva direto aos atendimentos sem preço).\n\nAqui você vê seus agendamentos com o status de pagamento: \"Pagou tudo\", \"Pagou só o sinal\", \"Sem pagamento\" ou \"Falta registrar o preço\". No topo há um resumo com o sinal cobrado, o cobrado em atendimentos concluídos e o que falta cobrar. Você pode filtrar por agendamento (confirmados ou concluídos), por status de pagamento, e buscar pelo nome do cliente.\n\nOs agendamentos que o app marcou como concluídos sozinho (porque o horário passou) ficam sem preço: encontre-os com o filtro \"Falta registrar o preço\" e toque em \"Cobrar\" para completá-los; depois de cobrados, passam a contar nas Estatísticas.\n\nSe em vários atendimentos você cobrou o preço de tabela, toque em \"Usar preço de tabela nos N atendimentos\" acima para cobrá-los todos de uma vez (o app pede confirmação). Os que mudaram de preço ou não têm preço de tabela são cobrados com o botão de cada um.\n\nNo detalhe de cada agendamento você também vê o bloco \"Pagamento\" com o total dos serviços, o sinal e o que falta cobrar."
       },
       "incomes": {
-        "title": "Receitas",
-        "text": "Negócio → Finanças → Receitas.\n\nAqui você cadastra manualmente qualquer receita que não venha de um agendamento — por exemplo a venda de um produto, uma gorjeta maior, ou qualquer outro dinheiro que entrou no negócio fora da agenda.\n\nCada receita tem um valor, uma data e uma categoria. Elas somam no total que você vê em \"Receita\" e no \"Lucro líquido\" nas Estatísticas, sempre separadas do dinheiro recebido por agendamentos."
+        "title": "Outras receitas",
+        "text": "Negócio → Finanças → Outras receitas.\n\nAqui você cadastra manualmente qualquer receita que não venha de um agendamento — por exemplo a venda de um produto, uma gorjeta maior, ou qualquer outro dinheiro que entrou no negócio fora da agenda.\n\nCada receita tem um valor, uma data e uma categoria. Elas somam no total que você vê em \"Receita\" e no \"Lucro líquido\" nas Estatísticas, sempre separadas do dinheiro recebido por agendamentos."
       },
       "expenses": {
         "title": "Despesas",
-        "text": "Negócio → Finanças → Despesas.\n\nFunciona igual a Receitas, mas para o que o negócio gasta — insumos, aluguel, o que for. Cada despesa tem um valor, uma data e uma categoria, e é descontada do seu \"Lucro líquido\" nas Estatísticas."
+        "text": "Negócio → Finanças → Despesas.\n\nFunciona igual a Outras receitas, mas para o que o negócio gasta — insumos, aluguel, o que for. Cada despesa tem um valor, uma data e uma categoria, e é descontada do seu \"Lucro líquido\" nas Estatísticas."
       },
       "myProfile": {
         "title": "Meu negócio",
-        "text": "Aba Negócio — é o centro do seu negócio, organizado em grupos:\n\n- Dados do negócio: nome, telefone, endereço e sua localização no mapa (você marca uma vez, buscando o endereço ou pelo GPS do celular). Bem no topo desta tela também fica o envio do logo do seu negócio (usado no cabeçalho do Story de disponibilidade, veja essa seção).\n- Reservas e pagamentos: acesso a Reservas online (ainda não disponível) e a Sinal e pagamentos — ali você cadastra o valor que é pedido de sinal, e vê a conexão com o Mercado Pago como alternativa à transferência (nesta primeira versão a equipe da Turnetto configura isso com você — fale com o suporte).\n- Mensagens automáticas: ative \"Pedir sinal para confirmar agendamentos\" e cadastre os dados da sua conta (titular, alias ou CBU), e os interruptores \"Confirmação automática\" e \"Lembrete automático\" — veja o detalhe completo em \"WhatsApp automático\" e \"Mensagens de WhatsApp\". Os três exigem que você já tenha cadastrado seu endereço e sua localização no mapa (veja \"Dados do negócio\" acima).\n- Finanças: acesso a Despesas, Receitas e Estatísticas (veja essas seções).\n- Aparência e idioma: veja essas duas seções.\n- Minha conta: o status da sua assinatura (ativa, vencida ou isenta, com data de vencimento), alterar sua senha, e este mesmo módulo de Ajuda."
+        "text": "Aba Negócio — é o centro do seu negócio, organizado em grupos:\n\n- Dados do negócio: nome, telefone, endereço e sua localização no mapa (você marca uma vez, buscando o endereço ou pelo GPS do celular). Bem no topo desta tela também fica o envio do logo do seu negócio (usado no cabeçalho do Story de disponibilidade, veja essa seção).\n- Reservas e pagamentos: acesso a Reservas online (ainda não disponível) e a Sinal e pagamentos — ali você cadastra o valor que é pedido de sinal, e vê a conexão com o Mercado Pago como alternativa à transferência (nesta primeira versão a equipe da Turnetto configura isso com você — fale com o suporte).\n- Mensagens automáticas: ative \"Pedir sinal para confirmar agendamentos\" e cadastre os dados da sua conta (titular, alias ou CBU), e os interruptores \"Confirmação automática\" e \"Lembrete automático\" — veja o detalhe completo em \"WhatsApp automático\" e \"Mensagens de WhatsApp\". Os três exigem que você já tenha cadastrado seu endereço e sua localização no mapa (veja \"Dados do negócio\" acima).\n- Finanças: acesso a Despesas, Outras receitas e Estatísticas (veja essas seções).\n- Aparência e idioma: veja essas duas seções.\n- Minha conta: o status da sua assinatura (ativa, vencida ou isenta, com data de vencimento), alterar sua senha, e este mesmo módulo de Ajuda."
       },
       "appearance": {
         "title": "Aparência",

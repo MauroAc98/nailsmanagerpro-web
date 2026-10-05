@@ -62,7 +62,7 @@ interface TurnosState {
 
   fetchTurnos: (fecha: string) => Promise<void>;
   fetchTurnosMes: (mes: string) => Promise<void>;
-  fetchTurno: (id: number) => Promise<void>;
+  fetchTurno: (id: number, opts?: { silent?: boolean }) => Promise<void>;
   crearTurno: (dto: CreateTurnoDto) => Promise<OperacionResult>;
   actualizarTurno: (id: number, dto: UpdateTurnoDto) => Promise<OperacionResult>;
   completarTurno: (
@@ -196,7 +196,19 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   // ─────────────────────────────────────────────
   // fetchTurno — carga un turno individual (pantalla de edición)
   // ─────────────────────────────────────────────
-  fetchTurno: async (id) => {
+  // silent: refresca turnoActual en el lugar, sin vaciarlo ni mostrar el
+  // loader (ej. tras cargar precios, para no hacer parpadear la pantalla).
+  fetchTurno: async (id, opts) => {
+    if (opts?.silent) {
+      set({ errorTurno: null, turnoIdSolicitado: id });
+      try {
+        const turno = await turnoService.getOne(id);
+        if (get().turnoIdSolicitado === id) set({ turnoActual: turno });
+      } catch (e) {
+        if (get().turnoIdSolicitado === id) set({ errorTurno: extraerMensajeError(e) });
+      }
+      return;
+    }
     set({ loadingTurno: true, errorTurno: null, turnoActual: null, turnoIdSolicitado: id });
     return withGlobalLoader(async () => {
       try {
