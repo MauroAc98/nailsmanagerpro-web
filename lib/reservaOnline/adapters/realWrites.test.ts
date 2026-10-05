@@ -194,6 +194,20 @@ describe('createRealWrites: retenerHorario', () => {
     expect(generar).toHaveBeenCalledTimes(2);
     expect(pedidos[0].headers['Idempotency-Key']).not.toBe(pedidos[1].headers['Idempotency-Key']);
   });
+
+  it('tras liberar el hold, el mismo pick genera una Idempotency-Key nueva', async () => {
+    const generar = vi.fn(() => `key-${generar.mock.calls.length}`);
+    const pedidos: Pedido[] = [];
+    const escrituras = createRealWrites(
+      crearPublicHttp({ baseURL: 'https://api.test/api', adapter: crearBackendFalso(pedidos) }),
+      { deviceToken: () => 'device-de-prueba-0123456789abcdef', newIdempotencyKey: generar },
+    );
+    const input = { servicioIds: [7], fecha: '2026-09-25', hora: '10:00' };
+    const retencion = await escrituras.retenerHorario('ana', input);
+    await escrituras.liberarHold('ana', retencion.reservaId);
+    await escrituras.retenerHorario('ana', input);
+    expect(generar).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('createRealWrites: actualizarDatosReserva, iniciarPago, liberarHold, getReservationStatus', () => {

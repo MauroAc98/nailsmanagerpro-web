@@ -153,6 +153,7 @@ export function createRealWrites(http: AxiosInstance, opts: RealWritesOptions = 
     },
 
     async iniciarPago(slug, reservaId): Promise<ReservationCreated> {
+      ultimoIntento = null;
       const data = await pedir(() =>
         http.post<BasicoDto>(`${base(slug)}/${reservaId}/pago`, undefined, { headers: headers() }),
       );
@@ -165,6 +166,7 @@ export function createRealWrites(http: AxiosInstance, opts: RealWritesOptions = 
     },
 
     async liberarHold(slug, reservaId): Promise<void> {
+      ultimoIntento = null;
       await pedir(() => http.delete(`${base(slug)}/${reservaId}`, { headers: headers() }));
     },
 
