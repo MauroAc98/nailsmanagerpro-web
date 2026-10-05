@@ -242,6 +242,22 @@
     "error_limite": "Llegaste al máximo de 30 categorías.",
     "error_minima": "Tenés que dejar al menos una categoría."
   },
+  "SenaPreviewServicio": {
+    "serviceFallback": "Servicio",
+    "clientTitle": "Así lo ve tu cliente al reservar",
+    "depositPercent": "Seña ({pct}%)",
+    "deposit": "Seña",
+    "remaining": "Resta pagar en el salón",
+    "receiveTitle": "Lo que te llega a vos",
+    "depositCollected": "Seña cobrada",
+    "mpFee": "− Mercado Pago ({rate}%)",
+    "taxRetention": "− Retención de impuestos",
+    "netReceived": "Te llegan",
+    "costNote": "Es el {cost}% del precio. Si querés cubrirlo, tenelo en cuenta al fijar el precio.",
+    "suggestion": "Con {precio} la seña sería {sena}, un número redondo.",
+    "useSuggestion": "Usar {precio}",
+    "alreadyRound": "Con este precio, la seña queda en un número redondo."
+  },
   "NuevoServicioPage": {
     "title": "Nuevo servicio",
     "loading": "Cargando...",

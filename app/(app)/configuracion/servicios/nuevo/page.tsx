@@ -13,6 +13,7 @@ import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import PillToggle from '@/components/PillToggle';
+import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -272,6 +273,7 @@ function NuevoServicioContent() {
             inputMode="decimal"
           />
         </div>
+        <SenaPreviewServicio nombre={nombre} precio={precio} onUsarPrecio={setPrecio} />
         </>)}
 
         {/* Button */}

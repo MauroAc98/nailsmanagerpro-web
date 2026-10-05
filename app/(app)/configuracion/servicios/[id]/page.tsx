@@ -13,6 +13,7 @@ import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import PillToggle from '@/components/PillToggle';
+import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import EstadoReservaOnlineCard from '@/components/servicios/EstadoReservaOnlineCard';
@@ -368,6 +369,8 @@ export default function EditarServicioPage() {
                 inputMode="decimal"
               />
             </div>
+
+            <SenaPreviewServicio nombre={nombre} precio={precio} onUsarPrecio={setPrecio} />
           </>
         )}
 
