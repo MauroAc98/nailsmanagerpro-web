@@ -197,9 +197,15 @@ export const authService = {
     return response.data;
   },
 
-  logout: async (): Promise<void> => {
+  // `token` lo captura el caller ANTES de limpiar localStorage: el interceptor
+  // lo lee de ahí, y sin header el backend responde 401 sin revocar nada.
+  logout: async (token?: string | null): Promise<void> => {
     try {
-      await api.post('/auth/logout');
+      await api.post(
+        '/auth/logout',
+        undefined,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+      );
     } finally {
       safeRemoveItem(KEYS.token);
       safeRemoveItem(KEYS.user);

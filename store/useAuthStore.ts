@@ -478,6 +478,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     //    never hold the user on the current screen or leave a global loader
     //    spinning forever (the old code awaited `POST /auth/logout` unbounded).
     authService.limpiarEmailPendiente();
+    // Capturar antes de borrar: el POST /auth/logout necesita el token para
+    // que el backend lo revoque (el interceptor lo lee de localStorage).
+    const tokenParaRevocar = get().token;
     try {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
@@ -511,7 +514,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     //    it stays OUT of `withGlobalLoader`. A hung or failed request is just
     //    logged — never resurfaced to the user.
     void Promise.race([
-      authService.logout(),
+      authService.logout(tokenParaRevocar),
       new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('logout-timeout')), LOGOUT_SERVER_TIMEOUT_MS);
       }),

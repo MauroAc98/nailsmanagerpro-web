@@ -165,6 +165,18 @@ describe('logout', () => {
     expect(useAuthStore.getState().authStatus).toBe('unauthenticated');
   });
 
+  it('sends the captured token explicitly so the server can revoke it after localStorage is cleared', async () => {
+    useAuthStore.setState({ authStatus: 'authenticated', token: 'tok-abc' });
+    localStorage.setItem('auth_token', 'tok-abc');
+    mockedPost.mockResolvedValue({ data: {} });
+
+    await useAuthStore.getState().logout();
+
+    expect(mockedPost).toHaveBeenCalledWith('/auth/logout', undefined, {
+      headers: { Authorization: 'Bearer tok-abc' },
+    });
+  });
+
   it('clears local auth state synchronously, before the server POST settles', () => {
     useAuthStore.setState({
       authStatus: 'authenticated',
