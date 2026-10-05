@@ -7,6 +7,7 @@ import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute
 import { classifyTenant } from '@/lib/authRouteClasses';
 import { esHostReservaPublica } from '@/lib/reservaOnline/host';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
+import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme } from '@/store/useThemeStore';
@@ -83,6 +84,10 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     initLocale();
     setMounted(true);
   }, []);
+
+  // Al cambiar de cuenta (logout, sesión revocada, otro usuario) se vacían los
+  // stores con datos del salón; si no, el siguiente salón vería datos ajenos.
+  useEffect(() => iniciarResetDeStoresPorCambioDeCuenta(), []);
 
   // Un confirm/alert (ConfirmSheetHost) vive en este layout raíz, no en la
   // pantalla que lo abrió — nunca se desmonta con la navegación. Sin este
