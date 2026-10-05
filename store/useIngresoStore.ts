@@ -70,12 +70,17 @@ export const useIngresosStore = create<IngresosState>((set, get) => ({
     return withGlobalLoader(async () => {
       try {
         await ingresoService.create(dto);
-        const ingresos = await ingresoService.getAll(get().rangoActual);
-        set({ ingresos });
-        return { success: true };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
       }
+      // El ingreso ya quedó guardado: si solo falla el refetch NO se informa
+      // error, porque el usuario reintentaría y lo cargaría dos veces.
+      try {
+        set({ ingresos: await ingresoService.getAll(get().rangoActual) });
+      } catch {
+        // lista desactualizada hasta el próximo fetch
+      }
+      return { success: true };
     });
   },
 

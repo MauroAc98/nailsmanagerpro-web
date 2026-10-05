@@ -72,12 +72,18 @@ export const useGastosStore = create<GastosState>((set, get) => ({
     return withGlobalLoader(async () => {
       try {
         await gastoService.create(dto);
-        const gastos = await gastoService.getAll(get().rangoActual);
-        set({ gastos });
-        return { success: true };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };
       }
+      // El gasto ya quedó guardado: si solo falla el refetch NO se informa error,
+      // porque el usuario reintentaría y lo cargaría dos veces. La lista se
+      // actualiza en el próximo fetch.
+      try {
+        set({ gastos: await gastoService.getAll(get().rangoActual) });
+      } catch {
+        // lista desactualizada hasta el próximo fetch
+      }
+      return { success: true };
     });
   },
 

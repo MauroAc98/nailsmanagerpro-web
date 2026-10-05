@@ -78,3 +78,23 @@ describe('reordenarServicios', () => {
     expect(useServiciosStore.getState().servicios).toEqual(original);
   });
 });
+
+describe('agregarServicio', () => {
+  it('si el servicio se guardó pero el refetch falla, igual es éxito con su id (reintentar duplicaría el servicio)', async () => {
+    const create = vi.spyOn(servicioService, 'create').mockResolvedValue({ id: 99 } as never);
+    vi.spyOn(servicioService, 'getAll').mockRejectedValue(new Error('network'));
+
+    const res = await useServiciosStore.getState().agregarServicio({ nombre: 'Mani', duracion_minutos: 30 } as never);
+
+    expect(res).toMatchObject({ success: true, id: 99 });
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('si el create falla, devuelve el error', async () => {
+    vi.spyOn(servicioService, 'create').mockRejectedValue(new Error('boom'));
+
+    const res = await useServiciosStore.getState().agregarServicio({ nombre: 'Mani', duracion_minutos: 30 } as never);
+
+    expect(res.success).toBe(false);
+  });
+});

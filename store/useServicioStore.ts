@@ -70,19 +70,25 @@ export const useServiciosStore = create<ServiciosState>((set, get) => ({
 
   agregarServicio: async (dto) => {
     return withGlobalLoader(async () => {
+      let creado;
       try {
-        const creado = await servicioService.create(dto);
-        const servicios = await servicioService.getAll();
-        set({ servicios });
+        creado = await servicioService.create(dto);
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+      // El servicio ya quedó guardado: si solo falla un refetch NO se informa
+      // error, porque el usuario reintentaría y lo crearía dos veces.
+      try {
+        set({ servicios: await servicioService.getAll() });
         // Profesional.servicios (relación anidada, ver profesionalService.ts)
         // gana un id nuevo con esta creación; sin refetch queda desincronizada
         // hasta un F5 — la afecta cualquier consumidor que filtre por
         // pertenencia ahí (useHistoriaPrecios, agenda/nuevo).
         await refrescarProfesionales();
-        return { success: true, id: creado.id };
-      } catch (e) {
-        return { success: false, message: extraerMensajeError(e) };
+      } catch {
+        // listas desactualizadas hasta el próximo fetch
       }
+      return { success: true, id: creado.id };
     });
   },
 
