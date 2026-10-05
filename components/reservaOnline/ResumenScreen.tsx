@@ -6,6 +6,7 @@ import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { getService } from '@/lib/reservaOnline';
 import { esCheckoutUrlValida } from '@/lib/reservaOnline/checkoutUrl';
 import { fechaLarga } from '@/lib/reservaOnline/formatoFecha';
+import { formatearWhatsapp } from '@/lib/reservaOnline/formatoWhatsapp';
 import { rutaPaso, rutaReserva } from '@/lib/reservaOnline/rutas';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { duracionDeServicios, formatearDuracion } from '@/lib/reservaOnline/totales';
@@ -107,6 +108,7 @@ export function ResumenScreen({
   const fecha = useReservaOnlineStore((s) => s.fecha);
   const hora = useReservaOnlineStore((s) => s.hora);
   const nota = useReservaOnlineStore((s) => s.nota);
+  const cliente = useReservaOnlineStore((s) => s.cliente);
   const { hold, restanteMs, vencido } = useHold(ahora, cadaMs);
   const [enviando, setEnviando] = useState(false);
   const [holdPerdido, setHoldPerdido] = useState(false);
@@ -233,6 +235,35 @@ export function ResumenScreen({
       </Tarjeta>
 
       <div style={{ height: 12 }} />
+      {/* Un digito mal tipeado manda la confirmacion a un numero sin WhatsApp:
+          se muestra el numero (dato personal: solo en pantalla, sin log) con
+          salida directa a corregirlo; lo tipeado queda en el store. */}
+      {cliente.whatsapp && (
+        <>
+          <Tarjeta estilo={{ borderRadius: 16 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, color: colors.sub, lineHeight: 1.4 }}>{t('resumen.whatsappConfirmacion')}</div>
+                <div style={{ fontSize: 15.5, fontWeight: 700, color: colors.strong, marginTop: 2, whiteSpace: 'nowrap' }}>
+                  {formatearWhatsapp(cliente.whatsapp)}
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label={t('resumen.editarWhatsappLabel')}
+                onClick={() => ir(rutaPaso(slug, 'datos'))}
+                style={{
+                  flexShrink: 0, minHeight: 44, padding: '0 14px', cursor: 'pointer', background: colors.surface,
+                  border: `1.5px solid ${colors.border}`, borderRadius: 12, fontSize: 14, fontWeight: 600, color: colors.primaryDeep,
+                }}
+              >
+                {t('resumen.editarWhatsapp')}
+              </button>
+            </div>
+          </Tarjeta>
+          <div style={{ height: 12 }} />
+        </>
+      )}
       <Tarjeta estilo={{ background: colors.successBg, borderColor: colors.successBorder, borderRadius: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: colors.strong }}>{t('resumen.senaTitulo')}</span>

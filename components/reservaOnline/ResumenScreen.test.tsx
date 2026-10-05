@@ -75,6 +75,17 @@ describe('ResumenScreen', () => {
     expect(screen.getByText('Av. Siempreviva 742')).toBeInTheDocument();
   });
 
+  it('muestra el WhatsApp de la confirmacion legible y "Editar" vuelve a datos sin perder lo tipeado', async () => {
+    const ir = vi.fn();
+    renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+    await screen.findByRole('heading', { name: 'Revisá y confirmá' });
+    expect(screen.getByText('Te mandamos la confirmación por WhatsApp a')).toBeInTheDocument();
+    expect(screen.getByText('+54 9 376 512-3456')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Editar el WhatsApp' }));
+    expect(ir).toHaveBeenCalledWith('/reservar/demo/datos');
+    expect(useReservaOnlineStore.getState().cliente.whatsapp).toBe('+5493765123456');
+  });
+
   it('con una sola profesional no aclara hasta cuando ocupa el turno (Rule L)', async () => {
     renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await screen.findAllByText('con Ana');

@@ -98,7 +98,10 @@
     "enTotal": "En total",
     "tuIdea": "Tu idea",
     "tiempoPagar": "Tenés {minutos} minutos para pagar y asegurar el horario",
-    "cancelacion": "Cancelación gratis hasta {horas} h antes"
+    "cancelacion": "Cancelación gratis hasta {horas} h antes",
+    "whatsappConfirmacion": "Te mandamos la confirmación por WhatsApp a",
+    "editarWhatsapp": "Editar",
+    "editarWhatsappLabel": "Editar el WhatsApp"
   },
   "estado": {
     "confirmada": "Reserva confirmada",
