@@ -11,6 +11,7 @@ import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
+import { parsearMonto } from '@/lib/parsearMonto';
 import PillToggle from '@/components/PillToggle';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -125,6 +126,11 @@ function NuevoServicioContent() {
       await alertDialog(t('invalidDuration'));
       return;
     }
+    const precioNumerico = precio.trim() && !mostrarComponentes ? parsearMonto(precio) : undefined;
+    if (precioNumerico === null) {
+      await alertDialog(t('invalidPrice'));
+      return;
+    }
 
     if (mostrarComponentes && hayFilaIncompleta(componentes)) {
       await alertDialog(t('incompleteRow'));
@@ -149,7 +155,7 @@ function NuevoServicioContent() {
     const result = await agregarServicio({
       nombre: nombre.trim(),
       duracion_minutos: duracion,
-      precio: precio && !mostrarComponentes ? parseFloat(precio) : undefined,
+      precio: precioNumerico,
       es_promo: esPromo,
       categoria_id: categoriaId,
     });
@@ -258,7 +264,7 @@ function NuevoServicioContent() {
         <div>
           <label style={labelStyle}>{t('priceLabel')}</label>
           <input
-            type="number"
+            type="text"
             placeholder={t('pricePlaceholder')}
             value={precio}
             onChange={e => setPrecio(e.target.value)}

@@ -50,7 +50,7 @@ describe('PrecioServiciosSheetHost', () => {
     renderWithProviders(<PrecioServiciosSheetHost />);
     abrir();
 
-    const inputs = screen.getAllByRole('spinbutton');
+    const inputs = screen.getAllByRole('textbox');
     fireEvent.change(inputs[0], { target: { value: '19500' } });
 
     expect(screen.getByText(/Ajustado \+\$1\.500/i)).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('PrecioServiciosSheetHost', () => {
     renderWithProviders(<PrecioServiciosSheetHost />);
     const promesa = abrir();
 
-    fireEvent.change(screen.getAllByRole('spinbutton')[1], { target: { value: '5000' } });
+    fireEvent.change(screen.getAllByRole('textbox')[1], { target: { value: '5000' } });
     fireEvent.click(await esperarArmado(/Finalizar · \$23\.000/));
 
     await expect(promesa).resolves.toEqual([

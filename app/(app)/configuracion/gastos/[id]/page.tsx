@@ -7,6 +7,7 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { parsearMonto } from '@/lib/parsearMonto';
 import { useGastosStore } from '@/store/useGastoStore';
 import { gastoService, CATEGORIAS_GASTO } from '@/services/gastoService';
 import { labelCategoriaGasto } from '@/lib/categoriaLabel';
@@ -113,8 +114,8 @@ export default function EditarGastoPage() {
       await alertDialog(t('dateRequired'));
       return;
     }
-    const montoNumerico = parseFloat(monto);
-    if (!monto || isNaN(montoNumerico) || montoNumerico <= 0) {
+    const montoNumerico = parsearMonto(monto);
+    if (montoNumerico === null || montoNumerico <= 0) {
       setErrorMonto(t('invalidAmount'));
       return;
     }
@@ -203,7 +204,7 @@ export default function EditarGastoPage() {
         <div>
           <label style={labelStyle}>{t('amountLabel')}</label>
           <input
-            type="number"
+            type="text"
             placeholder={t('amountPlaceholder')}
             value={monto}
             onChange={e => { setMonto(e.target.value); setErrorMonto(''); }}

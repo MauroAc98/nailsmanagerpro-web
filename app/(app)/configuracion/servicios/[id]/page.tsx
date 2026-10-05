@@ -11,6 +11,7 @@ import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
+import { parsearMonto } from '@/lib/parsearMonto';
 import PillToggle from '@/components/PillToggle';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
@@ -202,6 +203,12 @@ export default function EditarServicioPage() {
       return;
     }
 
+    const precioNumerico = precio.trim() ? parsearMonto(precio) : null;
+    if (precio.trim() && precioNumerico === null) {
+      await alertDialog(t('invalidPrice'));
+      return;
+    }
+
     setSaving(true);
 
     if (apagandoPromoConComponentes) {
@@ -223,7 +230,7 @@ export default function EditarServicioPage() {
       // null (no undefined) cuando el campo queda vacío: undefined se cae
       // del JSON al serializar y el PUT saldría sin la clave `precio`, así
       // que borrar el precio nunca llegaba a impactar en el backend.
-      precio: precio ? parseFloat(precio) : null,
+      precio: precioNumerico,
       es_promo: esPromo,
       categoria_id: categoriaId ?? null,
     });
@@ -353,7 +360,7 @@ export default function EditarServicioPage() {
             <div>
               <label style={labelStyle}>{t('priceLabel')}</label>
               <input
-                type="number"
+                type="text"
                 placeholder={t('pricePlaceholder')}
                 value={precio}
                 onChange={e => setPrecio(e.target.value)}

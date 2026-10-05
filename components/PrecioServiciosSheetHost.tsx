@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { parsearMonto } from '@/lib/parsearMonto';
 import { useLocale, useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import { formatMontoCorto } from '@/lib/money';
@@ -53,9 +54,7 @@ export function PrecioServiciosSheetHost() {
 
   const numero = (id: number): number | null => {
     const v = valores[id];
-    return v !== undefined && v.trim() !== '' && !Number.isNaN(Number(v)) && Number(v) >= 0
-      ? Number(v)
-      : null;
+    return v === undefined ? null : parsearMonto(v);
   };
 
   const preciosFinales = servicios.map(s => ({
@@ -217,10 +216,8 @@ export function PrecioServiciosSheetHost() {
                     $
                   </span>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    min={0}
-                    step="0.01"
                     disabled={sinCobro}
                     aria-label={s.nombre}
                     value={sinCobro ? '0' : (valores[s.servicio_id] ?? '')}
