@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       // implícito ya cubría toda la app.
       scope: '/',
       display: 'standalone',
-      background_color: '#ffffff',
+      background_color: '#faf6f0',
       theme_color: '#6b8f6a',
       orientation: 'portrait',
       icons: [

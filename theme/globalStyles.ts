@@ -8,7 +8,7 @@ export const globalStyles = {
   },
 
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 16,
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)',
@@ -62,7 +62,7 @@ export const globalStyles = {
   },
 
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     padding: 14,
     borderRadius: 12,
     border: '1px solid #EEE',

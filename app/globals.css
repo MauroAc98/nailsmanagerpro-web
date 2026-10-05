@@ -12,8 +12,13 @@
      colores distintos: la card se separa por color antes de sumarle el
      borde. Este gris muy sutil replica esa misma relación en claro, así
      las cards/bottom sheets vuelven a "flotar" sobre la página incluso
-     antes de que el borde entre en juego. */
-  --color-background: #f7f7f8;
+     antes de que el borde entre en juego.
+     2026-10-05: ya no es un gris frío, es el mismo hueso cálido que --ag-bg.
+     Lo usan el body, el layout de (app), los fallbacks de carga y las
+     pantallas fuera del scope de Agenda (auth, admin, legal): con el gris
+     de antes se veía un destello frío al cargar y esas pantallas quedaban de
+     otro color que el resto. --color-subtext (#666666) da 4.6:1 sobre él. */
+  --color-background: #ede6e0;
   --color-text: #333333;
   --color-subtext: #666666;
   /* De #eeeeee (1.17:1 sobre blanco) a este tono — ~2:1 sobre blanco, un
@@ -33,7 +38,14 @@
   --color-danger-bg: color-mix(in srgb, var(--color-danger) 12%, white);
   --color-danger-border: color-mix(in srgb, var(--color-danger) 55%, white);
 
-  --color-surface: #ffffff;
+  /* Hueso en vez de blanco puro (2026-10-05): el blanco de las tarjetas, hojas
+     e inputs se veía frío junto al verde salvia y el fondo cálido de Agenda.
+     Mismo tono que --ag-surface (ver ahí por qué). --color-subtext (#666666)
+     da 5.3:1 sobre este tono, así que sigue pasando AA. Lo que baja es la
+     separación tarjeta/fondo: la sostienen el borde y la sombra. Los ratios
+     "sobre blanco" de los comentarios de acá abajo se midieron con #ffffff y
+     son anteriores a este cambio. */
+  --color-surface: #faf6f0;
   --color-surface-subtle: #eeeeef;
   --color-text-strong: #1a1a1a;
   --color-muted: #999999;
@@ -234,9 +246,19 @@ body {
    on the old color (happened once — see the 2026-08-22 teal rebrand). */
 .agenda-light {
   color-scheme: light;
-  --ag-bg: #efe9e7;
-  --ag-surface: #ffffff;
-  --ag-surface-2: #f6f1ef;
+  /* Hueso en vez de blanco puro (2026-10-05, mismo cambio que --color-surface).
+     Se movió la escala entera de neutros, no solo la superficie: un hueso solo
+     en --ag-surface (#fbf8f4) casi no se distinguía del blanco y se pisaba con
+     --ag-surface-2 (las cards se confundían con chips y segmentos). Punto medio
+     entre ese primer intento y uno más marcado (#f9f4ec): se nota sin
+     amarillear. Ratios: --ag-sub 5.05:1 sobre --ag-surface (igual que sobre el
+     blanco anterior), 4.72:1 sobre --ag-surface-2 y 4.40:1 sobre --ag-bg (era
+     4.20:1; ahí no llega a 4.5). Separación card/fondo 1.15:1 (era 1.20:1 con
+     blanco): la completan el borde y la sombra. Los ratios de los comentarios
+     de abajo se midieron sobre #ffffff. */
+  --ag-bg: #ede6e0;
+  --ag-surface: #faf6f0;
+  --ag-surface-2: #f4eee8;
   --ag-text: #4a3f42;
   --ag-strong: #2b2226;
   /* --ag-sub y --ag-muted bajados (2026-09-30, feedback de contraste) — el
@@ -247,7 +269,7 @@ body {
      --ag-sub 8a7c80→7a6b6f: 3.92:1→5.01:1 sobre --ag-surface (pasa AA texto
      normal). --ag-muted b3a7aa→948689: 2.29:1→3.43:1 (pasa para íconos/UI,
      sigue sin ser para texto de cuerpo — es placeholder/dato secundario). */
-  --ag-sub: #7a6b6f;
+  --ag-sub: #75666a; /* 7a6b6f → 75666a al pasar a hueso (ver --ag-surface) */
   --ag-muted: #948689;
   /* e7dcde→c9b2b6: 1.15:1→1.96:1 sobre --ag-surface, igualando el ~2:1 que
      ya usa --color-border del tema base (mismo motivo que --ag-sub arriba). */
