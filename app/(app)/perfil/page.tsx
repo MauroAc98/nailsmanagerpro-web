@@ -18,6 +18,7 @@ import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { sanitizarLineaSimple, type SenaCampo } from '@/lib/senaConfig';
+import type { User } from '@/services/authService';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -42,13 +43,20 @@ function parsearSenaMonto(texto: string): { valor: number | undefined } | null {
   return { valor: numero };
 }
 
-// Porcentaje (0-50, mismo tope que el backend). Mismo shape que el monto;
-// null = inválido, undefined = vacío.
+// Porcentaje de la retención de impuestos (0-50, mismo tope que el backend).
+// Mismo shape que el monto; null = inválido, undefined = vacío.
 function parsearPorcentaje(texto: string): { valor: number | undefined } | null {
   const r = parsearSenaMonto(texto);
   if (!r) return null;
   if (r.valor !== undefined && r.valor > 50) return null;
   return r;
+}
+
+// Porcentaje de la seña (1-100). null = inválido o vacío.
+function parsearPorcentajeSena(texto: string): number | null {
+  const r = parsearSenaMonto(texto);
+  if (!r || r.valor === undefined) return null;
+  return r.valor >= 1 && r.valor <= 100 ? r.valor : null;
 }
 
 function formatFechaCorta(iso: string): string {
@@ -266,10 +274,12 @@ export default function PerfilPage() {
     setLongitud(null);
   };
   const [senaMonto, setSenaMonto] = useState('');
+  const [senaTipo, setSenaTipo] = useState<'fijo' | 'porcentaje'>('fijo');
+  const [senaPorcentaje, setSenaPorcentaje] = useState('');
+  const [senaPorcentajeError, setSenaPorcentajeError] = useState<string | null>(null);
+  const [retiene, setRetiene] = useState(false);
   const [retencionIibb, setRetencionIibb] = useState('');
-  const [comisionMp, setComisionMp] = useState('');
   const [retencionError, setRetencionError] = useState<string | null>(null);
-  const [comisionError, setComisionError] = useState<string | null>(null);
   const [whatsappPideSena, setWhatsappPideSena] = useState(false);
   const [senaTitular, setSenaTitular] = useState('');
   const [senaEntidad, setSenaEntidad] = useState('');
@@ -305,9 +315,11 @@ export default function PerfilPage() {
     setLongitud(user.longitud);
     setErrorUbicacion(null);
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
-    // 0 se muestra vacío (placeholder "0"): nunca se precarga un valor sugerido.
+    setSenaTipo(user.sena_tipo === 'porcentaje' ? 'porcentaje' : 'fijo');
+    setSenaPorcentaje(user.sena_porcentaje != null ? String(user.sena_porcentaje) : '');
+    // > 0 = "Sí me descuenta" con ese porcentaje; 0 = "No me descuenta".
+    setRetiene((user.retencion_iibb_porcentaje ?? 0) > 0);
     setRetencionIibb(user.retencion_iibb_porcentaje ? String(user.retencion_iibb_porcentaje) : '');
-    setComisionMp(user.comision_mp_porcentaje != null ? String(user.comision_mp_porcentaje) : '');
     setWhatsappPideSena(user.whatsapp_pide_sena ?? false);
     setSenaTitular(user.whatsapp_sena_titular ?? '');
     setSenaEntidad(user.whatsapp_sena_entidad ?? '');
@@ -320,8 +332,8 @@ export default function PerfilPage() {
     setPasswordConfirmation('');
     setPasswordError(null);
     setSenaMontoError(null);
+    setSenaPorcentajeError(null);
     setRetencionError(null);
-    setComisionError(null);
     setErroresNegocio({});
     setSheetActivo(sheet);
   };
@@ -364,25 +376,36 @@ export default function PerfilPage() {
       return;
     }
 
-    let senaMontoParseada: number | undefined;
-    let retencionParseada = 0;
-    let comisionParseada: number | null = null;
+    let payloadSena: Pick<User, 'sena_tipo' | 'retencion_iibb_porcentaje'> &
+      Partial<Pick<User, 'sena_monto' | 'sena_porcentaje'>> | null = null;
     if (sheetActivo === 'senaYPagos') {
-      const resultado = parsearSenaMonto(senaMonto);
-      if (!resultado) {
-        setSenaMontoError(t('depositAmountInvalid'));
-        return;
+      // Retención: "No" guarda 0; "Sí" exige un porcentaje cargado (0-50).
+      const retencion = retiene ? parsearPorcentaje(retencionIibb) : { valor: 0 };
+      const retencionValida = retencion !== null && retencion.valor !== undefined;
+      setRetencionError(retencionValida ? null : t('percentInvalid'));
+
+      // Solo viaja el campo del modo elegido: el backend limpia el otro.
+      let campoSena: Partial<Pick<User, 'sena_monto' | 'sena_porcentaje'>>;
+      if (senaTipo === 'porcentaje') {
+        const porcentaje = parsearPorcentajeSena(senaPorcentaje);
+        setSenaPorcentajeError(porcentaje === null ? t('depositPercentInvalid') : null);
+        setSenaMontoError(null);
+        if (porcentaje === null || !retencionValida) return;
+        campoSena = { sena_porcentaje: porcentaje };
+      } else {
+        const monto = parsearSenaMonto(senaMonto);
+        const montoValido = monto !== null && monto.valor !== undefined && monto.valor > 0;
+        setSenaMontoError(montoValido ? null : t('depositAmountInvalid'));
+        setSenaPorcentajeError(null);
+        if (!montoValido || !retencionValida) return;
+        campoSena = { sena_monto: monto.valor };
       }
-      const retencion = parsearPorcentaje(retencionIibb);
-      const comision = parsearPorcentaje(comisionMp);
-      setRetencionError(retencion ? null : t('percentInvalid'));
-      setComisionError(comision ? null : t('percentInvalid'));
-      if (!retencion || !comision) return;
-      retencionParseada = retencion.valor ?? 0;
-      comisionParseada = comision.valor ?? null;
-      setSenaMontoError(null);
       setErroresNegocio({});
-      senaMontoParseada = resultado.valor;
+      payloadSena = {
+        sena_tipo: senaTipo,
+        ...campoSena,
+        retencion_iibb_porcentaje: retencion.valor ?? 0,
+      };
     }
 
     setGuardando(true);
@@ -397,11 +420,7 @@ export default function PerfilPage() {
           longitud,
         });
       } else if (sheetActivo === 'senaYPagos') {
-        await updatePerfil({
-          sena_monto: senaMontoParseada,
-          retencion_iibb_porcentaje: retencionParseada,
-          comision_mp_porcentaje: comisionParseada,
-        });
+        await updatePerfil(payloadSena!);
       } else if (sheetActivo === 'negocio') {
         await updatePerfil({
           whatsapp_pide_sena: whatsappPideSena,
@@ -450,7 +469,7 @@ export default function PerfilPage() {
         // el estado final sin importar desde cuál de los dos llegó el 422.
         const errores = (e as { response?: { data?: { errors?: Record<string, string[]> } } })
           .response?.data?.errors ?? {};
-        const campos: SenaCampo[] = ['sena_monto', 'retencion_iibb_porcentaje', 'comision_mp_porcentaje', 'direccion', 'whatsapp_sena_titular', 'whatsapp_sena_alias'];
+        const campos: SenaCampo[] = ['sena_monto', 'sena_porcentaje', 'retencion_iibb_porcentaje', 'direccion', 'whatsapp_sena_titular', 'whatsapp_sena_alias'];
         const mapa: Partial<Record<SenaCampo, string>> = {};
         for (const campo of campos) {
           const primero = errores[campo]?.[0];
@@ -509,15 +528,21 @@ export default function PerfilPage() {
       case 'senaYPagos':
         return (
           <SheetSenaYPagos
+            senaTipo={senaTipo}
+            setSenaTipo={setSenaTipo}
+            senaPorcentaje={senaPorcentaje}
+            setSenaPorcentaje={setSenaPorcentaje}
+            porcentajeGuardado={user.sena_tipo === 'porcentaje' ? user.sena_porcentaje : null}
             senaMonto={senaMonto}
             setSenaMonto={setSenaMonto}
             error={senaMontoError}
+            errorPorcentaje={senaPorcentajeError}
+            retiene={retiene}
+            setRetiene={setRetiene}
             retencion={retencionIibb}
             setRetencion={setRetencionIibb}
-            comision={comisionMp}
-            setComision={setComisionMp}
             errorRetencion={retencionError}
-            errorComision={comisionError}
+            comisionVigente={user.comision_mp_vigente ?? null}
             erroresServidor={erroresNegocio}
             onGuardar={handleGuardar}
             guardando={guardando}
@@ -527,6 +552,7 @@ export default function PerfilPage() {
       case 'negocio':
         return (
           <SheetNegocio
+            senaTipo={senaTipo}
             senaMonto={senaMonto}
             whatsappPideSena={whatsappPideSena}
             setWhatsappPideSena={setWhatsappPideSena}

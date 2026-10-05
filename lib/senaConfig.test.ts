@@ -112,6 +112,24 @@ describe('validarSenaConfig', () => {
     expect(errores.whatsapp_sena_alias).toBe('aliasOCbuRequerido');
   });
 
+  it('percentage mode: accepts 1..100 and ignores monto', () => {
+    expect(validarSenaConfig({ ...valido, monto: undefined, tipo: 'porcentaje', porcentaje: 30 })).toEqual({});
+    expect(validarSenaConfig({ ...valido, tipo: 'porcentaje', porcentaje: 1 })).toEqual({});
+    expect(validarSenaConfig({ ...valido, tipo: 'porcentaje', porcentaje: 100 })).toEqual({});
+  });
+
+  it('percentage mode: flags missing or out-of-range percentages', () => {
+    for (const porcentaje of [undefined, 0, 0.5, 101, -3]) {
+      const e = validarSenaConfig({ ...valido, tipo: 'porcentaje', porcentaje });
+      expect(e.sena_porcentaje).toBe('porcentajeInvalido');
+      expect(e.sena_monto).toBeUndefined();
+    }
+  });
+
+  it('fixed mode (explicit) behaves like the default', () => {
+    expect(validarSenaConfig({ ...valido, tipo: 'fijo', monto: 0 }).sena_monto).toBe('montoRequerido');
+  });
+
   it('reports every missing field at once', () => {
     expect(validarSenaConfig({ monto: undefined, direccion: '', titular: '', alias: '', cbu: '' })).toEqual({
       sena_monto: 'montoRequerido',

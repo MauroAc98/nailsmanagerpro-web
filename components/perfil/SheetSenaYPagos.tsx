@@ -2,28 +2,38 @@
 
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
+import { SegmentedControl } from '@/components/SegmentedControl';
 import { SheetInput } from './SheetInput';
 import type { SenaCampo } from '@/lib/senaConfig';
-import { COMISIONES_MP_REFERENCIA, coincideConPorcentaje, porcentajeParaInput } from '@/lib/mpComisiones';
+
+const PORCENTAJES_PREDEFINIDOS = [20, 30, 50, 100];
 
 interface Props {
+  senaTipo: 'fijo' | 'porcentaje';
+  setSenaTipo: (v: 'fijo' | 'porcentaje') => void;
+  // Porcentaje elegido, como texto (el chip tocado o el valor guardado).
+  senaPorcentaje: string;
+  setSenaPorcentaje: (v: string) => void;
+  // Porcentaje guardado en el negocio: si no es uno de los chips, se agrega un
+  // chip extra con ese valor para no perderlo de vista.
+  porcentajeGuardado: number | null;
   senaMonto: string;
   setSenaMonto: (v: string) => void;
-  // Error de formato local (parsearSenaMonto en perfil/page.tsx), no del
-  // guard de negocio — ese llega en erroresServidor.sena_monto.
+  // Error de formato local (perfil/page.tsx), no del guard de negocio: ese
+  // llega en erroresServidor.
   error: string | null;
-  // 422 del guard de Mercado Pago (reserva online): rechaza vaciar el monto
-  // mientras haya una cuenta conectada. Vive acá porque el monto ahora se
-  // edita en este sheet, no en Mensajes automáticos.
+  errorPorcentaje: string | null;
+  // 422 del backend por campo (p. ej. el guard de Mercado Pago que rechaza
+  // vaciar el monto mientras haya una cuenta conectada).
   erroresServidor?: Partial<Record<SenaCampo, string>>;
-  // Porcentajes por negocio, como texto de input. Vacío en comisión = tasa
-  // estándar; vacío en retención = 0 (la decisión de sumarla es del negocio).
+  // Retención de impuestos: "No" guarda 0, "Sí" guarda el porcentaje cargado.
+  retiene: boolean;
+  setRetiene: (v: boolean) => void;
   retencion: string;
   setRetencion: (v: string) => void;
-  comision: string;
-  setComision: (v: string) => void;
   errorRetencion: string | null;
-  errorComision: string | null;
+  // Comisión de MP con IVA (user.comision_mp_vigente); null = no se muestra.
+  comisionVigente: number | null;
   onGuardar: () => void;
   guardando: boolean;
   onClose: () => void;
@@ -46,14 +56,28 @@ function IconMoney() {
   );
 }
 
+const avisoStyle = { fontSize: 12.5, color: colors.subtext, lineHeight: 1.4 } as const;
+const errorStyle = { fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 } as const;
+const preguntaStyle = { fontSize: 13, fontWeight: 600, color: colors.subtext, margin: '0 0 10px' } as const;
+
+function formatearTasa(n: number): string {
+  return n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 export function SheetSenaYPagos({
-  senaMonto, setSenaMonto, error, erroresServidor,
-  retencion, setRetencion, comision, setComision, errorRetencion, errorComision, onGuardar, guardando, onClose,
+  senaTipo, setSenaTipo, senaPorcentaje, setSenaPorcentaje, porcentajeGuardado,
+  senaMonto, setSenaMonto, error, errorPorcentaje, erroresServidor,
+  retiene, setRetiene, retencion, setRetencion, errorRetencion, comisionVigente,
+  onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetSenaYPagos');
-  const errorServidorMonto = erroresServidor?.sena_monto;
-  const errorComisionMostrado = errorComision ?? erroresServidor?.comision_mp_porcentaje;
+  const errorMonto = error ?? erroresServidor?.sena_monto;
+  const errorPorcentajeMostrado = errorPorcentaje ?? erroresServidor?.sena_porcentaje;
   const errorRetencionMostrado = errorRetencion ?? erroresServidor?.retencion_iibb_porcentaje;
+  const chips = porcentajeGuardado != null && !PORCENTAJES_PREDEFINIDOS.includes(porcentajeGuardado)
+    ? [...PORCENTAJES_PREDEFINIDOS, porcentajeGuardado]
+    : PORCENTAJES_PREDEFINIDOS;
+  const porcentajeElegido = Number(senaPorcentaje.replace(',', '.'));
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
@@ -67,77 +91,94 @@ export function SheetSenaYPagos({
         {t('subtitle')}
       </p>
 
-      <SheetInput
-        label={t('depositAmount')}
-        icon={<IconMoney />}
-        value={senaMonto}
-        onChange={setSenaMonto}
-        placeholder="0"
-        type="text"
-        inputMode="decimal"
-      />
-
-      {error && (
-        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16 }}>{error}</p>
-      )}
-      {errorServidorMonto && (
-        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{errorServidorMonto}</p>
-      )}
-
-      <SheetInput
-        label={t('mpCommission')}
-        icon={<IconMoney />}
-        value={comision}
-        onChange={setComision}
-        placeholder={t('mpCommissionPlaceholder')}
-        type="text"
-        inputMode="decimal"
-      />
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: -4, marginBottom: 10 }}>
-        {COMISIONES_MP_REFERENCIA.map(c => {
-          const activo = coincideConPorcentaje(comision, c.porcentaje);
-          return (
-            <button
-              key={c.id}
-              type="button"
-              aria-pressed={activo}
-              onClick={() => setComision(porcentajeParaInput(c.porcentaje))}
-              style={{
-                borderRadius: 20, padding: '8px 14px', fontSize: 13, border: 'none', cursor: 'pointer',
-                backgroundColor: activo ? colors.primarySolid : colors.border,
-                color: activo ? '#fff' : colors.subtext,
-              }}
-            >
-              {t(`mpPlazo.${c.id}`, { rate: porcentajeParaInput(c.porcentaje) })}
-            </button>
-          );
-        })}
+      <p style={preguntaStyle}>{t('depositModeQuestion')}</p>
+      <div style={{ marginBottom: 16 }}>
+        <SegmentedControl
+          ariaLabel={t('depositModeLabel')}
+          value={senaTipo}
+          onChange={setSenaTipo}
+          options={[
+            { value: 'porcentaje', label: t('modePercent') },
+            { value: 'fijo', label: t('modeFixed') },
+          ]}
+        />
       </div>
-      <p style={{ fontSize: 12, color: colors.subtext, marginTop: 0, marginBottom: 16, lineHeight: 1.4 }}>{t('mpCommissionHelp')}</p>
-      {errorComisionMostrado && (
-        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{errorComisionMostrado}</p>
+
+      {senaTipo === 'porcentaje' ? (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            {chips.map(p => {
+              const activo = porcentajeElegido === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={activo}
+                  onClick={() => setSenaPorcentaje(String(p))}
+                  style={{
+                    flex: '1 1 60px', minHeight: 48, borderRadius: 14, fontSize: 15, fontWeight: 700, border: 'none',
+                    cursor: 'pointer', whiteSpace: 'nowrap',
+                    backgroundColor: activo ? colors.primarySolid : colors.surfaceSubtle,
+                    color: activo ? '#fff' : colors.subtext,
+                  }}
+                >
+                  {p}%
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ ...avisoStyle, margin: 0 }}>{t('percentHelp')}</p>
+          {errorPorcentajeMostrado && (
+            <p style={{ ...errorStyle, marginTop: 8, marginBottom: 0 }}>{errorPorcentajeMostrado}</p>
+          )}
+        </div>
+      ) : (
+        <>
+          <SheetInput
+            label={t('fixedAmountLabel')}
+            icon={<IconMoney />}
+            value={senaMonto}
+            onChange={setSenaMonto}
+            placeholder="0"
+            type="text"
+            inputMode="decimal"
+          />
+          {errorMonto && <p style={errorStyle}>{errorMonto}</p>}
+        </>
       )}
 
-      <SheetInput
-        label={t('iibbRetention')}
-        icon={<IconMoney />}
-        value={retencion}
-        onChange={setRetencion}
-        placeholder="0"
-        type="text"
-        inputMode="decimal"
-      />
-      <p style={{ fontSize: 12, color: colors.subtext, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{t('iibbRetentionHelp')}</p>
-      {errorRetencionMostrado && (
-        <p style={{ fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 }}>{errorRetencionMostrado}</p>
-      )}
-
-      <div style={{
-        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
-      }}>
-        <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: colors.text }}>{t('mpInfoTitle')}</p>
-        <p style={{ margin: '4px 0 0', fontSize: 12.5, color: colors.subtext, lineHeight: 1.4 }}>{t('mpInfoBody')}</p>
+      <p style={preguntaStyle}>{t('retentionQuestion')}</p>
+      <div style={{ marginBottom: 12 }}>
+        <SegmentedControl
+          ariaLabel={t('retentionQuestion')}
+          value={retiene ? 'si' : 'no'}
+          onChange={v => setRetiene(v === 'si')}
+          options={[
+            { value: 'no', label: t('retentionNo') },
+            { value: 'si', label: t('retentionYes') },
+          ]}
+        />
       </div>
+      {retiene && (
+        <SheetInput
+          label={t('retentionInputLabel')}
+          icon={<IconMoney />}
+          value={retencion}
+          onChange={setRetencion}
+          placeholder={t('retentionPlaceholder')}
+          type="text"
+          inputMode="decimal"
+          rightAdornment={<span style={{ fontSize: 15, color: colors.muted }}>%</span>}
+        />
+      )}
+      {errorRetencionMostrado && <p style={errorStyle}>{errorRetencionMostrado}</p>}
+      <p style={{ ...avisoStyle, margin: '0 0 16px' }}>{t('retentionHelp')}</p>
+
+      {comisionVigente != null && (
+        <p style={{ ...avisoStyle, margin: '0 0 16px', padding: '0 2px' }}>
+          {t('mpFeeNote', { rate: formatearTasa(comisionVigente) })}
+        </p>
+      )}
 
       <div style={{
         backgroundColor: colors.primarySoft, borderRadius: 12, padding: '12px 14px', marginBottom: 20,

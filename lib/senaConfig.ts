@@ -9,8 +9,8 @@
 /** Campos del formulario de "Mi negocio" que pueden mostrar un error de seña. */
 export type SenaCampo =
   | 'sena_monto'
+  | 'sena_porcentaje'
   | 'retencion_iibb_porcentaje'
-  | 'comision_mp_porcentaje'
   | 'direccion'
   | 'whatsapp_sena_titular'
   | 'whatsapp_sena_alias';
@@ -68,6 +68,10 @@ export function armarDatosCuentaSena(f: {
 }
 
 export interface SenaConfigInput {
+  /** Modo de la seña; por defecto `fijo`. */
+  tipo?: 'fijo' | 'porcentaje';
+  /** Porcentaje ya parseado (modo `porcentaje`): `undefined` = vacío. */
+  porcentaje?: number;
   /** Monto de seña ya parseado: `undefined` = vacío, número = formato válido. */
   monto: number | undefined;
   direccion: string;
@@ -78,7 +82,7 @@ export interface SenaConfigInput {
 
 /**
  * Valida que se pueda activar "pedir seña". Espeja el guard del backend:
- * requiere `monto > 0`, `direccion` cargada, `titular` y (`alias` o `cbu`).
+ * requiere `monto > 0` (o, en modo porcentaje, un porcentaje entre 1 y 100), `direccion` cargada, `titular` y (`alias` o `cbu`).
  * `entidad` y `cbu` son opcionales por separado. Devuelve un mapa
  * campo -> código de error (objeto vacío = válido). El componente traduce
  * el código.
@@ -86,7 +90,12 @@ export interface SenaConfigInput {
 export function validarSenaConfig(input: SenaConfigInput): Partial<Record<SenaCampo, string>> {
   const errores: Partial<Record<SenaCampo, string>> = {};
 
-  if (input.monto === undefined || input.monto <= 0) {
+  if (input.tipo === 'porcentaje') {
+    const p = input.porcentaje;
+    if (p === undefined || !(p >= 1 && p <= 100)) {
+      errores.sena_porcentaje = 'porcentajeInvalido';
+    }
+  } else if (input.monto === undefined || input.monto <= 0) {
     errores.sena_monto = 'montoRequerido';
   }
   if (sanitizarLineaSimple(input.direccion) === '') {
