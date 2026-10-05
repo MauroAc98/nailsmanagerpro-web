@@ -71,4 +71,18 @@ describe('ProfesionalesPage — rediseño del card', () => {
     renderWithProviders(<ProfesionalesPage />);
     expect(screen.getByText(/Lun a Vie/)).toBeInTheDocument();
   });
+
+  it('con una sola activa, su toggle queda deshabilitado y se explica por qué', () => {
+    seedProfesionales([profesional({ id: 1 }), profesional({ id: 2, activo: false })]);
+    renderWithProviders(<ProfesionalesPage />);
+    expect(screen.getByText(/al menos un profesional activo/)).toBeInTheDocument();
+    expect(screen.getAllByRole('switch').filter(s => s.getAttribute('aria-disabled') === 'true')).toHaveLength(1);
+  });
+
+  it('con dos activas, ningún toggle queda deshabilitado', () => {
+    seedProfesionales([profesional({ id: 1 }), profesional({ id: 2 })]);
+    renderWithProviders(<ProfesionalesPage />);
+    expect(screen.queryByText(/al menos un profesional activo/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('switch').some(s => s.getAttribute('aria-disabled') === 'true')).toBe(false);
+  });
 });

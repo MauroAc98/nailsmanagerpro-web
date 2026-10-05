@@ -21,9 +21,11 @@ function ProfesionalCard({
   esJefa,
   onEdit,
   onToggle,
+  esUltimaActiva,
 }: {
   profesional: Profesional;
   esJefa:      boolean;
+  esUltimaActiva: boolean;
   onEdit:      () => void;
   onToggle:    (activo: boolean) => void;
 }) {
@@ -114,7 +116,7 @@ function ProfesionalCard({
         </p>
       </div>
 
-      <PillToggle value={profesional.activo} onChange={onToggle} stopPropagation />
+      <PillToggle value={profesional.activo} onChange={onToggle} stopPropagation disabled={esUltimaActiva} ariaLabel={esUltimaActiva ? t('ultimaActivaHint') : undefined} />
     </div>
   );
 }
@@ -220,6 +222,9 @@ export default function ProfesionalesPage() {
       {/* List */}
       {!loading && !error && (
         <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {activas === 1 && (
+            <p style={{ fontSize: 12, color: colors.subtext, margin: 0, lineHeight: 1.4 }}>{t('ultimaActivaHint')}</p>
+          )}
           {profesionales.length === 0 ? (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
               {t('emptyState')}
@@ -232,6 +237,7 @@ export default function ProfesionalesPage() {
                   key={p.id}
                   profesional={p}
                   esJefa={jefa?.id === p.id}
+                  esUltimaActiva={p.activo && activas === 1}
                   onEdit={() => router.push(`/configuracion/profesionales/${p.id}`)}
                   onToggle={activo => toggleActivo(p.id, activo)}
                 />

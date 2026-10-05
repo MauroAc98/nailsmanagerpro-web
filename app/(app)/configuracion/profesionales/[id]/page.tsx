@@ -74,6 +74,8 @@ export default function EditarProfesionalPage() {
   const [errorNombre, setErrorNombre] = useState('');
   const [loadingProfesional, setLoadingProfesional] = useState(true);
   const [saving,      setSaving]      = useState(false);
+  // El backend rechaza dejar el salón sin profesionales activas (422).
+  const esUltimaActiva = activo && !profesionales.some(x => x.id !== id && x.activo);
 
   useEffect(() => {
     const cargar = async () => {
@@ -346,10 +348,10 @@ export default function EditarProfesionalPage() {
             <div>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('activeLabel')}</p>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-                {activo ? t('activeSubtitleOn') : t('activeSubtitleOff')}
+                {esUltimaActiva ? t('lastActiveHint') : activo ? t('activeSubtitleOn') : t('activeSubtitleOff')}
               </p>
             </div>
-            <PillToggle value={activo} onChange={setActivo} />
+            <PillToggle value={activo} onChange={setActivo} disabled={esUltimaActiva} ariaLabel={t('activeLabel')} />
           </div>
           <div>
             <label style={labelStyle}>{t('workingDaysLabel')}</label>
