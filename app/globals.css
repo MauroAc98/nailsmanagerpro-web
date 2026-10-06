@@ -164,6 +164,9 @@ body {
 
 .loader-spinner {
   animation: spin 0.8s linear infinite;
+  /* Capa propia en el compositor: el giro sigue fluido aunque el hilo
+     principal esté ocupado (respuesta del login, re-render del store). */
+  will-change: transform;
 }
 
 /* Esqueletos de carga (ej. reserva online, EntryScreen) — bloques neutros

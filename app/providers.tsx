@@ -10,7 +10,8 @@ import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoadingStore } from '@/store/useLoadingStore';
-import { initTheme } from '@/store/useThemeStore';
+import { initTheme, useThemeStore } from '@/store/useThemeStore';
+import { agendaColors } from '@/theme/agendaColors';
 import { initLocale, useLocaleStore } from '@/store/useLocaleStore';
 import { Loader } from '@/components/Loader';
 import { BootSplash } from '@/components/BootSplash';
@@ -66,6 +67,19 @@ function esRutaAdmin(): boolean {
 // para no duplicar el prefijo /reservar al navegar dentro del flujo).
 function esRutaReservaPublica(): boolean {
   return typeof window !== 'undefined' && esHostReservaPublica(window.location.hostname);
+}
+
+// Pantalla de paso mientras el guard resuelve una redirección (ej. logout ->
+// /login). Usa el mismo fondo cálido que LoginScreen (agendaColors.bg, con su
+// clase de tema) para que el corte no cambie de color entre una pantalla y otra.
+function PantallaDePaso() {
+  const resolvedTheme = useThemeStore(s => s.resolvedTheme);
+  return (
+    <div
+      className={resolvedTheme === 'dark' ? 'agenda-dark' : 'agenda-light'}
+      style={{ minHeight: '100vh', backgroundColor: agendaColors.bg }}
+    />
+  );
 }
 
 function ProvidersInner({ children }: { children: React.ReactNode }) {
@@ -263,7 +277,17 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin, authStatus, pathname, subscriptionBlockedOrigin]);
 
-  const puedeMostrarContenido = isAdmin || isReservaPublica || route.type === 'allow';
+  // Recién logueado (`authenticated`) y todavía parado en /login (o en
+  // /cambiar-password): el resolver pide redirect a home, pero hasta que el
+  // router.push aterriza esa pantalla es la única que no tiene datos ajenos —
+  // tapar eso con un div en blanco era el "pantallazo" entre el login y la
+  // bienvenida. Se la deja montada y la bienvenida (z-index 200) la cubre.
+  // Solo con `authenticated`: en logout / suscripción vencida / sesión
+  // revocada el contenido sigue cortándose para no exponer pantallas con
+  // stores ya vaciados.
+  const redirigiendoYaAutenticado = route.type === 'redirect' && authStatus === 'authenticated';
+  const puedeMostrarContenido =
+    isAdmin || isReservaPublica || route.type === 'allow' || redirigiendoYaAutenticado;
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">
@@ -271,7 +295,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
         ? children
         : authStatus === 'booting'
           ? <BootSplash />
-          : <div style={{ minHeight: '100vh', backgroundColor: colors.background }} />}
+          : <PantallaDePaso />}
       <Loader visible={isLoading} />
       {/* WelcomeScreen es el splash PERSONALIZADO ("Buenos días, {nombre}").
           Gateado en `authenticated` además del flag: si la sesión resultó
