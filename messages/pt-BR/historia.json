@@ -2,11 +2,13 @@
   "TextoLibreInput": {
     "placeholder": "Adicione um texto ao seu story..."
   },
+  "PieContacto": {
+    "reserveCta": "Reserve seu horário"
+  },
   "StoryCanvas": {
     "availableTitle": "Horários disponíveis",
     "withProfessional": "com {nombre}",
-    "complete": "COMPLETO",
-    "reserveCta": "Reserve seu horário"
+    "complete": "COMPLETO"
   },
   "HistoriaPage": {
     "title": "Gerar story",
@@ -48,8 +50,7 @@
   "TarjetaPrecios": {
     "header": "Preços",
     "sectionServicios": "Serviços",
-    "sectionPromociones": "Promoções",
-    "reservarLabel": "Reserve seu horário"
+    "sectionPromociones": "Promoções"
   },
   "SelectorPlantilla": {
     "missingPhotos": "faltam {count, plural, one {# foto} other {# fotos}}",
@@ -100,6 +101,36 @@
     "share": "Compartilhar",
     "noContentToShow": "Envie ao menos uma foto para gerar a imagem.",
     "couldNotGenerateImage": "Não foi possível gerar a imagem. Tente novamente.",
-    "shareTitle": "Meu story de preços"
+    "shareTitle": "Meu story de preços",
+    "seleccionTitle": "Quais serviços mostrar?",
+    "seleccionElegirTodo": "Escolher tudo",
+    "seleccionQuitarTodo": "Tirar tudo",
+    "seleccionContador": "{marcados} de {total} serviços escolhidos. Toque em uma categoria para ver os serviços e tirar os que não quiser.",
+    "seleccionNoEntra": "Não cabe em uma única imagem com letra legível. Tire alguns serviços para poder salvá-la.",
+    "seleccionSinCategoria": "Sem categoria",
+    "seleccionCategoriaCuenta": "{marcados} de {total}",
+    "seleccionCategoriaAria": "Marcar todos os serviços de {nombre}",
+    "seleccionPromo": "PROMO",
+    "seleccionHintSinCategoria": "Os serviços sem categoria aparecem juntos. Atribua uma em Serviços para organizar melhor.",
+    "seleccionVacia": "Escolha pelo menos um serviço para gerar sua story.",
+    "modoTitle": "Como quer montar?",
+    "modoUnaTitle": "Uma story",
+    "modoUnaDesc": "Tudo junto em uma única imagem.",
+    "modoUnaCuenta": "{count, plural, one {# serviço escolhido} other {# serviços escolhidos}}",
+    "modoCategoriaTitle": "Uma por categoria",
+    "modoCategoriaDesc": "Uma imagem para cada categoria que você escolheu.",
+    "modoCategoriaCuenta": "{count, plural, one {# story para compartilhar.} other {# stories para compartilhar.}}",
+    "modoVacio": "Escolha pelo menos um serviço.",
+    "modoRecomendado": "Recomendado",
+    "historiaAnterior": "Story anterior",
+    "historiaSiguiente": "Próxima story",
+    "historiaPosicion": "Story {actual} de {total} · {nombre}",
+    "historiaNoEntra": "Esta story não cabe com letra legível. Tire serviços para poder salvá-la.",
+    "historiaPosicionNoEntra": "Story {actual} de {total} · {nombre} · não cabe",
+    "historiasNoEntranUna": "A story de {nombre} não cabe com letra legível. Tire serviços dessa categoria para poder salvá-la.",
+    "historiasNoEntranVarias": "A story de {nombre} e {resto, plural, one {mais #} other {mais #}} não cabem com letra legível. Tire serviços dessas categorias para poder salvá-las.",
+    "guardarVarias": "Salvar {count}",
+    "compartirVarias": "Compartilhar {count}",
+    "compartirVariasDescargadas": "Seu navegador não permite compartilhar várias imagens juntas: elas foram baixadas."
   }
 }

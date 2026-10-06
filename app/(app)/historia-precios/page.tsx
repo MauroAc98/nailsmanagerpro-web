@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ImagePlus } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ChevronLeft, ChevronRight, ImagePlus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PillToggle from '@/components/PillToggle';
 import SelectorProfesional from '@/components/SelectorProfesional';
@@ -14,6 +14,11 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from '@/components/historia-precios/HistoriaPreciosCanvas';
 import { SelectorPlantilla } from '@/components/historia-precios/SelectorPlantilla';
 import { GestorFotos } from '@/components/historia-precios/GestorFotos';
+import { SeleccionServicios } from '@/components/historia-precios/SeleccionServicios';
+import { ModoHistorias } from '@/components/historia-precios/ModoHistorias';
+import { HistoriasFueraDePantalla } from '@/components/historia-precios/HistoriasFueraDePantalla';
+import { avisoNoEntran, etiquetaAccion, leyendaPosicion } from '@/lib/historia/exportarHistorias';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 
 // ─────────────────────────────────────────────
 // Responsive preview wrapper — HistoriaPreciosCanvas ALWAYS renders at its
@@ -44,20 +49,26 @@ export default function HistoriaPreciosPage() {
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { servicios, fetchServicios }         = useServiciosStore();
+  const { categorias, fetchCategorias }      = useCategoriasServicioStore();
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
     if (servicios.length === 0) fetchServicios();
+    fetchCategorias();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
-    effectiveProfesionalId, serviciosActivos,
+    effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
+    excluidosIds, setExcluidosIds,
     selectedProfesionalId, setSelectedProfesionalId,
+    modo, setModo, historias, cantidadPorCategoria, idxHistoria, historiaActual, irAnterior, irSiguiente,
     nombreNegocio, telefono,
     templateId, handleTemplateChange,
     notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
     notaActiva, setNotaActiva,
     notaAlineacion, setNotaAlineacion,
-    fotos, fotosUrls, puedeCapturar,
+    fotos, fotosUrls, hayFotos, puedeCapturar,
+    entra, nivelDensidad, onFitChange,
+    hayVarias, reportarFit, registrarCanvas, entraTodas, historiasQueNoEntran, exportando,
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
 
@@ -70,9 +81,20 @@ export default function HistoriaPreciosPage() {
   // borra, así se puede reactivar sin volver a escribir.
   const notaParaMostrar = notaActiva ? notaAdicional : undefined;
 
+  // Solo lo de la historia actual va a la tarjeta/preview/captura. En modo
+  // categoría la tarjeta lleva el nombre de la categoría como subtítulo.
+  const serviciosHistoria = historiaActual?.servicios ?? [];
+  const subtituloHistoria = modo === 'categoria' ? historiaActual?.titulo ?? undefined : undefined;
+  const hayNavegacion = hayVarias;
+  const botonesInactivos = !puedeCapturar || exportando;
+  const cantidadImagenes = hayVarias ? historias.length : 1;
+  const avisoVarias = hayVarias && !entraTodas ? avisoNoEntran(historiasQueNoEntran, t) : null;
+  const historiaActualNoEntra = historiaActual ? historiasQueNoEntran.some(h => h.id === historiaActual.id) : false;
+
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
   const cargando = profesionales.length === 0;
+  const sinServicios = serviciosActivos.length === 0;
 
   // Multi-profesional — invisible con ≤1 profesional activa, mismo criterio
   // que app/(app)/agenda/historia/page.tsx. profesionalSeleccionada solo
@@ -139,7 +161,7 @@ export default function HistoriaPreciosPage() {
               el preview de arriba con una imagen rota (`fotos[0]`
               undefined). Muestra el mismo mensaje que ya existía más abajo
               (`emptyPhotosState`), ahora también acá arriba. */}
-          {!puedeCapturar ? (
+          {!hayFotos ? (
             <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', margin: '20px 0' }}>
               {t('emptyPhotosState')}
             </p>
@@ -158,7 +180,7 @@ export default function HistoriaPreciosPage() {
               {/* Canvas preview — marco tipo celular alrededor del MISMO nodo
                   que captura la exportación (ver useCanvasScale arriba); el
                   frame es puramente decorativo, no toca el nodo con canvasRef. */}
-              <div style={{ padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
+              <div style={{ position: 'relative', padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
                 <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 20 }}>
                   <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                     <HistoriaPreciosCanvas
@@ -166,16 +188,51 @@ export default function HistoriaPreciosPage() {
                       templateId={templateId}
                       fotos={fotosUrls}
                       titulo={titulo}
-                      servicios={serviciosActivos}
+                      subtitulo={subtituloHistoria}
+                      servicios={serviciosHistoria}
                       nombreNegocio={nombreNegocio}
                       telefono={telefono}
                       profesionalNombre={profesionalSeleccionada?.nombre}
                       nota={notaParaMostrar}
                       notaAlineacion={notaAlineacion}
+                      onFitChange={onFitChange}
                     />
                   </div>
                 </div>
+                {hayNavegacion && (
+                  <>
+                    <FlechaHistoria lado="left" label={t('historiaAnterior')} onClick={irAnterior} />
+                    <FlechaHistoria lado="right" label={t('historiaSiguiente')} onClick={irSiguiente} />
+                  </>
+                )}
               </div>
+              {hayNavegacion && (
+                <p style={{ margin: '10px 0 0', fontSize: 12.5, color: historiaActualNoEntra ? colors.amberFg : colors.subtext, textAlign: 'center' }}>
+                  {leyendaPosicion({ actual: idxHistoria + 1, total: historias.length, nombre: historiaActual?.titulo ?? '', noEntra: historiaActualNoEntra }, t)}
+                </p>
+              )}
+
+              {/* Qué servicios entran en la historia — selección de sesión. */}
+              {serviciosDisponibles.length > 0 && (
+                <SeleccionServicios
+                  servicios={serviciosDisponibles}
+                  categorias={categorias}
+                  excluidos={excluidosIds}
+                  onChange={setExcluidosIds}
+                  noEntra={modo === 'una' && !entra}
+                />
+              )}
+
+              {/* Cómo repartir lo elegido: una historia o una por categoría. */}
+              {serviciosDisponibles.length > 0 && (
+                <ModoHistorias
+                  modo={modo}
+                  onChange={setModo}
+                  cantidadServicios={serviciosActivos.length}
+                  cantidadHistorias={cantidadPorCategoria}
+                  entra={entra}
+                />
+              )}
 
               {/* Plantilla picker */}
               <div style={{ width: '100%', marginTop: 20 }}>
@@ -185,12 +242,14 @@ export default function HistoriaPreciosPage() {
                 <SelectorPlantilla
                   fotos={fotosUrls}
                   titulo={titulo}
-                  servicios={serviciosActivos}
+                  servicios={serviciosHistoria}
+                  subtitulo={subtituloHistoria}
                   nombreNegocio={nombreNegocio}
                   telefono={telefono}
                   profesionalNombre={profesionalSeleccionada?.nombre}
                   nota={notaParaMostrar}
                   notaAlineacion={notaAlineacion}
+                  nivelDensidad={nivelDensidad}
                   templateId={templateId}
                   onTemplateChange={handleTemplateChange}
                 />
@@ -303,9 +362,17 @@ export default function HistoriaPreciosPage() {
             <GestorFotos profesionalId={effectiveProfesionalId} fotos={fotos} />
           </div>
 
-          {!puedeCapturar && (
+          {!hayFotos && (
             <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '16px 0 0' }}>
               {t('emptyPhotosState')}
+            </p>
+          )}
+          {hayFotos && !puedeCapturar && (
+            <p style={{
+              fontSize: 12, textAlign: 'center', margin: '16px 0 0',
+              color: avisoVarias || (!sinServicios && !entra) ? colors.amberFg : colors.subtext,
+            }}>
+              {avisoVarias ?? (sinServicios || entra ? t('seleccionVacia') : modo === 'categoria' ? t('historiaNoEntra') : t('seleccionNoEntra'))}
             </p>
           )}
 
@@ -313,37 +380,74 @@ export default function HistoriaPreciosPage() {
           <div style={{ width: '100%', marginTop: 25, display: 'flex', gap: 10 }}>
             <button
               onClick={descargarImagen}
-              disabled={!puedeCapturar}
+              disabled={botonesInactivos}
               style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`,
-                cursor: puedeCapturar ? 'pointer' : 'not-allowed', opacity: puedeCapturar ? 1 : 0.5,
+                cursor: botonesInactivos ? 'not-allowed' : 'pointer', opacity: botonesInactivos ? 0.5 : 1,
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('save')}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{etiquetaAccion('guardar', cantidadImagenes, t)}</span>
             </button>
             <button
               onClick={compartirImagen}
-              disabled={!puedeCapturar}
+              disabled={botonesInactivos}
               style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`,
-                cursor: puedeCapturar ? 'pointer' : 'not-allowed', opacity: puedeCapturar ? 1 : 0.5,
+                cursor: botonesInactivos ? 'not-allowed' : 'pointer', opacity: botonesInactivos ? 0.5 : 1,
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                 <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('share')}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{etiquetaAccion('compartir', cantidadImagenes, t)}</span>
             </button>
           </div>
+          {/* Una por categoría: todas las historias montadas fuera de pantalla
+              para medir su ajuste y capturarlas al exportar. */}
+          {hayVarias && hayFotos && (
+            <HistoriasFueraDePantalla
+              historias={historias}
+              registrarCanvas={registrarCanvas}
+              reportarFit={reportarFit}
+              templateId={templateId}
+              fotos={fotosUrls}
+              titulo={titulo}
+              nombreNegocio={nombreNegocio}
+              telefono={telefono}
+              profesionalNombre={profesionalSeleccionada?.nombre}
+              nota={notaParaMostrar}
+              notaAlineacion={notaAlineacion}
+            />
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+// Flecha de navegación sobre el costado del preview (44px de área táctil).
+function FlechaHistoria({ lado, label, onClick }: { lado: 'left' | 'right'; label: string; onClick: () => void }) {
+  const Icono = lado === 'left' ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      style={{
+        position: 'absolute', top: '50%', [lado]: 14, transform: 'translateY(-50%)',
+        width: 44, height: 44, borderRadius: 22, border: 'none', cursor: 'pointer',
+        background: withAlpha(colors.surface, 'E6'), color: colors.primaryDeep,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <Icono size={20} strokeWidth={2.5} />
+    </button>
   );
 }

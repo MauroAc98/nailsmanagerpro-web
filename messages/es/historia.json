@@ -2,11 +2,13 @@
   "TextoLibreInput": {
     "placeholder": "Agregá un texto a tu historia..."
   },
+  "PieContacto": {
+    "reserveCta": "Reservá tu turno"
+  },
   "StoryCanvas": {
     "availableTitle": "Turnos disponibles",
     "withProfessional": "con {nombre}",
-    "complete": "COMPLETO",
-    "reserveCta": "Reservá tu turno"
+    "complete": "COMPLETO"
   },
   "HistoriaPage": {
     "title": "Historia de turnos",
@@ -48,8 +50,7 @@
   "TarjetaPrecios": {
     "header": "Precios",
     "sectionServicios": "Servicios",
-    "sectionPromociones": "Promociones",
-    "reservarLabel": "Reservá tu turno"
+    "sectionPromociones": "Promociones"
   },
   "SelectorPlantilla": {
     "missingPhotos": "faltan {count, plural, one {# foto} other {# fotos}}",
@@ -100,6 +101,36 @@
     "share": "Compartir",
     "noContentToShow": "Subí al menos una foto para generar la imagen.",
     "couldNotGenerateImage": "No se pudo generar la imagen. Intentá de nuevo.",
-    "shareTitle": "Mi historia de precios"
+    "shareTitle": "Mi historia de precios",
+    "seleccionTitle": "¿Qué servicios mostrar?",
+    "seleccionElegirTodo": "Elegir todo",
+    "seleccionQuitarTodo": "Quitar todo",
+    "seleccionContador": "{marcados} de {total} servicios elegidos. Tocá una categoría para ver sus servicios y sacar los que no quieras.",
+    "seleccionNoEntra": "No entra en una sola imagen con letra legible. Sacá algunos servicios para poder guardarla.",
+    "seleccionSinCategoria": "Sin categoría",
+    "seleccionCategoriaCuenta": "{marcados} de {total}",
+    "seleccionCategoriaAria": "Marcar todos los servicios de {nombre}",
+    "seleccionPromo": "PROMO",
+    "seleccionHintSinCategoria": "Los servicios sin categoría aparecen juntos. Asignales una desde Servicios para ordenarlos mejor.",
+    "seleccionVacia": "Elegí al menos un servicio para generar tu historia.",
+    "modoTitle": "¿Cómo querés armarla?",
+    "modoUnaTitle": "Una historia",
+    "modoUnaDesc": "Todo junto en una sola imagen.",
+    "modoUnaCuenta": "{count, plural, one {# servicio elegido} other {# servicios elegidos}}",
+    "modoCategoriaTitle": "Una por categoría",
+    "modoCategoriaDesc": "Una imagen por cada categoría que elegiste.",
+    "modoCategoriaCuenta": "{count, plural, one {# historia para compartir.} other {# historias para compartir.}}",
+    "modoVacio": "Elegí al menos un servicio.",
+    "modoRecomendado": "Recomendado",
+    "historiaAnterior": "Historia anterior",
+    "historiaSiguiente": "Historia siguiente",
+    "historiaPosicion": "Historia {actual} de {total} · {nombre}",
+    "historiaNoEntra": "Esta historia no entra con letra legible. Sacá servicios para poder guardarla.",
+    "historiaPosicionNoEntra": "Historia {actual} de {total} · {nombre} · no entra",
+    "historiasNoEntranUna": "La historia de {nombre} no entra con letra legible. Sacá servicios de esa categoría para poder guardarla.",
+    "historiasNoEntranVarias": "La historia de {nombre} y {resto, plural, one {# más} other {# más}} no entran con letra legible. Sacá servicios de esas categorías para poder guardarlas.",
+    "guardarVarias": "Guardar {count}",
+    "compartirVarias": "Compartir {count}",
+    "compartirVariasDescargadas": "Tu navegador no permite compartir varias imágenes juntas: se descargaron."
   }
 }

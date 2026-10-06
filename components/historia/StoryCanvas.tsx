@@ -7,7 +7,7 @@ import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { agendaFontSerif } from '@/theme/agendaColors';
-import { phoneUtils } from '@/lib/phoneUtils';
+import { PieContacto } from '@/components/historia/PieContacto';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
@@ -421,57 +421,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               )}
             </div>
 
-            {/* Línea divisoria — separa el bloque de disponibilidad del
-                footer de contacto, tal cual la referencia. Margen bajado
-                (14->10) junto con el resto del footer, que ocupaba más
-                lugar del que debería (feedback de diseño 2026-08-17). */}
-            <div ref={lineaRef} data-testid="story-linea" style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }} />
-
-            {/* Footer — CTA "Reservá tu turno" + WhatsApp con el teléfono,
-                tal cual la referencia. Blanco liso (no primaryRaw): probado
-                en rosa de marca primero pero no convencía sobre la foto.
-                agendaFontSerif en itálica (2026-08-19: unificado con el
-                mismo CTA de TarjetaPrecios en historia-precios, que ya usa
-                itálica — antes este quedaba recto y las dos historias
-                generadas por la app se veían inconsistentes entre sí). El
-                ícono (no la palabra "WhatsApp" escrita) para quedar
-                consistente con cómo se representa esa acción en el resto de
-                la app (Recordatorios, botón de turno). Sin teléfono
-                cargado, el CTA solo alcanza — no hace falta un mensaje
-                genérico aparte. */}
-            <div ref={pieRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <span style={{
-                fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 16,
-                color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-              }}>
-                {t('reserveCta')}
-              </span>
-              {/* Una sola línea: el negocio (que ya no es el título del
-                  header) y el teléfono con su ícono pegado al número. */}
-              {(telefonoEstudio || nombreEstudio) && (
-                // Texto corrido en UNA línea (no cajas flex): nombre en serif,
-                // guion y teléfono comparten la línea base por construcción,
-                // sin depender de cómo cada tipografía arma su caja (con flex
-                // el nombre quedaba más abajo y fuera de la línea del teléfono).
-                // Un nombre muy largo baja de renglón antes que cortarse, y el
-                // teléfono nunca se parte.
-                <div style={{
-                  textAlign: 'center', maxWidth: '100%', marginTop: 2, fontSize: 12, lineHeight: '16px',
-                  color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)',
-                }}>
-                  {nombreEstudio && <span style={{ fontFamily: agendaFontSerif }}>{nombreEstudio}</span>}
-                  {nombreEstudio && telefonoEstudio && (
-                    // Guion largo: se lee como una firma ("Negocio — teléfono").
-                    <span aria-hidden style={{ margin: '0 8px', color: 'rgba(255,255,255,0.75)' }}>—</span>
-                  )}
-                  {telefonoEstudio && (
-                    <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      +{phoneUtils.formatDisplay(telefonoEstudio)}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Línea divisoria + footer de contacto (CTA, negocio y teléfono):
+                componente compartido con la historia de precios (ver
+                PieContacto) para que las dos no se desalineen. Los refs
+                caen en los mismos nodos que antes: se miden para la zona
+                de blur del pie. */}
+            <PieContacto nombre={nombreEstudio} telefono={telefonoEstudio} lineaRef={lineaRef} pieRef={pieRef} />
           </div>
         </div>
 

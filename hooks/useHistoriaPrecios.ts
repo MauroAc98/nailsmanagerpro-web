@@ -6,10 +6,17 @@ import { fetchAsDataUrl, prepararImagenesParaCaptura } from '@/lib/historia/capt
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
+import { filtrarPorSeleccion } from '@/lib/historiaSeleccion';
+import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
+import { armarHistorias, nombreArchivoHistoria, type ModoHistorias } from '@/lib/historiaHistorias';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import type { ResultadoDensidad } from '@/lib/historiaDensidad';
+import {
+  agregarAjustes, decidirEnvio, descargarSecuencial, exportarHistorias, type NavegadorCompartir,
+} from '@/lib/historia/exportarHistorias';
 import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
-const FILENAME = 'historia-precios.png';
 
 // Ancho de exportación fijo — mismo criterio que useGenerarHistoria.capturar:
 // 1080px es la resolución estándar recomendada por Instagram Stories y
@@ -17,6 +24,25 @@ const FILENAME = 'historia-precios.png';
 // BASE_WIDTH=420 (ver D3 en sdd/dynamic-price-story), así que un
 // pixelRatio:2 fijo exportaba siempre 840x1493, por debajo de ese estándar.
 const STORY_EXPORT_WIDTH = 1080;
+
+// Pausa entre descargas automáticas sucesivas (varios PNG): sin ella los
+// navegadores tienden a bloquear las posteriores a la primera.
+const DESCARGA_DELAY_MS = 400;
+
+const esperarMs = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+const esperarFrame = () => new Promise<void>(resolve => {
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
+  else setTimeout(resolve, 16);
+});
+
+function descargarArchivo(file: File) {
+  const url = URL.createObjectURL(file);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const proxiedUrl = (url: string) => `/api/historia-fondo?url=${encodeURIComponent(url)}`;
 
@@ -45,7 +71,29 @@ export function useHistoriaPrecios() {
   // datos mostrados son los de ella.
   // ─────────────────────────────────────────────
   const { profesionales, guardarNotaHistoriaPrecios } = useProfesionalStore();
-  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const [selectedProfesionalId, setSelectedProfesionalIdRaw] = useState<number | null>(null);
+  // Selección de servicios de la historia (ver lib/historiaSeleccion): ids
+  // EXCLUIDOS, puramente de sesión. Vacío = todo elegido (comportamiento
+  // previo). Cambiar de profesional la resetea: sus servicios son otros.
+  const [excluidosIds, setExcluidosIdsRaw] = useState<ReadonlySet<number>>(new Set());
+  // Modo de armado ('una' historia o una por categoría) y la historia que se
+  // está viendo. Cambiar el modo o la selección vuelve a la primera historia:
+  // el reparto en historias es otro.
+  const [modo, setModoRaw] = useState<ModoHistorias>('una');
+  const [idxRaw, setIdxRaw] = useState(0);
+  const setExcluidosIds = useCallback((next: ReadonlySet<number>) => {
+    setExcluidosIdsRaw(next);
+    setIdxRaw(0);
+  }, []);
+  const setModo = useCallback((next: ModoHistorias) => {
+    setModoRaw(next);
+    setIdxRaw(0);
+  }, []);
+  const setSelectedProfesionalId = useCallback((id: number | null) => {
+    setSelectedProfesionalIdRaw(id);
+    setExcluidosIdsRaw(new Set());
+    setIdxRaw(0);
+  }, []);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;
@@ -75,7 +123,7 @@ export function useHistoriaPrecios() {
   // cuenta filtraría mal en cuentas con varias profesionales con servicios
   // asignados por separado.
   const { servicios } = useServiciosStore();
-  const serviciosActivos = useMemo(
+  const serviciosDisponibles = useMemo(
     () => profesionalActual
       ? servicios
           .filter(s =>
@@ -92,6 +140,36 @@ export function useHistoriaPrecios() {
       : [],
     [servicios, profesionalActual]
   );
+  // Lo que realmente va a la tarjeta: los disponibles menos los excluidos.
+  const serviciosActivos = useMemo(
+    () => filtrarPorSeleccion(serviciosDisponibles, excluidosIds),
+    [serviciosDisponibles, excluidosIds]
+  );
+
+  // Historias: cómo se reparten los servicios elegidos según el modo. Todo
+  // (preview, ajuste, captura) usa SOLO los de la historia actual.
+  const { categorias } = useCategoriasServicioStore();
+  const historias = useMemo(
+    () => armarHistorias(serviciosActivos, modo, categorias, tStatic('historia.HistoriaPreciosPage.seleccionSinCategoria')),
+    [serviciosActivos, modo, categorias]
+  );
+  // Cuántas historias saldrían en modo "una por categoría" (para la tarjeta de
+  // ese modo, aun estando en modo "una").
+  const cantidadPorCategoria = useMemo(
+    () => agruparServiciosPorCategoria(serviciosActivos, categorias).length,
+    [serviciosActivos, categorias]
+  );
+  const idxHistoria = Math.min(idxRaw, Math.max(historias.length - 1, 0));
+  const historiaActual = historias[idxHistoria] ?? null;
+  const irAnterior = useCallback(() => {
+    if (historias.length === 0) return;
+    setIdxRaw((idxHistoria - 1 + historias.length) % historias.length);
+  }, [historias.length, idxHistoria]);
+  const irSiguiente = useCallback(() => {
+    if (historias.length === 0) return;
+    setIdxRaw((idxHistoria + 1) % historias.length);
+  }, [historias.length, idxHistoria]);
+  const nombreArchivo = nombreArchivoHistoria(historiaActual?.titulo ?? null);
 
   // ─────────────────────────────────────────────
   // Selección de plantilla — puramente local a esta sesión. Ningún task de
@@ -317,7 +395,55 @@ export function useHistoriaPrecios() {
   // Las 8 plantillas del catálogo actual piden al menos 1 foto (ver
   // catalogo.ts, minFotos) — no hay plantilla sin foto de fondo, a
   // diferencia del catálogo anterior ('type'/Tipográfico, minFotos: 0).
-  const puedeCapturar = fotosOrdenadas.length > 0;
+  const hayFotos = fotosOrdenadas.length > 0;
+  // Sin servicios elegidos no hay nada que capturar (la tarjeta saldría
+  // vacía), aunque haya fotos.
+  //
+  // Ajuste al contenido (TarjetaPrecios mide y reporta por onFitChange): si ni
+  // con la densidad más compacta entra con letra legible (`entra` false), no
+  // se puede capturar — la imagen perdería servicios. Estable (useCallback) y
+  // sin re-render si el resultado no cambió, para no armar loops con el
+  // useLayoutEffect de la tarjeta.
+  const [ajuste, setAjuste] = useState<ResultadoDensidad>({ nivel: 0, entra: true });
+  const onFitChange = useCallback((r: ResultadoDensidad) => {
+    setAjuste(prev => (prev.nivel === r.nivel && prev.entra === r.entra ? prev : r));
+  }, []);
+  const { entra, nivel: nivelDensidad } = ajuste;
+
+  // Ajuste de CADA historia en modo "una por categoría" con varias: se montan
+  // todas fuera de pantalla (ver HistoriasFueraDePantalla) y cada una reporta
+  // acá. `fitsRef` es el espejo síncrono del estado: la captura necesita leer
+  // el valor actual sin esperar a un render.
+  const hayVarias = modo === 'categoria' && historias.length > 1;
+  const [fitsPorHistoria, setFitsPorHistoria] = useState<Record<string, ResultadoDensidad>>({});
+  const fitsRef = useRef<Record<string, ResultadoDensidad>>({});
+  const reportarFit = useCallback((id: string, r: ResultadoDensidad) => {
+    const prev = fitsRef.current[id];
+    if (prev && prev.nivel === r.nivel && prev.entra === r.entra) return;
+    fitsRef.current = { ...fitsRef.current, [id]: r };
+    setFitsPorHistoria(fitsRef.current);
+  }, []);
+  const { entraTodas, historiasQueNoEntran } = useMemo(
+    () => agregarAjustes(historias, fitsPorHistoria),
+    [historias, fitsPorHistoria]
+  );
+  const todasConServicios = historias.length > 0 && historias.every(h => h.servicios.length > 0);
+  const puedeCapturar = hayVarias
+    ? hayFotos && todasConServicios && entraTodas
+    : hayFotos && (historiaActual?.servicios.length ?? 0) > 0 && entra;
+
+  // Nodos de los canvas fuera de pantalla, por id de historia. Los callbacks
+  // de ref se cachean por id para que su identidad sea estable entre renders.
+  const canvasesRef = useRef(new Map<string, HTMLDivElement>());
+  const refCallbacks = useRef(new Map<string, (el: HTMLDivElement | null) => void>());
+  const registrarCanvas = useCallback((id: string) => {
+    let cb = refCallbacks.current.get(id);
+    if (!cb) {
+      cb = el => { if (el) canvasesRef.current.set(id, el); else canvasesRef.current.delete(id); };
+      refCallbacks.current.set(id, cb);
+    }
+    return cb;
+  }, []);
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
@@ -332,8 +458,8 @@ export function useHistoriaPrecios() {
   // ─────────────────────────────────────────────
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const capturar = useCallback(async (): Promise<Blob | null> => {
-    if (!canvasRef.current) return null;
+  const capturarNodo = useCallback(async (nodo: HTMLDivElement | null): Promise<Blob | null> => {
+    if (!nodo) return null;
 
     // document.fonts.ready — same class of bug prepararImagenesParaCaptura
     // guards against for <img>s (decode()+settle before rasterizing), but
@@ -344,9 +470,9 @@ export function useHistoriaPrecios() {
     // the on-screen preview looks correct once it loads a moment later.
     // Standard Font Loading API — supported in all target browsers
     // including iOS Safari.
-    await document.fonts.ready;
+    await document.fonts?.ready;
 
-    const resueltas = await prepararImagenesParaCaptura(canvasRef.current);
+    const resueltas = await prepararImagenesParaCaptura(nodo);
     if (resueltas.size > 0) {
       setDataUrlsPorFoto(prev => {
         let changed = false;
@@ -365,15 +491,69 @@ export function useHistoriaPrecios() {
     // pixelRatio calculado, no fijo — mismo motivo que useGenerarHistoria:
     // el PNG exportado sale a STORY_EXPORT_WIDTH de ancho real sin importar
     // el ancho intrínseco del canvas (BASE_WIDTH).
-    const pixelRatio = STORY_EXPORT_WIDTH / canvasRef.current.getBoundingClientRect().width;
+    const pixelRatio = STORY_EXPORT_WIDTH / nodo.getBoundingClientRect().width;
 
-    await toBlob(canvasRef.current, { pixelRatio });
-    return toBlob(canvasRef.current, { pixelRatio });
+    await toBlob(nodo, { pixelRatio });
+    return toBlob(nodo, { pixelRatio });
   }, [fotosOrdenadas, fotosUrls]);
+
+  const capturar = useCallback(() => capturarNodo(canvasRef.current), [capturarNodo]);
+
+  // ─────────────────────────────────────────────
+  // Exportar TODAS (modo "una por categoría", más de una historia).
+  //
+  // Determinismo: TarjetaPrecios re-mide una vez cuando `document.fonts.ready`
+  // resuelve (cambia el alto del texto, puede cambiar el nivel de densidad).
+  // Antes de capturar se espera `fonts.ready` y dos frames, así ese re-medido
+  // ya corrió y reportó; después se verifica que todas siguen entrando. Y la
+  // firma del ajuste de todas (id + nivel + entra) se compara al empezar y al
+  // terminar: si algo se re-midió a mitad de captura el lote se descarta y se
+  // avisa, nunca se entrega un set con densidades mezcladas.
+  // ─────────────────────────────────────────────
+  const [exportando, setExportando] = useState(false);
+  const exportandoRef = useRef(false);
+
+  const generarTodas = useCallback(async (): Promise<File[] | null> => {
+    if (exportandoRef.current) return null;
+    exportandoRef.current = true;
+    setExportando(true);
+    try {
+      return await exportarHistorias({
+        historias,
+        asentar: async () => {
+          await document.fonts?.ready;
+          await esperarFrame();
+          await esperarFrame();
+          if (!agregarAjustes(historias, fitsRef.current).entraTodas) {
+            throw new Error('Alguna historia dejó de entrar con letra legible');
+          }
+        },
+        firma: () => JSON.stringify(historias.map(h => [h.id, fitsRef.current[h.id]?.nivel, fitsRef.current[h.id]?.entra])),
+        capturar: id => capturarNodo(canvasesRef.current.get(id) ?? null),
+      });
+    } catch (err) {
+      console.error('useHistoriaPrecios: fallo al generar las imágenes', err);
+      await alertDialog(tStatic('historia.HistoriaPreciosPage.couldNotGenerateImage'));
+      return null;
+    } finally {
+      exportandoRef.current = false;
+      setExportando(false);
+    }
+  }, [historias, capturarNodo]);
+
+  const descargarVarias = useCallback(
+    (files: File[]) => descargarSecuencial(files, { descargar: descargarArchivo, esperar: () => esperarMs(DESCARGA_DELAY_MS) }),
+    []
+  );
 
   const descargarImagen = useCallback(async () => {
     if (!puedeCapturar) {
       await alertDialog(tStatic('historia.HistoriaPreciosPage.noContentToShow'));
+      return;
+    }
+    if (hayVarias) {
+      const files = await generarTodas();
+      if (files) await descargarVarias(files);
       return;
     }
     let blob: Blob | null;
@@ -388,14 +568,33 @@ export function useHistoriaPrecios() {
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
-    a.download = FILENAME;
+    a.download = nombreArchivo;
     a.click();
     URL.revokeObjectURL(url);
-  }, [puedeCapturar, capturar]);
+  }, [puedeCapturar, hayVarias, generarTodas, descargarVarias, capturar, nombreArchivo]);
 
   const compartirImagen = useCallback(async () => {
     if (!puedeCapturar) {
       await alertDialog(tStatic('historia.HistoriaPreciosPage.noContentToShow'));
+      return;
+    }
+    if (hayVarias) {
+      const files = await generarTodas();
+      if (!files) return;
+      const nav = navigator as Navigator & NavegadorCompartir;
+      if (decidirEnvio(files, nav) === 'compartir') {
+        try {
+          await nav.share!({ files, title: tStatic('historia.HistoriaPreciosPage.shareTitle') });
+          return;
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') return;
+          // NotAllowedError: capturar varias imágenes tarda y puede vencer el
+          // gesto del usuario que exige share(); se cae a descargar.
+          console.error('useHistoriaPrecios.compartirImagen: share falló, se descargan', err);
+        }
+      }
+      await descargarVarias(files);
+      await alertDialog(tStatic('historia.HistoriaPreciosPage.compartirVariasDescargadas'));
       return;
     }
     let blob: Blob | null;
@@ -410,7 +609,7 @@ export function useHistoriaPrecios() {
 
     const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
     if (nav.share && nav.canShare) {
-      const file = new File([blob], FILENAME, { type: 'image/png' });
+      const file = new File([blob], nombreArchivo, { type: 'image/png' });
       if (nav.canShare({ files: [file] })) {
         try {
           await nav.share({ files: [file], title: tStatic('historia.HistoriaPreciosPage.shareTitle') });
@@ -427,15 +626,19 @@ export function useHistoriaPrecios() {
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
-    a.download = FILENAME;
+    a.download = nombreArchivo;
     a.click();
     URL.revokeObjectURL(url);
-  }, [puedeCapturar, capturar]);
+  }, [puedeCapturar, hayVarias, generarTodas, descargarVarias, capturar, nombreArchivo]);
 
   return {
     // professional / servicios
-    effectiveProfesionalId, serviciosActivos,
+    effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
+    excluidosIds, setExcluidosIds,
     selectedProfesionalId, setSelectedProfesionalId,
+
+    // modo de armado y navegación entre historias
+    modo, setModo, historias, cantidadPorCategoria, idxHistoria, historiaActual, irAnterior, irSiguiente,
 
     // footer credit (account-level)
     nombreNegocio, telefono,
@@ -449,7 +652,13 @@ export function useHistoriaPrecios() {
     notaAlineacion, setNotaAlineacion,
 
     // photos
-    fotos: fotosOrdenadas, fotosUrls, puedeCapturar,
+    fotos: fotosOrdenadas, fotosUrls, hayFotos, puedeCapturar,
+
+    // fit-to-content (ver TarjetaPrecios)
+    entra, nivelDensidad, onFitChange,
+
+    // ajuste de todas las historias (modo categoría con varias)
+    hayVarias, reportarFit, registrarCanvas, entraTodas, historiasQueNoEntran, exportando,
 
     // capture / export
     canvasRef, capturar, descargarImagen, compartirImagen,

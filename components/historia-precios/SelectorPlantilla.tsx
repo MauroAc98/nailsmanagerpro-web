@@ -23,6 +23,7 @@ interface Props {
   // previsualiza el título real, no un placeholder (spec: "Picker previews
   // with real data").
   titulo:         string;
+  subtitulo?:     string;
   // Lista ya filtrada de Servicios activos, misma que espera TarjetaPrecios
   // — este componente es puramente presentacional, no lee el store.
   servicios:      Servicio[];
@@ -35,6 +36,9 @@ interface Props {
   profesionalNombre?: string;
   nota?:          string;
   notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
+  // Densidad que resolvió el canvas principal; las miniaturas la heredan y
+  // no miden (8 mediciones por cambio serían puro costo).
+  nivelDensidad?: number;
   templateId:       TemplateId;
   onTemplateChange: (id: TemplateId) => void;
 }
@@ -46,7 +50,7 @@ interface Props {
 // de quien llama — nunca contenido placeholder (spec: "Picker previews with
 // real data").
 export function SelectorPlantilla({
-  fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, templateId, onTemplateChange,
+  fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, nivelDensidad, templateId, onTemplateChange,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
 
@@ -94,12 +98,14 @@ export function SelectorPlantilla({
               templateId={template.id}
               fotos={fotos}
               titulo={titulo}
+              subtitulo={subtitulo}
               servicios={servicios}
               nombreNegocio={nombreNegocio}
               telefono={telefono}
               profesionalNombre={profesionalNombre}
               nota={nota}
               notaAlineacion={notaAlineacion}
+              nivelDensidad={nivelDensidad}
               width={THUMB_WIDTH}
             />
             <span style={{ fontFamily: agendaFontSerif, fontSize: 11, fontWeight: 600, color: colors.textStrong, whiteSpace: 'nowrap' }}>
