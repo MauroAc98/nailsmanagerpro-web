@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, screen } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import api from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
+import type { User } from '@/services/authService';
 import { EntradaFotosServicio } from './EntradaFotosServicio';
 
 // La fila lee las fotos via servicioService.getOne (autenticado — este es un
@@ -16,9 +18,20 @@ describe('EntradaFotosServicio', () => {
   beforeEach(() => {
     mockedGet.mockReset();
     mockedGet.mockResolvedValue({ data: { id: 5, fotos: [] } });
+    useAuthStore.setState({ user: { reserva_online_activa: true } as User });
   });
   afterEach(() => {
     vi.unstubAllEnvs();
+    useAuthStore.setState({ user: null });
+  });
+
+  it('con la flag prendida pero sin el add-on del negocio no renderiza nada', async () => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    useAuthStore.setState({ user: { reserva_online_activa: false } as User });
+    const { container } = renderWithProviders(<EntradaFotosServicio servicioId={5} onAbrir={() => {}} />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(container).toBeEmptyDOMElement();
+    expect(mockedGet).not.toHaveBeenCalled();
   });
 
   it('con la flag apagada no renderiza nada (la fila esta oculta)', async () => {

@@ -3,18 +3,20 @@
 import { notFound, useParams } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import { FotosServicioEditor } from '@/components/reservaOnline/FotosServicioEditor';
-import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
+import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 
 // Configuracion > Servicios > editar > Fotos de tus trabajos (mockup
-// FotosServicio). Con la flag apagada la ruta responde 404, igual que el resto
+// FotosServicio). Con la flag apagada o sin el add-on del negocio la ruta responde 404, igual que el resto
 // de la reserva online. El AgendaThemeScope lo pone el layout de /servicios.
 export default function FotosServicioPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const nombre = useServiciosStore((s) => s.servicios.find((x) => x.id === id)?.nombre);
-  if (!reservaOnlineHabilitada()) notFound();
+  const user = useAuthStore((s) => s.user);
+  if (!reservaOnlineActivaParaNegocio(user)) notFound();
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>

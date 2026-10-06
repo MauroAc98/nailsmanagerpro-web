@@ -1,19 +1,21 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { reservaOnlineHabilitada } from '@/lib/reservaOnline';
+import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
+import { useAuthStore } from '@/store/useAuthStore';
 import { servicioService } from '@/services/servicioService';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { useCarga } from './hooks';
 import { IcoImagen } from './iconos';
 
 // Fila "Fotos de tus trabajos" de Configuracion > Servicios > editar servicio.
-// Oculta con la flag apagada; abre el gestor de fotos del servicio. Lee la
+// Oculta con la flag apagada o sin el add-on del negocio; abre el gestor de fotos del servicio. Lee la
 // cantidad via servicioService (autenticado, lib/api) — este es un
 // componente de Configuracion, no del flujo publico de reserva online, asi
 // que no pasa por getService()/lib/reservaOnline.
 export function EntradaFotosServicio({ servicioId, onAbrir }: { servicioId: number; onAbrir: () => void }) {
-  const habilitada = reservaOnlineHabilitada();
+  const user = useAuthStore((s) => s.user);
+  const habilitada = reservaOnlineActivaParaNegocio(user);
   const t = useTranslations('reservaOnline');
   const { data } = useCarga(
     () => (habilitada ? servicioService.getOne(servicioId).then((s) => s.fotos ?? []) : Promise.resolve([])),
