@@ -8,8 +8,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
-import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura, hornearFotoEncabezado } from '@/lib/historia/captura';
-import { elegirFotoEncabezado } from '@/lib/historia/fotoEncabezado';
+import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
+import { useFotoEncabezado } from '@/hooks/useFotoEncabezado';
 
 export type Modo = 'dia' | 'semana' | 'mes';
 
@@ -130,35 +130,9 @@ export function useGenerarHistoria(fechaInicial?: string) {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;
   }, [selectedProfesionalId, profesionales]);
-  const logoUrlCrudo = elegirFotoEncabezado(activeProfesionales, effectiveProfesionalId, logoNegocioCrudo);
-  const logoUrlProxiado = useMemo(
-    () => (logoUrlCrudo ? `/api/historia-fondo?url=${encodeURIComponent(logoUrlCrudo)}` : null),
-    [logoUrlCrudo]
-  );
-  // El proxy resuelve el CORS, pero Safari además necesita que la foto ya
-  // viaje embebida (data URL) y que no haya ningún `filter` CSS en el árbol
-  // que se captura (reportado real en prod 2026-10-01: la historia entera
-  // salía negra). Mismo camino de antes — foto horneada con Canvas 2D — pero
-  // a color. Reset sincrónico durante el render (patrón oficial de React, sin
-  // setState dentro de un efecto): arranca con la URL proxiada y el efecto la
-  // reemplaza por la imagen embebida apenas está lista. Si falla (offline,
-  // proxy caído) se queda con la URL proxiada: mejor eso que ocultar la foto.
-  const [logoUrlProxiadoSincronizado, setLogoUrlProxiadoSincronizado] = useState(logoUrlProxiado);
-  const [logoUrl, setLogoUrl] = useState<string | null>(logoUrlProxiado);
-  if (logoUrlProxiadoSincronizado !== logoUrlProxiado) {
-    setLogoUrlProxiadoSincronizado(logoUrlProxiado);
-    setLogoUrl(logoUrlProxiado);
-  }
-  useEffect(() => {
-    if (!logoUrlProxiado) return;
-    let cancelado = false;
-    hornearFotoEncabezado(logoUrlProxiado)
-      .then(dataUrl => { if (!cancelado) setLogoUrl(dataUrl); })
-      .catch(() => {
-        // ya quedó en logoUrlProxiado por el reset de arriba, nada que hacer
-      });
-    return () => { cancelado = true; };
-  }, [logoUrlProxiado]);
+  // Foto del recuadro del encabezado (avatar efectivo o logo, proxiada y
+  // horneada): lógica compartida con la historia de precios.
+  const logoUrl = useFotoEncabezado(activeProfesionales, effectiveProfesionalId, logoNegocioCrudo);
   const fondoFijoGuardado = useMemo(
     () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
     [activeProfesionales, effectiveProfesionalId]
