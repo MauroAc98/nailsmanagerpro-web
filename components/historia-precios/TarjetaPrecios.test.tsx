@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, screen } from '@/test/render';
+import { within } from '@testing-library/react';
 import type { Servicio } from '@/services/servicioService';
 import { estiloFeature } from './estilos';
 import { TarjetaPrecios } from './TarjetaPrecios';
@@ -55,7 +56,6 @@ function renderTarjeta(props: Partial<React.ComponentProps<typeof TarjetaPrecios
       titulo="Precios"
       servicios={lista(3)}
       nombreNegocio="Salón"
-      telefono="123"
       onFitChange={onFitChange}
       {...props}
     />,
@@ -97,7 +97,7 @@ describe('TarjetaPrecios · ajuste al contenido', () => {
     rerender(
       <TarjetaPrecios
         tokens={estiloFeature} titulo="Precios" servicios={lista(2)}
-        nombreNegocio="Salón" telefono="123" onFitChange={onFitChange}
+        nombreNegocio="Salón" onFitChange={onFitChange}
       />,
     );
     expect(card().dataset.densidad).toBe('0');
@@ -117,5 +117,27 @@ describe('TarjetaPrecios · ajuste al contenido', () => {
     renderTarjeta();
     const fila = screen.getByText('Servicio 1');
     expect(parseFloat(fila.style.fontSize)).toBeGreaterThanOrEqual(12);
+  });
+});
+
+describe('TarjetaPrecios · pie fuera de la tarjeta', () => {
+  it('no renderiza CTA ni teléfono dentro de la tarjeta; la nota sigue al pie', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ nota: 'Seña del 50%' });
+    expect(screen.queryByText('Reservá tu turno')).toBeNull();
+    expect(screen.queryByText('123')).toBeNull();
+    expect(within(card()).getByText('Seña del 50%')).toBeTruthy();
+  });
+
+  it('reserva la zona del pie: el contenedor termina arriba de ella', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ reservaInferior: 96 });
+    expect(screen.getByTestId('tarjeta-contenedor').style.bottom).toBe('96px');
+  });
+
+  it('sin reserva el contenedor llega al borde inferior', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta();
+    expect(screen.getByTestId('tarjeta-contenedor').style.bottom).toBe('0px');
   });
 });

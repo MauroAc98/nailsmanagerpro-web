@@ -5,10 +5,21 @@ import { TemplateId } from '@/services/profesionalService';
 import { Servicio } from '@/services/servicioService';
 import { TEMPLATES } from './catalogo';
 import { TarjetaPrecios } from './TarjetaPrecios';
+import { PieContacto } from '@/components/historia/PieContacto';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 
 export const BASE_WIDTH  = 420;
 export const BASE_HEIGHT = (BASE_WIDTH * 16) / 9;
+
+// Zona inferior (px, a BASE_WIDTH) reservada para el pie de contacto que se
+// dibuja sobre la foto: divisor 1 + 10 de margen + CTA ~20 + 3 de gap + línea
+// de contacto 2+16 (hasta 2 renglones = 32) ≈ 68, más 24 de aire contra el
+// borde inferior. Constante (no medida) para que el ajuste de la tarjeta y la
+// captura con html-to-image sean deterministas; la tarjeta tiene además su
+// propio padding inferior (16) de holgura si un nombre largo ocupa 3 renglones.
+export const FOOTER_RESERVA = 96;
+const FOOTER_PADDING_BOTTOM = 24;
+const FOOTER_PADDING_X = 40;
 
 interface Props {
   templateId:    TemplateId;
@@ -59,7 +70,6 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             titulo={titulo}
             servicios={servicios}
             nombreNegocio={nombreNegocio}
-            telefono={telefono}
             profesionalNombre={profesionalNombre}
             nota={nota}
             notaAlineacion={notaAlineacion}
@@ -67,8 +77,34 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             align={template.align}
             nivelDensidad={nivelDensidad}
             onFitChange={onFitChange}
+            reservaInferior={FOOTER_RESERVA}
           />
         </Layout>
+        {/* Scrim local detrás del pie: degradé a negro solo en la franja
+            inferior (misma altura que la zona reservada), sin oscurecer toda
+            la foto. A diferencia del blur de StoryCanvas no se reutiliza esa
+            técnica: acá cada plantilla pone una foto distinta abajo, y un
+            degradé es un fondo CSS que html-to-image captura sin problema. */}
+        <div
+          data-testid="historia-precios-scrim"
+          style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0, height: FOOTER_RESERVA + 24,
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.7) 100%)',
+          }}
+        />
+        {/* Pie sobre la foto, fuera de la tarjeta — mismo componente que la
+            historia de turnos (PieContacto). Nombre: la profesional elegida a
+            mano, si no el negocio. */}
+        <div
+          data-testid="historia-precios-pie"
+          style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0,
+            padding: `0 ${FOOTER_PADDING_X}px ${FOOTER_PADDING_BOTTOM}px`,
+            display: 'flex', flexDirection: 'column',
+          }}
+        >
+          <PieContacto nombre={profesionalNombre || nombreNegocio} telefono={telefono} />
+        </div>
       </div>
     </div>
   );

@@ -50,8 +50,7 @@
   "TarjetaPrecios": {
     "header": "Preços",
     "sectionServicios": "Serviços",
-    "sectionPromociones": "Promoções",
-    "reservarLabel": "Reserve seu horário"
+    "sectionPromociones": "Promoções"
   },
   "SelectorPlantilla": {
     "missingPhotos": "faltam {count, plural, one {# foto} other {# fotos}}",

@@ -20,10 +20,10 @@ interface Props {
   // serviciosRegulares/serviciosPromo más abajo).
   servicios: Servicio[];
   // Account/business name (`User.name`, useAuthStore — NOT `Profesional`,
-  // a different concept) and phone (`User.telefono`). Threaded down from
-  // useHistoriaPrecios through every layer, purely presentational here.
+  // a different concept). Threaded down from useHistoriaPrecios through every
+  // layer, purely presentational here. El teléfono y el CTA ya no viven en la
+  // tarjeta: los dibuja el canvas sobre la foto (ver PieContacto).
   nombreNegocio: string;
-  telefono:      string | null;
   // Name of the professional explicitly picked via the multi-profesional
   // selector (page.tsx) — same precedent as StoryCanvas's `profesionalNombre`
   // (agenda/historia): when set, replaces nombreNegocio in the footer credit
@@ -58,6 +58,11 @@ interface Props {
   // `nivelDensidad` (miniaturas del picker) NO mide: usa ese nivel tal cual.
   nivelDensidad?: number;
   onFitChange?:   (resultado: ResultadoDensidad) => void;
+  // Alto (px) que el canvas reserva abajo para el pie de contacto, que se
+  // dibuja sobre la foto fuera de la tarjeta. El contenedor termina ese alto
+  // antes del borde inferior, así el `clientHeight` que mide el ajuste ya
+  // descuenta el pie y la tarjeta nunca lo pisa.
+  reservaInferior?: number;
 }
 
 // Padding vertical del contenedor absoluto (20 arriba + 16 abajo): el alto
@@ -100,7 +105,7 @@ const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
 const ACCENT_CLARO     = '#E8E5E1';
 const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange, reservaInferior = 0 }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
@@ -117,7 +122,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   const mostrarSubheaders  = serviciosRegulares.length > 0 && serviciosPromo.length > 0;
 
   // Última fila visible de la lista — no lleva línea divisoria: justo abajo
-  // ya está el divisor del pie (nota / CTA), y las dos juntas se leían como
+  // ya está el divisor de la nota, y las dos juntas se leían como
   // ruido. Los divisores entre filas quedan; solo se saca el que colgaba al
   // final de la lista.
   const ultimoServicioId = (serviciosPromo.length > 0 ? serviciosPromo : serviciosRegulares).at(-1)?.id;
@@ -152,7 +157,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
 
   const firma = JSON.stringify([
     servicios.map(s => [s.id, s.nombre, s.precio, s.es_promo]),
-    titulo, nota ?? '', nombreFooter ?? '', telefono ?? '', variante, fuentesListas,
+    titulo, nota ?? '', nombreFooter ?? '', reservaInferior, variante, fuentesListas,
   ]);
   const [medicion, setMedicion] = useState({ firma, nivel: 0, fin: false });
   let estado = medicion;
@@ -197,7 +202,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
       ref={contenedorRef}
       data-testid="tarjeta-contenedor"
       style={{
-        position: 'absolute', inset: 0,
+        position: 'absolute', inset: 0, bottom: reservaInferior,
         padding: `${PADDING_TOP}px ${OUTER_PADDING_X}px ${PADDING_BOTTOM}px`,
         display: 'flex', flexDirection: 'column', justifyContent,
       }}
@@ -296,73 +301,36 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
         </div>
 
         {/* Pie de tarjeta — nota adicional (aclaración libre, ver prop
-            `nota`) y/o CTA reservar+teléfono, separados de la lista de
-            precios por un divisor. El nombre ya se muestra arriba como
-            eyebrow (ver encabezado editorial), así que este bloque no lo
-            repite. CTA: mismo lenguaje visual que el footer de StoryCanvas
-            (label mayúscula wide-tracked + fila de ícono/teléfono),
-            adaptado a los tokens por plantilla en vez de blanco
-            hardcodeado: la tarjeta opaca clara necesita texto oscuro. See
-            StoryCanvas.tsx lines ~238-257 for the reference. */}
-        {(nota || (nombreFooter && telefono)) && (
+            `nota`), separada de la lista de precios por un divisor. El CTA
+            "Reservá tu turno" y el contacto ya no van acá: los dibuja
+            HistoriaPreciosCanvas sobre la foto con PieContacto, igual que la
+            historia de turnos. */}
+        {nota && (
           <div
             style={{
               marginTop: d.footerMarginTop, paddingTop: d.footerPaddingTop, borderTop: `1px solid ${tokens.dividerColor}`,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
             }}
           >
-            {nota && (
-              // Recuadro con el tinte grafito (accentBg, mismo que
-              // SectionPill) — la nota pasó de letra chica al pie a "leé
-              // esto": el cliente tiene que verla (seña, retiro aparte,
-              // etc.). Texto en `accent`, no en nombreColor apagado, para
-              // que se lea de verdad sin gritar más que la lista de precios.
-              <div
+            {/* Recuadro con el tinte grafito (accentBg, mismo que
+                SectionPill) — la nota pasó de letra chica al pie a "leé
+                esto": el cliente tiene que verla (seña, retiro aparte,
+                etc.). Texto en `accent`, no en nombreColor apagado, para
+                que se lea de verdad sin gritar más que la lista de precios. */}
+            <div
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                backgroundColor: accentBg, borderRadius: 10, padding: '8px 12px',
+              }}
+            >
+              <p
                 style={{
-                  width: '100%', boxSizing: 'border-box', margin: '0 0 10px',
-                  backgroundColor: accentBg, borderRadius: 10, padding: '8px 12px',
+                  margin: 0, whiteSpace: 'pre-line', textAlign: notaAlineacion,
+                  fontSize: 9, fontWeight: 400, lineHeight: 1.55, color: accent,
                 }}
               >
-                <p
-                  style={{
-                    margin: 0, whiteSpace: 'pre-line', textAlign: notaAlineacion,
-                    fontSize: 9, fontWeight: 400, lineHeight: 1.55, color: accent,
-                  }}
-                >
-                  {nota}
-                </p>
-              </div>
-            )}
-            {nombreFooter && telefono && (
-              <>
-                <span
-                  style={{
-                    // Serif itálica (mock v0 actualizado: font-serif italic,
-                    // sin mayúsculas ni tracking) — reemplaza la versalita
-                    // wide-tracked anterior, que copiaba el lenguaje del
-                    // footer de StoryCanvas en vez del de esta tarjeta.
-                    fontFamily: agendaFontSerif, fontStyle: 'italic',
-                    fontSize: 12, fontWeight: 400,
-                    color: tokens.nombreColor, opacity: 0.9,
-                  }}
-                >
-                  {t('reservarLabel')}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: 0.65 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill={tokens.nombreColor} xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                  </svg>
-                  <span
-                    style={{
-                      fontSize: 10, fontWeight: 500, letterSpacing: 0.5,
-                      color: tokens.nombreColor,
-                    }}
-                  >
-                    {telefono}
-                  </span>
-                </div>
-              </>
-            )}
+                {nota}
+              </p>
+            </div>
           </div>
         )}
       </div>
