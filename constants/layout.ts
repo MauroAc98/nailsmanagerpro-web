@@ -35,6 +35,12 @@ export const NAV_BUBBLE_POKE = Math.round(NAV_BUBBLE_SIZE * 0.3);
 // debajo en vez de dejar un hueco.
 export const NAV_CLEARANCE = NAV_HEIGHT + NAV_MARGIN;
 
+// Padding inferior del contenedor raíz de una pantalla (formularios, detalle,
+// ayuda): deja el final del contenido —y el botón principal— por encima del
+// nav fijo, con el safe-area del home indicator. Con un 40 suelto el último
+// bloque quedaba tapado por el nav al llegar al fondo del scroll.
+export const CONTENT_BOTTOM_PADDING = `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 24px)`;
+
 // Por encima de BottomSheet (40, components/BottomSheet.tsx) y del FAB de
 // las pantallas con lista (45) — así el bubble del tab activo, que entra en
 // esa misma franja vertical, se pinta arriba de cualquiera de los dos en
