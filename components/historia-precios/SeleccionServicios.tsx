@@ -18,17 +18,15 @@ import {
   type ExcluidosHistoria,
 } from '@/lib/historiaSeleccion';
 
-// Hasta que la tarjeta escale/divida filas (próximas rebanadas), con más de
-// esta cantidad la imagen se ve apretada — ver TarjetaPrecios (`compacta`
-// sólo ajusta gaps, el alto del canvas es fijo). Fácil de cambiar acá.
-export const MAX_SERVICIOS_POR_HISTORIA = 8;
-
 interface Props {
   // Servicios activos de la profesional (ANTES de filtrar por selección).
   servicios:  Servicio[];
   categorias: CategoriaServicio[];
   excluidos:  ExcluidosHistoria;
   onChange:   (next: Set<number>) => void;
+  // La tarjeta no entra en una sola imagen ni con la densidad más compacta
+  // (ver TarjetaPrecios/onFitChange): se avisa en ámbar.
+  noEntra?:   boolean;
 }
 
 function Caja({ estado, size }: { estado: EstadoSeleccion; size: number }) {
@@ -47,7 +45,7 @@ function Caja({ estado, size }: { estado: EstadoSeleccion; size: number }) {
   );
 }
 
-export function SeleccionServicios({ servicios, categorias, excluidos, onChange }: Props) {
+export function SeleccionServicios({ servicios, categorias, excluidos, onChange, noEntra = false }: Props) {
   const t = useTranslations('historia.HistoriaPreciosPage');
   const [abiertas, setAbiertas] = useState<ReadonlySet<string>>(new Set());
 
@@ -88,12 +86,12 @@ export function SeleccionServicios({ servicios, categorias, excluidos, onChange 
         {t('seleccionContador', { marcados, total })}
       </span>
 
-      {marcados > MAX_SERVICIOS_POR_HISTORIA && (
+      {noEntra && (
         <span style={{
           fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
           background: colors.amberBg, color: colors.amberFg,
         }}>
-          {t('seleccionMuchos')}
+          {t('seleccionNoEntra')}
         </span>
       )}
 

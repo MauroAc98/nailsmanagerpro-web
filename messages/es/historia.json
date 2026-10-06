@@ -105,7 +105,7 @@
     "seleccionElegirTodo": "Elegir todo",
     "seleccionQuitarTodo": "Quitar todo",
     "seleccionContador": "{marcados} de {total} servicios elegidos. Tocá una categoría para ver sus servicios y sacar los que no quieras.",
-    "seleccionMuchos": "Son muchos servicios para una sola imagen y se va a ver más chica. Podés elegir menos.",
+    "seleccionNoEntra": "No entra en una sola imagen con letra legible. Sacá algunos servicios para poder guardarla.",
     "seleccionSinCategoria": "Sin categoría",
     "seleccionCategoriaCuenta": "{marcados} de {total}",
     "seleccionCategoriaAria": "Marcar todos los servicios de {nombre}",

@@ -63,6 +63,7 @@ export default function HistoriaPreciosPage() {
     notaActiva, setNotaActiva,
     notaAlineacion, setNotaAlineacion,
     fotos, fotosUrls, hayFotos, puedeCapturar,
+    entra, nivelDensidad, onFitChange,
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
 
@@ -78,6 +79,7 @@ export default function HistoriaPreciosPage() {
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
   const cargando = profesionales.length === 0;
+  const sinServicios = serviciosActivos.length === 0;
 
   // Multi-profesional — invisible con ≤1 profesional activa, mismo criterio
   // que app/(app)/agenda/historia/page.tsx. profesionalSeleccionada solo
@@ -177,6 +179,7 @@ export default function HistoriaPreciosPage() {
                       profesionalNombre={profesionalSeleccionada?.nombre}
                       nota={notaParaMostrar}
                       notaAlineacion={notaAlineacion}
+                      onFitChange={onFitChange}
                     />
                   </div>
                 </div>
@@ -189,6 +192,7 @@ export default function HistoriaPreciosPage() {
                   categorias={categorias}
                   excluidos={excluidosIds}
                   onChange={setExcluidosIds}
+                  noEntra={!entra}
                 />
               )}
 
@@ -206,6 +210,7 @@ export default function HistoriaPreciosPage() {
                   profesionalNombre={profesionalSeleccionada?.nombre}
                   nota={notaParaMostrar}
                   notaAlineacion={notaAlineacion}
+                  nivelDensidad={nivelDensidad}
                   templateId={templateId}
                   onTemplateChange={handleTemplateChange}
                 />
@@ -324,8 +329,11 @@ export default function HistoriaPreciosPage() {
             </p>
           )}
           {hayFotos && !puedeCapturar && (
-            <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '16px 0 0' }}>
-              {t('seleccionVacia')}
+            <p style={{
+              fontSize: 12, textAlign: 'center', margin: '16px 0 0',
+              color: sinServicios || entra ? colors.subtext : colors.amberFg,
+            }}>
+              {sinServicios || entra ? t('seleccionVacia') : t('seleccionNoEntra')}
             </p>
           )}
 

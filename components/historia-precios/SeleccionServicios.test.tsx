@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import type { Servicio } from '@/services/servicioService';
 import type { CategoriaServicio } from '@/services/categoriaServicioService';
-import { SeleccionServicios, MAX_SERVICIOS_POR_HISTORIA } from './SeleccionServicios';
+import { SeleccionServicios } from './SeleccionServicios';
 
 function servicio(overrides: Partial<Servicio>): Servicio {
   return {
@@ -20,10 +20,10 @@ const servicios = [
   servicio({ id: 4, nombre: 'Cejas', categoria_id: null }),
 ];
 
-function setup(excluidos: number[] = [], lista = servicios) {
+function setup(excluidos: number[] = [], lista = servicios, noEntra = false) {
   const onChange = vi.fn();
   renderWithProviders(
-    <SeleccionServicios servicios={lista} categorias={categorias} excluidos={new Set(excluidos)} onChange={onChange} />,
+    <SeleccionServicios servicios={lista} categorias={categorias} excluidos={new Set(excluidos)} onChange={onChange} noEntra={noEntra} />,
   );
   return onChange;
 }
@@ -117,22 +117,13 @@ describe('SeleccionServicios', () => {
     expect(screen.queryByText(/Los servicios sin categoría aparecen juntos/)).toBeNull();
   });
 
-  it('no avisa por debajo del umbral', () => {
+  it('no avisa si la tarjeta entra', () => {
     setup();
-    expect(screen.queryByText(/Son muchos servicios/)).toBeNull();
+    expect(screen.queryByText(/No entra en una sola imagen/)).toBeNull();
   });
 
-  it('muestra la nota ámbar con más de MAX_SERVICIOS_POR_HISTORIA elegidos', () => {
-    const muchos = Array.from({ length: MAX_SERVICIOS_POR_HISTORIA + 1 }, (_, i) =>
-      servicio({ id: 100 + i, nombre: `S${i}`, categoria_id: 10 }));
-    setup([], muchos);
-    expect(screen.getByText(/Son muchos servicios/)).toBeTruthy();
-  });
-
-  it('no avisa con exactamente el umbral', () => {
-    const justos = Array.from({ length: MAX_SERVICIOS_POR_HISTORIA }, (_, i) =>
-      servicio({ id: 100 + i, nombre: `S${i}`, categoria_id: 10 }));
-    setup([], justos);
-    expect(screen.queryByText(/Son muchos servicios/)).toBeNull();
+  it('muestra la nota ámbar cuando no entra con letra legible', () => {
+    setup([], servicios, true);
+    expect(screen.getByText('No entra en una sola imagen con letra legible. Sacá algunos servicios para poder guardarla.')).toBeTruthy();
   });
 });
