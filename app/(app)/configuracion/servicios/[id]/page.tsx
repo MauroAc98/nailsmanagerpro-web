@@ -25,6 +25,7 @@ import {
   draftsDesdeDetalle, duracionDerivada, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
   payloadComponentes, precioAGuardar, precioInicialComponentes, resumenComponentes, serviciosComponibles, sumaComponentes,
   type ComponenteDraft, type ProblemaFila,
+  precioTotalPromo,
 } from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
@@ -347,6 +348,9 @@ export default function EditarServicioPage() {
             onBeforeNavigate={guardarBorradorActual}
           />
         )}
+        {mostrarComponentes && tieneComponentes && (
+          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} />
+        )}
 
         {/* Duración y precio: con la promo activa y componentes posibles se
             arman desde ellos — ComponentesPromoSection muestra la duración
@@ -370,7 +374,7 @@ export default function EditarServicioPage() {
               />
             </div>
 
-            <SenaPreviewServicio nombre={nombre} precio={precio} onUsarPrecio={setPrecio} />
+            <SenaPreviewServicio precio={precio} />
           </>
         )}
 

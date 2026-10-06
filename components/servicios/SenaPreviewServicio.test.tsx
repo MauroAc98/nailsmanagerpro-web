@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { User } from '@/services/authService';
@@ -17,34 +17,35 @@ function setUser(parcial: Partial<User> | null) {
   });
 }
 
-function setup(precio: string, onUsarPrecio = vi.fn(), nombre = 'Softgel') {
-  renderWithProviders(<SenaPreviewServicio nombre={nombre} precio={precio} onUsarPrecio={onUsarPrecio} />);
-  return onUsarPrecio;
+function setup(precio: string) {
+  renderWithProviders(<SenaPreviewServicio precio={precio} />);
 }
 
 beforeEach(() => setUser({}));
 
 describe('SenaPreviewServicio', () => {
-  it('shows what the client sees when booking', () => {
-    setup('10400');
-    expect(screen.getByText('Así lo ve tu cliente al reservar')).toBeInTheDocument();
-    expect(screen.getByText('Softgel')).toBeInTheDocument();
-    expect(screen.getByText('$10.400')).toBeInTheDocument();
-    expect(screen.getByText('Seña (30%)')).toBeInTheDocument();
-    expect(screen.getAllByText('$3.120')).toHaveLength(2); // seña + seña cobrada
-    expect(screen.getByText('Resta pagar en el salón')).toBeInTheDocument();
-    expect(screen.getByText('$7.280')).toBeInTheDocument();
+  it('client card: just "Seña" and the charged amount', () => {
+    setUser({ sena_porcentaje: 50 });
+    setup('18000');
+    const card = screen.getByText('Así lo ve tu cliente al reservar').parentElement!;
+    expect(within(card).getByText('Seña')).toBeInTheDocument();
+    expect(within(card).getByText('$9.800')).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect(within(card).queryByText(/%|comisi|Mercado|gesti/i)).toBeNull();
+    expect(screen.queryByText(/Seña \(/)).toBeNull();
   });
 
-  it('shows what the salon receives, with the commission derived from comision_mp_vigente', () => {
-    setup('10400');
+  it('professional card: charged, Mercado Pago cost, net received and what is collected in the salon', () => {
+    setUser({ sena_porcentaje: 50 });
+    setup('18000');
     expect(screen.getByText('Lo que te llega a vos')).toBeInTheDocument();
-    expect(screen.getByText('Seña cobrada')).toBeInTheDocument();
+    expect(screen.getByText('Tu cliente paga de seña')).toBeInTheDocument();
     expect(screen.getByText('− Mercado Pago (7,6%)')).toBeInTheDocument();
-    expect(screen.getByText('$237')).toBeInTheDocument(); // round(3120 * 7.61 / 100)
+    expect(screen.getByText('$746')).toBeInTheDocument();
     expect(screen.getByText('Te llegan')).toBeInTheDocument();
-    expect(screen.getByText('$2.883')).toBeInTheDocument(); // 3120 - 237
-    expect(screen.getByText(/Es el 2,3% del precio/)).toBeInTheDocument();
+    expect(screen.getByText('$9.054')).toBeInTheDocument();
+    expect(screen.getByText('Cobrás en el salón')).toBeInTheDocument();
+    expect(screen.getByText('$9.000')).toBeInTheDocument();
+    expect(screen.getByText('Se le suma a la seña para que te llegue completa.')).toBeInTheDocument();
   });
 
   it('follows a different commission instead of a hardcoded 7,6', () => {
@@ -60,33 +61,23 @@ describe('SenaPreviewServicio', () => {
   });
 
   it('shows the retention row with its amount when > 0', () => {
-    setUser({ retencion_iibb_porcentaje: 4 });
-    setup('10000');
+    setUser({ sena_porcentaje: 50, retencion_iibb_porcentaje: 4 });
+    setup('18000');
     expect(screen.getByText('− Retención de impuestos')).toBeInTheDocument();
-    expect(screen.getByText('$120')).toBeInTheDocument(); // round(3000 * 4 / 100)
+    expect(screen.getByText('$408')).toBeInTheDocument(); // round(10200 * 4 / 100)
   });
 
-  it('suggests a clean price and applies it with the button', () => {
-    const onUsar = setup('10400');
-    expect(screen.getByText('Con $11.000 la seña sería $3.300, un número redondo.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $11.000' }));
-    expect(onUsar).toHaveBeenCalledWith('11000');
-  });
-
-  it('confirms when the seña is already round', () => {
-    setup('11000');
-    expect(screen.getByText('Con este precio, la seña queda en un número redondo.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
-  });
-
-  it('fixed mode shows the cards but no suggestion and no percentage', () => {
-    setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
+  it('has no price suggestion banner or button anymore', () => {
     setup('10400');
-    expect(screen.getByText('Seña')).toBeInTheDocument();
-    expect(screen.getAllByText('$5.000')).toHaveLength(2); // seña + seña cobrada
-    expect(screen.queryByText(/Seña \(/)).toBeNull();
-    expect(screen.queryByText(/un número redondo/)).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
+    expect(screen.queryByText(/número redondo/)).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('fixed mode works too', () => {
+    setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
+    setup('20000');
+    expect(screen.getAllByText('$5.500')).toHaveLength(2); // cliente + profesional
+    expect(screen.getByText('$15.000')).toBeInTheDocument();
   });
 
   it('renders nothing without a valid seña configuration', () => {
@@ -116,13 +107,14 @@ describe('SenaPreviewServicio', () => {
   });
 
   it('understands es-AR thousands separators in the price field', () => {
-    setup('1.500,50');
-    expect(screen.getByText('Seña (30%)')).toBeInTheDocument();
+    setUser({ sena_porcentaje: 50 });
+    setup('18.000');
+    expect(screen.getAllByText('$9.800')).toHaveLength(2);
   });
 
   it('keeps money on one line (nowrap) so amounts are never cut with an ellipsis', () => {
-    setup('10400');
-    for (const el of screen.getAllByText('$3.120')) expect(el).toHaveStyle({ whiteSpace: 'nowrap' });
-    expect(screen.getByText('$2.883')).toHaveStyle({ whiteSpace: 'nowrap' });
+    setUser({ sena_porcentaje: 50 });
+    setup('18000');
+    for (const t of ['$746', '$9.054', '$9.000']) expect(screen.getByText(t)).toHaveStyle({ whiteSpace: 'nowrap' });
   });
 });

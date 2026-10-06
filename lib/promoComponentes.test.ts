@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ahorroPromo, duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, mensajeBloqueoParalelo, moverFila,
+  ahorroPromo, duracionDerivada, erroresGuardarComponentes, filaIncompleta, hayFilaIncompleta, mensajeBloqueoParalelo, moverFila, precioTotalPromo,
   paraleloDisponible, precioAGuardar, precioInicialComponentes, problemasDeFila, problemasDePromo, sumaComponentes,
   type ComponenteDraft,
 } from './promoComponentes';
@@ -154,5 +154,16 @@ describe('promoComponentes — ahorroPromo', () => {
     expect(ahorroPromo(22000, 'abc')).toBe(0);
     expect(ahorroPromo(22000, '22000')).toBe(0);
     expect(ahorroPromo(22000, '25000')).toBe(0);
+  });
+});
+
+describe('promoComponentes — precioTotalPromo', () => {
+  it('uses the typed override when it differs from the sum', () => {
+    expect(precioTotalPromo('18000', 22000)).toBe(18000);
+  });
+  it('falls back to the component sum when the field is empty, invalid or equal to the sum', () => {
+    expect(precioTotalPromo('', 22000)).toBe(22000);
+    expect(precioTotalPromo('abc', 22000)).toBe(22000);
+    expect(precioTotalPromo('22000', 22000)).toBe(22000);
   });
 });

@@ -1,6 +1,7 @@
 // Vista previa de la seña al editar el precio de un servicio. Espeja el
-// cálculo del backend (NailsManagerProApi): el cliente paga EXACTAMENTE la
-// seña (sin gross-up) y la profesional absorbe el costo de Mercado Pago.
+// cálculo del backend (NailsManagerProApi): la seña neta que quiere la
+// profesional se "infla" para cubrir el costo de Mercado Pago, y el cliente
+// paga un único monto redondeado a múltiplos de $100.
 
 export interface SenaPreviewConfig {
   sena_tipo?: 'fijo' | 'porcentaje' | null;
@@ -13,18 +14,17 @@ export interface SenaPreviewConfig {
 
 export interface SenaPreview {
   precio: number;
+  /** Seña neta: lo que la profesional quiere que le llegue. */
+  neta: number;
+  /** Seña cobrada: lo que paga el cliente (múltiplo de $100). */
   sena: number;
-  resta: number;
+  /** Lo que se cobra en el salón: precio menos la seña neta. */
+  restaSalon: number;
   cargo: number;
   retencion: number;
   llega: number;
   /** Costo (MP + retención) como % del precio, con un decimal. */
   costoPct: number;
-  /** Porcentaje de la seña; null en modo fijo. */
-  porcentaje: number | null;
-  /** Precio "redondo" sugerido (solo porcentaje entero y precio fuera de paso). */
-  sugerencia: number | null;
-  senaSugerida: number | null;
 }
 
 function configValida(c: SenaPreviewConfig): boolean {
@@ -44,8 +44,11 @@ export function calcularSena(precio: number, c: SenaPreviewConfig): number {
   return Math.min(bruta, precio);
 }
 
-function mcd(a: number, b: number): number {
-  return b === 0 ? a : mcd(b, a % b);
+export function calcularSenaCobrada(precio: number, c: SenaPreviewConfig): number {
+  const neta = calcularSena(precio, c);
+  if (neta <= 0) return 0;
+  const tasa = Math.min((c.comision_mp_vigente ?? 0) + (c.retencion_iibb_porcentaje ?? 0), 95);
+  return Math.min(precio, Math.ceil(neta / (1 - tasa / 100) / 100) * 100);
 }
 
 export function calcularSenaPreview(precio: number, c: SenaPreviewConfig): SenaPreview | null {
@@ -53,32 +56,19 @@ export function calcularSenaPreview(precio: number, c: SenaPreviewConfig): SenaP
   const comision = c.comision_mp_vigente;
   if (typeof comision !== 'number' || !Number.isFinite(comision)) return null;
 
-  const sena = calcularSena(precio, c);
+  const neta = calcularSena(precio, c);
+  const sena = calcularSenaCobrada(precio, c);
   const cargo = Math.round((sena * comision) / 100);
   const retencion = Math.round((sena * (c.retencion_iibb_porcentaje ?? 0)) / 100);
-  const esPorcentaje = c.sena_tipo === 'porcentaje';
-  const pct = esPorcentaje ? (c.sena_porcentaje as number) : null;
-
-  let sugerencia: number | null = null;
-  let senaSugerida: number | null = null;
-  if (pct !== null && Number.isInteger(pct)) {
-    const paso = 10000 / mcd(10000, pct);
-    if (precio % paso !== 0) {
-      sugerencia = Math.ceil(precio / paso) * paso;
-      senaSugerida = calcularSena(sugerencia, c);
-    }
-  }
 
   return {
     precio,
+    neta,
     sena,
-    resta: precio - sena,
+    restaSalon: precio - neta,
     cargo,
     retencion,
     llega: sena - cargo - retencion,
     costoPct: Math.round(((cargo + retencion) / precio) * 1000) / 10,
-    porcentaje: pct,
-    sugerencia,
-    senaSugerida,
   };
 }

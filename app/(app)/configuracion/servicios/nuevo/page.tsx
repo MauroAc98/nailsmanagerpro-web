@@ -21,6 +21,7 @@ import { consumirBorrador, guardarBorrador, limpiarBorrador } from '@/lib/servic
 import {
   duracionDerivada, hayFilaIncompleta, paraleloDisponible, resumenComponentes, serviciosComponibles,
   type ComponenteDraft,
+  precioTotalPromo,
 } from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
@@ -251,6 +252,9 @@ function NuevoServicioContent() {
             onBeforeNavigate={guardarBorradorActual}
           />
         )}
+        {mostrarComponentes && tieneComponentes && (
+          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} />
+        )}
 
         {/* Duración y precio: con la promo activa y 2+ personas en actividad se
             arman desde los componentes (la sección muestra la duración derivada
@@ -273,7 +277,7 @@ function NuevoServicioContent() {
             inputMode="decimal"
           />
         </div>
-        <SenaPreviewServicio nombre={nombre} precio={precio} onUsarPrecio={setPrecio} />
+        <SenaPreviewServicio precio={precio} />
         </>)}
 
         {/* Button */}
