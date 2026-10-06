@@ -35,6 +35,9 @@ export interface NegocioLookupResult {
   slug: string;
   email: string;
   is_exempt: boolean;
+  // Add-on de reserva online contratado (la columna, no el efectivo: el efectivo
+  // además exige suscripción vigente). Opcional por compatibilidad.
+  reserva_online?: boolean;
   subscription: NegocioSubscription | null;
 }
 
@@ -271,6 +274,13 @@ export const adminService = {
   // completo que la pantalla filtra client-side.
   listarNegocios: async (): Promise<NegocioLookupResult[]> => {
     const response = await adminApi.get<NegocioLookupResult[]>('/admin/negocios');
+    return response.data;
+  },
+
+  // Activa/desactiva el add-on de reserva online de un negocio
+  // (PUT /admin/negocios/{user}/reserva-online). Auditado en el backend.
+  actualizarReservaOnline: async (userId: number, habilitada: boolean): Promise<{ user_id: number; reserva_online: boolean; reserva_online_activa: boolean }> => {
+    const response = await adminApi.put(`/admin/negocios/${userId}/reserva-online`, { habilitada });
     return response.data;
   },
 

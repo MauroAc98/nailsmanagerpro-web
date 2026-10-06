@@ -19,6 +19,9 @@ export interface User {
   latitud: number | null;
   longitud: number | null;
   is_exempt: boolean;
+  // Add-on de reserva online (lo activa el admin) con suscripción vigente,
+  // calculado en vivo por el backend. Solo lectura; ausente = inactivo.
+  reserva_online_activa?: boolean;
   confirmacion_automatica: boolean;
   recordatorio_automatico: boolean;
   hora_recordatorio: string;

@@ -143,6 +143,12 @@
     "verificacionRequerida": "Precisamos verificar seu WhatsApp para continuar. Escreva para nós e ajudamos você.",
     "desafioFallido": "Não conseguimos verificar que você é uma pessoa. Tente de novo."
   },
+  "contactanos": {
+    "titulo": "Reserva online",
+    "descripcion": "Seus clientes reservam sozinhos por um link e pagam o sinal. É um serviço adicional que ativamos para você.",
+    "boton": "Fale conosco",
+    "mensaje": "Olá! Quero ativar a reserva online na minha conta."
+  },
   "settings": {
     "title": "Reservas online",
     "subtitle": "Seus clientes reservam por conta própria e pagam o sinal",

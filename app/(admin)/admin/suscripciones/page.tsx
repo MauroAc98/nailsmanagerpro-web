@@ -242,6 +242,22 @@ export default function SuscripcionesPage() {
     }
   };
 
+  const alternarReservaOnline = async () => {
+    if (!seleccionado) return;
+    const habilitada = !seleccionado.reserva_online;
+    setProcesando(true);
+    setErrorAccion(null);
+    try {
+      const response = await adminService.actualizarReservaOnline(seleccionado.id, habilitada);
+      setSeleccionado({ ...seleccionado, reserva_online: response.reserva_online });
+      cargarNegocios();
+    } catch (e: unknown) {
+      setErrorAccion(extraerMensajeError(e, 'No se pudo cambiar la reserva online.'));
+    } finally {
+      setProcesando(false);
+    }
+  };
+
   const ejecutarSuspension = async () => {
     if (!seleccionado) return;
     setProcesando(true);
@@ -564,6 +580,15 @@ export default function SuscripcionesPage() {
                     >
                       <CalendarClock size={16} />
                       Ajustar vencimiento
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={alternarReservaOnline}
+                      disabled={procesando}
+                      style={{ ...btnSecundario, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                    >
+                      {seleccionado.reserva_online ? 'Desactivar reserva online' : 'Activar reserva online'}
                     </button>
                   </div>
                 )}

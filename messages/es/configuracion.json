@@ -256,9 +256,14 @@
     "error_minima": "Tenés que dejar al menos una categoría."
   },
   "SenaPreviewServicio": {
-    "clientTitle": "Así lo ve tu cliente al reservar",
-    "deposit": "Seña",
-    "receiveTitle": "Lo que te llega a vos",
+    "sectionTitle": "Seña de la reserva online",
+    "commissionNote": "Mercado Pago cobra una comisión del {rate}% sobre la seña de cada reserva online. Se descuenta de lo que te llega.",
+    "notConfigured": "Todavía no configuraste la seña. Definila para ver cuánto paga tu cliente y cuánto te llega después de la comisión de Mercado Pago.",
+    "enterPrice": "Ingresá un precio para ver la seña y lo que te llega.",
+    "suggestionTitle": "Precio sugerido",
+    "configure": "Configurar seña y pagos",
+    "configuredPercent": "Seña configurada: {pct}% del precio",
+    "configuredFixed": "Seña configurada: {monto}",
     "clientPays": "Tu cliente paga de seña",
     "mpFee": "− Mercado Pago ({rate}%)",
     "taxRetention": "− Retención de impuestos",
