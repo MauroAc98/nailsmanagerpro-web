@@ -64,7 +64,7 @@
     "retentionInputLabel": "Porcentaje de la retención de impuestos",
     "retentionPlaceholder": "Porcentaje que te descuentan",
     "retentionHelp": "En cada cobro, Mercado Pago puede descontar una retención de impuestos, distinta de su comisión. El porcentaje depende de tu situación fiscal. Lo ves en el detalle del cobro, como una línea aparte. Por ejemplo: “Retención Impuesto Ingresos Brutos Régimen SIRTAC” o una percepción de IVA. Si no aparece ninguna, elegí No me descuenta.",
-    "mpFeeNote": "El cargo de Mercado Pago es {rate}% en total (comisión más IVA), con el dinero disponible al instante.",
+    "mpFeeNote": "Mercado Pago descuenta {rate}% de cada seña. Podés cubrirlo desde el precio al editar un servicio.",
     "crosslinkToMensajes": "¿También pedís la seña por transferencia bancaria en tus mensajes de WhatsApp? Los datos de la cuenta (titular, alias/CBU) se cargan en Mensajes automáticos.",
     "saving": "Guardando...",
     "save": "Guardar cambios"

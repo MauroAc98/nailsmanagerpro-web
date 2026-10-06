@@ -172,6 +172,13 @@ describe('SheetSenaYPagos — cargo de Mercado Pago', () => {
     expect(screen.getByText(/7,6%/)).toBeInTheDocument();
   });
 
+  it('says the cost is discounted from each deposit and can be covered from the price', () => {
+    setup({ comisionVigente: 7.61 });
+    expect(screen.getByText(
+      'Mercado Pago descuenta 7,6% de cada seña. Podés cubrirlo desde el precio al editar un servicio.',
+    )).toBeInTheDocument();
+  });
+
   it('follows a different commission instead of a hardcoded one', () => {
     setup({ comisionVigente: 5.5 });
     expect(screen.getByText(/5,5%/)).toBeInTheDocument();
@@ -180,7 +187,7 @@ describe('SheetSenaYPagos — cargo de Mercado Pago', () => {
 
   it('omits the note when the commission is unknown', () => {
     setup({ comisionVigente: null });
-    expect(screen.queryByText(/cargo de Mercado Pago/)).toBeNull();
+    expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
   });
 });
 
