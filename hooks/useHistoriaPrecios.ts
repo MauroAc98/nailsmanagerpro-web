@@ -6,6 +6,7 @@ import { fetchAsDataUrl, prepararImagenesParaCaptura } from '@/lib/historia/capt
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
+import { filtrarPorSeleccion } from '@/lib/historiaSeleccion';
 import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
@@ -45,7 +46,15 @@ export function useHistoriaPrecios() {
   // datos mostrados son los de ella.
   // ─────────────────────────────────────────────
   const { profesionales, guardarNotaHistoriaPrecios } = useProfesionalStore();
-  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const [selectedProfesionalId, setSelectedProfesionalIdRaw] = useState<number | null>(null);
+  // Selección de servicios de la historia (ver lib/historiaSeleccion): ids
+  // EXCLUIDOS, puramente de sesión. Vacío = todo elegido (comportamiento
+  // previo). Cambiar de profesional la resetea: sus servicios son otros.
+  const [excluidosIds, setExcluidosIds] = useState<ReadonlySet<number>>(new Set());
+  const setSelectedProfesionalId = useCallback((id: number | null) => {
+    setSelectedProfesionalIdRaw(id);
+    setExcluidosIds(new Set());
+  }, []);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
     return profesionalJefa(profesionales)?.id ?? null;
@@ -75,7 +84,7 @@ export function useHistoriaPrecios() {
   // cuenta filtraría mal en cuentas con varias profesionales con servicios
   // asignados por separado.
   const { servicios } = useServiciosStore();
-  const serviciosActivos = useMemo(
+  const serviciosDisponibles = useMemo(
     () => profesionalActual
       ? servicios
           .filter(s =>
@@ -91,6 +100,11 @@ export function useHistoriaPrecios() {
           .sort((a, b) => a.orden - b.orden || a.id - b.id)
       : [],
     [servicios, profesionalActual]
+  );
+  // Lo que realmente va a la tarjeta: los disponibles menos los excluidos.
+  const serviciosActivos = useMemo(
+    () => filtrarPorSeleccion(serviciosDisponibles, excluidosIds),
+    [serviciosDisponibles, excluidosIds]
   );
 
   // ─────────────────────────────────────────────
@@ -317,7 +331,10 @@ export function useHistoriaPrecios() {
   // Las 8 plantillas del catálogo actual piden al menos 1 foto (ver
   // catalogo.ts, minFotos) — no hay plantilla sin foto de fondo, a
   // diferencia del catálogo anterior ('type'/Tipográfico, minFotos: 0).
-  const puedeCapturar = fotosOrdenadas.length > 0;
+  const hayFotos = fotosOrdenadas.length > 0;
+  // Sin servicios elegidos no hay nada que capturar (la tarjeta saldría
+  // vacía), aunque haya fotos.
+  const puedeCapturar = hayFotos && serviciosActivos.length > 0;
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
@@ -434,7 +451,8 @@ export function useHistoriaPrecios() {
 
   return {
     // professional / servicios
-    effectiveProfesionalId, serviciosActivos,
+    effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
+    excluidosIds, setExcluidosIds,
     selectedProfesionalId, setSelectedProfesionalId,
 
     // footer credit (account-level)
@@ -449,7 +467,7 @@ export function useHistoriaPrecios() {
     notaAlineacion, setNotaAlineacion,
 
     // photos
-    fotos: fotosOrdenadas, fotosUrls, puedeCapturar,
+    fotos: fotosOrdenadas, fotosUrls, hayFotos, puedeCapturar,
 
     // capture / export
     canvasRef, capturar, descargarImagen, compartirImagen,

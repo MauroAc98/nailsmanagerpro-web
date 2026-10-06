@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { useHistoriaPrecios } from './useHistoriaPrecios';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -74,5 +74,62 @@ describe('useHistoriaPrecios.serviciosActivos', () => {
     expect(result.current.serviciosActivos.map(s => s.nombre)).toEqual([
       'Manicura', 'Pedicura', 'Esmaltado',
     ]);
+  });
+});
+
+describe('useHistoriaPrecios.selección de servicios', () => {
+  const serviciosDelStore = [
+    servicio({ id: 1, nombre: 'Esmaltado', orden: 0 }),
+    servicio({ id: 2, nombre: 'Manicura',  orden: 1 }),
+    servicio({ id: 3, nombre: 'Pedicura',  orden: 2 }),
+  ];
+
+  beforeEach(() => {
+    useServiciosStore.setState({ servicios: serviciosDelStore });
+    useProfesionalStore.setState({
+      profesionales: [
+        profesional({ id: 1, servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[] }),
+        profesional({ id: 2, nombre: 'Otra', activo: true, servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[] }),
+      ],
+    });
+  });
+
+  it('por defecto no excluye nada: serviciosActivos == serviciosDisponibles', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.serviciosActivos.map(s => s.id)).toEqual([1, 2, 3]);
+    expect(result.current.serviciosDisponibles.map(s => s.id)).toEqual([1, 2, 3]);
+    expect(result.current.excluidosIds.size).toBe(0);
+  });
+
+  it('serviciosActivos solo trae los no excluidos; serviciosDisponibles sigue completo', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setExcluidosIds(new Set([2])));
+    expect(result.current.serviciosActivos.map(s => s.id)).toEqual([1, 3]);
+    expect(result.current.serviciosDisponibles.map(s => s.id)).toEqual([1, 2, 3]);
+  });
+
+  it('con todos excluidos puedeCapturar es false aunque haya fotos', () => {
+    useProfesionalStore.setState({
+      profesionales: [
+        profesional({
+          id: 1,
+          servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[],
+          historia_precios_fotos: [{ id: 1, url: 'x', orden: 0 }] as Profesional['historia_precios_fotos'],
+        }),
+      ],
+    });
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.puedeCapturar).toBe(true);
+    act(() => result.current.setExcluidosIds(new Set([1, 2, 3])));
+    expect(result.current.puedeCapturar).toBe(false);
+    expect(result.current.hayFotos).toBe(true);
+  });
+
+  it('cambiar de profesional resetea la selección', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setExcluidosIds(new Set([2])));
+    act(() => result.current.setSelectedProfesionalId(2));
+    expect(result.current.excluidosIds.size).toBe(0);
+    expect(result.current.serviciosActivos.map(s => s.id)).toEqual([1, 2, 3]);
   });
 });
