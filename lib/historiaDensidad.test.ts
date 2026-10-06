@@ -47,6 +47,13 @@ describe('NIVELES_DENSIDAD', () => {
     }
   });
 
+  it('no hay campos del encabezado viejo (el título vive sobre la foto)', () => {
+    for (const n of NIVELES_DENSIDAD) {
+      expect(n).not.toHaveProperty('fuenteTitulo');
+      expect(n).not.toHaveProperty('periodoMarginBottom');
+    }
+  });
+
   it('cada nivel es igual o más compacto que el anterior', () => {
     for (let i = 1; i < NIVELES_DENSIDAD.length; i++) {
       const a = NIVELES_DENSIDAD[i - 1];

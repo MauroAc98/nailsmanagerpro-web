@@ -48,7 +48,7 @@
     "shareTitle": "Horários disponíveis"
   },
   "TarjetaPrecios": {
-    "header": "Preços",
+    "header": "Lista de preços",
     "sectionServicios": "Serviços",
     "sectionPromociones": "Promoções"
   },
@@ -83,7 +83,7 @@
     "noProfessional": "Não foi possível identificar seu perfil profissional.",
     "previewTitle": "Prévia",
     "previewFormat": "Formato story · 9:16",
-    "showPricesOf": "Mostrar preços de:",
+    "showPricesOf": "História de:",
     "templateSectionTitle": "Escolha seu design",
     "notaAdicionalTitle": "Texto adicional",
     "notaAdicionalHint": "Você pode acrescentar uma observação breve ao final do story.",

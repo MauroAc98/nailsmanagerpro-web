@@ -48,7 +48,7 @@
     "shareTitle": "Turnos disponibles"
   },
   "TarjetaPrecios": {
-    "header": "Precios",
+    "header": "Lista de precios",
     "sectionServicios": "Servicios",
     "sectionPromociones": "Promociones"
   },
@@ -83,7 +83,7 @@
     "noProfessional": "No se pudo identificar tu perfil profesional.",
     "previewTitle": "Vista previa",
     "previewFormat": "Formato historia · 9:16",
-    "showPricesOf": "Mostrar precios de:",
+    "showPricesOf": "Historia de:",
     "templateSectionTitle": "Elegí tu diseño",
     "notaAdicionalTitle": "Texto adicional",
     "notaAdicionalHint": "Podés sumar una aclaración breve al cierre de la historia.",

@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { toBlob } from 'html-to-image';
 import { alertDialog } from '@/store/useConfirmStore';
@@ -8,6 +8,7 @@ vi.mock('html-to-image', () => ({ toBlob: vi.fn() }));
 vi.mock('@/lib/historia/captura', () => ({
   fetchAsDataUrl: async () => 'data:image/png;base64,eA==',
   prepararImagenesParaCaptura: async () => new Map(),
+  hornearFotoEncabezado: async () => 'data:image/png;base64,HORNEADA',
 }));
 vi.mock('@/store/useConfirmStore', async orig => ({
   ...(await orig<typeof import('@/store/useConfirmStore')>()),
@@ -17,6 +18,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import type { Profesional } from '@/services/profesionalService';
 import type { Servicio } from '@/services/servicioService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import type { CategoriaServicio } from '@/services/categoriaServicioService';
 
@@ -420,5 +422,67 @@ describe('useHistoriaPrecios.exportar todas (modo categoría)', () => {
       expect(toBlob).not.toHaveBeenCalled();
       expect(descargas).toEqual([]);
     });
+  });
+});
+
+describe('useHistoriaPrecios.encabezado (foto, profesional, serie)', () => {
+  const serviciosDelStore = [
+    servicio({ id: 1, nombre: 'Esmaltado', orden: 0, categoria_id: 10 }),
+    servicio({ id: 3, nombre: 'Pedicura',  orden: 2, categoria_id: 20 }),
+  ];
+  const prox = (u: string) => `/api/historia-fondo?url=${encodeURIComponent(u)}`;
+
+  function montarProfesionales(profes: Profesional[]) {
+    useCategoriasServicioStore.setState({
+      categorias: [{ id: 10, nombre: 'Uñas' }, { id: 20, nombre: 'Pies' }] as CategoriaServicio[],
+    });
+    useServiciosStore.setState({ servicios: serviciosDelStore });
+    useProfesionalStore.setState({ profesionales: profes });
+  }
+  const conServicios = serviciosDelStore.map(s => ({ id: s.id })) as Servicio[];
+
+  beforeEach(() => {
+    useAuthStore.setState({ user: { name: 'Salón', logo_url: 'https://cdn/logo.png' } as never });
+  });
+
+  it('con una sola profesional activa igual expone la profesional efectiva (titular) para el encabezado', () => {
+    montarProfesionales([profesional({ id: 1, nombre: 'Ana', servicios: conServicios })]);
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.profesionalEncabezado?.nombre).toBe('Ana');
+  });
+
+  it('sigue la profesional elegida en el selector', () => {
+    montarProfesionales([
+      profesional({ id: 1, nombre: 'Ana', servicios: conServicios }),
+      profesional({ id: 2, nombre: 'Bea', servicios: conServicios }),
+    ]);
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.profesionalEncabezado?.nombre).toBe('Ana');
+    act(() => result.current.setSelectedProfesionalId(2));
+    expect(result.current.profesionalEncabezado?.nombre).toBe('Bea');
+  });
+
+  it('logoUrl: avatar de la efectiva si tiene (proxiado y luego horneado); si no, el logo del negocio', async () => {
+    montarProfesionales([
+      profesional({ id: 1, nombre: 'Ana', avatar_url: 'https://cdn/ana.jpg', servicios: conServicios }),
+      profesional({ id: 2, nombre: 'Bea', avatar_url: null, servicios: conServicios }),
+    ]);
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.logoUrl).toBe(prox('https://cdn/ana.jpg'));
+    await waitFor(() => expect(result.current.logoUrl).toBe('data:image/png;base64,HORNEADA'));
+    act(() => result.current.setSelectedProfesionalId(2));
+    expect(result.current.logoUrl).toBe(prox('https://cdn/logo.png'));
+  });
+
+  it('serie: null en modo una; {actual,total} en modo categoría con varias; null con una sola', () => {
+    montarProfesionales([profesional({ id: 1, servicios: conServicios })]);
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.serie).toBeNull();
+    act(() => result.current.setModo('categoria'));
+    expect(result.current.serie).toEqual({ actual: 1, total: 2 });
+    act(() => result.current.irSiguiente());
+    expect(result.current.serie).toEqual({ actual: 2, total: 2 });
+    act(() => result.current.setExcluidosIds(new Set([3])));
+    expect(result.current.serie).toBeNull();
   });
 });

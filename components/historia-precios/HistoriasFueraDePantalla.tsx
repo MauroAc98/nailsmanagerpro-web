@@ -5,7 +5,7 @@ import type { Historia } from '@/lib/historiaHistorias';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from './HistoriaPreciosCanvas';
 
-type CanvasProps = Omit<ComponentProps<typeof HistoriaPreciosCanvas>, 'servicios' | 'subtitulo' | 'onFitChange' | 'nivelDensidad'>;
+type CanvasProps = Omit<ComponentProps<typeof HistoriaPreciosCanvas>, 'servicios' | 'subtitulo' | 'serie' | 'onFitChange' | 'nivelDensidad'>;
 
 interface Props extends CanvasProps {
   historias:        Historia[];
@@ -33,12 +33,13 @@ export function HistoriasFueraDePantalla({ historias, registrarCanvas, reportarF
         pointerEvents: 'none', overflow: 'hidden',
       }}
     >
-      {historias.map(h => (
+      {historias.map((h, i) => (
         <div key={h.id} style={{ position: 'absolute', top: 0, left: 0, width: BASE_WIDTH, height: BASE_HEIGHT }}>
           <HistoriaPreciosCanvas
             {...canvas}
             ref={registrarCanvas(h.id)}
             subtitulo={h.titulo ?? undefined}
+            serie={{ actual: i + 1, total: historias.length }}
             servicios={h.servicios}
             onFitChange={r => reportarFit(h.id, r)}
           />

@@ -10,6 +10,8 @@ import { filtrarPorSeleccion } from '@/lib/historiaSeleccion';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import { armarHistorias, nombreArchivoHistoria, type ModoHistorias } from '@/lib/historiaHistorias';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { useFotoEncabezado } from '@/hooks/useFotoEncabezado';
+import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 import {
   agregarAjustes, decidirEnvio, descargarSecuencial, exportarHistorias, type NavegadorCompartir,
@@ -113,6 +115,18 @@ export function useHistoriaPrecios() {
   const nombreNegocio = user?.name ?? '';
   const telefono = user?.telefono ?? null;
 
+  // Encabezado de la tarjeta — mismo patrón y misma lógica que la historia de
+  // turnos: la profesional efectiva (titular por defecto, o la elegida) va
+  // SIEMPRE, también con una sola activa; la foto del recuadro es su avatar si
+  // tiene, si no el logo del negocio (proxiada y horneada, ver
+  // useFotoEncabezado).
+  const profesionalesActivas = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
+  const profesionalEncabezado = useMemo(
+    () => profesionalDelEncabezado(profesionalesActivas, effectiveProfesionalId),
+    [profesionalesActivas, effectiveProfesionalId]
+  );
+  const logoUrl = useFotoEncabezado(profesionalesActivas, effectiveProfesionalId, user?.logo_url ?? null);
+
   // Servicios activos — servicios Y promociones juntos en una sola lista
   // (TarjetaPrecios agrupa internamente por es_promo, ver ese archivo),
   // restringidos a los servicios de profesionalActual (mismo criterio que
@@ -161,6 +175,11 @@ export function useHistoriaPrecios() {
   );
   const idxHistoria = Math.min(idxRaw, Math.max(historias.length - 1, 0));
   const historiaActual = historias[idxHistoria] ?? null;
+  // Contador "1/4" del encabezado: solo en modo categoría con más de una.
+  const serie = useMemo(
+    () => (modo === 'categoria' && historias.length > 1 ? { actual: idxHistoria + 1, total: historias.length } : null),
+    [modo, historias.length, idxHistoria]
+  );
   const irAnterior = useCallback(() => {
     if (historias.length === 0) return;
     setIdxRaw((idxHistoria - 1 + historias.length) % historias.length);
@@ -642,6 +661,9 @@ export function useHistoriaPrecios() {
 
     // footer credit (account-level)
     nombreNegocio, telefono,
+
+    // encabezado de la tarjeta (foto, profesional efectiva, contador de serie)
+    logoUrl, profesionalEncabezado, serie,
 
     // template selection
     templateId, handleTemplateChange,

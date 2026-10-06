@@ -34,6 +34,8 @@ interface Props {
   nombreNegocio:  string;
   telefono:       string | null;
   profesionalNombre?: string;
+  logoUrl?: string | null;
+  serie?: { actual: number; total: number };
   nota?:          string;
   notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
   // Densidad que resolvió el canvas principal; las miniaturas la heredan y
@@ -50,7 +52,7 @@ interface Props {
 // de quien llama — nunca contenido placeholder (spec: "Picker previews with
 // real data").
 export function SelectorPlantilla({
-  fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, nivelDensidad, templateId, onTemplateChange,
+  fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, logoUrl, serie, nota, notaAlineacion, nivelDensidad, templateId, onTemplateChange,
 }: Props) {
   const t = useTranslations('historia.SelectorPlantilla');
 
@@ -103,6 +105,8 @@ export function SelectorPlantilla({
               nombreNegocio={nombreNegocio}
               telefono={telefono}
               profesionalNombre={profesionalNombre}
+              logoUrl={logoUrl}
+              serie={serie}
               nota={nota}
               notaAlineacion={notaAlineacion}
               nivelDensidad={nivelDensidad}

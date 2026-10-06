@@ -62,6 +62,7 @@ export default function HistoriaPreciosPage() {
     selectedProfesionalId, setSelectedProfesionalId,
     modo, setModo, historias, cantidadPorCategoria, idxHistoria, historiaActual, irAnterior, irSiguiente,
     nombreNegocio, telefono,
+    logoUrl, profesionalEncabezado, serie,
     templateId, handleTemplateChange,
     notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
     notaActiva, setNotaActiva,
@@ -97,18 +98,17 @@ export default function HistoriaPreciosPage() {
   const sinServicios = serviciosActivos.length === 0;
 
   // Multi-profesional — invisible con ≤1 profesional activa, mismo criterio
-  // que app/(app)/agenda/historia/page.tsx. profesionalSeleccionada solo
-  // existe con pick EXPLÍCITO (selectedProfesionalId, no el fallback a la
-  // jefa) — mismo criterio que StoryCanvas.profesionalNombre: reemplaza el
-  // nombre del negocio en el footer para que la historia lea como la
-  // tarjeta de esa profesional puntual, no como la del negocio. El
-  // CONTENIDO (servicios, fotos, etc.) sí usa effectiveProfesionalId, que
-  // cae en la jefa por default (confirmado con el usuario, 2026-08-19):
-  // arrancar mostrando los datos de la jefa, tildada en el picker, no
-  // "nada" — distinto de agenda/nuevo, que nunca defaultea.
+  // que app/(app)/agenda/historia/page.tsx. El CONTENIDO (servicios, fotos,
+  // etc.) usa effectiveProfesionalId, que cae en la jefa por default
+  // (confirmado con el usuario, 2026-08-19). Nombres: el pie es SIEMPRE el
+  // negocio; el encabezado de la tarjeta lleva SIEMPRE a la profesional
+  // efectiva ("con Ana"), también con una sola activa, igual que la historia
+  // de turnos (ver useHistoriaPrecios.profesionalEncabezado).
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
-  const profesionalSeleccionada    = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
+  const nombreEncabezado           = profesionalEncabezado?.nombre?.trim() || undefined;
+  const nombrePie                  = nombreNegocio;
+  const serieEncabezado            = serie ?? undefined;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
@@ -190,9 +190,11 @@ export default function HistoriaPreciosPage() {
                       titulo={titulo}
                       subtitulo={subtituloHistoria}
                       servicios={serviciosHistoria}
-                      nombreNegocio={nombreNegocio}
+                      nombreNegocio={nombrePie}
                       telefono={telefono}
-                      profesionalNombre={profesionalSeleccionada?.nombre}
+                      profesionalNombre={nombreEncabezado}
+                      logoUrl={logoUrl}
+                      serie={serieEncabezado}
                       nota={notaParaMostrar}
                       notaAlineacion={notaAlineacion}
                       onFitChange={onFitChange}
@@ -244,9 +246,11 @@ export default function HistoriaPreciosPage() {
                   titulo={titulo}
                   servicios={serviciosHistoria}
                   subtitulo={subtituloHistoria}
-                  nombreNegocio={nombreNegocio}
+                  nombreNegocio={nombrePie}
                   telefono={telefono}
-                  profesionalNombre={profesionalSeleccionada?.nombre}
+                  profesionalNombre={nombreEncabezado}
+                  logoUrl={logoUrl}
+                  serie={serieEncabezado}
                   nota={notaParaMostrar}
                   notaAlineacion={notaAlineacion}
                   nivelDensidad={nivelDensidad}
@@ -419,9 +423,10 @@ export default function HistoriaPreciosPage() {
               templateId={templateId}
               fotos={fotosUrls}
               titulo={titulo}
-              nombreNegocio={nombreNegocio}
+              nombreNegocio={nombrePie}
               telefono={telefono}
-              profesionalNombre={profesionalSeleccionada?.nombre}
+              profesionalNombre={nombreEncabezado}
+              logoUrl={logoUrl}
               nota={notaParaMostrar}
               notaAlineacion={notaAlineacion}
             />

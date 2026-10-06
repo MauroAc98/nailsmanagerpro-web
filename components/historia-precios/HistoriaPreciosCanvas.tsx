@@ -6,6 +6,7 @@ import { Servicio } from '@/services/servicioService';
 import { TEMPLATES } from './catalogo';
 import { TarjetaPrecios } from './TarjetaPrecios';
 import { PieContacto } from '@/components/historia/PieContacto';
+import { EncabezadoHistoria, alturaZonaEncabezado, reservaSuperiorEncabezado } from './EncabezadoHistoria';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 
 export const BASE_WIDTH  = 420;
@@ -30,12 +31,20 @@ interface Props {
   nombreNegocio: string;
   telefono:      string | null;
   profesionalNombre?: string;
+  // Foto del recuadro del encabezado (ya proxiada/horneada) y posición en la
+  // serie ("1/4"); ver EncabezadoHistoria.
+  logoUrl?: string | null;
+  serie?: { actual: number; total: number };
   nota?: string;
   notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
   // Ver TarjetaPrecios: el canvas principal mide y reporta (`onFitChange`,
   // estable); las miniaturas pasan `nivelDensidad` y no miden.
   nivelDensidad?: number;
   onFitChange?:   (resultado: ResultadoDensidad) => void;
+  // Miniaturas del picker: dejan el degradé oscuro detrás del encabezado pero
+  // omiten la segunda copia desenfocada de la foto (8 renders de foto de más
+  // por un blur que a 104px no se distingue).
+  sinFranjaDesenfocada?: boolean;
 }
 
 // HistoriaPreciosCanvas — always renders at the intrinsic BASE_WIDTH /
@@ -48,11 +57,15 @@ interface Props {
 // matches export" guarantee (spec: price-story-templates). See design
 // decision D3 in sdd/dynamic-price-story.
 export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function HistoriaPreciosCanvas(
-  { templateId, fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, nivelDensidad, onFitChange },
+  { templateId, fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, logoUrl, serie, nota, notaAlineacion, nivelDensidad, onFitChange, sinFranjaDesenfocada = false },
   ref
 ) {
   const template = TEMPLATES.find(t => t.id === templateId) ?? TEMPLATES[0];
   const Layout = template.Component;
+  // Zona del encabezado (sobre la foto): la tarjeta empieza debajo de
+  // reservaSuperiorEncabezado y la franja desenfocada/degradé cubre
+  // alturaZonaEncabezado; ambos salen del mismo módulo que el encabezado.
+  const zonaEncabezado = alturaZonaEncabezado(BASE_HEIGHT);
 
   return (
     // Outer wrapper: on-screen look only (rounded corners). The captured
@@ -68,11 +81,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
         <Layout fotos={fotos} overlayOpacity={template.tokens.overlayOpacity}>
           <TarjetaPrecios
             tokens={template.tokens}
-            titulo={titulo}
-            subtitulo={subtitulo}
             servicios={servicios}
-            nombreNegocio={nombreNegocio}
-            profesionalNombre={profesionalNombre}
             nota={nota}
             notaAlineacion={notaAlineacion}
             variante={template.cardVariant}
@@ -80,8 +89,47 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             nivelDensidad={nivelDensidad}
             onFitChange={onFitChange}
             reservaInferior={FOOTER_RESERVA}
+            reservaSuperior={reservaSuperiorEncabezado(BASE_HEIGHT)}
           />
         </Layout>
+        {/* Franja desenfocada detrás del encabezado — misma técnica que
+            StoryCanvas: filter:blur() sobre una SEGUNDA copia de la foto (no
+            backdrop-filter, que html-to-image no compone). Se vuelve a
+            renderizar el mismo Layout (sin tarjeta) a tamaño de canvas
+            completo, dentro de un wrapper con overflow:hidden que solo destapa
+            la zona del encabezado: así el blur queda alineado píxel a píxel con
+            la foto base en las plantillas con foto de fondo; en collage (fondo
+            sólido + bloque de fotos arriba) funciona igual y el blur de un color
+            plano es inocuo. */}
+        {!sinFranjaDesenfocada && (
+          <div
+            data-testid="historia-precios-banda"
+            aria-hidden="true"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: zonaEncabezado, overflow: 'hidden' }}
+          >
+            <div
+              data-testid="historia-precios-banda-copia"
+              style={{ position: 'absolute', top: 0, left: 0, width: BASE_WIDTH, height: BASE_HEIGHT, filter: 'blur(16px)' }}
+            >
+              <Layout fotos={fotos} overlayOpacity={template.tokens.overlayOpacity}>{null}</Layout>
+            </div>
+          </div>
+        )}
+        <div
+          data-testid="historia-precios-degradado"
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: zonaEncabezado,
+            background: 'linear-gradient(to bottom, rgba(25,17,20,0.62) 0%, rgba(25,17,20,0) 100%)',
+          }}
+        />
+        <EncabezadoHistoria
+          titulo={titulo}
+          subtitulo={subtitulo}
+          profesionalNombre={profesionalNombre}
+          logoUrl={logoUrl}
+          serie={serie}
+          canvasHeight={BASE_HEIGHT}
+        />
         {/* Scrim local detrás del pie: degradé a negro solo en la franja
             inferior (misma altura que la zona reservada), sin oscurecer toda
             la foto. A diferencia del blur de StoryCanvas no se reutiliza esa
@@ -95,8 +143,8 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
           }}
         />
         {/* Pie sobre la foto, fuera de la tarjeta — mismo componente que la
-            historia de turnos (PieContacto). Nombre: la profesional elegida a
-            mano, si no el negocio. */}
+            historia de turnos (PieContacto). Nombre: SIEMPRE el negocio; la
+            profesional va solo en el encabezado. */}
         <div
           data-testid="historia-precios-pie"
           style={{
@@ -105,7 +153,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             display: 'flex', flexDirection: 'column',
           }}
         >
-          <PieContacto nombre={profesionalNombre || nombreNegocio} telefono={telefono} />
+          <PieContacto nombre={nombreNegocio} telefono={telefono} />
         </div>
       </div>
     </div>

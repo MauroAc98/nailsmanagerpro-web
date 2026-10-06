@@ -14,9 +14,7 @@ export interface DensidadTokens {
   rowGap:           number;
   groupGap:         number;
   rowPaddingY:      number;
-  periodoMarginBottom: number;
   cardPaddingY:     number;
-  fuenteTitulo:     number;
   footerMarginTop:  number;
   footerPaddingTop: number;
 }
@@ -24,10 +22,10 @@ export interface DensidadTokens {
 // Ordenados de más cómodo (0) a más compacto. Cada valor es <= al del nivel
 // anterior (lo verifica el test).
 export const NIVELES_DENSIDAD: readonly DensidadTokens[] = [
-  { fuenteNombre: 12.5, fuentePrecio: 13,   rowGap: 14, groupGap: 20, rowPaddingY: 10, periodoMarginBottom: 24, cardPaddingY: 24, fuenteTitulo: 31, footerMarginTop: 20, footerPaddingTop: 14 },
-  { fuenteNombre: 12.5, fuentePrecio: 13,   rowGap: 8,  groupGap: 12, rowPaddingY: 6,  periodoMarginBottom: 14, cardPaddingY: 24, fuenteTitulo: 31, footerMarginTop: 20, footerPaddingTop: 14 },
-  { fuenteNombre: 12,   fuentePrecio: 12.5, rowGap: 6,  groupGap: 10, rowPaddingY: 4,  periodoMarginBottom: 10, cardPaddingY: 18, fuenteTitulo: 28, footerMarginTop: 14, footerPaddingTop: 10 },
-  { fuenteNombre: 12,   fuentePrecio: 12,   rowGap: 4,  groupGap: 8,  rowPaddingY: 3,  periodoMarginBottom: 8,  cardPaddingY: 14, fuenteTitulo: 26, footerMarginTop: 10, footerPaddingTop: 8 },
+  { fuenteNombre: 12.5, fuentePrecio: 13,   rowGap: 14, groupGap: 20, rowPaddingY: 10, cardPaddingY: 24, footerMarginTop: 20, footerPaddingTop: 14 },
+  { fuenteNombre: 12.5, fuentePrecio: 13,   rowGap: 8,  groupGap: 12, rowPaddingY: 6,  cardPaddingY: 24, footerMarginTop: 20, footerPaddingTop: 14 },
+  { fuenteNombre: 12,   fuentePrecio: 12.5, rowGap: 6,  groupGap: 10, rowPaddingY: 4,  cardPaddingY: 18, footerMarginTop: 14, footerPaddingTop: 10 },
+  { fuenteNombre: 12,   fuentePrecio: 12,   rowGap: 4,  groupGap: 8,  rowPaddingY: 3,   cardPaddingY: 14, footerMarginTop: 10, footerPaddingTop: 8 },
 ];
 
 export interface ResultadoDensidad {

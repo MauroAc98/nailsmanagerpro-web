@@ -13,6 +13,8 @@ interface Props {
   nombreNegocio: string;
   telefono:      string | null;
   profesionalNombre?: string;
+  logoUrl?: string | null;
+  serie?: { actual: number; total: number };
   nota?: string;
   notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
   // Densidad ya resuelta por el canvas principal (mismo contenido => mismo
@@ -30,7 +32,7 @@ interface Props {
 // is smaller, the DOM node under the transform is untouched. Thumbnails are
 // inert (`pointer-events: none`): no drag/click passthrough into the canvas
 // underneath, selection happens on the wrapping button in SelectorPlantilla.
-export function MiniaturaCanvas({ templateId, fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, nivelDensidad, width }: Props) {
+export function MiniaturaCanvas({ templateId, fotos, titulo, subtitulo, servicios, nombreNegocio, telefono, profesionalNombre, logoUrl, serie, nota, notaAlineacion, nivelDensidad, width }: Props) {
   const scale  = width / BASE_WIDTH;
   const height = BASE_HEIGHT * scale;
 
@@ -51,9 +53,12 @@ export function MiniaturaCanvas({ templateId, fotos, titulo, subtitulo, servicio
           nombreNegocio={nombreNegocio}
           telefono={telefono}
           profesionalNombre={profesionalNombre}
+          logoUrl={logoUrl}
+          serie={serie}
           nota={nota}
           notaAlineacion={notaAlineacion}
           nivelDensidad={nivelDensidad ?? 0}
+          sinFranjaDesenfocada
         />
       </div>
     </div>

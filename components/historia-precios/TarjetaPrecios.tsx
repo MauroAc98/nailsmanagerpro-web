@@ -2,38 +2,16 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
-import { agendaFontSerif } from '@/theme/agendaColors';
-import { nombreMes } from '@/lib/dateFormat';
 import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
 import { NIVELES_DENSIDAD, elegirDensidad, type DensidadTokens, type ResultadoDensidad } from '@/lib/historiaDensidad';
 
 interface Props {
   tokens:    EstiloTokens;
-  // Card title — fijo, resuelto por el caller (page.tsx) vía
-  // tCard('header'). Servicios y promociones se combinan en esta misma
-  // tarjeta (ver el split por es_promo más abajo), así que ya no hay un
-  // título por modo.
-  titulo:    string;
-  // Subtítulo opcional bajo el título (nombre de la categoría en el modo "una
-  // por categoría"). Es parte del contenido medido por el ajuste.
-  subtitulo?: string;
   // Servicios activos del profesional (es_promo:true y es_promo:false
   // mezclados, ver useHistoriaPrecios.serviciosActivos) — TarjetaPrecios no
   // filtra ni lee el store, solo agrupa por es_promo para el render (ver
   // serviciosRegulares/serviciosPromo más abajo).
   servicios: Servicio[];
-  // Account/business name (`User.name`, useAuthStore — NOT `Profesional`,
-  // a different concept). Threaded down from useHistoriaPrecios through every
-  // layer, purely presentational here. El teléfono y el CTA ya no viven en la
-  // tarjeta: los dibuja el canvas sobre la foto (ver PieContacto).
-  nombreNegocio: string;
-  // Name of the professional explicitly picked via the multi-profesional
-  // selector (page.tsx) — same precedent as StoryCanvas's `profesionalNombre`
-  // (agenda/historia): when set, replaces nombreNegocio in the footer credit
-  // so each professional's price story reads as HER card, not the business
-  // owner's. undefined (no explicit pick) keeps the existing nombreNegocio-only
-  // behavior for single-profesional accounts.
-  profesionalNombre?: string;
   // Aclaración breve del negocio (seña, retiro aparte, etc.), escrita en el
   // textarea "Texto adicional" de page.tsx (useHistoriaPrecios.notaAdicional)
   // — se renderiza al pie de la tarjeta, arriba de "Reservá tu turno". Mismo
@@ -66,6 +44,11 @@ interface Props {
   // antes del borde inferior, así el `clientHeight` que mide el ajuste ya
   // descuenta el pie y la tarjeta nunca lo pisa.
   reservaInferior?: number;
+  // Alto (px) que el canvas reserva ARRIBA para el encabezado, que se dibuja
+  // sobre la foto fuera de la tarjeta (ver reservaSuperiorEncabezado). Igual que
+  // reservaInferior: el contenedor empieza ese alto debajo del borde superior,
+  // así lo que mide el ajuste ya lo descuenta y la tarjeta nunca pisa el encabezado.
+  reservaSuperior?: number;
 }
 
 // Padding vertical del contenedor absoluto (20 arriba + 16 abajo): el alto
@@ -108,9 +91,8 @@ const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
 const ACCENT_CLARO     = '#E8E5E1';
 const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
 
-export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNegocio, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange, reservaInferior = 0 }: Props) {
+export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange, reservaInferior = 0, reservaSuperior = 0 }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
-  const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
   const accent   = tokens.claro ? ACCENT_OSCURO    : ACCENT_CLARO;
   const accentBg = tokens.claro ? ACCENT_OSCURO_BG : ACCENT_CLARO_BG;
@@ -119,7 +101,7 @@ export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNeg
   // imágenes separadas, ver useHistoriaPrecios). Los sub-headers solo se
   // muestran cuando hay AMBOS grupos — con uno solo (el caso común: un
   // negocio sin promociones cargadas) sería un header redundante repitiendo
-  // lo que ya dice `titulo`.
+  // lo que ya dice el encabezado.
   const serviciosRegulares = servicios.filter(s => !s.es_promo);
   const serviciosPromo     = servicios.filter(s => s.es_promo);
   const mostrarSubheaders  = serviciosRegulares.length > 0 && serviciosPromo.length > 0;
@@ -133,8 +115,7 @@ export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNeg
   // Densidad — la tarjeta ocupa el alto COMPLETO del canvas a propósito (ver
   // estilos.ts, 2026-08-18 octava actualización). El canvas es fijo, así que
   // lo que se adapta es el contenido: se MIDE el alto natural real de la
-  // tarjeta (encabezado, filas, nota y pie incluidos, lo que sea que
-  // renderice) en cada nivel de NIVELES_DENSIDAD, del más cómodo al más
+  // tarjeta (filas y nota incluidas, lo que sea que renderice) en cada nivel de NIVELES_DENSIDAD, del más cómodo al más
   // compacto, y se queda con el primero que entra. Si ni el último entra,
   // reporta entra=false en vez de recortar en silencio. Todo ocurre en
   // useLayoutEffect: los re-renders de cada paso se resuelven de forma
@@ -160,7 +141,7 @@ export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNeg
 
   const firma = JSON.stringify([
     servicios.map(s => [s.id, s.nombre, s.precio, s.es_promo]),
-    titulo, subtitulo ?? '', nota ?? '', nombreFooter ?? '', reservaInferior, variante, fuentesListas,
+    nota ?? '', reservaInferior, reservaSuperior, variante, fuentesListas,
   ]);
   const [medicion, setMedicion] = useState({ firma, nivel: 0, fin: false });
   let estado = medicion;
@@ -192,20 +173,14 @@ export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNeg
     NIVELES_DENSIDAD.length - 1,
   );
   const d: DensidadTokens = NIVELES_DENSIDAD[nivel];
-  const { rowGap, groupGap, rowPaddingY, periodoMarginBottom } = d;
+  const { rowGap, groupGap, rowPaddingY } = d;
   const justifyContent = align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : 'center';
-  // "AGOSTO 2026" en el locale activo — mismo criterio editorial que el
-  // mock v0 (subtítulo bajo el título, ver captura de referencia), generado
-  // al momento de renderizar (no persistido) porque la imagen se comparte
-  // fresca cada vez que se genera.
-  const ahora = new Date();
-  const periodo = `${nombreMes(ahora, 'long', 'mayusculas')} ${ahora.getFullYear()}`;
   return (
     <div
       ref={contenedorRef}
       data-testid="tarjeta-contenedor"
       style={{
-        position: 'absolute', inset: 0, bottom: reservaInferior,
+        position: 'absolute', inset: 0, top: reservaSuperior, bottom: reservaInferior,
         padding: `${PADDING_TOP}px ${OUTER_PADDING_X}px ${PADDING_BOTTOM}px`,
         display: 'flex', flexDirection: 'column', justifyContent,
       }}
@@ -227,71 +202,6 @@ export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNeg
           boxShadow: esPanel ? 'none' : '0 2px 8px rgba(0,0,0,0.10)',
         }}
       >
-        {/* Encabezado editorial (ver mock v0, price-story.tsx): eyebrow con
-            el nombre de negocio/profesional, título grande alineado a la
-            izquierda (ya no centrado) y subtítulo con el período — 3 niveles
-            tipográficos en vez del título solo centrado de la versión
-            anterior (ver historial git de este archivo). Playfair Display
-            recta (agendaFontSerif), no Cormorant Garamond itálica como
-            antes — unificación del serif de toda la app a uno solo, ver
-            design decision 2026-08-17. */}
-        {/* fontSize 9 + opacity 0.65 en tokens.nombreColor original casi no
-            se notaba (feedback real: "apenas se nota el nombre del salón") —
-            mismo problema que ya resolvimos en SectionPill: texto chico/
-            apagado se funde con el fondo. `accent` (no tokens.nombreColor) y
-            opacity casi plena para que el nombre del negocio, que es lo
-            primero que lee un cliente, realmente resalte. */}
-        {nombreFooter && (
-          <span
-            style={{
-              fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase',
-              color: accent, opacity: 0.95, marginBottom: 6,
-            }}
-          >
-            {nombreFooter}
-          </span>
-        )}
-        <span
-          style={{
-            fontFamily: agendaFontSerif,
-            // letterSpacing negativo + lineHeight 1 (mock v0 actualizado,
-            // 2026-08-18: tracking-[-0.03em] + leading-none) — serif grande
-            // más ajustado/editorial, reemplaza el tracking positivo suelto
-            // de la versión anterior.
-            fontSize: d.fuenteTitulo, fontWeight: 400, letterSpacing: -0.9, lineHeight: 1,
-            color: tokens.headerColor, textAlign: 'left',
-          }}
-        >
-          {titulo}
-        </span>
-        {/* Subtítulo (categoría): 10px mayúsculas con tracking .14em. Usa
-            `accent` (variante clara/oscura de la tarjeta) y no un verde fijo:
-            en las plantillas oscuras el verde no contrasta. */}
-        {subtitulo && (
-          <span
-            data-testid="tarjeta-subtitulo"
-            style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
-              color: accent, marginTop: 6,
-            }}
-          >
-            {subtitulo}
-          </span>
-        )}
-        {/* Barra de acento bajo el título — referencia visual real que mandó
-            el usuario (ejemplo.png). `accent` (ver comment arriba), no
-            tokens.precioColor: probado antes, en la mayoría de plantillas es
-            negro/blanco puro y no se leía como "color" real. */}
-        <div style={{ width: 32, height: 3, borderRadius: 2, background: accent, marginTop: 10 }} />
-        <span
-          style={{
-            fontSize: 9, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase',
-            color: tokens.nombreColor, opacity: 0.65, marginTop: 8, marginBottom: periodoMarginBottom,
-          }}
-        >
-          {periodo}
-        </span>
-
         {/* Nombre en minúscula/oración (no versalita con tracking) y precio
             a un tamaño/peso mucho más parejo con el nombre — la referencia
             no hace que ninguno de los dos "grite" sobre el otro, la

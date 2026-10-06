@@ -53,9 +53,7 @@ function renderTarjeta(props: Partial<React.ComponentProps<typeof TarjetaPrecios
   const utils = renderWithProviders(
     <TarjetaPrecios
       tokens={estiloFeature}
-      titulo="Precios"
       servicios={lista(3)}
-      nombreNegocio="Salón"
       onFitChange={onFitChange}
       {...props}
     />,
@@ -96,8 +94,8 @@ describe('TarjetaPrecios · ajuste al contenido', () => {
     alturasPorNivel = [500, 400, 300, 250];
     rerender(
       <TarjetaPrecios
-        tokens={estiloFeature} titulo="Precios" servicios={lista(2)}
-        nombreNegocio="Salón" onFitChange={onFitChange}
+        tokens={estiloFeature} servicios={lista(2)}
+        onFitChange={onFitChange}
       />,
     );
     expect(card().dataset.densidad).toBe('0');
@@ -142,33 +140,39 @@ describe('TarjetaPrecios · pie fuera de la tarjeta', () => {
   });
 });
 
-describe('TarjetaPrecios · subtítulo de categoría', () => {
-  it('sin subtitulo no renderiza nada extra', () => {
+describe('TarjetaPrecios · sin encabezado (vive sobre la foto)', () => {
+  it('la tarjeta no dibuja recuadro, título, línea, contador ni divisor de encabezado', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ nota: 'Seña del 50%' });
+    for (const id of ['tarjeta-foto', 'tarjeta-icono', 'tarjeta-titulo', 'tarjeta-linea', 'tarjeta-serie', 'tarjeta-divisor']) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
+    expect(card().querySelector('svg')).toBeNull();
+    expect(within(card()).queryByText('Lista de precios')).toBeNull();
+  });
+});
+
+describe('TarjetaPrecios · reserva superior', () => {
+  it('el contenedor empieza reservaSuperior px debajo del borde superior', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ reservaSuperior: 142, reservaInferior: 96 });
+    const c = screen.getByTestId('tarjeta-contenedor');
+    expect(c.style.top).toBe('142px');
+    expect(c.style.bottom).toBe('96px');
+  });
+
+  it('sin reserva superior el contenedor arranca en el borde', () => {
     alturasPorNivel = [500, 400, 300, 250];
     renderTarjeta();
-    expect(screen.queryByTestId('tarjeta-subtitulo')).toBeNull();
+    expect(screen.getByTestId('tarjeta-contenedor').style.top).toBe('0px');
   });
 
-  it('con subtitulo lo muestra bajo el título, en mayúsculas', () => {
-    alturasPorNivel = [500, 400, 300, 250];
-    renderTarjeta({ subtitulo: 'Pies' });
-    const sub = screen.getByTestId('tarjeta-subtitulo');
-    expect(sub.textContent).toBe('Pies');
-    expect(sub.style.textTransform).toBe('uppercase');
-    expect(sub.style.fontSize).toBe('10px');
-  });
-
-  it('forma parte del contenido medido: cambiarlo re-mide desde el nivel 0', () => {
+  it('cambiar la reserva superior re-mide desde el nivel 0', () => {
     alturasPorNivel = [900, 800, 700, 650];
-    const { onFitChange, rerender } = renderTarjeta({ subtitulo: 'Pies' });
+    const { onFitChange, rerender } = renderTarjeta({ reservaSuperior: 0 });
     expect(card().dataset.densidad).toBe('2');
     alturasPorNivel = [500, 400, 300, 250];
-    rerender(
-      <TarjetaPrecios
-        tokens={estiloFeature} titulo="Precios" servicios={lista(3)} subtitulo="Uñas"
-        nombreNegocio="Salón" onFitChange={onFitChange}
-      />,
-    );
+    rerender(<TarjetaPrecios tokens={estiloFeature} servicios={lista(3)} onFitChange={onFitChange} reservaSuperior={142} />);
     expect(card().dataset.densidad).toBe('0');
   });
 });
