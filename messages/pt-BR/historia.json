@@ -2,11 +2,13 @@
   "TextoLibreInput": {
     "placeholder": "Adicione um texto ao seu story..."
   },
+  "PieContacto": {
+    "reserveCta": "Reserve seu horário"
+  },
   "StoryCanvas": {
     "availableTitle": "Horários disponíveis",
     "withProfessional": "com {nombre}",
-    "complete": "COMPLETO",
-    "reserveCta": "Reserve seu horário"
+    "complete": "COMPLETO"
   },
   "HistoriaPage": {
     "title": "Gerar story",

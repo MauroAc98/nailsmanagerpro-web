@@ -2,11 +2,13 @@
   "TextoLibreInput": {
     "placeholder": "Agregá un texto a tu historia..."
   },
+  "PieContacto": {
+    "reserveCta": "Reservá tu turno"
+  },
   "StoryCanvas": {
     "availableTitle": "Turnos disponibles",
     "withProfessional": "con {nombre}",
-    "complete": "COMPLETO",
-    "reserveCta": "Reservá tu turno"
+    "complete": "COMPLETO"
   },
   "HistoriaPage": {
     "title": "Historia de turnos",
