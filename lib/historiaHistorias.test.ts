@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Servicio } from '@/services/servicioService';
 import type { CategoriaServicio } from '@/services/categoriaServicioService';
-import { armarHistorias } from './historiaHistorias';
+import { armarHistorias, nombreArchivoHistoria } from './historiaHistorias';
 
 function servicio(overrides: Partial<Servicio>): Servicio {
   return {
@@ -50,5 +50,17 @@ describe('armarHistorias', () => {
   it('permite traducir el título de "Sin categoría"', () => {
     const h = armarHistorias([servicios[2]], 'categoria', categorias, 'Sem categoria');
     expect(h[0].titulo).toBe('Sem categoria');
+  });
+});
+
+describe('nombreArchivoHistoria', () => {
+  it('sin título usa el nombre histórico', () => {
+    expect(nombreArchivoHistoria(null)).toBe('historia-precios.png');
+  });
+  it('con categoría agrega un slug sin tildes ni símbolos', () => {
+    expect(nombreArchivoHistoria('Uñas & Pies')).toBe('historia-precios-unas-pies.png');
+  });
+  it('un título sin caracteres útiles cae al nombre histórico', () => {
+    expect(nombreArchivoHistoria('***')).toBe('historia-precios.png');
   });
 });

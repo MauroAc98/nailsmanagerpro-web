@@ -28,3 +28,12 @@ export function armarHistorias(
     servicios: g.servicios,
   }));
 }
+
+// Nombre de archivo de la imagen exportada: en modo categoría incluye el slug
+// de la categoría para distinguir las historias al guardarlas.
+export function nombreArchivoHistoria(titulo: string | null): string {
+  const slug = (titulo ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return slug ? `historia-precios-${slug}.png` : 'historia-precios.png';
+}

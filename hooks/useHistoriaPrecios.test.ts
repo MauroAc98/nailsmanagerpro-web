@@ -5,6 +5,8 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import type { Profesional } from '@/services/profesionalService';
 import type { Servicio } from '@/services/servicioService';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import type { CategoriaServicio } from '@/services/categoriaServicioService';
 
 function servicio(overrides: Partial<Servicio>): Servicio {
   return {
@@ -167,5 +169,98 @@ describe('useHistoriaPrecios.selección de servicios', () => {
     act(() => result.current.setSelectedProfesionalId(2));
     expect(result.current.excluidosIds.size).toBe(0);
     expect(result.current.serviciosActivos.map(s => s.id)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('useHistoriaPrecios.modos de historia', () => {
+  const serviciosDelStore = [
+    servicio({ id: 1, nombre: 'Esmaltado', orden: 0, categoria_id: 10 }),
+    servicio({ id: 2, nombre: 'Manicura',  orden: 1, categoria_id: 10 }),
+    servicio({ id: 3, nombre: 'Pedicura',  orden: 2, categoria_id: 20 }),
+    servicio({ id: 4, nombre: 'Cejas',     orden: 3, categoria_id: null }),
+  ];
+
+  beforeEach(() => {
+    useCategoriasServicioStore.setState({
+      categorias: [{ id: 10, nombre: 'Uñas' }, { id: 20, nombre: 'Pies' }] as CategoriaServicio[],
+    });
+    useServiciosStore.setState({ servicios: serviciosDelStore });
+    useProfesionalStore.setState({
+      profesionales: [
+        profesional({
+          id: 1,
+          servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[],
+          historia_precios_fotos: [{ id: 1, url: 'x', orden: 0 }] as Profesional['historia_precios_fotos'],
+        }),
+        profesional({ id: 2, nombre: 'Otra', servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[] }),
+      ],
+    });
+  });
+
+  it('por defecto es "una": una historia con todos los servicios elegidos', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.modo).toBe('una');
+    expect(result.current.historias).toHaveLength(1);
+    expect(result.current.historiaActual?.servicios.map(s => s.id)).toEqual([1, 2, 3, 4]);
+    expect(result.current.historiaActual?.titulo).toBeNull();
+    expect(result.current.idxHistoria).toBe(0);
+  });
+
+  it('en "categoria" arma una historia por categoría y la actual es la primera', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    expect(result.current.historias).toHaveLength(3);
+    expect(result.current.historias[0].titulo).toBe('Uñas');
+    expect(result.current.historiaActual?.servicios.map(s => s.id)).toEqual([1, 2]);
+  });
+
+  it('irSiguiente/irAnterior recorren las historias con wrap-around', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    act(() => result.current.irAnterior());
+    expect(result.current.idxHistoria).toBe(2);
+    act(() => result.current.irSiguiente());
+    expect(result.current.idxHistoria).toBe(0);
+    act(() => result.current.irSiguiente());
+    expect(result.current.historiaActual?.servicios.map(s => s.id)).toEqual([3]);
+  });
+
+  it('cambiar de modo o de selección vuelve al índice 0', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    act(() => result.current.irSiguiente());
+    expect(result.current.idxHistoria).toBe(1);
+    act(() => result.current.setExcluidosIds(new Set([1])));
+    expect(result.current.idxHistoria).toBe(0);
+    act(() => result.current.irSiguiente());
+    act(() => result.current.setModo('una'));
+    expect(result.current.idxHistoria).toBe(0);
+  });
+
+  it('el índice se acota si quedan menos historias que antes', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    act(() => result.current.irAnterior()); // última (Sin categoría)
+    act(() => useServiciosStore.setState({ servicios: serviciosDelStore.slice(0, 2) }));
+    expect(result.current.historias).toHaveLength(1);
+    expect(result.current.idxHistoria).toBe(0);
+    expect(result.current.historiaActual?.titulo).toBe('Uñas');
+  });
+
+  it('sin servicios elegidos no hay historia actual ni se puede capturar', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    act(() => result.current.setExcluidosIds(new Set([1, 2, 3, 4])));
+    expect(result.current.historias).toEqual([]);
+    expect(result.current.historiaActual).toBeNull();
+    expect(result.current.puedeCapturar).toBe(false);
+    act(() => result.current.irSiguiente());
+    expect(result.current.idxHistoria).toBe(0);
+  });
+
+  it('puedeCapturar se evalúa sobre la historia actual (hay fotos y servicios en ella)', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    expect(result.current.puedeCapturar).toBe(true);
   });
 });

@@ -7,11 +7,12 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { filtrarPorSeleccion } from '@/lib/historiaSeleccion';
+import { armarHistorias, nombreArchivoHistoria, type ModoHistorias } from '@/lib/historiaHistorias';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
-const FILENAME = 'historia-precios.png';
 
 // Ancho de exportación fijo — mismo criterio que useGenerarHistoria.capturar:
 // 1080px es la resolución estándar recomendada por Instagram Stories y
@@ -51,10 +52,24 @@ export function useHistoriaPrecios() {
   // Selección de servicios de la historia (ver lib/historiaSeleccion): ids
   // EXCLUIDOS, puramente de sesión. Vacío = todo elegido (comportamiento
   // previo). Cambiar de profesional la resetea: sus servicios son otros.
-  const [excluidosIds, setExcluidosIds] = useState<ReadonlySet<number>>(new Set());
+  const [excluidosIds, setExcluidosIdsRaw] = useState<ReadonlySet<number>>(new Set());
+  // Modo de armado ('una' historia o una por categoría) y la historia que se
+  // está viendo. Cambiar el modo o la selección vuelve a la primera historia:
+  // el reparto en historias es otro.
+  const [modo, setModoRaw] = useState<ModoHistorias>('una');
+  const [idxRaw, setIdxRaw] = useState(0);
+  const setExcluidosIds = useCallback((next: ReadonlySet<number>) => {
+    setExcluidosIdsRaw(next);
+    setIdxRaw(0);
+  }, []);
+  const setModo = useCallback((next: ModoHistorias) => {
+    setModoRaw(next);
+    setIdxRaw(0);
+  }, []);
   const setSelectedProfesionalId = useCallback((id: number | null) => {
     setSelectedProfesionalIdRaw(id);
-    setExcluidosIds(new Set());
+    setExcluidosIdsRaw(new Set());
+    setIdxRaw(0);
   }, []);
   const effectiveProfesionalId = useMemo(() => {
     if (selectedProfesionalId) return selectedProfesionalId;
@@ -107,6 +122,25 @@ export function useHistoriaPrecios() {
     () => filtrarPorSeleccion(serviciosDisponibles, excluidosIds),
     [serviciosDisponibles, excluidosIds]
   );
+
+  // Historias: cómo se reparten los servicios elegidos según el modo. Todo
+  // (preview, ajuste, captura) usa SOLO los de la historia actual.
+  const { categorias } = useCategoriasServicioStore();
+  const historias = useMemo(
+    () => armarHistorias(serviciosActivos, modo, categorias, tStatic('historia.HistoriaPreciosPage.seleccionSinCategoria')),
+    [serviciosActivos, modo, categorias]
+  );
+  const idxHistoria = Math.min(idxRaw, Math.max(historias.length - 1, 0));
+  const historiaActual = historias[idxHistoria] ?? null;
+  const irAnterior = useCallback(() => {
+    if (historias.length === 0) return;
+    setIdxRaw((idxHistoria - 1 + historias.length) % historias.length);
+  }, [historias.length, idxHistoria]);
+  const irSiguiente = useCallback(() => {
+    if (historias.length === 0) return;
+    setIdxRaw((idxHistoria + 1) % historias.length);
+  }, [historias.length, idxHistoria]);
+  const nombreArchivo = nombreArchivoHistoria(historiaActual?.titulo ?? null);
 
   // ─────────────────────────────────────────────
   // Selección de plantilla — puramente local a esta sesión. Ningún task de
@@ -346,7 +380,7 @@ export function useHistoriaPrecios() {
     setAjuste(prev => (prev.nivel === r.nivel && prev.entra === r.entra ? prev : r));
   }, []);
   const { entra, nivel: nivelDensidad } = ajuste;
-  const puedeCapturar = hayFotos && serviciosActivos.length > 0 && entra;
+  const puedeCapturar = hayFotos && (historiaActual?.servicios.length ?? 0) > 0 && entra;
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
@@ -417,10 +451,10 @@ export function useHistoriaPrecios() {
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
-    a.download = FILENAME;
+    a.download = nombreArchivo;
     a.click();
     URL.revokeObjectURL(url);
-  }, [puedeCapturar, capturar]);
+  }, [puedeCapturar, capturar, nombreArchivo]);
 
   const compartirImagen = useCallback(async () => {
     if (!puedeCapturar) {
@@ -439,7 +473,7 @@ export function useHistoriaPrecios() {
 
     const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
     if (nav.share && nav.canShare) {
-      const file = new File([blob], FILENAME, { type: 'image/png' });
+      const file = new File([blob], nombreArchivo, { type: 'image/png' });
       if (nav.canShare({ files: [file] })) {
         try {
           await nav.share({ files: [file], title: tStatic('historia.HistoriaPreciosPage.shareTitle') });
@@ -456,16 +490,19 @@ export function useHistoriaPrecios() {
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
-    a.download = FILENAME;
+    a.download = nombreArchivo;
     a.click();
     URL.revokeObjectURL(url);
-  }, [puedeCapturar, capturar]);
+  }, [puedeCapturar, capturar, nombreArchivo]);
 
   return {
     // professional / servicios
     effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
     excluidosIds, setExcluidosIds,
     selectedProfesionalId, setSelectedProfesionalId,
+
+    // modo de armado y navegación entre historias
+    modo, setModo, historias, idxHistoria, historiaActual, irAnterior, irSiguiente,
 
     // footer credit (account-level)
     nombreNegocio, telefono,
