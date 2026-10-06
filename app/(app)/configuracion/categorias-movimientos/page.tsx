@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { Spinner } from '@/components/Spinner';
 import CategoriaRow from '@/components/configuracion/CategoriaRow';
-import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { showToast } from '@/store/useToastStore';
@@ -61,14 +61,6 @@ function CategoriasMovimientosContent() {
     }
   };
 
-  const tabButtonStyle = (activo: boolean): React.CSSProperties => ({
-    flex: 1, padding: '9px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-    border: 'none', borderRadius: 9,
-    backgroundColor: activo ? colors.surface : 'transparent',
-    color: activo ? colors.textStrong : colors.subtext,
-    boxShadow: activo ? shadows.card : 'none',
-  });
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: NAV_CLEARANCE + 40 }}>
       <div style={{ padding: '20px 20px 4px' }}>
@@ -78,7 +70,11 @@ function CategoriasMovimientosContent() {
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
           {t('title')}
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: 14, color: colors.subtext }}>{t('subtitle')}</p>
+        {user && (
+          <p style={{ margin: '4px 0 0', fontSize: 14, color: colors.subtext }}>
+            {t(tab === 'gasto' ? 'summaryGastos' : 'summaryIngresos', { count: lista.length })}
+          </p>
+        )}
       </div>
 
       {/* FAB — alta en su propia página, igual que el resto de las listas. */}
@@ -99,17 +95,27 @@ function CategoriasMovimientosContent() {
       </button>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {/* Toggle Gastos / Ingresos */}
-        <div style={{
-          display: 'flex', gap: 4, padding: 4, borderRadius: 12,
-          backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
-        }}>
-          <button type="button" aria-pressed={tab === 'gasto'} onClick={() => setTab('gasto')} style={tabButtonStyle(tab === 'gasto')}>
-            {t('tabGastos')}
-          </button>
-          <button type="button" aria-pressed={tab === 'ingreso'} onClick={() => setTab('ingreso')} style={tabButtonStyle(tab === 'ingreso')}>
-            {t('tabIngresos')}
-          </button>
+        {/* Gastos / Otros ingresos — pastillas, igual que los filtros de Servicios. */}
+        <div role="group" style={{ display: 'flex', gap: 8 }}>
+          {([['gasto', t('tabGastos')], ['ingreso', t('tabIngresos')]] as const).map(([valor, label]) => {
+            const activo = tab === valor;
+            return (
+              <button
+                key={valor}
+                type="button"
+                aria-pressed={activo}
+                onClick={() => setTab(valor)}
+                style={{
+                  padding: '6px 14px', minHeight: 32, borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${activo ? colors.primarySolid : colors.border}`,
+                  backgroundColor: activo ? colors.primarySolid : colors.surface,
+                  color: activo ? '#FFF' : colors.text,
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {!user ? (
@@ -118,10 +124,6 @@ function CategoriasMovimientosContent() {
           </div>
         ) : (
           <>
-            <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>
-              {t('summary', { count: lista.length })}
-            </p>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {lista.map((cat, index) => (
                 <CategoriaRow
@@ -135,12 +137,9 @@ function CategoriasMovimientosContent() {
               ))}
             </div>
 
+            {/* Renombrar/borrar no reescribe los movimientos ya cargados */}
             <p style={{ margin: '4px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.placeholder, textAlign: 'center' }}>
-              {t('swipeHint')}
-            </p>
-            {/* Aviso: renombrar/borrar no reescribe los movimientos ya cargados */}
-            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
-              {t('historyNote')}
+              {t('footnote')}
             </p>
           </>
         )}
