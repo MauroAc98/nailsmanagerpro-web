@@ -1,6 +1,18 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { toBlob } from 'html-to-image';
+import { alertDialog } from '@/store/useConfirmStore';
 import { useHistoriaPrecios } from './useHistoriaPrecios';
+
+vi.mock('html-to-image', () => ({ toBlob: vi.fn() }));
+vi.mock('@/lib/historia/captura', () => ({
+  fetchAsDataUrl: async () => 'data:image/png;base64,eA==',
+  prepararImagenesParaCaptura: async () => new Map(),
+}));
+vi.mock('@/store/useConfirmStore', async orig => ({
+  ...(await orig<typeof import('@/store/useConfirmStore')>()),
+  alertDialog: vi.fn(async () => {}),
+}));
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import type { Profesional } from '@/services/profesionalService';
@@ -270,5 +282,143 @@ describe('useHistoriaPrecios.modos de historia', () => {
     expect(result.current.cantidadPorCategoria).toBe(3);
     act(() => result.current.setExcluidosIds(new Set([3])));
     expect(result.current.cantidadPorCategoria).toBe(2);
+  });
+});
+
+describe('useHistoriaPrecios.exportar todas (modo categoría)', () => {
+  const serviciosDelStore = [
+    servicio({ id: 1, nombre: 'Esmaltado', orden: 0, categoria_id: 10 }),
+    servicio({ id: 3, nombre: 'Pedicura',  orden: 2, categoria_id: 20 }),
+    servicio({ id: 4, nombre: 'Cejas',     orden: 3, categoria_id: 30 }),
+  ];
+  const ID_UNAS = 'categoria-10', ID_PIES = 'categoria-20', ID_CEJAS = 'categoria-30';
+
+  beforeEach(() => {
+    useCategoriasServicioStore.setState({
+      categorias: [{ id: 10, nombre: 'Uñas' }, { id: 20, nombre: 'Pies' }, { id: 30, nombre: 'Cejas' }] as CategoriaServicio[],
+    });
+    useServiciosStore.setState({ servicios: serviciosDelStore });
+    useProfesionalStore.setState({
+      profesionales: [
+        profesional({
+          id: 1,
+          servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[],
+          historia_precios_fotos: [{ id: 1, url: 'x', orden: 0 }] as Profesional['historia_precios_fotos'],
+        }),
+      ],
+    });
+  });
+
+  it('hayVarias solo en modo categoría con más de una historia', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.hayVarias).toBe(false);
+    act(() => result.current.setModo('categoria'));
+    expect(result.current.hayVarias).toBe(true);
+    act(() => result.current.setExcluidosIds(new Set([3, 4])));
+    expect(result.current.historias).toHaveLength(1);
+    expect(result.current.hayVarias).toBe(false);
+  });
+
+  it('agrega el ajuste de todas: puedeCapturar exige que entren todas y nombra las que no', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.setModo('categoria'));
+    expect(result.current.entraTodas).toBe(true);
+    expect(result.current.puedeCapturar).toBe(true);
+
+    act(() => result.current.reportarFit(ID_PIES, { nivel: 3, entra: false }));
+    expect(result.current.entraTodas).toBe(false);
+    expect(result.current.historiasQueNoEntran.map(h => h.titulo)).toEqual(['Pies']);
+    expect(result.current.puedeCapturar).toBe(false);
+
+    act(() => result.current.reportarFit(ID_PIES, { nivel: 2, entra: true }));
+    expect(result.current.entraTodas).toBe(true);
+    expect(result.current.puedeCapturar).toBe(true);
+  });
+
+  it('en modo "una" los reportes por historia no afectan puedeCapturar', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    act(() => result.current.reportarFit('una', { nivel: 3, entra: false }));
+    expect(result.current.puedeCapturar).toBe(true);
+  });
+
+  describe('captura de todas', () => {
+    let descargas: string[];
+    beforeEach(() => {
+      descargas = [];
+      vi.mocked(toBlob).mockReset();
+      vi.mocked(toBlob).mockResolvedValue(new Blob(['x'], { type: 'image/png' }));
+      vi.mocked(alertDialog).mockClear();
+      URL.createObjectURL = vi.fn(() => 'blob:x');
+      URL.revokeObjectURL = vi.fn();
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+        descargas.push(this.download);
+      });
+    });
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    function montar() {
+      const hook = renderHook(() => useHistoriaPrecios());
+      act(() => hook.result.current.setModo('categoria'));
+      const nodos = new Map<string, HTMLDivElement>();
+      [ID_UNAS, ID_PIES, ID_CEJAS].forEach(id => {
+        const el = document.createElement('div');
+        nodos.set(id, el);
+        hook.result.current.registrarCanvas(id)(el);
+      });
+      return { ...hook, nodos };
+    }
+
+    it('Guardar descarga un PNG por historia, en orden y con nombres distintos', async () => {
+      const { result, nodos } = montar();
+      await act(async () => { await result.current.descargarImagen(); });
+      expect(descargas).toEqual([
+        'historia-precios-unas.png', 'historia-precios-pies.png', 'historia-precios-cejas.png',
+      ]);
+      // 2 llamadas a toBlob por nodo (warm-up + real), en el orden de las historias
+      const nodosCapturados = vi.mocked(toBlob).mock.calls.map(c => c[0]);
+      expect(nodosCapturados).toEqual([
+        nodos.get(ID_UNAS), nodos.get(ID_UNAS),
+        nodos.get(ID_PIES), nodos.get(ID_PIES),
+        nodos.get(ID_CEJAS), nodos.get(ID_CEJAS),
+      ]);
+    });
+
+    it('si una captura falla no descarga nada y avisa con el mensaje existente', async () => {
+      vi.mocked(toBlob).mockRejectedValue(new Error('boom'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { result } = montar();
+      await act(async () => { await result.current.descargarImagen(); });
+      expect(descargas).toEqual([]);
+      expect(alertDialog).toHaveBeenCalledWith('No se pudo generar la imagen. Intentá de nuevo.');
+    });
+
+    it('Compartir usa Web Share con todos los archivos si el navegador puede', async () => {
+      const share = vi.fn(async (_data: ShareData) => {});
+      Object.assign(navigator, { share, canShare: () => true });
+      const { result } = montar();
+      await act(async () => { await result.current.compartirImagen(); });
+      expect(share).toHaveBeenCalledTimes(1);
+      const arg = share.mock.calls[0][0];
+      expect(arg.files?.map(f => f.name)).toEqual([
+        'historia-precios-unas.png', 'historia-precios-pies.png', 'historia-precios-cejas.png',
+      ]);
+      expect(descargas).toEqual([]);
+    });
+
+    it('Compartir sin soporte para varios archivos descarga todos y avisa', async () => {
+      Object.assign(navigator, { share: vi.fn(), canShare: () => false });
+      const { result } = montar();
+      await act(async () => { await result.current.compartirImagen(); });
+      expect(descargas).toHaveLength(3);
+      expect(alertDialog).toHaveBeenCalledWith('Tu navegador no permite compartir varias imágenes juntas: se descargaron.');
+    });
+
+    it('no exporta si alguna historia no entra', async () => {
+      const { result } = montar();
+      act(() => result.current.reportarFit(ID_PIES, { nivel: 3, entra: false }));
+      await act(async () => { await result.current.descargarImagen(); });
+      expect(toBlob).not.toHaveBeenCalled();
+      expect(descargas).toEqual([]);
+    });
   });
 });

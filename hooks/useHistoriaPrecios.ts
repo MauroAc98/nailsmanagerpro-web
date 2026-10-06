@@ -11,6 +11,9 @@ import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria
 import { armarHistorias, nombreArchivoHistoria, type ModoHistorias } from '@/lib/historiaHistorias';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
+import {
+  agregarAjustes, decidirEnvio, descargarSecuencial, exportarHistorias, type NavegadorCompartir,
+} from '@/lib/historia/exportarHistorias';
 import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
@@ -21,6 +24,25 @@ const DEFAULT_TEMPLATE: TemplateId = 'feature';
 // BASE_WIDTH=420 (ver D3 en sdd/dynamic-price-story), así que un
 // pixelRatio:2 fijo exportaba siempre 840x1493, por debajo de ese estándar.
 const STORY_EXPORT_WIDTH = 1080;
+
+// Pausa entre descargas automáticas sucesivas (varios PNG): sin ella los
+// navegadores tienden a bloquear las posteriores a la primera.
+const DESCARGA_DELAY_MS = 400;
+
+const esperarMs = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+const esperarFrame = () => new Promise<void>(resolve => {
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
+  else setTimeout(resolve, 16);
+});
+
+function descargarArchivo(file: File) {
+  const url = URL.createObjectURL(file);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const proxiedUrl = (url: string) => `/api/historia-fondo?url=${encodeURIComponent(url)}`;
 
@@ -387,7 +409,41 @@ export function useHistoriaPrecios() {
     setAjuste(prev => (prev.nivel === r.nivel && prev.entra === r.entra ? prev : r));
   }, []);
   const { entra, nivel: nivelDensidad } = ajuste;
-  const puedeCapturar = hayFotos && (historiaActual?.servicios.length ?? 0) > 0 && entra;
+
+  // Ajuste de CADA historia en modo "una por categoría" con varias: se montan
+  // todas fuera de pantalla (ver HistoriasFueraDePantalla) y cada una reporta
+  // acá. `fitsRef` es el espejo síncrono del estado: la captura necesita leer
+  // el valor actual sin esperar a un render.
+  const hayVarias = modo === 'categoria' && historias.length > 1;
+  const [fitsPorHistoria, setFitsPorHistoria] = useState<Record<string, ResultadoDensidad>>({});
+  const fitsRef = useRef<Record<string, ResultadoDensidad>>({});
+  const reportarFit = useCallback((id: string, r: ResultadoDensidad) => {
+    const prev = fitsRef.current[id];
+    if (prev && prev.nivel === r.nivel && prev.entra === r.entra) return;
+    fitsRef.current = { ...fitsRef.current, [id]: r };
+    setFitsPorHistoria(fitsRef.current);
+  }, []);
+  const { entraTodas, historiasQueNoEntran } = useMemo(
+    () => agregarAjustes(historias, fitsPorHistoria),
+    [historias, fitsPorHistoria]
+  );
+  const todasConServicios = historias.length > 0 && historias.every(h => h.servicios.length > 0);
+  const puedeCapturar = hayVarias
+    ? hayFotos && todasConServicios && entraTodas
+    : hayFotos && (historiaActual?.servicios.length ?? 0) > 0 && entra;
+
+  // Nodos de los canvas fuera de pantalla, por id de historia. Los callbacks
+  // de ref se cachean por id para que su identidad sea estable entre renders.
+  const canvasesRef = useRef(new Map<string, HTMLDivElement>());
+  const refCallbacks = useRef(new Map<string, (el: HTMLDivElement | null) => void>());
+  const registrarCanvas = useCallback((id: string) => {
+    let cb = refCallbacks.current.get(id);
+    if (!cb) {
+      cb = el => { if (el) canvasesRef.current.set(id, el); else canvasesRef.current.delete(id); };
+      refCallbacks.current.set(id, cb);
+    }
+    return cb;
+  }, []);
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
@@ -402,8 +458,8 @@ export function useHistoriaPrecios() {
   // ─────────────────────────────────────────────
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const capturar = useCallback(async (): Promise<Blob | null> => {
-    if (!canvasRef.current) return null;
+  const capturarNodo = useCallback(async (nodo: HTMLDivElement | null): Promise<Blob | null> => {
+    if (!nodo) return null;
 
     // document.fonts.ready — same class of bug prepararImagenesParaCaptura
     // guards against for <img>s (decode()+settle before rasterizing), but
@@ -414,9 +470,9 @@ export function useHistoriaPrecios() {
     // the on-screen preview looks correct once it loads a moment later.
     // Standard Font Loading API — supported in all target browsers
     // including iOS Safari.
-    await document.fonts.ready;
+    await document.fonts?.ready;
 
-    const resueltas = await prepararImagenesParaCaptura(canvasRef.current);
+    const resueltas = await prepararImagenesParaCaptura(nodo);
     if (resueltas.size > 0) {
       setDataUrlsPorFoto(prev => {
         let changed = false;
@@ -435,15 +491,69 @@ export function useHistoriaPrecios() {
     // pixelRatio calculado, no fijo — mismo motivo que useGenerarHistoria:
     // el PNG exportado sale a STORY_EXPORT_WIDTH de ancho real sin importar
     // el ancho intrínseco del canvas (BASE_WIDTH).
-    const pixelRatio = STORY_EXPORT_WIDTH / canvasRef.current.getBoundingClientRect().width;
+    const pixelRatio = STORY_EXPORT_WIDTH / nodo.getBoundingClientRect().width;
 
-    await toBlob(canvasRef.current, { pixelRatio });
-    return toBlob(canvasRef.current, { pixelRatio });
+    await toBlob(nodo, { pixelRatio });
+    return toBlob(nodo, { pixelRatio });
   }, [fotosOrdenadas, fotosUrls]);
+
+  const capturar = useCallback(() => capturarNodo(canvasRef.current), [capturarNodo]);
+
+  // ─────────────────────────────────────────────
+  // Exportar TODAS (modo "una por categoría", más de una historia).
+  //
+  // Determinismo: TarjetaPrecios re-mide una vez cuando `document.fonts.ready`
+  // resuelve (cambia el alto del texto, puede cambiar el nivel de densidad).
+  // Antes de capturar se espera `fonts.ready` y dos frames, así ese re-medido
+  // ya corrió y reportó; después se verifica que todas siguen entrando. Y la
+  // firma del ajuste de todas (id + nivel + entra) se compara al empezar y al
+  // terminar: si algo se re-midió a mitad de captura el lote se descarta y se
+  // avisa, nunca se entrega un set con densidades mezcladas.
+  // ─────────────────────────────────────────────
+  const [exportando, setExportando] = useState(false);
+  const exportandoRef = useRef(false);
+
+  const generarTodas = useCallback(async (): Promise<File[] | null> => {
+    if (exportandoRef.current) return null;
+    exportandoRef.current = true;
+    setExportando(true);
+    try {
+      return await exportarHistorias({
+        historias,
+        asentar: async () => {
+          await document.fonts?.ready;
+          await esperarFrame();
+          await esperarFrame();
+          if (!agregarAjustes(historias, fitsRef.current).entraTodas) {
+            throw new Error('Alguna historia dejó de entrar con letra legible');
+          }
+        },
+        firma: () => JSON.stringify(historias.map(h => [h.id, fitsRef.current[h.id]?.nivel, fitsRef.current[h.id]?.entra])),
+        capturar: id => capturarNodo(canvasesRef.current.get(id) ?? null),
+      });
+    } catch (err) {
+      console.error('useHistoriaPrecios: fallo al generar las imágenes', err);
+      await alertDialog(tStatic('historia.HistoriaPreciosPage.couldNotGenerateImage'));
+      return null;
+    } finally {
+      exportandoRef.current = false;
+      setExportando(false);
+    }
+  }, [historias, capturarNodo]);
+
+  const descargarVarias = useCallback(
+    (files: File[]) => descargarSecuencial(files, { descargar: descargarArchivo, esperar: () => esperarMs(DESCARGA_DELAY_MS) }),
+    []
+  );
 
   const descargarImagen = useCallback(async () => {
     if (!puedeCapturar) {
       await alertDialog(tStatic('historia.HistoriaPreciosPage.noContentToShow'));
+      return;
+    }
+    if (hayVarias) {
+      const files = await generarTodas();
+      if (files) await descargarVarias(files);
       return;
     }
     let blob: Blob | null;
@@ -461,11 +571,30 @@ export function useHistoriaPrecios() {
     a.download = nombreArchivo;
     a.click();
     URL.revokeObjectURL(url);
-  }, [puedeCapturar, capturar, nombreArchivo]);
+  }, [puedeCapturar, hayVarias, generarTodas, descargarVarias, capturar, nombreArchivo]);
 
   const compartirImagen = useCallback(async () => {
     if (!puedeCapturar) {
       await alertDialog(tStatic('historia.HistoriaPreciosPage.noContentToShow'));
+      return;
+    }
+    if (hayVarias) {
+      const files = await generarTodas();
+      if (!files) return;
+      const nav = navigator as Navigator & NavegadorCompartir;
+      if (decidirEnvio(files, nav) === 'compartir') {
+        try {
+          await nav.share!({ files, title: tStatic('historia.HistoriaPreciosPage.shareTitle') });
+          return;
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') return;
+          // NotAllowedError: capturar varias imágenes tarda y puede vencer el
+          // gesto del usuario que exige share(); se cae a descargar.
+          console.error('useHistoriaPrecios.compartirImagen: share falló, se descargan', err);
+        }
+      }
+      await descargarVarias(files);
+      await alertDialog(tStatic('historia.HistoriaPreciosPage.compartirVariasDescargadas'));
       return;
     }
     let blob: Blob | null;
@@ -500,7 +629,7 @@ export function useHistoriaPrecios() {
     a.download = nombreArchivo;
     a.click();
     URL.revokeObjectURL(url);
-  }, [puedeCapturar, capturar, nombreArchivo]);
+  }, [puedeCapturar, hayVarias, generarTodas, descargarVarias, capturar, nombreArchivo]);
 
   return {
     // professional / servicios
@@ -527,6 +656,9 @@ export function useHistoriaPrecios() {
 
     // fit-to-content (ver TarjetaPrecios)
     entra, nivelDensidad, onFitChange,
+
+    // ajuste de todas las historias (modo categoría con varias)
+    hayVarias, reportarFit, registrarCanvas, entraTodas, historiasQueNoEntran, exportando,
 
     // capture / export
     canvasRef, capturar, descargarImagen, compartirImagen,
