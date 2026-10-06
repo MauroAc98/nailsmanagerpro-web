@@ -100,6 +100,17 @@
     "share": "Compartilhar",
     "noContentToShow": "Envie ao menos uma foto para gerar a imagem.",
     "couldNotGenerateImage": "Não foi possível gerar a imagem. Tente novamente.",
-    "shareTitle": "Meu story de preços"
+    "shareTitle": "Meu story de preços",
+    "seleccionTitle": "Quais serviços mostrar?",
+    "seleccionElegirTodo": "Escolher tudo",
+    "seleccionQuitarTodo": "Tirar tudo",
+    "seleccionContador": "{marcados} de {total} serviços escolhidos. Toque em uma categoria para ver os serviços e tirar os que não quiser.",
+    "seleccionMuchos": "São muitos serviços para uma única imagem e ela vai ficar menor. Você pode escolher menos.",
+    "seleccionSinCategoria": "Sem categoria",
+    "seleccionCategoriaCuenta": "{marcados} de {total}",
+    "seleccionCategoriaAria": "Marcar todos os serviços de {nombre}",
+    "seleccionPromo": "PROMO",
+    "seleccionHintSinCategoria": "Os serviços sem categoria aparecem juntos. Atribua uma em Serviços para organizar melhor.",
+    "seleccionVacia": "Escolha pelo menos um serviço para gerar sua story."
   }
 }

@@ -100,6 +100,17 @@
     "share": "Compartir",
     "noContentToShow": "Subí al menos una foto para generar la imagen.",
     "couldNotGenerateImage": "No se pudo generar la imagen. Intentá de nuevo.",
-    "shareTitle": "Mi historia de precios"
+    "shareTitle": "Mi historia de precios",
+    "seleccionTitle": "¿Qué servicios mostrar?",
+    "seleccionElegirTodo": "Elegir todo",
+    "seleccionQuitarTodo": "Quitar todo",
+    "seleccionContador": "{marcados} de {total} servicios elegidos. Tocá una categoría para ver sus servicios y sacar los que no quieras.",
+    "seleccionMuchos": "Son muchos servicios para una sola imagen y se va a ver más chica. Podés elegir menos.",
+    "seleccionSinCategoria": "Sin categoría",
+    "seleccionCategoriaCuenta": "{marcados} de {total}",
+    "seleccionCategoriaAria": "Marcar todos los servicios de {nombre}",
+    "seleccionPromo": "PROMO",
+    "seleccionHintSinCategoria": "Los servicios sin categoría aparecen juntos. Asignales una desde Servicios para ordenarlos mejor.",
+    "seleccionVacia": "Elegí al menos un servicio para generar tu historia."
   }
 }
