@@ -13,13 +13,16 @@ export const BASE_WIDTH  = 420;
 export const BASE_HEIGHT = (BASE_WIDTH * 16) / 9;
 
 // Zona inferior (px, a BASE_WIDTH) reservada para el pie de contacto que se
-// dibuja sobre la foto: divisor 1 + 10 de margen + CTA ~20 + 3 de gap + línea
-// de contacto 2+16 (hasta 2 renglones = 32) ≈ 68, más 24 de aire contra el
-// borde inferior. Constante (no medida) para que el ajuste de la tarjeta y la
-// captura con html-to-image sean deterministas; la tarjeta tiene además su
-// propio padding inferior (16) de holgura si un nombre largo ocupa 3 renglones.
-export const FOOTER_RESERVA = 96;
-const FOOTER_PADDING_BOTTOM = 24;
+// dibuja sobre la foto. El pie (divisor 1 + 10 de margen + CTA ~20 + 3 de gap +
+// línea de contacto 2+16, hasta 2 renglones = 32 ≈ 68, más 4 de holgura) se
+// sube un poco del borde inferior para que la barra de responder/enviar de
+// Instagram/WhatsApp no lo tape. Es un margen chico a propósito (7% del alto,
+// no el 16% completo de lib/historia/safeArea.ts): con más el pie flota alto
+// sobre la foto. Constante (no medida) para que el ajuste de la tarjeta y la
+// captura con html-to-image sean deterministas.
+const FOOTER_ALTO = 72;
+const FOOTER_PADDING_BOTTOM = Math.round(BASE_HEIGHT * 0.07);
+export const FOOTER_RESERVA = FOOTER_ALTO + FOOTER_PADDING_BOTTOM;
 const FOOTER_PADDING_X = 40;
 
 interface Props {
@@ -139,7 +142,7 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
           data-testid="historia-precios-scrim"
           style={{
             position: 'absolute', left: 0, right: 0, bottom: 0, height: FOOTER_RESERVA + 24,
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.7) 100%)',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.7) 100%)',
           }}
         />
         {/* Pie sobre la foto, fuera de la tarjeta — mismo componente que la

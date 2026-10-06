@@ -3,7 +3,7 @@ import { renderWithProviders, screen } from '@/test/render';
 import { nombreMes } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import {
-  EncabezadoHistoria, ENCABEZADO_TILE, ENCABEZADO_GAP, alturaZonaEncabezado, reservaSuperiorEncabezado,
+  EncabezadoHistoria, ENCABEZADO_TILE, ENCABEZADO_GAP, ENCABEZADO_SUBIDA, alturaZonaEncabezado, reservaSuperiorEncabezado,
 } from './EncabezadoHistoria';
 
 const ALTO = 747;
@@ -19,18 +19,18 @@ const titulo = () => screen.getByTestId('encabezado-titulo');
 const linea = () => screen.getByTestId('encabezado-linea');
 
 describe('EncabezadoHistoria · reserva compartida', () => {
-  it('la reserva es safe.top + recuadro + separación, y el encabezado arranca en safe.top', () => {
+  it('la reserva es safe.top + recuadro + separación, y el encabezado arranca en safe.top menos la subida', () => {
     const safe = safeAreaInsets(ALTO);
-    expect(reservaSuperiorEncabezado(ALTO)).toBe(safe.top + ENCABEZADO_TILE + ENCABEZADO_GAP);
+    expect(reservaSuperiorEncabezado(ALTO)).toBe(safe.top - ENCABEZADO_SUBIDA + ENCABEZADO_TILE + ENCABEZADO_GAP);
     renderEncabezado();
     const raiz = screen.getByTestId('encabezado-historia');
-    expect(raiz.style.top).toBe(`${safe.top}px`);
+    expect(raiz.style.top).toBe(`${safe.top - ENCABEZADO_SUBIDA}px`);
     expect(raiz.style.height).toBe(`${ENCABEZADO_TILE}px`);
   });
 
   it('la zona de la franja desenfocada cubre todo el encabezado', () => {
     expect(alturaZonaEncabezado(ALTO)).toBeGreaterThan(reservaSuperiorEncabezado(ALTO) - ENCABEZADO_GAP);
-    expect(alturaZonaEncabezado(ALTO)).toBe(safeAreaInsets(ALTO).top + Math.round(ALTO * 0.10));
+    expect(alturaZonaEncabezado(ALTO)).toBe(safeAreaInsets(ALTO).top - ENCABEZADO_SUBIDA + Math.round(ALTO * 0.10));
   });
 });
 

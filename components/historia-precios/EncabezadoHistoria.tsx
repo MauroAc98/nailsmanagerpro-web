@@ -16,17 +16,27 @@ export const ENCABEZADO_TILE = 44;
 export const ENCABEZADO_GAP = 4;
 const ENCABEZADO_PADDING_X = 18;
 
+// Cuánto se sube el encabezado respecto del borde de la safe area superior
+// (11%): ahí queda un poco alto sobre la foto, y 30px de subida siguen
+// librando el chrome de Instagram/WhatsApp (avatar + barra de progreso).
+export const ENCABEZADO_SUBIDA = 30;
+
+// Borde superior del encabezado (px desde el tope del canvas).
+function topEncabezado(canvasHeight: number): number {
+  return Math.max(0, safeAreaInsets(canvasHeight).top - ENCABEZADO_SUBIDA);
+}
+
 // Distancia desde el borde superior del canvas hasta donde puede empezar la
 // tarjeta: safe area + encabezado + una separación chica (la tarjeta suma además
 // su propio padding superior).
 export function reservaSuperiorEncabezado(canvasHeight: number): number {
-  return safeAreaInsets(canvasHeight).top + ENCABEZADO_TILE + ENCABEZADO_GAP;
+  return topEncabezado(canvasHeight) + ENCABEZADO_TILE + ENCABEZADO_GAP;
 }
 
 // Alto de la franja desenfocada + degradé detrás del encabezado: mismo cálculo
 // que tituloZonaAlto de la historia de turnos (StoryCanvas).
 export function alturaZonaEncabezado(canvasHeight: number): number {
-  return safeAreaInsets(canvasHeight).top + Math.round(canvasHeight * 0.10);
+  return topEncabezado(canvasHeight) + Math.round(canvasHeight * 0.10);
 }
 
 const SOMBRA = '0 2px 6px rgba(0,0,0,0.85)';
@@ -69,7 +79,7 @@ export function EncabezadoHistoria({ titulo, subtitulo, profesionalNombre, logoU
     <div
       data-testid="encabezado-historia"
       style={{
-        position: 'absolute', left: 0, right: 0, top: safeAreaInsets(canvasHeight).top, height: ENCABEZADO_TILE,
+        position: 'absolute', left: 0, right: 0, top: topEncabezado(canvasHeight), height: ENCABEZADO_TILE,
         padding: `0 ${ENCABEZADO_PADDING_X}px`, boxSizing: 'border-box',
         display: 'flex', alignItems: 'center', gap: 12,
       }}
