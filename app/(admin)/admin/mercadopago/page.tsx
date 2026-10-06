@@ -6,6 +6,7 @@ import { isAxiosError } from 'axios';
 import { ArrowLeft, Wallet, ChevronDown, ChevronUp, CircleCheck, Copy } from 'lucide-react';
 import { adminService, MercadoPagoNegocioConexion } from '@/services/adminService';
 import { colors, shadows } from '@/theme/colors';
+import { etiquetaSenaAdmin } from '@/lib/adminSena';
 
 // Fase 1 de Mercado Pago: cada negocio tiene su PROPIA cuenta, cargada a
 // mano por el equipo de Turnetto (sin OAuth propio — ver admin/whatsapp/
@@ -216,7 +217,7 @@ function FilaNegocio({ salon, onGuardado }: { salon: MercadoPagoNegocioConexion;
             {salon.nombre}
           </p>
           <p style={{ fontSize: 12, color: colors.subtext, margin: '2px 0 0' }}>
-            {salon.sena_monto ? `Seña: $${salon.sena_monto}` : 'Sin seña cargada'}
+            {etiquetaSenaAdmin(salon.sena_monto)}
           </p>
         </div>
         <span
