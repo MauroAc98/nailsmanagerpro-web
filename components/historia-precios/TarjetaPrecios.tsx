@@ -1,9 +1,11 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
 import { EstiloTokens } from './estilos';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { nombreMes } from '@/lib/dateFormat';
 import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
+import { NIVELES_DENSIDAD, elegirDensidad, type DensidadTokens, type ResultadoDensidad } from '@/lib/historiaDensidad';
 
 interface Props {
   tokens:    EstiloTokens;
@@ -50,7 +52,18 @@ interface Props {
   // abajo) o 'end' (tarjeta abajo, foto respira arriba). Nunca cambia la
   // altura disponible, solo dónde se ancla dentro del alto completo.
   align?: 'center' | 'start' | 'end';
+  // Ajuste al contenido. Por defecto la tarjeta MIDE su contenido real y baja
+  // de densidad (ver NIVELES_DENSIDAD) hasta que entra en el alto del canvas;
+  // reporta el resultado con `onFitChange` (debe ser estable). Si se pasa
+  // `nivelDensidad` (miniaturas del picker) NO mide: usa ese nivel tal cual.
+  nivelDensidad?: number;
+  onFitChange?:   (resultado: ResultadoDensidad) => void;
 }
+
+// Padding vertical del contenedor absoluto (20 arriba + 16 abajo): el alto
+// disponible para la tarjeta es el del contenedor menos esto.
+const PADDING_TOP = 20;
+const PADDING_BOTTOM = 16;
 
 // TarjetaPrecios — price list panel, rendered as the foreground `children`
 // of whichever layout (LayoutGrid4/LayoutSingle/LayoutSplit2) is active.
@@ -87,7 +100,7 @@ const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
 const ACCENT_CLARO     = '#E8E5E1';
 const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center' }: Props) {
+export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
@@ -110,22 +123,68 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   const ultimoServicioId = (serviciosPromo.length > 0 ? serviciosPromo : serviciosRegulares).at(-1)?.id;
 
   // Densidad — la tarjeta ocupa el alto COMPLETO del canvas a propósito (ver
-  // comment largo en estilos.ts, 2026-08-18 octava actualización: confinarla
-  // a una franja fija ya rompió dos veces con listas reales largas). Pero
-  // ese diseño asumía UNA lista (servicios O promociones); combinadas
-  // (es_promo unificado, ver useHistoriaPrecios) el total de filas casi se
-  // duplica para cualquier negocio con catálogo real, y con el espaciado
-  // "normal" la tarjeta terminaba comiéndose casi todo el canvas sin margen
-  // — se veía apretada/fea (reportado con captura real: 7 servicios + 4
-  // promos). Por debajo del umbral, el espaciado generoso original queda
-  // igual; por encima, se compacta (menos gap entre filas/grupos, header más
-  // corto) para recuperar el aire alrededor de la tarjeta sin truncar nada.
-  const totalItems = servicios.length;
-  const compacta    = totalItems > 7;
-  const rowGap      = compacta ? 8  : 14;
-  const groupGap     = compacta ? 12 : 20;
-  const rowPaddingY  = compacta ? 6  : 10;
-  const periodoMarginBottom = compacta ? 14 : 24;
+  // estilos.ts, 2026-08-18 octava actualización). El canvas es fijo, así que
+  // lo que se adapta es el contenido: se MIDE el alto natural real de la
+  // tarjeta (encabezado, filas, nota y pie incluidos, lo que sea que
+  // renderice) en cada nivel de NIVELES_DENSIDAD, del más cómodo al más
+  // compacto, y se queda con el primero que entra. Si ni el último entra,
+  // reporta entra=false en vez de recortar en silencio. Todo ocurre en
+  // useLayoutEffect: los re-renders de cada paso se resuelven de forma
+  // síncrona antes del primer paint, así que cuando html-to-image captura el
+  // nivel ya está asentado.
+  const medir = nivelDensidad === undefined;
+  const contenedorRef = useRef<HTMLDivElement>(null);
+  const cardRef       = useRef<HTMLDivElement>(null);
+  const alturasRef    = useRef<number[]>([]);
+  const onFitRef      = useRef(onFitChange);
+  onFitRef.current = onFitChange;
+
+  // Re-medir también cuando termina de cargar la tipografía (cambia el alto).
+  const [fuentesListas, setFuentesListas] = useState(false);
+  useEffect(() => {
+    if (!medir) return;
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+    if (!fonts?.ready) return;
+    let activo = true;
+    fonts.ready.then(() => { if (activo) setFuentesListas(true); });
+    return () => { activo = false; };
+  }, [medir]);
+
+  const firma = JSON.stringify([
+    servicios.map(s => [s.id, s.nombre, s.precio, s.es_promo]),
+    titulo, nota ?? '', nombreFooter ?? '', telefono ?? '', variante, fuentesListas,
+  ]);
+  const [medicion, setMedicion] = useState({ firma, nivel: 0, fin: false });
+  let estado = medicion;
+  if (medir && medicion.firma !== firma) {
+    // Contenido nuevo: arrancar de cero desde el nivel más cómodo.
+    estado = { firma, nivel: 0, fin: false };
+    setMedicion(estado);
+  }
+
+  useLayoutEffect(() => {
+    if (!medir || medicion.fin || medicion.firma !== firma) return;
+    const card = cardRef.current;
+    const contenedor = contenedorRef.current;
+    if (!card || !contenedor) return;
+    if (medicion.nivel === 0) alturasRef.current = [];
+    alturasRef.current[medicion.nivel] = card.offsetHeight;
+    const disponible = contenedor.clientHeight - PADDING_TOP - PADDING_BOTTOM;
+    const r = elegirDensidad(alturasRef.current, disponible);
+    if (r.entra || medicion.nivel >= NIVELES_DENSIDAD.length - 1) {
+      setMedicion({ firma: medicion.firma, nivel: r.nivel, fin: true });
+      onFitRef.current?.(r);
+    } else {
+      setMedicion({ firma: medicion.firma, nivel: medicion.nivel + 1, fin: false });
+    }
+  }, [medir, medicion, firma]);
+
+  const nivel = Math.min(
+    Math.max(medir ? estado.nivel : nivelDensidad, 0),
+    NIVELES_DENSIDAD.length - 1,
+  );
+  const d: DensidadTokens = NIVELES_DENSIDAD[nivel];
+  const { rowGap, groupGap, rowPaddingY, periodoMarginBottom } = d;
   const justifyContent = align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : 'center';
   // "AGOSTO 2026" en el locale activo — mismo criterio editorial que el
   // mock v0 (subtítulo bajo el título, ver captura de referencia), generado
@@ -135,16 +194,21 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
   const periodo = `${nombreMes(ahora, 'long', 'mayusculas')} ${ahora.getFullYear()}`;
   return (
     <div
+      ref={contenedorRef}
+      data-testid="tarjeta-contenedor"
       style={{
         position: 'absolute', inset: 0,
-        padding: `20px ${OUTER_PADDING_X}px 16px`,
+        padding: `${PADDING_TOP}px ${OUTER_PADDING_X}px ${PADDING_BOTTOM}px`,
         display: 'flex', flexDirection: 'column', justifyContent,
       }}
     >
       <div
+        ref={cardRef}
+        data-testid="tarjeta-card"
+        data-densidad={nivel}
         style={{
           display: 'flex', flexDirection: 'column',
-          padding: '24px 20px', borderRadius: esPanel ? 12 : 18,
+          padding: `${d.cardPaddingY}px 20px`, borderRadius: esPanel ? 12 : 18,
           background: tokens.cardBackground,
           border: `1px solid ${tokens.cardBorder}`,
           // Sombra más sutil (era 4px/16px blur — 5x más difusa que
@@ -186,7 +250,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             // 2026-08-18: tracking-[-0.03em] + leading-none) — serif grande
             // más ajustado/editorial, reemplaza el tracking positivo suelto
             // de la versión anterior.
-            fontSize: 31, fontWeight: 400, letterSpacing: -0.9, lineHeight: 1,
+            fontSize: d.fuenteTitulo, fontWeight: 400, letterSpacing: -0.9, lineHeight: 1,
             color: tokens.headerColor, textAlign: 'left',
           }}
         >
@@ -217,7 +281,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
               {mostrarSubheaders && <SectionPill texto={t('sectionServicios')} accent={accent} accentBg={accentBg} />}
               {serviciosRegulares.map(servicio => (
-                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} sinBorde={servicio.id === ultimoServicioId} />
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} fuenteNombre={d.fuenteNombre} fuentePrecio={d.fuentePrecio} sinBorde={servicio.id === ultimoServicioId} />
               ))}
             </div>
           )}
@@ -225,7 +289,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
             <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
               {mostrarSubheaders && <SectionPill texto={t('sectionPromociones')} accent={accent} accentBg={accentBg} />}
               {serviciosPromo.map(servicio => (
-                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} sinBorde={servicio.id === ultimoServicioId} />
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} fuenteNombre={d.fuenteNombre} fuentePrecio={d.fuentePrecio} sinBorde={servicio.id === ultimoServicioId} />
               ))}
             </div>
           )}
@@ -243,7 +307,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, telef
         {(nota || (nombreFooter && telefono)) && (
           <div
             style={{
-              marginTop: 20, paddingTop: 14, borderTop: `1px solid ${tokens.dividerColor}`,
+              marginTop: d.footerMarginTop, paddingTop: d.footerPaddingTop, borderTop: `1px solid ${tokens.dividerColor}`,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
             }}
           >
@@ -329,9 +393,9 @@ function SectionPill({ texto, accent, accentBg }: { texto: string; accent: strin
 
 // Fila individual — extraída para no duplicar el markup entre el grupo de
 // servicios y el de promociones (ver split por es_promo en TarjetaPrecios).
-// `paddingY` llega desde TarjetaPrecios (ver `compacta`) — mismo criterio de
+// `paddingY` llega desde TarjetaPrecios (ver NIVELES_DENSIDAD) — mismo criterio de
 // densidad que el resto de la tarjeta, no un valor propio.
-function FilaServicio({ servicio, tokens, paddingY, sinBorde = false }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number; sinBorde?: boolean }) {
+function FilaServicio({ servicio, tokens, paddingY, fuenteNombre, fuentePrecio, sinBorde = false }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number; fuenteNombre: number; fuentePrecio: number; sinBorde?: boolean }) {
   return (
     <div
       style={{
@@ -342,7 +406,7 @@ function FilaServicio({ servicio, tokens, paddingY, sinBorde = false }: { servic
     >
       <span
         style={{
-          flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 400, letterSpacing: 0.2,
+          flex: 1, minWidth: 0, fontSize: fuenteNombre, fontWeight: 400, letterSpacing: 0.2,
           color: tokens.nombreColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}
       >
@@ -353,7 +417,7 @@ function FilaServicio({ servicio, tokens, paddingY, sinBorde = false }: { servic
           // tokens.precioFontWeight (no un valor fijo): varía por plantilla
           // (ver estilos.ts) — la variación entre estilos se mantiene, solo
           // que ninguno "grita" tanto como antes (17px -> 13px).
-          fontSize: 13, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
+          fontSize: fuentePrecio, fontWeight: tokens.precioFontWeight, color: tokens.precioColor,
           letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
           whiteSpace: 'nowrap',
         }}

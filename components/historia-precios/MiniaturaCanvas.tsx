@@ -14,6 +14,9 @@ interface Props {
   profesionalNombre?: string;
   nota?: string;
   notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
+  // Densidad ya resuelta por el canvas principal (mismo contenido => mismo
+  // nivel en toda plantilla). La miniatura nunca mide.
+  nivelDensidad?: number;
   // Target on-screen width of the thumbnail — height is derived to keep
   // BASE_WIDTH/BASE_HEIGHT's aspect ratio.
   width:         number;
@@ -26,7 +29,7 @@ interface Props {
 // is smaller, the DOM node under the transform is untouched. Thumbnails are
 // inert (`pointer-events: none`): no drag/click passthrough into the canvas
 // underneath, selection happens on the wrapping button in SelectorPlantilla.
-export function MiniaturaCanvas({ templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, width }: Props) {
+export function MiniaturaCanvas({ templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, nivelDensidad, width }: Props) {
   const scale  = width / BASE_WIDTH;
   const height = BASE_HEIGHT * scale;
 
@@ -48,6 +51,7 @@ export function MiniaturaCanvas({ templateId, fotos, titulo, servicios, nombreNe
           profesionalNombre={profesionalNombre}
           nota={nota}
           notaAlineacion={notaAlineacion}
+          nivelDensidad={nivelDensidad ?? 0}
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ import { TemplateId } from '@/services/profesionalService';
 import { Servicio } from '@/services/servicioService';
 import { TEMPLATES } from './catalogo';
 import { TarjetaPrecios } from './TarjetaPrecios';
+import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 
 export const BASE_WIDTH  = 420;
 export const BASE_HEIGHT = (BASE_WIDTH * 16) / 9;
@@ -19,6 +20,10 @@ interface Props {
   profesionalNombre?: string;
   nota?: string;
   notaAlineacion?: 'left' | 'center' | 'right' | 'justify';
+  // Ver TarjetaPrecios: el canvas principal mide y reporta (`onFitChange`,
+  // estable); las miniaturas pasan `nivelDensidad` y no miden.
+  nivelDensidad?: number;
+  onFitChange?:   (resultado: ResultadoDensidad) => void;
 }
 
 // HistoriaPreciosCanvas — always renders at the intrinsic BASE_WIDTH /
@@ -31,7 +36,7 @@ interface Props {
 // matches export" guarantee (spec: price-story-templates). See design
 // decision D3 in sdd/dynamic-price-story.
 export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function HistoriaPreciosCanvas(
-  { templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion },
+  { templateId, fotos, titulo, servicios, nombreNegocio, telefono, profesionalNombre, nota, notaAlineacion, nivelDensidad, onFitChange },
   ref
 ) {
   const template = TEMPLATES.find(t => t.id === templateId) ?? TEMPLATES[0];
@@ -60,6 +65,8 @@ export const HistoriaPreciosCanvas = forwardRef<HTMLDivElement, Props>(function 
             notaAlineacion={notaAlineacion}
             variante={template.cardVariant}
             align={template.align}
+            nivelDensidad={nivelDensidad}
+            onFitChange={onFitChange}
           />
         </Layout>
       </div>
