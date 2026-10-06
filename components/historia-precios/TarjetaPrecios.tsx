@@ -14,6 +14,9 @@ interface Props {
   // tarjeta (ver el split por es_promo más abajo), así que ya no hay un
   // título por modo.
   titulo:    string;
+  // Subtítulo opcional bajo el título (nombre de la categoría en el modo "una
+  // por categoría"). Es parte del contenido medido por el ajuste.
+  subtitulo?: string;
   // Servicios activos del profesional (es_promo:true y es_promo:false
   // mezclados, ver useHistoriaPrecios.serviciosActivos) — TarjetaPrecios no
   // filtra ni lee el store, solo agrupa por es_promo para el render (ver
@@ -105,7 +108,7 @@ const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
 const ACCENT_CLARO     = '#E8E5E1';
 const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
 
-export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange, reservaInferior = 0 }: Props) {
+export function TarjetaPrecios({ tokens, titulo, subtitulo, servicios, nombreNegocio, profesionalNombre, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange, reservaInferior = 0 }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const nombreFooter = profesionalNombre || nombreNegocio;
   const esPanel = variante === 'panel';
@@ -157,7 +160,7 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, profe
 
   const firma = JSON.stringify([
     servicios.map(s => [s.id, s.nombre, s.precio, s.es_promo]),
-    titulo, nota ?? '', nombreFooter ?? '', reservaInferior, variante, fuentesListas,
+    titulo, subtitulo ?? '', nota ?? '', nombreFooter ?? '', reservaInferior, variante, fuentesListas,
   ]);
   const [medicion, setMedicion] = useState({ firma, nivel: 0, fin: false });
   let estado = medicion;
@@ -261,6 +264,20 @@ export function TarjetaPrecios({ tokens, titulo, servicios, nombreNegocio, profe
         >
           {titulo}
         </span>
+        {/* Subtítulo (categoría): 10px mayúsculas con tracking .14em. Usa
+            `accent` (variante clara/oscura de la tarjeta) y no un verde fijo:
+            en las plantillas oscuras el verde no contrasta. */}
+        {subtitulo && (
+          <span
+            data-testid="tarjeta-subtitulo"
+            style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: accent, marginTop: 6,
+            }}
+          >
+            {subtitulo}
+          </span>
+        )}
         {/* Barra de acento bajo el título — referencia visual real que mandó
             el usuario (ejemplo.png). `accent` (ver comment arriba), no
             tokens.precioColor: probado antes, en la mayoría de plantillas es

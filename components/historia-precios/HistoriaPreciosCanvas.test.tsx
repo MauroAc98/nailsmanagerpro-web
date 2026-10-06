@@ -60,3 +60,14 @@ describe('HistoriaPreciosCanvas · pie', () => {
     expect(screen.getAllByTestId('historia-precios-pie')).toHaveLength(1);
   });
 });
+
+describe('HistoriaPreciosCanvas · subtítulo', () => {
+  it('pasa el subtítulo a la tarjeta', () => {
+    renderCanvas({ subtitulo: 'Pies' });
+    expect(screen.getByTestId('tarjeta-subtitulo').textContent).toBe('Pies');
+  });
+  it('sin subtítulo no se renderiza', () => {
+    renderCanvas();
+    expect(screen.queryByTestId('tarjeta-subtitulo')).toBeNull();
+  });
+});

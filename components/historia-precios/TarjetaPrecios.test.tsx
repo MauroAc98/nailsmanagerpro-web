@@ -141,3 +141,34 @@ describe('TarjetaPrecios · pie fuera de la tarjeta', () => {
     expect(screen.getByTestId('tarjeta-contenedor').style.bottom).toBe('0px');
   });
 });
+
+describe('TarjetaPrecios · subtítulo de categoría', () => {
+  it('sin subtitulo no renderiza nada extra', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta();
+    expect(screen.queryByTestId('tarjeta-subtitulo')).toBeNull();
+  });
+
+  it('con subtitulo lo muestra bajo el título, en mayúsculas', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ subtitulo: 'Pies' });
+    const sub = screen.getByTestId('tarjeta-subtitulo');
+    expect(sub.textContent).toBe('Pies');
+    expect(sub.style.textTransform).toBe('uppercase');
+    expect(sub.style.fontSize).toBe('10px');
+  });
+
+  it('forma parte del contenido medido: cambiarlo re-mide desde el nivel 0', () => {
+    alturasPorNivel = [900, 800, 700, 650];
+    const { onFitChange, rerender } = renderTarjeta({ subtitulo: 'Pies' });
+    expect(card().dataset.densidad).toBe('2');
+    alturasPorNivel = [500, 400, 300, 250];
+    rerender(
+      <TarjetaPrecios
+        tokens={estiloFeature} titulo="Precios" servicios={lista(3)} subtitulo="Uñas"
+        nombreNegocio="Salón" onFitChange={onFitChange}
+      />,
+    );
+    expect(card().dataset.densidad).toBe('0');
+  });
+});
