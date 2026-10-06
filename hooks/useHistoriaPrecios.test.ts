@@ -125,6 +125,42 @@ describe('useHistoriaPrecios.selección de servicios', () => {
     expect(result.current.hayFotos).toBe(true);
   });
 
+  it('puedeCapturar exige que el contenido entre (entra) y se recupera al volver a entrar', () => {
+    useProfesionalStore.setState({
+      profesionales: [
+        profesional({
+          id: 1,
+          servicios: serviciosDelStore.map(s => ({ id: s.id })) as Servicio[],
+          historia_precios_fotos: [{ id: 1, url: 'x', orden: 0 }] as Profesional['historia_precios_fotos'],
+        }),
+      ],
+    });
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.entra).toBe(true);
+    expect(result.current.puedeCapturar).toBe(true);
+    act(() => result.current.onFitChange({ nivel: 3, entra: false }));
+    expect(result.current.entra).toBe(false);
+    expect(result.current.nivelDensidad).toBe(3);
+    expect(result.current.puedeCapturar).toBe(false);
+    act(() => result.current.onFitChange({ nivel: 1, entra: true }));
+    expect(result.current.puedeCapturar).toBe(true);
+  });
+
+  it('onFitChange es estable y no re-renderiza con el mismo resultado', () => {
+    let renders = 0;
+    const { result } = renderHook(() => { renders++; return useHistoriaPrecios(); });
+    const fn = result.current.onFitChange;
+    act(() => result.current.onFitChange({ nivel: 2, entra: true }));
+    // React puede gastar un render extra al descartar el primer setState
+    // idéntico; a partir de ahí repetir el mismo resultado no debe renderizar.
+    act(() => result.current.onFitChange({ nivel: 2, entra: true }));
+    const antes = renders;
+    act(() => result.current.onFitChange({ nivel: 2, entra: true }));
+    act(() => result.current.onFitChange({ nivel: 2, entra: true }));
+    expect(renders).toBe(antes);
+    expect(result.current.onFitChange).toBe(fn);
+  });
+
   it('cambiar de profesional resetea la selección', () => {
     const { result } = renderHook(() => useHistoriaPrecios());
     act(() => result.current.setExcluidosIds(new Set([2])));

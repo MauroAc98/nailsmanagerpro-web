@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { filtrarPorSeleccion } from '@/lib/historiaSeleccion';
+import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 import { profesionalJefa, TemplateId, NotaHistoriaPrecios, NotaHistoriaPreciosModo, AlineacionNota } from '@/services/profesionalService';
 
 const DEFAULT_TEMPLATE: TemplateId = 'feature';
@@ -334,7 +335,18 @@ export function useHistoriaPrecios() {
   const hayFotos = fotosOrdenadas.length > 0;
   // Sin servicios elegidos no hay nada que capturar (la tarjeta saldría
   // vacía), aunque haya fotos.
-  const puedeCapturar = hayFotos && serviciosActivos.length > 0;
+  //
+  // Ajuste al contenido (TarjetaPrecios mide y reporta por onFitChange): si ni
+  // con la densidad más compacta entra con letra legible (`entra` false), no
+  // se puede capturar — la imagen perdería servicios. Estable (useCallback) y
+  // sin re-render si el resultado no cambió, para no armar loops con el
+  // useLayoutEffect de la tarjeta.
+  const [ajuste, setAjuste] = useState<ResultadoDensidad>({ nivel: 0, entra: true });
+  const onFitChange = useCallback((r: ResultadoDensidad) => {
+    setAjuste(prev => (prev.nivel === r.nivel && prev.entra === r.entra ? prev : r));
+  }, []);
+  const { entra, nivel: nivelDensidad } = ajuste;
+  const puedeCapturar = hayFotos && serviciosActivos.length > 0 && entra;
 
   // ─────────────────────────────────────────────
   // Captura — delega en prepararImagenesParaCaptura (lib/historia/captura.ts)
@@ -468,6 +480,9 @@ export function useHistoriaPrecios() {
 
     // photos
     fotos: fotosOrdenadas, fotosUrls, hayFotos, puedeCapturar,
+
+    // fit-to-content (ver TarjetaPrecios)
+    entra, nivelDensidad, onFitChange,
 
     // capture / export
     canvasRef, capturar, descargarImagen, compartirImagen,
