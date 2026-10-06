@@ -150,7 +150,7 @@ describe('EstadoReservaScreen', () => {
           profesionales: [{ id: 1, nombre: 'Ana', avatarUrl: null }], pagoHabilitado: true,
         }),
         getServices: async () => [{ id: 1, nombre: 'Esmaltado', duracionMinutos: 45, precio: 12000, fotos: [] }],
-        getTerms: async () => ({ deposito: 10000, ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24 }),
+        getTerms: async () => ({ deposito: 10000, senaTipo: 'fijo', senaPorcentaje: null, ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24 }),
         getReservationStatus: async () => ({
           id: 'real-1',
           status: 'pending_payment' as const,
@@ -379,5 +379,33 @@ describe('EstadoReservaScreen', () => {
     });
     montar();
     expect(await screen.findByRole('alert')).toHaveTextContent('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.');
+  });
+
+  describe('seña sin monto conocido (deposito null o 0)', () => {
+    const sinDeposito = (deposito: number | null, status?: 'confirmed') => {
+      setServiceParaTests({
+        ...svc,
+        getReservationStatus: async (slug: string, id: string) => {
+          const base = await svc.getReservationStatus(slug, id);
+          return { ...base, ...(status ? { status } : {}), summary: { ...base.summary, deposito } };
+        },
+      } as MockReservaOnlineService);
+    };
+
+    it.each([null, 0])('pendiente con deposito %s: no muestra "Seña $..." ni null/NaN', async (d) => {
+      sinDeposito(d);
+      montar();
+      await screen.findByRole('heading', { name: 'Esperando tu pago' });
+      expect(screen.queryByText(/Seña \$/)).toBeNull();
+      expect(document.body.textContent).not.toMatch(/null|NaN/);
+    });
+
+    it.each([null, 0])('confirmada con deposito %s: oculta la fila "Seña pagada"', async (d) => {
+      sinDeposito(d, 'confirmed');
+      montar();
+      await screen.findByRole('heading', { name: '¡Turno confirmado!' });
+      expect(screen.queryByText('Seña pagada')).toBeNull();
+      expect(document.body.textContent).not.toMatch(/null|NaN/);
+    });
   });
 });

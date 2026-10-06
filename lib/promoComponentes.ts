@@ -173,3 +173,9 @@ export const resumenComponentes = (componentes: ComponenteDraft[], servicios: Se
   const precioOverride = tieneComponentes ? precioAGuardar(precioComponentes, sumaActual) : null;
   return { aGuardar, tieneComponentes, sumaActual, precioOverride };
 };
+
+// Total single price of a promo with components: the typed override when
+// there is one, otherwise the sum of the components. Used by the deposit
+// preview, which needs one price to work from.
+export const precioTotalPromo = (precioComponentes: string, suma: number): number =>
+  precioAGuardar(precioComponentes, suma) ?? suma;

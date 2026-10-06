@@ -15,6 +15,7 @@ import {
   formatearMontoSena,
   armarDatosCuentaSena,
   type SenaCampo,
+  type SenaModo,
 } from '@/lib/senaConfig';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
@@ -22,6 +23,10 @@ const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 type TipoPreview = 'confirmacion' | 'recordatorio';
 
 interface Props {
+  // Modo de la seña configurado en "Seña y pagos". La seña por transferencia
+  // bancaria en WhatsApp solo funciona con monto fijo: el backend la rechaza
+  // en modo porcentaje.
+  senaTipo: SenaModo;
   // Monto de seña: solo lectura acá. El campo editable vive en "Seña y
   // pagos" (junto al estado de Mercado Pago) desde el rediseño de Perfil —
   // este sheet solo lo usa para el preview del mensaje y para saber si
@@ -183,7 +188,7 @@ function IconMapPin() {
 }
 
 export function SheetNegocio({
-  senaMonto,
+  senaTipo, senaMonto,
   whatsappPideSena, setWhatsappPideSena,
   senaTitular, setSenaTitular, senaEntidad, setSenaEntidad,
   senaAlias, setSenaAlias, senaCbu, setSenaCbu,
@@ -208,7 +213,8 @@ export function SheetNegocio({
   // El monto ahora se carga en "Seña y pagos", no acá — si todavía no hay
   // uno válido, este toggle no puede activarse (mismo patrón que
   // faltaUbicacion: no bloquea uno que ya esté ON).
-  const faltaMonto = montoActual === undefined || montoActual <= 0;
+  const esPorcentaje = senaTipo === 'porcentaje';
+  const faltaMonto = senaTipo === 'ninguna' || !esPorcentaje && (montoActual === undefined || montoActual <= 0);
 
   // Código de validación local -> mensaje traducido. Los errores del backend
   // ya llegan como string completo, así que el fallback (`?? v`) los deja pasar.
@@ -228,6 +234,7 @@ export function SheetNegocio({
   const handleGuardar = () => {
     if (whatsappPideSena) {
       const errs = validarSenaConfig({
+        tipo: senaTipo,
         monto: montoActual,
         direccion: direccionNegocio,
         titular: senaTitular,
@@ -238,6 +245,7 @@ export function SheetNegocio({
       // no puede activarse sin uno válido, así que ese error nunca tiene
       // dónde mostrarse acá — si el mapa lo trae de todos modos, se ignora.
       delete errs.sena_monto;
+      delete errs.sena_porcentaje;
       if (Object.keys(errs).length > 0) {
         setErroresLocales(errs);
         return;
@@ -280,7 +288,7 @@ export function SheetNegocio({
           <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>
             {t('depositAmountMovedNotice')}
           </p>
-          {!faltaMonto && (
+          {!faltaMonto && !esPorcentaje && (
             <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: colors.text }}>
               {formatearMontoSena(montoActual!)}
             </p>
@@ -301,7 +309,7 @@ export function SheetNegocio({
         <PillToggle
           value={whatsappPideSena}
           onChange={setWhatsappPideSena}
-          disabled={(faltaUbicacion || faltaMonto) && !whatsappPideSena}
+          disabled={(faltaUbicacion || faltaMonto || esPorcentaje) && !whatsappPideSena}
           ariaLabel={t('depositRequest')}
         />
       </div>
@@ -309,6 +317,12 @@ export function SheetNegocio({
       {faltaUbicacion && (
         <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
           {t('depositLocationRequiredWarning')}
+        </p>
+      )}
+
+      {esPorcentaje && (
+        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
+          {t('depositPercentNeedsFixedWarning')}
         </p>
       )}
 

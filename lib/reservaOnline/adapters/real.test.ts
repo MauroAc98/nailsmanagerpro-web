@@ -111,6 +111,8 @@ describe('real: mapeo', () => {
     expect((await r.getServices('ana'))[1].promoComponentizada).toBe(true);
     expect(await r.getTerms('ana')).toEqual({
       deposito: 10000,
+      senaTipo: 'fijo',
+      senaPorcentaje: null,
       ventanaPagoMinutos: 15,
       anticipacionMinutos: 120,
       ventanaCancelacionHoras: 24,
@@ -118,6 +120,16 @@ describe('real: mapeo', () => {
     const d = await r.getAvailability('ana', { fecha: '2026-09-25', servicioIds: [7, 9] });
     expect(d.duracionTotalMinutos).toBe(90);
     expect(d.slots[1]).toEqual({ hora: '10:30', profesionalIds: [3, 4] });
+  });
+
+  it('getTerms en modo porcentaje: deposito null + senaTipo/senaPorcentaje', async () => {
+    const base = crearBackendFalso();
+    const adapter: AxiosAdapter = (config) =>
+      (config.url ?? '').includes('/terminos')
+        ? respuesta(config, 200, { ...TERMINOS, deposito: null, sena_tipo: 'porcentaje', sena_porcentaje: 30 })
+        : base(config);
+    const r = createRealReads(crearPublicHttp({ baseURL: 'https://api.test/api', adapter }));
+    expect(await r.getTerms('ana')).toMatchObject({ deposito: null, senaTipo: 'porcentaje', senaPorcentaje: 30 });
   });
 
   it('mapea el detalle de una promo (modo y componentes en orden) y no inventa nada en un servicio comun', async () => {

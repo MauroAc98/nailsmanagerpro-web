@@ -13,6 +13,7 @@ import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import PillToggle from '@/components/PillToggle';
+import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import EstadoReservaOnlineCard from '@/components/servicios/EstadoReservaOnlineCard';
@@ -24,6 +25,7 @@ import {
   draftsDesdeDetalle, duracionDerivada, erroresGuardarComponentes, hayFilaIncompleta, paraleloDisponible,
   payloadComponentes, precioAGuardar, precioInicialComponentes, resumenComponentes, serviciosComponibles, sumaComponentes,
   type ComponenteDraft, type ProblemaFila,
+  precioTotalPromo,
 } from '@/lib/promoComponentes';
 
 const inputStyle: React.CSSProperties = {
@@ -346,6 +348,9 @@ export default function EditarServicioPage() {
             onBeforeNavigate={guardarBorradorActual}
           />
         )}
+        {mostrarComponentes && tieneComponentes && (
+          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} onUsarPrecio={setPrecioComponentes} />
+        )}
 
         {/* Duración y precio: con la promo activa y componentes posibles se
             arman desde ellos — ComponentesPromoSection muestra la duración
@@ -368,6 +373,8 @@ export default function EditarServicioPage() {
                 inputMode="decimal"
               />
             </div>
+
+            <SenaPreviewServicio precio={precio} onUsarPrecio={setPrecio} />
           </>
         )}
 

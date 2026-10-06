@@ -32,6 +32,8 @@ const CODIGOS_CONOCIDOS: Record<string, ReservaOnlineErrorCode> = {
   // a diferencia de mp_no_conectado, que es permanente hasta que se
   // configure y merece el bloqueo de pantalla completa.
   mp_no_conectado: 'mp_no_conectado',
+  // Seña por porcentaje y la reserva no tiene total calculable (422 con code).
+  sena_sin_total: 'sena_sin_total',
 };
 
 // Traductor unico de errores HTTP -> ReservaOnlineError, usado por lecturas y

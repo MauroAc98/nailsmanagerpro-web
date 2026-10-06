@@ -12,6 +12,7 @@ type Props = Parameters<typeof SheetNegocio>[0];
 
 function setup(overrides: Partial<Props> = {}) {
   const props: Props = {
+    senaTipo: 'fijo',
     senaMonto: '5000',
     whatsappPideSena: false,
     setWhatsappPideSena: vi.fn(),
@@ -68,6 +69,41 @@ describe('SheetNegocio — seña opt-in toggle', () => {
     const props = setup({ whatsappPideSena: false });
     fireEvent.click(senaToggle());
     expect(props.setWhatsappPideSena).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('SheetNegocio — sin seña', () => {
+  it('behaves as with no amount configured: warning shown and toggle blocked', () => {
+    setup({ senaTipo: 'ninguna', senaMonto: '', whatsappPideSena: false });
+    expect(screen.getByText(/Cargá el monto de la seña en Seña y pagos/)).toBeInTheDocument();
+    expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByText(/necesita una seña de monto fijo/)).toBeNull();
+  });
+
+  it('still lets the user turn it off when it was already on', () => {
+    setup({ senaTipo: 'ninguna', senaMonto: '', whatsappPideSena: true });
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+describe('SheetNegocio — seña en modo porcentaje', () => {
+  it('explains that the bank-transfer seña needs a fixed amount and blocks turning it on', () => {
+    setup({ senaTipo: 'porcentaje', senaMonto: '', whatsappPideSena: false });
+    expect(screen.getByText(/necesita una seña de monto fijo/)).toBeInTheDocument();
+    expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByText(/Cargá el monto de la seña en Seña y pagos/)).toBeNull();
+  });
+
+  it('keeps the hint but still lets the user turn it off when it was already on', () => {
+    setup({ senaTipo: 'porcentaje', whatsappPideSena: true });
+    expect(screen.getByText(/necesita una seña de monto fijo/)).toBeInTheDocument();
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('fixed mode shows no hint', () => {
+    setup({ senaTipo: 'fijo' });
+    expect(screen.queryByText(/necesita una seña de monto fijo/)).toBeNull();
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
 

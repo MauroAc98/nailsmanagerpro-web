@@ -47,7 +47,7 @@ interface EstadoDto extends BasicoDto {
     fecha: string;
     hora: string;
     duracion_total_minutos: number;
-    deposito: number;
+    deposito: number | null;
     nota: string | null;
     // Solo en reservas de varias profesionales.
     fin?: string;
@@ -182,7 +182,7 @@ export function createRealWrites(http: AxiosInstance, opts: RealWritesOptions = 
           profesionalId: data.resumen.profesional_id,
           fecha: data.resumen.fecha,
           hora: data.resumen.hora,
-          deposito: data.resumen.deposito,
+          deposito: data.resumen.deposito ?? null,
           duracionTotalMinutos: data.resumen.duracion_total_minutos,
           nota: data.resumen.nota ?? undefined,
           ...(data.resumen.tramos

@@ -383,4 +383,106 @@ describe('ResumenScreen', () => {
       expect(ir).not.toHaveBeenCalledWith(expect.stringContaining('/reserva/'));
     });
   });
+
+  describe('seña por porcentaje', () => {
+    const terminosPct = (porcentaje: number, deposito: number | null = null) => ({
+      deposito, senaTipo: 'porcentaje' as const, senaPorcentaje: porcentaje,
+      ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24,
+    });
+
+    it('muestra "N% del total de tu reserva" y no inventa un monto ($null, NaN, $0)', async () => {
+      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30) } as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('Seña para reservar');
+      expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
+    });
+
+    it('formatea el porcentaje sin ceros finales ni decimales de mas', async () => {
+      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(12.5) } as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByText('12,5% del total de tu reserva')).toBeInTheDocument();
+    });
+
+    it('si ademas hay monto conocido, lo muestra en pesos', async () => {
+      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30, 4500) } as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('30% del total de tu reserva');
+      expect(screen.getByText('$4.500')).toBeInTheDocument();
+    });
+
+    // Sin monto en los terminos, el exacto sale de la reserva retenida (lo que cobra MP).
+    const conResumen = (deposito: number | null, extra: Partial<MockReservaOnlineService> = {}) => {
+      const getReservationStatus = vi.fn(async (slug: string, id: string) => ({
+        id, status: 'pending_payment' as const, expiresAtMs: AHORA + 15 * MIN, checkoutUrl: '',
+        summary: { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '13:00', deposito, duracionTotalMinutos: 75 },
+        slug,
+      }));
+      setServiceParaTests({
+        ...svc, getTerms: async () => terminosPct(30), getReservationStatus, ...extra,
+      } as unknown as MockReservaOnlineService);
+      return getReservationStatus;
+    };
+
+    it('con la reserva retenida muestra el monto exacto y el porcentaje como texto secundario', async () => {
+      const getReservationStatus = conResumen(4200);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByText('$4.200')).toBeInTheDocument();
+      expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
+      expect(getReservationStatus).toHaveBeenCalledWith('demo', useReservaOnlineStore.getState().hold?.reservaId);
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeEnabled();
+      expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
+    });
+
+    it('mientras busca el monto muestra un loader y el boton de pagar queda deshabilitado', async () => {
+      conResumen(4200, { getReservationStatus: () => new Promise(() => {}) } as never);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('30% del total de tu reserva');
+      expect(screen.getByRole('status', { name: 'Calculando tu seña' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
+      expect(document.body.textContent).not.toMatch(/Cargando|null|NaN/);
+    });
+
+    it('si no se puede traer el monto, avisa con el mensaje amable y no deja pagar a ciegas', async () => {
+      conResumen(null, {
+        getReservationStatus: async () => {
+          throw new ReservaOnlineError('unknown');
+        },
+      } as never);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva.');
+      expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
+      expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
+    });
+
+    it('si el monto vuelve null o 0, tampoco deja pagar ni muestra un precio', async () => {
+      conResumen(0);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva.');
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
+    });
+
+    it('con seña fija no consulta la reserva y el boton queda habilitado', async () => {
+      const getReservationStatus = vi.fn();
+      setServiceParaTests({ ...svc, getReservationStatus } as unknown as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByRole('button', { name: /Pagar seña con/ })).toBeEnabled();
+      expect(getReservationStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  it('si el backend no puede calcular la seña (sena_sin_total) muestra un mensaje amable, no el generico', async () => {
+    setServiceParaTests({
+      ...svc,
+      iniciarPago: async () => {
+        throw new ReservaOnlineError('sena_sin_total');
+      },
+    });
+    const ir = vi.fn();
+    renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva. Escribile al salón para confirmarla.');
+    expect(ir).not.toHaveBeenCalled();
+  });
 });

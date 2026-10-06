@@ -22,13 +22,18 @@ export interface User {
   confirmacion_automatica: boolean;
   recordatorio_automatico: boolean;
   hora_recordatorio: string;
+  // Cómo se calcula la seña: monto fijo o porcentaje del precio. El backend
+  // limpia el campo del modo no elegido.
+  sena_tipo: 'fijo' | 'porcentaje';
+  sena_porcentaje: number | null;
   sena_monto: number | null;
-  // Retención de Ingresos Brutos que MP le aplica al negocio (%). Cast
-  // 'float' en el backend: llega como number; 0 = no se suma al cobro.
+  // Retención de impuestos que MP le aplica al negocio (%; el nombre del campo
+  // quedó por historia). Cast 'float' en el backend: llega como number; 0 = no
+  // hay retención.
   retencion_iibb_porcentaje: number;
-  // Comisión de MP propia del negocio (%, sin IVA). null = usa la tasa
-  // estándar global del panel de admin.
-  comision_mp_porcentaje: number | null;
+  // Comisión vigente de MP con IVA ya aplicado (ej. 7.61), solo lectura: la
+  // define el panel de admin. Nunca se hardcodea en el front.
+  comision_mp_vigente: number;
   // Opt-in por salón para pedir seña en la confirmación de WhatsApp
   // (plantilla `reserva_turno_sena`). Cuando es `true`, el backend exige
   // `sena_monto > 0`, `direccion`, `whatsapp_sena_titular` y (alias o CBU).

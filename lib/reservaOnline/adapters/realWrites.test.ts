@@ -313,6 +313,19 @@ describe('createRealWrites: getReservationStatus de un grupo', () => {
     expect(summary.profesionales).toEqual([{ id: 4, nombre: 'Ana' }, { id: 3, nombre: 'Laura' }]);
   });
 
+  it('resumen.deposito null (porcentaje sin total) llega como null, no 0 ni NaN', async () => {
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) =>
+        respuesta(config, 200, {
+          token: TOKEN, estado: 'pending_payment', expira_en_ms: 1,
+          resumen: { servicio_ids: [7], profesional_id: 3, fecha: '2026-09-25', hora: '10:00', duracion_total_minutos: 45, deposito: null, nota: null },
+        }),
+    });
+    const { summary } = await createRealWrites(http, { deviceToken: () => 'd'.repeat(32) }).getReservationStatus('ana', TOKEN);
+    expect(summary.deposito).toBeNull();
+  });
+
   it('un resumen de un solo tramo no suma campos nuevos (Rule L)', async () => {
     const { summary } = await nuevo().getReservationStatus('ana', TOKEN);
     expect(Object.keys(summary).sort()).toEqual(

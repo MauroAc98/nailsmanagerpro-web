@@ -81,6 +81,7 @@ export type ReservaOnlineErrorCode =
   | 'verification_required'
   | 'creation_disabled'
   | 'mp_no_conectado'
+  | 'sena_sin_total'
   | 'unknown';
 
 export class ReservaOnlineError extends Error {

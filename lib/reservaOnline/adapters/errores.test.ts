@@ -24,6 +24,7 @@ describe('traducirErrorHttp', () => {
       ['verification_required', 'verification_required'],
       ['creation_disabled', 'creation_disabled'],
       ['mp_no_conectado', 'mp_no_conectado'],
+      ['sena_sin_total', 'sena_sin_total'],
     ];
     for (const [code, esperado] of casos) {
       const err = traducirErrorHttp(axiosError(409, { message: 'x', code }));
