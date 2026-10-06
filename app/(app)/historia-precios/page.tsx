@@ -14,6 +14,8 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from '@/components/historia-precios/HistoriaPreciosCanvas';
 import { SelectorPlantilla } from '@/components/historia-precios/SelectorPlantilla';
 import { GestorFotos } from '@/components/historia-precios/GestorFotos';
+import { SeleccionServicios } from '@/components/historia-precios/SeleccionServicios';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 
 // ─────────────────────────────────────────────
 // Responsive preview wrapper — HistoriaPreciosCanvas ALWAYS renders at its
@@ -44,20 +46,23 @@ export default function HistoriaPreciosPage() {
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { servicios, fetchServicios }         = useServiciosStore();
+  const { categorias, fetchCategorias }      = useCategoriasServicioStore();
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
     if (servicios.length === 0) fetchServicios();
+    fetchCategorias();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
-    effectiveProfesionalId, serviciosActivos,
+    effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
+    excluidosIds, setExcluidosIds,
     selectedProfesionalId, setSelectedProfesionalId,
     nombreNegocio, telefono,
     templateId, handleTemplateChange,
     notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
     notaActiva, setNotaActiva,
     notaAlineacion, setNotaAlineacion,
-    fotos, fotosUrls, puedeCapturar,
+    fotos, fotosUrls, hayFotos, puedeCapturar,
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
 
@@ -139,7 +144,7 @@ export default function HistoriaPreciosPage() {
               el preview de arriba con una imagen rota (`fotos[0]`
               undefined). Muestra el mismo mensaje que ya existía más abajo
               (`emptyPhotosState`), ahora también acá arriba. */}
-          {!puedeCapturar ? (
+          {!hayFotos ? (
             <p style={{ fontSize: 13, color: colors.subtext, textAlign: 'center', margin: '20px 0' }}>
               {t('emptyPhotosState')}
             </p>
@@ -176,6 +181,16 @@ export default function HistoriaPreciosPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Qué servicios entran en la historia — selección de sesión. */}
+              {serviciosDisponibles.length > 0 && (
+                <SeleccionServicios
+                  servicios={serviciosDisponibles}
+                  categorias={categorias}
+                  excluidos={excluidosIds}
+                  onChange={setExcluidosIds}
+                />
+              )}
 
               {/* Plantilla picker */}
               <div style={{ width: '100%', marginTop: 20 }}>
@@ -303,9 +318,14 @@ export default function HistoriaPreciosPage() {
             <GestorFotos profesionalId={effectiveProfesionalId} fotos={fotos} />
           </div>
 
-          {!puedeCapturar && (
+          {!hayFotos && (
             <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '16px 0 0' }}>
               {t('emptyPhotosState')}
+            </p>
+          )}
+          {hayFotos && !puedeCapturar && (
+            <p style={{ fontSize: 12, color: colors.subtext, textAlign: 'center', margin: '16px 0 0' }}>
+              {t('seleccionVacia')}
             </p>
           )}
 
