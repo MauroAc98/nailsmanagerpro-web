@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ImagePlus } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ChevronLeft, ChevronRight, ImagePlus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PillToggle from '@/components/PillToggle';
 import SelectorProfesional from '@/components/SelectorProfesional';
@@ -15,6 +15,7 @@ import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from '@/components/his
 import { SelectorPlantilla } from '@/components/historia-precios/SelectorPlantilla';
 import { GestorFotos } from '@/components/historia-precios/GestorFotos';
 import { SeleccionServicios } from '@/components/historia-precios/SeleccionServicios';
+import { ModoHistorias } from '@/components/historia-precios/ModoHistorias';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 
 // ─────────────────────────────────────────────
@@ -57,6 +58,7 @@ export default function HistoriaPreciosPage() {
     effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
     excluidosIds, setExcluidosIds,
     selectedProfesionalId, setSelectedProfesionalId,
+    modo, setModo, historias, cantidadPorCategoria, idxHistoria, historiaActual, irAnterior, irSiguiente,
     nombreNegocio, telefono,
     templateId, handleTemplateChange,
     notaAdicional, setNotaAdicional, NOTA_MAX_LENGTH,
@@ -75,6 +77,12 @@ export default function HistoriaPreciosPage() {
   // (PillToggle más abajo), aunque el texto siga guardado — desactivar no
   // borra, así se puede reactivar sin volver a escribir.
   const notaParaMostrar = notaActiva ? notaAdicional : undefined;
+
+  // Solo lo de la historia actual va a la tarjeta/preview/captura. En modo
+  // categoría la tarjeta lleva el nombre de la categoría como subtítulo.
+  const serviciosHistoria = historiaActual?.servicios ?? [];
+  const subtituloHistoria = modo === 'categoria' ? historiaActual?.titulo ?? undefined : undefined;
+  const hayNavegacion = modo === 'categoria' && historias.length > 1;
 
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
@@ -165,7 +173,7 @@ export default function HistoriaPreciosPage() {
               {/* Canvas preview — marco tipo celular alrededor del MISMO nodo
                   que captura la exportación (ver useCanvasScale arriba); el
                   frame es puramente decorativo, no toca el nodo con canvasRef. */}
-              <div style={{ padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
+              <div style={{ position: 'relative', padding: 6, borderRadius: 26, background: colors.strong, boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
                 <div style={{ width: canvasWidth, height: canvasHeight, overflow: 'hidden', borderRadius: 20 }}>
                   <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                     <HistoriaPreciosCanvas
@@ -173,7 +181,8 @@ export default function HistoriaPreciosPage() {
                       templateId={templateId}
                       fotos={fotosUrls}
                       titulo={titulo}
-                      servicios={serviciosActivos}
+                      subtitulo={subtituloHistoria}
+                      servicios={serviciosHistoria}
                       nombreNegocio={nombreNegocio}
                       telefono={telefono}
                       profesionalNombre={profesionalSeleccionada?.nombre}
@@ -183,7 +192,18 @@ export default function HistoriaPreciosPage() {
                     />
                   </div>
                 </div>
+                {hayNavegacion && (
+                  <>
+                    <FlechaHistoria lado="left" label={t('historiaAnterior')} onClick={irAnterior} />
+                    <FlechaHistoria lado="right" label={t('historiaSiguiente')} onClick={irSiguiente} />
+                  </>
+                )}
               </div>
+              {hayNavegacion && (
+                <p style={{ margin: '10px 0 0', fontSize: 12.5, color: colors.subtext, textAlign: 'center' }}>
+                  {t('historiaPosicion', { actual: idxHistoria + 1, total: historias.length, nombre: historiaActual?.titulo ?? '' })}
+                </p>
+              )}
 
               {/* Qué servicios entran en la historia — selección de sesión. */}
               {serviciosDisponibles.length > 0 && (
@@ -192,7 +212,18 @@ export default function HistoriaPreciosPage() {
                   categorias={categorias}
                   excluidos={excluidosIds}
                   onChange={setExcluidosIds}
-                  noEntra={!entra}
+                  noEntra={modo === 'una' && !entra}
+                />
+              )}
+
+              {/* Cómo repartir lo elegido: una historia o una por categoría. */}
+              {serviciosDisponibles.length > 0 && (
+                <ModoHistorias
+                  modo={modo}
+                  onChange={setModo}
+                  cantidadServicios={serviciosActivos.length}
+                  cantidadHistorias={cantidadPorCategoria}
+                  entra={entra}
                 />
               )}
 
@@ -204,7 +235,8 @@ export default function HistoriaPreciosPage() {
                 <SelectorPlantilla
                   fotos={fotosUrls}
                   titulo={titulo}
-                  servicios={serviciosActivos}
+                  servicios={serviciosHistoria}
+                  subtitulo={subtituloHistoria}
                   nombreNegocio={nombreNegocio}
                   telefono={telefono}
                   profesionalNombre={profesionalSeleccionada?.nombre}
@@ -333,7 +365,7 @@ export default function HistoriaPreciosPage() {
               fontSize: 12, textAlign: 'center', margin: '16px 0 0',
               color: sinServicios || entra ? colors.subtext : colors.amberFg,
             }}>
-              {sinServicios || entra ? t('seleccionVacia') : t('seleccionNoEntra')}
+              {sinServicios || entra ? t('seleccionVacia') : modo === 'categoria' ? t('historiaNoEntra') : t('seleccionNoEntra')}
             </p>
           )}
 
@@ -370,8 +402,35 @@ export default function HistoriaPreciosPage() {
               <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('share')}</span>
             </button>
           </div>
+          {/* Temporal (rebanada 3a): hasta exportar todas las historias, Guardar
+              y Compartir actúan solo sobre la que se está viendo. */}
+          {modo === 'categoria' && hayFotos && (
+            <p style={{ fontSize: 12, textAlign: 'center', margin: '10px 0 0', color: colors.subtext }}>
+              {t('guardaLaQueVes')}
+            </p>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+// Flecha de navegación sobre el costado del preview (44px de área táctil).
+function FlechaHistoria({ lado, label, onClick }: { lado: 'left' | 'right'; label: string; onClick: () => void }) {
+  const Icono = lado === 'left' ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      style={{
+        position: 'absolute', top: '50%', [lado]: 14, transform: 'translateY(-50%)',
+        width: 44, height: 44, borderRadius: 22, border: 'none', cursor: 'pointer',
+        background: withAlpha(colors.surface, 'E6'), color: colors.primaryDeep,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <Icono size={20} strokeWidth={2.5} />
+    </button>
   );
 }

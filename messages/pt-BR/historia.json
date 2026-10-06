@@ -125,6 +125,7 @@
     "historiaAnterior": "Story anterior",
     "historiaSiguiente": "Próxima story",
     "historiaPosicion": "Story {actual} de {total} · {nombre}",
+    "historiaNoEntra": "Esta story não cabe com letra legível. Tire serviços para poder salvá-la.",
     "guardaLaQueVes": "Salva a story que você está vendo."
   }
 }

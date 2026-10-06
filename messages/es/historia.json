@@ -125,6 +125,7 @@
     "historiaAnterior": "Historia anterior",
     "historiaSiguiente": "Historia siguiente",
     "historiaPosicion": "Historia {actual} de {total} · {nombre}",
+    "historiaNoEntra": "Esta historia no entra con letra legible. Sacá servicios para poder guardarla.",
     "guardaLaQueVes": "Se guarda la historia que estás viendo."
   }
 }
