@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
@@ -8,6 +8,7 @@ import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { PieContacto } from '@/components/historia/PieContacto';
+import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
@@ -18,45 +19,6 @@ function nombreDia(fecha: string): string {
   // saca acá para que en la imagen quede "JUE 3", no "JUE. 3".
   const abrev = nombreDiaIntl(d, 'short', 'mayusculas').replace(/\.+$/, '');
   return `${abrev} ${d.getDate()}`;
-}
-
-// ─────────────────────────────────────────────
-// FitText — shrinks font-size until the text fits on one line, instead of
-// truncating with an ellipsis. Mirrors RN's `adjustsFontSizeToFit` (used on
-// the "horas" row) — with ellipsis, busy days with many free slots were
-// silently hiding real hours instead of just rendering them smaller.
-// ─────────────────────────────────────────────
-function FitText({
-  text, maxFontSize, minFontSize = 6, style,
-}: {
-  text: string;
-  maxFontSize: number;
-  minFontSize?: number;
-  style?: React.CSSProperties;
-}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [fontSize, setFontSize] = useState(maxFontSize);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let size = maxFontSize;
-    el.style.fontSize = `${size}px`;
-    while (el.scrollWidth > el.clientWidth && size > minFontSize) {
-      size -= 0.5;
-      el.style.fontSize = `${size}px`;
-    }
-    setFontSize(size);
-  }, [text, maxFontSize, minFontSize]);
-
-  return (
-    <span
-      ref={ref}
-      style={{ ...style, fontSize, whiteSpace: 'nowrap', overflow: 'hidden', display: 'block', width: '100%' }}
-    >
-      {text}
-    </span>
-  );
 }
 
 interface Props {
