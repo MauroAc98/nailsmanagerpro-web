@@ -8,6 +8,7 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 import { withAlpha } from '@/theme/colors';
 import { Servicio } from '@/services/servicioService';
 import { formatMontoCorto } from '@/lib/money';
+import { formatearDuracion } from '@/lib/duracion';
 import PillToggle from '@/components/PillToggle';
 
 // Mismos valores que agenda/page.tsx (SwipeableTurnoCard) — mismo gesto,
@@ -240,7 +241,7 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
                 </svg>
-                {servicio.duracion_minutos} min
+                {formatearDuracion(servicio.duracion_minutos)}
               </span>
             </div>
             {precioLabel && (
