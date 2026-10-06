@@ -253,7 +253,7 @@ function NuevoServicioContent() {
           />
         )}
         {mostrarComponentes && tieneComponentes && (
-          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} />
+          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} onUsarPrecio={setPrecioComponentes} />
         )}
 
         {/* Duración y precio: con la promo activa y 2+ personas en actividad se
@@ -277,7 +277,7 @@ function NuevoServicioContent() {
             inputMode="decimal"
           />
         </div>
-        <SenaPreviewServicio precio={precio} />
+        <SenaPreviewServicio precio={precio} onUsarPrecio={setPrecio} />
         </>)}
 
         {/* Button */}

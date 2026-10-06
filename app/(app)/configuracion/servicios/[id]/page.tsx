@@ -349,7 +349,7 @@ export default function EditarServicioPage() {
           />
         )}
         {mostrarComponentes && tieneComponentes && (
-          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} />
+          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} onUsarPrecio={setPrecioComponentes} />
         )}
 
         {/* Duración y precio: con la promo activa y componentes posibles se
@@ -374,7 +374,7 @@ export default function EditarServicioPage() {
               />
             </div>
 
-            <SenaPreviewServicio precio={precio} />
+            <SenaPreviewServicio precio={precio} onUsarPrecio={setPrecio} />
           </>
         )}
 

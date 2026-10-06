@@ -250,8 +250,11 @@
     "mpFee": "− Mercado Pago ({rate}%)",
     "taxRetention": "− Retención de impuestos",
     "netReceived": "Te llegan",
-    "collectedInSalon": "Cobrás en el salón",
-    "coveredNote": "Se le suma a la seña para que te llegue completa."
+    "costNote": "Es el {cost}% del precio.",
+    "suggestion": "Con {precio} tu cliente paga {sena} de seña y a vos te llegan {llega}, cubriendo el costo de Mercado Pago.",
+    "useSuggestion": "Usar {precio}",
+    "adjusted": "Precio ajustado. Antes: {precio}",
+    "undo": "Deshacer"
   },
   "NuevoServicioPage": {
     "title": "Nuevo servicio",
