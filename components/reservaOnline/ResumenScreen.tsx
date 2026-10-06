@@ -11,6 +11,7 @@ import { rutaPaso, rutaReserva } from '@/lib/reservaOnline/rutas';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { duracionDeServicios, formatearDuracion } from '@/lib/reservaOnline/totales';
 import { formatMontoCorto } from '@/lib/money';
+import { Spinner } from '@/components/Spinner';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, useGuardaPaso, useHold, type Ir } from './hooks';
@@ -22,6 +23,10 @@ import { ServiciosDelTurno } from './ServiciosDelTurno';
 import { BarraInferior, BotonPrimario, HoldPill, Hueso, Mensaje, PasoHeader, Tarjeta } from './ui';
 
 const AZUL_MP = '#009ee3'; // color de marca de Mercado Pago (no es del tema)
+
+// Un monto solo es mostrable si es finito y positivo: nunca $0, $null ni NaN.
+const montoValido = (n: number | null | undefined): number | null =>
+  typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null;
 
 // Fila de la tarjeta: icono en circulo suave + titulo y detalle.
 function Fila({ icono, titulo, detalle }: { icono: ReactNode; titulo: string; detalle?: string }) {
@@ -128,6 +133,23 @@ export function ResumenScreen({
     return { salon, servicios, terminos };
   }, `${slug}|${servicioIds.join(',')}`);
 
+  // Seña por porcentaje sin monto en los terminos: el monto exacto sale de la
+  // reserva retenida (el backend lo calcula sobre el precio congelado del hold y
+  // es lo mismo que cobra Mercado Pago). Con seña fija no se consulta nada.
+  const terminosDatos = data?.terminos;
+  const montoDeTerminos = montoValido(terminosDatos?.deposito);
+  const buscaMonto = terminosDatos?.senaTipo === 'porcentaje' && montoDeTerminos === null && !!hold;
+  const reservaId = hold?.reservaId;
+  const { data: resumenReserva, cargando: cargandoMonto } = useCarga(async () => {
+    if (!buscaMonto || !reservaId) return null;
+    try {
+      const estado = await getService().getReservationStatus(slug, reservaId);
+      return { deposito: montoValido(estado.summary.deposito) };
+    } catch {
+      return { deposito: null };
+    }
+  }, `${slug}|${reservaId ?? ''}|${buscaMonto}`);
+
   if (!listo) return null;
   // Reemplaza TODA la pantalla (header, boton volver, barra inferior
   // incluidos) desde que se toca "Pagar" hasta que el navegador efectivamente
@@ -144,10 +166,12 @@ export function ResumenScreen({
   const { salon, servicios, terminos } = data;
   // Monto firme de la seña, o null si no se conoce (porcentaje sin total, 0 o dato invalido):
   // nunca se muestra un $0, un $null ni un NaN como si fuera un precio.
-  const montoSena =
-    typeof terminos.deposito === 'number' && Number.isFinite(terminos.deposito) && terminos.deposito > 0
-      ? terminos.deposito
-      : null;
+  const montoSena = montoDeTerminos ?? resumenReserva?.deposito ?? null;
+  const esPorcentaje = terminos.senaTipo === 'porcentaje';
+  const calculandoMonto = esPorcentaje && montoSena === null && (cargandoMonto || (buscaMonto && !resumenReserva));
+  // En porcentaje nunca se paga a ciegas: sin monto exacto el boton queda inactivo.
+  const pagoBloqueado = esPorcentaje && montoSena === null;
+  const senaNoCalculable = pagoBloqueado && !calculandoMonto;
   const elegidos = servicioIds
     .map((id) => servicios.find((x) => x.id === id))
     .filter((x): x is NonNullable<typeof x> => !!x);
@@ -281,6 +305,7 @@ export function ResumenScreen({
               ${formatMontoCorto(montoSena)}
             </span>
           )}
+          {calculandoMonto && <Spinner size={22} label={t('resumen.senaCalculando')} />}
         </div>
         {terminos.senaTipo === 'porcentaje' && terminos.senaPorcentaje != null && (
           <div style={{ fontSize: 13, fontWeight: 600, color: colors.strong, marginTop: 4 }}>
@@ -302,7 +327,7 @@ export function ResumenScreen({
       </div>
 
       {limiteIntentos && <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>}
-      {senaSinTotal && <Mensaje tono="error">{t('errores.senaSinTotal')}</Mensaje>}
+      {(senaSinTotal || senaNoCalculable) && <Mensaje tono="error">{t('errores.senaSinTotal')}</Mensaje>}
       {errorPago && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       <BarraInferior>
@@ -313,7 +338,7 @@ export function ResumenScreen({
         {/* enviando ya no se refleja aca: mientras es true, el early return
             de arriba reemplaza toda la pantalla por RedirigiendoAMercadoPago
             (este boton nunca llega a pintarse en ese estado). */}
-        <BotonPrimario fondo={AZUL_MP} onClick={pagar}>
+        <BotonPrimario fondo={AZUL_MP} onClick={pagar} disabled={pagoBloqueado}>
           {t('resumen.pagar')} <span style={{ fontWeight: 800 }}>Mercado Pago</span>
         </BotonPrimario>
       </BarraInferior>

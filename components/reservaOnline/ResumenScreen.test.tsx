@@ -410,6 +410,66 @@ describe('ResumenScreen', () => {
       await screen.findByText('30% del total de tu reserva');
       expect(screen.getByText('$4.500')).toBeInTheDocument();
     });
+
+    // Sin monto en los terminos, el exacto sale de la reserva retenida (lo que cobra MP).
+    const conResumen = (deposito: number | null, extra: Partial<MockReservaOnlineService> = {}) => {
+      const getReservationStatus = vi.fn(async (slug: string, id: string) => ({
+        id, status: 'pending_payment' as const, expiresAtMs: AHORA + 15 * MIN, checkoutUrl: '',
+        summary: { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '13:00', deposito, duracionTotalMinutos: 75 },
+        slug,
+      }));
+      setServiceParaTests({
+        ...svc, getTerms: async () => terminosPct(30), getReservationStatus, ...extra,
+      } as unknown as MockReservaOnlineService);
+      return getReservationStatus;
+    };
+
+    it('con la reserva retenida muestra el monto exacto y el porcentaje como texto secundario', async () => {
+      const getReservationStatus = conResumen(4200);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByText('$4.200')).toBeInTheDocument();
+      expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
+      expect(getReservationStatus).toHaveBeenCalledWith('demo', useReservaOnlineStore.getState().hold?.reservaId);
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeEnabled();
+      expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
+    });
+
+    it('mientras busca el monto muestra un loader y el boton de pagar queda deshabilitado', async () => {
+      conResumen(4200, { getReservationStatus: () => new Promise(() => {}) } as never);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('30% del total de tu reserva');
+      expect(screen.getByRole('status', { name: 'Calculando tu seña' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
+      expect(document.body.textContent).not.toMatch(/Cargando|null|NaN/);
+    });
+
+    it('si no se puede traer el monto, avisa con el mensaje amable y no deja pagar a ciegas', async () => {
+      conResumen(null, {
+        getReservationStatus: async () => {
+          throw new ReservaOnlineError('unknown');
+        },
+      } as never);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva.');
+      expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
+      expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
+    });
+
+    it('si el monto vuelve null o 0, tampoco deja pagar ni muestra un precio', async () => {
+      conResumen(0);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva.');
+      expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
+    });
+
+    it('con seña fija no consulta la reserva y el boton queda habilitado', async () => {
+      const getReservationStatus = vi.fn();
+      setServiceParaTests({ ...svc, getReservationStatus } as unknown as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByRole('button', { name: /Pagar seña con/ })).toBeEnabled();
+      expect(getReservationStatus).not.toHaveBeenCalled();
+    });
   });
 
   it('si el backend no puede calcular la seña (sena_sin_total) muestra un mensaje amable, no el generico', async () => {

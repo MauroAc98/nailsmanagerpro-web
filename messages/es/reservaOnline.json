@@ -85,6 +85,7 @@
     "title": "Revisá y confirmá",
     "senaTitulo": "Seña para reservar",
     "senaPorcentaje": "{porcentaje}% del total de tu reserva",
+    "senaCalculando": "Calculando tu seña",
     "senaDetalle": "Es parte del valor final. El resto se define en el negocio según tu diseño y se abona ahí.",
     "pagar": "Pagar seña con",
     "pagando": "Creando tu reserva…",
