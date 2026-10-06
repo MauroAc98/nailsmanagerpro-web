@@ -40,15 +40,23 @@ export function FilaPromo({ titulo, hint, value, onChange }: {
   );
 }
 
-// Botón principal pegado abajo (sticky), siempre a mano aunque el formulario sea
-// largo. Se apoya sobre el bottom nav con la misma constante que los FAB.
+// Alto de la barra de guardar (12 + botón 52 + 12) y espacio que el formulario
+// debe dejar debajo del último bloque para que la barra no lo tape.
+const BARRA_ALTO = 76;
+export const FORM_PADDING_BOTTOM = BARRA_ALTO + 24;
+
+// Botón principal siempre a mano aunque el formulario sea largo. `fixed` (no
+// `sticky`): el layout envuelve el contenido en un contenedor con overflow:auto
+// y ahí sticky no se pega al borde de la pantalla. Se apoya sobre el bottom nav
+// con la misma técnica y constantes que los FAB de las listas, que ya andan en
+// Safari y en Chromium (nav-clearance + safe-area del home indicator).
 export function BarraGuardar({ onClick, disabled, label }: {
   onClick: () => void; disabled: boolean; label: string;
 }) {
   return (
     <div style={{
-      position: 'sticky', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom))`, zIndex: 5,
-      margin: '6px -20px 0', padding: '12px 20px',
+      position: 'fixed', left: 0, right: 0, bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom))`,
+      zIndex: 45, boxSizing: 'border-box', height: BARRA_ALTO, padding: '12px 20px',
       backgroundColor: colors.background, borderTop: `1px solid ${colors.hairline}`,
     }}>
       <button

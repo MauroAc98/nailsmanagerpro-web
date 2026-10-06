@@ -1,6 +1,5 @@
 'use client';
 
-import { CONTENT_BOTTOM_PADDING } from '@/constants/layout';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -109,7 +108,7 @@ export default function EditarClientePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: CONTENT_BOTTOM_PADDING }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
 
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas). */}

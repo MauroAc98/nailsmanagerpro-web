@@ -1,6 +1,5 @@
 'use client';
 
-import { CONTENT_BOTTOM_PADDING } from '@/constants/layout';
 import { Fragment, Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
@@ -477,7 +476,7 @@ function EstadisticasContent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: CONTENT_BOTTOM_PADDING }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />

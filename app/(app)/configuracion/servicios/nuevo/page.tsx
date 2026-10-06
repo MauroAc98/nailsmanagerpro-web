@@ -1,6 +1,5 @@
 'use client';
 
-import { CONTENT_BOTTOM_PADDING } from '@/constants/layout';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -14,7 +13,7 @@ import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
-import { FormSeccion, FilaPromo, BarraGuardar } from '@/components/servicios/FormServicioLayout';
+import { FormSeccion, FilaPromo, BarraGuardar, FORM_PADDING_BOTTOM } from '@/components/servicios/FormServicioLayout';
 import { Spinner } from '@/components/Spinner';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -201,7 +200,7 @@ function NuevoServicioContent() {
   return (
     // AgendaThemeScope vive en app/(app)/configuracion/servicios/layout.tsx
     // (segmento completo migrado — listado + nuevo + [id]), no acá.
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: CONTENT_BOTTOM_PADDING }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: FORM_PADDING_BOTTOM }}>
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas). */}
       <div style={{ padding: '20px 20px 4px' }}>
