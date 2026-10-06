@@ -110,6 +110,9 @@ const KEYS = {
   // aterriza en /login sin slug en la URL, sin importar por qué link se
   // instaló. Guardar el slug acá es lo único que sobrevive esa limitación.
   negocioSlug: 'negocio_slug',
+  // Último branding (nombre + logo) visto por slug — evita el parpadeo del
+  // logo en el login. Se sobrescribe con cada respuesta del backend.
+  brandingPrefix: 'negocio_branding:',
 };
 
 // El email del flujo "debe cambiar contraseña" vive en sessionStorage (no
@@ -272,7 +275,25 @@ export const authService = {
   obtenerBrandingNegocio: async (slug: string): Promise<NegocioBranding | null> => {
     try {
       const response = await api.get<NegocioBranding>(`/public/${slug}/branding`);
+      // Se recuerda para que la próxima vez que se muestre el login (ej. tras
+      // un logout) el logo ya esté disponible en el primer render, sin el
+      // salto "placeholder -> logo" de esperar la red.
+      safeSetItem(KEYS.brandingPrefix + slug, JSON.stringify(response.data));
+      if (response.data.logo_url && typeof Image !== 'undefined') {
+        new Image().src = response.data.logo_url; // calienta la caché del navegador
+      }
       return response.data;
+    } catch {
+      return null;
+    }
+  },
+
+  // Último branding conocido de este negocio en el dispositivo (síncrono).
+  getBrandingGuardado: (slug: string): NegocioBranding | null => {
+    const raw = safeGetItem(KEYS.brandingPrefix + slug);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as NegocioBranding;
     } catch {
       return null;
     }

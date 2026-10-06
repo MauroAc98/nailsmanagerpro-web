@@ -34,7 +34,15 @@ export function LoginScreen({ slug }: LoginScreenProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
-  const [branding, setBranding] = useState<NegocioBranding | null>(null);
+  // Arranca con el último branding conocido del dispositivo (si lo hay) para
+  // que el logo esté en el primer render; el fetch de abajo lo refresca. Este
+  // componente solo se monta del lado cliente (el guard de providers.tsx no
+  // renderiza children hasta que la app arrancó), así que leer localStorage
+  // acá no rompe la hidratación.
+  const [branding, setBranding] = useState<NegocioBranding | null>(() => {
+    const slugEfectivo = slug ?? authService.getSlugNegocioGuardado();
+    return slugEfectivo ? authService.getBrandingGuardado(slugEfectivo) : null;
+  });
 
   useEffect(() => {
     // Sin slug en la URL (ej. la PWA instalada, que siempre abre en /login

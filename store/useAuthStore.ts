@@ -411,6 +411,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // instalada (que siempre aterriza en /login sin slug) igual muestra
         // su logo. Ver KEYS.negocioSlug en authService.ts.
         authService.guardarSlugNegocio(result.user.slug);
+        // Calienta el branding para que el login posterior a un logout ya
+        // tenga el logo del negocio desde el primer render.
+        void authService.obtenerBrandingNegocio(result.user.slug);
         set({
           user: result.user, token: result.token, loading: false,
           mostrarBienvenida: true, esPrimerLogin: true,
