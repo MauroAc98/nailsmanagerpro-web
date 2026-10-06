@@ -263,4 +263,12 @@ describe('useHistoriaPrecios.modos de historia', () => {
     act(() => result.current.setModo('categoria'));
     expect(result.current.puedeCapturar).toBe(true);
   });
+
+  it('cantidadPorCategoria cuenta las historias del modo categoría aunque el modo sea "una"', () => {
+    const { result } = renderHook(() => useHistoriaPrecios());
+    expect(result.current.modo).toBe('una');
+    expect(result.current.cantidadPorCategoria).toBe(3);
+    act(() => result.current.setExcluidosIds(new Set([3])));
+    expect(result.current.cantidadPorCategoria).toBe(2);
+  });
 });

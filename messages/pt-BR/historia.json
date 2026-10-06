@@ -112,6 +112,19 @@
     "seleccionCategoriaAria": "Marcar todos os serviços de {nombre}",
     "seleccionPromo": "PROMO",
     "seleccionHintSinCategoria": "Os serviços sem categoria aparecem juntos. Atribua uma em Serviços para organizar melhor.",
-    "seleccionVacia": "Escolha pelo menos um serviço para gerar sua story."
+    "seleccionVacia": "Escolha pelo menos um serviço para gerar sua story.",
+    "modoTitle": "Como quer montar?",
+    "modoUnaTitle": "Uma story",
+    "modoUnaDesc": "Tudo junto em uma única imagem.",
+    "modoUnaCuenta": "{count, plural, one {# serviço escolhido} other {# serviços escolhidos}}",
+    "modoCategoriaTitle": "Uma por categoria",
+    "modoCategoriaDesc": "Uma imagem para cada categoria que você escolheu.",
+    "modoCategoriaCuenta": "{count, plural, one {# story para compartilhar.} other {# stories para compartilhar.}}",
+    "modoVacio": "Escolha pelo menos um serviço.",
+    "modoRecomendado": "Recomendado",
+    "historiaAnterior": "Story anterior",
+    "historiaSiguiente": "Próxima story",
+    "historiaPosicion": "Story {actual} de {total} · {nombre}",
+    "guardaLaQueVes": "Salva a story que você está vendo."
   }
 }

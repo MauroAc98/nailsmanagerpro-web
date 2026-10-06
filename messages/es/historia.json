@@ -112,6 +112,19 @@
     "seleccionCategoriaAria": "Marcar todos los servicios de {nombre}",
     "seleccionPromo": "PROMO",
     "seleccionHintSinCategoria": "Los servicios sin categoría aparecen juntos. Asignales una desde Servicios para ordenarlos mejor.",
-    "seleccionVacia": "Elegí al menos un servicio para generar tu historia."
+    "seleccionVacia": "Elegí al menos un servicio para generar tu historia.",
+    "modoTitle": "¿Cómo querés armarla?",
+    "modoUnaTitle": "Una historia",
+    "modoUnaDesc": "Todo junto en una sola imagen.",
+    "modoUnaCuenta": "{count, plural, one {# servicio elegido} other {# servicios elegidos}}",
+    "modoCategoriaTitle": "Una por categoría",
+    "modoCategoriaDesc": "Una imagen por cada categoría que elegiste.",
+    "modoCategoriaCuenta": "{count, plural, one {# historia para compartir.} other {# historias para compartir.}}",
+    "modoVacio": "Elegí al menos un servicio.",
+    "modoRecomendado": "Recomendado",
+    "historiaAnterior": "Historia anterior",
+    "historiaSiguiente": "Historia siguiente",
+    "historiaPosicion": "Historia {actual} de {total} · {nombre}",
+    "guardaLaQueVes": "Se guarda la historia que estás viendo."
   }
 }

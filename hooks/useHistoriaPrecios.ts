@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { filtrarPorSeleccion } from '@/lib/historiaSeleccion';
+import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import { armarHistorias, nombreArchivoHistoria, type ModoHistorias } from '@/lib/historiaHistorias';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
@@ -129,6 +130,12 @@ export function useHistoriaPrecios() {
   const historias = useMemo(
     () => armarHistorias(serviciosActivos, modo, categorias, tStatic('historia.HistoriaPreciosPage.seleccionSinCategoria')),
     [serviciosActivos, modo, categorias]
+  );
+  // Cuántas historias saldrían en modo "una por categoría" (para la tarjeta de
+  // ese modo, aun estando en modo "una").
+  const cantidadPorCategoria = useMemo(
+    () => agruparServiciosPorCategoria(serviciosActivos, categorias).length,
+    [serviciosActivos, categorias]
   );
   const idxHistoria = Math.min(idxRaw, Math.max(historias.length - 1, 0));
   const historiaActual = historias[idxHistoria] ?? null;
@@ -502,7 +509,7 @@ export function useHistoriaPrecios() {
     selectedProfesionalId, setSelectedProfesionalId,
 
     // modo de armado y navegación entre historias
-    modo, setModo, historias, idxHistoria, historiaActual, irAnterior, irSiguiente,
+    modo, setModo, historias, cantidadPorCategoria, idxHistoria, historiaActual, irAnterior, irSiguiente,
 
     // footer credit (account-level)
     nombreNegocio, telefono,
