@@ -16,6 +16,8 @@ import { SelectorPlantilla } from '@/components/historia-precios/SelectorPlantil
 import { GestorFotos } from '@/components/historia-precios/GestorFotos';
 import { SeleccionServicios } from '@/components/historia-precios/SeleccionServicios';
 import { ModoHistorias } from '@/components/historia-precios/ModoHistorias';
+import { HistoriasFueraDePantalla } from '@/components/historia-precios/HistoriasFueraDePantalla';
+import { avisoNoEntran, etiquetaAccion, leyendaPosicion } from '@/lib/historia/exportarHistorias';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 
 // ─────────────────────────────────────────────
@@ -66,6 +68,7 @@ export default function HistoriaPreciosPage() {
     notaAlineacion, setNotaAlineacion,
     fotos, fotosUrls, hayFotos, puedeCapturar,
     entra, nivelDensidad, onFitChange,
+    hayVarias, reportarFit, registrarCanvas, entraTodas, historiasQueNoEntran, exportando,
     canvasRef, descargarImagen, compartirImagen,
   } = useHistoriaPrecios();
 
@@ -82,7 +85,11 @@ export default function HistoriaPreciosPage() {
   // categoría la tarjeta lleva el nombre de la categoría como subtítulo.
   const serviciosHistoria = historiaActual?.servicios ?? [];
   const subtituloHistoria = modo === 'categoria' ? historiaActual?.titulo ?? undefined : undefined;
-  const hayNavegacion = modo === 'categoria' && historias.length > 1;
+  const hayNavegacion = hayVarias;
+  const botonesInactivos = !puedeCapturar || exportando;
+  const cantidadImagenes = hayVarias ? historias.length : 1;
+  const avisoVarias = hayVarias && !entraTodas ? avisoNoEntran(historiasQueNoEntran, t) : null;
+  const historiaActualNoEntra = historiaActual ? historiasQueNoEntran.some(h => h.id === historiaActual.id) : false;
 
   const { width: canvasWidth, height: canvasHeight, scale } = useCanvasScale();
 
@@ -200,8 +207,8 @@ export default function HistoriaPreciosPage() {
                 )}
               </div>
               {hayNavegacion && (
-                <p style={{ margin: '10px 0 0', fontSize: 12.5, color: colors.subtext, textAlign: 'center' }}>
-                  {t('historiaPosicion', { actual: idxHistoria + 1, total: historias.length, nombre: historiaActual?.titulo ?? '' })}
+                <p style={{ margin: '10px 0 0', fontSize: 12.5, color: historiaActualNoEntra ? colors.amberFg : colors.subtext, textAlign: 'center' }}>
+                  {leyendaPosicion({ actual: idxHistoria + 1, total: historias.length, nombre: historiaActual?.titulo ?? '', noEntra: historiaActualNoEntra }, t)}
                 </p>
               )}
 
@@ -363,9 +370,9 @@ export default function HistoriaPreciosPage() {
           {hayFotos && !puedeCapturar && (
             <p style={{
               fontSize: 12, textAlign: 'center', margin: '16px 0 0',
-              color: sinServicios || entra ? colors.subtext : colors.amberFg,
+              color: avisoVarias || (!sinServicios && !entra) ? colors.amberFg : colors.subtext,
             }}>
-              {sinServicios || entra ? t('seleccionVacia') : modo === 'categoria' ? t('historiaNoEntra') : t('seleccionNoEntra')}
+              {avisoVarias ?? (sinServicios || entra ? t('seleccionVacia') : modo === 'categoria' ? t('historiaNoEntra') : t('seleccionNoEntra'))}
             </p>
           )}
 
@@ -373,41 +380,51 @@ export default function HistoriaPreciosPage() {
           <div style={{ width: '100%', marginTop: 25, display: 'flex', gap: 10 }}>
             <button
               onClick={descargarImagen}
-              disabled={!puedeCapturar}
+              disabled={botonesInactivos}
               style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`,
-                cursor: puedeCapturar ? 'pointer' : 'not-allowed', opacity: puedeCapturar ? 1 : 0.5,
+                cursor: botonesInactivos ? 'not-allowed' : 'pointer', opacity: botonesInactivos ? 0.5 : 1,
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('save')}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{etiquetaAccion('guardar', cantidadImagenes, t)}</span>
             </button>
             <button
               onClick={compartirImagen}
-              disabled={!puedeCapturar}
+              disabled={botonesInactivos}
               style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '12px 0', borderRadius: 14, background: colors.surface, border: `1.5px solid ${colors.border}`,
-                cursor: puedeCapturar ? 'pointer' : 'not-allowed', opacity: puedeCapturar ? 1 : 0.5,
+                cursor: botonesInactivos ? 'not-allowed' : 'pointer', opacity: botonesInactivos ? 0.5 : 1,
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
                 <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                 <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{t('share')}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: colors.primaryDeep }}>{etiquetaAccion('compartir', cantidadImagenes, t)}</span>
             </button>
           </div>
-          {/* Temporal (rebanada 3a): hasta exportar todas las historias, Guardar
-              y Compartir actúan solo sobre la que se está viendo. */}
-          {modo === 'categoria' && hayFotos && (
-            <p style={{ fontSize: 12, textAlign: 'center', margin: '10px 0 0', color: colors.subtext }}>
-              {t('guardaLaQueVes')}
-            </p>
+          {/* Una por categoría: todas las historias montadas fuera de pantalla
+              para medir su ajuste y capturarlas al exportar. */}
+          {hayVarias && hayFotos && (
+            <HistoriasFueraDePantalla
+              historias={historias}
+              registrarCanvas={registrarCanvas}
+              reportarFit={reportarFit}
+              templateId={templateId}
+              fotos={fotosUrls}
+              titulo={titulo}
+              nombreNegocio={nombreNegocio}
+              telefono={telefono}
+              profesionalNombre={profesionalSeleccionada?.nombre}
+              nota={notaParaMostrar}
+              notaAlineacion={notaAlineacion}
+            />
           )}
         </div>
       )}
