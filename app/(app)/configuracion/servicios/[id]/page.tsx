@@ -12,8 +12,9 @@ import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCa
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import { parsearMonto } from '@/lib/parsearMonto';
-import PillToggle from '@/components/PillToggle';
 import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
+import { FormSeccion, FilaPromo, BarraGuardar } from '@/components/servicios/FormServicioLayout';
+import { Spinner } from '@/components/Spinner';
 import { EntradaFotosServicio } from '@/components/reservaOnline/EntradaFotosServicio';
 import ComponentesPromoSection from '@/components/servicios/ComponentesPromoSection';
 import EstadoReservaOnlineCard from '@/components/servicios/EstadoReservaOnlineCard';
@@ -40,7 +41,14 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 7, display: 'block', marginLeft: 2,
 };
 
-interface BorradorEditar { componentes: ComponenteDraft[]; modoPromo: ModoPromo; precioComponentes: string }
+// Dentro de una FormSeccion la card ya aporta la sombra: el campo va sin ella.
+const campoStyle: React.CSSProperties = { ...inputStyle, boxShadow: 'none' };
+
+interface BorradorEditar {
+  componentes: ComponenteDraft[]; modoPromo: ModoPromo; precioComponentes: string;
+  // Campos básicos (opcionales: un borrador de la ida a Horarios no los trae).
+  nombre?: string; duracion?: number; precio?: string; esPromo?: boolean; categoriaId?: number | null;
+}
 
 export default function EditarServicioPage() {
   const t = useTranslations('configuracion.EditarServicioPage');
@@ -112,11 +120,18 @@ export default function EditarServicioPage() {
           const precioInicial = precioInicialComponentes(detalle);
           setPrecioComponentes(precioInicial);
           setPrecioComponentesInicial(precioInicial);
-          if (borrador) {
-            setComponentes(borrador.componentes);
-            setModoPromo(borrador.modoPromo);
-            setPrecioComponentes(borrador.precioComponentes);
-          }
+        }
+        // Lo escrito antes de salir (Horarios o Seña y pagos) gana sobre lo
+        // cargado del backend.
+        if (borrador) {
+          setComponentes(borrador.componentes);
+          setModoPromo(borrador.modoPromo);
+          setPrecioComponentes(borrador.precioComponentes);
+          if (borrador.nombre !== undefined) setNombre(borrador.nombre);
+          if (borrador.duracion !== undefined) setDuracion(borrador.duracion);
+          if (borrador.precio !== undefined) setPrecio(borrador.precio);
+          if (borrador.esPromo !== undefined) setEsPromo(borrador.esPromo);
+          if (borrador.categoriaId !== undefined) setCategoriaId(borrador.categoriaId);
         }
       } catch {
         await alertDialog(t('loadError'));
@@ -170,7 +185,14 @@ export default function EditarServicioPage() {
 
   const guardarBorradorActual = () => guardarBorrador(claveBorrador, {
     componentes, modoPromo, precioComponentes,
+    nombre, duracion, precio, esPromo, categoriaId,
   } satisfies BorradorEditar);
+
+  // Atajo a Perfil > Seña y pagos: se guarda lo cargado para recuperarlo al volver.
+  const irAConfigurarSena = () => {
+    guardarBorradorActual();
+    router.push('/perfil?sheet=senaYPagos');
+  };
 
   const handleGuardar = async () => {
     setErroresFila({});
@@ -275,7 +297,7 @@ export default function EditarServicioPage() {
   if (loadingServicio) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: colors.subtext }}>{t('loading')}</p>
+        <Spinner label={t('loading')} />
       </div>
     );
   }
@@ -283,7 +305,7 @@ export default function EditarServicioPage() {
   return (
     // AgendaThemeScope vive en app/(app)/configuracion/servicios/layout.tsx
     // (segmento completo migrado — listado + nuevo + [id]), no acá.
-    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 40 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 24 }}>
       {/* Header — BackButton en su propia fila, h1 serif debajo (mismo
           patrón que el resto de las pantallas migradas). */}
       <div style={{ padding: '20px 20px 4px' }}>
@@ -294,37 +316,30 @@ export default function EditarServicioPage() {
       </div>
 
       {/* Form */}
-      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* Categoría — primer campo, idéntico orden a nuevo/page.tsx (spec:
-            "Edit form matches create form field order"). */}
-        <SelectorCategoriaServicio value={categoriaId} onChange={setCategoriaId} />
-
-        {/* Nombre */}
-        <div>
-          <label style={labelStyle}>{t('nameLabel')}</label>
-          <input
-            type="text"
-            placeholder={t('namePlaceholder')}
-            value={nombre}
-            onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-            style={{ ...inputStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
-          />
-          {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
-        </div>
-
-        {/* Promo */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '12px 16px',
-        }}>
+      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <FormSeccion>
           <div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('promoLabel')}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              {t('promoHint')}
-            </p>
+            <label htmlFor="servicio-nombre" style={labelStyle}>{t('nameLabel')}</label>
+            <input
+              id="servicio-nombre"
+              type="text"
+              placeholder={t('namePlaceholder')}
+              value={nombre}
+              onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
+              style={{ ...campoStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
+            />
+            {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
           </div>
-          <PillToggle value={esPromo} onChange={setEsPromo} />
-        </div>
+
+          {/* Categoría — siempre visible, incluso con cero categorías cargadas
+              (spec: service-category-assignment). Va después del nombre: es el
+              orden natural de carga. */}
+          <SelectorCategoriaServicio value={categoriaId} onChange={setCategoriaId} />
+
+          {/* Promoción — dentro de la card de datos, justo arriba de la sección
+              que cambia al activarla. */}
+          <FilaPromo titulo={t('promoLabel')} hint={t('promoHint')} value={esPromo} onChange={setEsPromo} />
+        </FormSeccion>
 
         {mostrarComponentes && estadoOnline && (
           <EstadoReservaOnlineCard estado={estadoOnline} onIrAHorarios={() => { guardarBorradorActual(); router.push('/configuracion/slots'); }} />
@@ -349,7 +364,11 @@ export default function EditarServicioPage() {
           />
         )}
         {mostrarComponentes && tieneComponentes && (
-          <SenaPreviewServicio precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)} onUsarPrecio={setPrecioComponentes} />
+          <SenaPreviewServicio
+            precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)}
+            onUsarPrecio={setPrecioComponentes}
+            onConfigurar={irAConfigurarSena}
+          />
         )}
 
         {/* Duración y precio: con la promo activa y componentes posibles se
@@ -357,52 +376,45 @@ export default function EditarServicioPage() {
             derivada (solo lectura) y el precio override en su lugar. */}
         {!mostrarComponentes && !esperandoRoster && (
           <>
+          <FormSeccion>
             <div>
               <label style={labelStyle}>{t('durationLabel')}</label>
               <DuracionPicker value={duracion} onChange={setDuracion} />
             </div>
 
             <div>
-              <label style={labelStyle}>{t('priceLabel')}</label>
+              <label htmlFor="servicio-precio" style={labelStyle}>{t('priceLabel')}</label>
               <input
+                id="servicio-precio"
                 type="text"
                 placeholder={t('pricePlaceholder')}
                 value={precio}
                 onChange={e => setPrecio(e.target.value)}
-                style={inputStyle}
+                style={campoStyle}
                 inputMode="decimal"
               />
             </div>
-
-            <SenaPreviewServicio precio={precio} onUsarPrecio={setPrecio} />
+          </FormSeccion>
+          <SenaPreviewServicio precio={precio} onUsarPrecio={setPrecio} onConfigurar={irAConfigurarSena} />
           </>
         )}
 
         {/* Fotos de trabajos (reserva online): la fila se oculta con la flag apagada. */}
         <EntradaFotosServicio servicioId={id} onAbrir={() => router.push(`/configuracion/servicios/${id}/fotos`)} />
 
-        {/* Button */}
-        {/* categoriasLoading también deshabilita: fetchCategorias() (ahora
-            disparado dentro de SelectorCategoriaServicio) y
-            actualizarServicio() comparten el mismo withGlobalLoader
-            booleano (no contador, ver comentario en useServicioStore.ts) —
-            si el submit dispara mientras la categoría todavía está en
-            vuelo, el finally que termine primero apaga el spinner con la
-            otra operación todavía en curso. Bloquear el submit hasta que
-            categorías resuelva evita el solape en vez de intentar arreglar
-            el contador compartido. */}
-        <button
+        {/* categoriasLoading también deshabilita: fetchCategorias() (disparado
+            dentro de SelectorCategoriaServicio) y la operación de guardado
+            comparten el mismo withGlobalLoader booleano (no contador, ver
+            comentario en useServicioStore.ts) — si el submit dispara mientras
+            la categoría todavía está en vuelo, el finally que termine primero
+            apaga el spinner con la otra operación todavía en curso. Bloquear el
+            submit hasta que categorías resuelva evita el solape en vez de
+            intentar arreglar el contador compartido. */}
+        <BarraGuardar
           onClick={handleGuardar}
           disabled={saving || categoriasLoading}
-          style={{
-            marginTop: 20, height: 52, borderRadius: 14,
-            backgroundColor: (saving || categoriasLoading) ? colors.primaryDisabled : colors.primarySolid,
-            color: '#fff', fontSize: 16, fontWeight: 600,
-            border: 'none', cursor: (saving || categoriasLoading) ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {saving ? t('saving') : t('submit')}
-        </button>
+          label={saving ? t('saving') : t('submit')}
+        />
       </div>
     </div>
   );

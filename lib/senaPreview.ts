@@ -24,6 +24,12 @@ export interface SenaPreview {
   costoPct: number;
 }
 
+// ¿El salón tiene una seña bien configurada (porcentaje 1–100 o monto fijo > 0)?
+// Exportada para que la UI distinga "no configuró la seña" de "falta el precio".
+export function senaConfigurada(c: SenaPreviewConfig): boolean {
+  return configValida(c);
+}
+
 function configValida(c: SenaPreviewConfig): boolean {
   if (c.sena_tipo === 'porcentaje') {
     const p = c.sena_porcentaje;

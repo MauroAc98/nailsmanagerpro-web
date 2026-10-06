@@ -303,6 +303,19 @@ export default function PerfilPage() {
     }
   }, [sheetActivo]);
 
+  // Enlace directo `/perfil?sheet=senaYPagos` (atajo desde el formulario de
+  // servicio): abre la hoja de Seña y pagos una sola vez y limpia el param, así
+  // un refresh no la reabre. Se lee de window.location (no useSearchParams) para
+  // no exigir un Suspense en toda la pantalla.
+  const abrioPorEnlace = useRef(false);
+  useEffect(() => {
+    if (!user || abrioPorEnlace.current) return;
+    if (new URLSearchParams(window.location.search).get('sheet') !== 'senaYPagos') return;
+    abrioPorEnlace.current = true;
+    abrirSheet('senaYPagos');
+    router.replace('/perfil');
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!user) return null;
 
   const abrirSheet = (sheet: Exclude<Sheet, null>) => {
