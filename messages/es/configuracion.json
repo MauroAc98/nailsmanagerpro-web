@@ -262,6 +262,8 @@
     "enterPrice": "Ingresá un precio para ver la seña y lo que te llega.",
     "suggestionTitle": "Precio sugerido",
     "configure": "Configurar seña y pagos",
+    "configuredPercent": "Seña configurada: {pct}% del precio",
+    "configuredFixed": "Seña configurada: {monto}",
     "clientPays": "Tu cliente paga de seña",
     "mpFee": "− Mercado Pago ({rate}%)",
     "taxRetention": "− Retención de impuestos",

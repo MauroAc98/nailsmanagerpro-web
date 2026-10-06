@@ -117,7 +117,7 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
     setup('10400', { onConfigurar });
     expect(screen.getByText(/Todavía no configuraste la seña/)).toBeInTheDocument();
     expect(screen.queryByText('Tu cliente paga de seña')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Configurar seña y pagos' }));
+    fireEvent.click(screen.getByRole('button', { name: /Configurar seña y pagos/ }));
     expect(onConfigurar).toHaveBeenCalledTimes(1);
   });
 
@@ -137,13 +137,24 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
 
   it('the shortcut button only exists when onConfigurar is given', () => {
     setup('18000');
-    expect(screen.queryByRole('button', { name: 'Configurar seña y pagos' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Configurar seña y pagos/ })).toBeNull();
+  });
+
+  it('shows which seña is configured next to the shortcut (percentage and fixed)', () => {
+    setup('18000', { onConfigurar: vi.fn() });
+    expect(screen.getByText('Seña configurada: 30% del precio')).toBeInTheDocument();
+  });
+
+  it('shows the fixed amount when the seña is a fixed amount', () => {
+    setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
+    setup('18000', { onConfigurar: vi.fn() });
+    expect(screen.getByText('Seña configurada: $5.000')).toBeInTheDocument();
   });
 
   it('calls onConfigurar from the full card too', () => {
     const onConfigurar = vi.fn();
     setup('18000', { onConfigurar });
-    fireEvent.click(screen.getByRole('button', { name: 'Configurar seña y pagos' }));
+    fireEvent.click(screen.getByRole('button', { name: /Configurar seña y pagos/ }));
     expect(onConfigurar).toHaveBeenCalledTimes(1);
   });
 });

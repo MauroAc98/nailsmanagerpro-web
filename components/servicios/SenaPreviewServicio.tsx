@@ -51,6 +51,13 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   const decimal = (n: number) =>
     new Intl.NumberFormat(numero, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n);
 
+  // Qué seña se está usando para el cálculo, a la vista junto al atajo.
+  const resumenSena = !senaConfigurada(user)
+    ? null
+    : user.sena_tipo === 'porcentaje'
+      ? t('configuredPercent', { pct: user.sena_porcentaje ?? 0 })
+      : t('configuredFixed', { monto: monto(Number(user.sena_monto ?? 0)) });
+
   const atajo = onConfigurar && (
     <>
       <div style={{ height: 1, backgroundColor: colors.hairline }} />
@@ -62,7 +69,12 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
           background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: colors.text,
         }}
       >
-        <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600 }}>{t('configure')}</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          {resumenSena && (
+            <span style={{ display: 'block', fontSize: 13, color: colors.subtext }}>{resumenSena}</span>
+          )}
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 600 }}>{t('configure')}</span>
+        </span>
         <svg
           width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder}
           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-hidden="true"
