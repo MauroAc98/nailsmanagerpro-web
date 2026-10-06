@@ -154,3 +154,58 @@ describe('descargarSecuencial', () => {
     expect(eventos).toEqual(['d:a.png', 'w', 'd:b.png', 'w', 'd:c.png']);
   });
 });
+
+// ── Textos (se prueban contra los mensajes reales de es/pt-BR) ──────────────
+import { IntlMessageFormat } from 'intl-messageformat';
+import es from '@/messages/es/historia.json';
+import ptBR from '@/messages/pt-BR/historia.json';
+import { avisoNoEntran, etiquetaAccion, leyendaPosicion } from './exportarHistorias';
+
+function traductor(locale: string, mensajes: Record<string, string>) {
+  return (key: string, values?: Record<string, string | number>) =>
+    String(new IntlMessageFormat(mensajes[key], locale).format(values));
+}
+const tEs = traductor('es', es.HistoriaPreciosPage);
+const tPt = traductor('pt-BR', ptBR.HistoriaPreciosPage);
+
+describe('avisoNoEntran', () => {
+  it('null cuando todas entran', () => {
+    expect(avisoNoEntran([], tEs)).toBeNull();
+  });
+
+  it('nombra la categoría cuando es una sola', () => {
+    expect(avisoNoEntran([h('b', 'Pies')], tEs)).toBe(
+      'La historia de Pies no entra con letra legible. Sacá servicios de esa categoría para poder guardarla.',
+    );
+  });
+
+  it('nombra la primera y cuenta el resto cuando son varias', () => {
+    expect(avisoNoEntran([h('a', 'Uñas'), h('b', 'Pies')], tEs)).toBe(
+      'La historia de Uñas y 1 más no entran con letra legible. Sacá servicios de esas categorías para poder guardarlas.',
+    );
+    expect(avisoNoEntran([h('a', 'Uñas'), h('b', 'Pies'), h('c', 'Cejas')], tEs)).toContain('Uñas y 2 más');
+  });
+
+  it('el mensaje existe y formatea en pt-BR', () => {
+    expect(avisoNoEntran([h('a', 'Unhas'), h('b', 'Pés')], tPt)).toContain('Unhas e mais 1');
+  });
+});
+
+describe('leyendaPosicion', () => {
+  it('marca "no entra" solo en las historias que no entran', () => {
+    expect(leyendaPosicion({ actual: 2, total: 3, nombre: 'Pies', noEntra: true }, tEs)).toBe('Historia 2 de 3 · Pies · no entra');
+    expect(leyendaPosicion({ actual: 1, total: 3, nombre: 'Uñas', noEntra: false }, tEs)).toBe('Historia 1 de 3 · Uñas');
+  });
+});
+
+describe('etiquetaAccion', () => {
+  it('con varias imágenes lleva la cantidad', () => {
+    expect(etiquetaAccion('guardar', 3, tEs)).toBe('Guardar 3');
+    expect(etiquetaAccion('compartir', 3, tEs)).toBe('Compartir 3');
+  });
+
+  it('con una sola imagen mantiene el texto de siempre', () => {
+    expect(etiquetaAccion('guardar', 1, tEs)).toBe('Guardar');
+    expect(etiquetaAccion('compartir', 1, tEs)).toBe('Compartir');
+  });
+});

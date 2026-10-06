@@ -126,6 +126,11 @@
     "historiaSiguiente": "Próxima story",
     "historiaPosicion": "Story {actual} de {total} · {nombre}",
     "historiaNoEntra": "Esta story não cabe com letra legível. Tire serviços para poder salvá-la.",
-    "guardaLaQueVes": "Salva a story que você está vendo."
+    "historiaPosicionNoEntra": "Story {actual} de {total} · {nombre} · não cabe",
+    "historiasNoEntranUna": "A story de {nombre} não cabe com letra legível. Tire serviços dessa categoria para poder salvá-la.",
+    "historiasNoEntranVarias": "A story de {nombre} e {resto, plural, one {mais #} other {mais #}} não cabem com letra legível. Tire serviços dessas categorias para poder salvá-las.",
+    "guardarVarias": "Salvar {count}",
+    "compartirVarias": "Compartilhar {count}",
+    "compartirVariasDescargadas": "Seu navegador não permite compartilhar várias imagens juntas: elas foram baixadas."
   }
 }

@@ -87,3 +87,32 @@ export async function descargarSecuencial(files: File[], { descargar, esperar }:
     if (i < files.length - 1) await esperar();
   }
 }
+
+// ── Textos ───────────────────────────────────────────────────────────────────
+// `t` es la función de traducción del namespace HistoriaPreciosPage.
+type Traducir = (key: string, values?: Record<string, string | number>) => string;
+
+// Aviso (ámbar) junto a los botones: nombra la primera que no entra y cuenta
+// el resto, sin armar listas por locale.
+export function avisoNoEntran(noEntran: Pick<Historia, 'titulo'>[], t: Traducir): string | null {
+  if (noEntran.length === 0) return null;
+  const nombre = noEntran[0].titulo ?? '';
+  return noEntran.length === 1
+    ? t('historiasNoEntranUna', { nombre })
+    : t('historiasNoEntranVarias', { nombre, resto: noEntran.length - 1 });
+}
+
+// Leyenda bajo el preview; marca las historias que no entran para que se
+// puedan encontrar con las flechas.
+export function leyendaPosicion(
+  { actual, total, nombre, noEntra }: { actual: number; total: number; nombre: string; noEntra: boolean },
+  t: Traducir,
+): string {
+  return t(noEntra ? 'historiaPosicionNoEntra' : 'historiaPosicion', { actual, total, nombre });
+}
+
+// "Guardar" / "Compartir", con la cantidad cuando se exportan varias imágenes.
+export function etiquetaAccion(accion: 'guardar' | 'compartir', cantidad: number, t: Traducir): string {
+  if (cantidad <= 1) return t(accion === 'guardar' ? 'save' : 'share');
+  return t(accion === 'guardar' ? 'guardarVarias' : 'compartirVarias', { count: cantidad });
+}

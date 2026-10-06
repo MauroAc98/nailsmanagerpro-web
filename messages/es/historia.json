@@ -126,6 +126,11 @@
     "historiaSiguiente": "Historia siguiente",
     "historiaPosicion": "Historia {actual} de {total} · {nombre}",
     "historiaNoEntra": "Esta historia no entra con letra legible. Sacá servicios para poder guardarla.",
-    "guardaLaQueVes": "Se guarda la historia que estás viendo."
+    "historiaPosicionNoEntra": "Historia {actual} de {total} · {nombre} · no entra",
+    "historiasNoEntranUna": "La historia de {nombre} no entra con letra legible. Sacá servicios de esa categoría para poder guardarla.",
+    "historiasNoEntranVarias": "La historia de {nombre} y {resto, plural, one {# más} other {# más}} no entran con letra legible. Sacá servicios de esas categorías para poder guardarlas.",
+    "guardarVarias": "Guardar {count}",
+    "compartirVarias": "Compartir {count}",
+    "compartirVariasDescargadas": "Tu navegador no permite compartir varias imágenes juntas: se descargaron."
   }
 }
