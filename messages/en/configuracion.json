@@ -20,6 +20,10 @@
   "CategoriasPage": {
     "title": "Categories",
     "loading": "Loading categories...",
+    "summary": "{categorias, plural, one {# category} other {# categories}} · {servicios, plural, one {# service} other {# services}}",
+    "noServices": "No services",
+    "delete": "DELETE",
+    "swipeHint": "Swipe a category to the left to delete it. Only categories without services can be deleted.",
     "serviceCount": "{count, plural, one {# service} other {# services}}",
     "empty": "Add your first category!",
     "add": "Add category",

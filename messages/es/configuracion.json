@@ -57,6 +57,10 @@
   "CategoriasPage": {
     "title": "Categorías",
     "loading": "Cargando categorías...",
+    "summary": "{categorias, plural, one {# categoría} other {# categorías}} · {servicios, plural, one {# servicio} other {# servicios}}",
+    "noServices": "Sin servicios",
+    "delete": "ELIMINAR",
+    "swipeHint": "Deslizá una categoría hacia la izquierda para eliminarla. Solo se pueden eliminar las que no tienen servicios.",
     "serviceCount": "{count, plural, one {# servicio} other {# servicios}}",
     "empty": "¡Cargá tu primera categoría!",
     "add": "Agregar categoría",
