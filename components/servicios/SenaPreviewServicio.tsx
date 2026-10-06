@@ -44,7 +44,7 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   // sugerir.
   const [aplicado, setAplicado] = useState<{ anterior: string; nuevo: string } | null>(null);
 
-  if (!(activa ?? reservaOnlineActivaParaNegocio()) || !user) return null;
+  if (!(activa ?? reservaOnlineActivaParaNegocio(user)) || !user) return null;
 
   const numero = locale === 'es' ? 'es-AR' : locale;
   const monto = (n: number) => `$${new Intl.NumberFormat(numero, { maximumFractionDigits: 2 }).format(n)}`;
