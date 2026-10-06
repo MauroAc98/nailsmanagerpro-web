@@ -95,6 +95,15 @@ describe('SenaPreviewServicio', () => {
     expect(screen.queryByText('Así lo ve tu cliente al reservar')).toBeNull();
   });
 
+  it('renders nothing when the salon has no deposit (percentage type without a percentage)', () => {
+    setUser({ sena_tipo: 'porcentaje', sena_porcentaje: null, sena_monto: null });
+    setup('10400');
+    expect(screen.queryByText('Así lo ve tu cliente al reservar')).toBeNull();
+    setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 0 });
+    setup('10400');
+    expect(screen.queryByText('Así lo ve tu cliente al reservar')).toBeNull();
+  });
+
   it('renders nothing without a user', () => {
     setUser(null);
     setup('10400');

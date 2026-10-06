@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  modoSenaGuardado,
   sanitizarLineaSimple,
   validarSenaConfig,
   formatearMontoSena,
@@ -137,5 +138,33 @@ describe('validarSenaConfig', () => {
       whatsapp_sena_titular: 'titularRequerido',
       whatsapp_sena_alias: 'aliasOCbuRequerido',
     });
+  });
+});
+
+describe('modoSenaGuardado', () => {
+  it('fixed with amount > 0 is fixed', () => {
+    expect(modoSenaGuardado({ sena_tipo: 'fijo', sena_monto: 5000, sena_porcentaje: null })).toBe('fijo');
+  });
+  it('fixed with null or 0 amount means no deposit', () => {
+    expect(modoSenaGuardado({ sena_tipo: 'fijo', sena_monto: null, sena_porcentaje: null })).toBe('ninguna');
+    expect(modoSenaGuardado({ sena_tipo: 'fijo', sena_monto: 0, sena_porcentaje: null })).toBe('ninguna');
+  });
+  it('percentage with a valid percentage is percentage', () => {
+    expect(modoSenaGuardado({ sena_tipo: 'porcentaje', sena_monto: null, sena_porcentaje: 30 })).toBe('porcentaje');
+    expect(modoSenaGuardado({ sena_tipo: 'porcentaje', sena_monto: null, sena_porcentaje: 100 })).toBe('porcentaje');
+  });
+  it('percentage without a valid percentage means no deposit', () => {
+    for (const p of [null, 0, 101, -1]) {
+      expect(modoSenaGuardado({ sena_tipo: 'porcentaje', sena_monto: null, sena_porcentaje: p })).toBe('ninguna');
+    }
+  });
+});
+
+describe('validarSenaConfig — sin seña', () => {
+  it('cannot activate the WhatsApp deposit without a configured deposit', () => {
+    const e = validarSenaConfig({
+      tipo: 'ninguna', monto: undefined, direccion: 'x', titular: 'y', alias: 'z', cbu: '',
+    });
+    expect(e.sena_monto).toBe('montoRequerido');
   });
 });

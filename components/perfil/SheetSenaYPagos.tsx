@@ -4,13 +4,13 @@ import { useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { SheetInput } from './SheetInput';
-import type { SenaCampo } from '@/lib/senaConfig';
+import type { SenaCampo, SenaModo } from '@/lib/senaConfig';
 
 const PORCENTAJES_PREDEFINIDOS = [20, 30, 50, 100];
 
 interface Props {
-  senaTipo: 'fijo' | 'porcentaje';
-  setSenaTipo: (v: 'fijo' | 'porcentaje') => void;
+  senaTipo: SenaModo;
+  setSenaTipo: (v: SenaModo) => void;
   // Porcentaje elegido, como texto (el chip tocado o el valor guardado).
   senaPorcentaje: string;
   setSenaPorcentaje: (v: string) => void;
@@ -100,11 +100,17 @@ export function SheetSenaYPagos({
           options={[
             { value: 'porcentaje', label: t('modePercent') },
             { value: 'fijo', label: t('modeFixed') },
+            { value: 'ninguna', label: t('modeNone') },
           ]}
         />
       </div>
 
-      {senaTipo === 'porcentaje' ? (
+      {senaTipo === 'ninguna' ? (
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ ...avisoStyle, margin: 0 }}>{t('noneHelp')}</p>
+          {errorMonto && <p style={{ ...errorStyle, marginTop: 8, marginBottom: 0 }}>{errorMonto}</p>}
+        </div>
+      ) : senaTipo === 'porcentaje' ? (
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
             {chips.map(p => {

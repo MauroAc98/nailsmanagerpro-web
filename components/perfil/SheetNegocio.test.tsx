@@ -72,6 +72,20 @@ describe('SheetNegocio — seña opt-in toggle', () => {
   });
 });
 
+describe('SheetNegocio — sin seña', () => {
+  it('behaves as with no amount configured: warning shown and toggle blocked', () => {
+    setup({ senaTipo: 'ninguna', senaMonto: '', whatsappPideSena: false });
+    expect(screen.getByText(/Cargá el monto de la seña en Seña y pagos/)).toBeInTheDocument();
+    expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByText(/necesita una seña de monto fijo/)).toBeNull();
+  });
+
+  it('still lets the user turn it off when it was already on', () => {
+    setup({ senaTipo: 'ninguna', senaMonto: '', whatsappPideSena: true });
+    expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
 describe('SheetNegocio — seña en modo porcentaje', () => {
   it('explains that the bank-transfer seña needs a fixed amount and blocks turning it on', () => {
     setup({ senaTipo: 'porcentaje', senaMonto: '', whatsappPideSena: false });

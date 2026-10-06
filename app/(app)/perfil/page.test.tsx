@@ -150,6 +150,46 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     expect(screen.getByRole('button', { name: '30%' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('hidrata en "Sin seña" un salón sin seña guardada (fijo sin monto, o porcentaje sin valor)', () => {
+    for (const user of [
+      { ...BASE_USER },
+      { ...BASE_USER, sena_monto: 0 },
+      { ...BASE_USER, sena_tipo: 'porcentaje' as const, sena_porcentaje: null },
+    ]) {
+      mockUseAuth({ user });
+      const { unmount } = renderWithProviders(<PerfilPage />);
+      abrirSena();
+      expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('No se cobra seña al reservar.')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('"Sin seña" guarda sena_tipo fijo y sena_monto null', async () => {
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+    renderWithProviders(<PerfilPage />);
+    abrirSena();
+    fireEvent.click(screen.getByRole('button', { name: 'Sin seña' }));
+    guardar();
+    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
+      sena_tipo: 'fijo', sena_monto: null, retencion_iibb_porcentaje: 0,
+    }));
+  });
+
+  it('"Sin seña" muestra el 422 de Mercado Pago bajo el selector', async () => {
+    mockUseAuth({
+      user: { ...BASE_USER, sena_monto: 5000 },
+      updatePerfil: vi.fn().mockRejectedValue({
+        response: { data: { errors: { sena_monto: ['No podés vaciar la seña: tenés Mercado Pago conectado.'] } } },
+      }),
+    });
+    renderWithProviders(<PerfilPage />);
+    abrirSena();
+    fireEvent.click(screen.getByRole('button', { name: 'Sin seña' }));
+    guardar();
+    expect(await screen.findByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
+  });
+
   it('guarda modo fijo mandando sena_tipo, sena_monto y la retención en 0', async () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);

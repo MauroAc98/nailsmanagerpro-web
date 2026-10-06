@@ -17,7 +17,7 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
-import { sanitizarLineaSimple, type SenaCampo } from '@/lib/senaConfig';
+import { modoSenaGuardado, sanitizarLineaSimple, type SenaCampo, type SenaModo } from '@/lib/senaConfig';
 import type { User } from '@/services/authService';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
@@ -274,7 +274,7 @@ export default function PerfilPage() {
     setLongitud(null);
   };
   const [senaMonto, setSenaMonto] = useState('');
-  const [senaTipo, setSenaTipo] = useState<'fijo' | 'porcentaje'>('fijo');
+  const [senaTipo, setSenaTipo] = useState<SenaModo>('ninguna');
   const [senaPorcentaje, setSenaPorcentaje] = useState('');
   const [senaPorcentajeError, setSenaPorcentajeError] = useState<string | null>(null);
   const [retiene, setRetiene] = useState(false);
@@ -315,7 +315,7 @@ export default function PerfilPage() {
     setLongitud(user.longitud);
     setErrorUbicacion(null);
     setSenaMonto(user.sena_monto != null ? String(user.sena_monto) : '');
-    setSenaTipo(user.sena_tipo === 'porcentaje' ? 'porcentaje' : 'fijo');
+    setSenaTipo(modoSenaGuardado(user));
     setSenaPorcentaje(user.sena_porcentaje != null ? String(user.sena_porcentaje) : '');
     // > 0 = "Sí me descuenta" con ese porcentaje; 0 = "No me descuenta".
     setRetiene((user.retencion_iibb_porcentaje ?? 0) > 0);
@@ -386,7 +386,13 @@ export default function PerfilPage() {
 
       // Solo viaja el campo del modo elegido: el backend limpia el otro.
       let campoSena: Partial<Pick<User, 'sena_monto' | 'sena_porcentaje'>>;
-      if (senaTipo === 'porcentaje') {
+      if (senaTipo === 'ninguna') {
+        // Sin seña: fijo + monto null; el servidor limpia el porcentaje solo.
+        setSenaMontoError(null);
+        setSenaPorcentajeError(null);
+        if (!retencionValida) return;
+        campoSena = { sena_monto: null };
+      } else if (senaTipo === 'porcentaje') {
         const porcentaje = parsearPorcentajeSena(senaPorcentaje);
         setSenaPorcentajeError(porcentaje === null ? t('depositPercentInvalid') : null);
         setSenaMontoError(null);
@@ -402,7 +408,7 @@ export default function PerfilPage() {
       }
       setErroresNegocio({});
       payloadSena = {
-        sena_tipo: senaTipo,
+        sena_tipo: senaTipo === 'porcentaje' ? 'porcentaje' : 'fijo',
         ...campoSena,
         retencion_iibb_porcentaje: retencion.valor ?? 0,
       };

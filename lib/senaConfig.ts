@@ -67,9 +67,28 @@ export function armarDatosCuentaSena(f: {
   return partes.join(' · ');
 }
 
+/**
+ * Modo de seña que elige el salón en "Seña y pagos". `ninguna` no es un valor
+ * del backend: se guarda como `sena_tipo: 'fijo'` con `sena_monto: null`.
+ */
+export type SenaModo = 'ninguna' | 'porcentaje' | 'fijo';
+
+/** Deriva el modo de la pantalla desde lo guardado en el negocio. */
+export function modoSenaGuardado(u: {
+  sena_tipo: 'fijo' | 'porcentaje';
+  sena_monto: number | null;
+  sena_porcentaje: number | null;
+}): SenaModo {
+  if (u.sena_tipo === 'porcentaje') {
+    const p = u.sena_porcentaje;
+    return p != null && p >= 1 && p <= 100 ? 'porcentaje' : 'ninguna';
+  }
+  return u.sena_monto != null && u.sena_monto > 0 ? 'fijo' : 'ninguna';
+}
+
 export interface SenaConfigInput {
-  /** Modo de la seña; por defecto `fijo`. */
-  tipo?: 'fijo' | 'porcentaje';
+  /** Modo de la seña; por defecto `fijo`. `ninguna` no puede activar "pedir seña". */
+  tipo?: SenaModo;
   /** Porcentaje ya parseado (modo `porcentaje`): `undefined` = vacío. */
   porcentaje?: number;
   /** Monto de seña ya parseado: `undefined` = vacío, número = formato válido. */

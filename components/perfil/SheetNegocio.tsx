@@ -15,6 +15,7 @@ import {
   formatearMontoSena,
   armarDatosCuentaSena,
   type SenaCampo,
+  type SenaModo,
 } from '@/lib/senaConfig';
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
@@ -25,7 +26,7 @@ interface Props {
   // Modo de la seña configurado en "Seña y pagos". La seña por transferencia
   // bancaria en WhatsApp solo funciona con monto fijo: el backend la rechaza
   // en modo porcentaje.
-  senaTipo: 'fijo' | 'porcentaje';
+  senaTipo: SenaModo;
   // Monto de seña: solo lectura acá. El campo editable vive en "Seña y
   // pagos" (junto al estado de Mercado Pago) desde el rediseño de Perfil —
   // este sheet solo lo usa para el preview del mensaje y para saber si
@@ -213,7 +214,7 @@ export function SheetNegocio({
   // uno válido, este toggle no puede activarse (mismo patrón que
   // faltaUbicacion: no bloquea uno que ya esté ON).
   const esPorcentaje = senaTipo === 'porcentaje';
-  const faltaMonto = !esPorcentaje && (montoActual === undefined || montoActual <= 0);
+  const faltaMonto = senaTipo === 'ninguna' || !esPorcentaje && (montoActual === undefined || montoActual <= 0);
 
   // Código de validación local -> mensaje traducido. Los errores del backend
   // ya llegan como string completo, así que el fallback (`?? v`) los deja pasar.

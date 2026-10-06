@@ -54,6 +54,8 @@
     "depositModeLabel": "Cómo se cobra la seña",
     "modePercent": "Porcentaje",
     "modeFixed": "Monto fijo",
+    "modeNone": "Sin seña",
+    "noneHelp": "No se cobra seña al reservar.",
     "percentHelp": "Es un porcentaje del precio de los servicios que elige el cliente. Para ver cómo queda cada precio, usá la vista previa al editar un servicio.",
     "fixedAmountLabel": "Monto fijo por turno",
     "retentionQuestion": "¿Mercado Pago te descuenta una retención de impuestos?",

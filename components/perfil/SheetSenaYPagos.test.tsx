@@ -38,6 +38,29 @@ function setup(overrides: Partial<Props> = {}) {
 const montoInput = () => screen.getByRole('textbox', { name: 'Monto fijo por turno' });
 
 describe('SheetSenaYPagos — modo de la seña', () => {
+  it('offers a third option "Sin seña" and selects it through the parent setter', () => {
+    const props = setup({ senaTipo: 'fijo' });
+    expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Sin seña' }));
+    expect(props.setSenaTipo).toHaveBeenCalledWith('ninguna');
+  });
+
+  it('"Sin seña" hides the chips and the amount input and shows a neutral line', () => {
+    setup({ senaTipo: 'ninguna', senaMonto: '' });
+    expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: '30%' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Monto fijo por turno' })).toBeNull();
+    expect(screen.getByText('No se cobra seña al reservar.')).toBeInTheDocument();
+  });
+
+  it('"Sin seña" shows the server error on sena_monto under the selector', () => {
+    setup({
+      senaTipo: 'ninguna',
+      erroresServidor: { sena_monto: 'No podés vaciar la seña: tenés Mercado Pago conectado.' },
+    });
+    expect(screen.getByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
+  });
+
   it('offers Porcentaje | Monto fijo and marks the current one', () => {
     setup({ senaTipo: 'porcentaje', senaPorcentaje: '30' });
     expect(screen.getByRole('button', { name: 'Porcentaje' })).toHaveAttribute('aria-pressed', 'true');
