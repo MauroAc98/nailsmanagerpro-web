@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
-import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import { Spinner } from '@/components/Spinner';
+import CategoriaRow from '@/components/configuracion/CategoriaRow';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { CategoriaServicio } from '@/services/categoriaServicioService';
@@ -26,6 +28,8 @@ export default function CategoriasPage() {
   // el listado de Servicios — spec: el conteo incluye inactivos).
   const contarServicios = (categoriaId: number) =>
     servicios.filter(s => s.categoria_id === categoriaId).length;
+  // Total de servicios que SÍ tienen categoría (los sueltos no cuentan acá).
+  const totalServicios = servicios.filter(s => s.categoria_id !== null).length;
 
   // El backend bloquea el borrado (409) si la categoría tiene servicios
   // asignados; `result.message` ya trae ese texto (extraerMensajeError lee
@@ -50,8 +54,13 @@ export default function CategoriasPage() {
       <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
       </div>
-      <div style={{ padding: '4px 20px 12px' }}>
+      <div style={{ padding: '4px 20px 16px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+        {categorias.length > 0 && (
+          <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>
+            {t('summary', { categorias: categorias.length, servicios: totalServicios })}
+          </p>
+        )}
       </div>
 
       {/* FAB */}
@@ -80,8 +89,8 @@ export default function CategoriasPage() {
 
         {/* Loading */}
         {loading && (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+          <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+            <Spinner label={t('loading')} />
           </div>
         )}
 
@@ -97,47 +106,19 @@ export default function CategoriasPage() {
               {categorias.map(c => {
                 const count = contarServicios(c.id);
                 return (
-                <div
-                  key={c.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                    boxShadow: shadows.card, borderRadius: 14, padding: '14px 16px',
-                  }}
-                >
-                  <button
-                    onClick={() => router.push(`/configuracion/categorias/${c.id}`)}
-                    style={{
-                      flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    }}
-                  >
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{
-                        margin: 0, fontSize: 15, fontWeight: 600, color: colors.text,
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>
-                        {c.nombre}
-                      </p>
-                      <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-                        {t('serviceCount', { count })}
-                      </p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleEliminar(c)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', flexShrink: 0 }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                      <path d="M10 11v6M14 11v6"/>
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                    </svg>
-                  </button>
-                </div>
+                  <CategoriaRow
+                    key={c.id}
+                    nombre={c.nombre}
+                    detalle={count === 0 ? t('noServices') : t('serviceCount', { count })}
+                    detalleTenue={count === 0}
+                    onOpen={() => router.push(`/configuracion/categorias/${c.id}`)}
+                    onDelete={() => handleEliminar(c)}
+                  />
                 );
               })}
+              <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.placeholder, textAlign: 'center' }}>
+                {t('swipeHint')}
+              </p>
             </div>
           )
         )}

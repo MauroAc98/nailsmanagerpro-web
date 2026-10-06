@@ -138,16 +138,33 @@ export default function ServiciosPage() {
     [serviciosFiltrados, categorias]
   );
 
-  // Colapso en memoria, nunca persistido — cada carga de página arranca
-  // con el Set vacío (todo expandido), spec: "every visit starts expanded".
-  const [colapsadas, setColapsadas] = useState<Set<number | null>>(new Set());
+  // Acordeón: una sola categoría abierta a la vez, en memoria (nunca
+  // persistido). `undefined` = el usuario todavía no eligió → abre la primera
+  // categoría; `NINGUNA` = cerró la que estaba abierta. `null` es un valor
+  // válido: el grupo "Sin categoría".
+  const NINGUNA = -1;
+  const [abiertaId, setAbiertaId] = useState<number | null | undefined>(undefined);
+  // Red de seguridad: si la categoría elegida ya no está en la lista (se
+  // quedó sin servicios al filtrar o al borrar el último), abre la primera
+  // visible en vez de dejar todo cerrado sin motivo. `NINGUNA` (cierre
+  // explícito) se respeta.
+  const abiertaExiste = abiertaId !== undefined && gruposPorCategoria.some(g => g.id === abiertaId);
+  const abiertaEfectiva =
+    abiertaId === NINGUNA ? NINGUNA
+    : abiertaExiste ? abiertaId
+    : (gruposPorCategoria[0]?.id ?? NINGUNA);
   const toggleColapsar = (id: number | null) => {
-    setColapsadas(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+    setAbiertaId(abiertaEfectiva === id ? NINGUNA : id);
   };
+  // Con un filtro de estado activo se muestran TODAS las categorías abiertas:
+  // el filtro tiene que mostrar todo lo que coincide, no esconderlo detrás
+  // del acordeón. El estado del acordeón no se toca, así al volver a "Todos"
+  // reaparece la categoría que estaba abierta.
+  const acordeonActivo = filtroEstado === 'todos';
+
+  // El buscador no ocupa una fila fija: se despliega desde la lupa del header.
+  const [buscadorAbierto, setBuscadorAbierto] = useState(false);
+  const mostrarBuscador = buscadorAbierto || buscar !== '';
 
   // Entry point a "historia de precios" (spec: price-story) — gateado en que
   // el campo NUEVO exista en la respuesta del backend (no en que tenga un
@@ -163,9 +180,15 @@ export default function ServiciosPage() {
   const mostrarHistoriaPreciosButton = jefa !== null && jefa.historia_precios_template_id !== undefined;
 
   const chipStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 999,
+    display: 'flex', alignItems: 'center', gap: 6, minHeight: 40, padding: '0 14px', borderRadius: 999,
     backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
     fontSize: 13, fontWeight: 600, color: colors.text, cursor: 'pointer',
+  };
+
+  const iconButtonStyle: React.CSSProperties = {
+    flexShrink: 0, width: 44, height: 44, borderRadius: 22,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, border: `1px solid ${colors.border}`, cursor: 'pointer',
   };
 
   return (
@@ -177,28 +200,39 @@ export default function ServiciosPage() {
       <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
       </div>
-      <div style={{ padding: '4px 20px 12px' }}>
-        <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
-        {servicios.length > 0 && (
-          <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>
-            {t('summaryCounts', { activos: conteos.activos, pausados: conteos.pausados })}
-          </p>
-        )}
-      </div>
-
-      {/* Accesos secundarios como chips compactos (antes eran dos tarjetas
-          grandes que empujaban la lista casi a mitad de pantalla).
+      {/* Título a la izquierda y la lupa (ícono universal) a la derecha: el
+          buscador se despliega debajo (ver `mostrarBuscador`) en vez de ser
+          una fila fija. Los dos accesos secundarios van como chips CON texto
+          en la fila siguiente — como ícono solo quedaban camuflados.
+          - Gestionar categorías (spec: service-category-navigation): único
+            punto de entrada sancionado al CRUD de categorías.
           - Historia de precios (spec: price-story): gateado en que el campo
             NUEVO exista en la respuesta del backend (no en que tenga valor
             truthy: `historia_precios_template_id` es válidamente `null`
-            cuando la profesional todavía no eligió plantilla).
-          - Gestionar categorías (spec: service-category-navigation): único
-            punto de entrada sancionado al CRUD de categorías. */}
-      <div style={{ display: 'flex', gap: 8, padding: '0 20px 12px', flexWrap: 'wrap' }}>
+            cuando la profesional todavía no eligió plantilla). */}
+      <div style={{ padding: '4px 20px 14px', display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+          {servicios.length > 0 && (
+            <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>
+              {t('summaryCounts', { activos: conteos.activos, pausados: conteos.pausados })}
+            </p>
+          )}
+        </div>
         <button
-          onClick={() => router.push('/configuracion/categorias')}
-          style={chipStyle}
+          aria-label={t('searchPlaceholder')}
+          aria-pressed={mostrarBuscador}
+          onClick={() => setBuscadorAbierto(v => !v)}
+          style={iconButtonStyle}
         >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, padding: '0 20px 12px', flexWrap: 'wrap' }}>
+        <button onClick={() => router.push('/configuracion/categorias')} style={chipStyle}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
             <rect x="3" y="4" width="7" height="7" rx="1.5" />
             <rect x="14" y="4" width="7" height="7" rx="1.5" />
@@ -221,7 +255,13 @@ export default function ServiciosPage() {
 
       {/* FAB */}
       <button
-        onClick={() => router.push('/configuracion/servicios/nuevo')}
+        onClick={() => router.push(
+          // Crea en la categoría abierta (acordeón); sin categoría real
+          // abierta (o con un filtro/búsqueda activos) va sin preselección.
+          acordeonActivo && !buscar && abiertaEfectiva !== null && abiertaEfectiva !== NINGUNA
+            ? `/configuracion/servicios/nuevo?categoria=${abiertaEfectiva}`
+            : '/configuracion/servicios/nuevo'
+        )}
         style={{
           position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
           width: 56, height: 56, borderRadius: 28,
@@ -235,8 +275,8 @@ export default function ServiciosPage() {
         </svg>
       </button>
 
-      {/* Search */}
-      <div style={{ padding: '0 20px 16px' }}>
+      {/* Search — solo visible tras tocar la lupa (o con un término activo) */}
+      {mostrarBuscador && <div style={{ padding: '0 20px 16px' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
@@ -248,20 +288,24 @@ export default function ServiciosPage() {
           </svg>
           <input
             type="text"
+            autoFocus
             placeholder={t('searchPlaceholder')}
             value={buscar}
             onChange={e => setBuscar(e.target.value)}
-            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: colors.text, background: 'transparent' }}
+            style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', fontSize: 15, color: colors.text, background: 'transparent' }}
           />
-          {buscar && (
-            <button onClick={() => setBuscar('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          )}
+          {/* Limpia el término Y cierra el buscador. */}
+          <button
+            aria-label={t('searchPlaceholder')}
+            onClick={() => { setBuscar(''); setBuscadorAbierto(false); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
-      </div>
+      </div>}
 
       {/* Filtro por estado */}
       {servicios.length > 0 && (
@@ -341,16 +385,14 @@ export default function ServiciosPage() {
             // service-category-grouping).
             gruposPorCategoria.map(grupo => {
               const panelId = `categoria-panel-${grupo.id ?? 'sin-categoria'}`;
-              const colapsada = colapsadas.has(grupo.id);
+              const colapsada = acordeonActivo && abiertaEfectiva !== grupo.id;
               return (
                 <div key={grupo.id ?? 'sin-categoria'} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <CategoriaHeader
-                    categoriaId={grupo.id}
                     nombre={grupo.id === null ? t('sectionSinCategoria') : grupo.nombre}
                     count={grupo.servicios.length}
                     colapsada={colapsada}
                     onToggleColapsar={() => toggleColapsar(grupo.id)}
-                    onQuickAdd={grupo.id !== null ? () => router.push(`/configuracion/servicios/nuevo?categoria=${grupo.id}`) : undefined}
                     panelId={panelId}
                   />
                   {!colapsada && (

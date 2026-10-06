@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
+import { Spinner } from '@/components/Spinner';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
 import { useIngresosStore } from '@/store/useIngresoStore';
 import { CATEGORIAS_INGRESO, Ingreso } from '@/services/ingresoService';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
@@ -124,47 +124,34 @@ export default function IngresosPage() {
       </div>
       <div style={{ padding: '4px 20px 12px' }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
+        {!loading && !error && (
+          <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>
+            {t('summary', { count: ingresos.length })}
+          </p>
+        )}
       </div>
 
-      {/* Entry point: Gestionar categorías (mismo patrón que
-          servicios/page.tsx — único punto de entrada sancionado al editor
-          de categorías de gastos/ingresos, ahora que se sacó del menú raíz
-          de Configuración). Categorías de movimientos es una pantalla
-          compartida con Gastos, así que ambas listas necesitan su propio
-          entry point acá. */}
-      <div style={{ padding: '0 20px 16px' }}>
+      {/* Entry point: Gestionar categorías — chip con texto (mismo patrón que
+          servicios/page.tsx; antes una tarjeta grande que empujaba la
+          lista). Único punto de entrada sancionado al editor de categorías
+          de gastos/ingresos; la pantalla es compartida con Gastos, así que
+          ambas listas necesitan su propio entry point acá. */}
+      <div style={{ padding: '0 20px 12px' }}>
         <button
           onClick={() => router.push('/configuracion/categorias-movimientos?tab=ingreso')}
           style={{
-            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-            backgroundColor: colors.surface,
-            border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14,
-            padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: 6, minHeight: 40, padding: '0 14px', borderRadius: 999,
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            fontSize: 13, fontWeight: 600, color: colors.text, cursor: 'pointer',
           }}
         >
-          <div style={{
-            width: 36, height: 36, backgroundColor: withAlpha(colors.primary, '15'),
-            borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
-              <rect x="3" y="4" width="7" height="7" rx="1.5" />
-              <rect x="14" y="4" width="7" height="7" rx="1.5" />
-              <rect x="3" y="13" width="7" height="7" rx="1.5" />
-              <rect x="14" y="13" width="7" height="7" rx="1.5" />
-            </svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.text }}>
-              {t('manageCategoriesButton')}
-            </p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
-              {t('manageCategoriesHint')}
-            </p>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" style={{ flexShrink: 0 }}>
-            <polyline points="9 18 15 12 9 6"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="2">
+            <rect x="3" y="4" width="7" height="7" rx="1.5" />
+            <rect x="14" y="4" width="7" height="7" rx="1.5" />
+            <rect x="3" y="13" width="7" height="7" rx="1.5" />
+            <rect x="14" y="13" width="7" height="7" rx="1.5" />
           </svg>
+          {t('manageCategoriesButton')}
         </button>
       </div>
 
@@ -185,81 +172,95 @@ export default function IngresosPage() {
       </button>
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Month navigator — mismo patrón que estadisticas/page.tsx (modo
-            'mes'): flechas prev/next alrededor del nombre del mes. */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-          boxShadow: shadows.card, borderRadius: 14, padding: '10px 14px',
-        }}>
-          <button
-            onClick={() => cambiarMes(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
-            {nombreMes(viewDate, 'long')} {viewDate.getFullYear()}
-          </span>
-          <button
-            onClick={() => cambiarMes(1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Filtros — toggle + panel colapsable. El filtrado es client-side
-            sobre el mes ya cargado (lib/filtrarIngresos.ts). Sin dimensión
-            de profesional: un ingreso no tiene profesional_id. */}
+        {/* Mes + total + filtros en UN solo bloque (antes eran tres bloques
+            apilados antes de la lista). El filtrado es client-side sobre el
+            mes ya cargado; el total solo se muestra con !loading && !error —
+            el store no pisa los datos si el fetch del mes falla (a propósito,
+            para no "desaparecer" lo ya cargado), así que sin ese gate la card
+            mostraría el total del mes ANTERIOR contradiciendo el banner de
+            error. */}
         <div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => setPanelAbierto(v => !v)}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                backgroundColor: colors.surface, border: `1px solid ${filtrosActivos > 0 ? colors.primarySolid : colors.border}`,
-                boxShadow: shadows.card, borderRadius: 12, padding: '10px 14px',
-                fontSize: 14, fontWeight: 600, color: colors.text, cursor: 'pointer',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-              {t('filtersToggle')}
-              {filtrosActivos > 0 && (
-                <span style={{
-                  minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9,
-                  backgroundColor: colors.primarySolid, color: '#FFF',
-                  fontSize: 11, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {filtrosActivos}
-                </span>
-              )}
-              <svg
-                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2"
-                style={{ transform: panelAbierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-            {filtrosActivos > 0 && (
+          <div style={{
+            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card, borderRadius: 14,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px' }}>
               <button
-                onClick={limpiarFiltros}
-                style={{
-                  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-                  boxShadow: shadows.card, borderRadius: 12, padding: '10px 14px',
-                  fontSize: 14, fontWeight: 600, color: colors.primaryDeep, cursor: 'pointer',
-                }}
+                aria-label={t('prevMonth')}
+                onClick={() => cambiarMes(-1)}
+                style={{ width: 44, height: 44, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                {t('filtersClear')}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
               </button>
-            )}
+              <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
+                {nombreMes(viewDate, 'long')} {viewDate.getFullYear()}
+              </span>
+              <button
+                aria-label={t('nextMonth')}
+                onClick={() => cambiarMes(1)}
+                style={{ width: 44, height: 44, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div style={{ height: 1, backgroundColor: colors.hairline, margin: '0 14px' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px 12px 16px' }}>
+              <div style={{ minWidth: 0 }}>
+                {!loading && !error && (
+                  <>
+                    <div style={{ fontSize: 12, color: colors.subtext }}>
+                      {filtrosActivos > 0 ? t('totalFilteredLabel') : t('totalLabel')}
+                    </div>
+                    <div style={{ fontFamily: agendaFontSerif, fontSize: 24, lineHeight: 1.2, color: colors.textStrong }}>
+                      ${formatMonto(totalMostrado)}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                {filtrosActivos > 0 && (
+                  <button
+                    onClick={limpiarFiltros}
+                    style={{
+                      minHeight: 40, padding: '0 6px', background: 'none', border: 'none',
+                      fontSize: 13, fontWeight: 600, color: colors.primaryDeep, cursor: 'pointer',
+                    }}
+                  >
+                    {t('filtersClear')}
+                  </button>
+                )}
+                <button
+                  onClick={() => setPanelAbierto(v => !v)}
+                  aria-expanded={panelAbierto}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, minHeight: 40, padding: '0 14px', borderRadius: 999,
+                    backgroundColor: colors.surface, border: `1px solid ${filtrosActivos > 0 ? colors.primarySolid : colors.border}`,
+                    fontSize: 13, fontWeight: 600, color: colors.text, cursor: 'pointer',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                  {t('filtersToggle')}
+                  {filtrosActivos > 0 && (
+                    <span style={{
+                      minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9,
+                      backgroundColor: colors.primarySolid, color: '#FFF',
+                      fontSize: 11, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {filtrosActivos}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           {panelAbierto && (
@@ -338,23 +339,6 @@ export default function IngresosPage() {
           )}
         </div>
 
-        {/* Total — suma client-side de lo que se ve (ya filtrado). Gateado
-            por !loading && !error (mismo criterio que la lista de abajo): el
-            store no pisa `ingresos` si el fetch del mes falla (a propósito,
-            para no "desaparecer" datos ya cargados). */}
-        {!loading && !error && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
-            boxShadow: shadows.card, borderRadius: 14, padding: '14px 16px',
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: colors.subtext }}>
-              {filtrosActivos > 0 ? t('totalFilteredLabel') : t('totalLabel')}
-            </span>
-            <span style={{ fontSize: 18, fontWeight: 700, color: colors.textStrong }}>${formatMonto(totalMostrado)}</span>
-          </div>
-        )}
-
         {/* Error */}
         {error && (
           <div style={{ padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
@@ -364,8 +348,8 @@ export default function IngresosPage() {
 
         {/* Loading */}
         {loading && (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+          <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+            <Spinner label={t('loading')} />
           </div>
         )}
 
