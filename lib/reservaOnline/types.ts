@@ -126,7 +126,11 @@ export interface ServicesQuery {
 
 // Condiciones de la reserva (mock hasta que exista el backend de settings).
 export interface ReservationTerms {
-  deposito: number;
+  // Monto exacto en modo fijo; null en modo porcentaje (depende del total de la reserva).
+  deposito: number | null;
+  senaTipo: 'fijo' | 'porcentaje';
+  // Solo en modo porcentaje.
+  senaPorcentaje: number | null;
   ventanaPagoMinutos: number;
   anticipacionMinutos: number;
   ventanaCancelacionHoras: number;
@@ -200,7 +204,8 @@ export interface ReservationSummary {
   fecha: Fecha;
   hora: Hora;
   // Unico monto firme del flujo: la sena. No hay total (los precios son "desde").
-  deposito: number;
+  // null cuando la sena es un porcentaje y la reserva todavia no tiene total.
+  deposito: number | null;
   duracionTotalMinutos: number;
   nota?: string;
   // Solo en reservas de varias profesionales.

@@ -171,6 +171,11 @@ export function EstadoReservaScreen({
 
   const { salon, servicios, terminos } = data;
   const resumen = estado.summary;
+  // null/0 = seña por porcentaje sin total conocido: no se muestra como si fuera un precio.
+  const montoSena =
+    typeof resumen.deposito === 'number' && Number.isFinite(resumen.deposito) && resumen.deposito > 0
+      ? resumen.deposito
+      : null;
   const elegidos = resumen.servicioIds
     .map((id) => servicios.find((s) => s.id === id))
     .filter((s): s is NonNullable<typeof s> => !!s);
@@ -239,10 +244,12 @@ export function EstadoReservaScreen({
               )}
             </div>
             <div style={{ borderTop: `2px dashed ${colors.border}`, margin: '0 14px' }} />
-            <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
-              <span style={{ color: colors.sub }}>{t('estado.senaPagada')}</span>
-              <b style={{ color: colors.success }}>${formatMontoCorto(resumen.deposito)}</b>
-            </div>
+            {montoSena !== null && (
+              <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13.5 }}>
+                <span style={{ minWidth: 0, color: colors.sub }}>{t('estado.senaPagada')}</span>
+                <b style={{ flexShrink: 0, whiteSpace: 'nowrap', color: colors.success }}>${formatMontoCorto(montoSena)}</b>
+              </div>
+            )}
             <div style={{ padding: '0 18px 16px', fontSize: 12.5, color: colors.sub, lineHeight: 1.45 }}>
               {t('estado.valorFinal')}
             </div>
@@ -338,9 +345,11 @@ export function EstadoReservaScreen({
           <div style={{ fontSize: 14.5, fontWeight: 700, color: colors.strong }}>
             {capitalizar(diaLargoCorto(resumen.fecha, locale))} · {resumen.hora}
           </div>
-          <div style={{ fontSize: 13, color: colors.sub, marginTop: 2 }}>
-            {t('estado.senaLinea', { monto: `$${formatMontoCorto(resumen.deposito)}` })}
-          </div>
+          {montoSena !== null && (
+            <div style={{ fontSize: 13, color: colors.sub, marginTop: 2, whiteSpace: 'nowrap' }}>
+              {t('estado.senaLinea', { monto: `$${formatMontoCorto(montoSena)}` })}
+            </div>
+          )}
         </Tarjeta>
       </div>
       {simular && (

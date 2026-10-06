@@ -330,6 +330,8 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
     const { settings } = cargar();
     return {
       deposito: settings.deposito,
+      senaTipo: 'fijo',
+      senaPorcentaje: null,
       ventanaPagoMinutos: settings.ventanaPagoMinutos,
       anticipacionMinutos: settings.anticipacionMinutos,
       ventanaCancelacionHoras: settings.ventanaCancelacionHoras,

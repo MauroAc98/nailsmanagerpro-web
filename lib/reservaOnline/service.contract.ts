@@ -36,7 +36,12 @@ export function describeReadsContract(
 
     it('getTerms devuelve la forma ReservationTerms', async () => {
       const terminos = await crear().getTerms(esc.slug);
-      expect(typeof terminos.deposito).toBe('number');
+      if (terminos.senaTipo === 'porcentaje') {
+        expect(terminos.deposito).toBeNull();
+        expect(typeof terminos.senaPorcentaje).toBe('number');
+      } else {
+        expect(typeof terminos.deposito).toBe('number');
+      }
       expect(typeof terminos.ventanaPagoMinutos).toBe('number');
       expect(typeof terminos.anticipacionMinutos).toBe('number');
       expect(typeof terminos.ventanaCancelacionHoras).toBe('number');

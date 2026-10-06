@@ -59,7 +59,9 @@ interface DiasDto {
 }
 
 interface TerminosDto {
-  deposito: number;
+  deposito: number | null;
+  sena_tipo?: 'fijo' | 'porcentaje';
+  sena_porcentaje?: number | string | null;
   ventana_pago_minutos: number;
   anticipacion_minutos: number;
   ventana_cancelacion_horas: number;
@@ -122,7 +124,9 @@ const aDisponibilidad = (d: DisponibilidadDto): Availability => ({
 });
 
 const aTerminos = (d: TerminosDto): ReservationTerms => ({
-  deposito: d.deposito,
+  deposito: d.deposito ?? null,
+  senaTipo: d.sena_tipo === 'porcentaje' ? 'porcentaje' : 'fijo',
+  senaPorcentaje: d.sena_porcentaje == null ? null : Number(d.sena_porcentaje),
   ventanaPagoMinutos: d.ventana_pago_minutos,
   anticipacionMinutos: d.anticipacion_minutos,
   ventanaCancelacionHoras: d.ventana_cancelacion_horas,

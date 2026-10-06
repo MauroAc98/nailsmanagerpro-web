@@ -383,4 +383,46 @@ describe('ResumenScreen', () => {
       expect(ir).not.toHaveBeenCalledWith(expect.stringContaining('/reserva/'));
     });
   });
+
+  describe('seña por porcentaje', () => {
+    const terminosPct = (porcentaje: number, deposito: number | null = null) => ({
+      deposito, senaTipo: 'porcentaje' as const, senaPorcentaje: porcentaje,
+      ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24,
+    });
+
+    it('muestra "N% del total de tu reserva" y no inventa un monto ($null, NaN, $0)', async () => {
+      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30) } as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('Seña para reservar');
+      expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
+    });
+
+    it('formatea el porcentaje sin ceros finales ni decimales de mas', async () => {
+      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(12.5) } as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      expect(await screen.findByText('12,5% del total de tu reserva')).toBeInTheDocument();
+    });
+
+    it('si ademas hay monto conocido, lo muestra en pesos', async () => {
+      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30, 4500) } as MockReservaOnlineService);
+      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+      await screen.findByText('30% del total de tu reserva');
+      expect(screen.getByText('$4.500')).toBeInTheDocument();
+    });
+  });
+
+  it('si el backend no puede calcular la seña (sena_sin_total) muestra un mensaje amable, no el generico', async () => {
+    setServiceParaTests({
+      ...svc,
+      iniciarPago: async () => {
+        throw new ReservaOnlineError('sena_sin_total');
+      },
+    });
+    const ir = vi.fn();
+    renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva. Escribile al salón para confirmarla.');
+    expect(ir).not.toHaveBeenCalled();
+  });
 });

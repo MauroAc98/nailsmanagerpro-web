@@ -114,6 +114,7 @@ export function ResumenScreen({
   const [holdPerdido, setHoldPerdido] = useState(false);
   const [errorPago, setErrorPago] = useState(false);
   const [limiteIntentos, setLimiteIntentos] = useState(false);
+  const [senaSinTotal, setSenaSinTotal] = useState(false);
   // Kill switch del backend apagado: a pantalla completa, como en Horario/Datos.
   const [noDisponible, setNoDisponible] = useState(false);
 
@@ -141,6 +142,12 @@ export function ResumenScreen({
   if (!data || !fecha || !hora || !hold) return <ResumenSkeleton />;
 
   const { salon, servicios, terminos } = data;
+  // Monto firme de la seña, o null si no se conoce (porcentaje sin total, 0 o dato invalido):
+  // nunca se muestra un $0, un $null ni un NaN como si fuera un precio.
+  const montoSena =
+    typeof terminos.deposito === 'number' && Number.isFinite(terminos.deposito) && terminos.deposito > 0
+      ? terminos.deposito
+      : null;
   const elegidos = servicioIds
     .map((id) => servicios.find((x) => x.id === id))
     .filter((x): x is NonNullable<typeof x> => !!x);
@@ -156,6 +163,7 @@ export function ResumenScreen({
     setEnviando(true);
     setErrorPago(false);
     setLimiteIntentos(false);
+    setSenaSinTotal(false);
     try {
       const pago = await getService().iniciarPago(slug, hold.reservaId);
       if (esRedirectSeguro(pago.checkoutUrl)) {
@@ -182,6 +190,7 @@ export function ResumenScreen({
       // pantalla completa que el kill switch, nunca el error generico.
       else if (e instanceof ReservaOnlineError && (e.code === 'creation_disabled' || e.code === 'mp_no_conectado')) setNoDisponible(true);
       else if (e instanceof ReservaOnlineError && e.code === 'rate_limited') setLimiteIntentos(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'sena_sin_total') setSenaSinTotal(true);
       else setErrorPago(true);
       setEnviando(false);
     }
@@ -265,12 +274,19 @@ export function ResumenScreen({
         </>
       )}
       <Tarjeta estilo={{ background: colors.successBg, borderColor: colors.successBorder, borderRadius: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: colors.strong }}>{t('resumen.senaTitulo')}</span>
-          <span style={{ fontFamily: agendaFontSerif, fontSize: 26, color: colors.strong }}>
-            ${formatMontoCorto(terminos.deposito)}
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: colors.strong }}>{t('resumen.senaTitulo')}</span>
+          {montoSena !== null && (
+            <span style={{ flexShrink: 0, whiteSpace: 'nowrap', fontFamily: agendaFontSerif, fontSize: 26, color: colors.strong }}>
+              ${formatMontoCorto(montoSena)}
+            </span>
+          )}
         </div>
+        {terminos.senaTipo === 'porcentaje' && terminos.senaPorcentaje != null && (
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.strong, marginTop: 4 }}>
+            {t('resumen.senaPorcentaje', { porcentaje: formatMontoCorto(terminos.senaPorcentaje) })}
+          </div>
+        )}
         <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 8, lineHeight: 1.5 }}>{t('resumen.senaDetalle')}</div>
       </Tarjeta>
 
@@ -286,6 +302,7 @@ export function ResumenScreen({
       </div>
 
       {limiteIntentos && <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>}
+      {senaSinTotal && <Mensaje tono="error">{t('errores.senaSinTotal')}</Mensaje>}
       {errorPago && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       <BarraInferior>
