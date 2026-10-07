@@ -37,6 +37,9 @@ interface Props {
   errorRetencion: string | null;
   // Comisión de MP con IVA (user.comision_mp_vigente); null = no se muestra.
   comisionVigente: number | null;
+  // La sugerencia de cubrir la comisión solo tiene sentido con la reserva
+  // online activa (es donde se cobra la seña por Mercado Pago).
+  reservaOnlineActiva: boolean;
   onGuardar: () => void;
   guardando: boolean;
   onClose: () => void;
@@ -83,7 +86,7 @@ export function SheetSenaYPagos({
   senaTipo, setSenaTipo, senaPorcentaje, setSenaPorcentaje, porcentajeGuardado,
   senaMonto, setSenaMonto, error, errorPorcentaje, erroresServidor,
   retiene, setRetiene, retencion, setRetencion, errorRetencion, comisionVigente,
-  onGuardar, guardando, onClose,
+  reservaOnlineActiva, onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetSenaYPagos');
   const locale = useLocale();
@@ -106,7 +109,7 @@ export function SheetSenaYPagos({
   const configCalculo = { comision_mp_vigente: comisionVigente, retencion_iibb_porcentaje: retencionPct };
   const desglose = montoFijo !== null ? desgloseSena(montoFijo, configCalculo) : null;
   const confirmado = aplicado !== null && senaMonto === aplicado.nuevo;
-  const sugerida = montoFijo !== null && !confirmado ? senaFijaSugerida(montoFijo, configCalculo) : null;
+  const sugerida = reservaOnlineActiva && montoFijo !== null && !confirmado ? senaFijaSugerida(montoFijo, configCalculo) : null;
   const desgloseSugerida = sugerida !== null ? desgloseSena(sugerida, configCalculo) : null;
   const usarSugerida = () => {
     if (sugerida === null) return;

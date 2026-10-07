@@ -25,6 +25,7 @@ function setup(overrides: Partial<Props> = {}) {
     setRetencion: vi.fn(),
     errorRetencion: null,
     comisionVigente: 7.61,
+    reservaOnlineActiva: true,
     erroresServidor: undefined,
     onGuardar: vi.fn(),
     guardando: false,
@@ -224,6 +225,13 @@ describe('SheetSenaYPagos — cálculo en monto fijo', () => {
     expect(screen.getByText(/Para recibir \$5\.000/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Usar $5.500' }));
     expect(props.setSenaMonto).toHaveBeenCalledWith('5500');
+  });
+
+  it('does not suggest a covering seña when online booking is not active, but keeps the breakdown', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61, reservaOnlineActiva: false });
+    expect(screen.queryByText(/Para recibir/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
+    expect(screen.getByText('El cliente paga')).toBeInTheDocument();
   });
 
   it('includes the tax retention when the user declares one', () => {
