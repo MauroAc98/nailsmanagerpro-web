@@ -129,7 +129,9 @@ describe('composicion del servicio', () => {
       },
     };
     const svc = componerServicio(mock, undefined, escrituras);
-    const h = await svc.retenerHorario('demo', { servicioIds: [1], profesionalId: 1, fecha: '2026-09-25', hora: '10:30' });
+    // Fecha relativa: una fija termina en el pasado y el mock la rechaza.
+    const enUnMes = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const h = await svc.retenerHorario('demo', { servicioIds: [1], profesionalId: 1, fecha: enUnMes, hora: '10:30' });
     expect(h.reservaId).toMatch(/^mock-/);
   });
 
