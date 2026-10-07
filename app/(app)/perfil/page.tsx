@@ -7,7 +7,6 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
 import { extraerMensajeError } from '@/services/clienteService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
-import { FilaAvisosReservas } from '@/components/perfil/FilaAvisosReservas';
 import { HeroPerfil } from '@/components/perfil/HeroPerfil';
 import { SheetDatosPersonales } from '@/components/perfil/SheetDatosPersonales';
 import { SheetNegocio } from '@/components/perfil/SheetNegocio';
@@ -655,10 +654,6 @@ export default function PerfilPage() {
         <Grupo titulo={t('groupReservasPagos')}>
           <FilaNav icon={<IconGlobeReservas />} label={t('rowReservasOnline')} onClick={() => router.push('/configuracion/reservas-online')} />
           <FilaNav icon={<IconCardPago />} label={t('rowSenaYPagos')} onClick={() => abrirSheet('senaYPagos')} ultima />
-        </Grupo>
-
-        <Grupo titulo={t('groupAvisos')}>
-          <FilaAvisosReservas />
         </Grupo>
 
         <Grupo titulo={t('groupMensajes')}>

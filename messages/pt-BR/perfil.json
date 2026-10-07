@@ -172,8 +172,7 @@
     "dataSaved": "Dados salvos",
     "passwordsDontMatch": "As senhas não coincidem.",
     "percentInvalid": "Informe uma porcentagem válida, entre 0 e 50.",
-    "depositAmountInvalid": "Informe um valor válido (ou deixe em branco para não pedir sinal).",
-    "groupAvisos": "Avisos"
+    "depositAmountInvalid": "Informe um valor válido (ou deixe em branco para não pedir sinal)."
   },
   "FinanzasPage": {
     "title": "Finanças",

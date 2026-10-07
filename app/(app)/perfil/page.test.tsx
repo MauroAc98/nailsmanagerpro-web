@@ -134,12 +134,43 @@ describe('PerfilPage — hub "Mi negocio"', () => {
   const abrirSena = () => fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
   const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
+  it('no muestra el aviso de reservas online suelto: vive dentro de Reservas online', () => {
+    mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: false } });
+    renderWithProviders(<PerfilPage />);
+    expect(screen.queryByText('Avisos de reservas online')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Avisos de reservas online' })).toBeNull();
+  });
+
   it('abre Seña y pagos con el monto guardado (modo fijo)', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
     expect(screen.getByRole('button', { name: 'Monto fijo' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('textbox', { name: 'Monto fijo por turno' })).toHaveValue('5000');
+  });
+
+  describe('sugerencia de seña (monto fijo) con la reserva web activa', () => {
+    afterEach(() => vi.unstubAllEnvs());
+    // El backend manda sena_monto como texto (decimal:2).
+    const fijoComoLlegaDeLaApi = { ...BASE_USER, sena_monto: '5000.00' as unknown as number };
+
+    it('muestra el desglose y el botón "Usar" cuando la reserva web está activa', () => {
+      vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+      mockUseAuth({ user: { ...fijoComoLlegaDeLaApi, reserva_online_activa: true } });
+      renderWithProviders(<PerfilPage />);
+      abrirSena();
+      expect(screen.getByText('El cliente paga')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Usar $5.500' })).toBeInTheDocument();
+    });
+
+    it('no muestra nada de la comisión si la reserva web no está activa', () => {
+      vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+      mockUseAuth({ user: { ...fijoComoLlegaDeLaApi, reserva_online_activa: false } });
+      renderWithProviders(<PerfilPage />);
+      abrirSena();
+      expect(screen.queryByText('El cliente paga')).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
+    });
   });
 
   it('abre Seña y pagos con el porcentaje guardado', () => {

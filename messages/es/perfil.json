@@ -174,8 +174,7 @@
     "passwordsDontMatch": "Las contraseñas no coinciden.",
     "percentInvalid": "Ingresá un porcentaje válido, entre 0 y 50.",
     "depositAmountInvalid": "Ingresá un monto mayor a 0.",
-    "depositPercentInvalid": "Elegí un porcentaje entre 1 y 100.",
-    "groupAvisos": "Avisos"
+    "depositPercentInvalid": "Elegí un porcentaje entre 1 y 100."
   },
   "FinanzasPage": {
     "title": "Finanzas",
