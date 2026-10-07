@@ -18,6 +18,11 @@ interface Props {
   onConfigurar?: () => void;
   // Solo para tests: fuerza el criterio de "reserva online activa".
   activa?: boolean;
+  // Precio con el que se abrió el formulario (servicio ya guardado). Mientras
+  // el precio siga igual NO se ofrece cubrir la comisión: si no, cada vez que se
+  // abre la edición volvería a sugerir un monto mayor. Sin esto (servicio nuevo)
+  // cualquier precio cargado cuenta como tocado.
+  precioInicial?: string;
 }
 
 const sectionStyle = {
@@ -35,7 +40,7 @@ const etiquetaStyle = { minWidth: 0 } as const;
 // y sugiere un precio que cubre la comisión. Solo existe si la reserva online
 // está activa (la comisión de MP solo aplica al pago online). Sin seña
 // configurada o sin precio no desaparece: explica qué falta y ofrece el atajo.
-export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar, activa }: Props) {
+export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar, activa, precioInicial }: Props) {
   const t = useTranslations('configuracion.SenaPreviewServicio');
   const locale = useLocale();
   const user = useAuthStore(s => s.user);
@@ -117,7 +122,9 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   }
 
   const hayRetencion = p.retencion > 0;
-  const sugerido = onUsarPrecio ? precioSugeridoSena(valor, user) : null;
+  // Se ofrece cubrir la comisión solo si el precio se tocó en esta pantalla.
+  const tocado = valor !== parsearMonto(precioInicial ?? '');
+  const sugerido = onUsarPrecio && tocado ? precioSugeridoSena(valor, user) : null;
   const sugerencia = sugerido !== null ? calcularSenaPreview(sugerido, user) : null;
   const confirmado = aplicado !== null && precio === aplicado.nuevo;
   const anterior = aplicado ? parsearMonto(aplicado.anterior) : null;
@@ -137,6 +144,17 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   const bannerStyle = {
     backgroundColor: colors.primarySoft, borderRadius: 14, padding: 14,
     display: 'flex', flexDirection: 'column', gap: 12,
+  } as const;
+  // La oferta de cubrir la comisión es una opción, no una orden: tarjeta con
+  // borde y botón de contorno (el relleno lo reservamos para "Deshacer").
+  const ofertaStyle = {
+    border: `1px solid ${colors.border}`, borderRadius: 12, padding: 12,
+    display: 'flex', flexDirection: 'column', gap: 10,
+  } as const;
+  const botonSecundarioStyle = {
+    alignSelf: 'flex-start', minHeight: 44, padding: '0 14px', borderRadius: 10, cursor: 'pointer',
+    backgroundColor: 'transparent', border: `1.5px solid ${colors.primarySolid}`, color: colors.primaryDeep,
+    fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
   } as const;
   const botonStyle = {
     width: '100%', minHeight: 44, border: 'none', borderRadius: 12,
@@ -160,16 +178,11 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
         </div>
       )}
       {!confirmado && sugerido !== null && sugerencia && (
-        <div style={bannerStyle}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: colors.primaryDeep }}>
-              {t('suggestionTitle')}
-            </span>
-            <span style={{ fontSize: 14, lineHeight: 1.4, color: colors.text }}>
-              {t('suggestion', { precio: monto(sugerido), sena: monto(sugerencia.sena), llega: monto(sugerencia.llega) })}
-            </span>
-          </div>
-          <button type="button" onClick={usar} style={botonStyle}>{t('useSuggestion', { precio: monto(sugerido) })}</button>
+        <div style={ofertaStyle}>
+          <span style={{ fontSize: 13.5, lineHeight: 1.4, color: colors.text }}>
+            {t('coverQuestion', { sena: monto(p.sena), precio: monto(sugerido), senaNueva: monto(sugerencia.sena), llega: monto(sugerencia.llega) })}
+          </span>
+          <button type="button" onClick={usar} style={botonSecundarioStyle}>{t('coverButton', { precio: monto(sugerido) })}</button>
         </div>
       )}
 

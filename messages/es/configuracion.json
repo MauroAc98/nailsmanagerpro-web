@@ -260,7 +260,6 @@
     "commissionNote": "Mercado Pago cobra una comisión del {rate}% sobre la seña de cada reserva online. Se descuenta de lo que te llega.",
     "notConfigured": "Todavía no configuraste la seña. Definila para ver cuánto paga tu cliente y cuánto te llega después de la comisión de Mercado Pago.",
     "enterPrice": "Ingresá un precio para ver la seña y lo que te llega.",
-    "suggestionTitle": "Precio sugerido",
     "configure": "Configurar seña y pagos",
     "configuredPercent": "Seña configurada: {pct}% del precio",
     "configuredFixed": "Seña configurada: {monto}",
@@ -269,8 +268,8 @@
     "taxRetention": "− Retención de impuestos",
     "netReceived": "Te llegan",
     "costNote": "Es el {cost}% del precio.",
-    "suggestion": "Con {precio} tu cliente paga {sena} de seña y a vos te llegan {llega}, cubriendo el costo de Mercado Pago.",
-    "useSuggestion": "Usar {precio}",
+    "coverQuestion": "¿Querés que te lleguen los {sena} completos? Con un precio de {precio} la seña es {senaNueva} y te llegan {llega}.",
+    "coverButton": "Cubrir la comisión · {precio}",
     "adjusted": "Precio ajustado. Antes: {precio}",
     "undo": "Deshacer"
   },
