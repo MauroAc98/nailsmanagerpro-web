@@ -170,6 +170,7 @@
     "loadingAppointment": "Cargando turno...",
     "back": "Volver",
     "editingAppointment": "EDITANDO TURNO: {fecha}",
+    "appointmentDate": "FECHA DEL TURNO",
     "client": "CLIENTE",
     "select": "Seleccionar...",
     "searchByName": "Buscar por nombre...",

@@ -170,6 +170,7 @@
     "loadingAppointment": "Carregando agendamento...",
     "back": "Voltar",
     "editingAppointment": "EDITANDO AGENDAMENTO: {fecha}",
+    "appointmentDate": "DATA DO AGENDAMENTO",
     "client": "CLIENTE",
     "select": "Selecionar...",
     "searchByName": "Buscar por nome...",

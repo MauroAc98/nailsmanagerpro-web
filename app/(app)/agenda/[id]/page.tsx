@@ -652,6 +652,25 @@ export default function EditarTurnoPage() {
 
         </>)}
 
+        {!enCombo && (
+          <>
+            <label htmlFor="fecha-turno" style={{ ...sectionLabelStyle, display: 'block' }}>{t('appointmentDate')}</label>
+            <input
+              id="fecha-turno"
+              type="date"
+              min={new Date().toISOString().slice(0, 10)}
+              value={fecha}
+              onChange={e => {
+                if (!e.target.value) return;
+                setFecha(e.target.value);
+                // La validacion de solapamientos corre contra los turnos del dia elegido.
+                fetchTurnos(e.target.value);
+              }}
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', marginBottom: 20 }}
+            />
+          </>
+        )}
+
         <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
         <div
           onClick={() => { setTempHora(enCombo ? horaComboEf : horaSeleccionada); setShowHoraPicker(true); }}
