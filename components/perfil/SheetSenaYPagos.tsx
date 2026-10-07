@@ -35,7 +35,8 @@ interface Props {
   retencion: string;
   setRetencion: (v: string) => void;
   errorRetencion: string | null;
-  // Comisión de MP con IVA (user.comision_mp_vigente); null = no se muestra.
+  // Comisión de MP con IVA (user.comision_mp_vigente); null = no se muestra. Solo se
+  // muestra con la reserva online activa (ver reservaOnlineActiva).
   comisionVigente: number | null;
   // La sugerencia de cubrir la comisión solo tiene sentido con la reserva
   // online activa (es donde se cobra la seña por Mercado Pago).
@@ -107,7 +108,10 @@ export function SheetSenaYPagos({
   const montoFijo = senaTipo === 'fijo' ? parsearMonto(senaMonto) : null;
   const retencionPct = retiene ? (parsearMonto(retencion) ?? 0) : 0;
   const configCalculo = { comision_mp_vigente: comisionVigente, retencion_iibb_porcentaje: retencionPct };
-  const desglose = montoFijo !== null ? desgloseSena(montoFijo, configCalculo) : null;
+  // La comisión de MP solo existe en el pago online: sin la reserva web activa
+  // no se muestra el desglose ni se sugiere nada (la seña por WhatsApp es una
+  // transferencia bancaria).
+  const desglose = reservaOnlineActiva && montoFijo !== null ? desgloseSena(montoFijo, configCalculo) : null;
   const confirmado = aplicado !== null && senaMonto === aplicado.nuevo;
   const sugerida = reservaOnlineActiva && montoFijo !== null && !confirmado ? senaFijaSugerida(montoFijo, configCalculo) : null;
   const desgloseSugerida = sugerida !== null ? desgloseSena(sugerida, configCalculo) : null;
@@ -276,7 +280,7 @@ export function SheetSenaYPagos({
       {errorRetencionMostrado && <p style={errorStyle}>{errorRetencionMostrado}</p>}
       <p style={{ ...avisoStyle, margin: '0 0 16px' }}>{t('retentionHelp')}</p>
 
-      {comisionVigente != null && (
+      {reservaOnlineActiva && senaTipo === 'porcentaje' && comisionVigente != null && (
         <p style={{ ...avisoStyle, margin: '0 0 16px', padding: '0 2px' }}>
           {t('mpFeeNote', { rate: formatearTasa(comisionVigente) })}
         </p>

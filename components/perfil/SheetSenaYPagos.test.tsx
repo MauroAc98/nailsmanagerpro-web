@@ -167,27 +167,40 @@ describe('SheetSenaYPagos — retención de impuestos', () => {
   });
 });
 
-describe('SheetSenaYPagos — cargo de Mercado Pago', () => {
+describe('SheetSenaYPagos — cargo de Mercado Pago (porcentaje)', () => {
+  const pct = { senaTipo: 'porcentaje', senaPorcentaje: '30', senaMonto: '' } as const;
+
   it('derives the displayed percent from comision_mp_vigente, one decimal es-AR', () => {
-    setup({ comisionVigente: 7.61 });
+    setup({ ...pct, comisionVigente: 7.61 });
     expect(screen.getByText(/descuenta 7,6%/)).toBeInTheDocument();
   });
 
   it('says the cost is discounted from each deposit and can be covered from the price', () => {
-    setup({ comisionVigente: 7.61 });
+    setup({ ...pct, comisionVigente: 7.61 });
     expect(screen.getByText(
       'Mercado Pago descuenta 7,6% de cada seña. Podés cubrirlo desde el precio al editar un servicio.',
     )).toBeInTheDocument();
   });
 
   it('follows a different commission instead of a hardcoded one', () => {
-    setup({ comisionVigente: 5.5 });
+    setup({ ...pct, comisionVigente: 5.5 });
     expect(screen.getByText(/descuenta 5,5%/)).toBeInTheDocument();
     expect(screen.queryByText(/7,6%/)).toBeNull();
   });
 
   it('omits the note when the commission is unknown', () => {
-    setup({ comisionVigente: null });
+    setup({ ...pct, comisionVigente: null });
+    expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
+  });
+
+  it('omits the note when online booking is not active (the fee only applies to online payments)', () => {
+    setup({ ...pct, comisionVigente: 7.61, reservaOnlineActiva: false });
+    expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
+    expect(screen.queryByText(/Podés cubrirlo desde el precio/)).toBeNull();
+  });
+
+  it('does not repeat the generic note in fixed mode (the breakdown already shows the fee)', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
     expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
   });
 });
@@ -220,6 +233,11 @@ describe('SheetSenaYPagos — cálculo en monto fijo', () => {
     expect(screen.getByText('$4.619')).toBeInTheDocument();
   });
 
+  it('suggests even when the API sends the amount as text with decimals (decimal:2)', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '5000.00', comisionVigente: 7.61 });
+    expect(screen.getByRole('button', { name: 'Usar $5.500' })).toBeInTheDocument();
+  });
+
   it('suggests a higher seña rounded up to 100 and applies it through the parent setter', () => {
     const props = setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
     expect(screen.getByText(/Para recibir \$5\.000/)).toBeInTheDocument();
@@ -227,11 +245,12 @@ describe('SheetSenaYPagos — cálculo en monto fijo', () => {
     expect(props.setSenaMonto).toHaveBeenCalledWith('5500');
   });
 
-  it('does not suggest a covering seña when online booking is not active, but keeps the breakdown', () => {
+  it('shows neither the breakdown nor the suggestion when online booking is not active', () => {
     setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61, reservaOnlineActiva: false });
     expect(screen.queryByText(/Para recibir/)).toBeNull();
     expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
-    expect(screen.getByText('El cliente paga')).toBeInTheDocument();
+    expect(screen.queryByText('El cliente paga')).toBeNull();
+    expect(screen.queryByText(/Mercado Pago \(/)).toBeNull();
   });
 
   it('includes the tax retention when the user declares one', () => {
