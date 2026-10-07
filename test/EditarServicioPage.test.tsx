@@ -257,7 +257,7 @@ describe('EditarServicioPage — derived duration, price override, turn-off clea
     montar(promo, [ana], { componentes: [], problemas: [] });
     await screen.findByRole('button', { name: 'Guardar cambios' });
     expect(screen.getByText('Duración *')).toBeInTheDocument();
-    expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
+    expect(screen.getByText('Precio')).toBeInTheDocument();
   });
 
   it('orders the promo switch before duration and price', async () => {

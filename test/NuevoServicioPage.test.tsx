@@ -57,6 +57,9 @@ function montar(profesionales: Profesional[] = []) {
 const escribirNombre = async (nombre: string) =>
   fireEvent.change(await screen.findByPlaceholderText('Ej: Kapping'), { target: { value: nombre } });
 // The components section's own "Agregar servicio" button sits above the submit one.
+// The price is required for a plain service (and a promo without a components section).
+const escribirPrecio = async (precio: string) =>
+  fireEvent.change(await screen.findByLabelText('Precio'), { target: { value: precio } });
 const guardar = () => fireEvent.click(screen.getAllByRole('button', { name: 'Agregar servicio' }).at(-1)!);
 const toggle = () => fireEvent.click(screen.getByRole('switch'));
 
@@ -71,11 +74,12 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
   it('normal servicio: creates with the legacy payload and never calls components', async () => {
     montar([ana, laura]);
     await escribirNombre('Nuevo');
+    await escribirPrecio('5000');
     guardar();
 
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
     expect(servicioService.create).toHaveBeenCalledWith({
-      nombre: 'Nuevo', duracion_minutos: 30, precio: undefined, es_promo: false, categoria_id: null,
+      nombre: 'Nuevo', duracion_minutos: 30, precio: 5000, es_promo: false, categoria_id: null,
     });
     expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
   });
@@ -84,11 +88,12 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
     montar([ana]);
     await escribirNombre('Combo');
     toggle();
+    await escribirPrecio('8000');
     guardar();
 
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
     expect(servicioService.create).toHaveBeenCalledWith({
-      nombre: 'Combo', duracion_minutos: 30, precio: undefined, es_promo: true, categoria_id: null,
+      nombre: 'Combo', duracion_minutos: 30, precio: 8000, es_promo: true, categoria_id: null,
     });
     expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
     expect(alertDialog).not.toHaveBeenCalled();
@@ -120,6 +125,7 @@ describe('NuevoServicioPage — components section for a new promo', () => {
 
     toggle();
     expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
+    await escribirPrecio('5000');
     guardar();
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
     expect(servicioService.create).toHaveBeenCalledWith(expect.objectContaining({ es_promo: false, duracion_minutos: 30 }));
@@ -220,13 +226,13 @@ describe('NuevoServicioPage — promo first, duration and price only when they a
     const nombre = await screen.findByPlaceholderText('Ej: Kapping');
     antes(nombre, screen.getByRole('switch'));
     antes(screen.getByRole('switch'), screen.getByText('Duración *'));
-    antes(screen.getByText('Duración *'), screen.getByText('Precio (opcional)'));
+    antes(screen.getByText('Duración *'), screen.getByText('Precio'));
   });
 
   it('promo off: duration and price are shown', async () => {
     montar([ana, laura]);
     expect(await screen.findByText('Duración *')).toBeInTheDocument();
-    expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
+    expect(screen.getByText('Precio')).toBeInTheDocument();
   });
 
   it('promo on with 2+ active professionals: only the components section, no duration nor price', async () => {
@@ -235,7 +241,7 @@ describe('NuevoServicioPage — promo first, duration and price only when they a
     toggle();
     expect(await screen.findByText('Servicios que incluye')).toBeInTheDocument();
     expect(screen.queryByText('Duración *')).not.toBeInTheDocument();
-    expect(screen.queryByText('Precio (opcional)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Precio')).not.toBeInTheDocument();
   });
 
   it('promo on with a single active professional: keeps duration and price', async () => {
@@ -243,7 +249,7 @@ describe('NuevoServicioPage — promo first, duration and price only when they a
     await escribirNombre('Combo');
     toggle();
     expect(screen.getByText('Duración *')).toBeInTheDocument();
-    expect(screen.getByText('Precio (opcional)')).toBeInTheDocument();
+    expect(screen.getByText('Precio')).toBeInTheDocument();
     expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
   });
 
@@ -319,6 +325,7 @@ describe('NuevoServicioPage — draft survives the round-trip to Horarios', () =
     montar([ana, laura]);
     window.sessionStorage.setItem('servicioBorrador:nuevo', JSON.stringify({ guardadoEn: Date.now(), datos: { nombre: 'X' } }));
     await escribirNombre('Nuevo');
+    await escribirPrecio('5000');
     guardar();
     await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/configuracion/servicios'));
     expect(window.sessionStorage.getItem('servicioBorrador:nuevo')).toBeNull();
