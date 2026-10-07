@@ -39,11 +39,10 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
   }, slug);
 
   if (error) {
-    return (
-      <Mensaje tono="error">
-        {error.code === 'not_found' ? t('errores.noEncontrado') : t('errores.generico')}
-      </Mensaje>
-    );
+    // 404: el negocio no existe o no tiene la reserva online habilitada (el
+    // backend no distingue a proposito). Pantalla amable, no caja de error.
+    if (error.code === 'not_found') return <NoDisponibleAun variante="negocio" />;
+    return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
   }
   // Esqueleto en vez del "Cargando…" de texto plano (Mensaje): es la primera
   // pantalla que ve la clienta, y ese flash de texto suelto desentonaba con

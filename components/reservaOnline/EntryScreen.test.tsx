@@ -133,9 +133,10 @@ describe('EntryScreen', () => {
     expect(screen.queryByRole('heading', { name: 'Studio Demo' })).toBeNull();
   });
 
-  it('salon inexistente: mensaje de no encontrado y sin CTA', async () => {
+  it('salon inexistente o sin add-on: pantalla amable y sin CTA', async () => {
     renderWithProviders(<EntryScreen slug="no-existe" ir={() => {}} />);
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No encontramos este negocio.'));
+    await waitFor(() => expect(screen.getByText('Este negocio no recibe reservas online')).toBeInTheDocument());
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Reservar turno' })).toBeNull();
   });
 });
