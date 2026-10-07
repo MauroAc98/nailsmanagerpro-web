@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { List, type RowComponentProps } from 'react-window';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { useClientesStore } from '@/store/useClienteStore';
+import { useClientesStore, type EstadoCliente } from '@/store/useClienteStore';
 import { Cliente } from '@/services/clienteService';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { abrirHistorial } from '@/store/useHistorialClienteStore';
@@ -125,6 +125,17 @@ export default function ClientesPage() {
     cargarPrimeraPagina, cargarSiguientePagina, toggleCliente,
   } = useClientesStore();
   const [buscarInput, setBuscarInput] = useState('');
+  const [estado, setEstado] = useState<EstadoCliente>('todos');
+  // El timer de la búsqueda puede dispararse después de cambiar el filtro: lee
+  // el estado vigente de acá y no el del render en que se agendó.
+  const estadoRef = useRef<EstadoCliente>('todos');
+
+  const cambiarEstado = (nuevo: EstadoCliente) => {
+    if (nuevo === estadoRef.current) return;
+    estadoRef.current = nuevo;
+    setEstado(nuevo);
+    cargarPrimeraPagina(buscarInput.trim(), nuevo);
+  };
 
   useEffect(() => {
     cargarPrimeraPagina('');
@@ -148,7 +159,7 @@ export default function ClientesPage() {
       primeraCorridaBusqueda.current = false;
       return;
     }
-    const timer = setTimeout(() => cargarPrimeraPagina(buscarInput.trim()), 500);
+    const timer = setTimeout(() => cargarPrimeraPagina(buscarInput.trim(), estadoRef.current), 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscarInput]);
@@ -182,7 +193,7 @@ export default function ClientesPage() {
       </button>
 
       {/* Buscador */}
-      <div style={{ padding: '0 20px 16px' }}>
+      <div style={{ padding: '0 20px 12px' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
@@ -209,6 +220,24 @@ export default function ClientesPage() {
         </div>
       </div>
 
+      {/* Filtro por estado */}
+      <div role="group" aria-label={t('filterAriaLabel')} style={{ display: 'flex', gap: 8, padding: '0 20px 16px' }}>
+        {([['todos', 'filterAll'], ['activos', 'filterActive'], ['inactivos', 'filterInactive']] as const).map(([valor, clave]) => (
+          <button
+            key={valor}
+            onClick={() => cambiarEstado(valor)}
+            aria-pressed={estado === valor}
+            style={{
+              flex: 1, minWidth: 0, padding: '8px 6px', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              border: `1px solid ${estado === valor ? colors.primaryDeep : colors.border}`,
+              backgroundColor: estado === valor ? colors.surfaceSubtle : colors.surface, color: colors.text,
+            }}
+          >
+            {t(clave)}
+          </button>
+        ))}
+      </div>
+
       {/* Error */}
       {error && (
         <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: 8, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
@@ -224,7 +253,7 @@ export default function ClientesPage() {
           </div>
         ) : clientesPagina.length === 0 ? (
           <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-            {buscarInput ? t('noResults') : t('emptyState')}
+            {buscarInput || estado !== 'todos' ? t('noResults') : t('emptyState')}
           </p>
         ) : (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

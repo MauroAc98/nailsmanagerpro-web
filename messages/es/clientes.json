@@ -2,6 +2,10 @@
   "ClientesPage": {
     "title": "Clientes",
     "searchPlaceholder": "Buscar por nombre o teléfono...",
+    "filterAll": "Todos",
+    "filterActive": "Activos",
+    "filterInactive": "Inactivos",
+    "filterAriaLabel": "Filtrar clientes por estado",
     "historyButton": "Historial",
     "historyButtonAriaLabel": "Ver historial de turnos",
     "noContactInfo": "Sin datos de contacto",

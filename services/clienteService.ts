@@ -46,9 +46,13 @@ export const clienteService = {
   // mandar `page` activa el shape paginado en el backend (ver
   // ClienteController::index) — getAll() (sin `page`) sigue devolviendo el
   // array plano de siempre, usado por el picker de cliente en Agenda.
-  getPaginado: async (params: { page: number; perPage?: number; buscar?: string }): Promise<ClientesPaginados> => {
+  getPaginado: async (params: { page: number; perPage?: number; buscar?: string; activo?: boolean }): Promise<ClientesPaginados> => {
     const { data } = await api.get<ClientesPaginados>('/clientes', {
-      params: { page: params.page, per_page: params.perPage ?? 30, buscar: params.buscar || undefined },
+      params: {
+        page: params.page, per_page: params.perPage ?? 30, buscar: params.buscar || undefined,
+        // Sin `activo` el backend lista todos.
+        activo: params.activo === undefined ? undefined : params.activo ? 1 : 0,
+      },
     });
     return data;
   },

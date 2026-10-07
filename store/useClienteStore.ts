@@ -24,6 +24,12 @@ interface CrearClienteResult extends OperacionResult {
   cliente?: Cliente;
 }
 
+export type EstadoCliente = 'todos' | 'activos' | 'inactivos';
+
+// 'todos' = sin filtro (el backend lista todos si no recibe `activo`).
+const activoDeEstado = (estado: EstadoCliente): boolean | undefined =>
+  estado === 'todos' ? undefined : estado === 'activos';
+
 interface ClientesState {
   clientes: Cliente[];
   loading: boolean;
@@ -43,13 +49,14 @@ interface ClientesState {
   cargandoPagina: boolean;
   cargandoMasPagina: boolean;
   buscarActivo: string;
+  estadoActivo: EstadoCliente;
 
   fetchClientes: () => Promise<void>;
   crearCliente: (dto: CreateClienteDto) => Promise<CrearClienteResult>;
   actualizarCliente: (id: number, dto: UpdateClienteDto) => Promise<OperacionResult>;
   eliminarCliente: (id: number) => Promise<OperacionResult>;
   toggleCliente: (id: number, activo: boolean) => Promise<OperacionResult>;
-  cargarPrimeraPagina: (buscar: string) => Promise<void>;
+  cargarPrimeraPagina: (buscar: string, estado?: EstadoCliente) => Promise<void>;
   cargarSiguientePagina: () => Promise<void>;
   clearError: () => void;
 }
@@ -69,6 +76,7 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   cargandoPagina: false,
   cargandoMasPagina: false,
   buscarActivo: '',
+  estadoActivo: 'todos',
 
   clearError: () => set({ error: null }),
 
@@ -166,10 +174,10 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   // cargandoMasPagina) para no tapar la pantalla con el spinner global en
   // cada búsqueda o scroll.
   // ─────────────────────────────────────────────
-  cargarPrimeraPagina: async (buscar) => {
-    set({ cargandoPagina: true, error: null, buscarActivo: buscar });
+  cargarPrimeraPagina: async (buscar, estado = 'todos') => {
+    set({ cargandoPagina: true, error: null, buscarActivo: buscar, estadoActivo: estado });
     try {
-      const res = await clienteService.getPaginado({ page: 1, buscar });
+      const res = await clienteService.getPaginado({ page: 1, buscar, activo: activoDeEstado(estado) });
       set({
         clientesPagina: res.data,
         paginaActual: res.current_page,
@@ -184,11 +192,11 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   },
 
   cargarSiguientePagina: async () => {
-    const { paginaActual, totalPaginas, cargandoMasPagina, buscarActivo } = get();
+    const { paginaActual, totalPaginas, cargandoMasPagina, buscarActivo, estadoActivo } = get();
     if (cargandoMasPagina || paginaActual === 0 || paginaActual >= totalPaginas) return;
     set({ cargandoMasPagina: true });
     try {
-      const res = await clienteService.getPaginado({ page: paginaActual + 1, buscar: buscarActivo });
+      const res = await clienteService.getPaginado({ page: paginaActual + 1, buscar: buscarActivo, activo: activoDeEstado(estadoActivo) });
       set(state => ({
         clientesPagina: [...state.clientesPagina, ...res.data],
         paginaActual: res.current_page,
