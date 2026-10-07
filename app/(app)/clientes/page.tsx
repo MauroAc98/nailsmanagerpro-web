@@ -12,6 +12,7 @@ import { abrirHistorial } from '@/store/useHistorialClienteStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import PillToggle from '@/components/PillToggle';
 import { Spinner } from '@/components/Spinner';
+import { FiltroPills } from '@/components/FiltroPills';
 
 // Altura real de la tarjeta (~70px) + 10px de gap, horneado en la fila
 // porque react-window no soporta gap entre filas absolutas.
@@ -221,21 +222,17 @@ export default function ClientesPage() {
       </div>
 
       {/* Filtro por estado */}
-      <div role="group" aria-label={t('filterAriaLabel')} style={{ display: 'flex', gap: 8, padding: '0 20px 16px' }}>
-        {([['todos', 'filterAll'], ['activos', 'filterActive'], ['inactivos', 'filterInactive']] as const).map(([valor, clave]) => (
-          <button
-            key={valor}
-            onClick={() => cambiarEstado(valor)}
-            aria-pressed={estado === valor}
-            style={{
-              flex: 1, minWidth: 0, padding: '8px 6px', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              border: `1px solid ${estado === valor ? colors.primaryDeep : colors.border}`,
-              backgroundColor: estado === valor ? colors.surfaceSubtle : colors.surface, color: colors.text,
-            }}
-          >
-            {t(clave)}
-          </button>
-        ))}
+      <div style={{ padding: '0 20px 16px' }}>
+        <FiltroPills
+          ariaLabel={t('filterAriaLabel')}
+          options={[
+            { value: 'todos', label: t('filterAll') },
+            { value: 'activos', label: t('filterActive') },
+            { value: 'inactivos', label: t('filterInactive') },
+          ]}
+          value={estado}
+          onChange={cambiarEstado}
+        />
       </div>
 
       {/* Error */}

@@ -22,6 +22,7 @@ import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import CategoriaHeader from '@/components/configuracion/CategoriaHeader';
 import { contarPorEstado, filtrarPorEstado, type FiltroEstado } from '@/lib/serviciosPorEstado';
+import { FiltroPills } from '@/components/FiltroPills';
 
 // ReorderableSection — un grupo (una categoría, o "Sin categoría") con su
 // propio DndContext/SortableContext, así arrastrar nunca mezcla ids entre
@@ -309,29 +310,16 @@ export default function ServiciosPage() {
 
       {/* Filtro por estado */}
       {servicios.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, padding: '0 20px 14px' }}>
-          {([
-            ['todos', t('filterAll', { count: conteos.todos })],
-            ['activos', t('filterActive', { count: conteos.activos })],
-            ['pausados', t('filterPaused', { count: conteos.pausados })],
-          ] as const).map(([valor, label]) => {
-            const activo = filtroEstado === valor;
-            return (
-              <button
-                key={valor}
-                onClick={() => setFiltroEstado(valor)}
-                aria-pressed={activo}
-                style={{
-                  padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                  border: `1px solid ${activo ? colors.primarySolid : colors.border}`,
-                  backgroundColor: activo ? colors.primarySolid : colors.surface,
-                  color: activo ? '#FFF' : colors.text,
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+        <div style={{ padding: '0 20px 14px' }}>
+          <FiltroPills
+            options={[
+              { value: 'todos', label: t('filterAll', { count: conteos.todos }) },
+              { value: 'activos', label: t('filterActive', { count: conteos.activos }) },
+              { value: 'pausados', label: t('filterPaused', { count: conteos.pausados }) },
+            ]}
+            value={filtroEstado}
+            onChange={setFiltroEstado}
+          />
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { Spinner } from '@/components/Spinner';
+import { FiltroPills } from '@/components/FiltroPills';
 import CategoriaRow from '@/components/configuracion/CategoriaRow';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAuth } from '@/hooks/useAuth';
@@ -96,27 +97,11 @@ function CategoriasMovimientosContent() {
 
       <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Gastos / Otros ingresos — pastillas, igual que los filtros de Servicios. */}
-        <div role="group" style={{ display: 'flex', gap: 8 }}>
-          {([['gasto', t('tabGastos')], ['ingreso', t('tabIngresos')]] as const).map(([valor, label]) => {
-            const activo = tab === valor;
-            return (
-              <button
-                key={valor}
-                type="button"
-                aria-pressed={activo}
-                onClick={() => setTab(valor)}
-                style={{
-                  padding: '6px 14px', minHeight: 32, borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                  border: `1px solid ${activo ? colors.primarySolid : colors.border}`,
-                  backgroundColor: activo ? colors.primarySolid : colors.surface,
-                  color: activo ? '#FFF' : colors.text,
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+        <FiltroPills
+          options={[{ value: 'gasto', label: t('tabGastos') }, { value: 'ingreso', label: t('tabIngresos') }]}
+          value={tab}
+          onChange={setTab}
+        />
 
         {!user ? (
           <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
