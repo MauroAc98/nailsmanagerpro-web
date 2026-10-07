@@ -12,6 +12,7 @@ import { HeroPerfil } from '@/components/perfil/HeroPerfil';
 import { SheetDatosPersonales } from '@/components/perfil/SheetDatosPersonales';
 import { SheetNegocio } from '@/components/perfil/SheetNegocio';
 import { SheetSenaYPagos } from '@/components/perfil/SheetSenaYPagos';
+import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
 import { SheetPassword } from '@/components/perfil/SheetPassword';
 import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
@@ -303,22 +304,10 @@ export default function PerfilPage() {
     }
   }, [sheetActivo]);
 
-  // Enlace directo `/perfil?sheet=senaYPagos` (atajo desde el formulario de
-  // servicio): abre la hoja de Seña y pagos una sola vez y limpia el param, así
-  // un refresh no la reabre. Se lee de window.location (no useSearchParams) para
-  // no exigir un Suspense en toda la pantalla.
-  const abrioPorEnlace = useRef(false);
-  useEffect(() => {
-    if (!user || abrioPorEnlace.current) return;
-    if (new URLSearchParams(window.location.search).get('sheet') !== 'senaYPagos') return;
-    abrioPorEnlace.current = true;
-    abrirSheet('senaYPagos');
-    router.replace('/perfil');
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!user) return null;
-
+  // Declarada antes de los efectos que la usan (el enlace ?sheet=senaYPagos);
+  // con `user` nulo no hay nada que hidratar.
   const abrirSheet = (sheet: Exclude<Sheet, null>) => {
+    if (!user) return;
     setNombreEstudio(user.name ?? '');
     const { codigo, numero } = phoneUtils.splitCodigoPais(user.telefono ?? '');
     setCodigoPais(codigo);
@@ -350,6 +339,23 @@ export default function PerfilPage() {
     setErroresNegocio({});
     setSheetActivo(sheet);
   };
+
+  // Enlace directo `/perfil?sheet=senaYPagos` (atajo desde el formulario de
+  // servicio): abre la hoja de Seña y pagos una sola vez y limpia el param, así
+  // un refresh no la reabre. Se lee de window.location (no useSearchParams) para
+  // no exigir un Suspense en toda la pantalla.
+  const abrioPorEnlace = useRef(false);
+  useEffect(() => {
+    if (!user || abrioPorEnlace.current) return;
+    if (new URLSearchParams(window.location.search).get('sheet') !== 'senaYPagos') return;
+    abrioPorEnlace.current = true;
+    // Abre la hoja una sola vez al llegar por el enlace: sincroniza con la URL.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    abrirSheet('senaYPagos');
+    router.replace('/perfil');
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!user) return null;
 
   // Atajo desde Mensajes automáticos: abre Seña y pagos (re-hidrata desde lo
   // guardado, así que descarta lo sin guardar del sheet anterior) y, si hace
@@ -570,6 +576,7 @@ export default function PerfilPage() {
             setRetencion={setRetencionIibb}
             errorRetencion={retencionError}
             comisionVigente={user.comision_mp_vigente ?? null}
+            reservaOnlineActiva={reservaOnlineActivaParaNegocio(user)}
             erroresServidor={erroresNegocio}
             onGuardar={handleGuardar}
             guardando={guardando}
