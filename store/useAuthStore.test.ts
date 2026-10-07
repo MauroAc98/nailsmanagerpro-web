@@ -564,3 +564,78 @@ describe('inicializar — boot check timeout backstop', () => {
     expect(mockedLog).toHaveBeenCalledWith('checkSubscription.boot-timeout');
   });
 });
+
+// El estado de la reserva online lo cambia el admin desde otro lado (otro
+// navegador): la app abierta tiene que enterarse sin cerrar sesión. /auth/me
+// ya devuelve `reserva_online_activa` calculado en vivo.
+describe('estado del negocio que cambia desde afuera (reserva online)', () => {
+  const userBase = { id: 1, name: 'Ana', reserva_online_activa: true, whatsapp_requiere_envio_manual: false };
+
+  function mockMe(data: Record<string, unknown>) {
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', ...data } });
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+  }
+
+  it('refrescarEstadoNegocio: trae reserva_online_activa de /auth/me y la guarda en user y en localStorage', async () => {
+    useAuthStore.setState({ user: userBase as never, authStatus: 'authenticated' });
+    mockMe({ ...userBase, reserva_online_activa: false });
+
+    await useAuthStore.getState().refrescarEstadoNegocio();
+
+    expect(useAuthStore.getState().user?.reserva_online_activa).toBe(false);
+    expect(JSON.parse(localStorage.getItem('auth_user') ?? '{}').reserva_online_activa).toBe(false);
+  });
+
+  it('refrescarEstadoNegocio: conserva el resto del user (no lo pisa completo)', async () => {
+    useAuthStore.setState({ user: { ...userBase, name: 'Estudio Ana' } as never, authStatus: 'authenticated' });
+    mockMe({ name: 'Otro', reserva_online_activa: false });
+
+    await useAuthStore.getState().refrescarEstadoNegocio();
+
+    expect(useAuthStore.getState().user?.name).toBe('Estudio Ana');
+  });
+
+  it('refrescarEstadoNegocio: sin usuario no hace ninguna llamada', async () => {
+    useAuthStore.setState({ user: null });
+    await useAuthStore.getState().refrescarEstadoNegocio();
+    expect(mockedGet).not.toHaveBeenCalled();
+  });
+
+  it('refrescarEstadoNegocio: si /auth/me falla, no toca el user ni lanza', async () => {
+    useAuthStore.setState({ user: userBase as never, authStatus: 'authenticated' });
+    mockedGet.mockRejectedValue(new Error('offline'));
+
+    await expect(useAuthStore.getState().refrescarEstadoNegocio()).resolves.toBeUndefined();
+    expect(useAuthStore.getState().user?.reserva_online_activa).toBe(true);
+  });
+
+  it('refrescarEstadoNegocio: llamadas simultáneas comparten una sola request', async () => {
+    useAuthStore.setState({ user: userBase as never, authStatus: 'authenticated' });
+    mockMe({ ...userBase });
+
+    await Promise.all([
+      useAuthStore.getState().refrescarEstadoNegocio(),
+      useAuthStore.getState().refrescarEstadoNegocio(),
+    ]);
+
+    expect(mockedGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('checkSubscription también refresca reserva_online_activa (al arrancar o reverificar)', async () => {
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', reserva_online_activa: false, whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+    useAuthStore.setState({ user: userBase as never, authStatus: 'authenticated' });
+
+    await useAuthStore.getState().checkSubscription();
+
+    expect(useAuthStore.getState().user?.reserva_online_activa).toBe(false);
+  });
+});

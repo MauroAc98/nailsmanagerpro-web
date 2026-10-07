@@ -9,6 +9,7 @@ import { esHostReservaPublica } from '@/lib/reservaOnline/host';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useRefrescoEstadoNegocio } from '@/hooks/useRefrescoEstadoNegocio';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme, useThemeStore } from '@/store/useThemeStore';
 import { agendaColors } from '@/theme/agendaColors';
@@ -102,6 +103,10 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // Al cambiar de cuenta (logout, sesión revocada, otro usuario) se vacían los
   // stores con datos del salón; si no, el siguiente salón vería datos ajenos.
   useEffect(() => iniciarResetDeStoresPorCambioDeCuenta(), []);
+
+  // Datos del negocio que cambian desde afuera (ej. el admin activa o desactiva
+  // la reserva online): se refrescan al volver a la app y cada minuto.
+  useRefrescoEstadoNegocio();
 
   // Un confirm/alert (ConfirmSheetHost) vive en este layout raíz, no en la
   // pantalla que lo abrió — nunca se desmonta con la navegación. Sin este

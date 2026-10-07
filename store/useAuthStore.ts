@@ -32,6 +32,10 @@ const LOGOUT_SERVER_TIMEOUT_MS = 3000;
 // request and ONE state transition.
 let recheckInFlight: Promise<void> | null = null;
 
+// Mismo patrón para `refrescarEstadoNegocio`: varios disparadores (foco,
+// volver a la pestaña, intervalo) pueden coincidir y comparten UNA request.
+let refrescoNegocioInFlight: Promise<void> | null = null;
+
 // ─────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────
@@ -83,6 +87,10 @@ interface AuthState {
   // Single-flight authoritative recheck triggered by the interceptor's
   // `auth:subscription-suspect` intent event. Concurrent calls share one promise.
   recheckSubscription: () => Promise<void>;
+  // Trae de /auth/me los datos del negocio que cambian desde afuera (el admin
+  // activa/desactiva la reserva online, el ratio de fallos de WhatsApp) y los
+  // mezcla en `user` sin pisarlo completo. Silencioso: si falla, no toca nada.
+  refrescarEstadoNegocio: () => Promise<void>;
   // Graceful, coalesced 401 handling (design D5). Transitions to
   // `session-ending` (modal owns the screen), keeps `user` for the dimmed
   // view, nulls `token`, captures the origin route for `?redirect=`.
@@ -199,19 +207,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           // que el cliente se entere — este campo sí necesita refrescarse acá
           // para que el banner de recordatorios pendientes aparezca sin
           // depender de un logout/login.
-          const userActual = get().user;
-          if (userActual) {
-            const userActualizado = {
-              ...userActual,
-              whatsapp_requiere_envio_manual: meResponse.whatsapp_requiere_envio_manual,
-            };
-            set({ user: userActualizado });
-            try {
-              localStorage.setItem('auth_user', JSON.stringify(userActualizado));
-            } catch {
-              // sin acceso a localStorage — no bloqueamos
-            }
-          }
+          mezclarEstadoNegocio(meResponse);
         } catch (err) {
           logAuthEvent('checkSubscription.me-reconcile-failed', { err });
         }
@@ -229,6 +225,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       set({ subscriptionChecked: true });
     }
+  },
+
+  refrescarEstadoNegocio: () => {
+    if (!get().user) return Promise.resolve();
+    return (refrescoNegocioInFlight ??= authService
+      .me()
+      .then((me) => { mezclarEstadoNegocio(me); })
+      .catch(() => { /* silencioso: sin red o 401 lo maneja el interceptor */ })
+      .finally(() => { refrescoNegocioInFlight = null; }));
   },
 
   // Design D3 — single-flight. `recheckInFlight` is module-scoped so every
@@ -601,3 +606,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 }));
+
+// Mezcla en `user` los datos del negocio que cambian desde afuera, sin pisarlo
+// completo (el resto del perfil local puede tener ediciones sin guardar). Es una
+// declaracion de funcion (hoisted): se usa dentro del store y se resuelve al
+// llamarla, cuando `useAuthStore` ya existe.
+function mezclarEstadoNegocio(me: User): void {
+  const userActual = useAuthStore.getState().user;
+  if (!userActual) return;
+  const userActualizado: User = {
+    ...userActual,
+    whatsapp_requiere_envio_manual: me.whatsapp_requiere_envio_manual,
+    // El add-on de reserva online lo activa el admin y se evalua en vivo contra
+    // la suscripcion: sin esto la app abierta no se entera del cambio.
+    reserva_online_activa: me.reserva_online_activa ?? userActual.reserva_online_activa,
+  };
+  useAuthStore.setState({ user: userActualizado });
+  try {
+    localStorage.setItem('auth_user', JSON.stringify(userActualizado));
+  } catch {
+    // sin acceso a localStorage — no bloqueamos
+  }
+}
