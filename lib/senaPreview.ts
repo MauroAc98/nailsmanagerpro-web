@@ -6,7 +6,8 @@
 export interface SenaPreviewConfig {
   sena_tipo?: 'fijo' | 'porcentaje' | null;
   sena_porcentaje?: number | null;
-  sena_monto?: number | null;
+  // El backend lo castea decimal:2: en el JSON llega como texto ("5000.00").
+  sena_monto?: number | string | null;
   retencion_iibb_porcentaje?: number | null;
   /** Comisión de MP con IVA ya aplicado (ej. 7.61). */
   comision_mp_vigente?: number | null;
@@ -30,20 +31,27 @@ export function senaConfigurada(c: SenaPreviewConfig): boolean {
   return configValida(c);
 }
 
+// Número finito de un valor que puede venir como texto; null si no lo es.
+function comoNumero(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function configValida(c: SenaPreviewConfig): boolean {
   if (c.sena_tipo === 'porcentaje') {
     const p = c.sena_porcentaje;
     return typeof p === 'number' && Number.isFinite(p) && p >= 1 && p <= 100;
   }
-  const m = c.sena_monto;
-  return typeof m === 'number' && Number.isFinite(m) && m > 0;
+  const m = comoNumero(c.sena_monto);
+  return m !== null && m > 0;
 }
 
 export function calcularSena(precio: number, c: SenaPreviewConfig): number {
   if (!(precio > 0) || !configValida(c)) return 0;
   const bruta = c.sena_tipo === 'porcentaje'
     ? Math.round((precio * (c.sena_porcentaje as number)) / 100)
-    : (c.sena_monto as number);
+    : (comoNumero(c.sena_monto) as number);
   return Math.min(bruta, precio);
 }
 
@@ -70,6 +78,33 @@ export function precioSugeridoSena(precio: number, c: SenaPreviewConfig): number
   const base = 10000 / mcd(10000, pct);
   const paso = (100 * base) / mcd(100, base);
   return Math.ceil(pMin / paso) * paso;
+}
+
+export interface DesgloseSena {
+  sena: number;
+  cargo: number;
+  retencion: number;
+  /** Lo que llega: seña menos comisión de MP y retención. */
+  llega: number;
+}
+
+// Desglose de una seña de monto FIJO (sin precio de servicio de por medio).
+// Null si no hay seña positiva o falta la comisión vigente.
+export function desgloseSena(sena: number, c: SenaPreviewConfig): DesgloseSena | null {
+  const comision = c.comision_mp_vigente;
+  if (!(sena > 0) || typeof comision !== 'number' || !Number.isFinite(comision)) return null;
+  const cargo = Math.round((sena * comision) / 100);
+  const retencion = Math.round((sena * (c.retencion_iibb_porcentaje ?? 0)) / 100);
+  return { sena, cargo, retencion, llega: sena - cargo - retencion };
+}
+
+// Seña fija más alta que, descontados comisión de MP (con IVA) y retención,
+// deja al menos `monto` neto. Siempre redondea HACIA ARRIBA a múltiplos de 100.
+export function senaFijaSugerida(monto: number, c: SenaPreviewConfig): number | null {
+  const comision = c.comision_mp_vigente;
+  if (!(monto > 0) || typeof comision !== 'number' || !Number.isFinite(comision)) return null;
+  const bruta = monto / (1 - tasaCosto(c) / 100);
+  return Math.ceil(bruta / 100 - 1e-9) * 100;
 }
 
 export function calcularSenaPreview(precio: number, c: SenaPreviewConfig): SenaPreview | null {

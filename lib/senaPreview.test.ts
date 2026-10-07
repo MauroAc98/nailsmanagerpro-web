@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcularSena, calcularSenaPreview, precioSugeridoSena, type SenaPreviewConfig } from './senaPreview';
+import { calcularSena, calcularSenaPreview, desgloseSena, precioSugeridoSena, senaFijaSugerida, type SenaPreviewConfig } from './senaPreview';
 
 const pct = (p: number, extra: Partial<SenaPreviewConfig> = {}): SenaPreviewConfig => ({
   sena_tipo: 'porcentaje', sena_porcentaje: p, sena_monto: null,
@@ -8,6 +8,24 @@ const pct = (p: number, extra: Partial<SenaPreviewConfig> = {}): SenaPreviewConf
 const fijo = (m: number | null, extra: Partial<SenaPreviewConfig> = {}): SenaPreviewConfig => ({
   sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: m,
   retencion_iibb_porcentaje: 0, comision_mp_vigente: 7.61, ...extra,
+});
+
+// El backend castea sena_monto como decimal:2: en el JSON llega como TEXTO
+// ("5000.00"), aunque el tipo diga number. El cálculo no puede depender de que
+// sea number.
+describe('monto fijo que llega como texto (decimal:2 del backend)', () => {
+  const fijoTexto = (m: string) => fijo(m as unknown as number);
+  it('is a configured seña and computes the commission', () => {
+    expect(calcularSena(10000, fijoTexto('5000.00'))).toBe(5000);
+    const p = calcularSenaPreview(10000, fijoTexto('5000.00'));
+    expect(p).not.toBeNull();
+    expect(p!.sena).toBe(5000);
+    expect(p!.cargo).toBe(Math.round((5000 * 7.61) / 100));
+  });
+  it('still rejects a zero or non-numeric text amount', () => {
+    expect(calcularSena(10000, fijoTexto('0.00'))).toBe(0);
+    expect(calcularSena(10000, fijoTexto(''))).toBe(0);
+  });
 });
 
 describe('calcularSena', () => {
@@ -111,5 +129,39 @@ describe('precioSugeridoSena', () => {
     expect(precioSugeridoSena(18000, pct(12.5))).toBeNull();
     expect(precioSugeridoSena(18000, pct(0))).toBeNull();
     expect(precioSugeridoSena(18000, pct(50, { comision_mp_vigente: null }))).toBeNull();
+  });
+});
+
+describe('desgloseSena (monto fijo, sin precio)', () => {
+  it('splits a fixed seña into MP fee and net', () => {
+    expect(desgloseSena(5000, { comision_mp_vigente: 7.61 })).toEqual({ sena: 5000, cargo: 381, retencion: 0, llega: 4619 });
+  });
+  it('includes the tax retention', () => {
+    expect(desgloseSena(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 }))
+      .toEqual({ sena: 5000, cargo: 381, retencion: 100, llega: 4519 });
+  });
+  it('is null without a positive seña or without the commission', () => {
+    expect(desgloseSena(0, { comision_mp_vigente: 7.61 })).toBeNull();
+    expect(desgloseSena(5000, { comision_mp_vigente: null })).toBeNull();
+  });
+});
+
+describe('senaFijaSugerida', () => {
+  it('raises the seña, rounded UP to a multiple of 100, so the net covers the typed amount', () => {
+    // 5000 / (1 - 0.0761) = 5411,7 -> 5500
+    expect(senaFijaSugerida(5000, { comision_mp_vigente: 7.61 })).toBe(5500);
+    const d = desgloseSena(5500, { comision_mp_vigente: 7.61 })!;
+    expect(d.llega).toBeGreaterThanOrEqual(5000);
+  });
+  it('accounts for the tax retention', () => {
+    // 5000 / (1 - 0.0961) = 5531,3 -> 5600
+    expect(senaFijaSugerida(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 })).toBe(5600);
+  });
+  it('is exact when the amount already lands on a multiple of 100 after gross-up', () => {
+    expect(senaFijaSugerida(100, { comision_mp_vigente: 0 })).toBe(100);
+  });
+  it('is null without a positive amount or without the commission', () => {
+    expect(senaFijaSugerida(0, { comision_mp_vigente: 7.61 })).toBeNull();
+    expect(senaFijaSugerida(5000, {})).toBeNull();
   });
 });
