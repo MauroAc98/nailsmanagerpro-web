@@ -178,6 +178,23 @@ describe('DatosScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Todavía no está disponible' })).toBeInTheDocument();
   });
 
+  it('si el negocio desactivo la reserva online (not_found) al guardar los datos, avisa que no recibe reservas y no pide reintentar', async () => {
+    setServiceParaTests({
+      ...svc,
+      actualizarDatosReserva: async () => {
+        throw new ReservaOnlineError('not_found');
+      },
+    });
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('heading', { name: 'Este negocio no recibe reservas online' })).toBeInTheDocument();
+    expect(screen.queryByText(/Probá de nuevo/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).toBeNull();
+  });
+
   it('el selector de pais arranca en +54 y el numero se tipea local', async () => {
     renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     const pais = await screen.findByRole('combobox', { name: 'Código de país' });

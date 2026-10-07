@@ -254,6 +254,25 @@ describe('HorarioScreen', () => {
     expect(ir).not.toHaveBeenCalled();
   });
 
+  it('si el negocio desactivo la reserva online (not_found) al retener el horario, avisa que no recibe reservas y no pide reintentar', async () => {
+    const ir = vi.fn();
+    setServiceParaTests({
+      ...svc,
+      retenerHorario: async () => {
+        throw new ReservaOnlineError('not_found');
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={ir} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
+    girarA('10:30');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(await screen.findByRole('heading', { name: 'Este negocio no recibe reservas online' })).toBeInTheDocument();
+    expect(screen.queryByText(/Probá de nuevo/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).toBeNull();
+    expect(ir).not.toHaveBeenCalled();
+  });
+
   it('si el backend limita los intentos (rate_limited) muestra un aviso especifico, no el generico', async () => {
     setServiceParaTests({
       ...svc,

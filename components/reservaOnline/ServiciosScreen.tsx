@@ -11,6 +11,7 @@ import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { EtiquetaPromo, PasosPromo, PastillaModo } from './PromoIncluye';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 
@@ -202,6 +203,8 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   }, [servicios]);
 
   if (!listo) return null;
+  // 404 = el negocio desactivó la reserva online: reintentar no sirve, se avisa.
+  if (error?.code === 'not_found') return <NoDisponibleAun variante="negocio" />;
 
   const categorias = new Map<number, string>();
   for (const s of servicios ?? []) if (s.categoria) categorias.set(s.categoria.id, s.categoria.nombre);

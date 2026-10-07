@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, screen, waitFor } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
+import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { DetalleServicioScreen } from './DetalleServicioScreen';
 import { limpiarFlujo, prepararServicio } from './testUtils';
@@ -15,6 +16,18 @@ describe('DetalleServicioScreen', () => {
 
   // El "Cargando…" de texto plano se ve mal aca: pasa a un esqueleto que
   // respeta la forma real (galeria + titulo/duracion + boton).
+  it('si el negocio desactivo la reserva online (not_found), avisa que no recibe reservas y no dice "probá de nuevo"', async () => {
+    setServiceParaTests({
+      ...prepararServicio(),
+      getServices: async () => {
+        throw new ReservaOnlineError('not_found');
+      },
+    });
+    renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
+    expect(await screen.findByRole('heading', { name: 'Este negocio no recibe reservas online' })).toBeInTheDocument();
+    expect(screen.queryByText(/Probá de nuevo/)).toBeNull();
+  });
+
   it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
     renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
     expect(screen.getByTestId('detalle-servicio-skeleton')).toBeInTheDocument();

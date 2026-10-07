@@ -66,9 +66,12 @@ export function DatosScreen({
   const [avisoTelefono, setAvisoTelefono] = useState<{ tipo: 'phone_cooldown'; minutos: number } | { tipo: 'verification_required' } | null>(null);
   // Kill switch del backend apagado: a pantalla completa, como en Horario.
   const [noDisponible, setNoDisponible] = useState(false);
+  // El negocio desactivó la reserva online (404): reintentar no sirve.
+  const [sinReservas, setSinReservas] = useState(false);
 
   if (!listo) return null;
   if (noDisponible) return <NoDisponibleAun />;
+  if (sinReservas) return <NoDisponibleAun variante="negocio" />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
 
   const whatsappVisible = whatsappCrudo ?? separarWhatsapp(cliente.whatsapp).local;
@@ -117,6 +120,7 @@ export function DatosScreen({
     } catch (e) {
       if (e instanceof ReservaOnlineError && e.code === 'hold_expired') setHoldPerdido(true);
       else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') setNoDisponible(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'not_found') setSinReservas(true);
       else if (e instanceof ReservaOnlineError && e.code === 'phone_cooldown') {
         setAvisoTelefono({ tipo: 'phone_cooldown', minutos: Math.ceil((e.retryAfterSeconds ?? 0) / 60) });
       } else if (e instanceof ReservaOnlineError && e.code === 'verification_required') {

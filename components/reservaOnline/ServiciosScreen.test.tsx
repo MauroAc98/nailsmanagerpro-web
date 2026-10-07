@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, renderWithProviders, screen, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
+import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { ServiciosScreen } from './ServiciosScreen';
 import { limpiarFlujo, prepararServicio } from './testUtils';
@@ -15,6 +16,30 @@ describe('ServiciosScreen', () => {
 
   // El "Cargando…" de texto plano se ve mal aca tambien: pasa a un esqueleto
   // que respeta la forma real (pastillas de filtro + tarjetas de servicio).
+  it('si el negocio desactivo la reserva online (not_found) al listar servicios, avisa que no recibe reservas y no pide reintentar', async () => {
+    setServiceParaTests({
+      ...prepararServicio(),
+      getServices: async () => {
+        throw new ReservaOnlineError('not_found');
+      },
+    });
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    expect(await screen.findByRole('heading', { name: 'Este negocio no recibe reservas online' })).toBeInTheDocument();
+    expect(screen.queryByText(/Probá de nuevo/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).toBeNull();
+  });
+
+  it('un error de red al listar servicios SI ofrece reintentar', async () => {
+    setServiceParaTests({
+      ...prepararServicio(),
+      getServices: async () => {
+        throw new Error('network');
+      },
+    });
+    renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+    expect(await screen.findByRole('button', { name: /Reintentar/ })).toBeInTheDocument();
+  });
+
   it('mientras carga, muestra un esqueleto en vez del texto plano "Cargando…"', () => {
     renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
     expect(screen.getByTestId('servicios-skeleton')).toBeInTheDocument();

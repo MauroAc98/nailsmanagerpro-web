@@ -98,6 +98,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   // pantalla completa, nunca se confunde con slot_taken/hold_expired (esos
   // dejan seguir reservando, esto no).
   const [noDisponible, setNoDisponible] = useState(false);
+  // El negocio desactivó la reserva online (404): reintentar no sirve.
+  const [sinReservas, setSinReservas] = useState(false);
   const [avisoRetener, setAvisoRetener] = useState<'rate_limited' | 'challenge_failed' | null>(null);
   // Nombre de la profesional elegida antes que ya no hace el servicio (aviso de una linea).
   const [avisoReset, setAvisoReset] = useState<string | null>(null);
@@ -226,6 +228,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
 
   if (!listo) return null;
   if (noDisponible) return <NoDisponibleAun />;
+  if (sinReservas || error?.code === 'not_found') return <NoDisponibleAun variante="negocio" />;
 
   const sinHorarios = error?.code === 'validation' || (disp !== null && disp.slots.length === 0);
   const errorDeCarga = error && error.code !== 'validation';
@@ -368,6 +371,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         reintentar();
       } else if (e instanceof ReservaOnlineError && e.code === 'creation_disabled') {
         setNoDisponible(true);
+      } else if (e instanceof ReservaOnlineError && e.code === 'not_found') {
+        setSinReservas(true);
       } else if (e instanceof ReservaOnlineError && (e.code === 'rate_limited' || e.code === 'challenge_failed')) {
         setAvisoRetener(e.code);
       } else {

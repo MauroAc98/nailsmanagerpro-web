@@ -11,6 +11,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { FotoTile } from './FotoTile';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoAtras, IcoReloj } from './iconos';
+import { NoDisponibleAun } from './NoDisponibleAun';
 import { BarraInferior, BotonPrimario, Hueso, Mensaje } from './ui';
 import { VisorFotos } from './VisorFotos';
 
@@ -57,6 +58,8 @@ export function DetalleServicioScreen({
   if (!listo) return null;
   const volver = () => ir(rutaPaso(slug, 'servicios'));
 
+  // 404 = el negocio desactivó la reserva online: reintentar no sirve, se avisa.
+  if (error?.code === 'not_found') return <NoDisponibleAun variante="negocio" />;
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
   if (!servicios) return <DetalleServicioSkeleton />;
   const s = servicios.find((x) => x.id === servicioId);

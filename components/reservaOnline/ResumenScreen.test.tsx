@@ -284,6 +284,22 @@ describe('ResumenScreen', () => {
     expect(ir).not.toHaveBeenCalled();
   });
 
+  it('si el negocio desactivo la reserva online (not_found) al pagar, avisa que no recibe reservas y no pide reintentar', async () => {
+    setServiceParaTests({
+      ...svc,
+      iniciarPago: async () => {
+        throw new ReservaOnlineError('not_found');
+      },
+    });
+    const ir = vi.fn();
+    renderWithProviders(<ResumenScreen slug="demo" ir={ir} ahora={() => AHORA} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Pagar seña con/ }));
+    expect(await screen.findByRole('heading', { name: 'Este negocio no recibe reservas online' })).toBeInTheDocument();
+    expect(screen.queryByText(/Probá de nuevo/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).toBeNull();
+    expect(ir).not.toHaveBeenCalled();
+  });
+
   // EntryScreen ya deberia haber cortado antes (salon.pagoHabilitado), pero
   // MP pudo desconectarse mientras la clienta completaba el formulario.
   it('si el negocio no tiene MP conectado (mp_no_conectado) muestra la pantalla completa de "no disponible", no un error generico', async () => {

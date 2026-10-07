@@ -122,6 +122,8 @@ export function ResumenScreen({
   const [senaSinTotal, setSenaSinTotal] = useState(false);
   // Kill switch del backend apagado: a pantalla completa, como en Horario/Datos.
   const [noDisponible, setNoDisponible] = useState(false);
+  // El negocio desactivó la reserva online (404): reintentar no sirve.
+  const [sinReservas, setSinReservas] = useState(false);
 
   const { data, error } = useCarga(async () => {
     const svc = getService();
@@ -159,6 +161,7 @@ export function ResumenScreen({
   // en curso.
   if (enviando) return <RedirigiendoAMercadoPago />;
   if (noDisponible) return <NoDisponibleAun />;
+  if (sinReservas || error?.code === 'not_found') return <NoDisponibleAun variante="negocio" />;
   if (vencido || holdPerdido) return <HoldVencido slug={slug} ir={ir} />;
   if (error) return <Mensaje tono="error">{t('errores.generico')}</Mensaje>;
   if (!data || !fecha || !hora || !hold) return <ResumenSkeleton />;
@@ -213,6 +216,7 @@ export function ResumenScreen({
       // mientras la clienta completaba el formulario — mismo bloqueo de
       // pantalla completa que el kill switch, nunca el error generico.
       else if (e instanceof ReservaOnlineError && (e.code === 'creation_disabled' || e.code === 'mp_no_conectado')) setNoDisponible(true);
+      else if (e instanceof ReservaOnlineError && e.code === 'not_found') setSinReservas(true);
       else if (e instanceof ReservaOnlineError && e.code === 'rate_limited') setLimiteIntentos(true);
       else if (e instanceof ReservaOnlineError && e.code === 'sena_sin_total') setSenaSinTotal(true);
       else setErrorPago(true);
