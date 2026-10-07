@@ -104,6 +104,43 @@ describe('EditarTurnoPage — turno comun (Rule L)', () => {
   });
 });
 
+describe('EditarTurnoPage — fecha de un turno suelto', () => {
+  it('permite mover el turno a otro dia y lo manda al guardar', async () => {
+    montar(turno());
+    await screen.findByText('Marta Rios');
+    fireEvent.change(screen.getByLabelText('FECHA DEL TURNO'), { target: { value: '2099-06-12' } });
+    guardar();
+
+    await waitFor(() => expect(actualizarTurno).toHaveBeenCalledWith(1, expect.objectContaining({ fecha_hora: '2099-06-12 10:00' })));
+  });
+});
+
+describe('EditarTurnoPage — panel de pago', () => {
+  it('no se muestra en un turno confirmado sin seña, aunque tenga precio de lista', async () => {
+    montar(turno({ sena: null }));
+    await screen.findByText('Marta Rios');
+
+    expect(screen.queryByText('Falta cobrar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pago')).not.toBeInTheDocument();
+  });
+
+  it('se muestra cuando hay una seña online pagada', async () => {
+    montar(turno({ sena: { monto: 2000, estado: 'aprobado', reserva_web_id: 9 } }));
+    await screen.findByText('Marta Rios');
+
+    expect(screen.getByText('Pago')).toBeInTheDocument();
+    expect(screen.getByText('Seña pagada')).toBeInTheDocument();
+    expect(screen.getByText('Falta cobrar')).toBeInTheDocument();
+  });
+
+  it('no se muestra con una seña pendiente de pago', async () => {
+    montar(turno({ sena: { monto: 2000, estado: 'pendiente', reserva_web_id: 9 } }));
+    await screen.findByText('Marta Rios');
+
+    expect(screen.queryByText('Pago')).not.toBeInTheDocument();
+  });
+});
+
 describe('EditarTurnoPage — mover todo el combo', () => {
   it('lista lo que se mueve (sin los ya atendidos ni cancelados) y ocultar jerga', async () => {
     montar(enGrupo([tramo(1, 1, 'Ana', '10:00', 60), tramo(2, 2, 'Laura', '11:00', 45), tramo(3, 1, 'Ana', '12:00', 30, 'completado'), tramo(4, 2, 'Laura', '13:00', 30, 'cancelado')]));

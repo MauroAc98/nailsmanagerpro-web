@@ -245,7 +245,10 @@ export default function EditarTurnoPage() {
 
   // Bloque "Pago": misma derivación que la pantalla de Cobros (lib/cobros).
   const referencias = new Map(servicios.map(s => [s.id, s.precio]));
-  const pago = turnoActual ? filaDePago(turnoActual, referencias) : null;
+  // Solo con una seña online pagada: sin ella "Falta cobrar" repite el precio y no
+  // informa nada. Lo cobrado de un turno finalizado se ve en Cobros.
+  const filaPago = turnoActual ? filaDePago(turnoActual, referencias) : null;
+  const pago = filaPago && filaPago.sena > 0 ? filaPago : null;
 
   const handleCargarPrecio = async () => {
     if (!turnoActual) return;
