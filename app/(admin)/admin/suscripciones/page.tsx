@@ -258,6 +258,26 @@ export default function SuscripcionesPage() {
     }
   };
 
+  // El add-on no depende de la suscripción para poder activarse: una cuenta
+  // exenta (sin fila de suscripción) también lo necesita, por eso el botón se
+  // reusa fuera del bloque de acciones de suscripción.
+  // Con la suscripción vencida o suspendida el add-on no funciona (se evalúa en
+  // vivo contra ends_at, ver User::reserva_online_activa): no se ofrece
+  // activarlo hasta que se renueve. El listado ya trae status calculado en
+  // vivo (AdminController::listarNegocios), no la columna guardada.
+  const statusSeleccionado = seleccionado?.subscription?.status;
+  const suscripcionCortada = statusSeleccionado === 'VENCIDO' || statusSeleccionado === 'SUSPENDIDO';
+  const botonReservaOnline = seleccionado && !suscripcionCortada && (
+    <button
+      type="button"
+      onClick={alternarReservaOnline}
+      disabled={procesando}
+      style={{ ...btnSecundario, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+    >
+      {seleccionado.reserva_online ? 'Desactivar reserva online' : 'Activar reserva online'}
+    </button>
+  );
+
   const ejecutarSuspension = async () => {
     if (!seleccionado) return;
     setProcesando(true);
@@ -477,14 +497,27 @@ export default function SuscripcionesPage() {
               // Negocio sin suscripción: renewSubscription en el backend
               // 404-ea con "El usuario no tiene suscripción" para estas
               // cuentas (ver AGENTS de la task), así que no mostramos las
-              // acciones — no aplican, sea por is_exempt o por cualquier otro
-              // motivo de datos sin suscripción.
-              <div style={{ padding: '14px 16px', borderRadius: 12, backgroundColor: colors.surfaceSubtle }}>
-                <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-                  Esta cuenta no tiene suscripción — no hay acciones disponibles.
-                  {seleccionado.is_exempt && ' Exento.'}
-                </p>
-              </div>
+              // acciones de suscripción — no aplican, sea por is_exempt o por
+              // cualquier otro motivo de datos sin suscripción. El add-on de
+              // reserva online SÍ aplica a una cuenta exenta.
+              <>
+                <div style={{ padding: '14px 16px', borderRadius: 12, backgroundColor: colors.surfaceSubtle }}>
+                  <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
+                    Esta cuenta no tiene suscripción — no hay acciones de suscripción disponibles.
+                    {seleccionado.is_exempt && ' Exento.'}
+                  </p>
+                </div>
+                {seleccionado.is_exempt && (
+                  <>
+                    {errorAccion && (
+                      <div role="alert" style={{ padding: '12px 16px', borderRadius: 12, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}` }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: colors.danger, margin: 0 }}>{errorAccion}</p>
+                      </div>
+                    )}
+                    {botonReservaOnline}
+                  </>
+                )}
+              </>
             ) : resultado ? (
               <div style={{ backgroundColor: colors.successBg, border: `1px solid ${colors.successBorder}`, borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', textAlign: 'center' }}>
                 <CircleCheck size={26} color={colors.success} strokeWidth={1.5} />
@@ -582,14 +615,12 @@ export default function SuscripcionesPage() {
                       Ajustar vencimiento
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={alternarReservaOnline}
-                      disabled={procesando}
-                      style={{ ...btnSecundario, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                    >
-                      {seleccionado.reserva_online ? 'Desactivar reserva online' : 'Activar reserva online'}
-                    </button>
+                    {botonReservaOnline}
+                    {suscripcionCortada && (
+                      <p style={{ fontSize: 12, color: colors.subtext, margin: 0, lineHeight: 1.4 }}>
+                        La reserva online se puede activar cuando la suscripción esté vigente.
+                      </p>
+                    )}
                   </div>
                 )}
 
