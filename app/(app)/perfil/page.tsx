@@ -351,6 +351,14 @@ export default function PerfilPage() {
     setSheetActivo(sheet);
   };
 
+  // Atajo desde Mensajes automáticos: abre Seña y pagos (re-hidrata desde lo
+  // guardado, así que descarta lo sin guardar del sheet anterior) y, si hace
+  // falta, lo deja con "Monto fijo" ya elegido.
+  const irASena = (pasarAFijo: boolean) => {
+    abrirSheet('senaYPagos');
+    if (pasarAFijo) setSenaTipo('fijo');
+  };
+
   const cerrarSheet = () => {
     sheetRef.current?.close();
   };
@@ -573,6 +581,8 @@ export default function PerfilPage() {
           <SheetNegocio
             senaTipo={senaTipo}
             senaMonto={senaMonto}
+            porcentajeSena={user.sena_tipo === 'porcentaje' ? user.sena_porcentaje : null}
+            onIrASena={irASena}
             whatsappPideSena={whatsappPideSena}
             setWhatsappPideSena={setWhatsappPideSena}
             senaTitular={senaTitular}

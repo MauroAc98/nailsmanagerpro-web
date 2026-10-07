@@ -18,6 +18,19 @@ import {
   type SenaModo,
 } from '@/lib/senaConfig';
 
+const tarjetaAvisoStyle = {
+  display: 'flex', flexDirection: 'column', gap: 10,
+  backgroundColor: colors.primarySoft, borderRadius: 12, padding: '14px', marginBottom: 16,
+} as const;
+const botonAvisoStyle = {
+  alignSelf: 'flex-start', minHeight: 44, padding: '0 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
+  backgroundColor: colors.primarySolid, color: '#fff', fontWeight: 700, fontSize: 13,
+} as const;
+const linkStyle = {
+  minHeight: 44, padding: '0 6px', border: 'none', background: 'none', cursor: 'pointer',
+  color: colors.primaryDeep, fontWeight: 700, fontSize: 13,
+} as const;
+
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
 
 type TipoPreview = 'confirmacion' | 'recordatorio';
@@ -32,6 +45,11 @@ interface Props {
   // este sheet solo lo usa para el preview del mensaje y para saber si
   // puede activarse "pedir seña por WhatsApp" (ver faltaMonto más abajo).
   senaMonto: string;
+  // Porcentaje guardado (solo informativo, para el aviso del modo porcentaje).
+  porcentajeSena: number | null;
+  // Abre "Seña y pagos" desde este sheet. `pasarAFijo` lo deja con "Monto
+  // fijo" ya elegido (el template de WhatsApp no soporta porcentaje).
+  onIrASena: (pasarAFijo: boolean) => void;
   // Opt-in "pedir seña" + datos bancarios que viajan en la confirmación de
   // WhatsApp. El estado vive en el padre (perfil/page.tsx) igual que el resto
   // del sheet; acá solo se editan y se validan antes de guardar.
@@ -188,7 +206,7 @@ function IconMapPin() {
 }
 
 export function SheetNegocio({
-  senaTipo, senaMonto,
+  senaTipo, senaMonto, porcentajeSena, onIrASena,
   whatsappPideSena, setWhatsappPideSena,
   senaTitular, setSenaTitular, senaEntidad, setSenaEntidad,
   senaAlias, setSenaAlias, senaCbu, setSenaCbu,
@@ -280,23 +298,6 @@ export function SheetNegocio({
       </div>
 
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '12px 14px', marginBottom: 16,
-      }}>
-        <IconMoney />
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>
-            {t('depositAmountMovedNotice')}
-          </p>
-          {!faltaMonto && !esPorcentaje && (
-            <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: colors.text }}>
-              {formatearMontoSena(montoActual!)}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
       }}>
@@ -314,21 +315,52 @@ export function SheetNegocio({
         />
       </div>
 
-      {faltaUbicacion && (
-        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
-          {t('depositLocationRequiredWarning')}
-        </p>
+      {!esPorcentaje && !faltaMonto && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '12px 14px', marginBottom: 16,
+        }}>
+          <IconMoney />
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('depositAmountLabel')}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: colors.text }}>
+              {formatearMontoSena(montoActual!)}
+            </p>
+          </div>
+          <button type="button" onClick={() => onIrASena(false)} style={linkStyle}>{t('depositChange')}</button>
+        </div>
       )}
 
       {esPorcentaje && (
-        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
-          {t('depositPercentNeedsFixedWarning')}
-        </p>
+        <div style={tarjetaAvisoStyle}>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: colors.primaryDeep }}>
+            <b>{t('depositFixedNeededTitle')}</b><br />
+            {porcentajeSena != null
+              ? t('depositFixedNeededBody', { porcentaje: porcentajeSena })
+              : t('depositFixedNeededBodyNoPct')}
+          </p>
+          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.45, color: colors.primaryDeep, backgroundColor: colors.surface, borderRadius: 8, padding: '8px 10px' }}>
+            <b>{t('depositFixedNeededOnlineLead')}</b> {t('depositFixedNeededOnline')}
+          </p>
+          <button type="button" onClick={() => onIrASena(true)} style={botonAvisoStyle}>
+            {t('depositSwitchToFixed')}
+          </button>
+          <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('depositSwitchToFixedHint')}</p>
+        </div>
       )}
 
-      {faltaMonto && (
+      {!esPorcentaje && faltaMonto && (
+        <div style={tarjetaAvisoStyle}>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: colors.primaryDeep }}>{t('depositAmountMissingWarning')}</p>
+          <button type="button" onClick={() => onIrASena(false)} style={botonAvisoStyle}>
+            {t('depositSetAmount')}
+          </button>
+        </div>
+      )}
+
+      {faltaUbicacion && (
         <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
-          {t('depositAmountMissingWarning')}
+          {t('depositLocationRequiredWarning')}
         </p>
       )}
 

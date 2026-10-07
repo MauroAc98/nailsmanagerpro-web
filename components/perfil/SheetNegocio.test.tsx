@@ -14,6 +14,8 @@ function setup(overrides: Partial<Props> = {}) {
   const props: Props = {
     senaTipo: 'fijo',
     senaMonto: '5000',
+    porcentajeSena: null,
+    onIrASena: vi.fn(),
     whatsappPideSena: false,
     setWhatsappPideSena: vi.fn(),
     senaTitular: '',
@@ -77,7 +79,7 @@ describe('SheetNegocio — sin seña', () => {
     setup({ senaTipo: 'ninguna', senaMonto: '', whatsappPideSena: false });
     expect(screen.getByText(/Cargá el monto de la seña en Seña y pagos/)).toBeInTheDocument();
     expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.queryByText(/necesita una seña de monto fijo/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Cargar seña' })).toBeInTheDocument();
   });
 
   it('still lets the user turn it off when it was already on', () => {
@@ -87,23 +89,38 @@ describe('SheetNegocio — sin seña', () => {
 });
 
 describe('SheetNegocio — seña en modo porcentaje', () => {
-  it('explains that the bank-transfer seña needs a fixed amount and blocks turning it on', () => {
-    setup({ senaTipo: 'porcentaje', senaMonto: '', whatsappPideSena: false });
-    expect(screen.getByText(/necesita una seña de monto fijo/)).toBeInTheDocument();
+  it('explains that WhatsApp needs a fixed amount, warns about online booking and blocks the toggle', () => {
+    setup({ senaTipo: 'porcentaje', porcentajeSena: 30, senaMonto: '', whatsappPideSena: false });
+    expect(screen.getByText(/tu seña hoy es del 30%/)).toBeInTheDocument();
+    expect(screen.getByText(/también cambia la seña de la reserva online/)).toBeInTheDocument();
     expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
     expect(screen.queryByText(/Cargá el monto de la seña en Seña y pagos/)).toBeNull();
   });
 
-  it('keeps the hint but still lets the user turn it off when it was already on', () => {
-    setup({ senaTipo: 'porcentaje', whatsappPideSena: true });
-    expect(screen.getByText(/necesita una seña de monto fijo/)).toBeInTheDocument();
+  it('"Pasar a monto fijo" asks the parent to open Seña y pagos preselecting fixed', () => {
+    const props = setup({ senaTipo: 'porcentaje', porcentajeSena: 30, senaMonto: '' });
+    fireEvent.click(screen.getByRole('button', { name: /Pasar a monto fijo/ }));
+    expect(props.onIrASena).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps the card but still lets the user turn it off when it was already on', () => {
+    setup({ senaTipo: 'porcentaje', porcentajeSena: 30, whatsappPideSena: true });
+    expect(screen.getByRole('button', { name: /Pasar a monto fijo/ })).toBeInTheDocument();
     expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('fixed mode shows no hint', () => {
+  it('fixed mode shows no percentage card', () => {
     setup({ senaTipo: 'fijo' });
-    expect(screen.queryByText(/necesita una seña de monto fijo/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Pasar a monto fijo/ })).toBeNull();
     expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+describe('SheetNegocio — monto fijo cargado', () => {
+  it('"Cambiar" opens Seña y pagos without forcing the mode', () => {
+    const props = setup({ senaMonto: '5000' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar' }));
+    expect(props.onIrASena).toHaveBeenCalledWith(false);
   });
 });
 
