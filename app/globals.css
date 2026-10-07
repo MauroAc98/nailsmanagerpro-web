@@ -332,3 +332,48 @@ body {
   --ag-danger: var(--color-danger);
   --ag-whatsapp: #25d366;
 }
+
+/* Fondo con trama de íconos de turnos (calendario, reloj, mensaje, campana,
+   check): da textura sin competir con el contenido. Se aplica AQUÍ, desde CSS,
+   a cualquier contenedor que pinte el color de fondo de la app, en vez de
+   tocar las ~60 pantallas que lo hacen:
+     - --ag-bg           el rediseño de Agenda (agendaColors.background)
+     - --color-background el tema base (colors.background)
+   Es solo un background-image: no agrega capas fijas ni intercepta toques, y las
+   tarjetas (que usan --ag-surface / --color-surface, opacos) la tapan, así el
+   contraste del texto no cambia. Cada selector va en dos formas: con espacio
+   tras los dos puntos (el DOM del navegador) y sin espacio (el HTML que genera
+   el servidor); si React cambia cómo serializa el style, app/fondoTrama.test.tsx
+   lo detecta. */
+[style*="background-color: var(--ag-bg)"],
+[style*="background-color: var(--color-background)"],
+[style*="background-color:var(--ag-bg)"],
+[style*="background-color:var(--color-background)"] {
+  background-image: url('/fondo-trama-claro.svg');
+  background-size: 160px 136px;
+  background-repeat: repeat;
+}
+
+html[data-theme="dark"] [style*="background-color: var(--ag-bg)"],
+html[data-theme="dark"] [style*="background-color: var(--color-background)"],
+html[data-theme="dark"] [style*="background-color:var(--ag-bg)"],
+html[data-theme="dark"] [style*="background-color:var(--color-background)"] {
+  background-image: url('/fondo-trama-oscuro.svg');
+}
+
+/* El body es el fondo de última instancia (pantallas sin contenedor propio). */
+body {
+  background-image: url('/fondo-trama-claro.svg');
+  background-size: 160px 136px;
+  background-repeat: repeat;
+}
+
+html[data-theme="dark"] body {
+  background-image: url('/fondo-trama-oscuro.svg');
+}
+
+/* Salida de emergencia: un elemento que usa el color de fondo pero NO es un
+   fondo de pantalla (p. ej. una barra fija) se marca con data-sin-trama. */
+[data-sin-trama] {
+  background-image: none !important;
+}

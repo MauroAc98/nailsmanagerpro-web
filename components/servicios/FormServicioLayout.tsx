@@ -54,7 +54,8 @@ export function BarraGuardar({ onClick, disabled, label }: {
   onClick: () => void; disabled: boolean; label: string;
 }) {
   return (
-    <div style={{
+    // data-sin-trama: es una barra, no un fondo de pantalla (ver globals.css).
+    <div data-sin-trama style={{
       position: 'fixed', left: 0, right: 0, bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom))`,
       zIndex: 45, boxSizing: 'border-box', height: BARRA_ALTO, padding: '12px 20px',
       backgroundColor: colors.background, borderTop: `1px solid ${colors.hairline}`,
