@@ -12,6 +12,7 @@ import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCa
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
 import { parsearMonto } from '@/lib/parsearMonto';
+import { validarPrecioServicio } from '@/lib/validarPrecioServicio';
 import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
 import { FormSeccion, FilaPromo, BarraGuardar, FORM_PADDING_BOTTOM } from '@/components/servicios/FormServicioLayout';
 import { Spinner } from '@/components/Spinner';
@@ -227,10 +228,20 @@ export default function EditarServicioPage() {
       return;
     }
 
-    const precioNumerico = precio.trim() ? parsearMonto(precio) : null;
-    if (precio.trim() && precioNumerico === null) {
-      await alertDialog(t('invalidPrice'));
-      return;
+    let precioNumerico: number | null = null;
+    if (!mostrarComponentes) {
+      const r = validarPrecioServicio(precio);
+      if (!r.ok) {
+        await alertDialog(t(r.error === 'required' ? 'priceRequired' : 'invalidPrice'));
+        return;
+      }
+      precioNumerico = r.valor;
+    } else if (precio.trim()) {
+      precioNumerico = parsearMonto(precio);
+      if (precioNumerico === null) {
+        await alertDialog(t('invalidPrice'));
+        return;
+      }
     }
 
     setSaving(true);

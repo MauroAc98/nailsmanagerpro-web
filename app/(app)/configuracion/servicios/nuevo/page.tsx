@@ -11,7 +11,7 @@ import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
-import { parsearMonto } from '@/lib/parsearMonto';
+import { validarPrecioServicio } from '@/lib/validarPrecioServicio';
 import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
 import { FormSeccion, FilaPromo, BarraGuardar, FORM_PADDING_BOTTOM } from '@/components/servicios/FormServicioLayout';
 import { Spinner } from '@/components/Spinner';
@@ -138,10 +138,14 @@ function NuevoServicioContent() {
       await alertDialog(t('invalidDuration'));
       return;
     }
-    const precioNumerico = precio.trim() && !mostrarComponentes ? parsearMonto(precio) : undefined;
-    if (precioNumerico === null) {
-      await alertDialog(t('invalidPrice'));
-      return;
+    let precioNumerico: number | undefined;
+    if (!mostrarComponentes) {
+      const r = validarPrecioServicio(precio);
+      if (!r.ok) {
+        await alertDialog(t(r.error === 'required' ? 'priceRequired' : 'invalidPrice'));
+        return;
+      }
+      precioNumerico = r.valor;
     }
 
     if (mostrarComponentes && hayFilaIncompleta(componentes)) {
