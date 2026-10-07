@@ -169,7 +169,7 @@ describe('SheetSenaYPagos — retención de impuestos', () => {
 describe('SheetSenaYPagos — cargo de Mercado Pago', () => {
   it('derives the displayed percent from comision_mp_vigente, one decimal es-AR', () => {
     setup({ comisionVigente: 7.61 });
-    expect(screen.getByText(/7,6%/)).toBeInTheDocument();
+    expect(screen.getByText(/descuenta 7,6%/)).toBeInTheDocument();
   });
 
   it('says the cost is discounted from each deposit and can be covered from the price', () => {
@@ -181,7 +181,7 @@ describe('SheetSenaYPagos — cargo de Mercado Pago', () => {
 
   it('follows a different commission instead of a hardcoded one', () => {
     setup({ comisionVigente: 5.5 });
-    expect(screen.getByText(/5,5%/)).toBeInTheDocument();
+    expect(screen.getByText(/descuenta 5,5%/)).toBeInTheDocument();
     expect(screen.queryByText(/7,6%/)).toBeNull();
   });
 
@@ -207,5 +207,44 @@ describe('SheetSenaYPagos — acciones', () => {
     setup();
     expect(screen.queryByRole('textbox', { name: /Comisión de Mercado Pago/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /días/ })).toBeNull();
+  });
+});
+
+describe('SheetSenaYPagos — cálculo en monto fijo', () => {
+  it('shows what the client pays, the MP fee and the net for the typed amount', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
+    expect(screen.getByText('El cliente paga')).toBeInTheDocument();
+    expect(screen.getByText('$5.000')).toBeInTheDocument();
+    expect(screen.getByText('−$381')).toBeInTheDocument();
+    expect(screen.getByText('$4.619')).toBeInTheDocument();
+  });
+
+  it('suggests a higher seña rounded up to 100 and applies it through the parent setter', () => {
+    const props = setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
+    expect(screen.getByText(/Para recibir \$5\.000/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Usar $5.500' }));
+    expect(props.setSenaMonto).toHaveBeenCalledWith('5500');
+  });
+
+  it('includes the tax retention when the user declares one', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61, retiene: true, retencion: '2' });
+    expect(screen.getByText('Retención de impuestos')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Usar $5.600' })).toBeInTheDocument();
+  });
+
+  it('shows nothing when the amount is empty/invalid or the commission is unknown', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '', comisionVigente: 7.61 });
+    expect(screen.queryByText('El cliente paga')).toBeNull();
+  });
+
+  it('shows nothing in percentage mode or without commission', () => {
+    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', comisionVigente: 7.61 });
+    expect(screen.queryByText('El cliente paga')).toBeNull();
+  });
+
+  it('without a known commission it shows no calculation', () => {
+    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: null });
+    expect(screen.queryByText('El cliente paga')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
   });
 });

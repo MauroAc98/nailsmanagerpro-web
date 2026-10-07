@@ -1,8 +1,11 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { parsearMonto } from '@/lib/parsearMonto';
+import { desgloseSena, senaFijaSugerida } from '@/lib/senaPreview';
 import { SheetInput } from './SheetInput';
 import type { SenaCampo, SenaModo } from '@/lib/senaConfig';
 
@@ -60,6 +63,18 @@ const avisoStyle = { fontSize: 12.5, color: colors.subtext, lineHeight: 1.4 } as
 const errorStyle = { fontSize: 12, color: colors.danger, marginTop: -8, marginBottom: 16, lineHeight: 1.4 } as const;
 const preguntaStyle = { fontSize: 13, fontWeight: 600, color: colors.subtext, margin: '0 0 10px' } as const;
 
+const filaStyle = { display: 'flex', justifyContent: 'space-between', gap: 12 } as const;
+// El monto nunca se corta: no se achica ni baja de renglón; la etiqueta cede.
+const montoStyle = { whiteSpace: 'nowrap', flexShrink: 0 } as const;
+const bannerStyle = {
+  backgroundColor: colors.primarySoft, borderRadius: 14, padding: 14, marginBottom: 16,
+  display: 'flex', flexDirection: 'column', gap: 10,
+} as const;
+const botonBannerStyle = {
+  width: '100%', minHeight: 44, border: 'none', borderRadius: 12, cursor: 'pointer', whiteSpace: 'nowrap',
+  backgroundColor: colors.primarySolid, color: '#fff', fontSize: 14, fontWeight: 700,
+} as const;
+
 function formatearTasa(n: number): string {
   return n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
@@ -71,6 +86,9 @@ export function SheetSenaYPagos({
   onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetSenaYPagos');
+  const locale = useLocale();
+  // Tras "Usar": monto previo y el aplicado, para poder deshacer.
+  const [aplicado, setAplicado] = useState<{ anterior: string; nuevo: string } | null>(null);
   const errorMonto = error ?? erroresServidor?.sena_monto;
   const errorPorcentajeMostrado = errorPorcentaje ?? erroresServidor?.sena_porcentaje;
   const errorRetencionMostrado = errorRetencion ?? erroresServidor?.retencion_iibb_porcentaje;
@@ -78,6 +96,28 @@ export function SheetSenaYPagos({
     ? [...PORCENTAJES_PREDEFINIDOS, porcentajeGuardado]
     : PORCENTAJES_PREDEFINIDOS;
   const porcentajeElegido = Number(senaPorcentaje.replace(',', '.'));
+
+  // Cálculo de la seña fija: lo que paga el cliente, lo que cobra MP y lo que
+  // llega, más una seña sugerida que cubre el costo (redondeada hacia arriba a 100).
+  const numero = locale === 'es' ? 'es-AR' : locale;
+  const dinero = (n: number) => `$${new Intl.NumberFormat(numero, { maximumFractionDigits: 2 }).format(n)}`;
+  const montoFijo = senaTipo === 'fijo' ? parsearMonto(senaMonto) : null;
+  const retencionPct = retiene ? (parsearMonto(retencion) ?? 0) : 0;
+  const configCalculo = { comision_mp_vigente: comisionVigente, retencion_iibb_porcentaje: retencionPct };
+  const desglose = montoFijo !== null ? desgloseSena(montoFijo, configCalculo) : null;
+  const confirmado = aplicado !== null && senaMonto === aplicado.nuevo;
+  const sugerida = montoFijo !== null && !confirmado ? senaFijaSugerida(montoFijo, configCalculo) : null;
+  const desgloseSugerida = sugerida !== null ? desgloseSena(sugerida, configCalculo) : null;
+  const usarSugerida = () => {
+    if (sugerida === null) return;
+    setAplicado({ anterior: senaMonto, nuevo: String(sugerida) });
+    setSenaMonto(String(sugerida));
+  };
+  const deshacer = () => {
+    if (!aplicado) return;
+    setSenaMonto(aplicado.anterior);
+    setAplicado(null);
+  };
 
   return (
     <div style={{ padding: '4px 20px 24px' }}>
@@ -150,6 +190,59 @@ export function SheetSenaYPagos({
             inputMode="decimal"
           />
           {errorMonto && <p style={errorStyle}>{errorMonto}</p>}
+
+          {desglose && (
+            <div style={{
+              backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14,
+              padding: '12px 14px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
+              <div style={{ ...filaStyle, fontSize: 14, fontWeight: 700, color: colors.text }}>
+                <span style={{ minWidth: 0 }}>{t('fixedClientPays')}</span>
+                <span style={montoStyle}>{dinero(desglose.sena)}</span>
+              </div>
+              <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                <span style={{ minWidth: 0 }}>{t('fixedMpFee', { rate: formatearTasa(comisionVigente!) })}</span>
+                <span style={montoStyle}>{`−${dinero(desglose.cargo)}`}</span>
+              </div>
+              {desglose.retencion > 0 && (
+                <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                  <span style={{ minWidth: 0 }}>{t('fixedRetention')}</span>
+                  <span style={montoStyle}>{`−${dinero(desglose.retencion)}`}</span>
+                </div>
+              )}
+              <div style={{ height: 1, backgroundColor: colors.border }} />
+              <div style={{ ...filaStyle, fontSize: 15, fontWeight: 700, color: colors.text }}>
+                <span style={{ minWidth: 0 }}>{t('fixedNet')}</span>
+                <span style={{ ...montoStyle, fontSize: 17 }}>{dinero(desglose.llega)}</span>
+              </div>
+              <span style={avisoStyle}>{t('fixedCostNote')}</span>
+            </div>
+          )}
+
+          {confirmado && aplicado && (
+            <div style={{ ...bannerStyle, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, lineHeight: 1.35, color: colors.text, minWidth: 0 }}>
+                {t('fixedApplied', { monto: dinero(parsearMonto(aplicado.anterior) ?? 0) })}
+              </span>
+              <button type="button" onClick={deshacer} style={{ ...botonBannerStyle, width: 'auto', flexShrink: 0, padding: '0 14px', fontSize: 13 }}>
+                {t('fixedUndo')}
+              </button>
+            </div>
+          )}
+          {sugerida !== null && desgloseSugerida && montoFijo !== null && (
+            <div style={bannerStyle}>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: colors.primaryDeep }}>
+                {t('fixedSuggestTitle', { monto: dinero(montoFijo) })}
+              </span>
+              <span style={{ fontSize: 14, lineHeight: 1.4, color: colors.text }}>
+                {t('fixedSuggestBody', { sena: dinero(sugerida), cargo: dinero(desgloseSugerida.cargo), llega: dinero(desgloseSugerida.llega) })}
+              </span>
+              <button type="button" onClick={usarSugerida} style={botonBannerStyle}>
+                {t('fixedSuggestUse', { sena: dinero(sugerida) })}
+              </button>
+              <span style={avisoStyle}>{t('fixedSuggestRound')}</span>
+            </div>
+          )}
         </>
       )}
 
