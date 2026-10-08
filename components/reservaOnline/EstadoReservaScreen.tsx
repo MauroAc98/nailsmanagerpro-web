@@ -10,7 +10,7 @@ import { formatearRestante } from '@/lib/reservaOnline/cuentaRegresiva';
 import { diaLargoCorto, fechaLarga } from '@/lib/reservaOnline/formatoFecha';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useAhora, useCarga, type Ir } from './hooks';
@@ -247,7 +247,7 @@ export function EstadoReservaScreen({
             {montoSena !== null && (
               <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13.5 }}>
                 <span style={{ minWidth: 0, color: colors.sub }}>{t('estado.senaPagada')}</span>
-                <b style={{ flexShrink: 0, whiteSpace: 'nowrap', color: colors.success }}>${formatMontoCorto(montoSena)}</b>
+                <b style={{ flexShrink: 0, whiteSpace: 'nowrap', color: colors.success }}>${formatMonto(montoSena)}</b>
               </div>
             )}
             <div style={{ padding: '0 18px 16px', fontSize: 12.5, color: colors.sub, lineHeight: 1.45 }}>
@@ -347,7 +347,7 @@ export function EstadoReservaScreen({
           </div>
           {montoSena !== null && (
             <div style={{ fontSize: 13, color: colors.sub, marginTop: 2, whiteSpace: 'nowrap' }}>
-              {t('estado.senaLinea', { monto: `$${formatMontoCorto(montoSena)}` })}
+              {t('estado.senaLinea', { monto: `$${formatMonto(montoSena)}` })}
             </div>
           )}
         </Tarjeta>

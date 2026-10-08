@@ -24,13 +24,14 @@ import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { advertenciaTurno } from '@/lib/turnoAdvertencias';
+import { ClienteConTelefono } from '@/components/agenda/ClienteConTelefono';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { resumenMovimiento, tramosPendientes } from '@/lib/gruposTurnos';
 import { advertenciaDelCombo, tramosAMover } from '@/lib/comboManual';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha } from '@/lib/dateFormat';
 import { MontoFit } from '@/components/estadisticas/MontoFit';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import { filaDePago } from '@/lib/cobros';
 import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
@@ -66,7 +67,7 @@ const sectionLabelStyle: React.CSSProperties = {
   textTransform: 'uppercase', marginBottom: 8,
 };
 
-const monto = (n: number) => `$${formatMontoCorto(n)}`;
+const monto = (n: number) => `$${formatMonto(n)}`;
 
 const inputStyle: React.CSSProperties = {
   backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
@@ -339,7 +340,7 @@ export default function EditarTurnoPage() {
   };
 
   const clientesFiltrados = clientes.filter(c =>
-    c.activo && normalizarTexto(`${c.nombre} ${c.apellido}`).includes(normalizarTexto(clienteBuscar))
+    c.activo && normalizarTexto(`${c.nombre} ${c.apellido} ${c.telefono ?? ''}`).includes(normalizarTexto(clienteBuscar))
   );
 
   if (loadingTurno) {
@@ -513,12 +514,16 @@ export default function EditarTurnoPage() {
             }}
           >
             <User size={18} strokeWidth={1.8} color={colors.muted} style={{ flexShrink: 0 }} />
-            <span style={{
-              flex: 1, minWidth: 0, color: selectedCliente ? colors.text : colors.placeholder, fontSize: 15,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {selectedCliente ? `${selectedCliente.nombre} ${selectedCliente.apellido}` : t('select')}
-            </span>
+            {selectedCliente ? (
+              <ClienteConTelefono cliente={selectedCliente} variante="campo" />
+            ) : (
+              <span style={{
+                flex: 1, minWidth: 0, color: colors.placeholder, fontSize: 15,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {t('select')}
+              </span>
+            )}
             <ChevronDown
               size={16} strokeWidth={2} color={colors.muted}
               style={{ flexShrink: 0, transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
@@ -583,7 +588,7 @@ export default function EditarTurnoPage() {
                   onClick={() => { setSelectedCliente(c); setShowClienteDropdown(false); setClienteBuscar(''); }}
                   style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: `1px solid ${colors.hairline}` }}
                 >
-                  {c.nombre} {c.apellido}
+                  <ClienteConTelefono cliente={c} variante="fila" />
                 </div>
               ))}
             </div>

@@ -56,7 +56,7 @@ describe('ReservasOnlineSettings', () => {
 
   it('muestra la seña actual en monto fijo', () => {
     montar();
-    expect(screen.getByText('Seña actual: $5.000')).toBeInTheDocument();
+    expect(screen.getByText('Seña actual: $5.000,00')).toBeInTheDocument();
   });
 
   it('muestra la seña actual en porcentaje', () => {

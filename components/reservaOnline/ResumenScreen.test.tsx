@@ -114,7 +114,7 @@ describe('ResumenScreen', () => {
     expect(screen.queryByText('Total')).toBeNull();
     expect(screen.queryByText(/12\.000/)).toBeNull();
     expect(screen.queryByText(/20\.000/)).toBeNull();
-    expect(screen.getByText('$5.000')).toBeInTheDocument();
+    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
   });
 
   it('la sena aclara que es parte del valor final y el resto se define y paga en el salon', async () => {
@@ -406,7 +406,7 @@ describe('ResumenScreen', () => {
       ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24,
     });
 
-    it('muestra "N% del total de tu reserva" y no inventa un monto ($null, NaN, $0)', async () => {
+    it('muestra "N% del total de tu reserva" y no inventa un monto ($null, NaN, $0,00)', async () => {
       setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30) } as MockReservaOnlineService);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
       await screen.findByText('Seña para reservar');
@@ -424,7 +424,7 @@ describe('ResumenScreen', () => {
       setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30, 4500) } as MockReservaOnlineService);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
       await screen.findByText('30% del total de tu reserva');
-      expect(screen.getByText('$4.500')).toBeInTheDocument();
+      expect(screen.getByText('$4.500,00')).toBeInTheDocument();
     });
 
     // Sin monto en los terminos, el exacto sale de la reserva retenida (lo que cobra MP).
@@ -443,7 +443,7 @@ describe('ResumenScreen', () => {
     it('con la reserva retenida muestra el monto exacto y el porcentaje como texto secundario', async () => {
       const getReservationStatus = conResumen(4200);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-      expect(await screen.findByText('$4.200')).toBeInTheDocument();
+      expect(await screen.findByText('$4.200,00')).toBeInTheDocument();
       expect(screen.getByText('30% del total de tu reserva')).toBeInTheDocument();
       expect(getReservationStatus).toHaveBeenCalledWith('demo', useReservaOnlineStore.getState().hold?.reservaId);
       expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeEnabled();

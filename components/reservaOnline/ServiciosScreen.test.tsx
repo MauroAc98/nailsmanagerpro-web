@@ -58,7 +58,7 @@ describe('ServiciosScreen', () => {
     expect((await screen.findAllByText('Esmaltado semipermanente'))[0]).toBeInTheDocument();
     expect(screen.getByText('45 min')).toBeInTheDocument();
     // "Desde" va como etiqueta chica sobre el monto: nunca un precio firme.
-    expect(screen.getByText('$12.000')).toBeInTheDocument();
+    expect(screen.getByText('$12.000,00')).toBeInTheDocument();
     expect(screen.getAllByText('Desde').length).toBeGreaterThan(0);
   });
 
@@ -70,7 +70,7 @@ describe('ServiciosScreen', () => {
     expect(nombre.style.overflowWrap).toBe('anywhere');
   });
 
-  it('un servicio sin precio dice "Precio a consultar" en vez de "Desde $0"', async () => {
+  it('un servicio sin precio dice "Precio a consultar" en vez de "Desde $0,00"', async () => {
     const svc = prepararServicio();
     const original = svc.getServices.bind(svc);
     svc.getServices = async (slug, q) =>
@@ -78,7 +78,7 @@ describe('ServiciosScreen', () => {
     renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
     await screen.findByText('Retiro de esmalte');
     expect(screen.getByText('Precio a consultar')).toBeInTheDocument();
-    expect(screen.queryByText('$0')).toBeNull();
+    expect(screen.queryByText('$0,00')).toBeNull();
   });
 
   // El cliente (a menudo una persona mayor) entiende "1 h 45 min" antes que
@@ -209,7 +209,7 @@ describe('ServiciosScreen', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: /Retiro de esmalte/ }));
     expect(screen.getByRole('button', { name: 'Continuar · 2 servicios' })).toBeEnabled();
     // 12.000 + 8.000 no se suma: solo aparece el "Desde" de cada tarjeta.
-    expect(screen.getAllByText('$20.000')).toHaveLength(1); // Kapping gel, su propio precio
+    expect(screen.getAllByText('$20.000,00')).toHaveLength(1); // Kapping gel, su propio precio
     expect(useReservaOnlineStore.getState().servicioIds).toEqual([1, 2]);
   });
 

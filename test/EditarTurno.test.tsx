@@ -115,6 +115,39 @@ describe('EditarTurnoPage — fecha de un turno suelto', () => {
   });
 });
 
+describe('EditarTurnoPage — selector de cliente', () => {
+  const otraMarta: Cliente = { id: 6, nombre: 'Marta', apellido: 'Rios', telefono: '+543764000111', activo: true };
+  const abrirSelector = async () => {
+    // El campo muestra el cliente elegido; tocarlo abre la lista.
+    fireEvent.click((await screen.findAllByText('Marta Rios'))[0]);
+  };
+
+  it('el campo muestra el teléfono del cliente elegido', async () => {
+    montar(turno());
+
+    expect(await screen.findByText('+543765252395')).toBeInTheDocument();
+  });
+
+  it('con dos clientes del mismo nombre, la lista muestra el teléfono de cada uno', async () => {
+    montar(turno());
+    useClientesStore.setState({ clientes: [marta, otraMarta] });
+    await abrirSelector();
+
+    expect((await screen.findAllByText('+543764000111')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('+543765252395').length).toBeGreaterThanOrEqual(2); // campo + fila
+  });
+
+  it('se puede buscar por teléfono', async () => {
+    montar(turno());
+    useClientesStore.setState({ clientes: [marta, otraMarta] });
+    await abrirSelector();
+    fireEvent.change(await screen.findByPlaceholderText('Buscar por nombre...'), { target: { value: '4000111' } });
+
+    await waitFor(() => expect(screen.queryAllByText('+543765252395')).toHaveLength(1)); // solo el campo
+    expect(screen.getAllByText('+543764000111').length).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe('EditarTurnoPage — panel de pago', () => {
   it('no se muestra en un turno confirmado sin seña, aunque tenga precio de lista', async () => {
     montar(turno({ sena: null }));

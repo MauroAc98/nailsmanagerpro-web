@@ -53,7 +53,7 @@ describe('EstadoReservaScreen', () => {
         screen.getByText('Completá el pago en Mercado Pago. Guardamos tu horario hasta que se acabe el tiempo.'),
       ).toBeInTheDocument();
       expect(screen.getByText('Viernes 25 · 13:00')).toBeInTheDocument();
-      expect(screen.getByText('Seña $5.000')).toBeInTheDocument();
+      expect(screen.getByText('Seña $5.000,00')).toBeInTheDocument();
     });
 
     it('anillo circular con la cuenta regresiva mm:ss de la ventana de pago (15:00)', async () => {
@@ -282,7 +282,7 @@ describe('EstadoReservaScreen', () => {
       const ticket = (await screen.findByText('Viernes 25 de septiembre')).closest('[data-ticket]') as HTMLElement;
       expect(within(ticket).getByText('Studio Demo · Av. Siempreviva 742')).toBeInTheDocument();
       expect(within(ticket).getByText('Seña pagada')).toBeInTheDocument();
-      expect(within(ticket).getByText('$5.000')).toBeInTheDocument();
+      expect(within(ticket).getByText('$5.000,00')).toBeInTheDocument();
       expect(within(ticket).getByText('El valor final se confirma en el negocio según tu diseño.')).toBeInTheDocument();
     });
 

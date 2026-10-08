@@ -30,11 +30,11 @@ export function formatMonto(monto: number): string {
   }).format(monto);
 }
 
-// Como formatMonto pero sin decimales cuando el monto es entero: para
-// montos de lista/totales donde ",00" solo agrega ruido ("$18.000").
-export function formatMontoCorto(monto: number): string {
+// Porcentaje (p. ej. el de la seña): sin ceros finales, hasta dos decimales.
+// No es un monto: "30" y "12,5", no "30,00".
+export function formatPorcentaje(valor: number): string {
   return new Intl.NumberFormat(localeMonto(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(monto);
+  }).format(valor);
 }

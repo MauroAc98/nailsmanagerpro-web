@@ -91,7 +91,7 @@ describe('Estadísticas — héroe', () => {
     renderWithProviders(<EstadisticasPage />);
 
     const franja = await screen.findByTestId('hero-kpis');
-    expect(within(franja).getByText('$24.375')).toBeInTheDocument();
+    expect(within(franja).getByText('$24.375,00')).toBeInTheDocument();
     for (const etiqueta of ['turnos', 'promedio por turno', 'cancelaciones']) {
       const nodo = within(franja).getByText(etiqueta);
       expect(nodo.style.whiteSpace).not.toBe('nowrap');
@@ -104,7 +104,7 @@ describe('Estadísticas — héroe', () => {
     renderWithProviders(<EstadisticasPage />);
 
     const franja = await screen.findByTestId('hero-kpis');
-    const promedio = within(franja).getByText('$24.375');
+    const promedio = within(franja).getByText('$24.375,00');
     expect(promedio.style.whiteSpace).toBe('nowrap');
     expect(promedio.style.overflowWrap).not.toBe('anywhere');
 

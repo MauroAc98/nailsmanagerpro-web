@@ -160,7 +160,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       renderWithProviders(<PerfilPage />);
       abrirSena();
       expect(screen.getByText('El cliente paga')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Usar $5.500' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Usar $5.500,00' })).toBeInTheDocument();
     });
 
     it('no muestra nada de la comisión si la reserva web no está activa', () => {

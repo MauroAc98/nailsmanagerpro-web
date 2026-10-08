@@ -26,7 +26,7 @@ vi.mock('@/store/useCobrosStore', () => ({ useCobrosStore: () => mocks.state }))
 vi.mock('@/store/usePendientesDeCobroStore', () => ({
   usePendientesDeCobroStore: () => ({ actualizarPrecios: mocks.actualizar }),
 }));
-// Servicio 1 tiene precio de lista ($18.000); el 2 no.
+// Servicio 1 tiene precio de lista ($18.000,00); el 2 no.
 vi.mock('@/store/useServicioStore', () => ({
   useServiciosStore: () => ({
     servicios: [{ id: 1, nombre: 'Capping', precio: '18000' }, { id: 2, nombre: 'Soft gel', precio: null }],
@@ -224,10 +224,10 @@ describe('Cobros — resumen y lista', () => {
     const falta = within(screen.getByTestId('resumen-falta'));
     const cobrado = within(screen.getByTestId('resumen-cobrado'));
     expect(falta.getByText('Te falta cobrar')).toBeInTheDocument();
-    expect(falta.getByText('$30.000')).toBeInTheDocument();
+    expect(falta.getByText('$30.000,00')).toBeInTheDocument();
     expect(cobrado.getByText('Ya cobraste')).toBeInTheDocument();
-    expect(cobrado.getByText('$27.000')).toBeInTheDocument();
-    expect(cobrado.getByText('incluye $6.000 en señas')).toBeInTheDocument();
+    expect(cobrado.getByText('$27.000,00')).toBeInTheDocument();
+    expect(cobrado.getByText('incluye $6.000,00 en señas')).toBeInTheDocument();
   });
 
   it('sin señas pendientes no aclara nada', () => {
@@ -248,20 +248,20 @@ describe('Cobros — resumen y lista', () => {
     expect(within(camila).getByText(/con Natalia/)).toBeInTheDocument();
     expect(within(camila).getByText(/Confirmado$/)).toBeInTheDocument();
     expect(within(camila).getByText('Con seña')).toBeInTheDocument();
-    expect(within(camila).getByText('$6.000')).toBeInTheDocument();
-    expect(within(camila).getByText('Falta $12.000')).toBeInTheDocument();
+    expect(within(camila).getByText('$6.000,00')).toBeInTheDocument();
+    expect(within(camila).getByText('Falta $12.000,00')).toBeInTheDocument();
     const paula = screen.getByText('Paula Test').parentElement as HTMLElement;
     expect(within(paula).getByText(/Finalizado$/)).toBeInTheDocument();
     expect(within(paula).getByText('Cobrado')).toBeInTheDocument();
-    expect(within(paula).getByText('$21.000')).toBeInTheDocument();
+    expect(within(paula).getByText('$21.000,00')).toBeInTheDocument();
   });
 
   it('un finalizado con seña aclara cuánto de lo cobrado fue seña', () => {
     poner({ turnos: [turno(1, { nombre: 'Julieta', fecha: '2026-10-05 12:00:00', cobro: { pago: 'todo', cobrado: 28000, sena: 6000 } })] });
     renderPage();
     const fila = screen.getByText('Julieta Test').parentElement as HTMLElement;
-    expect(within(fila).getByText('$28.000')).toBeInTheDocument();
-    expect(within(fila).getByText('incluye seña $6.000')).toBeInTheDocument();
+    expect(within(fila).getByText('$28.000,00')).toBeInTheDocument();
+    expect(within(fila).getByText('incluye seña $6.000,00')).toBeInTheDocument();
   });
 
   it('sin resultados avisa que no hay turnos con esos filtros', () => {
@@ -325,7 +325,7 @@ describe('Cobros — cobrar un turno', () => {
   it('un turno sin precio ofrece usar el de lista, con su monto', () => {
     renderPage();
     const fila = screen.getByText('Mica Test').parentElement as HTMLElement;
-    expect(within(fila).getByText('Lista $18.000')).toBeInTheDocument();
+    expect(within(fila).getByText('Lista $18.000,00')).toBeInTheDocument();
   });
 
   it('"Usar precio de lista" pide confirmar, guarda y recarga lo cargado', async () => {
@@ -333,7 +333,7 @@ describe('Cobros — cobrar un turno', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Usar precio de lista' }));
     await waitFor(() => expect(mocks.actualizar).toHaveBeenCalledWith(1, [{ servicio_id: 1, precio: 18000 }]));
     expect(mocks.confirmar.mock.calls[0][0]).toContain('Mica');
-    expect(mocks.confirmar.mock.calls[0][0]).toContain('$18.000');
+    expect(mocks.confirmar.mock.calls[0][0]).toContain('$18.000,00');
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith('Precio guardado'));
     expect(mocks.recargar).toHaveBeenCalledTimes(1);
   });
@@ -406,7 +406,7 @@ describe('Cobros — usar precio de lista en todos', () => {
     fireEvent.click(screen.getByRole('button', { name: BOTON }));
     await waitFor(() => expect(mocks.confirmar).toHaveBeenCalledTimes(1));
     expect(mocks.confirmar.mock.calls[0][0]).toContain('3 turnos');
-    expect(mocks.confirmar.mock.calls[0][0]).toContain('$54.000');
+    expect(mocks.confirmar.mock.calls[0][0]).toContain('$54.000,00');
     expect(mocks.actualizar).not.toHaveBeenCalled();
   });
 

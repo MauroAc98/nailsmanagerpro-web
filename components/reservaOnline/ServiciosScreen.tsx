@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso, rutaServicio } from '@/lib/reservaOnline/rutas';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
@@ -103,7 +103,7 @@ function PieServicio({ s }: { s: BookableService }) {
       {s.precio > 0 ? (
         <div style={{ textAlign: 'right', lineHeight: 1 }}>
           <div style={{ fontSize: 11, color: colors.sub, marginBottom: 3 }}>{t('desdeEtiqueta')}</div>
-          <div style={{ fontFamily: agendaFontSerif, fontSize: 21, color: colors.strong }}>{`$${formatMontoCorto(s.precio)}`}</div>
+          <div style={{ fontFamily: agendaFontSerif, fontSize: 21, color: colors.strong }}>{`$${formatMonto(s.precio)}`}</div>
         </div>
       ) : (
         <div style={{ fontSize: 14, fontWeight: 600, color: colors.sub }}>{t('precioAConsultar')}</div>

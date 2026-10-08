@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { useAuthStore } from '@/store/useAuthStore';
 import { parsearMonto } from '@/lib/parsearMonto';
+import { formatMonto } from '@/lib/money';
 import { calcularSenaPreview, precioSugeridoSena, senaConfigurada } from '@/lib/senaPreview';
 import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
 
@@ -52,7 +53,7 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   if (!(activa ?? reservaOnlineActivaParaNegocio(user)) || !user) return null;
 
   const numero = locale === 'es' ? 'es-AR' : locale;
-  const monto = (n: number) => `$${new Intl.NumberFormat(numero, { maximumFractionDigits: 2 }).format(n)}`;
+  const monto = (n: number) => `$${formatMonto(n)}`;
   const decimal = (n: number) =>
     new Intl.NumberFormat(numero, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n);
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { useLocale, useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import {
   usePrecioServiciosStore,
   resolverPreciosServicios,
@@ -69,7 +69,7 @@ export function PrecioServiciosSheetHost() {
   const confirmLabel = sinCobro
     ? t(modo === 'cargar' ? 'confirmCargarSinCobro' : 'confirmFinalizarSinCobro')
     : t(modo === 'cargar' ? 'confirmCargar' : 'confirmFinalizar', {
-        total: `$${formatMontoCorto(total)}`,
+        total: `$${formatMonto(total)}`,
       });
 
   const subtitulo = (() => {
@@ -97,7 +97,7 @@ export function PrecioServiciosSheetHost() {
   };
 
   const diferenciaTexto = (diff: number) =>
-    `${diff > 0 ? '+' : '−'}$${formatMontoCorto(Math.abs(diff))}`;
+    `${diff > 0 ? '+' : '−'}$${formatMonto(Math.abs(diff))}`;
 
   return (
     <div
@@ -179,7 +179,7 @@ export function PrecioServiciosSheetHost() {
                   </p>
                   <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.subtext }}>
                     {s.precioReferencia != null
-                      ? t('listPrice', { monto: `$${formatMontoCorto(s.precioReferencia)}` })
+                      ? t('listPrice', { monto: `$${formatMonto(s.precioReferencia)}` })
                       : t('noListPrice')}
                   </p>
                   {ajustado && (
@@ -279,7 +279,7 @@ export function PrecioServiciosSheetHost() {
               color: colors.text,
             }}
           >
-            ${formatMontoCorto(total)}
+            ${formatMonto(total)}
           </span>
         </div>
 

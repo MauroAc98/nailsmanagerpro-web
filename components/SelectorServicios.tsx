@@ -8,6 +8,7 @@ import type { Servicio } from '@/services/servicioService';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import { deriveEstadoCategoria, type EstadoCategoria } from '@/lib/deriveEstadoCategoria';
+import { formatearDuracion } from '@/lib/duracion';
 
 // Picker de servicios compartido — reemplaza tres implementaciones que
 // habían divergido de forma independiente: `configuracion/SelectorServiciosPorCategoria`
@@ -177,7 +178,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
         flex: 1, minWidth: 0, fontSize: 14, color: colors.text,
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>{s.nombre}</span>
-      <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0 }}>{s.duracion_minutos} min</span>
+      <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0 }}>{formatearDuracion(s.duracion_minutos)}</span>
     </button>
   );
 

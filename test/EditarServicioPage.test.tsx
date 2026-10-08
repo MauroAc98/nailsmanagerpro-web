@@ -121,7 +121,7 @@ describe('EditarServicioPage — components section (multi-professional promo)',
     montar(promo, [ana, laura], { componentes: [comp(1, 1, 1), comp(2, 2, 2)], problemas: [] });
     expect(await screen.findByText('Softgel')).toBeInTheDocument();
     expect(screen.getByText('Semis pies')).toBeInTheDocument();
-    expect(screen.getByText('1 h · $13.000')).toBeInTheDocument();
+    expect(screen.getByText('1 h · $13.000,00')).toBeInTheDocument();
     expect(screen.getByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('Laura')).toBeInTheDocument();
   });

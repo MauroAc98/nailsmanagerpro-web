@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { useLocaleStore } from '@/store/useLocaleStore';
-import { formatMonto } from './money';
+import * as dinero from './money';
+import { formatMonto, formatPorcentaje } from './money';
 
 afterEach(() => useLocaleStore.setState({ locale: 'es' }));
 
@@ -26,5 +27,20 @@ describe('formatMonto', () => {
   it('siempre dos decimales', () => {
     expect(formatMonto(1500)).toBe('1.500,00');
     expect(formatMonto(1500.5)).toBe('1.500,50');
+  });
+
+  // Un porcentaje no es un monto: no lleva decimales fijos ("30%", no "30,00%").
+  it('formatPorcentaje: sin ceros finales, hasta dos decimales', () => {
+    useLocaleStore.setState({ locale: 'es' });
+    expect(formatPorcentaje(30)).toBe('30');
+    expect(formatPorcentaje(12.5)).toBe('12,5');
+    expect(formatPorcentaje(7.25)).toBe('7,25');
+  });
+
+  // Un solo formato de monto en toda la app: no hay una variante "corta" sin
+  // decimales para elegir por pantalla (los montos se veían "$18.000" en un lado
+  // y "$18.000,00" en otro).
+  it('no existe una variante sin decimales', () => {
+    expect(dinero).not.toHaveProperty('formatMontoCorto');
   });
 });

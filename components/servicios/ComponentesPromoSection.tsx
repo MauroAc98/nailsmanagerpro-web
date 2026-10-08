@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Info, Plus, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import { useHorariosCargados } from '@/hooks/useHorariosCargados';
 import { ElegirPersonaSheet, ElegirServicioSheet, PersonaAvatar } from '@/components/servicios/ComponentesPromoSheets';
@@ -194,7 +194,7 @@ export default function ComponentesPromoSection({
                   {servicio && (
                     <span style={{ display: 'block', marginTop: 2, fontSize: 12, color: colors.muted }}>
                       {servicio.precio !== null
-                        ? t('serviceMeta', { duracion: formatearDuracion(servicio.duracion_minutos), precio: `$${formatMontoCorto(parseFloat(servicio.precio))}` })
+                        ? t('serviceMeta', { duracion: formatearDuracion(servicio.duracion_minutos), precio: `$${formatMonto(parseFloat(servicio.precio))}` })
                         : formatearDuracion(servicio.duracion_minutos)}
                     </span>
                   )}
@@ -313,7 +313,7 @@ export default function ComponentesPromoSection({
             <div style={{ flex: 1 }}>
               <p style={eyebrow}>{t('totalPrice')}</p>
               <p style={{ margin: '3px 0 0', fontFamily: agendaFontSerif, fontSize: 20, color: colors.textStrong }}>
-                {`$${formatMontoCorto(precioMostrado)}`}
+                {`$${formatMonto(precioMostrado)}`}
               </p>
               <p style={{ margin: '2px 0 0', fontSize: 11.5, color: colors.subtext }}>
                 {t('priceSumLabel')}
@@ -339,8 +339,8 @@ export default function ComponentesPromoSection({
             />
             <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.subtext }}>
               {ahorro > 0
-                ? t('priceSavings', { suma: `$${formatMontoCorto(sumaComponentes)}`, ahorro: `$${formatMontoCorto(ahorro)}` })
-                : t('priceSumOnly', { suma: `$${formatMontoCorto(sumaComponentes)}` })}
+                ? t('priceSavings', { suma: `$${formatMonto(sumaComponentes)}`, ahorro: `$${formatMonto(ahorro)}` })
+                : t('priceSumOnly', { suma: `$${formatMonto(sumaComponentes)}` })}
             </p>
           </div>
         </div>

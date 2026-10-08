@@ -45,12 +45,11 @@ describe('ServicioCard — swipe-to-delete resting peek', () => {
 });
 
 describe('ServicioCard — jerarquía visual', () => {
-  it('muestra el precio como dato principal, sin decimales cuando es entero', () => {
-    const { getByText, queryByText } = renderWithProviders(
+  it('muestra el precio como dato principal, siempre con dos decimales', () => {
+    const { getByText } = renderWithProviders(
       <ServicioCard servicio={buildServicio({ precio: '18000' })} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
     );
-    expect(getByText('$18.000')).toBeInTheDocument();
-    expect(queryByText(/,00/)).toBeNull();
+    expect(getByText('$18.000,00')).toBeInTheDocument();
   });
 
   it('un servicio inactivo lleva la etiqueta PAUSADO', () => {
@@ -77,7 +76,7 @@ describe('ServicioCard — filas', () => {
     );
     const filaMeta = screen.getByText('PROMO').parentElement!.parentElement!;
     expect(filaMeta).toHaveTextContent('30 min');
-    expect(filaMeta).toHaveTextContent('$100');
+    expect(filaMeta).toHaveTextContent('$100,00');
     expect(filaMeta).not.toHaveTextContent('Combo');
   });
 
@@ -85,7 +84,7 @@ describe('ServicioCard — filas', () => {
     renderWithProviders(
       <ServicioCard servicio={buildServicio()} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
     );
-    const filaMeta = screen.getByText('$100').parentElement!.parentElement!;
+    const filaMeta = screen.getByText('$100,00').parentElement!.parentElement!;
     expect(filaMeta.querySelector('[role="switch"], button')).not.toBeNull();
   });
 });

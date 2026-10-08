@@ -10,7 +10,7 @@ import { Spinner } from '@/components/Spinner';
 import { MontoFit } from '@/components/estadisticas/MontoFit';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { NAV_CLEARANCE } from '@/constants/layout';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import {
   parsePagoFiltro,
   type EstadoPago,
@@ -27,7 +27,7 @@ import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
 import { showToast } from '@/store/useToastStore';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 
-const monto = (n: number) => `$${formatMontoCorto(n)}`;
+const monto = (n: number) => `$${formatMonto(n)}`;
 
 // Espera tras dejar de tipear antes de buscar en el servidor (igual que Clientes).
 const ESPERA_BUSQUEDA_MS = 500;

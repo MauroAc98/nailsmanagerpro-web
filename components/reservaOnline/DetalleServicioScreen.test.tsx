@@ -45,7 +45,7 @@ describe('DetalleServicioScreen', () => {
     renderWithProviders(<DetalleServicioScreen slug="demo" servicioId={1} ir={() => {}} />);
     expect(await screen.findByRole('heading', { name: 'Esmaltado semipermanente' })).toBeInTheDocument();
     expect(screen.getByText('45 min')).toBeInTheDocument();
-    expect(screen.getByText('Desde $12.000')).toBeInTheDocument();
+    expect(screen.getByText('Desde $12.000,00')).toBeInTheDocument();
     expect(screen.getByText('El valor final depende del diseño y se confirma en el negocio.')).toBeInTheDocument();
     expect(screen.getByText('1 / 4')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Ver foto \d/ })).toHaveLength(4);

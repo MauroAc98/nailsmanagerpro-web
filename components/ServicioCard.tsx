@@ -7,7 +7,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { Servicio } from '@/services/servicioService';
-import { formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/duracion';
 import PillToggle from '@/components/PillToggle';
 
@@ -39,7 +39,7 @@ interface Props {
 
 export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, draggable = false, showPromoBadge = false }: Props) {
   const t = useTranslations('configuracion.ServiciosPage');
-  const precioLabel = servicio.precio ? `$${formatMontoCorto(Number(servicio.precio))}` : null;
+  const precioLabel = servicio.precio ? `$${formatMonto(Number(servicio.precio))}` : null;
 
   // useSortable siempre se llama (regla de hooks) pero `disabled` cuando
   // `draggable` es false lo deja inerte: sin listeners, sin transform.

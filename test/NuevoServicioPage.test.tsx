@@ -271,14 +271,14 @@ describe('NuevoServicioPage — promo first, duration and price only when they a
     const precio = await screen.findByLabelText('Precio de la promo');
     expect(precio).toHaveValue(null);
     expect(precio).toHaveAttribute('placeholder', '13000');
-    expect(screen.getByText(/Suma de los servicios: \$13\.?000/)).toBeInTheDocument();
+    expect(screen.getByText(/Suma de los servicios: \$13\.?000,00/)).toBeInTheDocument();
     expect(screen.queryByText(/ahorrás/)).not.toBeInTheDocument();
 
     fireEvent.change(precio, { target: { value: '10000' } });
-    expect(screen.getByText(/Suma \$13\.?000 · ahorrás \$3\.?000/)).toBeInTheDocument();
+    expect(screen.getByText(/Suma \$13\.?000,00 · ahorrás \$3\.?000,00/)).toBeInTheDocument();
     fireEvent.change(precio, { target: { value: '15000' } });
     expect(screen.queryByText(/ahorrás/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Suma de los servicios: \$13\.?000/)).toBeInTheDocument();
+    expect(screen.getByText(/Suma de los servicios: \$13\.?000,00/)).toBeInTheDocument();
   });
 });
 

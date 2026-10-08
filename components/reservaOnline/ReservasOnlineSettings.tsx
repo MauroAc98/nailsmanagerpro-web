@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { linkReserva } from '@/lib/reservaOnline/linkPublico';
 import { senaConfigurada } from '@/lib/senaPreview';
+import { formatMonto } from '@/lib/money';
 import { FilaAvisosReservas } from '@/components/perfil/FilaAvisosReservas';
 import { useAuthStore } from '@/store/useAuthStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -23,8 +24,6 @@ import { Tarjeta } from './ui';
 // Seña y pagos; aca solo se muestra cual es la vigente y se ofrece cambiarla.
 export function ReservasOnlineSettings({ slug }: { slug: string }) {
   const t = useTranslations('reservaOnline.settings');
-  const locale = useLocale();
-  const numero = locale === 'es' ? 'es-AR' : locale;
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
@@ -39,7 +38,7 @@ export function ReservasOnlineSettings({ slug }: { slug: string }) {
     ? t('senaSinConfigurar')
     : user.sena_tipo === 'porcentaje'
       ? t('senaActualPorcentaje', { pct: user.sena_porcentaje ?? 0 })
-      : t('senaActualFijo', { monto: `$${new Intl.NumberFormat(numero, { maximumFractionDigits: 2 }).format(Number(user.sena_monto ?? 0))}` });
+      : t('senaActualFijo', { monto: `$${formatMonto(Number(user.sena_monto ?? 0))}` });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

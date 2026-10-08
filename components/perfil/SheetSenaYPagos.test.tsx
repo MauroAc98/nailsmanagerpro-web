@@ -228,20 +228,20 @@ describe('SheetSenaYPagos — cálculo en monto fijo', () => {
   it('shows what the client pays, the MP fee and the net for the typed amount', () => {
     setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
-    expect(screen.getByText('$5.000')).toBeInTheDocument();
-    expect(screen.getByText('−$381')).toBeInTheDocument();
-    expect(screen.getByText('$4.619')).toBeInTheDocument();
+    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
+    expect(screen.getByText('−$381,00')).toBeInTheDocument();
+    expect(screen.getByText('$4.619,00')).toBeInTheDocument();
   });
 
   it('suggests even when the API sends the amount as text with decimals (decimal:2)', () => {
     setup({ senaTipo: 'fijo', senaMonto: '5000.00', comisionVigente: 7.61 });
-    expect(screen.getByRole('button', { name: 'Usar $5.500' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Usar $5.500,00' })).toBeInTheDocument();
   });
 
   it('suggests a higher seña rounded up to 100 and applies it through the parent setter', () => {
     const props = setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
     expect(screen.getByText(/Para recibir \$5\.000/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $5.500' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Usar $5.500,00' }));
     expect(props.setSenaMonto).toHaveBeenCalledWith('5500');
   });
 
@@ -256,7 +256,7 @@ describe('SheetSenaYPagos — cálculo en monto fijo', () => {
   it('includes the tax retention when the user declares one', () => {
     setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61, retiene: true, retencion: '2' });
     expect(screen.getByText('Retención de impuestos')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Usar $5.600' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Usar $5.600,00' })).toBeInTheDocument();
   });
 
   it('shows nothing when the amount is empty/invalid or the commission is unknown', () => {

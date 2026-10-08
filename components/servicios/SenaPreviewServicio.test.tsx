@@ -50,11 +50,11 @@ describe('SenaPreviewServicio', () => {
     setup('18000');
     expect(screen.getByText('Seña de la reserva online')).toBeInTheDocument();
     expect(screen.getByText('Tu cliente paga de seña')).toBeInTheDocument();
-    expect(screen.getByText('$9.000')).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect(screen.getByText('$9.000,00')).toHaveStyle({ whiteSpace: 'nowrap' });
     expect(screen.getByText('− Mercado Pago (7,6%)')).toBeInTheDocument();
-    expect(screen.getByText('$685')).toBeInTheDocument();
+    expect(screen.getByText('$685,00')).toBeInTheDocument();
     expect(screen.getByText('Te llegan')).toBeInTheDocument();
-    expect(screen.getByText('$8.315')).toBeInTheDocument();
+    expect(screen.getByText('$8.315,00')).toBeInTheDocument();
     expect(screen.getByText('Es el 3,8% del precio.')).toBeInTheDocument();
   });
 
@@ -80,26 +80,26 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50, retencion_iibb_porcentaje: 4 });
     setup('18000');
     expect(screen.getByText('− Retención de impuestos')).toBeInTheDocument();
-    expect(screen.getByText('$360')).toBeInTheDocument(); // round(9000 * 4 / 100)
+    expect(screen.getByText('$360,00')).toBeInTheDocument(); // round(9000 * 4 / 100)
   });
 
   it('fixed mode: exact amount and NO price suggestion', () => {
     setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
     setup('20000');
-    expect(screen.getByText('$5.000')).toBeInTheDocument();
+    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('understands es-AR thousands separators in the price field', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18.000');
-    expect(screen.getByText('$9.000')).toBeInTheDocument();
+    expect(screen.getByText('$9.000,00')).toBeInTheDocument();
   });
 
   it('keeps money on one line (nowrap) so amounts are never cut with an ellipsis', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000');
-    for (const t of ['$685', '$8.315']) expect(screen.getByText(t)).toHaveStyle({ whiteSpace: 'nowrap' });
+    for (const t of ['$685,00', '$8.315,00']) expect(screen.getByText(t)).toHaveStyle({ whiteSpace: 'nowrap' });
   });
 });
 
@@ -155,7 +155,7 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
   it('shows the fixed amount when the seña is a fixed amount', () => {
     setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
     setup('18000', { onConfigurar: vi.fn() });
-    expect(screen.getByText('Seña configurada: $5.000')).toBeInTheDocument();
+    expect(screen.getByText('Seña configurada: $5.000,00')).toBeInTheDocument();
   });
 
   it('calls onConfigurar from the full card too', () => {
@@ -172,14 +172,14 @@ describe('SenaPreviewServicio — price suggestion', () => {
   it('percentage mode, price edited: offers to cover the commission, explaining what the user receives', () => {
     setup('18000');
     expect(screen.getByText(
-      '¿Querés que te lleguen los $9.000 completos? Con un precio de $19.600 la seña es $9.800 y te llegan $9.054.',
+      '¿Querés que te lleguen los $9.000,00 completos? Con un precio de $19.600,00 la seña es $9.800,00 y te llegan $9.054,00.',
     )).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600,00' })).toBeInTheDocument();
   });
 
   it('a service just opened (price untouched) shows the breakdown but NO suggestion', () => {
     setup('18000', { precioInicial: '18000' });
-    expect(screen.getByText('$9.000')).toBeInTheDocument();
+    expect(screen.getByText('$9.000,00')).toBeInTheDocument();
     expect(screen.queryByText(/¿Querés que te lleguen/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Cubrir/ })).toBeNull();
   });
@@ -192,37 +192,37 @@ describe('SenaPreviewServicio — price suggestion', () => {
   it('editing the price after opening brings the suggestion in, and going back to the original hides it', () => {
     setup('18000', { precioInicial: '18000' });
     fireEvent.change(screen.getByLabelText('precio'), { target: { value: '20000' } });
-    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $21.800' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $21.800,00' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('precio'), { target: { value: '18000' } });
     expect(screen.queryByRole('button', { name: /Cubrir/ })).toBeNull();
   });
 
   it('accepting sets the price and shows a confirmation with the previous price, no new suggestion', () => {
     setup('18000');
-    fireEvent.click(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600,00' }));
     expect(screen.getByLabelText('precio')).toHaveValue('19600');
-    expect(screen.getByText('Precio ajustado. Antes: $18.000')).toBeInTheDocument();
+    expect(screen.getByText('Precio ajustado. Antes: $18.000,00')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Cubrir/ })).toBeNull();
     expect(screen.queryByText(/¿Querés que te lleguen/)).toBeNull();
     // el desglose sigue mostrando los números del nuevo precio
-    expect(screen.getByText('$9.800')).toBeInTheDocument();
+    expect(screen.getByText('$9.800,00')).toBeInTheDocument();
   });
 
   it('"Deshacer" restores the previous price and offers the suggestion again', () => {
     setup('18000');
-    fireEvent.click(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600,00' }));
     fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
     expect(screen.getByLabelText('precio')).toHaveValue('18000');
     expect(screen.queryByText(/Precio ajustado/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600,00' })).toBeInTheDocument();
   });
 
   it('editing the price by hand leaves the confirmation and suggests again', () => {
     setup('18000');
-    fireEvent.click(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cubrir la comisión · $19.600,00' }));
     fireEvent.change(screen.getByLabelText('precio'), { target: { value: '25000' } });
     expect(screen.queryByText(/Precio ajustado/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $27.200' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cubrir la comisión · $27.200,00' })).toBeInTheDocument();
   });
 
   it('shows no suggestion for an invalid price', () => {

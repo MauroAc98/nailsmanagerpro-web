@@ -23,7 +23,7 @@ import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/
 import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes, nombreDia, diasSemanaCortos, formatoYMD } from '@/lib/dateFormat';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
-import { formatMonto, formatMontoCorto } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 
 // Recharts pesa ~100KB: se carga solo al entrar a esta pantalla (no en el
 // bundle de Agenda ni del resto), y sin SSR — mide el contenedor con
@@ -749,7 +749,7 @@ function EstadisticasContent() {
                 {[
                   { value: String(stats?.total_turnos ?? 0), label: t('kpiAppointments') },
                   {
-                    value: ticket === null ? '—' : ocultarMonto ? '••••' : `$${formatMontoCorto(ticket)}`,
+                    value: ticket === null ? '—' : ocultarMonto ? '••••' : `$${formatMonto(ticket)}`,
                     label: t('kpiAverageTicket'),
                   },
                   { value: tasaCancelacion === null ? '—' : `${tasaCancelacion}%`, label: t('kpiCancellations') },
@@ -801,7 +801,7 @@ function EstadisticasContent() {
                       parcialLabel={t('earningsPartialBucket')}
                       ariaLabel={t('trendAria')}
                       promedio={promedioDia}
-                      promedioLabel={promedioDia ? t('avgLabel', { monto: `$${formatMontoCorto(Math.round(promedioDia))}` }) : undefined}
+                      promedioLabel={promedioDia ? t('avgLabel', { monto: `$${formatMonto(Math.round(promedioDia))}` }) : undefined}
                     />
                     {previoSerie && (
                       <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 11, color: colors.subtext }}>
@@ -845,7 +845,7 @@ function EstadisticasContent() {
                   }}>
                     {ritmoAcumulado.diferencia.diff >= 0 ? <TrendingUp size={13} strokeWidth={2.5} /> : <TrendingDown size={13} strokeWidth={2.5} />}
                     {t(ritmoAcumulado.diferencia.diff >= 0 ? 'paceAbove' : 'paceBelow', {
-                      monto: ocultarMonto ? '••••' : `$${formatMontoCorto(Math.abs(ritmoAcumulado.diferencia.diff))}`,
+                      monto: ocultarMonto ? '••••' : `$${formatMonto(Math.abs(ritmoAcumulado.diferencia.diff))}`,
                       mes: nombreMes(mesAnteriorDate, 'long'),
                       dia: ritmoAcumulado.diferencia.dia,
                     })}
@@ -1039,7 +1039,7 @@ function EstadisticasContent() {
                         { value: String(resumenDia.ritmo.cancelados), label: t('cancelled') },
                         ...(resumenDia.horaPico !== null ? [{ value: t('occupancyPeakHourBadge', { hora: resumenDia.horaPico }), label: t('dayPeakHour') }] : []),
                         ...(resumenDia.ticket !== null
-                          ? [{ value: ocultarMonto ? '••••' : `$${formatMontoCorto(resumenDia.ticket)}`, label: t('dayTicket') }]
+                          ? [{ value: ocultarMonto ? '••••' : `$${formatMonto(resumenDia.ticket)}`, label: t('dayTicket') }]
                           : []),
                       ].map(k => (
                         <div key={k.label} style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 14, padding: '10px 12px', minWidth: 0 }}>

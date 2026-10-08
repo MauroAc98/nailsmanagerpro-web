@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { parsearMonto } from '@/lib/parsearMonto';
+import { formatMonto } from '@/lib/money';
 import { desgloseSena, senaFijaSugerida } from '@/lib/senaPreview';
 import { SheetInput } from './SheetInput';
 import type { SenaCampo, SenaModo } from '@/lib/senaConfig';
@@ -90,7 +91,6 @@ export function SheetSenaYPagos({
   reservaOnlineActiva, onGuardar, guardando, onClose,
 }: Props) {
   const t = useTranslations('perfil.SheetSenaYPagos');
-  const locale = useLocale();
   // Tras "Usar": monto previo y el aplicado, para poder deshacer.
   const [aplicado, setAplicado] = useState<{ anterior: string; nuevo: string } | null>(null);
   const errorMonto = error ?? erroresServidor?.sena_monto;
@@ -103,8 +103,7 @@ export function SheetSenaYPagos({
 
   // Cálculo de la seña fija: lo que paga el cliente, lo que cobra MP y lo que
   // llega, más una seña sugerida que cubre el costo (redondeada hacia arriba a 100).
-  const numero = locale === 'es' ? 'es-AR' : locale;
-  const dinero = (n: number) => `$${new Intl.NumberFormat(numero, { maximumFractionDigits: 2 }).format(n)}`;
+  const dinero = (n: number) => `$${formatMonto(n)}`;
   const montoFijo = senaTipo === 'fijo' ? parsearMonto(senaMonto) : null;
   const retencionPct = retiene ? (parsearMonto(retencion) ?? 0) : 0;
   const configCalculo = { comision_mp_vigente: comisionVigente, retencion_iibb_porcentaje: retencionPct };
