@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor } from '@testing-library/react';
-import { render } from '@testing-library/react';
+import { render, cleanup } from '@testing-library/react';
 import { routerMock, setMockLocation, resetNavigationMock } from '@/test/mocks/nextNavigation';
 
 vi.mock('next/navigation', async () => (await import('@/test/mocks/nextNavigation')).nextNavigationMock);
@@ -352,5 +352,71 @@ describe('Providers — reservar.turnetto.com (reserva pública)', () => {
         `/login?redirect=${encodeURIComponent('/natalia-acosta')}`,
       ),
     );
+  });
+});
+
+describe('Providers — service worker', () => {
+  const registro = { update: vi.fn(), unregister: vi.fn() };
+  const sw = {
+    register: vi.fn(),
+    getRegistration: vi.fn(),
+    getRegistrations: vi.fn(),
+    controller: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  };
+  const rechazosSinCapturar: unknown[] = [];
+  const alRechazar = (motivo: unknown) => rechazosSinCapturar.push(motivo);
+
+  beforeEach(() => {
+    rechazosSinCapturar.length = 0;
+    process.on('unhandledRejection', alRechazar);
+    registro.update.mockReset();
+    registro.unregister.mockReset().mockResolvedValue(true);
+    sw.register.mockReset().mockResolvedValue(registro);
+    sw.getRegistration.mockReset().mockResolvedValue(registro);
+    sw.getRegistrations.mockReset().mockResolvedValue([registro]);
+    Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+    setMockLocation('/login');
+  });
+
+  afterEach(() => {
+    cleanup(); // desmonta antes de quitar serviceWorker: el cleanup del efecto lo usa
+    process.off('unhandledRejection', alRechazar);
+    vi.unstubAllEnvs();
+    // @ts-expect-error jsdom no trae serviceWorker: lo quitamos para no afectar otros tests
+    delete navigator.serviceWorker;
+  });
+
+  const esperarUnTick = () => new Promise(resolve => setTimeout(resolve, 20));
+
+  it('en producción registra /sw.js', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    registro.update.mockResolvedValue(undefined);
+    render(<Providers><div>X</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(sw.register).toHaveBeenCalledWith('/sw.js'));
+  });
+
+  it('en producción, si buscar una actualización falla ("invalid state"), no queda un rechazo sin capturar', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    registro.update.mockRejectedValue(new DOMException('The object is in an invalid state.', 'InvalidStateError'));
+    render(<Providers><div>X</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(registro.update).toHaveBeenCalled());
+    await esperarUnTick();
+    expect(rechazosSinCapturar).toEqual([]);
+  });
+
+  it('fuera de producción no registra el service worker y da de baja el que quedó de un build anterior', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    render(<Providers><div>X</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(registro.unregister).toHaveBeenCalled());
+    expect(sw.register).not.toHaveBeenCalled();
+    expect(registro.update).not.toHaveBeenCalled();
   });
 });

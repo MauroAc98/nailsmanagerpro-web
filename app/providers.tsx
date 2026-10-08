@@ -149,6 +149,20 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+    // Fuera de producción next-pwa está apagado (next.config.ts: disable en
+    // development), así que no hay service worker propio. Pero public/sw.js
+    // queda de los builds de producción: registrarlo en localhost ataba el
+    // navegador a un SW viejo, y cada build nuevo lo dejaba en un estado
+    // inválido ("Failed to update a ServiceWorker ... invalid state"). En
+    // desarrollo no se registra y se da de baja el que haya quedado.
+    if (process.env.NODE_ENV !== 'production') {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then(registros => registros.forEach(registro => registro.unregister()))
+        .catch(() => {});
+      return;
+    }
+
     // next-pwa (register: true) inyecta su script de auto-registro en el
     // entry 'main.js' de webpack — eso es Pages Router. Esta app es App
     // Router (entry 'main-app'), así que esa inyección nunca corrió: cero
@@ -171,7 +185,10 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
     const checkForUpdate = () => {
       if (document.visibilityState === 'visible') {
-        navigator.serviceWorker.getRegistration().then(reg => reg?.update());
+        // Buscar una actualización nunca es fatal: si el registro está en un
+        // estado inválido (p. ej. "InvalidStateError"), la app sigue andando
+        // con el SW actual. Sin el catch quedaba como "Uncaught (in promise)".
+        navigator.serviceWorker.getRegistration().then(reg => reg?.update()).catch(() => {});
       }
     };
     document.addEventListener('visibilitychange', checkForUpdate);
