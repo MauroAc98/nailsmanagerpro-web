@@ -41,6 +41,9 @@ export interface Turno {
   grupo?: {
     id: number;
     modo: 'paralelo' | 'secuencia' | null;
+    // Promo de la que nace el grupo; null = seleccion suelta de servicios (o promo borrada).
+    // Opcional: ausente en backends viejos.
+    promo?: { id: number; nombre: string } | null;
     tramos: {
       turno_id: number;
       profesional_id: number;
@@ -48,6 +51,8 @@ export interface Turno {
       fecha_hora: string;
       duracion_total_minutos: number;
       estado: 'confirmado' | 'completado' | 'cancelado';
+      // Servicios del paso (tambien los de otro profesional u otro dia). Opcional: backends viejos.
+      servicios?: { id: number; nombre: string }[];
     }[];
   };
 }
