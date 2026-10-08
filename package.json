@@ -9,6 +9,8 @@
     "start": "node .next/standalone/server.js",
     "lint": "node scripts/check-messages.js && vitest run && eslint",
     "test": "vitest run",
+    "test:changed": "vitest run --changed",
+    "typecheck": "tsc --noEmit",
     "test:watch": "vitest",
     "deploy": "bash scripts/deploy.sh"
   },

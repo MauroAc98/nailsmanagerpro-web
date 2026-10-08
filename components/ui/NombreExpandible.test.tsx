@@ -3,10 +3,10 @@ import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { NombreExpandible } from './NombreExpandible';
 
-// El popover se detecta por su contenido, no con findByRole: la consulta por
-// rol recorre el arbol de accesibilidad y en este entorno tarda minutos.
-// Se consulta de forma sincrona: Base UI abre el popup dentro del mismo click,
-// y waitFor/findBy* entran en un loop con el DOM del popover bajo jsdom.
+// El popover se detecta por su contenido y de forma sincrona: Base UI abre el
+// popup dentro del mismo click, asi que no hace falta waitFor/findBy*.
+// (Abrir un popover bajo jsdom era lentisimo hasta que vitest.setup.ts resolvio
+// las pseudo-clases que jsdom no soporta; ahora cada caso tarda milisegundos.)
 const popup = () => document.querySelector('[role="dialog"]') as HTMLElement | null;
 const abierto = () => {
   const el = popup();
@@ -80,8 +80,7 @@ describe('NombreExpandible', () => {
     montar({ lineas: 2 });
     fireEvent.click(screen.getByText(NOMBRE));
     expect(abierto()).toHaveTextContent(NOMBRE);
-    // Abrir el popover en jsdom tarda ~5 s (floating-ui): el tope por defecto no alcanza.
-  }, 30000);
+  });
 
   it('si entra completo: el toque llega al padre como siempre y no abre nada', async () => {
     entra();
@@ -98,7 +97,7 @@ describe('NombreExpandible', () => {
     montar({ texto: 'A + B', children: <em>A + B (y 1 mas)</em> });
     fireEvent.click(screen.getByText('A + B (y 1 mas)'));
     expect(abierto()).toHaveTextContent('A + B');
-  }, 30000);
+  });
 
   it('una linea: nowrap + ellipsis; dos lineas: line-clamp 2', () => {
     entra();
