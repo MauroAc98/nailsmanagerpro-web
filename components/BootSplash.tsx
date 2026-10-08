@@ -33,14 +33,16 @@ export function BootSplash() {
         backgroundColor: withAlpha(colors.primary, '12'),
       }} />
 
+      {/* El logo transparente (no icon-192.png, que es un cuadrado con fondo
+          blanco opaco: sobre el hueso o el modo oscuro se veía un recuadro
+          blanco). Mismo logo que el splash nativo de iOS (scripts/generar-splash.py). */}
       <Image
-        src="/icon-192.png"
+        src="/logo-turnetto.png"
         alt=""
-        width={80}
-        height={80}
+        width={180}
+        height={141}
         priority
         style={{
-          borderRadius: 20,
           opacity: pulso ? 1 : 0.5,
           transition: 'opacity 0.9s ease',
         }}
