@@ -22,6 +22,7 @@ export const agendaColors = {
   amber: 'var(--ag-amber)',
   amberBg: 'var(--ag-amber-bg)',
   amberFg: 'var(--ag-amber-fg)',
+  scrim: 'var(--ag-scrim)',
   success: 'var(--ag-success)',
   successBg: 'var(--ag-success-bg)',
   danger: 'var(--ag-danger)',

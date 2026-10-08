@@ -99,6 +99,14 @@
     "activeFilters": "Filtros ativos",
     "filter": "Filtrar"
   },
+  "AccionesRapidas": {
+    "abrir": "Ações rápidas",
+    "cerrar": "Fechar",
+    "turno": "Novo agendamento",
+    "gasto": "Lançar despesa",
+    "ingreso": "Lançar receita",
+    "cobrar": "Cobrar agendamentos"
+  },
   "FiltroSheetContent": {
     "title": "Filtros",
     "clearAll": "Limpar tudo",

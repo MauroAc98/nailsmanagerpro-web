@@ -299,6 +299,8 @@ body {
      de la app en vez de traer un rojo aislado solo para esta pantalla. */
   --ag-danger: var(--color-danger);
   --ag-whatsapp: #25a366;
+  /* Velo que oscurece la pantalla detrás de un menú (el "+" de la Agenda). */
+  --ag-scrim: rgba(43, 34, 38, 0.4);
 }
 
 .agenda-dark {
@@ -331,6 +333,8 @@ body {
   --ag-success-bg: #16281c;
   --ag-danger: var(--color-danger);
   --ag-whatsapp: #25d366;
+  /* Más opaco que en claro: sobre un fondo ya oscuro un velo del 40% casi no se nota. */
+  --ag-scrim: rgba(0, 0, 0, 0.65);
 }
 
 /* Fondo con trama de íconos de turnos (calendario, reloj, mensaje, campana,

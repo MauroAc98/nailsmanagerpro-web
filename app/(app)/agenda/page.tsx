@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState, useRef, useCallback, useMemo } fr
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Camera, Check, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Camera, Check, SlidersHorizontal, X } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -21,6 +21,7 @@ import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { Spinner } from '@/components/Spinner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
+import { AccionesRapidasFab } from '@/components/agenda/AccionesRapidasFab';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
 import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
@@ -1199,23 +1200,15 @@ function AgendaContent() {
         />
       </BottomSheet>
 
-      {/* FAB — hidden for past dates, active filters, or while filters are open */}
-      {!esFechaPasada && !hayFiltroActivo && !filtrosAbiertos && (
-        <button
-          onClick={() => router.push(`/agenda/nuevo?fecha=${fechaSeleccionada}`)}
-          style={{
-            // calc() en vez de un número fijo: suma env(safe-area-inset-bottom)
-            // igual que el nav (app/(app)/layout.tsx) — sin esto el FAB queda
-            // tapado por el nav en iPhones con home indicator (inset ≠ 0).
-            position: 'fixed', bottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 8px)`, right: 24,
-            width: 56, height: 56, borderRadius: 28,
-            backgroundColor: colors.primarySolid, border: 'none',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: `0 8px 20px ${withAlpha(colors.primary, '80')}`, zIndex: 45,
-          }}
-        >
-          <Plus size={24} color={colors.primaryFg} strokeWidth={2.5} />
-        </button>
+      {/* Botón "+": siempre visible salvo con el sheet de filtros abierto. "Nuevo
+          turno" solo se ofrece con una fecha de hoy o futura y sin filtro activo
+          (no tiene sentido agendar en el pasado); las acciones de Finanzas no
+          dependen del día. */}
+      {!filtrosAbiertos && (
+        <AccionesRapidasFab
+          fechaSeleccionada={fechaSeleccionada}
+          mostrarNuevoTurno={!esFechaPasada && !hayFiltroActivo}
+        />
       )}
     </div>
   );

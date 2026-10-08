@@ -99,6 +99,14 @@
     "activeFilters": "Filtros activos",
     "filter": "Filtrar"
   },
+  "AccionesRapidas": {
+    "abrir": "Acciones rápidas",
+    "cerrar": "Cerrar",
+    "turno": "Nuevo turno",
+    "gasto": "Cargar gasto",
+    "ingreso": "Cargar ingreso",
+    "cobrar": "Cobrar turnos"
+  },
   "FiltroSheetContent": {
     "title": "Filtros",
     "clearAll": "Limpiar todo",
