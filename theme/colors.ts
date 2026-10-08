@@ -66,13 +66,26 @@ export function withAlpha(color: string, alphaHex: string): string {
 // Paleta curada para distinguir profesionales en la agenda multi-agenda
 // (chips, badges, nombre en las cards). Colores separados entre sí en tono
 // para que sean identificables incluso en textos chicos de 9-10px.
-export const profesionalPalette = [
-  '#6b8f6a', // salvia (primary)
-  '#8ecae6', // celeste
-  '#ffb703', // ámbar
-  '#06d6a0', // verde agua
-  '#c77dff', // lila
-  '#f4978e', // coral
-  '#577590', // azul petróleo
-  '#9c6644', // marrón
-];
+export const profesionalPaletaGrupos = {
+  suaves: [
+    '#6b8f6a', // salvia (primary)
+    '#8ecae6', // celeste
+    '#f4978e', // coral
+    '#c77dff', // lila
+    '#ffb703', // ámbar
+    '#06d6a0', // verde agua
+    '#e63988', // fucsia
+    '#f9844a', // naranja
+  ],
+  intensos: [
+    '#577590', // azul petróleo
+    '#9c6644', // marrón
+    '#4361ee', // azul
+    '#7b2cbf', // violeta
+    '#e76f51', // terracota
+    '#2a9d8f', // turquesa
+    '#90be6d', // verde manzana
+    '#8d99ae', // gris azulado
+  ],
+};
+export const profesionalPalette = [...profesionalPaletaGrupos.suaves, ...profesionalPaletaGrupos.intensos];

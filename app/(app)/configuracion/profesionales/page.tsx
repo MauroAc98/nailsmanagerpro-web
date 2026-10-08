@@ -176,12 +176,6 @@ export default function ProfesionalesPage() {
         </svg>
       </button>
 
-      <div style={{ padding: '0 20px 8px' }}>
-        <p style={{ fontSize: 13, color: colors.subtext, margin: 0 }}>
-          {t('disclaimer')}
-        </p>
-      </div>
-
       {/* Ajuste del salón "atiende en paralelo" (PR 2d): solo con más de una
           profesional activa, apagado por defecto, una sola línea de ayuda. */}
       {mostrarParalelo && (
