@@ -32,7 +32,7 @@ function OpcionAlcance({ activa, onClick, children }: { activa: boolean; onClick
 // Lo que cancela "Todos": cada turno pendiente en una linea, y la aclaracion de que lo ya finalizado no cambia.
 function ListaPendientes({ pendientes, nota }: { pendientes: string[]; nota: string }) {
   return (
-    <div style={{ fontSize: 13, color: colors.subtext, paddingLeft: 4, marginBottom: 8 }}>
+    <div style={{ fontSize: 13, fontWeight: 400, color: colors.subtext, marginTop: 6 }}>
       {pendientes.map(p => (
         <div key={p} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p}</div>
       ))}
@@ -131,8 +131,8 @@ export function MotivoCancelacionSheetHost() {
             </p>
             <OpcionAlcance activa={pasoElegido === null} onClick={() => setPasoElegido(null)}>
               {t('todoElCombo', { n: contexto.pendientes.length })}
+              {pasoElegido === null && <ListaPendientes pendientes={contexto.pendientes} nota={t('finalizadosNoCambian')} />}
             </OpcionAlcance>
-            {pasoElegido === null && <ListaPendientes pendientes={contexto.pendientes} nota={t('finalizadosNoCambian')} />}
             {contexto.pasos.map(paso => (
               <OpcionAlcance key={paso.turnoId} activa={pasoElegido === paso.turnoId} onClick={() => setPasoElegido(paso.turnoId)}>
                 {t('soloPaso', { paso: paso.etiqueta })}
@@ -151,12 +151,17 @@ export function MotivoCancelacionSheetHost() {
             {(['tramo', 'grupo'] as const).map(op => (
               <OpcionAlcance key={op} activa={alcance === op} onClick={() => setAlcance(op)}>
                 {op === 'tramo' ? t('soloEste') : t('todoElCombo', { n: contexto.pendientes.length })}
+                {op === 'grupo' && alcance === 'grupo' && <ListaPendientes pendientes={contexto.pendientes} nota={t('finalizadosNoCambian')} />}
               </OpcionAlcance>
             ))}
-            {alcance === 'grupo' && <ListaPendientes pendientes={contexto.pendientes} nota={t('finalizadosNoCambian')} />}
           </div>
         )}
 
+        {contexto && (
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.primaryDeep, margin: '0 0 8px' }}>
+            {t('porQue')}
+          </p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: esOtro ? 12 : 20 }}>
           {MOTIVOS_CANCELACION.map(motivo => (
             <button

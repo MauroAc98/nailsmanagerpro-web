@@ -179,10 +179,10 @@ describe('EditarTurnoPage — mover todo el combo', () => {
     montar(enGrupo([tramo(1, 1, 'Ana', '10:00', 60), tramo(2, 2, 'Laura', '11:00', 45), tramo(3, 1, 'Ana', '12:00', 30, 'completado'), tramo(4, 2, 'Laura', '13:00', 30, 'cancelado')]));
     await elegirCombo();
 
-    expect(screen.getByText('10:00 · con Ana')).toBeInTheDocument();
-    expect(screen.getByText('11:00 · con Laura')).toBeInTheDocument();
-    expect(screen.queryByText('12:00 · con Ana')).not.toBeInTheDocument();
-    expect(screen.queryByText('13:00 · con Laura')).not.toBeInTheDocument();
+    expect(screen.getByText('10:00 hs · con Ana')).toBeInTheDocument();
+    expect(screen.getByText('11:00 hs · con Laura')).toBeInTheDocument();
+    expect(screen.queryByText('12:00 hs · con Ana')).not.toBeInTheDocument();
+    expect(screen.queryByText('13:00 hs · con Laura')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
   });
 

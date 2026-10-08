@@ -175,10 +175,10 @@ describe('pasosCancelables', () => {
   it('lista lo que se cancela y una opcion por paso, con hora, servicio y profesional', () => {
     const r = pasosCancelables(visitaDe(paso1(), paso2()));
 
-    expect(r.pendientes).toEqual(['09:00 · con Mauro', '10:30 · con Mengano']);
+    expect(r.pendientes).toEqual(['09:00 hs · con Mauro', '10:30 hs · con Mengano']);
     expect(r.pasos).toEqual([
-      { turnoId: 1, etiqueta: '09:00 · Capping · con Mauro' },
-      { turnoId: 2, etiqueta: '10:30 · Soft gel · con Mengano' },
+      { turnoId: 1, etiqueta: '09:00 hs · Capping · con Mauro' },
+      { turnoId: 2, etiqueta: '10:30 hs · Soft gel · con Mengano' },
     ]);
   });
 
@@ -190,15 +190,15 @@ describe('pasosCancelables', () => {
     ));
 
     expect(r.pasos.map((p) => p.turnoId)).toEqual([2]);
-    expect(r.pendientes).toEqual(['10:30 · con Mengano']);
+    expect(r.pendientes).toEqual(['10:30 hs · con Mengano']);
   });
 
   it('un paso de otro dia lleva su fecha', () => {
     const tramos = [PASOS[0], tramo(2, MENGANO, '2026-10-10T10:30:00', 120, { servicios: [{ id: 2, nombre: 'Pedicura' }] })];
     const r = pasosCancelables(visitaDe(paso1({ grupo: grupo(tramos) })));
 
-    expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 · Capping · con Mauro', '10/10 10:30 · Pedicura · con Mengano']);
-    expect(r.pendientes).toEqual(['09:00 · con Mauro', '10/10 10:30 · con Mengano']);
+    expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 hs · Capping · con Mauro', '10/10 10:30 hs · Pedicura · con Mengano']);
+    expect(r.pendientes).toEqual(['09:00 hs · con Mauro', '10/10 10:30 hs · con Mengano']);
   });
 
   it('junta con " + " los servicios de un paso y omite lo que falta', () => {
@@ -208,6 +208,6 @@ describe('pasosCancelables', () => {
     ];
     const r = pasosCancelables(visitaDe(paso1({ grupo: grupo(tramos) }), paso2({ grupo: grupo(tramos) })));
 
-    expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 · Capping + Esmaltado · con Mauro', '10:30']);
+    expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 hs · Capping + Esmaltado · con Mauro', '10:30 hs']);
   });
 });

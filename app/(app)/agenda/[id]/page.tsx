@@ -485,7 +485,7 @@ export default function EditarTurnoPage() {
             <p style={sectionLabelStyle}>{t('seMueven')}</p>
             {pendientesCombo.map(p => (
               <div key={p.turno_id} style={{ fontSize: 14, color: colors.text, padding: '4px 2px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {p.fecha_hora.slice(11, 16)} · {t('conProfesional', { nombre: p.profesional_nombre ?? '' })}
+                {p.fecha_hora.slice(11, 16)} hs · {t('conProfesional', { nombre: p.profesional_nombre ?? '' })}
               </div>
             ))}
             <label htmlFor="fecha-combo" style={{ ...sectionLabelStyle, display: 'block', marginTop: 14 }}>{t('nuevaFechaCombo')}</label>
@@ -679,7 +679,7 @@ export default function EditarTurnoPage() {
           </>
         )}
 
-        <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
+        <p style={sectionLabelStyle}>{t(enCombo ? 'horaCombo' : 'appointmentTime')}</p>
         <div
           onClick={() => { setTempHora(enCombo ? horaComboEf : horaSeleccionada); setShowHoraPicker(true); }}
           style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer', marginBottom: 32 }}

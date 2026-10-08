@@ -869,7 +869,7 @@ function AgendaContent() {
     if (turno.grupo_id != null) {
       const eleccion = await pedirCancelacionGrupo({
         esteTurno: etiquetaTramo(turno),
-        pendientes: tramosPendientes(turno).map(p => `${p.fecha_hora.replace(' ', 'T').slice(11, 16)} · con ${p.profesional_nombre ?? ''}`),
+        pendientes: tramosPendientes(turno).map(p => `${p.fecha_hora.replace(' ', 'T').slice(11, 16)} hs · con ${p.profesional_nombre ?? ''}`),
       });
       if (!eleccion) return;
       const r = await cancelarTurno(turno.id, eleccion.motivo, eleccion.alcance === 'grupo' ? 'grupo' : undefined);

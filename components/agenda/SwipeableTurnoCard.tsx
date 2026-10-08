@@ -193,7 +193,7 @@ export function SwipeableTurnoCard({
             un tooltip en vez de perderse. */}
         <NombreExpandible
           texto={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
-          style={{ fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}
+          style={{ fontFamily: agendaFontSerif, fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}
         />
         {/* "con {profesional}" — reemplaza el punto de color + nombre que
             antes vivía en la columna de hora (Change 6, canvas aprobado

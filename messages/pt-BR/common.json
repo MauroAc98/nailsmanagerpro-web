@@ -96,6 +96,7 @@
     "seCancelara": "O atendimento de {turno} será cancelado",
     "soloEste": "Só este atendimento",
     "queSeCancela": "O que será cancelado?",
+    "porQue": "Por quê?",
     "soloPaso": "Só {paso}",
     "todoElCombo": "Todos ({n, plural, one {# atendimento} other {# atendimentos}})",
     "finalizadosNoCambian": "Os atendimentos já finalizados não mudam.",
@@ -127,7 +128,10 @@
     "confirmCargarSinCobro": "Salvar sem cobrança"
   },
   "ColorSwatchPicker": {
-    "ariaLabel": "Cor {color}"
+    "ariaLabel": "Cor {color}",
+    "cambiar": "Mudar cor",
+    "suaves": "Suaves",
+    "intensos": "Intensos"
   },
   "WeekdayPicker": {
     "mon": "S",

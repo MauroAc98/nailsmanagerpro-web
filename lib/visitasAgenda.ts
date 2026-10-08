@@ -125,7 +125,7 @@ export interface PasoCancelable {
 // "09:00" si el paso es del dia de la visita; "10/10 10:30" si cae otro dia.
 const cuando = (paso: PasoVisita, diaVisita: string): string => {
   const fh = paso.hora.replace(' ', 'T');
-  return dia(fh) === diaVisita ? fh.slice(11, 16) : `${fh.slice(8, 10)}/${fh.slice(5, 7)} ${fh.slice(11, 16)}`;
+  return dia(fh) === diaVisita ? `${fh.slice(11, 16)} hs` : `${fh.slice(8, 10)}/${fh.slice(5, 7)} ${fh.slice(11, 16)} hs`;
 };
 
 /**

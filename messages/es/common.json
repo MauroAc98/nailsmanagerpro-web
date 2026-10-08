@@ -96,6 +96,7 @@
     "seCancelara": "Se cancelará el turno de {turno}",
     "soloEste": "Solo este turno",
     "queSeCancela": "¿Qué se cancela?",
+    "porQue": "¿Por qué?",
     "soloPaso": "Solo {paso}",
     "todoElCombo": "Todos ({n, plural, one {# turno} other {# turnos}})",
     "finalizadosNoCambian": "Los turnos que ya se finalizaron no cambian.",
@@ -127,7 +128,10 @@
     "confirmCargarSinCobro": "Guardar sin cobro"
   },
   "ColorSwatchPicker": {
-    "ariaLabel": "Color {color}"
+    "ariaLabel": "Color {color}",
+    "cambiar": "Cambiar color",
+    "suaves": "Suaves",
+    "intensos": "Intensos"
   },
   "WeekdayPicker": {
     "mon": "L",
