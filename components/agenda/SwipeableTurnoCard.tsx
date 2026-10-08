@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Clock } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
@@ -14,6 +14,7 @@ import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
 import { nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
 import { ConBarra, IconoGrupo, LineaServicios } from './GrupoTurno';
+import { formatearDuracion } from '@/lib/duracion';
 import { IconoNotaTurno, tieneNotaTurno } from './IconoNotaTurno';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
 
@@ -124,7 +125,7 @@ export function SwipeableTurnoCard({
   // Change 6 (2026-09-30, canvas aprobado): profesional y "en curso" se
   // mudan de acá — quedaba ambiguo si el nombre chico de esta columna era
   // de la clienta o de quien atiende. Esta columna vuelve a ser solo
-  // hora+fecha, igual en los 3 estados del turno.
+  // hora+fecha+duración, igual en los 3 estados del turno.
   const timeSection = (
     <div
       onClick={() => onPress?.()}
@@ -140,6 +141,16 @@ export function SwipeableTurnoCard({
       <span style={{ fontSize: 9, fontWeight: 700, color: colors.muted, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.4 }}>
         {formatFechaMini(turno.fecha_hora)}
       </span>
+      {turno.duracion_total_minutos > 0 && (
+        // Reloj junto a la duración; va debajo de la fecha, al final de la columna.
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 600,
+          color: colors.subtext, marginTop: 4, whiteSpace: 'nowrap', lineHeight: 1,
+        }}>
+          <Clock size={10} strokeWidth={2.2} aria-hidden="true" style={{ flexShrink: 0 }} />
+          {formatearDuracion(turno.duracion_total_minutos)}
+        </span>
+      )}
       <div style={{ position: 'absolute', right: 0, top: '22%', height: '56%', width: 1, backgroundColor: colors.divider }} />
     </div>
   );

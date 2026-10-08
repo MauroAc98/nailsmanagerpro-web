@@ -43,6 +43,61 @@ describe('SwipeableTurnoCard — swipe-to-cancel resting peek (Change 4)', () =>
   });
 });
 
+describe('SwipeableTurnoCard — duración del turno', () => {
+  it('muestra cuánto dura el turno, junto a la hora', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ duracion_total_minutos: 90 })} />);
+
+    expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
+  });
+
+  it.each([
+    [45, '45 min'],
+    [60, '1 h'],
+    [120, '2 h'],
+  ])('%i minutos se lee como "%s"', (minutos, texto) => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ duracion_total_minutos: minutos })} />);
+
+    expect(screen.getByText(texto)).toBeInTheDocument();
+  });
+
+  it('lleva un reloj, escondido para lectores de pantalla', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ duracion_total_minutos: 90 })} />);
+    const icono = screen.getByText('1 h 30 min').querySelector('svg.lucide-clock');
+
+    expect(icono).not.toBeNull();
+    expect(icono).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('va debajo de la fecha, al final de la columna de la hora (hora, fecha, duración)', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ duracion_total_minutos: 90 })} />);
+    const duracion = screen.getByText('1 h 30 min');
+    const columna = duracion.parentElement as HTMLElement;
+    const hijos = Array.from(columna.children);
+
+    expect(hijos[0].textContent).toBe('10:00');
+    expect(hijos[1].textContent).toMatch(/\d/); // la fecha
+    expect(hijos[2]).toBe(duracion);
+  });
+
+  it('ya no usa el reloj de arena', () => {
+    const { container } = renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ duracion_total_minutos: 90 })} />);
+
+    expect(container.querySelector('svg.lucide-hourglass')).toBeNull();
+  });
+
+  it('también en un turno en curso', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ estado_visual: 'en_curso', duracion_total_minutos: 75 })} />);
+
+    expect(screen.getByText('1 h 15 min')).toBeInTheDocument();
+  });
+
+  it('una duración que no se conoce no deja "0 min" ni "NaN" en el card', () => {
+    const { container } = renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ duracion_total_minutos: undefined as never })} />);
+
+    expect(container.textContent).not.toMatch(/NaN|0 min|undefined/);
+  });
+});
+
 describe('SwipeableTurnoCard — en_curso layout (Change 5)', () => {
   it('shows the "En curso" indicator (now in the action column, above "Finalizar ahora") and only that one action', () => {
     const turno = buildTurno({ estado_visual: 'en_curso' });
