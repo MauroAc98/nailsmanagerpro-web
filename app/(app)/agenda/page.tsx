@@ -23,9 +23,13 @@ import { Spinner } from '@/components/Spinner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { AccionesRapidasFab } from '@/components/agenda/AccionesRapidasFab';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
+import { VisitaCard } from '@/components/agenda/VisitaCard';
 import { ConBarra, IconoGrupo } from '@/components/agenda/GrupoTurno';
 import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
-import { barrasDeGrupo, etiquetaTramo, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
+import { etiquetaTramo, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
+import { agruparVisitas, type VisitaAgenda } from '@/lib/visitasAgenda';
+import { urlWhatsappVisita } from '@/lib/visitasWhatsapp';
+import { useAuthStore } from '@/store/useAuthStore';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
@@ -682,6 +686,8 @@ function AgendaContent() {
     () => new Map(profesionales.map(p => [p.id, p])),
     [profesionales]
   );
+  // Datos del negocio para el recordatorio de WhatsApp de una visita.
+  const user = useAuthStore(s => s.user);
 
   // Badges del calendario mensual filtrados por profesional — solo se pide
   // cuando hay una profesional puntual seleccionada; con "Todas" alcanza
@@ -849,6 +855,25 @@ function AgendaContent() {
     else await alertDialog(result.message ?? t('finishError'));
   };
 
+  // Deslizar una visita cancela toda la promo: la hoja solo ofrece "todos" y lista lo que se cancela
+  // (los pasos pendientes, con su fecha si caen otro dia). Un paso suelto se cancela desde su detalle.
+  const handleCancelarVisita = async (visita: VisitaAgenda) => {
+    const { cabecera } = visita;
+    const diaVisita = cabecera.fecha_hora.replace(' ', 'T').slice(0, 10);
+    const eleccion = await pedirCancelacionGrupo({
+      pendientes: tramosPendientes(cabecera).map(p => {
+        const fh = p.fecha_hora.replace(' ', 'T');
+        const fecha = fh.slice(0, 10) === diaVisita ? '' : `${fh.slice(8, 10)}/${fh.slice(5, 7)} `;
+        return `${fecha}${fh.slice(11, 16)} · con ${p.profesional_nombre ?? ''}`;
+      }),
+      alcanceInicial: 'grupo',
+    });
+    if (!eleccion) return;
+    const r = await cancelarTurno(cabecera.id, eleccion.motivo, 'grupo');
+    if (r.success) showToast(t('cancelled'));
+    else await alertDialog(r.message ?? t('cancelError'));
+  };
+
   const handleCancelar = async (turno: Turno) => {
     // Turno de un grupo: se nombra el turno y se puede cancelar solo ese (sin
     // alcance, como siempre) o todo el combo (solo lo que no esta cancelado ni completado).
@@ -929,16 +954,20 @@ function AgendaContent() {
     ? ordenarTurnosBusqueda(vigentes(turnosBusqueda))
     : [...vigentes(turnos)].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
 
-  const datosAMostrar = (mostrarSelectorProfesional && profesionalFiltro !== null)
-    ? datosBase.filter(t => t.profesional_id === profesionalFiltro)
-    : datosBase;
+  // Los turnos de una promo (o de varios servicios agendados juntos) se unen en una visita; con un
+  // profesional filtrado quedan los items donde tiene un turno, ordenados por la hora de SU turno.
+  const itemsAMostrar = agruparVisitas(datosBase, mostrarSelectorProfesional ? profesionalFiltro : null);
 
   // La etiqueta de nombre/color en la card solo se muestra en la vista
   // "Todas" (redundante si ya está filtrada a una sola profesional) y solo
   // si hay más de una profesional activa en la cuenta.
   const mostrarEtiquetaProfesionalEnCard = mostrarSelectorProfesional && profesionalFiltro === null;
-  // Barra entre tramos contiguos del mismo grupo (con un filtro de profesional queda solo el suyo, sin barra).
-  const barras = barrasDeGrupo(datosAMostrar);
+  // Avatar y color de cada paso de una visita (la visita nombra a todos sus profesionales).
+  const profesionalLabelDe = (id: number): ProfesionalLabel | null => {
+    const p = profesionalesById.get(id);
+    return p ? { nombre: p.nombre, apellido: p.apellido, color: p.color || colors.primary, avatarUrl: p.avatar_url } : null;
+  };
+  const negocioWhatsapp = { nombre: user?.name ?? '', direccion: user?.direccion ?? null, telefono: user?.telefono ?? null };
 
   const cargandoHeader = loading || cargandoBusqueda;
 
@@ -1065,7 +1094,7 @@ function AgendaContent() {
             esHoy={fechaSeleccionada === hoy}
           />
 
-          {!loading && datosAMostrar.length === 0 && (
+          {!loading && itemsAMostrar.length === 0 && (
             <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 15 }}>
               {hayFiltroActivo
                 ? t('noResultsFound')
@@ -1083,7 +1112,21 @@ function AgendaContent() {
             display: 'flex', flexDirection: 'column', gap: 10,
             paddingBottom: `calc(${NAV_CLEARANCE}px + env(safe-area-inset-bottom) + 24px)`,
           }}>
-            {datosAMostrar.map(turno => {
+            {itemsAMostrar.map(item => {
+              if (item.tipo === 'visita') {
+                return (
+                  <VisitaCard
+                    key={`visita-${item.cabecera.id}`}
+                    visita={item}
+                    profesionalDe={profesionalLabelDe}
+                    whatsappHref={urlWhatsappVisita(item, negocioWhatsapp) ?? undefined}
+                    onCancel={() => handleCancelarVisita(item)}
+                    onAbrirPaso={id => router.push(`/agenda/${id}`)}
+                    onFinalizarPaso={handleFinalizar}
+                  />
+                );
+              }
+              const turno = item.turno;
               const pasado   = turno.estado_visual === 'completado';
               const cursando = turno.estado_visual === 'en_curso';
 
@@ -1106,7 +1149,7 @@ function AgendaContent() {
                 : undefined;
 
               if (pasado) {
-                return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} barra={barras.get(turno.id)} />;
+                return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} />;
               }
               return (
                 <SwipeableTurnoCard
@@ -1117,7 +1160,6 @@ function AgendaContent() {
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   profesionalLabel={profesionalLabel}
                   profesionalNombreWhatsapp={profesionalNombreWhatsapp}
-                  barra={barras.get(turno.id)}
                 />
               );
             })}

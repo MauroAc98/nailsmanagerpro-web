@@ -15,9 +15,12 @@ export const MOTIVOS_CANCELACION = [
 // Turno de un grupo (varias profesionales): `esteTurno` nombra el turno que se
 // toco y `pendientes` lista lo que cancela "todo el combo" (solo lo que no esta
 // cancelado ni completado).
+// Desde la tarjeta de una visita no hay "un turno" tocado: sin `esteTurno` la hoja
+// ofrece solo cancelar todo, y `alcanceInicial` deja elegido ese alcance.
 export interface ContextoCancelacionGrupo {
-  esteTurno: string;
+  esteTurno?: string;
   pendientes: string[];
+  alcanceInicial?: AlcanceCancelacion;
 }
 
 export type AlcanceCancelacion = 'tramo' | 'grupo';

@@ -33,7 +33,9 @@ export function MotivoCancelacionSheetHost() {
   };
   const [seleccion, setSeleccion] = useState<string>(MOTIVOS_CANCELACION[0]);
   const [otroTexto, setOtroTexto] = useState('');
-  const [alcance, setAlcance] = useState<'tramo' | 'grupo'>('tramo');
+  // Lo que la persona tocó; mientras no toque nada rige el alcance que pide quien abre la hoja.
+  const [alcanceElegido, setAlcanceElegido] = useState<'tramo' | 'grupo' | null>(null);
+  const alcance = alcanceElegido ?? contexto?.alcanceInicial ?? 'tramo';
 
   const esOtro = seleccion === 'Otro';
   const motivoFinal = esOtro ? otroTexto.trim() : seleccion;
@@ -43,7 +45,7 @@ export function MotivoCancelacionSheetHost() {
     resolverMotivoCancelacion(motivo, contexto ? alcance : undefined);
     setSeleccion(MOTIVOS_CANCELACION[0]);
     setOtroTexto('');
-    setAlcance('tramo');
+    setAlcanceElegido(null);
   };
 
   return (
@@ -88,13 +90,15 @@ export function MotivoCancelacionSheetHost() {
             ese o todo el combo (solo lo que todavia no se atendio). */}
         {contexto && (
           <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 14, color: colors.text, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
-              {t('seCancelara', { turno: contexto.esteTurno })}
-            </p>
-            {(['tramo', 'grupo'] as const).map(op => (
+            {contexto.esteTurno && (
+              <p style={{ fontSize: 14, color: colors.text, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
+                {t('seCancelara', { turno: contexto.esteTurno })}
+              </p>
+            )}
+            {(contexto.esteTurno ? (['tramo', 'grupo'] as const) : (['grupo'] as const)).map(op => (
               <button
                 key={op}
-                onClick={() => setAlcance(op)}
+                onClick={() => setAlcanceElegido(op)}
                 aria-pressed={alcance === op}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left', marginBottom: 8, padding: '10px 14px', borderRadius: 12,
