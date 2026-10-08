@@ -7,16 +7,6 @@ import type { Turno } from '@/services/turnoService';
 // Minutos de pared de "YYYY-MM-DD HH:MM:SS" / ISO sin zona (sin Date local: sin saltos de DST).
 const aMinutos = (fechaHora: string): number => Date.parse(`${fechaHora.replace(' ', 'T').slice(0, 19)}Z`) / 60_000;
 
-// Nombres de las OTRAS profesionales del grupo (sin la del propio turno, sin tramos cancelados, sin repetir).
-export function nombresDeLosOtros(turno: Turno): string[] {
-  if (turno.grupo_id == null || !turno.grupo) return [];
-  const nombres = turno.grupo.tramos
-    .filter((t) => t.estado !== 'cancelado' && t.profesional_id !== turno.profesional_id)
-    .map((t) => t.profesional_nombre)
-    .filter((n): n is string => !!n);
-  return [...new Set(nombres)];
-}
-
 export interface BarraGrupo {
   arriba: boolean;
   abajo: boolean;

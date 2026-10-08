@@ -1,10 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Link2 } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
-import { listaDeNombres } from '@/lib/reservaOnline/listaDeNombres';
 import type { BarraGrupo } from '@/lib/gruposTurnos';
 
 // Piezas visuales de un turno que es parte de un grupo (varias profesionales).
@@ -14,21 +13,6 @@ export function IconoGrupo() {
   return (
     <span aria-label={t('enlace')} role="img" style={{ display: 'flex', flexShrink: 0 }}>
       <Link2 size={14} color={colors.primaryDeep} strokeWidth={2.2} />
-    </span>
-  );
-}
-
-// "Servicios · con Laura": el "con ..." cede primero cuando falta lugar.
-export function LineaServicios({ servicios, otros }: { servicios: string; otros: string[] }) {
-  const t = useTranslations('agenda.GrupoTurno');
-  const locale = useLocale();
-  const corta = { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
-  if (otros.length === 0) return <>{servicios}</>;
-  return (
-    <span style={{ display: 'flex', minWidth: 0 }}>
-      <span style={{ ...corta, flexShrink: 1 }}>{servicios}</span>
-      <span style={{ flexShrink: 0 }}>&nbsp;·&nbsp;</span>
-      <span style={{ ...corta, flexShrink: 100 }}>{t('con', { nombres: listaDeNombres(otros, locale) })}</span>
     </span>
   );
 }

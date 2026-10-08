@@ -224,13 +224,15 @@ describe('SwipeableTurnoCard — turno de un grupo', () => {
     expect(container.querySelector('[data-grupo-barra]')).toBeNull();
   });
 
-  it('muestra el icono de enlace y "con" la otra profesional', () => {
+  it('marca que es parte de una promo con el icono de enlace, sin agregar texto a la línea del servicio', () => {
     renderWithProviders(
       <SwipeableTurnoCard turno={buildTurno({ grupo_id: 7, profesional_id: 10, grupo })} onCancel={vi.fn()} />,
     );
     expect(screen.getByLabelText('Parte de un turno que atienden varias personas')).toBeInTheDocument();
-    expect(screen.getByText('con Laura')).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
+    // La línea del servicio es solo el servicio: "· con Laura" se leía como si Laura hiciera ese servicio.
+    expect(screen.getByText('Manicura').textContent).toBe('Manicura');
+    expect(screen.queryByText('con Laura')).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/con Laura|tramo|paralelo|secuencia/i);
   });
 
   it('dibuja la barra de union cuando se lo piden', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Turno } from '@/services/turnoService';
-import { barrasDeGrupo, etiquetaTramo, nombresDeLosOtros, resumenMovimiento, tramosPendientes } from './gruposTurnos';
+import { barrasDeGrupo, etiquetaTramo, resumenMovimiento, tramosPendientes } from './gruposTurnos';
 
 type Tramo = NonNullable<Turno['grupo']>['tramos'][number];
 const tramo = (turno_id: number, profesional_id: number, nombre: string, hora: string, dur: number, estado = 'confirmado'): Tramo => ({
@@ -16,23 +16,6 @@ const turno = (id: number, hora: string, over: Partial<Turno> = {}): Turno =>
   }) as Turno;
 const deGrupo = (id: number, hora: string, dur: number, grupo = 7, pro = 10): Turno =>
   turno(id, hora, { grupo_id: grupo, duracion_total_minutos: dur, profesional_id: pro, grupo: { id: grupo, modo: 'secuencia', tramos: TRAMOS } });
-
-describe('nombresDeLosOtros', () => {
-  it('un turno sin grupo no nombra a nadie', () => {
-    expect(nombresDeLosOtros(turno(1, '10:00'))).toEqual([]);
-  });
-
-  it('nombra a las otras profesionales del grupo, sin la del propio turno', () => {
-    expect(nombresDeLosOtros(deGrupo(1, '10:00', 60, 7, 10))).toEqual(['Laura']);
-    expect(nombresDeLosOtros(deGrupo(2, '11:00', 45, 7, 20))).toEqual(['Ana']);
-  });
-
-  it('ignora los tramos cancelados y no repite nombres', () => {
-    const t = deGrupo(1, '10:00', 60);
-    t.grupo = { ...t.grupo!, tramos: [...TRAMOS, tramo(3, 20, 'Laura', '12:00', 30), tramo(4, 30, 'Sol', '13:00', 30, 'cancelado')] };
-    expect(nombresDeLosOtros(t)).toEqual(['Laura']);
-  });
-});
 
 describe('barrasDeGrupo', () => {
   it('une con una barra a los tramos contiguos del mismo grupo', () => {

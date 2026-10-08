@@ -23,9 +23,9 @@ import { Spinner } from '@/components/Spinner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { AccionesRapidasFab } from '@/components/agenda/AccionesRapidasFab';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
-import { ConBarra, IconoGrupo, LineaServicios } from '@/components/agenda/GrupoTurno';
+import { ConBarra, IconoGrupo } from '@/components/agenda/GrupoTurno';
 import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
-import { barrasDeGrupo, etiquetaTramo, nombresDeLosOtros, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
+import { barrasDeGrupo, etiquetaTramo, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
@@ -144,9 +144,7 @@ function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; prof
         <NombreExpandible
           texto={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
           style={{ fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}
-        >
-          <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
-        </NombreExpandible>
+        />
         {profesionalLabel && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{

@@ -12,8 +12,8 @@ import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
-import { nombresDeLosOtros, type BarraGrupo } from '@/lib/gruposTurnos';
-import { ConBarra, IconoGrupo, LineaServicios } from './GrupoTurno';
+import type { BarraGrupo } from '@/lib/gruposTurnos';
+import { ConBarra, IconoGrupo } from './GrupoTurno';
 import { formatearDuracion } from '@/lib/duracion';
 import { IconoNotaTurno, tieneNotaTurno } from './IconoNotaTurno';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
@@ -200,9 +200,7 @@ export function SwipeableTurnoCard({
         <NombreExpandible
           texto={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
           style={{ fontSize: 13, color: colors.subtext, fontStyle: 'italic' }}
-        >
-          <LineaServicios servicios={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')} otros={nombresDeLosOtros(turno)} />
-        </NombreExpandible>
+        />
         {/* "con {profesional}" — reemplaza el punto de color + nombre que
             antes vivía en la columna de hora (Change 6, canvas aprobado
             2026-09-30): quedaba ambiguo si era la clienta o quien atiende.

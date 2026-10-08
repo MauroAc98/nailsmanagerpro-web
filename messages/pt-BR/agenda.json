@@ -77,8 +77,7 @@
     "sinPendientes": "Não há nada para cancelar"
   },
   "GrupoTurno": {
-    "enlace": "Parte de um atendimento feito por várias pessoas",
-    "con": "com {nombres}"
+    "enlace": "Parte de um atendimento feito por várias pessoas"
   },
   "NotaTurno": {
     "chip": "Tem uma ideia do cliente",
