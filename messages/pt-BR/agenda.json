@@ -79,6 +79,18 @@
   "GrupoTurno": {
     "enlace": "Parte de um atendimento feito por várias pessoas"
   },
+  "VisitaCard": {
+    "promo": "Promo",
+    "serviciosJuntos": "{n} serviços agendados juntos",
+    "conProfesional": "com {nombre}",
+    "listo": "Pronto",
+    "enCurso": "EM ANDAMENTO",
+    "finalizar": "Finalizar",
+    "cancelar": "CANCELAR",
+    "whatsapp": "Enviar lembrete por WhatsApp",
+    "abrirPaso": "Abrir {servicio}, {profesional}",
+    "clienteEliminado": "Cliente excluído"
+  },
   "NotaTurno": {
     "chip": "Tem uma ideia do cliente",
     "title": "Ideia para o agendamento",
