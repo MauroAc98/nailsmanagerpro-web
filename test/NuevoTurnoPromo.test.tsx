@@ -116,7 +116,7 @@ describe('NuevoTurnoPage — combo', () => {
   it('manda solo la promo (sin profesional) y el precio manual si se completo', async () => {
     montar();
     await elegirClienteYServicio(/^Combo pies y manos/);
-    fireEvent.change(await screen.findByLabelText('Precio del combo (opcional)'), { target: { value: '15000' } });
+    fireEvent.change(await screen.findByLabelText('Precio de la promo (opcional)'), { target: { value: '15000' } });
     confirmar();
 
     await waitFor(() => expect(crearTurno).toHaveBeenCalledWith({
@@ -189,7 +189,7 @@ describe('NuevoTurnoPage — combo', () => {
     await elegirClienteYServicio(/^Combo pies y manos/);
     fireEvent.click(await screen.findByRole('button', { name: /^Manicura/ }));
 
-    expect(await screen.findByText('El combo se agenda solo, sin otros servicios.')).toBeInTheDocument();
+    expect(await screen.findByText('La promo se agenda sola, sin otros servicios.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirmar Turno' })).toBeDisabled();
   });
 });

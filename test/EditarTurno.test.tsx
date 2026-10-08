@@ -78,14 +78,14 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
-const moverCombo = () => fireEvent.click(screen.getByRole('button', { name: 'Mover todo el combo' }));
-const elegirCombo = async () => fireEvent.click(await screen.findByRole('button', { name: 'Todo el combo' }));
+const moverCombo = () => fireEvent.click(screen.getByRole('button', { name: 'Mover todo el grupo' }));
+const elegirCombo = async () => fireEvent.click(await screen.findByRole('button', { name: 'Todo el grupo' }));
 
 describe('EditarTurnoPage — turno comun (Rule L)', () => {
   it('no ofrece mover un combo y guarda exactamente como siempre', async () => {
     montar(turno());
     await screen.findByText('Marta Rios');
-    expect(screen.queryByRole('button', { name: 'Todo el combo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Todo el grupo' })).not.toBeInTheDocument();
     guardar();
 
     await waitFor(() => expect(actualizarTurno).toHaveBeenCalledWith(1, {
@@ -189,7 +189,7 @@ describe('EditarTurnoPage — mover todo el combo', () => {
   it('manda la nueva fecha y hora del primer turno al endpoint del grupo y avisa que se movio', async () => {
     montar(enGrupo());
     await elegirCombo();
-    fireEvent.change(screen.getByLabelText('Nueva fecha del combo'), { target: { value: '2099-06-12' } });
+    fireEvent.change(screen.getByLabelText('Nueva fecha del grupo'), { target: { value: '2099-06-12' } });
     moverCombo();
 
     await waitFor(() => expect(reprogramarGrupo).toHaveBeenCalledWith(7, '2099-06-12 10:00'));
@@ -227,7 +227,7 @@ describe('EditarTurnoPage — mover todo el combo', () => {
     await elegirCombo();
     moverCombo();
 
-    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Este combo ya tiene un turno atendido; no se puede mover completo.'));
+    await waitFor(() => expect(alertDialog).toHaveBeenCalledWith('Este grupo de servicios ya tiene un turno atendido; no se puede mover completo.'));
     expect(fetchTurno).toHaveBeenCalledTimes(2); // al abrir + al refrescar
   });
 

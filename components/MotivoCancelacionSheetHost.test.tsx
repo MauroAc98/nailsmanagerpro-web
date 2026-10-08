@@ -13,7 +13,7 @@ describe('MotivoCancelacionSheetHost', () => {
     renderWithProviders(<MotivoCancelacionSheetHost />);
     let p!: Promise<string | null>;
     act(() => { p = pedirMotivoCancelacion(); });
-    expect(screen.queryByText(/Todo el combo/)).toBeNull();
+    expect(screen.queryByText(/Todo el grupo/)).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
     await expect(p).resolves.toBe('Cliente canceló con aviso');
   });
@@ -31,7 +31,7 @@ describe('MotivoCancelacionSheetHost', () => {
     renderWithProviders(<MotivoCancelacionSheetHost />);
     let p!: ReturnType<typeof pedirCancelacionGrupo>;
     act(() => { p = pedirCancelacionGrupo(contexto); });
-    await userEvent.click(screen.getByRole('button', { name: /Todo el combo/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Todo el grupo/ }));
     await waitFor(() => expect(screen.getByText('11:00 · con Laura')).toBeInTheDocument());
     expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
