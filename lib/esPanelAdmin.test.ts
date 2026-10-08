@@ -19,6 +19,13 @@ describe('esPanelAdmin', () => {
     expect(esPanelAdmin('localhost', '/adminX/login')).toBe(false);
   });
 
+  it('sin host (renderizado en servidor) decide solo el prefijo de la ruta', () => {
+    expect(esPanelAdmin(null, '/admin')).toBe(true);
+    expect(esPanelAdmin(null, '/admin/login')).toBe(true);
+    expect(esPanelAdmin(null, '/agenda')).toBe(false);
+    expect(esPanelAdmin(null, '/login')).toBe(false);
+  });
+
   it('las pantallas del salon no son el panel', () => {
     expect(esPanelAdmin('localhost', '/agenda')).toBe(false);
     expect(esPanelAdmin('app.turnetto.com', '/login')).toBe(false);

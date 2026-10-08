@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor } from '@testing-library/react';
 import { render, cleanup } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { routerMock, setMockLocation, resetNavigationMock } from '@/test/mocks/nextNavigation';
 
 vi.mock('next/navigation', async () => (await import('@/test/mocks/nextNavigation')).nextNavigationMock);
@@ -418,5 +419,38 @@ describe('Providers — service worker', () => {
     await waitFor(() => expect(registro.unregister).toHaveBeenCalled());
     expect(sw.register).not.toHaveBeenCalled();
     expect(registro.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('Providers — renderizado en servidor del panel de admin', () => {
+  // En el servidor no hay window: si la guarda del salón solo supiera responder
+  // "¿es el panel?" con window, el HTML del servidor traería el BootSplash y el
+  // cliente (que sí sabe) pintaría el layout del admin: "Hydration failed".
+  const enServidor = (ruta: string) => {
+    setMockLocation(ruta);
+    vi.stubGlobal('window', undefined);
+    try {
+      return renderToString(<Providers><div>PANEL</div></Providers>);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  };
+
+  it('bajo /admin el servidor renderiza el contenido, no el BootSplash', () => {
+    const html = enServidor('/admin');
+
+    expect(html).toContain('PANEL');
+    expect(html).not.toContain('boot-splash');
+  });
+
+  it('bajo /admin/login también', () => {
+    expect(enServidor('/admin/login')).toContain('PANEL');
+  });
+
+  it('una pantalla del salón sigue mostrando el BootSplash mientras arranca', () => {
+    const html = enServidor('/agenda');
+
+    expect(html).toContain('boot-splash');
+    expect(html).not.toContain('PANEL');
   });
 });

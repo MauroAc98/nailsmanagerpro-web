@@ -49,8 +49,16 @@ import { colors } from '@/theme/colors';
 // pestaña, este guard tomaba /admin como pantalla del salón y empujaba de
 // vuelta al panel, que a su vez mandaba a /login: bucle. Las dos guardas
 // tienen que responder igual a "¿esto es el panel?".
+//
+// En el servidor no hay window (hostname = null), pero el pathname sí: la parte
+// del prefijo /admin se responde igual en servidor y cliente. Si todo dependiera
+// de window, el servidor dibujaría el BootSplash y el cliente el layout del
+// admin: "Hydration failed". (En admin.turnetto.com, que solo se reconoce por
+// host, el servidor sigue sin saberlo: la discrepancia es previa y se recupera
+// regenerando el árbol en el cliente.)
 function esRutaAdmin(pathname: string): boolean {
-  return typeof window !== 'undefined' && esPanelAdmin(window.location.hostname, pathname);
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : null;
+  return esPanelAdmin(hostname, pathname);
 }
 
 // reservar.turnetto.com — bug real de prod (2026-09-19): ese host reescribe

@@ -13,6 +13,8 @@ export function tienePrefijoAdmin(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 
-export function esPanelAdmin(hostname: string, pathname: string): boolean {
+// `hostname` es null donde no hay window (renderizado en servidor): ahí solo
+// decide el prefijo de la ruta.
+export function esPanelAdmin(hostname: string | null, pathname: string): boolean {
   return hostname === ADMIN_HOST || tienePrefijoAdmin(pathname);
 }
