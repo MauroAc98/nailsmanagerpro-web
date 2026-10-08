@@ -7,6 +7,7 @@ import type { CobroTurno, TurnoConCobro } from '@/services/cobrosService';
 const mocks = vi.hoisted(() => ({
   state: {} as Record<string, unknown>,
   query: '',
+  pendientes: [] as unknown[],
   cargarPrimeraPagina: vi.fn(),
   cargarSiguientePagina: vi.fn(),
   recargar: vi.fn(),
@@ -24,7 +25,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/components/BackButton', () => ({ default: () => null }));
 vi.mock('@/store/useCobrosStore', () => ({ useCobrosStore: () => mocks.state }));
 vi.mock('@/store/usePendientesDeCobroStore', () => ({
-  usePendientesDeCobroStore: () => ({ actualizarPrecios: mocks.actualizar }),
+  usePendientesDeCobroStore: () => ({ actualizarPrecios: mocks.actualizar, pendientes: mocks.pendientes, error: null }),
 }));
 // Servicio 1 tiene precio de lista ($18.000,00); el 2 no.
 vi.mock('@/store/useServicioStore', () => ({
@@ -111,12 +112,16 @@ function renderPage() {
   );
 }
 
-const FILTROS = { turno: 'todos', pago: 'todos', periodo: 'todo', buscar: '' };
+const FILTROS = { turno: 'todos', pago: 'sinprecio', periodo: 'todo', buscar: '' };
+const FILTROS_PROXIMOS = { turno: 'confirmado', pago: 'todos', periodo: 'todo', buscar: '' };
+const FILTROS_COBRADOS = { turno: 'finalizado', pago: 'todo', periodo: 'todo', buscar: '' };
 const ultimaCarga = () => mocks.cargarPrimeraPagina.mock.calls.at(-1)![0];
+const pestana = (nombre: RegExp) => screen.getByRole('tab', { name: nombre });
 
 beforeEach(() => {
   mocks.state = estadoBase();
   mocks.query = '';
+  mocks.pendientes = [];
   for (const m of [mocks.cargarPrimeraPagina, mocks.cargarSiguientePagina, mocks.recargar, mocks.actualizar, mocks.pedirPrecios, mocks.confirmar, mocks.avisar, mocks.toast]) {
     m.mockReset();
   }
@@ -126,59 +131,80 @@ beforeEach(() => {
   mocks.confirmar.mockResolvedValue(true);
 });
 
-describe('Cobros — carga y filtros (los aplica el backend)', () => {
-  it('al abrir pide la primera página sin filtros', () => {
+describe('Cobros — pestañas (cada una fija los filtros del backend)', () => {
+  it('al abrir muestra "Por resolver": atendidos sin precio, sin otros filtros', () => {
     renderPage();
     expect(mocks.cargarPrimeraPagina).toHaveBeenCalledTimes(1);
     expect(ultimaCarga()).toEqual(FILTROS);
+    expect(pestana(/^Por resolver/)).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('entra con "Sin precio" elegido cuando viene de ?pago=sinprecio', () => {
-    mocks.query = 'pago=sinprecio';
-    renderPage();
-    expect(ultimaCarga()).toEqual({ ...FILTROS, pago: 'sinprecio' });
-    expect(screen.getByRole('button', { name: /^Sin precio/ })).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('un valor desconocido en ?pago= cae en "Todos"', () => {
+  it('un valor de ?pago= que no es cobrados cae en "Por resolver"', () => {
     mocks.query = 'pago=cualquiera';
     renderPage();
-    expect(ultimaCarga().pago).toBe('todos');
-    expect(screen.getByRole('button', { name: /^Todos ·/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(ultimaCarga()).toEqual(FILTROS);
   });
 
-  it('los chips de pago muestran los conteos del conjunto completo', () => {
-    poner({ counts: { todos: 40, sena: 3, todo: 28, nada: 4, sinprecio: 5 } });
+  it('?pago=todo abre en "Cobrados"', () => {
+    mocks.query = 'pago=todo';
     renderPage();
-    for (const nombre of ['Todos · 40', 'Sin precio · 5', 'Con seña · 3', 'Sin pago · 4', 'Cobrados · 28']) {
-      expect(screen.getByRole('button', { name: nombre })).toBeInTheDocument();
-    }
+    expect(ultimaCarga()).toEqual(FILTROS_COBRADOS);
+    expect(pestana(/^Cobrados/)).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('elegir un chip de pago vuelve a pedir la primera página con ese pago', () => {
+  it('"Por resolver" lleva el contador de pendientes de cobro', () => {
+    mocks.pendientes = [{ id: 1 }, { id: 2 }];
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /^Con seña/ }));
-    expect(ultimaCarga()).toEqual({ ...FILTROS, pago: 'sena' });
-    expect(screen.getByRole('button', { name: /^Con seña/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(pestana(/^Por resolver/)).toHaveTextContent('Por resolver2');
   });
 
-  it('el turno se elige desde una hoja y el botón muestra la elección', () => {
+  it('"Próximos" pide los confirmados y cuenta con seña y sin seña', () => {
+    poner({ counts: { todos: 255, sena: 41, todo: 0, nada: 214, sinprecio: 0 } });
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Todos los turnos' }));
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Turnos' })).getByRole('button', { name: 'Confirmados' }));
-    expect(ultimaCarga()).toEqual({ ...FILTROS, turno: 'confirmado' });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirmados' })).toBeInTheDocument();
+    fireEvent.click(pestana(/^Próximos/));
+    expect(ultimaCarga()).toEqual(FILTROS_PROXIMOS);
+    expect(screen.getByText('255 turnos agendados')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Con seña · 41' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sin seña · 214' })).toBeInTheDocument();
   });
 
-  it('el período se elige desde una hoja; tocar el fondo la cierra sin pedir nada', () => {
+  it('elegir "Sin seña" vuelve a pedir los confirmados sin seña', () => {
     renderPage();
+    fireEvent.click(pestana(/^Próximos/));
+    fireEvent.click(screen.getByRole('button', { name: /^Sin seña/ }));
+    expect(ultimaCarga()).toEqual({ ...FILTROS_PROXIMOS, pago: 'nada' });
+    expect(screen.getByRole('button', { name: /^Sin seña/ })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('"Cobrados" pide los finalizados con plata y muestra el total del período', () => {
+    poner({
+      counts: { todos: 40, sena: 0, todo: 28, nada: 0, sinprecio: 0 },
+      resumen: { ...estadoBase().resumen, cobrado_total: 27000, sena_en_pendientes: 6000 },
+    });
+    renderPage();
+    fireEvent.click(pestana(/^Cobrados/));
+    expect(ultimaCarga()).toEqual(FILTROS_COBRADOS);
+    const cobrado = within(screen.getByTestId('resumen-cobrado'));
+    expect(cobrado.getByText('$27.000,00')).toBeInTheDocument();
+    expect(cobrado.getByText(/28 turnos/)).toBeInTheDocument();
+    expect(cobrado.getByText(/incluye .*6.000,00 en señas/)).toBeInTheDocument();
+  });
+
+  it('sin señas pendientes "Cobrados" no aclara nada', () => {
+    renderPage();
+    fireEvent.click(pestana(/^Cobrados/));
+    expect(screen.queryByText(/en señas/)).not.toBeInTheDocument();
+  });
+
+  it('el período se elige desde una hoja en "Cobrados"; tocar el fondo la cierra sin pedir nada', () => {
+    renderPage();
+    fireEvent.click(pestana(/^Cobrados/));
     fireEvent.click(screen.getByRole('button', { name: 'Todo el período' }));
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Período' })).getByRole('button', { name: 'Próximos turnos' }));
-    expect(ultimaCarga()).toEqual({ ...FILTROS, periodo: 'proximos' });
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Período' })).getByRole('button', { name: 'Este mes' }));
+    expect(ultimaCarga()).toEqual({ ...FILTROS_COBRADOS, periodo: 'mes' });
 
     const pedidos = mocks.cargarPrimeraPagina.mock.calls.length;
-    fireEvent.click(screen.getByRole('button', { name: 'Próximos turnos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Este mes' }));
     fireEvent.click(screen.getByTestId('hoja-fondo'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(mocks.cargarPrimeraPagina).toHaveBeenCalledTimes(pedidos);
@@ -218,21 +244,16 @@ describe('Cobros — carga y filtros (los aplica el backend)', () => {
 });
 
 describe('Cobros — resumen y lista', () => {
-  it('muestra lo que falta cobrar y lo que ya se cobró, con la seña aclarada', () => {
-    poner({ resumen: { ...estadoBase().resumen, falta_cobrar: 30000, cobrado_total: 27000, sena_en_pendientes: 6000 } });
+  it('un turno futuro sin seña dice "Sin seña" y uno atendido en cero dice "Sin cobro"', () => {
+    poner({
+      turnos: [
+        turno(1, { nombre: 'Lucía', fecha: '2026-10-09 09:00:00', estado: 'confirmado', cobro: { pago: 'nada' } }),
+        turno(2, { nombre: 'Marta', fecha: '2026-10-05 12:00:00', cobro: { pago: 'nada', cobrado: 0, precio: 0 } }),
+      ],
+    });
     renderPage();
-    const falta = within(screen.getByTestId('resumen-falta'));
-    const cobrado = within(screen.getByTestId('resumen-cobrado'));
-    expect(falta.getByText('Te falta cobrar')).toBeInTheDocument();
-    expect(falta.getByText('$30.000,00')).toBeInTheDocument();
-    expect(cobrado.getByText('Ya cobraste')).toBeInTheDocument();
-    expect(cobrado.getByText('$27.000,00')).toBeInTheDocument();
-    expect(cobrado.getByText('incluye $6.000,00 en señas')).toBeInTheDocument();
-  });
-
-  it('sin señas pendientes no aclara nada', () => {
-    renderPage();
-    expect(screen.queryByText(/en señas/)).not.toBeInTheDocument();
+    expect(within(screen.getByText('Lucía Test').parentElement as HTMLElement).getByText('Sin seña')).toBeInTheDocument();
+    expect(within(screen.getByText('Marta Test').parentElement as HTMLElement).getByText('Sin cobro')).toBeInTheDocument();
   });
 
   it('muestra cliente, servicio, profesional, estado del turno y un solo estado de pago', () => {
@@ -264,9 +285,9 @@ describe('Cobros — resumen y lista', () => {
     expect(within(fila).getByText('incluye seña $6.000,00')).toBeInTheDocument();
   });
 
-  it('sin resultados avisa que no hay turnos con esos filtros', () => {
+  it('sin resultados en "Por resolver" avisa que está todo al día', () => {
     renderPage();
-    expect(screen.getByText('No hay turnos con esos filtros.')).toBeInTheDocument();
+    expect(screen.getByText('No hay turnos esperando precio. ¡Todo al día!')).toBeInTheDocument();
   });
 
   it('mientras carga la primera página muestra el loader (no un texto) y no dice que está vacío', () => {
@@ -382,6 +403,7 @@ describe('Cobros — usar precio de lista en todos', () => {
   const BOTON = /Usar precio de lista en los 3 turnos/;
   beforeEach(() => {
     poner({
+      resumen: { ...estadoBase().resumen, sin_precio_count: 3, sin_precio_estimado: 54000 },
       listaBulk: {
         count: 3,
         total: 54000,

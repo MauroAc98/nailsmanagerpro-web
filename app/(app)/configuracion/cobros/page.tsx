@@ -43,28 +43,27 @@ function formatFechaHora(fechaHora: string): string {
 
 const nombreCliente = (turno: TurnoConCobro) => `${turno.cliente.nombre} ${turno.cliente.apellido}`.trim();
 
-type TurnoKey = 'turnoTodos' | 'turnoConfirmados' | 'turnoFinalizados';
-type PagoKey = 'pagoTodos' | 'pagoSena' | 'pagoTodo' | 'pagoNada' | 'pagoSinPrecio';
-type PeriodoKey = 'periodoTodo' | 'periodoHoy' | 'periodo7dias' | 'periodoMes' | 'periodoProximos';
+type PeriodoKey = 'periodoTodo' | 'periodoHoy' | 'periodo7dias' | 'periodoMes';
 
-const TURNO_OPCIONES: { valor: TurnoFiltro; key: TurnoKey }[] = [
-  { valor: 'todos', key: 'turnoTodos' },
-  { valor: 'confirmado', key: 'turnoConfirmados' },
-  { valor: 'finalizado', key: 'turnoFinalizados' },
+type Pestana = 'resolver' | 'proximos' | 'cobrados';
+const PESTANAS: { valor: Pestana; key: 'tabResolver' | 'tabProximos' | 'tabCobrados' }[] = [
+  { valor: 'resolver', key: 'tabResolver' },
+  { valor: 'proximos', key: 'tabProximos' },
+  { valor: 'cobrados', key: 'tabCobrados' },
 ];
-const PAGO_OPCIONES: { valor: PagoFiltro; key: PagoKey }[] = [
-  { valor: 'todos', key: 'pagoTodos' },
-  { valor: 'sinprecio', key: 'pagoSinPrecio' },
-  { valor: 'sena', key: 'pagoSena' },
-  { valor: 'nada', key: 'pagoNada' },
-  { valor: 'todo', key: 'pagoTodo' },
+type ChipSena = 'todos' | 'sena' | 'nada';
+const CHIPS_SENA: { valor: ChipSena; key: 'chipTodos' | 'chipConSena' | 'chipSinSena' }[] = [
+  { valor: 'todos', key: 'chipTodos' },
+  { valor: 'sena', key: 'chipConSena' },
+  { valor: 'nada', key: 'chipSinSena' },
 ];
+// Cada pestaña fija una combinación de los filtros del backend: Por resolver = ya atendidos sin precio;
+// Próximos = confirmados (todavía no hay nada que cobrar); Cobrados = finalizados con plata registrada.
 const PERIODO_OPCIONES: { valor: PeriodoFiltro; key: PeriodoKey }[] = [
   { valor: 'todo', key: 'periodoTodo' },
   { valor: 'hoy', key: 'periodoHoy' },
   { valor: '7dias', key: 'periodo7dias' },
   { valor: 'mes', key: 'periodoMes' },
-  { valor: 'proximos', key: 'periodoProximos' },
 ];
 const PILL_PAGO_KEY: Record<EstadoPago, 'pillSena' | 'pillTodo' | 'pillNada' | 'pillSinPrecio'> = {
   sena: 'pillSena',
@@ -92,17 +91,6 @@ function Pill({ tono, children }: { tono: 'ok' | 'warn' | 'none'; children: Reac
       {children}
     </span>
   );
-}
-
-// Celda de la barra de estados: el número arriba y la etiqueta abajo. Las cinco
-// miden lo mismo, así que entran en una sola fila sin scroll.
-function celdaStyle(activo: boolean): React.CSSProperties {
-  return {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-    minHeight: 56, minWidth: 0, padding: '6px 2px', border: 'none', borderRadius: 10, cursor: 'pointer',
-    backgroundColor: activo ? colors.primarySolid : 'transparent',
-    color: activo ? colors.primaryFg : colors.textStrong,
-  };
 }
 
 function botonFiltroStyle(activo: boolean): React.CSSProperties {
@@ -156,7 +144,7 @@ function FilaCobro({ turno, profesional, onUsarLista, onCargar }: FilaProps) {
     principal = monto(cobro.sena);
     secundario = t('senaDelGrupo');
   } else {
-    principal = monto(cobro.sena);
+    principal = cobro.sena > 0 ? monto(cobro.sena) : '';
     if (cobro.falta_fila != null) {
       secundario = t('faltaMonto', { monto: monto(cobro.falta_fila) });
       falta = cobro.falta_fila > 0;
@@ -178,7 +166,7 @@ function FilaCobro({ turno, profesional, onUsarLista, onCargar }: FilaProps) {
         </div>
         <div style={{ fontSize: 12, color: colors.subtext, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>
         <div style={{ textAlign: 'right', marginTop: 4 }}>
-          <Pill tono={TONO_PAGO[cobro.pago]}>{t(PILL_PAGO_KEY[cobro.pago])}</Pill>
+          <Pill tono={TONO_PAGO[cobro.pago]}>{t(cobro.pago === 'nada' && !cobro.finalizado ? 'pillSinSena' : PILL_PAGO_KEY[cobro.pago])}</Pill>
         </div>
       </div>
       {cobro.pago === 'sinprecio' && (
@@ -286,21 +274,16 @@ function CobrosContenido() {
     turnos, counts, resumen, listaBulk, cargando, cargandoMas, error,
     cargarPrimeraPagina, cargarSiguientePagina, recargar,
   } = useCobrosStore();
-  const { actualizarPrecios } = usePendientesDeCobroStore();
+  const { actualizarPrecios, pendientes, error: errorPendientes } = usePendientesDeCobroStore();
   const { servicios, fetchServicios } = useServiciosStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
-  const [turnoFiltro, setTurnoFiltro] = useState<TurnoFiltro>('todos');
-  const [pagoFiltro, setPagoFiltro] = useState<PagoFiltro>(() => parsePagoFiltro(searchParams.get('pago')));
+  const [pestana, setPestana] = useState<Pestana>(() => (parsePagoFiltro(searchParams.get('pago')) === 'todo' ? 'cobrados' : 'resolver'));
+  const [chipSena, setChipSena] = useState<ChipSena>('todos');
   const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>('todo');
   const [q, setQ] = useState('');
   const [buscarAplicado, setBuscarAplicado] = useState('');
   const [buscando, setBuscando] = useState(false);
-  const [hoja, setHoja] = useState<'periodo' | 'turno'>('periodo');
   const [hojaAbierta, setHojaAbierta] = useState(false);
-  const abrirHoja = (cual: 'periodo' | 'turno') => {
-    setHoja(cual);
-    setHojaAbierta(true);
-  };
 
   useEffect(() => {
     fetchServicios();
@@ -317,10 +300,14 @@ function CobrosContenido() {
 
   // Cualquier cambio de filtro vuelve a pedir la primera página: los filtros,
   // los conteos y los totales los calcula el backend sobre TODO el conjunto.
+  const turnoFiltro: TurnoFiltro = pestana === 'resolver' ? 'todos' : pestana === 'proximos' ? 'confirmado' : 'finalizado';
+  const pagoFiltro: PagoFiltro = pestana === 'resolver' ? 'sinprecio' : pestana === 'proximos' ? chipSena : 'todo';
+  const periodoEfectivo: PeriodoFiltro = pestana === 'cobrados' ? periodoFiltro : 'todo';
+
   useEffect(() => {
-    cargarPrimeraPagina({ turno: turnoFiltro, pago: pagoFiltro, periodo: periodoFiltro, buscar: buscarAplicado });
+    cargarPrimeraPagina({ turno: turnoFiltro, pago: pagoFiltro, periodo: periodoEfectivo, buscar: buscarAplicado });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turnoFiltro, pagoFiltro, periodoFiltro, buscarAplicado]);
+  }, [turnoFiltro, pagoFiltro, periodoEfectivo, buscarAplicado]);
 
   const referencias = useMemo(() => new Map(servicios.map(s => [s.id, s.precio])), [servicios]);
   const nombreProfesional = (id?: number | null) => {
@@ -394,98 +381,32 @@ function CobrosContenido() {
   };
 
   const textoPeriodo = t(PERIODO_OPCIONES.find(o => o.valor === periodoFiltro)!.key);
-  const textoTurno = t(TURNO_OPCIONES.find(o => o.valor === turnoFiltro)!.key);
+  const sinPrecioPendientes = errorPendientes ? null : pendientes.length;
 
   const encabezado = (
     <div>
       <div style={{ padding: '20px 20px 4px' }}>
         <BackButton />
       </div>
-      <div style={{ padding: '4px 20px 12px' }}>
+      <div style={{ padding: '4px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>{t('title')}</h1>
-        <p style={{ fontSize: 14, color: colors.subtext, margin: '4px 0 0' }}>{t('subtitle')}</p>
+        <button
+          onClick={alternarBusqueda}
+          aria-label={t('searchButton')}
+          aria-expanded={buscando}
+          style={{
+            width: 42, height: 42, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            backgroundColor: colors.surface, border: `1px solid ${buscando || q ? colors.primarySolid : colors.border}`,
+            boxShadow: shadows.card, borderRadius: 12,
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
       </div>
 
-      <div style={{ padding: '0 20px 10px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} aria-live="polite">
-          <div
-            data-testid="resumen-falta"
-            style={{ ...cardStyle, backgroundColor: colors.amberBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px' }}
-          >
-            <span style={{ fontSize: 13, fontWeight: 600, color: colors.amberFg, flexShrink: 0 }}>{t('summaryFalta')}</span>
-            <div style={{ flex: 1, minWidth: 0, textAlign: 'right', fontWeight: 700, color: colors.textStrong, fontVariantNumeric: 'tabular-nums' }}>
-              <MontoFit maxFontSize={18} minFontSize={11}>{monto(resumen.falta_cobrar)}</MontoFit>
-            </div>
-          </div>
-          <div
-            data-testid="resumen-cobrado"
-            style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px' }}
-          >
-            <div style={{ flexShrink: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: colors.subtext }}>{t('summaryCobrado')}</div>
-              {resumen.sena_en_pendientes > 0 && (
-                <div style={{ fontSize: 12, color: colors.subtext, marginTop: 2 }}>
-                  {t('summaryIncluyeSena', { monto: monto(resumen.sena_en_pendientes) })}
-                </div>
-              )}
-            </div>
-            <div style={{ flex: 1, minWidth: 0, textAlign: 'right', fontWeight: 700, color: colors.textStrong, fontVariantNumeric: 'tabular-nums' }}>
-              <MontoFit maxFontSize={18} minFontSize={11}>{monto(resumen.cobrado_total)}</MontoFit>
-            </div>
-          </div>
-        </div>
-
-        <div
-          role="group"
-          aria-label={t('filterPago')}
-          style={{ ...cardStyle, display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 4, padding: 4 }}
-        >
-          {PAGO_OPCIONES.map(o => {
-            const activo = o.valor === pagoFiltro;
-            return (
-              <button
-                key={o.valor}
-                type="button"
-                aria-pressed={activo}
-                aria-label={`${t(o.key)} · ${counts[o.valor]}`}
-                onClick={() => setPagoFiltro(o.valor)}
-                style={celdaStyle(activo)}
-              >
-                <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{counts[o.valor]}</span>
-                <span style={{ fontSize: 11, lineHeight: 1.15, textAlign: 'center', color: activo ? colors.primaryFg : colors.subtext }}>{t(o.key)}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => abrirHoja('periodo')} style={botonFiltroStyle(periodoFiltro !== 'todo')}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.textStrong} strokeWidth="2" aria-hidden="true" style={{ flexShrink: 0 }}>
-              <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{textoPeriodo}</span>
-            <Chevron />
-          </button>
-          <button onClick={() => abrirHoja('turno')} style={botonFiltroStyle(turnoFiltro !== 'todos')}>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{textoTurno}</span>
-            <Chevron />
-          </button>
-          <button
-            onClick={alternarBusqueda}
-            aria-label={t('searchButton')}
-            aria-expanded={buscando}
-            style={{
-              width: 42, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              backgroundColor: colors.surface, border: `1px solid ${buscando || q ? colors.primarySolid : colors.border}`,
-              boxShadow: shadows.card, borderRadius: 12,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </button>
-        </div>
-
+      <div style={{ padding: '0 20px 10px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {buscando && (
           <label style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 10, borderRadius: 12, padding: '0 14px', height: 48 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" aria-hidden="true">
@@ -503,24 +424,96 @@ function CobrosContenido() {
           </label>
         )}
 
-        {resumen.sin_precio_count > 0 && (
-          <div style={{ backgroundColor: colors.amberBg, color: colors.amberFg, borderRadius: 12, padding: '10px 12px', fontSize: 13, lineHeight: 1.4 }}>
-            <b>{t('sinPrecioNota', { count: resumen.sin_precio_count })}</b> · {t('sinPrecioEstimado', { monto: monto(resumen.sin_precio_estimado) })}
+        <div role="tablist" aria-label={t('title')} style={{ ...cardStyle, display: 'flex', gap: 4, padding: 4 }}>
+          {PESTANAS.map(p => {
+            const activa = p.valor === pestana;
+            return (
+              <button
+                key={p.valor}
+                type="button"
+                role="tab"
+                aria-selected={activa}
+                onClick={() => setPestana(p.valor)}
+                style={{
+                  flex: 1, minWidth: 0, padding: '10px 4px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: activa ? 700 : 600,
+                  border: 'none', backgroundColor: activa ? colors.primarySolid : 'transparent', color: activa ? colors.primaryFg : colors.subtext,
+                }}
+              >
+                {t(p.key)}
+                {p.valor === 'resolver' && sinPrecioPendientes != null && sinPrecioPendientes > 0 && (
+                  <span style={{ marginLeft: 5, color: activa ? colors.primaryFg : colors.amberFg }}>{sinPrecioPendientes}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {pestana === 'resolver' && resumen.sin_precio_count > 0 && (
+          <div style={{ ...cardStyle, backgroundColor: colors.amberBg, padding: '14px 16px' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: colors.amberFg }}>{t('sinPrecioNota', { count: resumen.sin_precio_count })}</div>
+            <div style={{ fontSize: 13, color: colors.text, marginTop: 4, lineHeight: 1.4 }}>
+              {t('sinPrecioEstimado', { monto: monto(resumen.sin_precio_estimado) })}
+            </div>
+            {listaBulk.count > 1 && (
+              <>
+                <button
+                  onClick={handleUsarListaEnTodos}
+                  style={{
+                    width: '100%', height: 46, marginTop: 12, borderRadius: 12, border: 'none', cursor: 'pointer',
+                    backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 14, fontWeight: 700,
+                  }}
+                >
+                  {t('useListPriceAll', { count: listaBulk.count })}
+                </button>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.subtext, textAlign: 'center' }}>{t('useListPriceAllHint')}</p>
+              </>
+            )}
           </div>
         )}
 
-        {listaBulk.count > 1 && (
-          <div>
-            <button
-              onClick={handleUsarListaEnTodos}
-              style={{
-                width: '100%', height: 48, borderRadius: 14, border: 'none', cursor: 'pointer',
-                backgroundColor: colors.primarySolid, color: colors.primaryFg, fontSize: 15, fontWeight: 600,
-              }}
-            >
-              {t('useListPriceAll', { count: listaBulk.count })}
-            </button>
-            <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.subtext, textAlign: 'center' }}>{t('useListPriceAllHint')}</p>
+        {pestana === 'proximos' && (
+          <div style={{ ...cardStyle, padding: '14px 16px' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: colors.textStrong }}>{t('proximosTitulo', { count: counts.todos })}</div>
+            <div style={{ fontSize: 13, color: colors.subtext, marginTop: 4, lineHeight: 1.4 }}>{t('proximosHint')}</div>
+            <div role="group" aria-label={t('proximosTitulo', { count: counts.todos })} style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              {CHIPS_SENA.map(c => {
+                const activo = c.valor === chipSena;
+                return (
+                  <button
+                    key={c.valor}
+                    type="button"
+                    aria-pressed={activo}
+                    onClick={() => setChipSena(c.valor)}
+                    style={{
+                      padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 12.5, fontWeight: activo ? 700 : 600,
+                      border: `1px solid ${activo ? colors.primarySolid : colors.border}`,
+                      backgroundColor: activo ? colors.surfaceSubtle : 'transparent', color: activo ? colors.textStrong : colors.subtext,
+                    }}
+                  >
+                    {c.valor === 'todos' ? t(c.key) : t(c.key, { count: counts[c.valor] })}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {pestana === 'cobrados' && (
+          <div data-testid="resumen-cobrado" style={{ ...cardStyle, padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>{t('cobradoTitulo')}</span>
+              <button onClick={() => setHojaAbierta(true)} style={{ ...botonFiltroStyle(periodoFiltro !== 'todo'), flex: '0 0 auto', padding: '6px 12px', fontSize: 12.5 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{textoPeriodo}</span>
+                <Chevron />
+              </button>
+            </div>
+            <div style={{ marginTop: 6, fontFamily: agendaFontSerif, fontWeight: 400, color: colors.textStrong, fontVariantNumeric: 'tabular-nums' }}>
+              <MontoFit maxFontSize={38} minFontSize={20}>{monto(resumen.cobrado_total)}</MontoFit>
+            </div>
+            <div style={{ marginTop: 6, fontSize: 13, color: colors.subtext }}>
+              {t('cobradoDetalle', { count: counts.todo })}
+              {resumen.sena_en_pendientes > 0 && ` · ${t('summaryIncluyeSena', { monto: monto(resumen.sena_en_pendientes) })}`}
+            </div>
           </div>
         )}
 
@@ -544,7 +537,7 @@ function CobrosContenido() {
   // Al cambiar los filtros las alturas medidas dejan de valer.
   const alturas = useDynamicRowHeight({
     defaultRowHeight: ALTO_ESTIMADO,
-    key: `${turnoFiltro}|${pagoFiltro}|${periodoFiltro}|${buscarAplicado}`,
+    key: `${turnoFiltro}|${pagoFiltro}|${periodoEfectivo}|${buscarAplicado}`,
   });
 
   return (
@@ -563,7 +556,7 @@ function CobrosContenido() {
           encabezado,
           atenuado: cargando && turnos.length > 0,
           textoCargando: t('loading'),
-          textoVacio: t('emptyState'),
+          textoVacio: t(pestana === 'resolver' ? 'resolverVacio' : 'emptyState'),
           textoMas: t('loadingMore'),
           profesionalDe: nombreProfesional,
           onUsarLista: handleUsarLista,
@@ -575,20 +568,13 @@ function CobrosContenido() {
         style={{ height: '100%', width: '100%' }}
       />
 
-      {/* Una sola hoja siempre montada: `hoja` conserva el contenido mientras
-          desliza hacia abajo y `hojaAbierta` maneja la animación. */}
       <OpcionesSheet
         visible={hojaAbierta}
-        titulo={hoja === 'periodo' ? t('periodoTitle') : t('turnoTitle')}
-        valor={hoja === 'periodo' ? periodoFiltro : turnoFiltro}
-        opciones={
-          hoja === 'periodo'
-            ? PERIODO_OPCIONES.map(o => ({ valor: o.valor, texto: t(o.key) }))
-            : TURNO_OPCIONES.map(o => ({ valor: o.valor, texto: t(o.key) }))
-        }
+        titulo={t('periodoTitle')}
+        valor={periodoFiltro}
+        opciones={PERIODO_OPCIONES.map(o => ({ valor: o.valor, texto: t(o.key) }))}
         onElegir={v => {
-          if (hoja === 'periodo') setPeriodoFiltro(v as PeriodoFiltro);
-          else setTurnoFiltro(v as TurnoFiltro);
+          setPeriodoFiltro(v as PeriodoFiltro);
           setHojaAbierta(false);
         }}
         onCerrar={() => setHojaAbierta(false)}

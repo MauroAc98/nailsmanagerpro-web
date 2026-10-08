@@ -48,7 +48,7 @@ export function AccionesRapidasFab({ fechaSeleccionada, mostrarNuevoTurno }: Pro
 
   // De arriba hacia abajo; la más cercana al botón es la más usada.
   const acciones: Accion[] = [
-    { clave: 'cobros', etiqueta: t('cobrar'), icono: <Wallet {...iconoAccion} />, ruta: '/configuracion/cobros', contador: porCobrar },
+    { clave: 'cobros', etiqueta: t('cobrar'), icono: <Wallet {...iconoAccion} />, ruta: porCobrar > 0 ? '/configuracion/cobros?pago=sinprecio' : '/configuracion/cobros', contador: porCobrar },
     { clave: 'ingreso', etiqueta: t('ingreso'), icono: <ArrowUpCircle {...iconoAccion} />, ruta: '/configuracion/ingresos/nuevo' },
     { clave: 'gasto', etiqueta: t('gasto'), icono: <ArrowDownCircle {...iconoAccion} />, ruta: '/configuracion/gastos/nuevo' },
     ...(mostrarNuevoTurno
