@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { colors, shadows } from '@/theme/colors';
 import {
@@ -10,6 +10,36 @@ import {
 } from '@/store/useMotivoCancelacionStore';
 
 const Z_INDEX = 100; // mismo nivel que ConfirmSheetHost — nunca están abiertos a la vez
+
+// Opcion de alcance ("Todos" / "Solo ..."): un boton elegible, como los de los motivos.
+function OpcionAlcance({ activa, onClick, children }: { activa: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={activa}
+      style={{
+        display: 'block', width: '100%', textAlign: 'left', marginBottom: 8, padding: '10px 14px', borderRadius: 12,
+        border: `1px solid ${activa ? colors.primaryDeep : colors.border}`,
+        backgroundColor: activa ? colors.surfaceSubtle : colors.surface,
+        fontSize: 14, fontWeight: activa ? 600 : 400, color: colors.text, cursor: 'pointer', overflowWrap: 'anywhere',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// Lo que cancela "Todos": cada turno pendiente en una linea, y la aclaracion de que lo ya finalizado no cambia.
+function ListaPendientes({ pendientes, nota }: { pendientes: string[]; nota: string }) {
+  return (
+    <div style={{ fontSize: 13, color: colors.subtext, paddingLeft: 4, marginBottom: 8 }}>
+      {pendientes.map(p => (
+        <div key={p} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p}</div>
+      ))}
+      <div style={{ marginTop: 4 }}>{nota}</div>
+    </div>
+  );
+}
 
 // Visualmente consistente con ConfirmSheetHost (mismo sheet, mismo backdrop),
 // pero con una lista de motivos seleccionables en vez de solo texto, y un
@@ -33,19 +63,25 @@ export function MotivoCancelacionSheetHost() {
   };
   const [seleccion, setSeleccion] = useState<string>(MOTIVOS_CANCELACION[0]);
   const [otroTexto, setOtroTexto] = useState('');
-  // Lo que la persona tocó; mientras no toque nada rige el alcance que pide quien abre la hoja.
-  const [alcanceElegido, setAlcanceElegido] = useState<'tramo' | 'grupo' | null>(null);
-  const alcance = alcanceElegido ?? contexto?.alcanceInicial ?? 'tramo';
+  // Turno de un grupo tocado en su tarjeta: solo ese ('tramo', por defecto) o todos.
+  const [alcance, setAlcance] = useState<'tramo' | 'grupo'>('tramo');
+  // Visita: null = "Todos" (por defecto); un número = solo el turno de ese paso.
+  const [pasoElegido, setPasoElegido] = useState<number | null>(null);
 
   const esOtro = seleccion === 'Otro';
   const motivoFinal = esOtro ? otroTexto.trim() : seleccion;
   const puedeConfirmar = motivoFinal.length > 0;
 
   const cerrar = (motivo: string | null) => {
-    resolverMotivoCancelacion(motivo, contexto ? alcance : undefined);
+    if (contexto?.pasos) {
+      resolverMotivoCancelacion(motivo, pasoElegido === null ? 'grupo' : 'tramo', pasoElegido ?? undefined);
+    } else {
+      resolverMotivoCancelacion(motivo, contexto ? alcance : undefined);
+    }
     setSeleccion(MOTIVOS_CANCELACION[0]);
     setOtroTexto('');
-    setAlcanceElegido(null);
+    setAlcance('tramo');
+    setPasoElegido(null);
   };
 
   return (
@@ -86,38 +122,38 @@ export function MotivoCancelacionSheetHost() {
           {t('title')}
         </p>
 
-        {/* Turno de un grupo: nombra el turno y deja elegir si se cancela solo
-            ese o todo el combo (solo lo que todavia no se atendio). */}
-        {contexto && (
+        {/* Visita (promo o servicios agendados juntos): "Todos" viene elegido y hay una
+            opcion por cada paso que se puede cancelar. */}
+        {contexto?.pasos && (
           <div style={{ marginBottom: 16 }}>
-            {contexto.esteTurno && (
-              <p style={{ fontSize: 14, color: colors.text, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
-                {t('seCancelara', { turno: contexto.esteTurno })}
-              </p>
-            )}
-            {(contexto.esteTurno ? (['tramo', 'grupo'] as const) : (['grupo'] as const)).map(op => (
-              <button
-                key={op}
-                onClick={() => setAlcanceElegido(op)}
-                aria-pressed={alcance === op}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left', marginBottom: 8, padding: '10px 14px', borderRadius: 12,
-                  border: `1px solid ${alcance === op ? colors.primaryDeep : colors.border}`,
-                  backgroundColor: alcance === op ? colors.surfaceSubtle : colors.surface,
-                  fontSize: 14, fontWeight: alcance === op ? 600 : 400, color: colors.text, cursor: 'pointer',
-                }}
-              >
-                {op === 'tramo' ? t('soloEste') : t('todoElCombo', { n: contexto.pendientes.length })}
-              </button>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.primaryDeep, margin: '0 0 8px' }}>
+              {t('queSeCancela')}
+            </p>
+            <OpcionAlcance activa={pasoElegido === null} onClick={() => setPasoElegido(null)}>
+              {t('todoElCombo', { n: contexto.pendientes.length })}
+            </OpcionAlcance>
+            {pasoElegido === null && <ListaPendientes pendientes={contexto.pendientes} nota={t('finalizadosNoCambian')} />}
+            {contexto.pasos.map(paso => (
+              <OpcionAlcance key={paso.turnoId} activa={pasoElegido === paso.turnoId} onClick={() => setPasoElegido(paso.turnoId)}>
+                {t('soloPaso', { paso: paso.etiqueta })}
+              </OpcionAlcance>
             ))}
-            {alcance === 'grupo' && (
-              <div style={{ fontSize: 13, color: colors.subtext, paddingLeft: 4 }}>
-                {contexto.pendientes.map(p => (
-                  <div key={p} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p}</div>
-                ))}
-                <div style={{ marginTop: 4 }}>{t('finalizadosNoCambian')}</div>
-              </div>
-            )}
+          </div>
+        )}
+
+        {/* Turno de un grupo tocado en su propia tarjeta: nombra el turno y deja elegir si se
+            cancela solo ese o todos (solo lo que todavia no se atendio). */}
+        {contexto && !contexto.pasos && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: colors.text, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
+              {t('seCancelara', { turno: contexto.esteTurno })}
+            </p>
+            {(['tramo', 'grupo'] as const).map(op => (
+              <OpcionAlcance key={op} activa={alcance === op} onClick={() => setAlcance(op)}>
+                {op === 'tramo' ? t('soloEste') : t('todoElCombo', { n: contexto.pendientes.length })}
+              </OpcionAlcance>
+            ))}
+            {alcance === 'grupo' && <ListaPendientes pendientes={contexto.pendientes} nota={t('finalizadosNoCambian')} />}
           </div>
         )}
 

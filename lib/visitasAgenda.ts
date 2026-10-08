@@ -116,3 +116,43 @@ export function agruparVisitas(turnos: Turno[], profesionalFiltro: number | null
     .sort((a, b) => a.ancla - b.ancla)
     .map((r) => r.item);
 }
+
+export interface PasoCancelable {
+  turnoId: number;
+  etiqueta: string;
+}
+
+// "09:00" si el paso es del dia de la visita; "10/10 10:30" si cae otro dia.
+const cuando = (paso: PasoVisita, diaVisita: string): string => {
+  const fh = paso.hora.replace(' ', 'T');
+  return dia(fh) === diaVisita ? fh.slice(11, 16) : `${fh.slice(8, 10)}/${fh.slice(5, 7)} ${fh.slice(11, 16)}`;
+};
+
+/**
+ * Que turno mandar a cancelar segun lo elegido en la hoja: sin `turnoId` es "Todos" (el backend
+ * cancela los pendientes de todo el grupo a partir de cualquier turno); con `turnoId`, solo ese turno.
+ */
+export function turnoACancelar(visita: VisitaAgenda, eleccion: { turnoId?: number }): { turnoId: number; alcance: 'grupo' | undefined } {
+  return eleccion.turnoId === undefined
+    ? { turnoId: visita.cabecera.id, alcance: 'grupo' }
+    : { turnoId: eleccion.turnoId, alcance: undefined };
+}
+
+/**
+ * Lo que la hoja de cancelacion muestra para una visita: la lista de lo que cancela "todos"
+ * y una opcion por paso. Solo entran los pasos que todavia se pueden cancelar (los
+ * confirmados); los completados no. Cancelar un paso cancela solo ese turno.
+ */
+export function pasosCancelables(visita: VisitaAgenda): { pendientes: string[]; pasos: PasoCancelable[] } {
+  const diaVisita = dia(visita.cabecera.fecha_hora);
+  const confirmados = visita.pasos.filter((p) => p.estado === 'confirmado');
+  const conProfesional = (p: PasoVisita): string => (p.profesionalNombre ? `con ${p.profesionalNombre}` : '');
+
+  return {
+    pendientes: confirmados.map((p) => [cuando(p, diaVisita), conProfesional(p)].filter(Boolean).join(' · ')),
+    pasos: confirmados.map((p) => ({
+      turnoId: p.turnoId,
+      etiqueta: [cuando(p, diaVisita), p.servicios.join(' + '), conProfesional(p)].filter(Boolean).join(' · '),
+    })),
+  };
+}

@@ -26,7 +26,7 @@ import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { VisitaCard } from '@/components/agenda/VisitaCard';
 import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
 import { etiquetaTramo, tramosPendientes } from '@/lib/gruposTurnos';
-import { agruparVisitas, type VisitaAgenda } from '@/lib/visitasAgenda';
+import { agruparVisitas, pasosCancelables, turnoACancelar, type VisitaAgenda } from '@/lib/visitasAgenda';
 import { urlWhatsappVisita } from '@/lib/visitasWhatsapp';
 import { useAuthStore } from '@/store/useAuthStore';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
@@ -851,21 +851,14 @@ function AgendaContent() {
     else await alertDialog(result.message ?? t('finishError'));
   };
 
-  // Deslizar una visita cancela toda la promo: la hoja solo ofrece "todos" y lista lo que se cancela
-  // (los pasos pendientes, con su fecha si caen otro dia). Un paso suelto se cancela desde su detalle.
+  // Deslizar una visita abre la hoja con "Todos" elegido (cancela toda la promo) y una opcion por cada
+  // paso que se puede cancelar (cancela solo ese turno). El detalle del turno no tiene cancelar.
   const handleCancelarVisita = async (visita: VisitaAgenda) => {
-    const { cabecera } = visita;
-    const diaVisita = cabecera.fecha_hora.replace(' ', 'T').slice(0, 10);
-    const eleccion = await pedirCancelacionGrupo({
-      pendientes: tramosPendientes(cabecera).map(p => {
-        const fh = p.fecha_hora.replace(' ', 'T');
-        const fecha = fh.slice(0, 10) === diaVisita ? '' : `${fh.slice(8, 10)}/${fh.slice(5, 7)} `;
-        return `${fecha}${fh.slice(11, 16)} · con ${p.profesional_nombre ?? ''}`;
-      }),
-      alcanceInicial: 'grupo',
-    });
+    const eleccion = await pedirCancelacionGrupo(pasosCancelables(visita));
     if (!eleccion) return;
-    const r = await cancelarTurno(cabecera.id, eleccion.motivo, 'grupo');
+    // "Todos" cancela los pendientes de toda la promo; un paso cancela solo su turno.
+    const { turnoId, alcance } = turnoACancelar(visita, eleccion);
+    const r = await cancelarTurno(turnoId, eleccion.motivo, alcance);
     if (r.success) showToast(t('cancelled'));
     else await alertDialog(r.message ?? t('cancelError'));
   };

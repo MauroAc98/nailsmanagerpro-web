@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Turno } from '@/services/turnoService';
-import { agruparVisitas, type VisitaAgenda } from './visitasAgenda';
+import { agruparVisitas, pasosCancelables, turnoACancelar, type VisitaAgenda } from './visitasAgenda';
 
 type Tramo = NonNullable<Turno['grupo']>['tramos'][number];
 
@@ -147,5 +147,67 @@ describe('agruparVisitas · pasos de otro dia y datos faltantes', () => {
   it('un turno con grupo_id pero sin datos del grupo se trata como turno normal', () => {
     const items = agruparVisitas([turno(1, '2026-10-09T09:00:00', MAURO, { grupo_id: 7 })], null);
     expect(items.map((i) => i.tipo)).toEqual(['turno']);
+  });
+});
+
+describe('turnoACancelar', () => {
+  const visitaDe = () => agruparVisitas([paso1(), paso2()], null)[0] as VisitaAgenda;
+
+  it('"Todos" cancela toda la promo a partir de un turno de la visita, con alcance grupo', () => {
+    expect(turnoACancelar(visitaDe(), {})).toEqual({ turnoId: 1, alcance: 'grupo' });
+  });
+
+  it('un paso elegido cancela solo el turno de ese paso, sin alcance de grupo', () => {
+    const r = turnoACancelar(visitaDe(), { turnoId: 2 });
+
+    expect(r).toEqual({ turnoId: 2, alcance: undefined });
+    expect(r.alcance).toBeUndefined();
+  });
+
+  it('puede ser un paso de otro dia, que no esta en la lista', () => {
+    expect(turnoACancelar(visitaDe(), { turnoId: 99 }).turnoId).toBe(99);
+  });
+});
+
+describe('pasosCancelables', () => {
+  const visitaDe = (...turnos: Turno[]) => agruparVisitas(turnos, null)[0] as VisitaAgenda;
+
+  it('lista lo que se cancela y una opcion por paso, con hora, servicio y profesional', () => {
+    const r = pasosCancelables(visitaDe(paso1(), paso2()));
+
+    expect(r.pendientes).toEqual(['09:00 · con Mauro', '10:30 · con Mengano']);
+    expect(r.pasos).toEqual([
+      { turnoId: 1, etiqueta: '09:00 · Capping · con Mauro' },
+      { turnoId: 2, etiqueta: '10:30 · Soft gel · con Mengano' },
+    ]);
+  });
+
+  it('no ofrece los pasos ya completados', () => {
+    const tramos = [{ ...PASOS[0], estado: 'completado' as const }, PASOS[1]];
+    const r = pasosCancelables(visitaDe(
+      paso1({ grupo: grupo(tramos), estado: 'completado', estado_visual: 'completado' }),
+      paso2({ grupo: grupo(tramos) }),
+    ));
+
+    expect(r.pasos.map((p) => p.turnoId)).toEqual([2]);
+    expect(r.pendientes).toEqual(['10:30 · con Mengano']);
+  });
+
+  it('un paso de otro dia lleva su fecha', () => {
+    const tramos = [PASOS[0], tramo(2, MENGANO, '2026-10-10T10:30:00', 120, { servicios: [{ id: 2, nombre: 'Pedicura' }] })];
+    const r = pasosCancelables(visitaDe(paso1({ grupo: grupo(tramos) })));
+
+    expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 · Capping · con Mauro', '10/10 10:30 · Pedicura · con Mengano']);
+    expect(r.pendientes).toEqual(['09:00 · con Mauro', '10/10 10:30 · con Mengano']);
+  });
+
+  it('junta con " + " los servicios de un paso y omite lo que falta', () => {
+    const tramos = [
+      tramo(1, MAURO, '2026-10-09T09:00:00', 90, { servicios: [{ id: 1, nombre: 'Capping' }, { id: 3, nombre: 'Esmaltado' }] }),
+      tramo(2, MENGANO, '2026-10-09T10:30:00', 120, { servicios: [], profesional_nombre: null }),
+    ];
+    const r = pasosCancelables(visitaDe(paso1({ grupo: grupo(tramos) }), paso2({ grupo: grupo(tramos) })));
+
+    expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 · Capping + Esmaltado · con Mauro', '10:30']);
   });
 });
