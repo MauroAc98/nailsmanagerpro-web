@@ -12,8 +12,6 @@ import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
-import type { BarraGrupo } from '@/lib/gruposTurnos';
-import { ConBarra, IconoGrupo } from './GrupoTurno';
 import { formatearDuracion } from '@/lib/duracion';
 import { IconoNotaTurno, tieneNotaTurno } from './IconoNotaTurno';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
@@ -45,7 +43,6 @@ export function SwipeableTurnoCard({
   onPress,
   profesionalLabel,
   profesionalNombreWhatsapp,
-  barra,
 }: {
   turno:                       Turno;
   onCancel?:                   () => void;
@@ -58,8 +55,6 @@ export function SwipeableTurnoCard({
   // cuando el turno tiene profesional asignada — la sustitución del mensaje
   // debe ser correcta sin importar el tamaño de la cuenta.
   profesionalNombreWhatsapp?:  string;
-  // Barra que une este turno con el de arriba/abajo del mismo grupo (vista "Todas").
-  barra?:                      BarraGrupo;
 }) {
   const t = useTranslations('agenda.SwipeableTurnoCard');
   const user = useAuthStore(s => s.user);
@@ -192,7 +187,6 @@ export function SwipeableTurnoCard({
           />
           {turno.origen === 'web' && reservaOnlineHabilitada() && <BadgeReservaOnline compacto />}
           {tieneNotaTurno(turno.notas) && <IconoNotaTurno />}
-          {turno.grupo_id != null && <IconoGrupo />}
         </div>
         {/* Servicio(s) — vuelve a una sola línea con ellipsis (cards de
             altura pareja, Change 6); la lista completa queda disponible en
@@ -325,19 +319,16 @@ export function SwipeableTurnoCard({
 
   if (!onCancel) {
     return (
-      <ConBarra barra={barra}>
-        <div style={outerStyle}>
-          {timeSection}
-          <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
-            {restBody}
-          </div>
+      <div style={outerStyle}>
+        {timeSection}
+        <div onClick={() => onPress?.()} style={{ ...restStyle, flex: 1 }}>
+          {restBody}
         </div>
-      </ConBarra>
+      </div>
     );
   }
 
   return (
-    <ConBarra barra={barra}>
     <div style={outerStyle}>
       {timeSection}
 
@@ -391,6 +382,5 @@ export function SwipeableTurnoCard({
         </div>
       </div>
     </div>
-    </ConBarra>
   );
 }

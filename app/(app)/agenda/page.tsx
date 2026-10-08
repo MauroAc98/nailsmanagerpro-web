@@ -24,9 +24,8 @@ import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { AccionesRapidasFab } from '@/components/agenda/AccionesRapidasFab';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { VisitaCard } from '@/components/agenda/VisitaCard';
-import { ConBarra, IconoGrupo } from '@/components/agenda/GrupoTurno';
 import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
-import { etiquetaTramo, tramosPendientes, type BarraGrupo } from '@/lib/gruposTurnos';
+import { etiquetaTramo, tramosPendientes } from '@/lib/gruposTurnos';
 import { agruparVisitas, type VisitaAgenda } from '@/lib/visitasAgenda';
 import { urlWhatsappVisita } from '@/lib/visitasWhatsapp';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -107,14 +106,13 @@ const sectionLabelStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────
 // FinalizadoCard — opacity 0.6, no swipe
 // ─────────────────────────────────────────────
-function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; profesionalLabel?: ProfesionalLabel | null; barra?: BarraGrupo }) {
+function FinalizadoCard({ turno, profesionalLabel }: { turno: Turno; profesionalLabel?: ProfesionalLabel | null }) {
   const t = useTranslations('agenda.FinalizadoCard');
   return (
     // Change 6 (2026-09-30, canvas aprobado): sin opacity:0.6 en el wrapper
     // — antes se sumaba a colores ya atenuados (colors.muted/subtext),
     // doble atenuación. Ahora se apoya solo en esos colores + el fondo
     // surfaceSubtle, mismo criterio que SwipeableTurnoCard.
-    <ConBarra barra={barra}>
     <div style={{
       backgroundColor: colors.surfaceSubtle, borderRadius: 18,
       border: `1px solid ${colors.border}`, boxShadow: shadows.card,
@@ -143,7 +141,6 @@ function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; prof
             style={{ fontSize: 15.5, fontWeight: 500, color: colors.muted }}
           />
           {tieneNotaTurno(turno.notas) && <IconoNotaTurno />}
-          {turno.grupo_id != null && <IconoGrupo />}
         </div>
         <NombreExpandible
           texto={turno.servicios.filter(s => s != null).map(s => s.nombre).join(' + ')}
@@ -186,7 +183,6 @@ function FinalizadoCard({ turno, profesionalLabel, barra }: { turno: Turno; prof
         </span>
       </div>
     </div>
-    </ConBarra>
   );
 }
 

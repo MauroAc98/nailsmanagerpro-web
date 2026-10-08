@@ -76,9 +76,6 @@
   "cancelarGrupo": {
     "sinPendientes": "Não há nada para cancelar"
   },
-  "GrupoTurno": {
-    "enlace": "Parte de um atendimento feito por várias pessoas"
-  },
   "VisitaCard": {
     "promo": "Promo",
     "serviciosJuntos": "{n} serviços agendados juntos",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Turno } from '@/services/turnoService';
-import { barrasDeGrupo, etiquetaTramo, resumenMovimiento, tramosPendientes } from './gruposTurnos';
+import { etiquetaTramo, resumenMovimiento, tramosPendientes } from './gruposTurnos';
 
 type Tramo = NonNullable<Turno['grupo']>['tramos'][number];
 const tramo = (turno_id: number, profesional_id: number, nombre: string, hora: string, dur: number, estado = 'confirmado'): Tramo => ({
@@ -16,28 +16,6 @@ const turno = (id: number, hora: string, over: Partial<Turno> = {}): Turno =>
   }) as Turno;
 const deGrupo = (id: number, hora: string, dur: number, grupo = 7, pro = 10): Turno =>
   turno(id, hora, { grupo_id: grupo, duracion_total_minutos: dur, profesional_id: pro, grupo: { id: grupo, modo: 'secuencia', tramos: TRAMOS } });
-
-describe('barrasDeGrupo', () => {
-  it('une con una barra a los tramos contiguos del mismo grupo', () => {
-    const b = barrasDeGrupo([deGrupo(1, '10:00', 60), deGrupo(2, '11:00', 45, 7, 20)]);
-    expect(b.get(1)).toEqual({ arriba: false, abajo: true });
-    expect(b.get(2)).toEqual({ arriba: true, abajo: false });
-  });
-
-  it('tambien une tramos en paralelo (mismo inicio)', () => {
-    const b = barrasDeGrupo([deGrupo(1, '10:00', 60), deGrupo(2, '10:00', 45, 7, 20)]);
-    expect(b.get(1)?.abajo).toBe(true);
-  });
-
-  it('no dibuja barra si hay otro turno entre medio o un hueco de tiempo', () => {
-    expect(barrasDeGrupo([deGrupo(1, '10:00', 60), turno(5, '10:30'), deGrupo(2, '11:00', 45, 7, 20)]).size).toBe(0);
-    expect(barrasDeGrupo([deGrupo(1, '10:00', 30), deGrupo(2, '11:00', 45, 7, 20)]).size).toBe(0);
-  });
-
-  it('no une turnos de grupos distintos y los turnos sin grupo no tienen barra', () => {
-    expect(barrasDeGrupo([deGrupo(1, '10:00', 60, 7), deGrupo(2, '11:00', 45, 8, 20), turno(3, '12:00')]).size).toBe(0);
-  });
-});
 
 describe('etiquetaTramo y tramosPendientes', () => {
   const t = (): Turno => ({ ...deGrupo(1, '10:00', 60), servicios: [{ id: 1, nombre: 'Softgel' }] }) as Turno;

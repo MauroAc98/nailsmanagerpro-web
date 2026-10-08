@@ -217,29 +217,21 @@ describe('SwipeableTurnoCard — turno de un grupo', () => {
     ],
   };
 
-  it('un turno sin grupo se ve como siempre: sin icono, sin "con" y sin barra (Rule L)', () => {
-    const { container } = renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ grupo_id: null })} onCancel={vi.fn()} />);
+  it('un turno sin grupo se ve como siempre: sin icono ni "con" (Rule L)', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ grupo_id: null })} onCancel={vi.fn()} />);
     expect(screen.queryByLabelText('Parte de un turno que atienden varias personas')).toBeNull();
     expect(screen.getByText('Manicura').textContent).toBe('Manicura');
-    expect(container.querySelector('[data-grupo-barra]')).toBeNull();
   });
 
-  it('marca que es parte de una promo con el icono de enlace, sin agregar texto a la línea del servicio', () => {
+  it('un turno de un grupo que llega suelto (los demás pasos se cancelaron) se ve como un turno normal', () => {
     renderWithProviders(
       <SwipeableTurnoCard turno={buildTurno({ grupo_id: 7, profesional_id: 10, grupo })} onCancel={vi.fn()} />,
     );
-    expect(screen.getByLabelText('Parte de un turno que atienden varias personas')).toBeInTheDocument();
+    // Sin icono de enlace: las promos con varios pasos se dibujan en VisitaCard.
+    expect(screen.queryByLabelText('Parte de un turno que atienden varias personas')).toBeNull();
     // La línea del servicio es solo el servicio: "· con Laura" se leía como si Laura hiciera ese servicio.
     expect(screen.getByText('Manicura').textContent).toBe('Manicura');
-    expect(screen.queryByText('con Laura')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/con Laura|tramo|paralelo|secuencia/i);
-  });
-
-  it('dibuja la barra de union cuando se lo piden', () => {
-    const { container } = renderWithProviders(
-      <SwipeableTurnoCard turno={buildTurno({ grupo_id: 7, profesional_id: 10, grupo })} onCancel={vi.fn()} barra={{ arriba: false, abajo: true }} />,
-    );
-    expect(container.querySelector('[data-grupo-barra]')).not.toBeNull();
   });
 });
 
