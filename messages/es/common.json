@@ -95,7 +95,7 @@
   "MotivoCancelacionSheetHost": {
     "seCancelara": "Se cancelará el turno de {turno}",
     "soloEste": "Solo este turno",
-    "todoElCombo": "Todo el grupo ({n, plural, one {# turno} other {# turnos}})",
+    "todoElCombo": "Todos ({n, plural, one {# turno} other {# turnos}})",
     "finalizadosNoCambian": "Los turnos que ya se finalizaron no cambian.",
     "title": "¿Por qué se cancela el turno?",
     "otherPlaceholder": "Contanos qué pasó...",

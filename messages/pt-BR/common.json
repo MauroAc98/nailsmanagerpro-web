@@ -95,7 +95,7 @@
   "MotivoCancelacionSheetHost": {
     "seCancelara": "O atendimento de {turno} será cancelado",
     "soloEste": "Só este atendimento",
-    "todoElCombo": "Todo o grupo ({n, plural, one {# atendimento} other {# atendimentos}})",
+    "todoElCombo": "Todos ({n, plural, one {# atendimento} other {# atendimentos}})",
     "finalizadosNoCambian": "Os atendimentos já finalizados não mudam.",
     "title": "Por que o agendamento está sendo cancelado?",
     "otherPlaceholder": "Conte pra gente o que aconteceu...",
