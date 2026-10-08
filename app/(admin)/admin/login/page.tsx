@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { tienePrefijoAdmin } from '@/lib/esPanelAdmin';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { colors, shadows, withAlpha } from '@/theme/colors';
@@ -13,6 +14,7 @@ import { colors, shadows, withAlpha } from '@/theme/colors';
 // idioma que el resto del código y comentarios del proyecto.
 export default function AdminLoginPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { login, loading, error, clearError } = useAdminAuthStore();
 
   const [email, setEmail] = useState('');
@@ -24,7 +26,9 @@ export default function AdminLoginPage() {
     if (!email.trim() || !password) return;
     clearError();
     const ok = await login(email.trim().toLowerCase(), password);
-    if (ok) router.push('/');
+    // Bajo /admin (localhost, app.turnetto.com/admin) el inicio del panel es
+    // /admin; la raíz a secas es la del salón. En admin.turnetto.com, "/".
+    if (ok) router.push(tienePrefijoAdmin(pathname) ? '/admin' : '/');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

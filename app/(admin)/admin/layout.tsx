@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { resolveAuthRoute, type AuthStatus } from '@/lib/resolveAuthRoute';
 import { classifyAdmin } from '@/lib/authRouteClasses';
+import { tienePrefijoAdmin } from '@/lib/esPanelAdmin';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { AdminReauthModal } from '@/components/admin/AdminReauthModal';
 import { colors } from '@/theme/colors';
@@ -72,13 +73,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ? 'unauthenticated'
       : 'authenticated';
 
+  // En admin.turnetto.com las URLs son limpias (/, /login). Fuera de ahí
+  // (localhost, app.turnetto.com/admin) el panel vive bajo /admin y su login es
+  // /admin/login: el /login a secas es el del salón, y mandar ahí al admin hacía
+  // un bucle con la guarda del salón cuando había una sesión de salón abierta.
+  const prefijo = tienePrefijoAdmin(pathname) ? '/admin' : '';
+
   const route = resolveAuthRoute(
     { status, i18nReady: true },
     { pathname, search: '' },
     classifyAdmin,
-    // Admin has no `/agenda` — an authenticated admin landing on `/login`
-    // goes to `/` (task 5.3, reconciles the D2 deviation from Slice 2).
-    { home: '/' },
+    // Admin has no `/agenda` — an authenticated admin landing on its login
+    // goes to its own home (task 5.3, reconciles the D2 deviation from Slice 2).
+    { home: prefijo || '/', login: `${prefijo}/login` },
   );
   const redirectTo = route.type === 'redirect' ? route.to : null;
 

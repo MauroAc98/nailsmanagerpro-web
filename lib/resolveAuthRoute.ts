@@ -30,9 +30,12 @@ export type AuthRoute = { type: 'allow' } | { type: 'redirect'; to: string } | {
 // they land on a route they no longer belong on (a public/change-pw/blocked
 // route). The tenant app defaults to `/agenda`; the admin panel injects `/`
 // because it has no `/agenda` route (task 5.3 — reconciles the D2 deviation
-// flagged in Slice 2).
+// flagged in Slice 2). `login` is where an unauthenticated user is sent: `/login`
+// everywhere except the admin panel served under `/admin` (no clean URLs), whose
+// login is `/admin/login` — `/login` there is the tenant's login.
 export interface ResolveAuthRouteOptions {
   home?: string;
+  login?: string;
 }
 
 const ALLOW: AuthRoute = { type: 'allow' };
@@ -40,6 +43,7 @@ const BLANK: AuthRoute = { type: 'blank' };
 const redirect = (to: string): AuthRoute => ({ type: 'redirect', to });
 
 const DEFAULT_HOME = '/agenda';
+const DEFAULT_LOGIN = '/login';
 const CHANGE_PW = '/cambiar-password';
 const BLOCKED = '/subscription-expired';
 
@@ -49,9 +53,9 @@ function buildOrigin(loc: RouteLocation): string {
   return esRedirectSeguro(full) ? encodeURIComponent(full) : '';
 }
 
-function loginWithOrigin(loc: RouteLocation): string {
+function loginWithOrigin(loc: RouteLocation, login: string): string {
   const origin = buildOrigin(loc);
-  return origin ? `/login?redirect=${origin}` : '/login';
+  return origin ? `${login}?redirect=${origin}` : login;
 }
 
 // Authenticated user landing on a public route: honor a safe `?redirect=`
@@ -70,6 +74,7 @@ export function resolveAuthRoute(
 ): AuthRoute {
   const routeClass = classify(loc);
   const home = opts?.home ?? DEFAULT_HOME;
+  const login = opts?.login ?? DEFAULT_LOGIN;
 
   // Precedence 1: neutral routes are always allowed, even while booting.
   if (routeClass === 'neutral') return ALLOW;
@@ -84,10 +89,10 @@ export function resolveAuthRoute(
         case 'public':
           return ALLOW;
         case 'change-pw':
-          return redirect('/login');
+          return redirect(login);
         case 'blocked':
         case 'protected':
-          return redirect(loginWithOrigin(loc));
+          return redirect(loginWithOrigin(loc, login));
         default:
           return BLANK;
       }

@@ -22,5 +22,6 @@ export function classifyTenant(loc: RouteLocation): RouteClass {
 }
 
 export function classifyAdmin(loc: RouteLocation): RouteClass {
-  return matchesAny(loc.pathname, ['/login']) ? 'public' : 'protected';
+  // '/admin/login': el panel fuera de admin.turnetto.com (sin URLs limpias).
+  return matchesAny(loc.pathname, ['/login', '/admin/login']) ? 'public' : 'protected';
 }

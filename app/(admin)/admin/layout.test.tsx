@@ -56,6 +56,41 @@ describe('AdminLayout — shared resolver', () => {
     expect(routerMock.push).not.toHaveBeenCalledWith('/agenda');
   });
 
+  // Fuera de admin.turnetto.com (localhost, app.turnetto.com/admin) el panel vive
+  // bajo /admin: su login es /admin/login, no el /login del salón.
+  it('bajo /admin, sin sesión -> va a /admin/login (no al login del salón) con el origen', async () => {
+    mockedGetToken.mockReturnValue(null);
+    setMockLocation('/admin');
+    render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(`/admin/login?redirect=${encodeURIComponent('/admin')}`),
+    );
+    expect(routerMock.push).not.toHaveBeenCalledWith(expect.stringMatching(/^\/login/));
+  });
+
+  it('bajo /admin, sin sesión y ya en /admin/login -> muestra el login, sin redirigir', async () => {
+    mockedGetToken.mockReturnValue(null);
+    setMockLocation('/admin/login');
+    render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+    expect(await screen.findByText('ADMIN CONTENT')).toBeInTheDocument();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  it('bajo /admin, con sesión en /admin/login -> va a /admin', async () => {
+    mockedGetToken.mockReturnValue('admin-tok');
+    setMockLocation('/admin/login');
+    render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/admin'));
+  });
+
+  it('bajo /admin, con sesión en /admin -> muestra el contenido', async () => {
+    mockedGetToken.mockReturnValue('admin-tok');
+    setMockLocation('/admin');
+    render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+    expect(await screen.findByText('ADMIN CONTENT')).toBeInTheDocument();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
   it('authenticated on / -> renders children', async () => {
     mockedGetToken.mockReturnValue('admin-tok');
     setMockLocation('/');

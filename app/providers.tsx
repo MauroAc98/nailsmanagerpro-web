@@ -7,6 +7,7 @@ import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute
 import { classifyTenant } from '@/lib/authRouteClasses';
 import { esHostReservaPublica } from '@/lib/reservaOnline/host';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
+import { esPanelAdmin } from '@/lib/esPanelAdmin';
 import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRefrescoEstadoNegocio } from '@/hooks/useRefrescoEstadoNegocio';
@@ -39,18 +40,17 @@ import { colors } from '@/theme/colors';
 // corte, alguien sin sesión tenant que entra ahí sería expulsado a
 // /login?redirect=... antes de poder loguearse como admin.
 //
-// Detecta por HOST, no por prefijo de pathname — hasta hace poco esto
-// era pathname.startsWith('/admin'), pero admin.turnetto.com ahora sirve
-// URLs limpias (/, /login, /suscripciones...) sin ese prefijo (ver
-// middleware.ts), así que ese chequeo dejó de matchear nada ahí. Bug
-// real visto en prod: loguearse en admin quedaba en bucle infinito
-// entre "/" y "/login" — este guard (tenant) empujaba a /login por no
-// reconocer "/" como admin, y el guard admin (que sí sabe de las rutas
-// limpias) empujaba de vuelta a "/".
-const ADMIN_HOST = 'admin.turnetto.com';
-
-function esRutaAdmin(): boolean {
-  return typeof window !== 'undefined' && window.location.hostname === ADMIN_HOST;
+// Detecta por HOST *o* por prefijo (lib/esPanelAdmin). Solo con el prefijo
+// (pathname.startsWith('/admin')) fallaba en admin.turnetto.com, que sirve URLs
+// limpias (/, /login, /suscripciones...) sin ese prefijo (ver middleware.ts):
+// bug real visto en prod, loguearse en admin quedaba en bucle infinito entre
+// "/" y "/login". Solo con el host fallaba en localhost y app.turnetto.com/admin,
+// donde el panel vive bajo /admin: con una sesión de salón abierta en otra
+// pestaña, este guard tomaba /admin como pantalla del salón y empujaba de
+// vuelta al panel, que a su vez mandaba a /login: bucle. Las dos guardas
+// tienen que responder igual a "¿esto es el panel?".
+function esRutaAdmin(pathname: string): boolean {
+  return typeof window !== 'undefined' && esPanelAdmin(window.location.hostname, pathname);
 }
 
 // reservar.turnetto.com — bug real de prod (2026-09-19): ese host reescribe
@@ -61,7 +61,7 @@ function esRutaAdmin(): boolean {
 // ESE MISMO host se reescribe a su vez a /reservar/login, matcheando el
 // [slug] dinámico con slug="login" y disparando un fetch real a
 // /api/public/login/info que explotaba (CORS/404) frente a la clienta.
-// Mismo corte que ADMIN_HOST arriba: por HOST, nunca por pathname — la
+// Mismo corte que el del panel admin arriba: por HOST, nunca por pathname — la
 // reserva pública no tiene sesión que gatear, así que ni vale la pena
 // depender de que `usePathname()` refleje bien la reescritura. El hostname
 // vive en lib/reservaOnline/host.ts, único lugar (useIr() también lo usa
@@ -211,7 +211,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // `puedeMostrarContenido` if/else that had to be kept byte-for-byte in sync)
   // is gone. `resolveAuthRoute` decides allow/redirect/blank once; the effect
   // only navigates, the render only gates. They can never disagree.
-  const isAdmin = esRutaAdmin(); // window read — stays outside the pure fn
+  const isAdmin = esRutaAdmin(pathname); // window read — stays outside the pure fn
   const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario arriba
   const qs = searchParams.toString();
   const snapshot: AuthRouteSnapshot = {

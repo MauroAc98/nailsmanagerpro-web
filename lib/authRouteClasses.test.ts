@@ -90,6 +90,17 @@ describe('classifyAdmin', () => {
     expect(classifyAdmin(at('/suscripciones'))).toBe('protected');
   });
 
+  // Fuera de admin.turnetto.com (localhost, app.turnetto.com/admin) las páginas
+  // del panel viven bajo /admin, sin el reescrito de URLs limpias.
+  it('/admin/login (panel con prefijo) -> public', () => {
+    expect(classifyAdmin(at('/admin/login'))).toBe('public');
+  });
+
+  it('/admin y /admin/suscripciones (panel con prefijo) -> protected', () => {
+    expect(classifyAdmin(at('/admin'))).toBe('protected');
+    expect(classifyAdmin(at('/admin/suscripciones'))).toBe('protected');
+  });
+
   it('never returns neutral / change-pw / blocked', () => {
     for (const p of ['/legal', '/cambiar-password', '/subscription-expired', '/agenda']) {
       expect(['public', 'protected']).toContain(classifyAdmin(at(p)));

@@ -211,6 +211,32 @@ describe('resolveAuthRoute — home override (task 5.3, admin consumer)', () => 
   });
 });
 
+describe('resolveAuthRoute — login override (panel admin bajo /admin)', () => {
+  it('unauthenticated on a protected route sends to the injected login, origin preserved', () => {
+    expect(
+      resolveAuthRoute(ready('unauthenticated'), loc('/admin/suscripciones'), classifyAdmin, {
+        home: '/admin',
+        login: '/admin/login',
+      }),
+    ).toEqual(redirect(`/admin/login?redirect=${encodeURIComponent('/admin/suscripciones')}`));
+  });
+
+  it('defaults the login to /login when no override is passed (tenant and clean-URL admin unchanged)', () => {
+    expect(
+      resolveAuthRoute(ready('unauthenticated'), loc('/suscripciones'), classifyAdmin, { home: '/' }),
+    ).toEqual(redirect(`/login?redirect=${encodeURIComponent('/suscripciones')}`));
+  });
+
+  it('admin with a session on /admin/login goes to the injected home, not back to a login', () => {
+    expect(
+      resolveAuthRoute(ready('authenticated'), loc('/admin/login'), classifyAdmin, {
+        home: '/admin',
+        login: '/admin/login',
+      }),
+    ).toEqual(redirect('/admin'));
+  });
+});
+
 describe('resolveAuthRoute — with real classifiers', () => {
   it('classifyTenant: unauthenticated on /agenda -> redirect to /login with origin', () => {
     expect(
