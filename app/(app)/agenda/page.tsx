@@ -964,7 +964,10 @@ function AgendaContent() {
             el swoosh, ocupa x:[138,410] de 635px de ancho → centro al
             43.15% del ancho del logo) con el centro del ícono circular del
             banner de Pendientes de cobro. */}
-        <Image src="/logo-turnetto.png" alt="Turnetto" width={635} height={499} priority style={{ width: 'auto', height: 40, marginLeft: 13 }} />
+        {/* Versión chica propia (~3x de lo que ocupa) y sin pasar por el optimizador
+            de Next: en producción devuelve el original de 1270 px para cualquier
+            ancho, y achicarlo tanto en el navegador deja el borde entrecortado. */}
+        <Image src="/logo-turnetto-encabezado.png" alt="Turnetto" width={160} height={126} priority unoptimized style={{ width: 'auto', height: 40, marginLeft: 13 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <NotificacionesBell />
           <button

@@ -13,6 +13,12 @@ imagen (un resplandor) y un relleno que varía levemente de verde. Este script:
   5. Lo deja en un lienzo de proporción 635:499, la que declaran las pantallas
      que lo muestran.
 
+Además genera public/logo-turnetto-encabezado.png, una versión chica (~3x del
+tamaño en pantalla) para el encabezado de la Agenda: el servidor no reduce las
+imágenes, y achicar 1270 px a ~51 px en el navegador deja el borde entrecortado.
+Tiene su propio nombre de archivo para no heredar la copia vieja que cacheó el
+navegador del logo anterior.
+
 Uso (desde la raíz del repo):  python scripts/limpiar-logo.py [fuente.png]
 Requiere Pillow y numpy.
 """
@@ -25,9 +31,11 @@ from PIL import Image, ImageFilter
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTE = RAIZ / "design" / "turnetto-logo-fuente.png"
 SALIDA = RAIZ / "public" / "logo-turnetto.png"
+SALIDA_ENCABEZADO = RAIZ / "public" / "logo-turnetto-encabezado.png"
 
 VERDE = (107, 143, 106)  # #6b8f6a, el verde de la marca (--color-primary)
 ANCHO_FINAL, ALTO_FINAL = 1270, 998  # proporción 635:499, al doble de resolución
+ANCHO_ENCABEZADO, ALTO_ENCABEZADO = 160, 126  # ~3x de los 51x40 px que ocupa en pantalla
 CERCANIA_PX = 6  # un píxel tenue a más de esto del logo es ruido
 NITIDEZ = 1.5  # >1 afina el contorno tras el escalado
 
@@ -53,10 +61,12 @@ def main():
     arriba = (ALTO_FINAL - alto_logo) // 2
     lienzo[arriba:arriba + alto_logo, :] = afinado
 
-    salida = Image.new("RGBA", (ANCHO_FINAL, ALTO_FINAL), VERDE + (0,))
-    salida.putalpha(Image.fromarray((lienzo * 255).round().astype(np.uint8), mode="L"))
-    salida.save(SALIDA, optimize=True)
-    print(f"{SALIDA.name}: {ANCHO_FINAL}x{ALTO_FINAL}px, logo {ANCHO_FINAL}x{alto_logo}px")
+    alfa_final = Image.fromarray((lienzo * 255).round().astype(np.uint8), mode="L")
+    for destino, tam in ((SALIDA, (ANCHO_FINAL, ALTO_FINAL)), (SALIDA_ENCABEZADO, (ANCHO_ENCABEZADO, ALTO_ENCABEZADO))):
+        salida = Image.new("RGBA", tam, VERDE + (0,))
+        salida.putalpha(alfa_final if tam == alfa_final.size else alfa_final.resize(tam, Image.LANCZOS))
+        salida.save(destino, optimize=True)
+        print(f"{destino.name}: {tam[0]}x{tam[1]}px")
 
 
 if __name__ == "__main__":

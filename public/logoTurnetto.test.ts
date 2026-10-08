@@ -79,3 +79,45 @@ describe('public/logo-turnetto.png', () => {
     expect(ancho).toBeGreaterThanOrEqual(1270);
   });
 });
+
+// El encabezado de la Agenda muestra el logo a ~51 px de ancho. El servidor no lo
+// reduce (devuelve el original para cualquier ancho), y achicar 1270 px a 51 en el
+// navegador deja el borde entrecortado: tiene su propia versión chica, con otro
+// nombre de archivo para no heredar la copia vieja que cacheó el navegador.
+describe('public/logo-turnetto-encabezado.png', () => {
+  const cargar = async () => {
+    const { data, info } = await sharp(join(process.cwd(), 'public', 'logo-turnetto-encabezado.png'))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    return { data, ancho: info.width, alto: info.height };
+  };
+
+  it('es chico (a lo sumo 3 veces el tamaño en pantalla) y conserva la proporción 635:499', async () => {
+    const { ancho, alto } = await cargar();
+
+    expect(ancho).toBeGreaterThanOrEqual(150);
+    expect(ancho).toBeLessThanOrEqual(400);
+    expect(ancho / alto).toBeCloseTo(635 / 499, 2);
+  });
+
+  it('todo píxel visible es del verde de la marca y el borde está suavizado', async () => {
+    const { data } = await cargar();
+    let visibles = 0;
+    let fueraDelVerde = 0;
+    let parciales = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] === 0) continue;
+      visibles += 1;
+      if (data[i + 3] < 255) parciales += 1;
+      if (
+        Math.abs(data[i] - VERDE.r) > TOLERANCIA ||
+        Math.abs(data[i + 1] - VERDE.g) > TOLERANCIA ||
+        Math.abs(data[i + 2] - VERDE.b) > TOLERANCIA
+      ) fueraDelVerde += 1;
+    }
+
+    expect(fueraDelVerde).toBe(0);
+    expect(parciales / visibles).toBeGreaterThan(0.01);
+  });
+});
