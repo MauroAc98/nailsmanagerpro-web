@@ -27,6 +27,13 @@ describe('ConfiguracionPage — reducida a "preparar mi agenda"', () => {
     expect(screen.getByRole('button', { name: 'Bloqueos' })).toBeInTheDocument();
   });
 
+  it('el subtítulo explica que es la configuración inicial para empezar a agendar, en tono profesional', () => {
+    conRouter(() => {});
+
+    expect(screen.getByText('Completá la configuración inicial para comenzar a agendar turnos.')).toBeInTheDocument();
+    expect(screen.queryByText(/necesitás/)).toBeNull();
+  });
+
   it('ya no muestra lo que se mudó a Mi negocio', () => {
     conRouter(() => {});
     expect(screen.queryByRole('button', { name: 'Reservas online' })).toBeNull();
