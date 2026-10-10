@@ -138,6 +138,15 @@ export function turnoACancelar(visita: VisitaAgenda, eleccion: { turnoId?: numbe
     : { turnoId: eleccion.turnoId, alcance: undefined };
 }
 
+// Un paso se puede cancelar mientras siga confirmado y la agenda no lo muestre como completado
+// (igual que un turno suelto completado, que tampoco se puede cancelar).
+const pasoCancelable = (p: PasoVisita): boolean => p.estado === 'confirmado' && p.turno?.estado_visual !== 'completado';
+
+/** Una visita finalizada (sin pasos pendientes) ya no se puede cancelar. */
+export function visitaCancelable(visita: VisitaAgenda): boolean {
+  return visita.pasos.some(pasoCancelable);
+}
+
 /**
  * Lo que la hoja de cancelacion muestra para una visita: la lista de lo que cancela "todos"
  * y una opcion por paso. Solo entran los pasos que todavia se pueden cancelar (los
@@ -145,7 +154,7 @@ export function turnoACancelar(visita: VisitaAgenda, eleccion: { turnoId?: numbe
  */
 export function pasosCancelables(visita: VisitaAgenda): { pendientes: string[]; pasos: PasoCancelable[] } {
   const diaVisita = dia(visita.cabecera.fecha_hora);
-  const confirmados = visita.pasos.filter((p) => p.estado === 'confirmado');
+  const confirmados = visita.pasos.filter(pasoCancelable);
   const conProfesional = (p: PasoVisita): string => (p.profesionalNombre ? `con ${p.profesionalNombre}` : '');
 
   return {

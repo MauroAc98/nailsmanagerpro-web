@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Turno } from '@/services/turnoService';
-import { agruparVisitas, pasosCancelables, turnoACancelar, type VisitaAgenda } from './visitasAgenda';
+import { agruparVisitas, pasosCancelables, turnoACancelar, visitaCancelable, type VisitaAgenda } from './visitasAgenda';
 
 type Tramo = NonNullable<Turno['grupo']>['tramos'][number];
 
@@ -193,6 +193,12 @@ describe('pasosCancelables', () => {
     expect(r.pendientes).toEqual(['10:30 hs · con Mengano']);
   });
 
+  it('no ofrece un paso que la agenda ya muestra como completado aunque siga confirmado', () => {
+    const r = pasosCancelables(visitaDe(paso1({ estado_visual: 'completado' }), paso2()));
+
+    expect(r.pasos.map((p) => p.turnoId)).toEqual([2]);
+  });
+
   it('un paso de otro dia lleva su fecha', () => {
     const tramos = [PASOS[0], tramo(2, MENGANO, '2026-10-10T10:30:00', 120, { servicios: [{ id: 2, nombre: 'Pedicura' }] })];
     const r = pasosCancelables(visitaDe(paso1({ grupo: grupo(tramos) })));
@@ -209,5 +215,23 @@ describe('pasosCancelables', () => {
     const r = pasosCancelables(visitaDe(paso1({ grupo: grupo(tramos) }), paso2({ grupo: grupo(tramos) })));
 
     expect(r.pasos.map((p) => p.etiqueta)).toEqual(['09:00 hs · Capping + Esmaltado · con Mauro', '10:30 hs']);
+  });
+});
+
+describe('visitaCancelable', () => {
+  const visitaDe = (...turnos: Turno[]) => agruparVisitas(turnos, null)[0] as VisitaAgenda;
+  const completos = [{ ...PASOS[0], estado: 'completado' as const }, { ...PASOS[1], estado: 'completado' as const }];
+
+  it('se puede cancelar mientras quede algun paso pendiente', () => {
+    expect(visitaCancelable(visitaDe(paso1(), paso2()))).toBe(true);
+  });
+
+  it('una visita finalizada (todos los pasos completados) no se puede cancelar', () => {
+    const v = visitaDe(
+      paso1({ grupo: grupo(completos), estado: 'completado', estado_visual: 'completado' }),
+      paso2({ grupo: grupo(completos), estado: 'completado', estado_visual: 'completado' }),
+    );
+
+    expect(visitaCancelable(v)).toBe(false);
   });
 });

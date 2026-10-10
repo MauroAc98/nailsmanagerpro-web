@@ -26,7 +26,7 @@ import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { VisitaCard } from '@/components/agenda/VisitaCard';
 import { IconoNotaTurno, tieneNotaTurno } from '@/components/agenda/IconoNotaTurno';
 import { etiquetaTramo, tramosPendientes } from '@/lib/gruposTurnos';
-import { agruparVisitas, pasosCancelables, turnoACancelar, type VisitaAgenda } from '@/lib/visitasAgenda';
+import { agruparVisitas, pasosCancelables, turnoACancelar, visitaCancelable, type VisitaAgenda } from '@/lib/visitasAgenda';
 import { urlWhatsappVisita } from '@/lib/visitasWhatsapp';
 import { useAuthStore } from '@/store/useAuthStore';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
@@ -1109,7 +1109,7 @@ function AgendaContent() {
                     visita={item}
                     profesionalDe={profesionalLabelDe}
                     whatsappHref={urlWhatsappVisita(item, negocioWhatsapp) ?? undefined}
-                    onCancel={() => handleCancelarVisita(item)}
+                    onCancel={visitaCancelable(item) ? () => handleCancelarVisita(item) : undefined}
                     onAbrirPaso={id => router.push(`/agenda/${id}`)}
                     onFinalizarPaso={handleFinalizar}
                   />
