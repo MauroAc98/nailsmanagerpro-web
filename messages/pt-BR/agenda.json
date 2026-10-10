@@ -297,6 +297,9 @@
     "estadoManual": "Enviado manualmente",
     "estadoFallido": "Falha no envio",
     "mensajeEnviado": "Foi isso que a pessoa recebeu",
-    "mensajeFallido": "Foi isso que tentamos enviar"
+    "mensajeFallido": "Foi isso que tentamos enviar",
+    "ayudaReenvio": "O WhatsApp não conseguiu entregar. Pode ser que o número não tenha WhatsApp ou não receba mensagens de empresas. Tente enviar pelo seu WhatsApp.",
+    "botonReenviar": "Enviar pelo meu WhatsApp",
+    "ayudaErrorNuestro": "Não foi possível enviar por um problema nosso, não do número do cliente. Fale com o suporte para revisarmos."
   }
 }

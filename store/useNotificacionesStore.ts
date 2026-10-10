@@ -9,6 +9,7 @@ interface NotificacionesState {
 
   fetchNotificaciones: () => Promise<void>;
   marcarVistas: () => Promise<void>;
+  marcarReenvioManual: (mensajeId: number) => Promise<void>;
 }
 
 export const useNotificacionesStore = create<NotificacionesState>((set, get) => ({
@@ -43,6 +44,27 @@ export const useNotificacionesStore = create<NotificacionesState>((set, get) => 
       await turnoService.marcarNotificacionesVistas();
     } catch (e) {
       console.error('marcarNotificacionesVistas:', e);
+    }
+  },
+
+  // Optimista: wa.me ya se abrió en el click, así que el mensaje se muestra
+  // como enviado a mano sin esperar. Si el POST falla, el próximo fetch trae
+  // el estado real ('failed') y el botón vuelve a aparecer.
+  marcarReenvioManual: async (mensajeId) => {
+    const { data } = get();
+    if (data) {
+      set({
+        data: {
+          ...data,
+          mensajes: data.mensajes.map(m =>
+            m.id === mensajeId ? { ...m, status: 'manual' as const, reenviable: false } : m),
+        },
+      });
+    }
+    try {
+      await turnoService.reenvioManualMensaje(mensajeId);
+    } catch (e) {
+      console.error('reenvioManualMensaje:', e);
     }
   },
 }));

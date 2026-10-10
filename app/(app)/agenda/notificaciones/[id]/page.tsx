@@ -8,6 +8,7 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
+import { phoneUtils } from '@/lib/phoneUtils';
 
 // Renderiza *texto* en negrita, igual que WhatsApp interpreta los
 // asteriscos — mismo helper que components/perfil/SheetNegocio.tsx
@@ -27,7 +28,7 @@ export default function DetalleNotificacionPage() {
   const params = useParams();
   const id = Number(Array.isArray(params?.id) ? params.id[0] : params?.id ?? '0');
 
-  const { data, loading, fetchNotificaciones } = useNotificacionesStore();
+  const { data, loading, fetchNotificaciones, marcarReenvioManual } = useNotificacionesStore();
   const mensaje = data?.mensajes.find(m => m.id === id);
 
   useEffect(() => {
@@ -50,6 +51,12 @@ export default function DetalleNotificacionPage() {
     : mensaje?.status === 'manual'
       ? t('estadoManual')
       : t('estadoEnviado');
+
+  // Reenvío desde el WhatsApp propio de la dueña: solo para fallos que Meta
+  // aceptó y no pudo entregar (ver WhatsappMensaje::esReenviableManual).
+  const hrefReenvio = esFallido && mensaje?.reenviable && mensaje.cliente_telefono
+    ? `https://wa.me/${phoneUtils.formatForWhatsApp(mensaje.cliente_telefono)}?text=${encodeURIComponent(mensaje.mensaje)}`
+    : null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 48 }}>
@@ -118,6 +125,34 @@ export default function DetalleNotificacionPage() {
                 {renderConNegritas(mensaje.mensaje)}
               </p>
             </div>
+
+            {hrefReenvio && (
+              <div style={{ marginTop: 16 }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5, color: colors.subtext }}>
+                  {t('ayudaReenvio')}
+                </p>
+                <a
+                  href={hrefReenvio}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => marcarReenvioManual(mensaje.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '13px 16px', borderRadius: 14, textDecoration: 'none',
+                    backgroundColor: colors.success, color: '#fff', fontSize: 14, fontWeight: 700,
+                  }}
+                >
+                  <WhatsappGlyph size={16} color="#fff" />
+                  {t('botonReenviar')}
+                </a>
+              </div>
+            )}
+
+            {esFallido && !mensaje.reenviable && (
+              <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.5, color: colors.subtext }}>
+                {t('ayudaErrorNuestro')}
+              </p>
+            )}
           </>
         )}
       </div>

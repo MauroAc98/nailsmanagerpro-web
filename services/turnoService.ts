@@ -72,6 +72,10 @@ export interface NotificacionMensaje {
   // Texto real armado por WhatsappTemplate::mensajeLegible() al momento
   // del envío (backend) — se guarda tal cual, no es una reconstrucción.
   mensaje: string;
+  cliente_telefono: string | null;
+  // 'failed' que Meta aceptó y no pudo entregar (problema del destinatario):
+  // se puede reenviar a mano por wa.me. Un 'failed' de nuestro lado no.
+  reenviable: boolean;
 }
 
 export interface Notificaciones {
@@ -239,6 +243,10 @@ export const turnoService = {
 
   marcarNotificacionesVistas: async (): Promise<void> => {
     await api.post('/turnos/notificaciones/marcar-vistas');
+  },
+
+  reenvioManualMensaje: async (mensajeId: number): Promise<void> => {
+    await api.post(`/turnos/notificaciones/${mensajeId}/reenvio-manual`);
   },
 
   actualizarPrecios: async (
