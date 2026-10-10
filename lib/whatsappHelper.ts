@@ -32,7 +32,8 @@ const armarCuerpo = (lineas: (string | null)[]): string =>
 // (2026-08-30, tono "sistema"): `confirmacion_turno` y `recordatorio_turno`.
 //
 // Fuente única para los dos lugares del frontend que muestran/mandan este
-// texto: el envío manual por wa.me (`whatsappHelper.buildUrl`, abajo) y la
+// texto: el envío manual por wa.me (`whatsappHelper.buildUrl`, abajo — sin el
+// aviso de número de solo avisos) y la
 // vista previa de Perfil > Mi negocio (components/perfil/SheetNegocio). Sin
 // esto los dos se escribían por separado y podían divergir.
 //
@@ -46,6 +47,9 @@ const armarCuerpo = (lineas: (string | null)[]): string =>
 export function cuerpoPlantillaWhatsapp(
   tipo: TipoPlantillaWhatsapp,
   d: DatosPlantillaWhatsapp,
+  // false en el envío manual por wa.me: sale del WhatsApp del propio salón,
+  // donde el cliente SÍ puede responder (ver quitarAvisoUnidireccional).
+  { conAvisoUnidireccional = true }: { conAvisoUnidireccional?: boolean } = {},
 ): string {
   const encabezado = tipo === 'recordatorio'
     // recordatorio_turno: el punto va DENTRO de la negrita del negocio.
@@ -64,10 +68,22 @@ export function cuerpoPlantillaWhatsapp(
     `✨ ${d.servicios}`,
     d.direccion ? `📍 ${d.direccion}` : null,
     '',
-    avisoUnidireccional(d.profesional),
+    conAvisoUnidireccional ? avisoUnidireccional(d.profesional) : null,
     '',
     d.telefono ? lineaContacto(d.telefono) : null,
   ]);
+}
+
+// El aviso "Desde este número solo se envían avisos…" solo es cierto en el
+// envío automático (número de avisos de Turnetto). Un envío manual por wa.me
+// sale del WhatsApp del propio salón, donde el cliente SÍ puede responder.
+// Para el texto ya armado por el backend (mensajeLegible), que trae el mismo
+// párrafo; el texto armado acá lo omite con `conAvisoUnidireccional: false`.
+export function quitarAvisoUnidireccional(texto: string): string {
+  return texto
+    .replace(/^⚠️ Desde este número solo se envían avisos\..*$/m, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 interface MessageData {
@@ -80,7 +96,6 @@ interface MessageData {
   negocio:         string;
   direccion:       string | null;
   telefonoNegocio: string | null;
-  profesional?:    string;
 }
 
 export const whatsappHelper = {
@@ -94,11 +109,9 @@ export const whatsappHelper = {
       hora:          data.hora,
       servicios:     data.servicio,
       direccion:     data.direccion?.trim() || '',
-      // Sin profesional resuelta, el negocio ocupa su lugar en el aviso:
-      // "*<negocio> no lo recibe...*" se lee bien; "* no lo recibe...*" no.
-      profesional:   data.profesional?.trim() || data.negocio,
+      profesional:   '',
       telefono:      data.telefonoNegocio ? phoneUtils.formatArWhatsapp(data.telefonoNegocio) : '',
-    });
+    }, { conAvisoUnidireccional: false });
 
     const numeroDestino = phoneUtils.formatForWhatsApp(data.clienteTelefono);
     return `https://wa.me/${numeroDestino}?text=${encodeURIComponent(cuerpo)}`;

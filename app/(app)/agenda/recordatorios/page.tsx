@@ -166,7 +166,6 @@ export default function RecordatoriosPendientesPage() {
                       negocio:         user?.name ?? '',
                       direccion:       user?.direccion ?? null,
                       telefonoNegocio: user?.telefono ?? null,
-                      profesional:     profesional?.nombre,
                     })}
                     target="_blank"
                     rel="noopener noreferrer"

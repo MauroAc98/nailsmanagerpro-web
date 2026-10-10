@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cuerpoPlantillaWhatsapp, whatsappHelper, type DatosPlantillaWhatsapp } from './whatsappHelper';
+import { cuerpoPlantillaWhatsapp, quitarAvisoUnidireccional, whatsappHelper, type DatosPlantillaWhatsapp } from './whatsappHelper';
 
 const base: DatosPlantillaWhatsapp = {
   nombreCliente: 'Martina',
@@ -56,7 +56,6 @@ describe('whatsappHelper.buildUrl', () => {
       negocio:         'Estudio Bella',
       direccion:       'Av. Siempreviva 742',
       telefonoNegocio: '3764741700',
-      profesional:     'Fernanda',
     });
     expect(url.startsWith('https://wa.me/5493764741700?text=')).toBe(true);
     const texto = decodeURIComponent(url.split('text=')[1]);
@@ -65,7 +64,25 @@ describe('whatsappHelper.buildUrl', () => {
     expect(texto).toContain('comunicate al +54 9 376 474-1700');
   });
 
-  it('falls back to the business name in the notice when the turno has no professional', () => {
+  it('never includes the "only notices" warning: a manual wa.me send comes from the salon\'s own WhatsApp', () => {
+    const url = whatsappHelper.buildUrl({
+      clienteNombre:   'Martina',
+      clienteTelefono: '5493764741700',
+      servicio:        'Manicura',
+      fecha:           '2026-08-20',
+      hora:            '15:30',
+      tipo:            'confirmacion',
+      negocio:         'Estudio Bella',
+      direccion:       'Av. Siempreviva 742',
+      telefonoNegocio: '3764741700',
+    });
+    const texto = decodeURIComponent(url.split('text=')[1]);
+    expect(texto).not.toContain('⚠️');
+    expect(texto).not.toContain('no puede contestarte');
+    expect(texto).toContain('📍 Av. Siempreviva 742\n\nPara consultas o cambios de turno');
+  });
+
+  it('drops the optional lines without leaving the notice behind', () => {
     const url = whatsappHelper.buildUrl({
       clienteNombre:   'Martina',
       clienteTelefono: '5493764741700',
@@ -76,11 +93,35 @@ describe('whatsappHelper.buildUrl', () => {
       negocio:         'Estudio Bella',
       direccion:       null,
       telefonoNegocio: null,
-      profesional:     undefined,
     });
     const texto = decodeURIComponent(url.split('text=')[1]);
-    expect(texto).toContain('*Estudio Bella no lo recibe y no puede contestarte.*');
+    expect(texto).not.toContain('no lo recibe');
     expect(texto).not.toContain('📍');
     expect(texto).not.toContain('comunicate al');
+    expect(texto.endsWith('✨ Manicura')).toBe(true);
+  });
+});
+
+describe('quitarAvisoUnidireccional', () => {
+  it('removes the warning paragraph from a backend-built message and keeps the rest intact', () => {
+    const conAviso = cuerpoPlantillaWhatsapp('confirmacion', base);
+    expect(quitarAvisoUnidireccional(conAviso)).toBe(
+      'Hola Martina, tu turno en *Estudio Bella* quedó confirmado.\n\n' +
+      '🗓️ 20/08 · 🕒 15:30 hs\n' +
+      '✨ Manicura semipermanente\n' +
+      '📍 Av. Siempreviva 742\n\n' +
+      'Para consultas o cambios de turno, comunicate al +54 9 11 2345-6789 con al menos 24 hs de anticipación.'
+    );
+  });
+
+  it('works when the warning is the last paragraph', () => {
+    const conAviso = cuerpoPlantillaWhatsapp('recordatorio', { ...base, telefono: '' });
+    const sinAviso = quitarAvisoUnidireccional(conAviso);
+    expect(sinAviso).not.toContain('⚠️');
+    expect(sinAviso.endsWith('📍 Av. Siempreviva 742')).toBe(true);
+  });
+
+  it('leaves a text without the warning untouched', () => {
+    expect(quitarAvisoUnidireccional('Hola Martina')).toBe('Hola Martina');
   });
 });

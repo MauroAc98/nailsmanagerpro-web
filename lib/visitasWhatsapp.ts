@@ -14,8 +14,8 @@ const primerNombre = (nombre: string | null): string => (nombre ?? '').trim().sp
  * confirmados del dia de la tarjeta (no los completados ni los de otro dia), con la
  * fecha y la hora del primero. Mismo formato que el mensaje automatico del backend
  * (WhatsappTemplate::parametrosCloudApi): con varias profesionales, "Capping con Ana ·
- * Soft gel con Laura" y el aviso nombra a "el equipo"; con una sola, los servicios
- * juntos con " + " y su nombre. null si el cliente no tiene telefono o no queda ningun paso.
+ * Soft gel con Laura"; con una sola, los servicios juntos con " + ". null si el cliente
+ * no tiene telefono o no queda ningun paso.
  */
 export function urlWhatsappVisita(visita: VisitaAgenda, negocio: NegocioWhatsapp): string | null {
   const cliente = visita.cabecera.cliente;
@@ -47,6 +47,5 @@ export function urlWhatsappVisita(visita: VisitaAgenda, negocio: NegocioWhatsapp
     negocio: negocio.nombre,
     direccion: negocio.direccion,
     telefonoNegocio: negocio.telefono,
-    profesional: variasProfesionales ? 'el equipo' : nombres[0],
   });
 }

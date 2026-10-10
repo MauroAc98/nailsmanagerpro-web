@@ -102,7 +102,6 @@ function NuevoTurnoContent() {
   const [turnoCreado, setTurnoCreado] = useState<{
     cliente: Cliente;
     servicios: string;
-    profesional?: string;
   } | null>(null);
 
   const now      = new Date();
@@ -286,7 +285,6 @@ function NuevoTurnoContent() {
       setTurnoCreado({
         cliente: selectedCliente,
         servicios: nombresServicios,
-        profesional: mostrarSelectorProfesional ? (profesionalSeleccionado?.nombre ?? undefined) : undefined,
       });
     } else {
       showToast(t('created'));
@@ -348,7 +346,6 @@ function NuevoTurnoContent() {
               negocio:         user?.name ?? '',
               direccion:       user?.direccion ?? null,
               telefonoNegocio: user?.telefono ?? null,
-              profesional:     turnoCreado.profesional,
             })}
             target="_blank"
             rel="noopener noreferrer"

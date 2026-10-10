@@ -1129,14 +1129,6 @@ function AgendaContent() {
                   }
                 : null;
 
-              // Para el placeholder {profesional} del mensaje de WhatsApp: a
-              // diferencia de profesionalLabel, no se oculta con ≤1
-              // profesional activa — el mensaje debe ser correcto siempre
-              // que el turno tenga profesional resuelta.
-              const profesionalNombreWhatsapp = turno.profesional_id != null
-                ? profesionalesById.get(turno.profesional_id)?.nombre
-                : undefined;
-
               if (pasado) {
                 return <FinalizadoCard key={turno.id} turno={turno} profesionalLabel={profesionalLabel} />;
               }
@@ -1148,7 +1140,6 @@ function AgendaContent() {
                   onFinalizar={cursando ? () => handleFinalizar(turno) : undefined}
                   onPress={() => router.push(`/agenda/${turno.id}`)}
                   profesionalLabel={profesionalLabel}
-                  profesionalNombreWhatsapp={profesionalNombreWhatsapp}
                 />
               );
             })}

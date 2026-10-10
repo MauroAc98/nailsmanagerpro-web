@@ -9,6 +9,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
+import { quitarAvisoUnidireccional } from '@/lib/whatsappHelper';
 
 // Renderiza *texto* en negrita, igual que WhatsApp interpreta los
 // asteriscos — mismo helper que components/perfil/SheetNegocio.tsx
@@ -55,7 +56,7 @@ export default function DetalleNotificacionPage() {
   // Reenvío desde el WhatsApp propio de la dueña: solo para fallos que Meta
   // aceptó y no pudo entregar (ver WhatsappMensaje::esReenviableManual).
   const hrefReenvio = esFallido && mensaje?.reenviable && mensaje.cliente_telefono
-    ? `https://wa.me/${phoneUtils.formatForWhatsApp(mensaje.cliente_telefono)}?text=${encodeURIComponent(mensaje.mensaje)}`
+    ? `https://wa.me/${phoneUtils.formatForWhatsApp(mensaje.cliente_telefono)}?text=${encodeURIComponent(quitarAvisoUnidireccional(mensaje.mensaje))}`
     : null;
 
   return (

@@ -42,19 +42,12 @@ export function SwipeableTurnoCard({
   onFinalizar,
   onPress,
   profesionalLabel,
-  profesionalNombreWhatsapp,
 }: {
   turno:                       Turno;
   onCancel?:                   () => void;
   onFinalizar?:                () => void;
   onPress?:                    () => void;
   profesionalLabel?:           ProfesionalLabel | null;
-  // Nombre de la profesional a cargo del turno, para el placeholder
-  // {profesional} del mensaje de WhatsApp. A diferencia de profesionalLabel
-  // (que se oculta con ≤1 profesional activa), este SIEMPRE se resuelve
-  // cuando el turno tiene profesional asignada — la sustitución del mensaje
-  // debe ser correcta sin importar el tamaño de la cuenta.
-  profesionalNombreWhatsapp?:  string;
 }) {
   const t = useTranslations('agenda.SwipeableTurnoCard');
   const user = useAuthStore(s => s.user);
@@ -278,7 +271,6 @@ export function SwipeableTurnoCard({
                   negocio:         user?.name ?? '',
                   direccion:       user?.direccion ?? null,
                   telefonoNegocio: user?.telefono ?? null,
-                  profesional:     profesionalNombreWhatsapp,
                 })}
                 target="_blank"
                 rel="noopener noreferrer"

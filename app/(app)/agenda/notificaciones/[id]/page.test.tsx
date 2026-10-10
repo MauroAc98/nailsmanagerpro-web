@@ -53,6 +53,16 @@ describe('DetalleNotificacionPage — reenvío manual', () => {
     );
   });
 
+  it('el texto reenviado no lleva el aviso de "solo se envían avisos" (sale del WhatsApp propio)', () => {
+    seed(mensaje({
+      mensaje: 'Hola Martina\n\n⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *Ana no lo recibe y no puede contestarte.*\n\nPara consultas, comunicate al 123.',
+    }));
+    renderWithProviders(<DetalleNotificacionPage />);
+
+    const href = screen.getByRole('link', { name: 'Enviar desde mi WhatsApp' }).getAttribute('href') ?? '';
+    expect(decodeURIComponent(href.split('text=')[1])).toBe('Hola Martina\n\nPara consultas, comunicate al 123.');
+  });
+
   it('al tocarlo lo marca como enviado a mano', async () => {
     seed(mensaje());
     renderWithProviders(<DetalleNotificacionPage />);

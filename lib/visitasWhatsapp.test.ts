@@ -32,19 +32,19 @@ const MAURO_Y_MENGANO = [
 ];
 
 describe('urlWhatsappVisita', () => {
-  it('con varias profesionales manda un solo mensaje con cada servicio y quien lo hace, y el aviso nombra al equipo', () => {
+  it('con varias profesionales manda un solo mensaje con cada servicio y quien lo hace, sin el aviso de número de solo avisos', () => {
     const url = urlWhatsappVisita(visitaDe(MAURO_Y_MENGANO), NEGOCIO);
 
     expect(url).toMatch(/^https:\/\/wa\.me\/\d+\?text=/);
     const t = texto(url);
     expect(t).toContain('Capping con Mauro · Soft gel con Mengano');
-    expect(t).toContain('el equipo');
+    expect(t).not.toContain('no lo recibe');
     expect(t).toContain('09/10');
     expect(t).toContain('09:00');
     expect(t).toContain('Estudio Luna');
   });
 
-  it('con una sola profesional junta los servicios con " + " y la nombra en el aviso', () => {
+  it('con una sola profesional junta los servicios con " + "', () => {
     const t = texto(urlWhatsappVisita(visitaDe([
       tramo(1, 10, 'Mauro', '2026-10-09T09:00:00', 'Capping'),
       tramo(2, 10, 'Mauro', '2026-10-09T10:30:00', 'Soft gel'),
@@ -52,7 +52,6 @@ describe('urlWhatsappVisita', () => {
 
     expect(t).toContain('Capping + Soft gel');
     expect(t).not.toContain(' con Mauro');
-    expect(t).toContain('Mauro no lo recibe');
   });
 
   it('usa solo el primer nombre de cada profesional', () => {
