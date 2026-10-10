@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
+  type DragEndEvent, type Modifier,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import BackButton from '@/components/BackButton';
@@ -34,6 +34,10 @@ import { FiltroPills } from '@/components/FiltroPills';
 // Nunca se renderiza con `servicios` vacío — el padre salta directamente el
 // grupo entero cuando no tiene items (ver `agruparServiciosPorCategoria`,
 // que ya omite categorías sin servicios asignados).
+// Bloquea el arrastre al eje vertical: la card nunca sale del ancho de la
+// columna, así que al soltar no hay "rebote" horizontal ni UI rota.
+const soloVertical: Modifier = ({ transform }) => ({ ...transform, x: 0 });
+
 function ReorderableSection({
   servicios, onEdit, onToggle, onDelete, onReorder,
 }: {
@@ -54,7 +58,7 @@ function ReorderableSection({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[soloVertical]} onDragEnd={handleDragEnd}>
       <SortableContext items={servicios.map(s => s.id)} strategy={verticalListSortingStrategy}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {servicios.map(s => (
@@ -375,7 +379,7 @@ export default function ServiciosPage() {
               const panelId = `categoria-panel-${grupo.id ?? 'sin-categoria'}`;
               const colapsada = acordeonActivo && abiertaEfectiva !== grupo.id;
               return (
-                <div key={grupo.id ?? 'sin-categoria'} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div key={grupo.id ?? 'sin-categoria'} style={{ display: 'flex', flexDirection: 'column' }}>
                   <CategoriaHeader
                     nombre={grupo.id === null ? t('sectionSinCategoria') : grupo.nombre}
                     count={grupo.servicios.length}
@@ -383,17 +387,34 @@ export default function ServiciosPage() {
                     onToggleColapsar={() => toggleColapsar(grupo.id)}
                     panelId={panelId}
                   />
-                  {!colapsada && (
-                    <div id={panelId}>
-                      <ReorderableSection
-                        servicios={grupo.servicios}
-                        onEdit={id => router.push(`/configuracion/servicios/${id}`)}
-                        onToggle={handleToggle}
-                        onDelete={handleEliminar}
-                        onReorder={reordenarServicios}
-                      />
+                  {/* Animamos la altura con grid 0fr→1fr: el contenido sigue
+                      montado (sin salto de layout) y `inert` lo saca del foco
+                      y de los lectores mientras está cerrado. */}
+                  <div
+                    id={panelId}
+                    aria-hidden={colapsada}
+                    inert={colapsada}
+                    style={{
+                      display: 'grid',
+                      gridTemplateRows: colapsada ? '0fr' : '1fr',
+                      opacity: colapsada ? 0 : 1,
+                      transition: 'grid-template-rows 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease',
+                    }}
+                  >
+                    <div style={{ overflow: 'hidden', minHeight: 0 }}>
+                      <div style={{ paddingTop: 12 }}>
+                        <ReorderableSection
+                          servicios={grupo.servicios}
+                          onEdit={id => router.push(`/configuracion/servicios/${id}`)}
+                          onToggle={handleToggle}
+                          onDelete={handleEliminar}
+                          onReorder={reordenarServicios}
+                        />
+                      </div>
                     </div>
-                  )}
+                  </div>
+                  {/* Separación entre categorías (antes la daba el gap del padre) */}
+                  <div style={{ height: 12 }} />
                 </div>
               );
             })
