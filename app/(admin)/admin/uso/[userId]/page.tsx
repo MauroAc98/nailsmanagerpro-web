@@ -1,12 +1,42 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
-import { ArrowLeft, CalendarCheck2, MessageCircle, Bell, TriangleAlert } from 'lucide-react';
-import { adminService, UsoDetalleNegocioResponse } from '@/services/adminService';
-import { colors, shadows, withAlpha } from '@/theme/colors';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps } from 'recharts';
+import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
+import { adminService, UsoDetalleNegocioResponse, UsoDia } from '@/services/adminService';
+import { FiltroPills } from '@/components/FiltroPills';
+import { Spinner } from '@/components/Spinner';
+import { TooltipCard } from '@/components/estadisticas/TooltipCard';
+import { diasDesde, formatFechaHora, formatUltimoTurno } from '@/lib/usoFechas';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const toISODate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+type Preset = '7d' | '30d' | 'mes' | 'otro';
+
+function calcularRango(preset: Exclude<Preset, 'otro'>): { desde: string; hasta: string } {
+  const hoy = new Date();
+  if (preset === 'mes') {
+    return { desde: toISODate(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), hasta: toISODate(hoy) };
+  }
+  const desde = new Date(hoy);
+  desde.setDate(hoy.getDate() - (preset === '7d' ? 6 : 29));
+  return { desde: toISODate(desde), hasta: toISODate(hoy) };
+}
+
+// Si el enlace trae desde/hasta que coinciden con un preset, lo marca; si no,
+// es un rango propio.
+function presetInicial(desde?: string, hasta?: string): Preset {
+  if (!desde || !hasta) return '30d';
+  for (const p of ['7d', '30d', 'mes'] as const) {
+    const r = calcularRango(p);
+    if (r.desde === desde && r.hasta === hasta) return p;
+  }
+  return 'otro';
+}
 
 function extraerMensajeError(e: unknown, fallback: string): string {
   if (isAxiosError(e)) {
@@ -15,91 +45,115 @@ function extraerMensajeError(e: unknown, fallback: string): string {
   return fallback;
 }
 
+// 'YYYY-MM-DD' -> '10 sep' sin pasar por Date (evita el corrimiento de huso).
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function formatFechaCorta(iso: string): string {
-  // iso es 'YYYY-MM-DD' — construir el Date con los componentes evita el
-  // corrimiento de un día que da `new Date('YYYY-MM-DD')` al interpretarlo
-  // como medianoche UTC y mostrarlo en un huso horario más atrasado.
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+  const [, m, d] = iso.split('-').map(Number);
+  return `${d} ${MESES[m - 1]}`;
 }
 
-const statCard = (valor: number, label: string, color: string, bg: string, Icon: typeof CalendarCheck2) => (
-  <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-    <div style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <Icon size={16} color={color} />
+const card: React.CSSProperties = {
+  backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, boxShadow: shadows.card, boxSizing: 'border-box',
+};
+
+const inputFecha: React.CSSProperties = {
+  flex: 1, minWidth: 0, height: 40, boxSizing: 'border-box', padding: '0 10px', borderRadius: 10, fontSize: 14,
+  border: `1px solid ${colors.border}`, backgroundColor: colors.surface, color: colors.text,
+};
+
+function Stat({ valor, label }: { valor: number; label: string }) {
+  return (
+    <div style={{ ...card, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
+      <span style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.1, color: colors.textStrong, whiteSpace: 'nowrap' }}>{valor}</span>
+      <span style={{ fontSize: 12, color: colors.subtext, textAlign: 'center' }}>{label}</span>
     </div>
-    <div style={{ minWidth: 0 }}>
-      <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textStrong }}>{valor}</p>
-      <p style={{ margin: 0, fontSize: 11, color: colors.subtext }}>{label}</p>
-    </div>
-  </div>
-);
+  );
+}
 
 export default function UsoDetalleNegocioPage() {
   const params = useParams();
+  const router = useRouter();
   const userId = Number(params.userId);
   const searchParams = useSearchParams();
-  const desde = searchParams.get('desde') ?? undefined;
-  const hasta = searchParams.get('hasta') ?? undefined;
+  const desdeParam = searchParams.get('desde') ?? undefined;
+  const hastaParam = searchParams.get('hasta') ?? undefined;
+
+  const [preset, setPreset] = useState<Preset>(() => presetInicial(desdeParam, hastaParam));
+  const [rango, setRango] = useState<{ desde: string; hasta: string }>(() => {
+    const p = presetInicial(desdeParam, hastaParam);
+    return p === 'otro' && desdeParam && hastaParam ? { desde: desdeParam, hasta: hastaParam } : calcularRango(p === 'otro' ? '30d' : p);
+  });
 
   const [data, setData] = useState<UsoDetalleNegocioResponse | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      const resultado = await adminService.obtenerUsoDetalleNegocio(userId, desde, hasta);
-      setData(resultado);
+      setData(await adminService.obtenerUsoDetalleNegocio(userId, rango.desde, rango.hasta));
     } catch (e: unknown) {
       setData(null);
       setError(extraerMensajeError(e, 'No se pudo cargar el detalle de uso.'));
     } finally {
       setCargando(false);
     }
+  }, [userId, rango.desde, rango.hasta]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const elegirPreset = (p: Preset) => {
+    setPreset(p);
+    if (p !== 'otro') setRango(calcularRango(p));
   };
 
-  // cargar se redefine cada render (cierra sobre userId/desde/hasta) — sumarla
-  // a las deps dispararía el efecto en loop. Mismo criterio que UsoPage.
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
-  useEffect(() => {
-    cargar();
-  }, [userId, desde, hasta]);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  const cambiarFecha = (campo: 'desde' | 'hasta', valor: string) => {
+    const nuevo = { ...rango, [campo]: valor };
+    if (nuevo.desde && nuevo.hasta && nuevo.desde <= nuevo.hasta) setRango(nuevo);
+    else setRango(r => ({ ...r, [campo]: valor }));
+  };
 
-  const maxTotal = useMemo(() => {
-    if (!data) return 1;
-    return Math.max(1, ...data.dias.map((d) => d.turnos + d.confirmaciones + d.recordatorios));
-  }, [data]);
+  const dias = data ? diasDesde(data.ultimo_turno_epoch) : null;
+  const ultimoTurno = !data || data.ultimo_turno_epoch === null
+    ? 'Nunca agendó un turno'
+    : `Último turno: ${formatUltimoTurno(data.ultimo_turno_epoch)} · ${dias === 0 ? 'hoy' : `hace ${dias} ${dias === 1 ? 'día' : 'días'}`}`;
 
-  const qs = useMemo(() => {
-    const p = new URLSearchParams();
-    if (desde) p.set('desde', desde);
-    if (hasta) p.set('hasta', hasta);
-    return p.toString();
-  }, [desde, hasta]);
+  const tooltip = (props: TooltipContentProps) => {
+    if (!props.active || !props.payload?.length) return null;
+    const d = props.payload[0].payload as UsoDia;
+    return <TooltipCard title={formatFechaCorta(d.fecha)} rows={[{ label: 'Turnos', value: String(d.turnos), color: colors.primary }]} />;
+  };
+
+  const fallos = useMemo(() => data?.fallos_recientes ?? [], [data]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', backgroundColor: colors.background }}>
-      <div style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column' }}>
-        <Link
-          href={qs ? `/uso?${qs}` : '/uso'}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.subtext, textDecoration: 'none', marginBottom: 20 }}
-        >
-          <ArrowLeft size={16} />
-          Volver a todos los negocios
-        </Link>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.background, color: colors.text }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', paddingBottom: 32 }}>
+        <div style={{ padding: '12px 20px 0' }}>
+          <Link
+            href="/uso"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 44, fontSize: 14, color: colors.subtext, textDecoration: 'none' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.subtext} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+            Uso de la app
+          </Link>
+        </div>
 
-        {cargando && <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', padding: '16px 0' }}>Cargando...</p>}
+        {cargando && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+            <Spinner size={32} label="Cargando detalle" />
+          </div>
+        )}
 
         {!cargando && error && (
-          <div style={{ padding: '12px 16px', borderRadius: 12, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}`, display: 'flex', flexDirection: 'column', gap: 10 }} role="alert">
+          <div style={{ margin: '12px 20px 0', padding: '12px 16px', borderRadius: 12, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}`, display: 'flex', flexDirection: 'column', gap: 10 }} role="alert">
             <p style={{ fontSize: 13, fontWeight: 500, color: colors.danger, margin: 0 }}>{error}</p>
             <button
               type="button"
               onClick={cargar}
-              style={{ alignSelf: 'flex-start', padding: '8px 14px', borderRadius: 10, border: `1px solid ${colors.dangerBorder}`, backgroundColor: 'transparent', color: colors.danger, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={{ alignSelf: 'flex-start', padding: '8px 14px', minHeight: 36, borderRadius: 10, border: `1px solid ${colors.dangerBorder}`, backgroundColor: 'transparent', color: colors.danger, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               Reintentar
             </button>
@@ -108,90 +162,94 @@ export default function UsoDetalleNegocioPage() {
 
         {!cargando && !error && data && (
           <>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.textStrong, margin: 0 }}>{data.nombre ?? `Negocio #${data.user_id}`}</h1>
-              <span style={{ fontSize: 12.5, color: colors.subtext }}>{formatFechaCorta(data.desde)} — {formatFechaCorta(data.hasta)}</span>
+            <div style={{ padding: '4px 20px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0, overflowWrap: 'anywhere' }}>
+                {data.nombre ?? `Negocio #${data.user_id}`}
+              </h1>
+              <span style={{ fontSize: 14, color: colors.subtext }}>{ultimoTurno}</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-              {statCard(data.totales.turnos, 'Turnos agendados', colors.chart1, withAlpha(colors.chart1, '22'), CalendarCheck2)}
-              {statCard(data.totales.confirmaciones, 'Confirmaciones', colors.chart2, withAlpha(colors.chart2, '22'), MessageCircle)}
-              {statCard(data.totales.recordatorios, 'Recordatorios', '#8b5cf6', 'rgba(139,92,246,0.14)', Bell)}
-              {statCard(data.totales.fallos, 'Mensajes fallidos', colors.danger, colors.dangerBg, TriangleAlert)}
+            <div style={{ padding: '0 20px 12px', overflowX: 'auto' }}>
+              <FiltroPills
+                ariaLabel="Período"
+                options={[
+                  { value: '7d', label: '7 días' },
+                  { value: '30d', label: '30 días' },
+                  { value: 'mes', label: 'Este mes' },
+                  { value: 'otro', label: 'Otro rango' },
+                ]}
+                value={preset}
+                onChange={elegirPreset}
+              />
             </div>
 
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, boxShadow: shadows.card, padding: '16px 14px', marginBottom: 18 }}>
-              <p style={{ margin: '0 0 12px', fontSize: 12.5, fontWeight: 700, color: colors.textStrong }}>Actividad por día</p>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 110 }}>
-                {data.dias.map((d) => {
-                  const total = d.turnos + d.confirmaciones + d.recordatorios;
-                  const altoTotal = Math.max(3, Math.round((total / maxTotal) * 100));
-                  const altoTurnos = total > 0 ? Math.round((d.turnos / total) * altoTotal) : 0;
-                  const altoConfirmaciones = total > 0 ? Math.round((d.confirmaciones / total) * altoTotal) : 0;
-                  const altoRecordatorios = altoTotal - altoTurnos - altoConfirmaciones;
-                  return (
-                    <Link
-                      key={d.fecha}
-                      href={`/uso/${userId}/dia?fecha=${d.fecha}`}
-                      title={`${formatFechaCorta(d.fecha)}: ${d.turnos} turnos, ${d.confirmaciones + d.recordatorios} mensajes${d.fallos > 0 ? `, ${d.fallos} fallidos` : ''}`}
-                      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }}
-                    >
-                      {d.fallos > 0 && <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: colors.danger, marginBottom: 2, flexShrink: 0 }} />}
-                      <div style={{ width: '100%', maxWidth: 10, display: 'flex', flexDirection: 'column-reverse', borderRadius: 2, overflow: 'hidden', height: altoTotal }}>
-                        <div style={{ width: '100%', backgroundColor: colors.chart1, height: altoTurnos }} />
-                        <div style={{ width: '100%', backgroundColor: colors.chart2, height: altoConfirmaciones }} />
-                        <div style={{ width: '100%', backgroundColor: '#8b5cf6', height: altoRecordatorios }} />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: colors.subtext }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: colors.chart1 }} /> Turnos
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: colors.subtext }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: colors.chart2 }} /> Confirmaciones
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: colors.subtext }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: '#8b5cf6' }} /> Recordatorios
-                </span>
-              </div>
-              <p style={{ margin: '8px 0 0', fontSize: 11, color: colors.subtext }}>Tocá un día para ver el detalle por hora.</p>
-            </div>
-
-            {data.fallos_recientes.length > 0 && (
-              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, boxShadow: shadows.card, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 14px 10px' }}>
-                  <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: colors.textStrong }}>Mensajes fallidos recientes</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 11, color: colors.subtext }}>El motivo exacto lo informa Meta al momento del fallo.</p>
-                </div>
-                {data.fallos_recientes.map((f, i) => (
-                  <div key={i} style={{ padding: '12px 14px', borderTop: `1px solid ${colors.divider}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, color: colors.subtext }}>{formatFechaCorta(f.fecha)}</span>
-                      <span
-                        style={{
-                          fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
-                          color: f.tipo === 'confirmacion' ? '#b5541d' : '#5b3fa3',
-                          backgroundColor: f.tipo === 'confirmacion' ? withAlpha(colors.chart2, '22') : 'rgba(139,92,246,0.14)',
-                        }}
-                      >
-                        {f.tipo === 'confirmacion' ? 'Confirmación' : 'Recordatorio'}
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: f.origen === 'meta' ? colors.subtext : colors.danger }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: f.origen === 'meta' ? colors.subtext : colors.danger }} />
-                        {f.origen === 'meta' ? 'Meta' : 'Nuestro lado'}
-                      </span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 13, color: colors.textStrong }}>
-                      {f.motivo}
-                      {f.codigo !== null && <span style={{ fontSize: 11, color: colors.subtext }}> · código {f.codigo}</span>}
-                    </p>
-                  </div>
-                ))}
+            {preset === 'otro' && (
+              <div style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
+                <input type="date" aria-label="Desde" value={rango.desde} max={rango.hasta || undefined} onChange={e => cambiarFecha('desde', e.target.value)} style={inputFecha} />
+                <input type="date" aria-label="Hasta" value={rango.hasta} min={rango.desde || undefined} onChange={e => cambiarFecha('hasta', e.target.value)} style={inputFecha} />
               </div>
             )}
+
+            <div style={{ padding: '4px 20px 16px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+              <Stat valor={data.totales.turnos} label="Turnos" />
+              <Stat valor={data.totales.confirmaciones} label="Confirmaciones" />
+              <Stat valor={data.totales.recordatorios} label="Recordatorios" />
+            </div>
+
+            <div style={{ padding: '0 20px 16px' }}>
+              <div style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: colors.text }}>Turnos agendados por día</p>
+                <div style={{ height: 90, width: '100%', touchAction: 'pan-y' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data.dias} title="Turnos agendados por día" margin={{ top: 4, right: 0, left: 0, bottom: 0 }} barCategoryGap="12%">
+                      <XAxis dataKey="fecha" hide />
+                      <YAxis hide allowDecimals={false} />
+                      <Tooltip content={tooltip} cursor={{ fill: colors.surfaceSubtle }} />
+                      <Bar
+                        dataKey="turnos"
+                        fill={colors.primary}
+                        radius={[2, 2, 0, 0]}
+                        minPointSize={2}
+                        isAnimationActive="auto"
+                        onClick={(_: unknown, i: number) => router.push(`/uso/${userId}/dia?fecha=${data.dias[i].fecha}`)}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: colors.muted }}>
+                  <span>{formatFechaCorta(data.desde)}</span>
+                  <span>{formatFechaCorta(data.hasta)}</span>
+                </div>
+                <p style={{ margin: 0, fontSize: 11, color: colors.muted }}>Tocá una barra para ver el detalle por hora.</p>
+              </div>
+            </div>
+
+            <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ margin: '0 0 0 4px', fontSize: 13, color: colors.subtext }}>
+                {data.totales.fallos === 0
+                  ? 'Sin mensajes fallidos'
+                  : `${data.totales.fallos} ${data.totales.fallos === 1 ? 'mensaje fallido' : 'mensajes fallidos'}`}
+              </p>
+              {fallos.map((f, i) => {
+                const { fecha, hora } = formatFechaHora(f.epoch);
+                return (
+                  <div key={i} style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text, minWidth: 0 }}>{fecha}</p>
+                      <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, backgroundColor: colors.surfaceSubtle, color: colors.text }}>
+                        {f.tipo === 'confirmacion' ? 'Confirmación' : 'Recordatorio'}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: colors.subtext }}>{hora} hs</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.text, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{f.motivo}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: colors.muted }}>
+                      {f.origen === 'meta' ? 'Origen: Meta' : 'Origen: nuestro lado'}
+                      {f.codigo !== null && ` · código ${f.codigo}`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
       </div>
