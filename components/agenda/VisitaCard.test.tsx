@@ -62,11 +62,18 @@ describe('VisitaCard · contenido', () => {
     expect(screen.getByText('2 servicios agendados juntos')).toBeInTheDocument();
   });
 
-  it('un paso completado se marca como Listo', () => {
+  it('un paso completado lleva la etiqueta FINALIZADO, como un turno suelto', () => {
     const tramos = [{ ...TRAMOS[0], estado: 'completado' as const }, TRAMOS[1]];
     renderWithProviders(<VisitaCard visita={armar({ tramos, over: { 1: { estado: 'completado', estado_visual: 'completado' } } })} profesionalDe={profesionalDe} {...props()} />);
 
-    expect(within(screen.getByRole('button', { name: /Capping/ })).getByText('Listo')).toBeInTheDocument();
+    expect(screen.getAllByText('FINALIZADO')).toHaveLength(1);
+    expect(screen.queryByText('Listo')).not.toBeInTheDocument();
+  });
+
+  it('un paso que la agenda muestra como completado tambien lleva FINALIZADO', () => {
+    renderWithProviders(<VisitaCard visita={armar({ over: { 1: { estado_visual: 'completado' } } })} profesionalDe={profesionalDe} {...props()} />);
+
+    expect(screen.getAllByText('FINALIZADO')).toHaveLength(1);
   });
 
   it('un paso de otro dia se ve con su fecha y no se puede abrir', () => {

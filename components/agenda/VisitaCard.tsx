@@ -140,7 +140,7 @@ function FilaPaso({
 }) {
   const t = useTranslations('agenda.VisitaCard');
   const nombre = profesional?.nombre ?? paso.profesionalNombre ?? '';
-  const completado = paso.estado === 'completado';
+  const completado = paso.estado === 'completado' || paso.turno?.estado_visual === 'completado';
   const apagado = paso.otroDia || completado || paso.propio === false;
   const color = profesional?.color || colors.primary;
   const servicio = paso.servicios.join(' + ');
@@ -167,12 +167,6 @@ function FilaPaso({
         <span style={{ fontFamily: agendaFontSerif, fontStyle: 'italic', fontSize: 13, color: colors.subtext, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {servicio}
         </span>
-        {completado && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3, color: colors.success }}>
-            <Check size={11} strokeWidth={3} aria-hidden="true" />
-            {t('listo')}
-          </span>
-        )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
         <span style={{
@@ -223,7 +217,19 @@ function FilaPaso({
         {columnaHora}
         <div style={{ width: 1, alignSelf: 'stretch', backgroundColor: colors.divider }} />
         {detalle}
-        {!onFinalizar && <ChevronRight size={20} color={colors.muted} strokeWidth={2} aria-hidden="true" style={{ flexShrink: 0, marginRight: 12 }} />}
+        {completado ? (
+          // Misma pastilla que la tarjeta de un turno suelto finalizado.
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, marginRight: 12,
+            fontSize: 9, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 0.6, textTransform: 'uppercase',
+            backgroundColor: colors.primarySoft, borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
+          }}>
+            <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} aria-hidden="true" />
+            {t('finalizado')}
+          </span>
+        ) : !onFinalizar && (
+          <ChevronRight size={20} color={colors.muted} strokeWidth={2} aria-hidden="true" style={{ flexShrink: 0, marginRight: 12 }} />
+        )}
       </button>
       {onFinalizar && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, padding: '0 12px 0 8px', flexShrink: 0 }}>
