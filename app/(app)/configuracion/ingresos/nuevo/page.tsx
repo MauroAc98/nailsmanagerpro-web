@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import SelectorProfesionalONegocio from '@/components/SelectorProfesionalONegocio';
+import { profesionalInicialId } from '@/lib/profesionalInicial';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { useIngresosStore } from '@/store/useIngresoStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -60,7 +60,7 @@ export default function NuevoIngresoPage() {
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
-  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null | undefined>(undefined);
   const [errorMonto, setErrorMonto] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -73,9 +73,12 @@ export default function NuevoIngresoPage() {
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
 
-  const handleSeleccionarProfesional = (id: number) => {
-    setSelectedProfesionalId(prev => prev === id ? null : id);
-  };
+  // Default = la jefa apenas cargan las profesionales, mientras no haya
+  // elegido nada (undefined). null = "Del negocio".
+  const profesionalElegido = selectedProfesionalId === undefined
+    ? profesionalInicialId(profesionales)
+    : selectedProfesionalId;
+
 
   const handleGuardar = async () => {
     if (!fecha) {
@@ -98,8 +101,8 @@ export default function NuevoIngresoPage() {
       monto: montoNumerico,
       categoria,
       descripcion: descripcion.trim() ? descripcion.trim() : undefined,
-      ...(mostrarSelectorProfesional && selectedProfesionalId
-        ? { profesional_id: selectedProfesionalId }
+      ...(mostrarSelectorProfesional && profesionalElegido
+        ? { profesional_id: profesionalElegido }
         : {}),
     });
     setSaving(false);
@@ -184,36 +187,12 @@ export default function NuevoIngresoPage() {
         {mostrarSelectorProfesional && (
           <div>
             <label style={labelStyle}>{t('professionalLabel')}</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {activeProfesionales.map(p => {
-                const selected = selectedProfesionalId === p.id;
-                const color = p.color || colors.primary;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSeleccionarProfesional(p.id)}
-                    style={{ ...chipStyle(selected, color), padding: '4px 16px 4px 4px' }}
-                  >
-                    <span style={{
-                      width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 800,
-                      backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
-                      color: selected ? '#fff' : color,
-                    }}>
-                      {p.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        inicialesProfesional(p.nombre, p.apellido)
-                      )}
-                    </span>
-                    {p.nombre}
-                  </button>
-                );
-              })}
-            </div>
+            <SelectorProfesionalONegocio
+              profesionales={activeProfesionales}
+              value={profesionalElegido}
+              onChange={setSelectedProfesionalId}
+              labelNegocio={t('businessOption')}
+            />
             <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
               {t('professionalHint')}
             </p>

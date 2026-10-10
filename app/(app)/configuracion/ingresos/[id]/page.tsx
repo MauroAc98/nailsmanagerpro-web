@@ -5,8 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import SelectorProfesionalONegocio from '@/components/SelectorProfesionalONegocio';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { useIngresosStore } from '@/store/useIngresoStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -93,9 +92,6 @@ export default function EditarIngresoPage() {
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
 
-  const handleSeleccionarProfesional = (pid: number) => {
-    setSelectedProfesionalId(prev => prev === pid ? null : pid);
-  };
 
   // Lista del salón (o set de fábrica) + la categoría ya guardada del
   // ingreso si quedó fuera de esa lista (la borraron) — así el chip sigue
@@ -246,36 +242,12 @@ export default function EditarIngresoPage() {
         {mostrarSelectorProfesional && (
           <div>
             <label style={labelStyle}>{t('professionalLabel')}</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {activeProfesionales.map(p => {
-                const selected = selectedProfesionalId === p.id;
-                const color = p.color || colors.primary;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSeleccionarProfesional(p.id)}
-                    style={{ ...chipStyle(selected, color), padding: '4px 16px 4px 4px' }}
-                  >
-                    <span style={{
-                      width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 800,
-                      backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
-                      color: selected ? '#fff' : color,
-                    }}>
-                      {p.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        inicialesProfesional(p.nombre, p.apellido)
-                      )}
-                    </span>
-                    {p.nombre}
-                  </button>
-                );
-              })}
-            </div>
+            <SelectorProfesionalONegocio
+              profesionales={activeProfesionales}
+              value={selectedProfesionalId}
+              onChange={setSelectedProfesionalId}
+              labelNegocio={t('businessOption')}
+            />
             <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
               {t('professionalHint')}
             </p>
