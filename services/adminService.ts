@@ -128,6 +128,8 @@ export interface MercadoPagoConexionCreada {
 export interface UsoNegocioResumen {
   user_id: number;
   nombre: string | null;
+  // Unix seconds del turno más reciente; null si nunca agendó uno.
+  ultimo_turno_epoch: number | null;
   turnos: number;
   confirmaciones: number;
   recordatorios: number;
@@ -153,6 +155,8 @@ export type UsoFalloOrigen = 'meta' | 'nuestro';
 
 export interface UsoFalloReciente {
   fecha: string;
+  // Unix seconds del fallo (hora exacta; `fecha` es solo el día).
+  epoch: number;
   tipo: UsoMensajeTipo;
   origen: UsoFalloOrigen;
   motivo: string;
@@ -169,6 +173,7 @@ export interface UsoTotales {
 export interface UsoDetalleNegocioResponse {
   user_id: number;
   nombre: string | null;
+  ultimo_turno_epoch: number | null;
   desde: string;
   hasta: string;
   totales: UsoTotales;
