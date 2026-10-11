@@ -30,6 +30,13 @@ export function formatMonto(monto: number): string {
   }).format(monto);
 }
 
+// Monto redondeado a pesos, para vistazos rápidos (el resumen del mes en la
+// Agenda) donde los centavos solo agregan ruido. El detalle sigue con
+// formatMonto.
+export function formatMontoEntero(monto: number): string {
+  return new Intl.NumberFormat(localeMonto(), { maximumFractionDigits: 0 }).format(monto);
+}
+
 // Porcentaje (p. ej. el de la seña): sin ceros finales, hasta dos decimales.
 // No es un monto: "30" y "12,5", no "30,00".
 export function formatPorcentaje(valor: number): string {

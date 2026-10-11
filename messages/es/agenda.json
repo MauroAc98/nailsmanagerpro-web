@@ -255,14 +255,15 @@
     "readyButton": "Listo"
   },
   "ResumenMesCard": {
-    "monthToDate": "{mes} · hasta hoy",
-    "collected": "Cobrado",
-    "vsMonth": "{pct}% vs. {mes}",
-    "attended": "turnos atendidos",
-    "upcoming": "turnos por venir",
-    "cancelled": "cancelados",
-    "topService": "El más pedido",
-    "newClients": "clientes nuevos",
+    "summaryOf": "Resumen de {mes}",
+    "collected": "cobrado",
+    "moreThan": "más que {mes}",
+    "lessThan": "menos que {mes}",
+    "attended": "{count, plural, one {atendido} other {atendidos}}",
+    "upcoming": "por venir",
+    "newClients": "{count, plural, one {cliente nuevo} other {clientes nuevos}}",
+    "cancelled": "{count, plural, one {cancelado} other {cancelados}}",
+    "topServiceLabel": "Más pedido:",
     "hideAmount": "Ocultar monto",
     "showAmount": "Mostrar monto"
   },

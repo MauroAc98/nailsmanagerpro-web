@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Sparkles, ArrowUpRight, Eye, EyeOff, ChevronUp, ChevronDown, Star, UserPlus } from 'lucide-react';
+import { Sparkles, ArrowUpRight, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { agendaColors, agendaShadows, agendaFontSerif } from '@/theme/agendaColors';
 import { statsService, DashboardStats } from '@/services/statsService';
 import { nombreMes, formatoYMD } from '@/lib/dateFormat';
-import { formatMonto } from '@/lib/money';
+import { formatMontoEntero } from '@/lib/money';
 import { rangoMesAnteriorMismoPeriodo, variacionPorcentual } from '@/lib/estadisticas/metricas';
 import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 
@@ -16,6 +16,18 @@ import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 // cuando `d` no es medianoche local.
 function formatFecha(d: Date): string {
   return formatoYMD(d);
+}
+
+// Con qué se compara lo cobrado: el mes en curso contra los mismos días del
+// mes pasado (lo que va del mes); un mes cerrado contra el anterior entero.
+// El texto no lo aclara ("10% más que septiembre") para que entre corto.
+function rangoDeComparacion(viewDate: Date, hoy: Date): { desde: string; hasta: string } {
+  const mismoTramo = rangoMesAnteriorMismoPeriodo(viewDate, hoy);
+  if (mismoTramo) return { desde: mismoTramo.desde, hasta: mismoTramo.hasta };
+  return {
+    desde: formatFecha(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)),
+    hasta: formatFecha(new Date(viewDate.getFullYear(), viewDate.getMonth(), 0)),
+  };
 }
 
 interface Props {
@@ -28,28 +40,11 @@ interface Props {
   viewDate: Date;
 }
 
-// Con qué se compara lo cobrado: el mes en curso contra el mismo tramo del
-// mes anterior (día 1 a hoy); un mes cerrado contra el mes anterior entero.
-function rangoDeComparacion(viewDate: Date, hoy: Date): { desde: string; hasta: string } {
-  const mismoTramo = rangoMesAnteriorMismoPeriodo(viewDate, hoy);
-  if (mismoTramo) return mismoTramo;
-  return {
-    desde: formatFecha(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)),
-    hasta: formatFecha(new Date(viewDate.getFullYear(), viewDate.getMonth(), 0)),
-  };
-}
-
-const recuadro: React.CSSProperties = {
-  borderRadius: 14, padding: '10px 12px', boxSizing: 'border-box',
-  backgroundColor: `color-mix(in srgb, ${agendaColors.surface} 75%, transparent)`,
-  border: `1px solid color-mix(in srgb, ${agendaColors.primary} 15%, transparent)`,
-};
-
 // ─────────────────────────────────────────────
 // ResumenMesCard — vistazo rápido del mes en el home (Agenda), sin repetir
-// el detalle completo que ya vive en Configuración → Estadísticas. Todo lo
-// que muestra habla de turnos: lo cobrado, cuántos se atendieron, cuántos
-// faltan y los destacados. La ganancia con gastos queda en Estadísticas.
+// el detalle completo que ya vive en Configuración → Estadísticas. Tiene que
+// seguir siendo compacto: arriba de la semana, nunca la empuja fuera de la
+// pantalla.
 // ─────────────────────────────────────────────
 export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   const router = useRouter();
@@ -65,13 +60,10 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   // un stats "stale" nunca pasa el chequeo del render aunque la request
   // todavía no haya resuelto o haya fallado.
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
-  // Lo cobrado en el período de comparación, con la misma clave: la
-  // comparación es opcional y nunca se muestra contra otro mes.
+  // Lo cobrado en el período de comparación, con la misma clave que `stats`:
+  // es opcional y nunca se muestra contra el mes equivocado.
   const [previo, setPrevio] = useState<{ key: string; ganancias: number } | null>(null);
   const [ocultarMonto, toggleOcultarMonto] = useOcultarMonto();
-
-  const hoy = new Date();
-  const esMesActual = viewDate.getFullYear() === hoy.getFullYear() && viewDate.getMonth() === hoy.getMonth();
 
   const statsKey = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
 
@@ -80,12 +72,12 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
     const desde = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     const hasta = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
     const key = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
-    const comparacion = rangoDeComparacion(viewDate, new Date());
 
     statsService.getDashboard(formatFecha(desde), formatFecha(hasta), profesionalId ?? undefined)
       .then(data => { if (!cancelled) { setStats(data); setLoadedKey(key); } })
       .catch(e => console.error('ResumenMesCard:', e));
 
+    const comparacion = rangoDeComparacion(viewDate, new Date());
     statsService.getDashboard(comparacion.desde, comparacion.hasta, profesionalId ?? undefined)
       .then(data => { if (!cancelled) setPrevio({ key, ganancias: data.ganancias }); })
       .catch(() => { /* la comparación es opcional: sin ella el card funciona igual */ });
@@ -99,26 +91,32 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   if (!stats || loadedKey !== statsKey || stats.total_turnos === 0) return null;
 
   const topServicio = stats.servicios_mas_pedidos[0]?.nombre;
+  const { completados, confirmados, cancelados } = stats.turnos_por_estado;
   const variacion = previo?.key === statsKey ? variacionPorcentual(stats.ganancias, previo.ganancias) : null;
-  const mesPrevio = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
-  const mes = nombreMes(viewDate, 'long');
+  const mesPrevio = nombreMes(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1), 'long', 'ninguna');
 
+  const divisor = `1px solid color-mix(in srgb, ${agendaColors.primary} 15%, transparent)`;
+  // Los números del mes, cada uno con su rótulo debajo. Atendidos =
+  // completados; por venir = confirmados (los vencidos se completan solos, ver
+  // turnos:completar-vencidos). Antes acá iba total_turnos, que sumaba los
+  // confirmados como completados.
   const numeros = [
-    { valor: stats.turnos_por_estado.completados, etiqueta: t('attended'), color: agendaColors.strong },
-    { valor: stats.turnos_por_estado.confirmados, etiqueta: t('upcoming'), color: agendaColors.strong },
-    { valor: stats.turnos_por_estado.cancelados, etiqueta: t('cancelled'), color: agendaColors.muted },
+    { valor: completados, rotulo: t('attended', { count: completados }) },
+    { valor: confirmados, rotulo: t('upcoming') },
+    { valor: stats.clientes.nuevas, rotulo: t('newClients', { count: stats.clientes.nuevas }) },
+    { valor: cancelados, rotulo: t('cancelled', { count: cancelados }) },
   ];
 
   return (
     <button
       onClick={() => {
-        const mesParam = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
-        const params = new URLSearchParams({ mes: mesParam });
+        const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
+        const params = new URLSearchParams({ mes });
         if (profesionalId != null) params.set('profesional', String(profesionalId));
         router.push(`/configuracion/estadisticas?${params.toString()}`);
       }}
       style={{
-        display: 'block', width: '100%', margin: '0 0 12px', padding: 18,
+        display: 'block', width: '100%', margin: '0 0 12px', padding: '12px 14px',
         background: `linear-gradient(135deg, ${agendaColors.primarySoft}, ${agendaColors.surface})`,
         border: `1px solid color-mix(in srgb, ${agendaColors.primary} 25%, transparent)`,
         boxShadow: agendaShadows.card, borderRadius: 24, cursor: 'pointer', textAlign: 'left',
@@ -126,98 +124,86 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <Sparkles size={14} color={agendaColors.primaryDeep} strokeWidth={2.5} />
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: agendaColors.primaryDeep, textTransform: 'uppercase' }}>
-            {esMesActual ? t('monthToDate', { mes }) : mes}
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: agendaColors.primaryDeep, textTransform: 'uppercase' }}>
+            {t('summaryOf', { mes: nombreMes(viewDate, 'long', 'ninguna') })}
           </p>
         </div>
         <ArrowUpRight size={18} color={agendaColors.primaryDeep} strokeWidth={2} style={{ flexShrink: 0 }} />
       </div>
 
-      {/* Lo principal: cuánto se cobró, y si viene mejor o peor que antes. */}
-      <div style={{ marginTop: 14 }}>
-        <p style={{ margin: '0 0 6px', fontSize: 12, color: agendaColors.sub }}>{t('collected')}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* El monto es el dato principal — nunca se comprime. */}
-          <p style={{ margin: 0, flexShrink: 0, fontSize: 32, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong, whiteSpace: 'nowrap' }}>
-            {ocultarMonto
-              // Fila de puntos de ancho fijo (no un input type=password
-              // ni un blur) — el patrón que usan Mercado Pago/Ualá para
-              // tapar saldo. El "$" queda al tamaño real; solo los puntos
-              // van más chicos.
-              ? <>${' '}<span style={{ fontSize: 20, fontWeight: 400, letterSpacing: 3 }}>●●●●●</span></>
-              : `$${formatMonto(stats.ganancias)}`}
-          </p>
-          <span
-            onClick={toggleOcultarMonto}
-            role="button"
-            aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
-            style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4, flexShrink: 0 }}
-          >
-            {ocultarMonto
-              ? <EyeOff size={16} color={agendaColors.sub} strokeWidth={2} />
-              : <Eye size={16} color={agendaColors.sub} strokeWidth={2} />}
-          </span>
-          <span style={{ flex: 1 }} />
-          {variacion !== null && !ocultarMonto && (
+      {/* 1) Lo principal: cuánto se cobró y cómo viene contra el mes pasado.
+          Mismo patrón que el resto del card: dato arriba, rótulo chico abajo. */}
+      <div style={{ marginTop: 8, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: 26, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong, fontVariantNumeric: 'tabular-nums' }}>
+              {ocultarMonto
+                // Fila de puntos de ancho fijo (no un input type=password
+                // ni un blur) — el patrón que usan Mercado Pago/Ualá para
+                // tapar saldo. El "$" queda al tamaño real (28, mismo que
+                // con el monto visible) — solo los puntos van más chicos;
+                // meterlo todo en un span más chico (intento anterior)
+                // encogía el "$" también, que se veía raro/inconsistente.
+                ? <>${' '}<span style={{ fontSize: 20, fontWeight: 400, letterSpacing: 3 }}>●●●●●</span></>
+                : `$${formatMontoEntero(stats.ganancias)}`}
+            </p>
+            <span
+              onClick={toggleOcultarMonto}
+              role="button"
+              aria-label={ocultarMonto ? t('showAmount') : t('hideAmount')}
+              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 4, margin: -4 }}
+            >
+              {ocultarMonto
+                ? <EyeOff size={16} color={agendaColors.sub} strokeWidth={2} />
+                : <Eye size={16} color={agendaColors.sub} strokeWidth={2} />}
+            </span>
+          </div>
+          <span style={{ display: 'block', marginTop: 2, fontSize: 11, color: agendaColors.sub }}>{t('collected')}</span>
+        </div>
+        {/* Se oculta junto con el monto: un porcentaje deja adivinar la plata. */}
+        {variacion !== null && !ocultarMonto && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 0 }}>
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0, whiteSpace: 'nowrap',
-              borderRadius: 20, padding: '3px 8px 3px 5px', fontSize: 11, fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', gap: 2, borderRadius: 20, padding: '3px 9px 3px 6px',
+              fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
               backgroundColor: variacion >= 0 ? agendaColors.successBg : agendaColors.amberBg,
               color: variacion >= 0 ? agendaColors.success : agendaColors.amberFg,
             }}>
-              {variacion >= 0 ? <ChevronUp size={12} strokeWidth={3} /> : <ChevronDown size={12} strokeWidth={3} />}
-              {t('vsMonth', { pct: Math.abs(variacion), mes: nombreMes(mesPrevio, 'short', 'ninguna').replace('.', '') })}
+              {variacion >= 0 ? <ChevronUp size={13} strokeWidth={3} /> : <ChevronDown size={13} strokeWidth={3} />}
+              {`${Math.abs(variacion)}%`}
             </span>
-          )}
-        </div>
+            <span style={{ marginTop: 2, fontSize: 11, color: agendaColors.sub, textAlign: 'right' }}>
+              {t(variacion >= 0 ? 'moreThan' : 'lessThan', { mes: mesPrevio })}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Cómo viene el mes en turnos: cada número con su palabra. */}
-      <div style={{
-        marginTop: 16, paddingTop: 14, display: 'flex', gap: 8,
-        borderTop: `1px solid color-mix(in srgb, ${agendaColors.primary} 15%, transparent)`,
-      }}>
-        {numeros.map(n => (
-          <div key={n.etiqueta} style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', fontSize: 20, fontWeight: 700, lineHeight: 1.1, color: n.color }}>{n.valor}</span>
-            <span style={{ display: 'block', marginTop: 2, fontSize: 11, color: agendaColors.sub }}>{n.etiqueta}</span>
+      {/* 2) Los números del mes: cuatro conteos en columnas. Cada columna
+          toma el ancho de su rótulo (en un renglón): con columnas iguales
+          "clientes nuevos" bajaba a dos y el card crecía. */}
+      <div style={{ marginTop: 10, paddingTop: 8, borderTop: divisor, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+        {numeros.map((n, i) => (
+          <div key={i} style={{ flex: '0 1 auto', minWidth: 0, ...(i > 0 ? { paddingLeft: 10, borderLeft: divisor } : {}) }}>
+            <span style={{ display: 'block', fontSize: 16, fontWeight: 600, lineHeight: 1.15, color: agendaColors.strong, fontVariantNumeric: 'tabular-nums' }}>
+              {n.valor}
+            </span>
+            <span style={{ display: 'block', marginTop: 1, fontSize: 11, lineHeight: 1.25, color: agendaColors.sub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.rotulo}</span>
           </div>
         ))}
       </div>
 
-      {/* Destacados. El servicio más pedido (nombre cargado por el usuario,
-          puede ser largo) se lee completo: baja de renglón en vez de
-          cortarse. Clientes nuevos va al costado, chico y fijo. */}
-      <div style={{ marginTop: 14, display: 'flex', alignItems: 'stretch', gap: 8 }}>
-        {topServicio && (
-          <div style={{ ...recuadro, flex: 1, minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <span style={{
-              flexShrink: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: agendaColors.primarySoft,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Star size={14} color={agendaColors.primaryDeep} strokeWidth={2} />
-            </span>
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 11, color: agendaColors.sub }}>{t('topService')}</span>
-              <span style={{ display: 'block', marginTop: 1, fontSize: 13, fontWeight: 700, lineHeight: 1.3, color: agendaColors.strong, overflowWrap: 'anywhere' }}>
-                {topServicio}
-              </span>
-            </span>
-          </div>
-        )}
-        <div style={{
-          ...recuadro, flexShrink: 0, width: topServicio ? 92 : '100%',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 16, fontWeight: 700, color: agendaColors.strong }}>
-            <UserPlus size={14} color={agendaColors.primaryDeep} strokeWidth={2} />
-            {stats.clientes.nuevas}
-          </span>
-          <span style={{ display: 'block', marginTop: 2, fontSize: 11, lineHeight: 1.2, color: agendaColors.sub }}>{t('newClients')}</span>
-        </div>
-      </div>
+      {/* 3) El más pedido, en un renglón: "Más pedido: <servicio>". Es texto
+          libre de largo variable: va último y a lo ancho, y si no entra baja
+          de renglón sin desalinear nada ni cortarse. */}
+      {topServicio && (
+        <p style={{ margin: '8px 0 0', paddingTop: 8, borderTop: divisor, fontSize: 13, lineHeight: 1.35, color: agendaColors.sub, overflowWrap: 'anywhere' }}>
+          {t('topServiceLabel')}{' '}
+          <span style={{ fontWeight: 600, color: agendaColors.strong }}>{topServicio}</span>
+        </p>
+      )}
     </button>
   );
 }
