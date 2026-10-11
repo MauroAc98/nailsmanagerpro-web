@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Turno } from '@/services/turnoService';
 import {
   agruparPorSemana,
+  cuandoFue,
   estimadoAPrecioDeLista,
   ordenarPendientes,
   resumenParaBanner,
@@ -80,40 +81,83 @@ describe('agruparPorSemana', () => {
 });
 
 describe('resumenParaBanner', () => {
-  const conCliente = (id: number, nombre: string, apellido: string, servicios: string[]): Turno =>
+  const conCliente = (
+    id: number,
+    nombre: string,
+    apellido: string,
+    servicios: string[],
+    extra: Partial<Turno> = {},
+  ): Turno =>
     ({
       id,
+      fecha_hora: '2026-10-09 15:00:00',
+      grupo_id: null,
       cliente: { nombre, apellido },
       servicios: servicios.map((n, i) => ({ id: i + 1, nombre: n })),
+      ...extra,
     }) as unknown as Turno;
 
-  it('con un solo turno nombra a la cliente y el servicio completado', () => {
+  const tramoDePromo = (id: number, servicio: string, fecha_hora: string, promo: string | null): Turno =>
+    conCliente(id, 'Ana', 'Gómez', [servicio], {
+      fecha_hora,
+      grupo_id: 7,
+      grupo: { id: 7, modo: 'secuencia', promo: promo ? { id: 1, nombre: promo } : null, tramos: [] },
+    } as Partial<Turno>);
+
+  it('con una visita nombra a la cliente, el servicio y cuándo fue', () => {
     expect(resumenParaBanner([conCliente(1, 'Mica', 'Bochetti', ['Capping'])]))
-      .toEqual({ tipo: 'uno', cliente: 'Mica Bochetti', servicios: 'Capping' });
+      .toEqual({ tipo: 'una', cliente: 'Mica Bochetti', servicios: 'Capping', fecha_hora: '2026-10-09 15:00:00' });
   });
 
   it('une varios servicios del mismo turno con " + "', () => {
     expect(resumenParaBanner([conCliente(1, 'Mica', 'Bochetti', ['Capping', 'Pedicura'])]))
-      .toEqual({ tipo: 'uno', cliente: 'Mica Bochetti', servicios: 'Capping + Pedicura' });
+      .toMatchObject({ tipo: 'una', servicios: 'Capping + Pedicura' });
   });
 
-  it('con varios turnos devuelve solo la cantidad', () => {
+  it('una promo (varios turnos del mismo grupo) cuenta como UNA visita, con el nombre de la promo y su primer horario', () => {
     expect(resumenParaBanner([
-      conCliente(1, 'Mica', 'Bochetti', ['Capping']),
-      conCliente(2, 'Ana', 'Perez', ['Soft gel']),
-    ])).toEqual({ tipo: 'varios', cantidad: 2 });
+      tramoDePromo(1, 'Pedicura', '2026-10-10 12:00:00', 'Promo Manos y pies'),
+      tramoDePromo(2, 'Capping', '2026-10-10 10:30:00', 'Promo Manos y pies'),
+    ])).toEqual({ tipo: 'una', cliente: 'Ana Gómez', servicios: 'Promo Manos y pies', fecha_hora: '2026-10-10 10:30:00' });
   });
 
-  it('un turno sin nombre de cliente cae a la cantidad', () => {
-    expect(resumenParaBanner([conCliente(1, '', '', ['Capping'])])).toEqual({ tipo: 'varios', cantidad: 1 });
+  it('un grupo sin promo junta los servicios de todos sus turnos, sin repetir', () => {
+    expect(resumenParaBanner([
+      tramoDePromo(1, 'Capping', '2026-10-10 10:30:00', null),
+      tramoDePromo(2, 'Pedicura', '2026-10-10 12:00:00', null),
+      tramoDePromo(3, 'Capping', '2026-10-10 13:00:00', null),
+    ])).toMatchObject({ tipo: 'una', servicios: 'Capping + Pedicura' });
   });
 
-  it('un turno sin servicios igual nombra a la cliente, sin servicio', () => {
+  it('con varias visitas devuelve cuántas y los nombres cortos, sin repetir clientes', () => {
+    expect(resumenParaBanner([
+      conCliente(1, 'Cristina', 'Fernández', ['Capping']),
+      conCliente(2, 'Ana', 'Gómez', ['Soft gel']),
+      conCliente(3, 'Cristina', 'Fernández', ['Esmaltado']),
+    ])).toEqual({ tipo: 'varias', cantidad: 3, clientes: ['Cristina F.', 'Ana G.'] });
+  });
+
+  it('una visita sin nombre de cliente cae a la cantidad', () => {
+    expect(resumenParaBanner([conCliente(1, '', '', ['Capping'])]))
+      .toEqual({ tipo: 'varias', cantidad: 1, clientes: [] });
+  });
+
+  it('una visita sin servicios igual nombra a la cliente, sin servicio', () => {
     expect(resumenParaBanner([conCliente(1, 'Mica', 'Bochetti', [])]))
-      .toEqual({ tipo: 'uno', cliente: 'Mica Bochetti', servicios: '' });
+      .toMatchObject({ tipo: 'una', cliente: 'Mica Bochetti', servicios: '' });
   });
 
   it('sin turnos devuelve cantidad 0', () => {
-    expect(resumenParaBanner([])).toEqual({ tipo: 'varios', cantidad: 0 });
+    expect(resumenParaBanner([])).toEqual({ tipo: 'varias', cantidad: 0, clientes: [] });
+  });
+});
+
+describe('cuandoFue', () => {
+  const hoy = new Date(2026, 9, 10, 18, 0);
+
+  it('hoy, ayer o la fecha corta, siempre con la hora', () => {
+    expect(cuandoFue('2026-10-10 10:30:00', hoy)).toEqual({ dia: 'hoy', fecha: '10/10', hora: '10:30' });
+    expect(cuandoFue('2026-10-09 15:00:00', hoy)).toEqual({ dia: 'ayer', fecha: '9/10', hora: '15:00' });
+    expect(cuandoFue('2026-10-05 09:05:00', hoy)).toEqual({ dia: 'otro', fecha: '5/10', hora: '9:05' });
   });
 });

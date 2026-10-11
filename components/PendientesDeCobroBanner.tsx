@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Wallet, ChevronRight, X } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
-import { resumenParaBanner } from '@/lib/pendientesDeCobro';
+import { cuandoFue, resumenParaBanner } from '@/lib/pendientesDeCobro';
 
 // Predicado puro — ver el mismo comentario en useSubscriptionWarningVisible
 // (SubscriptionWarningBanner.tsx). Única fuente de verdad de "¿aplicaría
@@ -33,16 +33,33 @@ export function PendientesDeCobroBanner({ onDismiss }: { onDismiss?: () => void 
 
   const esError = error && pendientes.length === 0;
 
-  // Dice lo que realmente falta: cargar cuánto se cobró. Con un solo turno,
-  // a quién y por qué servicio; con varios, cuántos.
+  // Arriba quién (o cuántas visitas), abajo qué y cuándo (o de quiénes).
+  // Cada línea entra en un renglón: si no alcanza, se corta con "…".
   const resumen = resumenParaBanner(pendientes);
-  const mensaje = esError
-    ? t('checkError')
-    : resumen.tipo === 'uno'
-      ? (resumen.servicios
-        ? t('messageOne', { cliente: resumen.cliente, servicios: resumen.servicios })
-        : t('messageOneNoService', { cliente: resumen.cliente }))
-      : t('messageMany', { count: resumen.cantidad });
+  let titulo: string;
+  let detalle: string;
+  if (esError) {
+    titulo = t('title');
+    detalle = t('checkError');
+  } else if (resumen.tipo === 'una') {
+    const c = cuandoFue(resumen.fecha_hora);
+    const cuando = c.dia === 'hoy'
+      ? t('whenToday', { hora: c.hora })
+      : c.dia === 'ayer'
+        ? t('whenYesterday', { hora: c.hora })
+        : t('whenDate', { fecha: c.fecha, hora: c.hora });
+    titulo = t('oneTitle', { cliente: resumen.cliente });
+    detalle = resumen.servicios ? t('oneDetail', { servicios: resumen.servicios, cuando }) : cuando;
+  } else {
+    const [a, b] = resumen.clientes;
+    titulo = t('manyTitle', { count: resumen.cantidad });
+    detalle = resumen.clientes.length > 2
+      ? t('namesMore', { a, b, count: resumen.clientes.length - 2 })
+      : resumen.clientes.length === 2
+        ? t('namesTwo', { a, b })
+        : (a ?? t('manyFallback'));
+  }
+  const unaLinea: React.CSSProperties = { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 
   // `<div role="button">` en vez de `<button>`: necesitamos anidar el ícono
   // de descarte como otro elemento interactivo adentro, y un <button> no
@@ -75,11 +92,11 @@ export function PendientesDeCobroBanner({ onDismiss }: { onDismiss?: () => void 
         <Wallet size={18} strokeWidth={2} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: colors.amberFg }}>
-          {t('title')}
+        <span style={{ ...unaLinea, fontSize: 13, fontWeight: 700, color: colors.amberFg }}>
+          {titulo}
         </span>
-        <span style={{ display: 'block', fontSize: 12, color: colors.amberFg, opacity: 0.85 }}>
-          {mensaje}
+        <span style={{ ...unaLinea, fontSize: 12, color: colors.amberFg, opacity: 0.85 }}>
+          {detalle}
         </span>
       </span>
       <ChevronRight size={16} color={colors.amberFg} style={{ flexShrink: 0, opacity: 0.7 }} />

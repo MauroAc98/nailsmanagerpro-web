@@ -70,19 +70,70 @@ export function agruparPorSemana(turnos: Turno[], hoy: Date = new Date()): Grupo
 }
 
 export type ResumenBanner =
-  | { tipo: 'uno'; cliente: string; servicios: string }
-  | { tipo: 'varios'; cantidad: number };
+  | { tipo: 'una'; cliente: string; servicios: string; fecha_hora: string }
+  | { tipo: 'varias'; cantidad: number; clientes: string[] };
 
-// Qué le cuenta el banner a quien lo ve: con un solo turno pendiente, a quién
-// y por qué servicio falta cargar lo cobrado; con varios, solo cuántos.
+// Una promo se guarda como un turno por tramo (mismo grupo_id), pero para el
+// salón es UNA visita: se agrupan por grupo, y los turnos sueltos van de a uno.
+function visitasDe(pendientes: Turno[]): Turno[][] {
+  const porClave = new Map<string, Turno[]>();
+  for (const t of pendientes) {
+    const clave = t.grupo_id != null ? `g${t.grupo_id}` : `t${t.id}`;
+    porClave.set(clave, [...(porClave.get(clave) ?? []), t]);
+  }
+  return [...porClave.values()];
+}
+
+function nombreCliente(t: Turno): string {
+  return `${t.cliente?.nombre ?? ''} ${t.cliente?.apellido ?? ''}`.trim();
+}
+
+// "Cristina F.": nombre y la inicial del apellido.
+function nombreCorto(t: Turno): string {
+  const nombre = (t.cliente?.nombre ?? '').trim();
+  const inicial = (t.cliente?.apellido ?? '').trim().charAt(0);
+  return inicial ? `${nombre} ${inicial}.`.trim() : nombre;
+}
+
+// Qué se hizo en la visita: el nombre de la promo si viene de una, si no los
+// servicios de todos sus turnos sin repetir.
+function serviciosDeVisita(turnos: Turno[]): string {
+  const promo = turnos.find(t => t.grupo?.promo)?.grupo?.promo?.nombre;
+  if (promo) return promo;
+  const nombres = turnos.flatMap(t => (t.servicios ?? []).filter(s => s != null).map(s => s.nombre));
+  return [...new Set(nombres)].join(' + ');
+}
+
+// Qué le cuenta el banner a quien lo ve: con una sola visita pendiente, a
+// quién, qué y cuándo; con varias, cuántas y de quiénes.
 export function resumenParaBanner(pendientes: Turno[]): ResumenBanner {
-  if (pendientes.length === 1) {
-    const [t] = pendientes;
-    const cliente = `${t.cliente?.nombre ?? ''} ${t.cliente?.apellido ?? ''}`.trim();
+  const visitas = visitasDe(pendientes);
+  if (visitas.length === 1) {
+    const turnos = ordenarPendientes(visitas[0], 'antiguos');
+    const cliente = nombreCliente(turnos[0]);
     if (cliente) {
-      const servicios = (t.servicios ?? []).filter(s => s != null).map(s => s.nombre).join(' + ');
-      return { tipo: 'uno', cliente, servicios };
+      return { tipo: 'una', cliente, servicios: serviciosDeVisita(turnos), fecha_hora: turnos[0].fecha_hora };
     }
   }
-  return { tipo: 'varios', cantidad: pendientes.length };
+  const clientes = [...new Set(visitas.map(v => nombreCorto(v[0])).filter(Boolean))];
+  return { tipo: 'varias', cantidad: visitas.length, clientes };
+}
+
+export interface CuandoFue {
+  dia: 'hoy' | 'ayer' | 'otro';
+  fecha: string; // "5/10"
+  hora: string;  // "9:05"
+}
+
+export function cuandoFue(fechaHora: string, hoy: Date = new Date()): CuandoFue {
+  const f = parseFechaHora(fechaHora);
+  const diaDe = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const ayer = new Date(hoy);
+  ayer.setDate(ayer.getDate() - 1);
+  const dia = diaDe(f) === diaDe(hoy) ? 'hoy' : diaDe(f) === diaDe(ayer) ? 'ayer' : 'otro';
+  return {
+    dia,
+    fecha: `${f.getDate()}/${f.getMonth() + 1}`,
+    hora: `${f.getHours()}:${String(f.getMinutes()).padStart(2, '0')}`,
+  };
 }

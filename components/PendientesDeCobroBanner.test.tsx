@@ -16,8 +16,12 @@ vi.mock('@/store/usePendientesDeCobroStore', () => ({
 
 import { PendientesDeCobroBanner } from './PendientesDeCobroBanner';
 
-const turno = (id: number, nombre: string, apellido: string, servicios: string[]) =>
-  ({ id, cliente: { nombre, apellido }, servicios: servicios.map((n, i) => ({ id: i + 1, nombre: n })) }) as unknown as Turno;
+const turno = (id: number, nombre: string, apellido: string, servicios: string[], fecha_hora = '2025-01-05 15:00:00') =>
+  ({
+    id, fecha_hora, grupo_id: null,
+    cliente: { nombre, apellido },
+    servicios: servicios.map((n, i) => ({ id: i + 1, nombre: n })),
+  }) as unknown as Turno;
 
 function renderBanner() {
   return render(
@@ -32,17 +36,28 @@ beforeEach(() => {
 });
 
 describe('PendientesDeCobroBanner — dice lo que falta', () => {
-  it('con un turno: título "Turnos por cobrar" y a quién y por qué servicio falta cargar lo cobrado', () => {
+  it('con una visita: arriba a quién, abajo qué y cuándo', () => {
     mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping'])];
     renderBanner();
-    expect(screen.getByText('Turnos por cobrar')).toBeInTheDocument();
-    expect(screen.getByText('Falta cargar cuánto cobraste a Mica Bochetti por Capping')).toBeInTheDocument();
+    expect(screen.getByText('Por cobrar · Mica Bochetti')).toBeInTheDocument();
+    expect(screen.getByText('Capping · 5/1 15:00')).toBeInTheDocument();
   });
 
-  it('con varios turnos: la cantidad de turnos finalizados', () => {
-    mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping']), turno(2, 'Ana', 'Perez', ['Soft gel'])];
+  it('con varias visitas: cuántas arriba y los nombres cortos abajo', () => {
+    mockStore.state.pendientes = [
+      turno(1, 'Cristina', 'Fernández', ['Capping']),
+      turno(2, 'Ana', 'Gómez', ['Soft gel']),
+      turno(3, 'Mica', 'Bochetti', ['Esmaltado']),
+    ];
     renderBanner();
-    expect(screen.getByText('Falta cargar lo cobrado en 2 turnos finalizados')).toBeInTheDocument();
+    expect(screen.getByText('3 visitas por cobrar')).toBeInTheDocument();
+    expect(screen.getByText('Cristina F., Ana G. y 1 más')).toBeInTheDocument();
+  });
+
+  it('con dos visitas de clientes distintos nombra a las dos', () => {
+    mockStore.state.pendientes = [turno(1, 'Cristina', 'Fernández', ['Capping']), turno(2, 'Ana', 'Gómez', ['Soft gel'])];
+    renderBanner();
+    expect(screen.getByText('Cristina F. y Ana G.')).toBeInTheDocument();
   });
 
   it('ya no habla de "precios por cargar" ni de "sin precio cargado"', () => {
@@ -55,7 +70,7 @@ describe('PendientesDeCobroBanner — dice lo que falta', () => {
   it('al tocarlo abre Cobros con el filtro "falta cargar el precio" ya elegido', () => {
     mockStore.state.pendientes = [turno(1, 'Mica', 'Bochetti', ['Capping'])];
     renderBanner();
-    fireEvent.click(screen.getByRole('button', { name: /Turnos por cobrar/ }));
+    fireEvent.click(screen.getByRole('button', { name: /por cobrar/i }));
     expect(mockStore.push).toHaveBeenCalledWith('/configuracion/cobros?pago=sinprecio');
   });
 
