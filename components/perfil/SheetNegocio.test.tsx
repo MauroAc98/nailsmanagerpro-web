@@ -48,7 +48,7 @@ function setup(overrides: Partial<Props> = {}) {
 }
 
 const save = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-const senaToggle = () => screen.getByRole('switch', { name: 'Pedir seña para confirmar turnos' });
+const senaToggle = () => screen.getByRole('switch', { name: 'Pedir seña en la confirmación' });
 const confirmacionToggle = () => screen.getByRole('switch', { name: 'Confirmación automática' });
 const recordatorioToggle = () => screen.getByRole('switch', { name: 'Recordatorio automático' });
 
@@ -74,10 +74,53 @@ describe('SheetNegocio — seña opt-in toggle', () => {
   });
 });
 
+describe('SheetNegocio — seña depende de la confirmación', () => {
+  it('hides the seña sub-option while confirmación is OFF', () => {
+    setup({ confirmacionAutomatica: false });
+    expect(screen.queryByRole('switch', { name: 'Pedir seña en la confirmación' })).toBeNull();
+  });
+
+  it('hides the bank inputs while confirmación is OFF', () => {
+    setup({ confirmacionAutomatica: false, whatsappPideSena: true });
+    expect(screen.queryByRole('textbox', { name: 'Titular de la cuenta' })).toBeNull();
+  });
+
+  it('shows the seña sub-option while confirmación is ON', () => {
+    setup({ confirmacionAutomatica: true });
+    expect(senaToggle()).toBeInTheDocument();
+    expect(screen.getByText('El mensaje incluye los datos para transferirla')).toBeInTheDocument();
+  });
+
+  it('turning confirmación OFF while seña is ON also turns seña OFF', () => {
+    const props = setup({ confirmacionAutomatica: true, whatsappPideSena: true });
+    fireEvent.click(confirmacionToggle());
+    expect(props.setConfirmacionAutomatica).toHaveBeenCalledWith(false);
+    expect(props.setWhatsappPideSena).toHaveBeenCalledWith(false);
+  });
+
+  it('turning confirmación OFF with seña already OFF does not touch seña', () => {
+    const props = setup({ confirmacionAutomatica: true, whatsappPideSena: false });
+    fireEvent.click(confirmacionToggle());
+    expect(props.setWhatsappPideSena).not.toHaveBeenCalled();
+  });
+
+  it('turning confirmación ON does not touch seña', () => {
+    const props = setup({ confirmacionAutomatica: false, whatsappPideSena: false });
+    fireEvent.click(confirmacionToggle());
+    expect(props.setConfirmacionAutomatica).toHaveBeenCalledWith(true);
+    expect(props.setWhatsappPideSena).not.toHaveBeenCalled();
+  });
+
+  it('never renders the old "Falta un paso" card', () => {
+    setup({ senaTipo: 'porcentaje', porcentajeSena: 30, senaMonto: '' });
+    expect(screen.queryByText(/Falta un paso/)).toBeNull();
+  });
+});
+
 describe('SheetNegocio — sin seña', () => {
   it('behaves as with no amount configured: warning shown and toggle blocked', () => {
     setup({ senaTipo: 'ninguna', senaMonto: '', whatsappPideSena: false });
-    expect(screen.getByText(/Cargá el monto de la seña en Seña y pagos/)).toBeInTheDocument();
+    expect(screen.getByText(/Cargá el monto en Seña y pagos/)).toBeInTheDocument();
     expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('button', { name: 'Cargar seña' })).toBeInTheDocument();
   });
@@ -91,27 +134,32 @@ describe('SheetNegocio — sin seña', () => {
 describe('SheetNegocio — seña en modo porcentaje', () => {
   it('explains that WhatsApp needs a fixed amount, warns about online booking and blocks the toggle', () => {
     setup({ senaTipo: 'porcentaje', porcentajeSena: 30, senaMonto: '', whatsappPideSena: false });
-    expect(screen.getByText(/tu seña hoy es del 30%/)).toBeInTheDocument();
+    expect(screen.getByText(/Tu seña es del 30%/)).toBeInTheDocument();
     expect(screen.getByText(/también cambia la seña de la reserva online/)).toBeInTheDocument();
     expect(senaToggle()).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.queryByText(/Cargá el monto de la seña en Seña y pagos/)).toBeNull();
+    expect(screen.queryByText(/Cargá el monto en Seña y pagos/)).toBeNull();
   });
 
-  it('"Pasar a monto fijo" asks the parent to open Seña y pagos preselecting fixed', () => {
+  it('shows the no-percentage variant when the stored percentage is unknown', () => {
+    setup({ senaTipo: 'porcentaje', porcentajeSena: null, senaMonto: '' });
+    expect(screen.getByText(/Tu seña es un porcentaje/)).toBeInTheDocument();
+  });
+
+  it('"Cambiar →" asks the parent to open Seña y pagos preselecting fixed', () => {
     const props = setup({ senaTipo: 'porcentaje', porcentajeSena: 30, senaMonto: '' });
-    fireEvent.click(screen.getByRole('button', { name: /Pasar a monto fijo/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar →' }));
     expect(props.onIrASena).toHaveBeenCalledWith(true);
   });
 
-  it('keeps the card but still lets the user turn it off when it was already on', () => {
+  it('keeps the line but still lets the user turn it off when it was already on', () => {
     setup({ senaTipo: 'porcentaje', porcentajeSena: 30, whatsappPideSena: true });
-    expect(screen.getByRole('button', { name: /Pasar a monto fijo/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cambiar →' })).toBeInTheDocument();
     expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('fixed mode shows no percentage card', () => {
+  it('fixed mode shows no percentage line', () => {
     setup({ senaTipo: 'fijo' });
-    expect(screen.queryByRole('button', { name: /Pasar a monto fijo/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cambiar →' })).toBeNull();
     expect(senaToggle()).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
@@ -252,12 +300,12 @@ describe('SheetNegocio — missing deposit amount gate (seña toggle)', () => {
 
   it('renders a missing-amount warning pointing to Seña y pagos', () => {
     setup({ senaMonto: '' });
-    expect(screen.getByText('Cargá el monto de la seña en Seña y pagos para poder activarla.')).toBeInTheDocument();
+    expect(screen.getByText('Cargá el monto en Seña y pagos para poder activarla.')).toBeInTheDocument();
   });
 
   it('does not render the missing-amount warning when a valid amount is set', () => {
     setup({ senaMonto: '5000' });
-    expect(screen.queryByText('Cargá el monto de la seña en Seña y pagos para poder activarla.')).toBeNull();
+    expect(screen.queryByText('Cargá el monto en Seña y pagos para poder activarla.')).toBeNull();
   });
 
   it('shows the current amount, formatted, as a read-only reference', () => {

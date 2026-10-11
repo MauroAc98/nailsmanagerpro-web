@@ -129,10 +129,17 @@ describe('PerfilPage — 422 latitud mapping', () => {
 describe('PerfilPage — hub "Mi negocio"', () => {
   afterEach(() => {
     routerMock.push.mockClear();
+    vi.unstubAllEnvs();
   });
 
   const abrirSena = () => fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
   const guardar = () => fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+  // La retención vive en la vista de Mercado Pago, que exige reserva online activa.
+  const conReservaOnline = (extra: Record<string, unknown> = {}) => {
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    return { ...BASE_USER, sena_monto: 5000, reserva_online_activa: true, ...extra };
+  };
+  const abrirMp = () => fireEvent.click(screen.getByRole('button', { name: 'Editar ›' }));
 
   it('no muestra el aviso de reservas online suelto: vive dentro de Reservas online', () => {
     mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: false } });
@@ -146,7 +153,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     renderWithProviders(<PerfilPage />);
     abrirSena();
     expect(screen.getByRole('button', { name: 'Monto fijo' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('textbox', { name: 'Monto fijo por turno' })).toHaveValue('5000');
+    expect(screen.getByRole('textbox', { name: 'El cliente paga' })).toHaveValue('5000');
   });
 
   describe('sugerencia de seña (monto fijo) con la reserva web activa', () => {
@@ -159,8 +166,8 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       mockUseAuth({ user: { ...fijoComoLlegaDeLaApi, reserva_online_activa: true } });
       renderWithProviders(<PerfilPage />);
       abrirSena();
-      expect(screen.getByText('El cliente paga')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Usar $5.500,00' })).toBeInTheDocument();
+      expect(screen.getByText('Te llegan')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Pedir \$5\.500,00/ })).toBeInTheDocument();
     });
 
     it('no muestra nada de la comisión si la reserva web no está activa', () => {
@@ -168,8 +175,8 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       mockUseAuth({ user: { ...fijoComoLlegaDeLaApi, reserva_online_activa: false } });
       renderWithProviders(<PerfilPage />);
       abrirSena();
-      expect(screen.queryByText('El cliente paga')).toBeNull();
-      expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
+      expect(screen.queryByText('Te llegan')).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Pedir/ })).toBeNull();
     });
   });
 
@@ -177,7 +184,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_tipo: 'porcentaje', sena_porcentaje: 30 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    expect(screen.getByRole('button', { name: 'Porcentaje' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '% del precio' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '30%' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -191,7 +198,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       const { unmount } = renderWithProviders(<PerfilPage />);
       abrirSena();
       expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByText('No se cobra seña al reservar.')).toBeInTheDocument();
+      expect(screen.getByText('Los turnos se confirman sin pedir seña.')).toBeInTheDocument();
       unmount();
     }
   });
@@ -246,7 +253,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: 'Porcentaje' }));
+    fireEvent.click(screen.getByRole('button', { name: '% del precio' }));
     fireEvent.click(screen.getByRole('button', { name: '20%' }));
     guardar();
     await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
@@ -258,7 +265,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: 'Porcentaje' }));
+    fireEvent.click(screen.getByRole('button', { name: '% del precio' }));
     guardar();
     expect(await screen.findByText('Elegí un porcentaje entre 1 y 100.')).toBeInTheDocument();
     expect(useAuth().updatePerfil).not.toHaveBeenCalled();
@@ -268,30 +275,32 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Monto fijo por turno' }), { target: { value: '0' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'El cliente paga' }), { target: { value: '0' } });
     guardar();
     expect(await screen.findByText('Ingresá un monto mayor a 0.')).toBeInTheDocument();
     expect(useAuth().updatePerfil).not.toHaveBeenCalled();
   });
 
-  it('hidrata "Sí me descuenta" con la retención guardada y la guarda', async () => {
-    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000, retencion_iibb_porcentaje: 4 } });
+  it('hidrata la retención guardada y la guarda', async () => {
+    mockUseAuth({ user: conReservaOnline({ retencion_iibb_porcentaje: 4 }) });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    expect(screen.getByRole('button', { name: 'Sí me descuenta' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('textbox', { name: 'Porcentaje de la retención de impuestos' })).toHaveValue('4');
-    fireEvent.change(screen.getByRole('textbox', { name: 'Porcentaje de la retención de impuestos' }), { target: { value: '4,5' } });
+    abrirMp();
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('textbox', { name: 'Porcentaje' })).toHaveValue('4');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Porcentaje' }), { target: { value: '4,5' } });
     guardar();
     await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
       sena_tipo: 'fijo', sena_monto: 5000, retencion_iibb_porcentaje: 4.5,
     }));
   });
 
-  it('"No me descuenta" guarda 0 aunque hubiera una retención cargada', async () => {
-    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000, retencion_iibb_porcentaje: 4 } });
+  it('apagar la retención guarda 0 aunque hubiera una retención cargada', async () => {
+    mockUseAuth({ user: conReservaOnline({ retencion_iibb_porcentaje: 4 }) });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: 'No me descuenta' }));
+    abrirMp();
+    fireEvent.click(screen.getByRole('switch'));
     guardar();
     await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
       sena_tipo: 'fijo', sena_monto: 5000, retencion_iibb_porcentaje: 0,
@@ -299,20 +308,22 @@ describe('PerfilPage — hub "Mi negocio"', () => {
   });
 
   it('rechaza una retención fuera de rango sin guardar', async () => {
-    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000, retencion_iibb_porcentaje: 4 } });
+    mockUseAuth({ user: conReservaOnline({ retencion_iibb_porcentaje: 4 }) });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Porcentaje de la retención de impuestos' }), { target: { value: '51' } });
+    abrirMp();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Porcentaje' }), { target: { value: '51' } });
     guardar();
     expect(await screen.findByText('Ingresá un porcentaje válido, entre 0 y 50.')).toBeInTheDocument();
     expect(useAuth().updatePerfil).not.toHaveBeenCalled();
   });
 
-  it('"Sí me descuenta" sin porcentaje no guarda', async () => {
-    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+  it('prender la retención sin porcentaje no guarda', async () => {
+    mockUseAuth({ user: conReservaOnline() });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: 'Sí me descuenta' }));
+    abrirMp();
+    fireEvent.click(screen.getByRole('switch'));
     guardar();
     expect(await screen.findByText('Ingresá un porcentaje válido, entre 0 y 50.')).toBeInTheDocument();
     expect(useAuth().updatePerfil).not.toHaveBeenCalled();

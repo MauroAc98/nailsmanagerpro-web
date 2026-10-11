@@ -1,15 +1,18 @@
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
+import { desgloseSena } from '@/lib/senaPreview';
+import { formatMonto } from '@/lib/money';
 import { SheetSenaYPagos } from './SheetSenaYPagos';
 
-// Seña y pagos: el salón elige cobrar la seña como porcentaje del precio o
-// como monto fijo, y declara si Mercado Pago le retiene impuestos.
+// Seña y pagos: el salón decide cuánta seña pide el cliente y ve cuánto le
+// llega; la comisión y la retención de Mercado Pago viven en una vista aparte.
 
 type Props = Parameters<typeof SheetSenaYPagos>[0];
 
-function setup(overrides: Partial<Props> = {}) {
-  const props: Props = {
+function baseProps(overrides: Partial<Props> = {}): Props {
+  return {
     senaTipo: 'fijo',
     setSenaTipo: vi.fn(),
     senaPorcentaje: '',
@@ -32,77 +35,140 @@ function setup(overrides: Partial<Props> = {}) {
     onClose: vi.fn(),
     ...overrides,
   };
+}
+
+function setup(overrides: Partial<Props> = {}) {
+  const props = baseProps(overrides);
   renderWithProviders(<SheetSenaYPagos {...props} />);
   return props;
 }
 
-const montoInput = () => screen.getByRole('textbox', { name: 'Monto fijo por turno' });
+const dinero = (n: number) => `$${formatMonto(n)}`;
+const montoInput = () => screen.getByRole('textbox', { name: 'El cliente paga' });
+const abrirMp = () => fireEvent.click(screen.getByRole('button', { name: 'Editar ›' }));
 
-describe('SheetSenaYPagos — modo de la seña', () => {
-  it('offers a third option "Sin seña" and selects it through the parent setter', () => {
+describe('SheetSenaYPagos — vista principal', () => {
+  it('has the title and no subtitle nor question heading', () => {
+    setup();
+    expect(screen.getByText('Seña y pagos')).toBeInTheDocument();
+    expect(screen.queryByText(/El monto que se le pide al cliente/)).toBeNull();
+    expect(screen.queryByText('¿Cómo cobrás la seña?')).toBeNull();
+  });
+
+  it('closes through the parent handler', () => {
+    const props = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('orders the segmented options: Sin seña | % del precio | Monto fijo', () => {
+    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30' });
+    const grupo = screen.getByRole('group', { name: 'Cómo se cobra la seña' });
+    const nombres = Array.from(grupo.querySelectorAll('button')).map(b => b.textContent);
+    expect(nombres).toEqual(['Sin seña', '% del precio', 'Monto fijo']);
+    expect(screen.getByRole('button', { name: '% del precio' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('switches mode through the parent setter', () => {
     const props = setup({ senaTipo: 'fijo' });
-    expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(screen.getByRole('button', { name: 'Sin seña' }));
     expect(props.setSenaTipo).toHaveBeenCalledWith('ninguna');
+    fireEvent.click(screen.getByRole('button', { name: '% del precio' }));
+    expect(props.setSenaTipo).toHaveBeenCalledWith('porcentaje');
   });
 
-  it('"Sin seña" hides the chips and the amount input and shows a neutral line', () => {
+  it('saves through the parent handler', () => {
+    const props = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(props.onGuardar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SheetSenaYPagos — sin seña', () => {
+  it('shows one neutral line and no chips, input or calculator', () => {
     setup({ senaTipo: 'ninguna', senaMonto: '' });
-    expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Los turnos se confirman sin pedir seña.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '30%' })).toBeNull();
-    expect(screen.queryByRole('textbox', { name: 'Monto fijo por turno' })).toBeNull();
-    expect(screen.getByText('No se cobra seña al reservar.')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'El cliente paga' })).toBeNull();
+    expect(screen.queryByText('Te llegan')).toBeNull();
   });
 
-  it('"Sin seña" shows the server error on sena_monto under the selector', () => {
+  it('shows the server error on sena_monto', () => {
     setup({
       senaTipo: 'ninguna',
       erroresServidor: { sena_monto: 'No podés vaciar la seña: tenés Mercado Pago conectado.' },
     });
     expect(screen.getByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
   });
+});
 
-  it('offers Porcentaje | Monto fijo and marks the current one', () => {
-    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30' });
-    expect(screen.getByRole('button', { name: 'Porcentaje' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Monto fijo' })).toHaveAttribute('aria-pressed', 'false');
-  });
+describe('SheetSenaYPagos — porcentaje', () => {
+  const pct = { senaTipo: 'porcentaje', senaPorcentaje: '30', senaMonto: '' } as const;
 
-  it('switches mode through the parent setter', () => {
-    const props = setup({ senaTipo: 'fijo' });
-    fireEvent.click(screen.getByRole('button', { name: 'Porcentaje' }));
-    expect(props.setSenaTipo).toHaveBeenCalledWith('porcentaje');
-  });
-
-  it('percentage mode shows the chips and hides the amount input', () => {
-    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30' });
+  it('shows the chips and hides the amount input', () => {
+    setup(pct);
     for (const n of ['20%', '30%', '50%', '100%']) {
       expect(screen.getByRole('button', { name: n })).toBeInTheDocument();
     }
     expect(screen.getByRole('button', { name: '30%' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '20%' })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('textbox', { name: 'Monto fijo por turno' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'El cliente paga' })).toBeNull();
   });
 
   it('picks a chip through the parent setter', () => {
-    const props = setup({ senaTipo: 'porcentaje', senaPorcentaje: '30' });
+    const props = setup(pct);
     fireEvent.click(screen.getByRole('button', { name: '50%' }));
     expect(props.setSenaPorcentaje).toHaveBeenCalledWith('50');
   });
 
   it('renders one extra selected chip when the saved percentage is not a preset', () => {
-    setup({ senaTipo: 'porcentaje', senaPorcentaje: '25', porcentajeGuardado: 25 });
+    setup({ ...pct, senaPorcentaje: '25', porcentajeGuardado: 25 });
     expect(screen.getByRole('button', { name: '25%' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByRole('button', { name: /^\d+%$/ })).toHaveLength(5);
   });
 
   it('adds no extra chip when the saved percentage is a preset', () => {
-    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', porcentajeGuardado: 30 });
+    setup({ ...pct, porcentajeGuardado: 30 });
     expect(screen.getAllByRole('button', { name: /^\d+%$/ })).toHaveLength(4);
   });
 
-  it('fixed mode shows the amount input and hides the chips', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '7500' });
+  it('with online booking shows an example calculator using desgloseSena', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    const d = desgloseSena(3000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
+    expect(screen.getByText('Ejemplo con un servicio de $10.000 · el cliente paga')).toBeInTheDocument();
+    expect(screen.getByText(dinero(3000))).toBeInTheDocument();
+    expect(screen.getByText('Te llegan')).toBeInTheDocument();
+    expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
+    expect(screen.queryByText('Del precio de cada servicio.')).toBeNull();
+  });
+
+  it('the example follows the chosen percentage and the declared retention', () => {
+    setup({ ...pct, senaPorcentaje: '50', retiene: true, retencion: '2' });
+    const d = desgloseSena(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 });
+    expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
+  });
+
+  it('without online booking shows only a small line and no calculator', () => {
+    setup({ ...pct, reservaOnlineActiva: false });
+    expect(screen.getByText('Del precio de cada servicio.')).toBeInTheDocument();
+    expect(screen.queryByText('Te llegan')).toBeNull();
+    expect(screen.queryByText(/Ejemplo con un servicio/)).toBeNull();
+  });
+
+  it('shows the server percentage error', () => {
+    setup({ ...pct, erroresServidor: { sena_porcentaje: 'El porcentaje debe estar entre 1 y 100.' } });
+    expect(screen.getByText('El porcentaje debe estar entre 1 y 100.')).toBeInTheDocument();
+  });
+
+  it('shows the local percentage error', () => {
+    setup({ ...pct, errorPorcentaje: 'Elegí un porcentaje entre 1 y 100.' });
+    expect(screen.getByText('Elegí un porcentaje entre 1 y 100.')).toBeInTheDocument();
+  });
+});
+
+describe('SheetSenaYPagos — monto fijo', () => {
+  it('shows the amount input and hides the chips', () => {
+    setup({ senaMonto: '7500' });
     expect(montoInput()).toHaveValue('7500');
     expect(screen.queryByRole('button', { name: '30%' })).toBeNull();
   });
@@ -118,160 +184,181 @@ describe('SheetSenaYPagos — modo de la seña', () => {
     expect(screen.getByText('Ingresá un monto mayor a 0.')).toBeInTheDocument();
   });
 
-  it('surfaces a server error on sena_monto in fixed mode', () => {
+  it('shows the server error on sena_monto', () => {
     setup({ erroresServidor: { sena_monto: 'No podés vaciar la seña: tenés Mercado Pago conectado.' } });
     expect(screen.getByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
   });
 
-  it('surfaces a server error on sena_porcentaje in percentage mode', () => {
-    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', erroresServidor: { sena_porcentaje: 'El porcentaje debe estar entre 1 y 100.' } });
-    expect(screen.getByText('El porcentaje debe estar entre 1 y 100.')).toBeInTheDocument();
+  it('shows the net amount big and keeps the breakdown collapsed', () => {
+    setup({ senaMonto: '5000' });
+    const d = desgloseSena(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
+    expect(screen.getByText('Te llegan')).toBeInTheDocument();
+    expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
+    expect(screen.queryByText('Mercado Pago (7,6%)')).toBeNull();
+    expect(screen.queryByText(/incluye el IVA/)).toBeNull();
   });
 
-  it('shows the local percentage error', () => {
-    setup({ senaTipo: 'porcentaje', errorPorcentaje: 'Elegí un porcentaje entre 1 y 100.' });
-    expect(screen.getByText('Elegí un porcentaje entre 1 y 100.')).toBeInTheDocument();
+  it('"Ver detalle" expands the breakdown and "Ocultar detalle" collapses it', () => {
+    setup({ senaMonto: '5000' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle ▾' }));
+    expect(screen.getByText('Mercado Pago (7,6%)')).toBeInTheDocument();
+    expect(screen.getByText('−$381,00')).toBeInTheDocument();
+    expect(screen.queryByText('Retención de impuestos')).toBeNull();
+    expect(screen.getByText(/incluye el IVA/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar detalle ▴' }));
+    expect(screen.queryByText('Mercado Pago (7,6%)')).toBeNull();
+  });
+
+  it('the expanded detail includes the retention when the user declares one', () => {
+    setup({ senaMonto: '5000', retiene: true, retencion: '2' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle ▾' }));
+    expect(screen.getByText('Retención de impuestos')).toBeInTheDocument();
+  });
+
+  it('suggests a pill and applies it through the parent setter', () => {
+    const props = setup({ senaMonto: '5000' });
+    fireEvent.click(screen.getByRole('button', { name: 'Pedir $5.500,00 para que te lleguen $5.000,00' }));
+    expect(props.setSenaMonto).toHaveBeenCalledWith('5500');
+  });
+
+  it('suggests even when the API sends the amount as text with decimals', () => {
+    setup({ senaMonto: '5000.00' });
+    expect(screen.getByRole('button', { name: /^Pedir \$5\.500,00/ })).toBeInTheDocument();
+  });
+
+  it('after applying shows "Listo. Antes" and Deshacer restores the previous amount', () => {
+    function Harness() {
+      const [monto, setMonto] = useState('5000');
+      return <SheetSenaYPagos {...baseProps({ senaMonto: monto, setSenaMonto: setMonto })} />;
+    }
+    renderWithProviders(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
+    expect(montoInput()).toHaveValue('5500');
+    expect(screen.getByText(/Listo\. Antes: \$5\.000,00/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Pedir/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
+    expect(montoInput()).toHaveValue('5000');
+    expect(screen.queryByText(/Listo\./)).toBeNull();
+  });
+
+  it('shows nothing of the calculator without online booking', () => {
+    setup({ reservaOnlineActiva: false });
+    expect(montoInput()).toBeInTheDocument();
+    expect(screen.queryByText('Te llegan')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ver detalle ▾' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Pedir/ })).toBeNull();
+  });
+
+  it('shows no calculator when the amount is empty', () => {
+    setup({ senaMonto: '' });
+    expect(screen.queryByText('Te llegan')).toBeNull();
   });
 });
 
-describe('SheetSenaYPagos — retención de impuestos', () => {
-  it('asks the question and defaults to "No me descuenta" with no input', () => {
+describe('SheetSenaYPagos — fila de Mercado Pago', () => {
+  it('shows the row with the commission when there is no retention', () => {
     setup({ retiene: false });
-    expect(screen.getByText('¿Mercado Pago te descuenta una retención de impuestos?')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'No me descuenta' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByRole('textbox', { name: 'Porcentaje de la retención de impuestos' })).toBeNull();
+    expect(screen.getByText('Mercado Pago')).toBeInTheDocument();
+    expect(screen.getByText('Comisión 7,6%')).toBeInTheDocument();
   });
 
-  it('toggles through the parent setter', () => {
+  it('adds the retention to the subtitle when declared', () => {
+    setup({ retiene: true, retencion: '2' });
+    expect(screen.getByText('Comisión 7,6% · Retención 2%')).toBeInTheDocument();
+  });
+
+  it('follows a different commission', () => {
+    setup({ comisionVigente: 5.5 });
+    expect(screen.getByText('Comisión 5,5%')).toBeInTheDocument();
+  });
+
+  it('is hidden without online booking', () => {
+    setup({ reservaOnlineActiva: false });
+    expect(screen.queryByRole('button', { name: 'Editar ›' })).toBeNull();
+  });
+
+  it('is hidden when the commission is unknown', () => {
+    setup({ comisionVigente: null });
+    expect(screen.queryByRole('button', { name: 'Editar ›' })).toBeNull();
+  });
+});
+
+describe('SheetSenaYPagos — vista de Mercado Pago', () => {
+  it('"Editar ›" opens it and the back chevron returns to the main view', () => {
+    setup();
+    abrirMp();
+    expect(screen.getByText('Comisión')).toBeInTheDocument();
+    expect(screen.getByText('7,6% (con IVA)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '% del precio' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(screen.getByRole('button', { name: '% del precio' })).toBeInTheDocument();
+  });
+
+  it('the retention toggle calls setRetiene', () => {
     const props = setup({ retiene: false });
-    fireEvent.click(screen.getByRole('button', { name: 'Sí me descuenta' }));
+    abrirMp();
+    expect(screen.getByText('Si aparece en el detalle de tus cobros')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('switch'));
     expect(props.setRetiene).toHaveBeenCalledWith(true);
+    expect(screen.queryByRole('textbox', { name: 'Porcentaje' })).toBeNull();
   });
 
-  it('shows the percentage input only with "Sí"', () => {
+  it('shows the percentage input only when it withholds', () => {
     const props = setup({ retiene: true, retencion: '4' });
-    const input = screen.getByRole('textbox', { name: 'Porcentaje de la retención de impuestos' });
+    abrirMp();
+    const input = screen.getByRole('textbox', { name: 'Porcentaje' });
     expect(input).toHaveValue('4');
     fireEvent.change(input, { target: { value: '4,5' } });
     expect(props.setRetencion).toHaveBeenCalledWith('4,5');
   });
 
-  it('explains what the withholding is, with the examples', () => {
+  it('the disclosure expands the short explanation', () => {
     setup();
-    expect(screen.getByText(/Retención Impuesto Ingresos Brutos Régimen SIRTAC/)).toBeInTheDocument();
+    abrirMp();
+    expect(screen.queryByText(/Retención Ingresos Brutos/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '¿Dónde la veo? ▾' }));
+    expect(screen.getByText(/Retención Ingresos Brutos/)).toBeInTheDocument();
+    expect(screen.queryByText(/SIRTAC/)).toBeNull();
   });
 
-  it('shows the retention error', () => {
-    setup({ retiene: true, errorRetencion: 'Ingresá un porcentaje válido, entre 0 y 50.' });
-    expect(screen.getByText('Ingresá un porcentaje válido, entre 0 y 50.')).toBeInTheDocument();
-  });
-});
-
-describe('SheetSenaYPagos — cargo de Mercado Pago (porcentaje)', () => {
-  const pct = { senaTipo: 'porcentaje', senaPorcentaje: '30', senaMonto: '' } as const;
-
-  it('derives the displayed percent from comision_mp_vigente, one decimal es-AR', () => {
-    setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(/descuenta 7,6%/)).toBeInTheDocument();
-  });
-
-  it('says the cost is discounted from each deposit and can be covered from the price', () => {
-    setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(
-      'Mercado Pago descuenta 7,6% de cada seña. Podés cubrirlo desde el precio al editar un servicio.',
-    )).toBeInTheDocument();
-  });
-
-  it('follows a different commission instead of a hardcoded one', () => {
-    setup({ ...pct, comisionVigente: 5.5 });
-    expect(screen.getByText(/descuenta 5,5%/)).toBeInTheDocument();
-    expect(screen.queryByText(/7,6%/)).toBeNull();
-  });
-
-  it('omits the note when the commission is unknown', () => {
-    setup({ ...pct, comisionVigente: null });
-    expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
-  });
-
-  it('omits the note when online booking is not active (the fee only applies to online payments)', () => {
-    setup({ ...pct, comisionVigente: 7.61, reservaOnlineActiva: false });
-    expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
-    expect(screen.queryByText(/Podés cubrirlo desde el precio/)).toBeNull();
-  });
-
-  it('does not repeat the generic note in fixed mode (the breakdown already shows the fee)', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
-    expect(screen.queryByText(/Mercado Pago descuenta/)).toBeNull();
-  });
-});
-
-describe('SheetSenaYPagos — acciones', () => {
-  it('saves through the parent handler', () => {
+  it('saves from the Mercado Pago view too', () => {
     const props = setup();
+    abrirMp();
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     expect(props.onGuardar).toHaveBeenCalledTimes(1);
   });
 
-  it('points to Mensajes automáticos for the bank-transfer data', () => {
-    setup();
-    expect(screen.getByText(/se cargan en Mensajes automáticos/)).toBeInTheDocument();
+  it('starts in this view when the retention has an error, so it is visible', () => {
+    setup({ retiene: true, errorRetencion: 'Ingresá un porcentaje válido, entre 0 y 50.' });
+    expect(screen.getByText('Ingresá un porcentaje válido, entre 0 y 50.')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Porcentaje' })).toBeInTheDocument();
   });
 
-  it('no longer offers the per-salon commission input or plazo chips', () => {
-    setup();
-    expect(screen.queryByRole('textbox', { name: /Comisión de Mercado Pago/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /días/ })).toBeNull();
+  it('starts in this view for a server error on the retention field', () => {
+    setup({ retiene: true, erroresServidor: { retencion_iibb_porcentaje: 'Retención inválida.' } });
+    expect(screen.getByText('Retención inválida.')).toBeInTheDocument();
+  });
+
+  it('shows a retention error that appears later on the main view too', () => {
+    const props = baseProps({ retiene: true, retencion: '' });
+    const { rerender } = renderWithProviders(<SheetSenaYPagos {...props} />);
+    rerender(<SheetSenaYPagos {...props} errorRetencion="Ingresá un porcentaje válido, entre 0 y 50." />);
+    expect(screen.getByText('Ingresá un porcentaje válido, entre 0 y 50.')).toBeInTheDocument();
   });
 });
 
-describe('SheetSenaYPagos — cálculo en monto fijo', () => {
-  it('shows what the client pays, the MP fee and the net for the typed amount', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
-    expect(screen.getByText('El cliente paga')).toBeInTheDocument();
-    expect(screen.getByText('$5.000,00')).toBeInTheDocument();
-    expect(screen.getByText('−$381,00')).toBeInTheDocument();
-    expect(screen.getByText('$4.619,00')).toBeInTheDocument();
+describe('SheetSenaYPagos — Mensajes automáticos', () => {
+  it('the link calls onIrAMensajes', () => {
+    const onIrAMensajes = vi.fn();
+    setup({ onIrAMensajes });
+    expect(screen.getByText(/Datos para transferencia por WhatsApp/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Mensajes automáticos ›' }));
+    expect(onIrAMensajes).toHaveBeenCalledTimes(1);
   });
 
-  it('suggests even when the API sends the amount as text with decimals (decimal:2)', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '5000.00', comisionVigente: 7.61 });
-    expect(screen.getByRole('button', { name: 'Usar $5.500,00' })).toBeInTheDocument();
-  });
-
-  it('suggests a higher seña rounded up to 100 and applies it through the parent setter', () => {
-    const props = setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61 });
-    expect(screen.getByText(/Para recibir \$5\.000/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $5.500,00' }));
-    expect(props.setSenaMonto).toHaveBeenCalledWith('5500');
-  });
-
-  it('shows neither the breakdown nor the suggestion when online booking is not active', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61, reservaOnlineActiva: false });
-    expect(screen.queryByText(/Para recibir/)).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
-    expect(screen.queryByText('El cliente paga')).toBeNull();
-    expect(screen.queryByText(/Mercado Pago \(/)).toBeNull();
-  });
-
-  it('includes the tax retention when the user declares one', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: 7.61, retiene: true, retencion: '2' });
-    expect(screen.getByText('Retención de impuestos')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Usar $5.600,00' })).toBeInTheDocument();
-  });
-
-  it('shows nothing when the amount is empty/invalid or the commission is unknown', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '', comisionVigente: 7.61 });
-    expect(screen.queryByText('El cliente paga')).toBeNull();
-  });
-
-  it('shows nothing in percentage mode or without commission', () => {
-    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', comisionVigente: 7.61 });
-    expect(screen.queryByText('El cliente paga')).toBeNull();
-  });
-
-  it('without a known commission it shows no calculation', () => {
-    setup({ senaTipo: 'fijo', senaMonto: '5000', comisionVigente: null });
-    expect(screen.queryByText('El cliente paga')).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
+  it('without the callback it is plain text, not a button', () => {
+    setup();
+    expect(screen.getByText(/Mensajes automáticos ›/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mensajes automáticos ›' })).toBeNull();
   });
 });

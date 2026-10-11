@@ -18,17 +18,14 @@ import {
   type SenaModo,
 } from '@/lib/senaConfig';
 
-const tarjetaAvisoStyle = {
-  display: 'flex', flexDirection: 'column', gap: 10,
-  backgroundColor: colors.primarySoft, borderRadius: 12, padding: '14px', marginBottom: 16,
-} as const;
-const botonAvisoStyle = {
-  alignSelf: 'flex-start', minHeight: 44, padding: '0 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
-  backgroundColor: colors.primarySolid, color: '#fff', fontWeight: 700, fontSize: 13,
-} as const;
 const linkStyle = {
   minHeight: 44, padding: '0 6px', border: 'none', background: 'none', cursor: 'pointer',
   color: colors.primaryDeep, fontWeight: 700, fontSize: 13,
+} as const;
+
+const linkInlineStyle = {
+  padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+  color: colors.primaryDeep, fontWeight: 700, fontSize: 12,
 } as const;
 
 const HORAS_RECORDATORIO = ['18:00', '19:00', '20:00', '21:00', '22:00'];
@@ -249,6 +246,13 @@ export function SheetNegocio({
     return MENSAJES_ERROR[v] ?? v;
   };
 
+  // Seña es una variante de la confirmación: sin confirmación no se manda
+  // nada, así que apagarla también apaga la seña.
+  const cambiarConfirmacion = (v: boolean) => {
+    setConfirmacionAutomatica(v);
+    if (!v && whatsappPideSena) setWhatsappPideSena(false);
+  };
+
   const handleGuardar = () => {
     if (whatsappPideSena) {
       const errs = validarSenaConfig({
@@ -297,123 +301,6 @@ export function SheetNegocio({
         </button>
       </div>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
-      }}>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('depositRequest')}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
-            {t('depositRequestSubtitle')}
-          </p>
-        </div>
-        <PillToggle
-          value={whatsappPideSena}
-          onChange={setWhatsappPideSena}
-          disabled={(faltaUbicacion || faltaMonto || esPorcentaje) && !whatsappPideSena}
-          ariaLabel={t('depositRequest')}
-        />
-      </div>
-
-      {!esPorcentaje && !faltaMonto && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '12px 14px', marginBottom: 16,
-        }}>
-          <IconMoney />
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('depositAmountLabel')}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: colors.text }}>
-              {formatearMontoSena(montoActual!)}
-            </p>
-          </div>
-          <button type="button" onClick={() => onIrASena(false)} style={linkStyle}>{t('depositChange')}</button>
-        </div>
-      )}
-
-      {esPorcentaje && (
-        <div style={tarjetaAvisoStyle}>
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: colors.primaryDeep }}>
-            <b>{t('depositFixedNeededTitle')}</b><br />
-            {porcentajeSena != null
-              ? t('depositFixedNeededBody', { porcentaje: porcentajeSena })
-              : t('depositFixedNeededBodyNoPct')}
-          </p>
-          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.45, color: colors.primaryDeep, backgroundColor: colors.surface, borderRadius: 8, padding: '8px 10px' }}>
-            <b>{t('depositFixedNeededOnlineLead')}</b> {t('depositFixedNeededOnline')}
-          </p>
-          <button type="button" onClick={() => onIrASena(true)} style={botonAvisoStyle}>
-            {t('depositSwitchToFixed')}
-          </button>
-          <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('depositSwitchToFixedHint')}</p>
-        </div>
-      )}
-
-      {!esPorcentaje && faltaMonto && (
-        <div style={tarjetaAvisoStyle}>
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: colors.primaryDeep }}>{t('depositAmountMissingWarning')}</p>
-          <button type="button" onClick={() => onIrASena(false)} style={botonAvisoStyle}>
-            {t('depositSetAmount')}
-          </button>
-        </div>
-      )}
-
-      {faltaUbicacion && (
-        <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
-          {t('depositLocationRequiredWarning')}
-        </p>
-      )}
-
-      {whatsappPideSena && (
-        <div style={{ marginBottom: 16 }}>
-          {textoError('direccion') && (
-            <p style={{ fontSize: 12, color: colors.danger, margin: '0 0 12px', lineHeight: 1.4 }}>{textoError('direccion')}</p>
-          )}
-
-          <SheetInput
-            label={t('depositHolder')}
-            icon={<IconBank />}
-            value={senaTitular}
-            onChange={setSenaTitular}
-            placeholder={t('depositHolderPlaceholder')}
-          />
-          {textoError('whatsapp_sena_titular') && (
-            <p style={{ fontSize: 12, color: colors.danger, margin: '-8px 0 12px', lineHeight: 1.4 }}>{textoError('whatsapp_sena_titular')}</p>
-          )}
-
-          <SheetInput
-            label={t('depositBank')}
-            icon={<IconBank />}
-            value={senaEntidad}
-            onChange={setSenaEntidad}
-            placeholder={t('depositBankPlaceholder')}
-          />
-
-          <SheetInput
-            label={t('depositAlias')}
-            icon={<IconBank />}
-            value={senaAlias}
-            onChange={setSenaAlias}
-            placeholder={t('depositAliasPlaceholder')}
-          />
-
-          <SheetInput
-            label={t('depositCbu')}
-            icon={<IconBank />}
-            value={senaCbu}
-            onChange={setSenaCbu}
-            placeholder={t('depositCbuPlaceholder')}
-            inputMode="numeric"
-          />
-          {textoError('whatsapp_sena_alias') && (
-            <p style={{ fontSize: 12, color: colors.danger, margin: '-8px 0 8px', lineHeight: 1.4 }}>{textoError('whatsapp_sena_alias')}</p>
-          )}
-          <p style={{ fontSize: 12, color: colors.subtext, margin: '0 2px', lineHeight: 1.4 }}>
-            {t('depositAliasOrCbuHelp')}
-          </p>
-        </div>
-      )}
-
       {faltaDireccion && (
         <p style={{ fontSize: 12, color: colors.danger, marginBottom: 12, lineHeight: 1.4 }}>
           {t('addressRequiredWarning')}
@@ -438,21 +325,142 @@ export function SheetNegocio({
       )}
 
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '14px 16px', marginBottom: 16,
       }}>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('autoConfirmation')}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
-            {t('autoConfirmationSubtitle')}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>{t('autoConfirmation')}</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
+              {t('autoConfirmationSubtitle')}
+            </p>
+          </div>
+          <PillToggle
+            value={confirmacionAutomatica}
+            onChange={cambiarConfirmacion}
+            disabled={(faltaDireccion || faltaUbicacion) && !confirmacionAutomatica}
+            ariaLabel={t('autoConfirmation')}
+          />
         </div>
-        <PillToggle
-          value={confirmacionAutomatica}
-          onChange={setConfirmacionAutomatica}
-          disabled={(faltaDireccion || faltaUbicacion) && !confirmacionAutomatica}
-          ariaLabel={t('autoConfirmation')}
-        />
+
+        {confirmacionAutomatica && (
+          <div style={{
+            marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.border}`,
+            paddingLeft: 14, borderLeft: `2px solid ${colors.primarySoft}`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: colors.text }}>{t('depositRequest')}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.subtext }}>
+                  {t('depositRequestSubtitle')}
+                </p>
+              </div>
+              <PillToggle
+                value={whatsappPideSena}
+                onChange={setWhatsappPideSena}
+                disabled={(faltaUbicacion || faltaMonto || esPorcentaje) && !whatsappPideSena}
+                ariaLabel={t('depositRequest')}
+              />
+            </div>
+
+            {esPorcentaje && (
+              <div style={{ marginTop: 8 }}>
+                <p style={{ margin: 0, fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
+                  {porcentajeSena != null
+                    ? t('depositPercentLine', { porcentaje: porcentajeSena })
+                    : t('depositPercentLineNoPct')}
+                  {' '}
+                  <button type="button" onClick={() => onIrASena(true)} style={linkInlineStyle}>
+                    {t('depositSwitchToFixed')}
+                  </button>
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
+                  {t('depositPercentOnlineNote')}
+                </p>
+              </div>
+            )}
+
+            {!esPorcentaje && faltaMonto && (
+              <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, color: colors.subtext }}>
+                {t('depositAmountMissingWarning')}{' '}
+                <button type="button" onClick={() => onIrASena(false)} style={linkInlineStyle}>
+                  {t('depositSetAmount')}
+                </button>
+              </p>
+            )}
+
+            {!esPorcentaje && !faltaMonto && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, marginTop: 10,
+                backgroundColor: colors.surface, borderRadius: 10, padding: '10px 12px',
+              }}>
+                <IconMoney />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 12, color: colors.subtext, lineHeight: 1.4 }}>{t('depositAmountLabel')}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: colors.text }}>
+                    {formatearMontoSena(montoActual!)}
+                  </p>
+                </div>
+                <button type="button" onClick={() => onIrASena(false)} style={linkStyle}>{t('depositChange')}</button>
+              </div>
+            )}
+
+            {faltaUbicacion && (
+              <p style={{ fontSize: 12, color: colors.danger, margin: '8px 0 0', lineHeight: 1.4 }}>
+                {t('depositLocationRequiredWarning')}
+              </p>
+            )}
+
+            {whatsappPideSena && (
+              <div style={{ marginTop: 12 }}>
+                {textoError('direccion') && (
+                  <p style={{ fontSize: 12, color: colors.danger, margin: '0 0 12px', lineHeight: 1.4 }}>{textoError('direccion')}</p>
+                )}
+
+                <SheetInput
+                  label={t('depositHolder')}
+                  icon={<IconBank />}
+                  value={senaTitular}
+                  onChange={setSenaTitular}
+                  placeholder={t('depositHolderPlaceholder')}
+                />
+                {textoError('whatsapp_sena_titular') && (
+                  <p style={{ fontSize: 12, color: colors.danger, margin: '-8px 0 12px', lineHeight: 1.4 }}>{textoError('whatsapp_sena_titular')}</p>
+                )}
+
+                <SheetInput
+                  label={t('depositBank')}
+                  icon={<IconBank />}
+                  value={senaEntidad}
+                  onChange={setSenaEntidad}
+                  placeholder={t('depositBankPlaceholder')}
+                />
+
+                <SheetInput
+                  label={t('depositAlias')}
+                  icon={<IconBank />}
+                  value={senaAlias}
+                  onChange={setSenaAlias}
+                  placeholder={t('depositAliasPlaceholder')}
+                />
+
+                <SheetInput
+                  label={t('depositCbu')}
+                  icon={<IconBank />}
+                  value={senaCbu}
+                  onChange={setSenaCbu}
+                  placeholder={t('depositCbuPlaceholder')}
+                  inputMode="numeric"
+                />
+                {textoError('whatsapp_sena_alias') && (
+                  <p style={{ fontSize: 12, color: colors.danger, margin: '-8px 0 8px', lineHeight: 1.4 }}>{textoError('whatsapp_sena_alias')}</p>
+                )}
+                <p style={{ fontSize: 12, color: colors.subtext, margin: '0 2px', lineHeight: 1.4 }}>
+                  {t('depositAliasOrCbuHelp')}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{

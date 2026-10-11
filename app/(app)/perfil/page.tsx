@@ -577,6 +577,7 @@ export default function PerfilPage() {
             comisionVigente={user.comision_mp_vigente ?? null}
             reservaOnlineActiva={reservaOnlineActivaParaNegocio(user)}
             erroresServidor={erroresNegocio}
+            onIrAMensajes={() => abrirSheet('negocio')}
             onGuardar={handleGuardar}
             guardando={guardando}
             onClose={cerrarSheet}
