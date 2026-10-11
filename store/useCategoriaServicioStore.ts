@@ -32,6 +32,8 @@ interface CategoriasServicioState {
   agregarCategoria: (dto: CreateCategoriaServicioDto) => Promise<AgregarCategoriaResult>;
   actualizarCategoria: (id: number, dto: UpdateCategoriaServicioDto) => Promise<OperacionResult>;
   eliminarCategoria: (id: number) => Promise<OperacionResult>;
+  guardarFondoHistoria: (id: number, archivo: File) => Promise<OperacionResult>;
+  borrarFondoHistoria: (id: number) => Promise<OperacionResult>;
 }
 
 // Mismo patrón que useServiciosStore/useGastosStore: withGlobalLoader +
@@ -90,6 +92,33 @@ export const useCategoriasServicioStore = create<CategoriasServicioState>((set) 
         await categoriaServicioService.delete(id);
         const categorias = await categoriaServicioService.getAll();
         set({ categorias });
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  // Fondo fijo de la historia: el backend devuelve la categoría actualizada,
+  // se reemplaza en sitio (sin refetch de la lista) como hace
+  // useProfesionalStore.guardarFondoHistoria.
+  guardarFondoHistoria: async (id, archivo) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizada = await categoriaServicioService.subirFondoHistoria(id, archivo);
+        set(state => ({ categorias: state.categorias.map(c => c.id === id ? actualizada : c) }));
+        return { success: true };
+      } catch (e) {
+        return { success: false, message: extraerMensajeError(e) };
+      }
+    });
+  },
+
+  borrarFondoHistoria: async (id) => {
+    return withGlobalLoader(async () => {
+      try {
+        const actualizada = await categoriaServicioService.borrarFondoHistoria(id);
+        set(state => ({ categorias: state.categorias.map(c => c.id === id ? actualizada : c) }));
         return { success: true };
       } catch (e) {
         return { success: false, message: extraerMensajeError(e) };

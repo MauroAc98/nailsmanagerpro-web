@@ -4,6 +4,9 @@ export interface CategoriaServicio {
   id: number;
   user_id: number;
   nombre: string;
+  // URL publica del fondo fijo de "generar historia" para esta categoria
+  // (misma convencion que Profesional.fondo_historia_url), null si no hay.
+  fondo_historia_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,5 +46,24 @@ export const categoriaServicioService = {
   // manejo especial acá, mismo criterio que servicioService.delete.
   delete: async (id: number): Promise<void> => {
     await api.delete(`/categorias-servicio/${id}`);
+  },
+
+  // Fondo fijo de "generar historia" por categoria. Mismo request que
+  // profesionalService.subirFondoHistoria: Content-Type undefined para que
+  // axios arme el multipart (la instancia `api` fuerza JSON por default) y
+  // timeout largo para subidas pesadas desde un celular con mala senal.
+  subirFondoHistoria: async (id: number, archivo: File): Promise<CategoriaServicio> => {
+    const form = new FormData();
+    form.append('imagen', archivo);
+    const { data } = await api.post<CategoriaServicio>(`/categorias-servicio/${id}/fondo-historia`, form, {
+      headers: { 'Content-Type': undefined },
+      timeout: 60_000,
+    });
+    return data;
+  },
+
+  borrarFondoHistoria: async (id: number): Promise<CategoriaServicio> => {
+    const { data } = await api.delete<CategoriaServicio>(`/categorias-servicio/${id}/fondo-historia`);
+    return data;
   },
 };

@@ -19,6 +19,8 @@
     "firstHalf": "1 — 15",
     "secondHalf": "16 — Fin",
     "showScheduleOf": "Mostrar agenda de:",
+    "categoryLabel": "Categoría:",
+    "allCategories": "Todas",
     "editAvailability": "Editar disponibilidad",
     "editAvailabilityHint": "Ya se muestra tu disponibilidad real. Usá esto solo si querés ocultar algo puntual antes de compartir.",
     "sectionAgenda": "Agenda",

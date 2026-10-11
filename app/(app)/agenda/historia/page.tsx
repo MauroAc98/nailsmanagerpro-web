@@ -16,6 +16,7 @@ import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
 
@@ -36,6 +37,18 @@ function tabStyle(active: boolean): React.CSSProperties {
     color:       active ? colors.primaryFg : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
     boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
+  };
+}
+
+// Pills del filtro por categoría — una sola fila con scroll horizontal si hay
+// muchas; flexShrink:0 + nowrap para que un nombre largo no se aplaste.
+function categoriaPillStyle(active: boolean): React.CSSProperties {
+  return {
+    flexShrink: 0, whiteSpace: 'nowrap', padding: '7px 14px', borderRadius: 999, cursor: 'pointer',
+    border: `1px solid ${active ? colors.primarySolid : colors.border}`,
+    background: active ? colors.primarySolid : colors.surface,
+    color: active ? colors.primaryFg : colors.subtext,
+    fontWeight: 600, fontSize: 12,
   };
 }
 
@@ -81,6 +94,7 @@ function HistoriaContent() {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
+    selectedCategoriaId, setSelectedCategoriaId, categoriaSeleccionada,
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
@@ -95,8 +109,16 @@ function HistoriaContent() {
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Filtro por categoría — invisible si la cuenta no tiene ninguna. Con una
+  // elegida los horarios son de varias profesionales, así que el selector de
+  // profesional se oculta.
+  const { categorias, fetchCategorias } = useCategoriasServicioStore();
+  useEffect(() => {
+    if (categorias.length === 0) fetchCategorias();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const mostrarSelectorCategoria   = categorias.length > 0;
   const activeProfesionales        = profesionales.filter(p => p.activo);
-  const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const mostrarSelectorProfesional = activeProfesionales.length > 1 && selectedCategoriaId === null;
   // La profesional del encabezado es la efectiva del selector (la dueña por
   // defecto al recargar, o la que se eligió): un único diseño para todas.
   const profesionalSeleccionada    = profesionalDelEncabezado(activeProfesionales, effectiveProfesionalId);
@@ -181,6 +203,26 @@ function HistoriaContent() {
           </div>
         )}
 
+        {/* Selector de categoría — "Todas" (null) es el default y mantiene el
+            comportamiento por profesional de siempre. */}
+        {mostrarSelectorCategoria && (
+          <div style={{ width: '100%', marginBottom: 14 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              {t('categoryLabel')}
+            </p>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+              <button onClick={() => setSelectedCategoriaId(null)} style={categoriaPillStyle(selectedCategoriaId === null)}>
+                {t('allCategories')}
+              </button>
+              {categorias.map(c => (
+                <button key={c.id} onClick={() => setSelectedCategoriaId(c.id)} style={categoriaPillStyle(selectedCategoriaId === c.id)}>
+                  {c.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Selector de profesional — invisible con ≤1 profesional activa */}
         {/* El pill cae en effectiveProfesionalId (jefa por default) cuando no
             hay pick explícito — confirmado con el usuario (2026-08-19): tiene
@@ -247,6 +289,7 @@ function HistoriaContent() {
               telefonoEstudio={telefonoEstudio}
               logoUrl={logoUrl}
               profesionalNombre={profesionalSeleccionada?.nombre}
+              categoriaNombre={categoriaSeleccionada?.nombre}
               dias={diasAMostrar}
               fondoUri={fondoUri}
               canvasWidth={canvasWidth}

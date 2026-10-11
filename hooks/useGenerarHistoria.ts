@@ -4,6 +4,7 @@ import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
@@ -100,6 +101,11 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // de siempre). El nombre para mostrar en el canvas se resuelve en la
   // pantalla, que tiene acceso a useProfesionalStore; el hook solo maneja el id.
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  // Filtro por categoría — null = "Todas" (comportamiento de siempre, por
+  // profesional). Con una categoría elegida los horarios son los de todas las
+  // profesionales que hacen algo de esa categoría y el selector de profesional
+  // deja de aplicar.
+  const [selectedCategoriaId, setSelectedCategoriaIdCrudo] = useState<number | null>(null);
 
   // ─────────────────────────────────────────────
   // Fondo fijo por profesional — el hook sí lee useProfesionalStore acá
@@ -112,6 +118,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // sentido).
   // ─────────────────────────────────────────────
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
+  const categorias = useCategoriasServicioStore(s => s.categorias);
+  const guardarFondoCategoria = useCategoriasServicioStore(s => s.guardarFondoHistoria);
+  const borrarFondoCategoria = useCategoriasServicioStore(s => s.borrarFondoHistoria);
+  const categoriaSeleccionada = useMemo(
+    () => categorias.find(c => c.id === selectedCategoriaId) ?? null,
+    [categorias, selectedCategoriaId]
+  );
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
   const telefonoEstudio = useAuthStore(s => s.user?.telefono ?? null);
   // El logo, como fondoFijoGuardado más abajo, es una URL del backend servida
@@ -132,10 +145,20 @@ export function useGenerarHistoria(fechaInicial?: string) {
   }, [selectedProfesionalId, profesionales]);
   // Foto del recuadro del encabezado (avatar efectivo o logo, proxiada y
   // horneada): lógica compartida con la historia de precios.
-  const logoUrl = useFotoEncabezado(activeProfesionales, effectiveProfesionalId, logoNegocioCrudo);
+  // Con categoría elegida no hay una profesional puntual: el encabezado usa
+  // solo el logo del negocio (null → elegirFotoEncabezado cae al logo).
+  const logoUrl = useFotoEncabezado(
+    activeProfesionales,
+    selectedCategoriaId !== null ? null : effectiveProfesionalId,
+    logoNegocioCrudo
+  );
+  // El fondo fijo sale de la categoría si hay una elegida; si no, de la
+  // profesional efectiva como siempre.
   const fondoFijoGuardado = useMemo(
-    () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
-    [activeProfesionales, effectiveProfesionalId]
+    () => selectedCategoriaId !== null
+      ? categoriaSeleccionada?.fondo_historia_url ?? null
+      : activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
+    [selectedCategoriaId, categoriaSeleccionada, activeProfesionales, effectiveProfesionalId]
   );
 
   // fondoFijoGuardado es una URL pública del backend, servida sin
@@ -183,9 +206,12 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // render en cascada que un setState dentro de un effect generaría). Solo
   // corre cuando effectiveProfesionalId realmente cambia, así que un fondo
   // elegido "por esta vez" en la misma profesional no se pisa solo.
-  const [profesionalSincronizada, setProfesionalSincronizada] = useState(effectiveProfesionalId);
-  if (profesionalSincronizada !== effectiveProfesionalId) {
-    setProfesionalSincronizada(effectiveProfesionalId);
+  // La "key" incluye la categoría: cambiar de profesional a categoría (o
+  // entre categorías) también recarga el fondo fijo correspondiente.
+  const fuenteFondo = selectedCategoriaId !== null ? `c${selectedCategoriaId}` : `p${effectiveProfesionalId}`;
+  const [fuenteSincronizada, setFuenteSincronizada] = useState(fuenteFondo);
+  if (fuenteSincronizada !== fuenteFondo) {
+    setFuenteSincronizada(fuenteFondo);
     setFondoUri(proxiedFondoFijoGuardado);
   }
 
@@ -280,8 +306,12 @@ export function useGenerarHistoria(fechaInicial?: string) {
           // — con una sola, se mantiene el fetch sin scope de siempre, para
           // no excluir turnos viejos con profesional_id null de antes de
           // multi-agenda.
-          const filtro = activeProfesionales.length > 1 ? (effectiveProfesionalId ?? undefined) : undefined;
-          const data = await turnoService.getDisponibilidad(desde, hasta, filtro);
+          // Con categoría elegida se manda solo categoria_id (el backend no
+          // admite profesional_id junto a él).
+          const filtro = selectedCategoriaId === null && activeProfesionales.length > 1
+            ? (effectiveProfesionalId ?? undefined)
+            : undefined;
+          const data = await turnoService.getDisponibilidad(desde, hasta, filtro, selectedCategoriaId ?? undefined);
           if (cancelled) return;
           setAgendaGenerada(data);
 
@@ -298,7 +328,15 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
     cargar();
     return () => { cancelled = true; };
-  }, [fechaBase, modo, effectiveProfesionalId, activeProfesionales.length]);
+  }, [fechaBase, modo, effectiveProfesionalId, activeProfesionales.length, selectedCategoriaId]);
+
+  // Elegir otra categoría cambia los horarios de fondo: lo ocultado a mano
+  // sobre los anteriores ya no aplica (igual que al cambiar de período).
+  const setSelectedCategoriaId = useCallback((id: number | null) => {
+    setSelectedCategoriaIdCrudo(id);
+    setDiasOcultos([]);
+    setSlotsOcultos([]);
+  }, []);
 
   // ─────────────────────────────────────────────
   // Reset (mode switch / date nav) — fondoUri untouched
@@ -527,6 +565,16 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
       if (!guardarFijo) return;
 
+      // Con categoría elegida el fondo fijo es de la categoría, no de una
+      // profesional.
+      if (selectedCategoriaId !== null) {
+        const resultadoCategoria = await guardarFondoCategoria(selectedCategoriaId, archivoParaSubir);
+        if (!resultadoCategoria.success) {
+          await alertDialog(resultadoCategoria.message ?? tStatic('historia.HistoriaPage.couldNotSaveFixedBackground'));
+        }
+        return;
+      }
+
       let profesionalId = effectiveProfesionalId;
 
       // Si todavía no hay ninguna profesional resuelta puede ser que el
@@ -551,17 +599,20 @@ export function useGenerarHistoria(fechaInicial?: string) {
         await alertDialog(resultado.message ?? tStatic('historia.HistoriaPage.couldNotSaveFixedBackground'));
       }
     })();
-  }, [effectiveProfesionalId, selectedProfesionalId, guardarFondoHistoria]);
+  }, [effectiveProfesionalId, selectedProfesionalId, selectedCategoriaId, guardarFondoHistoria, guardarFondoCategoria]);
 
   const quitarFondoFijo = useCallback(async () => {
-    if (!effectiveProfesionalId) return;
-    const resultado = await borrarFondoHistoria(effectiveProfesionalId);
+    const fuenteId = selectedCategoriaId ?? effectiveProfesionalId;
+    if (!fuenteId) return;
+    const resultado = selectedCategoriaId !== null
+      ? await borrarFondoCategoria(selectedCategoriaId)
+      : await borrarFondoHistoria(fuenteId);
     if (resultado.success) {
       setFondoUri(null);
     } else {
       await alertDialog(resultado.message ?? tStatic('historia.HistoriaPage.couldNotRemoveFixedBackground'));
     }
-  }, [effectiveProfesionalId, borrarFondoHistoria]);
+  }, [effectiveProfesionalId, selectedCategoriaId, borrarFondoHistoria, borrarFondoCategoria]);
 
   // ─────────────────────────────────────────────
   // Capture helper — rasterize StoryCanvas DOM node.
@@ -702,6 +753,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
     editandoId, canvasRef, canvasWidth, canvasHeight,
     selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
+    selectedCategoriaId, setSelectedCategoriaId, categoriaSeleccionada,
     fondoFijoGuardado, nombreEstudio, telefonoEstudio, logoUrl,
 
     // navigation / mode

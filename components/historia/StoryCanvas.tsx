@@ -36,6 +36,10 @@ interface Props {
   // línea "con {nombre} · {fecha}" (ver lineaProfesional); el nombre del
   // negocio baja al pie.
   profesionalNombre?: string;
+  // Si se filtra por categoría, la línea chica pasa a "{categoría} · {fecha}"
+  // (los horarios son de varias profesionales, no de una) y gana sobre
+  // profesionalNombre.
+  categoriaNombre?: string;
   // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
   // ícono genérico en el header, en los 3 modos (día/semana/mes), para
   // impulsar la marca del negocio en la imagen que se comparte (pedido
@@ -61,7 +65,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, categoriaNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -79,9 +83,11 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // una sola línea chica "con {profesional} · {fecha}" (solo la fecha si no
   // hay profesional). El nombre del negocio va siempre en el pie, junto al
   // teléfono.
-  const lineaProfesional = profesionalNombre
-    ? t('withProfessional', { nombre: profesionalNombre })
-    : null;
+  const lineaProfesional = categoriaNombre
+    ? categoriaNombre
+    : profesionalNombre
+      ? t('withProfessional', { nombre: profesionalNombre })
+      : null;
   const tituloPrincipal = t('availableTitle');
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
