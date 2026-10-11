@@ -290,13 +290,40 @@ describe('Cobros — resumen y lista', () => {
     expect(screen.getByText('No hay turnos esperando precio. ¡Todo al día!')).toBeInTheDocument();
   });
 
-  it('mientras carga la primera página muestra el loader (no un texto) y no dice que está vacío', () => {
+  it('primera visita de una pestaña: muestra esqueletos con forma de fila, sin spinner ni "vacío"', () => {
     poner({ cargando: true });
     renderPage();
-    const loader = screen.getByRole('status', { name: 'Cargando...' });
-    expect(loader).toHaveClass('loader-spinner');
+    expect(screen.getAllByTestId('cobro-esqueleto')).toHaveLength(3);
+    expect(screen.getByRole('status', { name: 'Cargando...' })).not.toHaveClass('loader-spinner');
     expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
     expect(screen.queryByText('No hay turnos con esos filtros.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No hay turnos esperando precio. ¡Todo al día!')).not.toBeInTheDocument();
+  });
+
+  it('en "Cobrados", mientras carga por primera vez no muestra un $0 engañoso', () => {
+    poner({ cargando: true });
+    renderPage();
+    fireEvent.click(pestana(/^Cobrados/));
+    expect(within(screen.getByTestId('resumen-cobrado')).queryByText('$0,00')).not.toBeInTheDocument();
+  });
+
+  it('pestaña ya vista (con refresco de fondo): muestra sus filas al instante, sin esqueleto ni atenuarlas', () => {
+    poner({ turnos: [turno(1, { nombre: 'Camila', fecha: '2026-10-09 15:30:00', estado: 'confirmado' })], cargando: false });
+    renderPage();
+    expect(screen.getByText('Camila Test')).toBeInTheDocument();
+    expect(screen.queryByTestId('cobro-esqueleto')).not.toBeInTheDocument();
+    const fila = screen.getByText('Camila Test').closest('.rz-fade-in') as HTMLElement;
+    expect(fila).not.toBeNull();
+    expect(fila.style.opacity).toBe('');
+  });
+
+  it('la pastilla de la pestaña activa se desliza (transform) en vez de saltar', () => {
+    renderPage();
+    const pildora = screen.getByTestId('pestana-pildora');
+    expect(pildora).toHaveClass('rz-tab-pill');
+    expect(pildora.style.transform).toContain('translateX(calc(0 *');
+    fireEvent.click(pestana(/^Cobrados/));
+    expect(pildora.style.transform).toContain('translateX(calc(2 *');
   });
 
   it('al pedir la página siguiente muestra el loader debajo de lo ya cargado', () => {

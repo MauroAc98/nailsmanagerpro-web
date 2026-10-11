@@ -10,6 +10,8 @@ import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMontoEntero } from '@/lib/money';
 import { rangoMesAnteriorMismoPeriodo, variacionPorcentual } from '@/lib/estadisticas/metricas';
 import { useOcultarMonto } from '@/hooks/useOcultarMonto';
+import { crearCacheLru } from '@/lib/cacheLru';
+import { Skeleton } from '@/components/Skeleton';
 
 // Delega a formatoYMD (componentes LOCALES) — d.toISOString().split('T')[0]
 // corre la fecha un día para atrás en husos negativos como ART/BRT (UTC-3)
@@ -29,6 +31,12 @@ function rangoDeComparacion(viewDate: Date, hoy: Date): { desde: string; hasta: 
     hasta: formatFecha(new Date(viewDate.getFullYear(), viewDate.getMonth(), 0)),
   };
 }
+
+// Lo último visto de cada mes/profesional: al volver se muestra al instante y
+// se refresca de fondo. Está atado a su clave, así que nunca mezcla períodos.
+interface Entrada { stats: DashboardStats; previo: number | null }
+const cacheResumen = crearCacheLru<Entrada>(8);
+export const vaciarCacheResumenMes = () => cacheResumen.clear();
 
 interface Props {
   // Mismo filtro de profesional que el resto de la pantalla de Agenda —
@@ -63,6 +71,10 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   // Lo cobrado en el período de comparación, con la misma clave que `stats`:
   // es opcional y nunca se muestra contra el mes equivocado.
   const [previo, setPrevio] = useState<{ key: string; ganancias: number } | null>(null);
+  // Si la última carga mostró la tarjeta: mientras llega lo nuevo (otra
+  // profesional u otro mes) se queda en pantalla con esqueletos, así no
+  // desaparece y reaparece empujando el resto de la pantalla.
+  const [mostrada, setMostrada] = useState(false);
   const [ocultarMonto, toggleOcultarMonto] = useOcultarMonto();
 
   const statsKey = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
@@ -74,25 +86,42 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
     const key = `${profesionalId ?? 'all'}:${viewDate.getFullYear()}-${viewDate.getMonth()}`;
 
     statsService.getDashboard(formatFecha(desde), formatFecha(hasta), profesionalId ?? undefined)
-      .then(data => { if (!cancelled) { setStats(data); setLoadedKey(key); } })
-      .catch(e => console.error('ResumenMesCard:', e));
+      .then(data => {
+        if (cancelled) return;
+        cacheResumen.set(key, { stats: data, previo: cacheResumen.get(key)?.previo ?? null });
+        setStats(data); setLoadedKey(key); setMostrada(data.total_turnos > 0);
+      })
+      .catch(e => { if (!cancelled) setMostrada(false); console.error('ResumenMesCard:', e); });
 
     const comparacion = rangoDeComparacion(viewDate, new Date());
     statsService.getDashboard(comparacion.desde, comparacion.hasta, profesionalId ?? undefined)
-      .then(data => { if (!cancelled) setPrevio({ key, ganancias: data.ganancias }); })
+      .then(data => {
+        if (cancelled) return;
+        const entrada = cacheResumen.get(key);
+        if (entrada) cacheResumen.set(key, { ...entrada, previo: data.ganancias });
+        setPrevio({ key, ganancias: data.ganancias });
+      })
       .catch(() => { /* la comparación es opcional: sin ella el card funciona igual */ });
 
     return () => { cancelled = true; };
   }, [profesionalId, viewDate]);
 
-  // Sin datos todavía (cargando), datos de un mes/profesional distinto al
-  // actual (fetch en vuelo o que falló), o sin ningún turno este mes: no
-  // ocupar espacio en el home con una tarjeta vacía o con un dato viejo.
-  if (!stats || loadedKey !== statsKey || stats.total_turnos === 0) return null;
+  // Datos de ESTE mes/profesional: los recién cargados o, si ya se vieron, los
+  // cacheados. Nunca los de otra selección (sería plata con el período equivocado).
+  const propios: Entrada | undefined = stats && loadedKey === statsKey
+    ? { stats, previo: previo?.key === statsKey ? previo.ganancias : (cacheResumen.get(statsKey)?.previo ?? null) }
+    : cacheResumen.get(statsKey);
 
-  const topServicio = stats.servicios_mas_pedidos[0]?.nombre;
-  const { completados, confirmados, cancelados } = stats.turnos_por_estado;
-  const variacion = previo?.key === statsKey ? variacionPorcentual(stats.ganancias, previo.ganancias) : null;
+  // Sin turnos este mes: no ocupar espacio con una tarjeta vacía. Sin datos
+  // todavía: esqueleto solo si la tarjeta ya estaba a la vista; si no, nada.
+  if (propios?.stats.total_turnos === 0) return null;
+  if (!propios && !mostrada) return null;
+
+  const cargandoDatos = !propios;
+  const datos = propios?.stats ?? null;
+  const topServicio = datos?.servicios_mas_pedidos[0]?.nombre;
+  const { completados, confirmados, cancelados } = datos?.turnos_por_estado ?? { completados: 0, confirmados: 0, cancelados: 0 };
+  const variacion = datos && propios?.previo != null ? variacionPorcentual(datos.ganancias, propios.previo) : null;
   const mesPrevio = nombreMes(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1), 'long', 'ninguna');
 
   const divisor = `1px solid color-mix(in srgb, ${agendaColors.primary} 15%, transparent)`;
@@ -100,15 +129,18 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
   // completados; por venir = confirmados (los vencidos se completan solos, ver
   // turnos:completar-vencidos). Antes acá iba total_turnos, que sumaba los
   // confirmados como completados.
+  const nuevas = datos?.clientes.nuevas ?? 0;
   const numeros = [
     { valor: completados, rotulo: t('attended', { count: completados }) },
     { valor: confirmados, rotulo: t('upcoming') },
-    { valor: stats.clientes.nuevas, rotulo: t('newClients', { count: stats.clientes.nuevas }) },
+    { valor: nuevas, rotulo: t('newClients', { count: nuevas }) },
     { valor: cancelados, rotulo: t('cancelled', { count: cancelados }) },
   ];
 
   return (
     <button
+      aria-busy={cargandoDatos}
+      data-testid={cargandoDatos ? 'resumen-mes-esqueleto' : undefined}
       onClick={() => {
         const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
         const params = new URLSearchParams({ mes });
@@ -138,7 +170,7 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
       <div style={{ marginTop: 8, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <p style={{ margin: 0, fontSize: 26, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong, fontVariantNumeric: 'tabular-nums' }}>
+            {cargandoDatos ? <Skeleton width={110} height={26} radius={6} /> : <p style={{ margin: 0, fontSize: 26, lineHeight: 1, fontFamily: agendaFontSerif, fontWeight: 400, color: agendaColors.strong, fontVariantNumeric: 'tabular-nums' }}>
               {ocultarMonto
                 // Fila de puntos de ancho fijo (no un input type=password
                 // ni un blur) — el patrón que usan Mercado Pago/Ualá para
@@ -147,8 +179,8 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
                 // meterlo todo en un span más chico (intento anterior)
                 // encogía el "$" también, que se veía raro/inconsistente.
                 ? <>${' '}<span style={{ fontSize: 20, fontWeight: 400, letterSpacing: 3 }}>●●●●●</span></>
-                : `$${formatMontoEntero(stats.ganancias)}`}
-            </p>
+                : `$${formatMontoEntero(datos!.ganancias)}`}
+            </p>}
             <span
               onClick={toggleOcultarMonto}
               role="button"
@@ -187,10 +219,19 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
       <div style={{ marginTop: 10, paddingTop: 8, borderTop: divisor, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
         {numeros.map((n, i) => (
           <div key={i} style={{ flex: '0 1 auto', minWidth: 0, ...(i > 0 ? { paddingLeft: 10, borderLeft: divisor } : {}) }}>
-            <span style={{ display: 'block', fontSize: 16, fontWeight: 600, lineHeight: 1.15, color: agendaColors.strong, fontVariantNumeric: 'tabular-nums' }}>
-              {n.valor}
-            </span>
-            <span style={{ display: 'block', marginTop: 1, fontSize: 11, lineHeight: 1.25, color: agendaColors.sub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.rotulo}</span>
+            {cargandoDatos ? (
+              <>
+                <Skeleton width={28} height={18} />
+                <Skeleton width={56} height={11} style={{ marginTop: 3 }} />
+              </>
+            ) : (
+              <>
+                <span style={{ display: 'block', fontSize: 16, fontWeight: 600, lineHeight: 1.15, color: agendaColors.strong, fontVariantNumeric: 'tabular-nums' }}>
+                  {n.valor}
+                </span>
+                <span style={{ display: 'block', marginTop: 1, fontSize: 11, lineHeight: 1.25, color: agendaColors.sub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.rotulo}</span>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -198,6 +239,11 @@ export function ResumenMesCard({ profesionalId, viewDate }: Props) {
       {/* 3) El más pedido, en un renglón: "Más pedido: <servicio>". Es texto
           libre de largo variable: va último y a lo ancho, y si no entra baja
           de renglón sin desalinear nada ni cortarse. */}
+      {cargandoDatos && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: divisor }}>
+          <Skeleton width="60%" height={13} />
+        </div>
+      )}
       {topServicio && (
         <p style={{ margin: '8px 0 0', paddingTop: 8, borderTop: divisor, fontSize: 13, lineHeight: 1.35, color: agendaColors.sub, overflowWrap: 'anywhere' }}>
           {t('topServiceLabel')}{' '}

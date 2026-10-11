@@ -180,6 +180,26 @@ body {
   animation: rz-pulse 1.4s ease-in-out infinite;
 }
 
+/* Contenido que aparece (lista que llega tras el esqueleto) y pastilla que
+   desliza entre pestañas: transiciones cortas, apagadas con reduce-motion. */
+@keyframes rz-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.rz-fade-in {
+  animation: rz-fade-in 150ms ease-out;
+}
+
+.rz-tab-pill {
+  transition: transform 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rz-skeleton, .rz-fade-in { animation: none; }
+  .rz-tab-pill { transition: none; }
+}
+
 /* Bottom nav — el bubble del tab activo se monta/desmonta en cada cambio de
    ruta (branch condicional en app/(app)/layout.tsx, no una transform de un
    elemento persistente), así que un transition normal no lo agarra: no hay

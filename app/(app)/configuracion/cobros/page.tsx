@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import BackButton from '@/components/BackButton';
 import OpcionesSheet from '@/components/cobros/OpcionesSheet';
 import { Spinner } from '@/components/Spinner';
+import { Skeleton } from '@/components/Skeleton';
 import { MontoFit } from '@/components/estadisticas/MontoFit';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { NAV_CLEARANCE } from '@/constants/layout';
@@ -197,11 +198,29 @@ function FilaCobro({ turno, profesional, onUsarLista, onCargar }: FilaProps) {
   );
 }
 
+// Fila de carga con la forma de FilaCobro: dos barras a la izquierda y una a
+// la derecha. Solo la primera avisa "cargando" a lectores de pantalla.
+function FilaCobroEsqueleto({ etiqueta }: { etiqueta?: string }) {
+  return (
+    <div
+      data-testid="cobro-esqueleto"
+      {...(etiqueta ? { role: 'status', 'aria-label': etiqueta } : {})}
+      style={{ ...cardStyle, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+    >
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Skeleton width="55%" height={14} />
+        <Skeleton width="80%" height={12} />
+      </div>
+      <Skeleton width={64} height={16} />
+    </div>
+  );
+}
+
 // Lo que dibuja la lista: la cabecera (título, resumen, filtros) es la fila 0,
 // así toda la pantalla scrollea junta y las alturas se miden solas.
 type Item =
   | { tipo: 'encabezado' }
-  | { tipo: 'cargando' }
+  | { tipo: 'esqueleto'; primero: boolean }
   | { tipo: 'vacio' }
   | { tipo: 'turno'; turno: TurnoConCobro }
   | { tipo: 'mas' };
@@ -209,7 +228,6 @@ type Item =
 interface FilaListaProps {
   items: Item[];
   encabezado: ReactNode;
-  atenuado: boolean;
   textoCargando: string;
   textoVacio: string;
   textoMas: string;
@@ -219,7 +237,7 @@ interface FilaListaProps {
 }
 
 function FilaLista({
-  index, style, items, encabezado, atenuado, textoCargando, textoVacio, textoMas, profesionalDe, onUsarLista, onCargar,
+  index, style, items, encabezado, textoCargando, textoVacio, textoMas, profesionalDe, onUsarLista, onCargar,
 }: RowComponentProps<FilaListaProps>) {
   const item = items[index];
   if (!item) return null;
@@ -228,12 +246,8 @@ function FilaLista({
     case 'encabezado':
       contenido = encabezado;
       break;
-    case 'cargando':
-      contenido = (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
-          <Spinner label={textoCargando} />
-        </div>
-      );
+    case 'esqueleto':
+      contenido = <FilaCobroEsqueleto etiqueta={item.primero ? textoCargando : undefined} />;
       break;
     case 'vacio':
       contenido = <p style={{ textAlign: 'center', color: colors.subtext, margin: 0, fontSize: 14, padding: '22px 0' }}>{textoVacio}</p>;
@@ -247,7 +261,7 @@ function FilaLista({
       break;
     case 'turno':
       contenido = (
-        <div style={{ opacity: atenuado ? 0.55 : 1, transition: 'opacity 0.15s' }}>
+        <div className="rz-fade-in">
           <FilaCobro
             turno={item.turno}
             profesional={profesionalDe(item.turno.profesional_id)}
@@ -304,7 +318,9 @@ function CobrosContenido() {
   const pagoFiltro: PagoFiltro = pestana === 'resolver' ? 'sinprecio' : pestana === 'proximos' ? chipSena : 'todo';
   const periodoEfectivo: PeriodoFiltro = pestana === 'cobrados' ? periodoFiltro : 'todo';
 
-  useEffect(() => {
+  // Layout effect: el store cambia (esqueleto o lista cacheada) antes de pintar,
+  // así no hay un cuadro con la lista de la pestaña anterior.
+  useLayoutEffect(() => {
     cargarPrimeraPagina({ turno: turnoFiltro, pago: pagoFiltro, periodo: periodoEfectivo, buscar: buscarAplicado });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnoFiltro, pagoFiltro, periodoEfectivo, buscarAplicado]);
@@ -380,6 +396,8 @@ function CobrosContenido() {
     setBuscando(v => !v);
   };
 
+  // Primera visita de un filtro: sin datos todavía (no hay copia cacheada).
+  const cargandoPrimera = cargando && turnos.length === 0;
   const textoPeriodo = t(PERIODO_OPCIONES.find(o => o.valor === periodoFiltro)!.key);
   const sinPrecioPendientes = errorPendientes ? null : pendientes.length;
 
@@ -424,7 +442,18 @@ function CobrosContenido() {
           </label>
         )}
 
-        <div role="tablist" aria-label={t('title')} style={{ ...cardStyle, display: 'flex', gap: 4, padding: 4 }}>
+        <div role="tablist" aria-label={t('title')} style={{ ...cardStyle, position: 'relative', display: 'flex', gap: 4, padding: 4 }}>
+          {/* Pastilla activa: una sola, que desliza entre pestañas (3 de igual ancho, 4px entre ellas). */}
+          <div
+            aria-hidden="true"
+            data-testid="pestana-pildora"
+            className="rz-tab-pill"
+            style={{
+              position: 'absolute', top: 4, bottom: 4, left: 4, width: 'calc((100% - 16px) / 3)', borderRadius: 10,
+              backgroundColor: colors.primarySolid,
+              transform: `translateX(calc(${PESTANAS.findIndex(x => x.valor === pestana)} * (100% + 4px)))`,
+            }}
+          />
           {PESTANAS.map(p => {
             const activa = p.valor === pestana;
             return (
@@ -435,8 +464,8 @@ function CobrosContenido() {
                 aria-selected={activa}
                 onClick={() => setPestana(p.valor)}
                 style={{
-                  flex: 1, minWidth: 0, padding: '10px 4px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: activa ? 700 : 600,
-                  border: 'none', backgroundColor: activa ? colors.primarySolid : 'transparent', color: activa ? colors.primaryFg : colors.subtext,
+                  position: 'relative', flex: 1, minWidth: 0, padding: '10px 4px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: activa ? 700 : 600,
+                  border: 'none', backgroundColor: 'transparent', color: activa ? colors.primaryFg : colors.subtext, transition: 'color 200ms',
                 }}
               >
                 {t(p.key)}
@@ -508,11 +537,13 @@ function CobrosContenido() {
               </button>
             </div>
             <div style={{ marginTop: 6, fontFamily: agendaFontSerif, fontWeight: 400, color: colors.textStrong, fontVariantNumeric: 'tabular-nums' }}>
-              <MontoFit maxFontSize={38} minFontSize={20}>{monto(resumen.cobrado_total)}</MontoFit>
+              {cargandoPrimera
+                ? <Skeleton width={150} height={38} radius={8} />
+                : <MontoFit maxFontSize={38} minFontSize={20}>{monto(resumen.cobrado_total)}</MontoFit>}
             </div>
             <div style={{ marginTop: 6, fontSize: 13, color: colors.subtext }}>
-              {t('cobradoDetalle', { count: counts.todo })}
-              {resumen.sena_en_pendientes > 0 && ` · ${t('summaryIncluyeSena', { monto: monto(resumen.sena_en_pendientes) })}`}
+              {cargandoPrimera ? <Skeleton width={120} height={13} style={{ display: 'inline-block', verticalAlign: 'middle' }} /> : t('cobradoDetalle', { count: counts.todo })}
+              {!cargandoPrimera && resumen.sena_en_pendientes > 0 && ` · ${t('summaryIncluyeSena', { monto: monto(resumen.sena_en_pendientes) })}`}
             </div>
           </div>
         )}
@@ -528,7 +559,10 @@ function CobrosContenido() {
 
   const items = useMemo<Item[]>(() => {
     const lista: Item[] = [{ tipo: 'encabezado' }];
-    if (turnos.length === 0) lista.push({ tipo: cargando ? 'cargando' : 'vacio' });
+    if (turnos.length === 0) {
+      if (cargando) lista.push({ tipo: 'esqueleto', primero: true }, { tipo: 'esqueleto', primero: false }, { tipo: 'esqueleto', primero: false });
+      else lista.push({ tipo: 'vacio' });
+    }
     else lista.push(...turnos.map((turno): Item => ({ tipo: 'turno', turno })));
     if (cargandoMas) lista.push({ tipo: 'mas' });
     return lista;
@@ -554,7 +588,6 @@ function CobrosContenido() {
         rowProps={{
           items,
           encabezado,
-          atenuado: cargando && turnos.length > 0,
           textoCargando: t('loading'),
           textoVacio: t(pestana === 'resolver' ? 'resolverVacio' : 'emptyState'),
           textoMas: t('loadingMore'),

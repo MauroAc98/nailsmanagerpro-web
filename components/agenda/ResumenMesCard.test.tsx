@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
-import { renderWithProviders, screen } from '@/test/render';
+import { renderWithProviders, screen, waitFor } from '@/test/render';
 import { statsService } from '@/services/statsService';
-import { ResumenMesCard } from './ResumenMesCard';
+import { ResumenMesCard, vaciarCacheResumenMes } from './ResumenMesCard';
 
 vi.mock('next/navigation', async () => (await import('@/test/mocks/nextNavigation')).nextNavigationMock);
 
@@ -33,6 +33,7 @@ const octubre = new Date(2026, 9, 1);
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 11, 12, 0));
+  vaciarCacheResumenMes();
   getDashboard.mockReset();
   getDashboard.mockResolvedValue(stats() as never);
 });
@@ -138,5 +139,83 @@ describe('ResumenMesCard', () => {
     } finally {
       localStorage.removeItem('agenda:ocultarMontoResumen');
     }
+  });
+});
+
+describe('ResumenMesCard — cambio de profesional / mes', () => {
+  // Respuesta pendiente a mano, para ver el estado "cargando".
+  function pendiente() {
+    let resolver!: (v: never) => void;
+    const promesa = new Promise<never>(r => { resolver = r; });
+    return { promesa, resolver };
+  }
+
+  it('al cambiar de profesional sigue montada, con esqueletos y sin la plata de la anterior', async () => {
+    getDashboard.mockImplementation(async (_d: string, _h: string, prof?: number) =>
+      stats({ ganancias: prof === 7 ? 111000 : 607300 }) as never);
+    const { rerender } = renderWithProviders(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+    expect(await screen.findByText('$607.300')).toBeInTheDocument();
+
+    const lento = pendiente();
+    getDashboard.mockImplementation(() => lento.promesa);
+    rerender(<ResumenMesCard profesionalId={7} viewDate={octubre} />);
+
+    expect(screen.getByText('Resumen de octubre')).toBeInTheDocument();
+    expect(screen.queryByText('$607.300')).not.toBeInTheDocument();
+    expect(screen.getByTestId('resumen-mes-esqueleto')).toBeInTheDocument();
+  });
+
+  it('cuando llega lo nuevo reemplaza los esqueletos por los números', async () => {
+    const { rerender } = renderWithProviders(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+    await screen.findByText('$607.300');
+
+    getDashboard.mockResolvedValue(stats({ ganancias: 111000 }) as never);
+    rerender(<ResumenMesCard profesionalId={7} viewDate={octubre} />);
+
+    expect(await screen.findByText('$111.000')).toBeInTheDocument();
+    expect(screen.queryByTestId('resumen-mes-esqueleto')).not.toBeInTheDocument();
+  });
+
+  it('si lo nuevo no tiene turnos, se oculta como siempre', async () => {
+    const { rerender } = renderWithProviders(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+    await screen.findByText('$607.300');
+
+    getDashboard.mockResolvedValue(stats({ total_turnos: 0 }) as never);
+    rerender(<ResumenMesCard profesionalId={7} viewDate={octubre} />);
+
+    await waitFor(() => expect(screen.queryByText('Resumen de octubre')).not.toBeInTheDocument());
+  });
+
+  it('si el pedido nuevo falla, se oculta (nunca queda la plata vieja ni un esqueleto eterno)', async () => {
+    const { rerender } = renderWithProviders(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+    await screen.findByText('$607.300');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    getDashboard.mockRejectedValue(new Error('sin red'));
+    rerender(<ResumenMesCard profesionalId={7} viewDate={octubre} />);
+
+    await waitFor(() => expect(screen.queryByText('Resumen de octubre')).not.toBeInTheDocument());
+    log.mockRestore();
+  });
+
+  it('antes de la primera carga no ocupa lugar (sin esqueleto)', () => {
+    getDashboard.mockImplementation(() => new Promise(() => {}));
+    renderWithProviders(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+    expect(screen.queryByText('Resumen de octubre')).not.toBeInTheDocument();
+  });
+
+  it('al volver a una selección ya vista muestra sus números al instante', async () => {
+    getDashboard.mockImplementation(async (_d: string, _h: string, prof?: number) =>
+      stats({ ganancias: prof === 7 ? 111000 : 607300 }) as never);
+    const { rerender } = renderWithProviders(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+    await screen.findByText('$607.300');
+    rerender(<ResumenMesCard profesionalId={7} viewDate={octubre} />);
+    await screen.findByText('$111.000');
+
+    getDashboard.mockImplementation(() => new Promise(() => {})); // el refresco de fondo queda en vuelo
+    rerender(<ResumenMesCard profesionalId={null} viewDate={octubre} />);
+
+    expect(screen.getByText('$607.300')).toBeInTheDocument();
+    expect(screen.queryByTestId('resumen-mes-esqueleto')).not.toBeInTheDocument();
   });
 });

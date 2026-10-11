@@ -11,7 +11,7 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
-import { turnoService, Turno, TurnoMes } from '@/services/turnoService';
+import { Turno } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
@@ -21,6 +21,7 @@ import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from
 import { NotificacionesBell } from '@/components/NotificacionesBell';
 import { Spinner } from '@/components/Spinner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
+import { useMarcasMesProfesional } from '@/hooks/useMarcasMesProfesional';
 import { AccionesRapidasFab } from '@/components/agenda/AccionesRapidasFab';
 import { SwipeableTurnoCard } from '@/components/agenda/SwipeableTurnoCard';
 import { VisitaCard } from '@/components/agenda/VisitaCard';
@@ -626,7 +627,6 @@ function AgendaContent() {
   // búsqueda más: mutuamente excluyente con textoBusqueda/servicioFiltro/
   // fechaFiltro, igual que esos tres lo son entre sí (ver useTurnoStore).
   const [profesionalFiltroBusqueda, setProfesionalFiltroBusqueda] = useState<number | null>(null);
-  const [turnosMesFiltrado, setTurnosMesFiltrado] = useState<TurnoMes[]>([]);
   const [viewDate,        setViewDate]        = useState<Date>(() => {
     const [y, m] = fechaInicial.split('-').map(Number);
     return new Date(y, m - 1, 1);
@@ -687,24 +687,9 @@ function AgendaContent() {
   // Badges del calendario mensual filtrados por profesional — solo se pide
   // cuando hay una profesional puntual seleccionada; con "Todas" alcanza
   // turnosMes de siempre (misma fuente, sin filtrar). El backend filtra
-  // server-side (/turnos/marcas?profesional_id=...) y devuelve el mismo
-  // agregado liviano {fecha, cantidad} ya filtrado — no trae turnos completos.
-  useEffect(() => {
-    if (!mostrarSelectorProfesional || profesionalFiltro === null) return;
-    let cancelled = false;
-
-    // Limpia antes de pedir: sin esto, al saltar de una profesional a otra
-    // (sin pasar por "Todas") los badges quedaban un instante mostrando el
-    // conteo de la profesional anterior mientras resuelve el fetch nuevo.
-    setTurnosMesFiltrado([]);
-
-    const mes = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
-    turnoService.getByMes(mes, profesionalFiltro)
-      .then(data => { if (!cancelled) setTurnosMesFiltrado(data); })
-      .catch(e => console.error('fetchTurnosMesFiltrado:', e));
-
-    return () => { cancelled = true; };
-  }, [mostrarSelectorProfesional, profesionalFiltro, viewDate]);
+  // server-side (/turnos/marcas?profesional_id=...). El hook recuerda las
+  // últimas vistas (al volver se ven al instante) y nunca muestra las de otra.
+  const turnosMesFiltrado = useMarcasMesProfesional(mostrarSelectorProfesional, profesionalFiltro, viewDate);
 
   const turnosMesParaBadges = (mostrarSelectorProfesional && profesionalFiltro !== null)
     ? turnosMesFiltrado
