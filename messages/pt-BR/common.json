@@ -58,6 +58,8 @@
     "retry": "Tentar novamente",
     "empty": "Nenhuma novidade por hoje.",
     "clienteDesconocido": "um cliente",
+    "reservaOnlinePagada": "{nombre} reservou online e pagou o sinal",
+    "reservaOnlineDetalle": "{fecha} · {hora}",
     "confirmacionEnviada": "Confirmação enviada a {cliente}",
     "confirmacionFallida": "Falha ao enviar a confirmação a {cliente}",
     "recordatorioEnviado": "Lembrete enviado a {cliente}",

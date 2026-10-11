@@ -85,6 +85,18 @@ export interface Notificaciones {
   // completa de hoy (vistos o no), esto es solo el contador.
   no_vistos: number;
   mensajes: NotificacionMensaje[];
+  // Reservas online con seña pagada HOY que ya son turno. Opcional: un
+  // backend viejo no lo manda.
+  reservas_pagadas?: NotificacionReservaPagada[];
+}
+
+export interface NotificacionReservaPagada {
+  id: number;            // id de la reserva
+  turno_id: number;
+  cliente_nombre: string | null;
+  cliente_apellido: string | null;
+  fecha_hora: string;    // del turno, "YYYY-MM-DD HH:MM:SS" (hora de pared)
+  pagada_at: string;     // ISO
 }
 
 // Turno de referencia para /agenda/manana — mismo shape que Turno más el

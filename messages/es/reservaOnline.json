@@ -195,10 +195,7 @@
     "nota": "La seña va directo a tu cuenta. Turnetto no toca tu plata."
   },
   "agenda": {
-    "badge": "Reserva online",
-    "aviso": "{nombre} reservó y pagó la seña",
-    "avisoDetalle": "{fecha} {hora}",
-    "avisoNota": "Idea: {nota}"
+    "badge": "Reserva online"
   },
   "detalle": {
     "agregar": "Agregar a mi turno",

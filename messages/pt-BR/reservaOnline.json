@@ -192,10 +192,7 @@
     "nota": "O sinal vai direto para a sua conta. O Turnetto não mexe no seu dinheiro."
   },
   "agenda": {
-    "badge": "Reserva online",
-    "aviso": "{nombre} reservou e pagou o sinal",
-    "avisoDetalle": "{fecha} {hora}",
-    "avisoNota": "Ideia: {nota}"
+    "badge": "Reserva online"
   },
   "detalle": {
     "agregar": "Adicionar ao meu horário",

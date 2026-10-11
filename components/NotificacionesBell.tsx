@@ -2,12 +2,13 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { Bell, CalendarDays, ChevronRight, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Bell, CalendarDays, ChevronRight, CheckCircle2, XCircle, Clock, Send, Globe } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
-import type { NotificacionMensaje } from '@/services/turnoService';
+import type { NotificacionMensaje, NotificacionReservaPagada } from '@/services/turnoService';
 import { claveTextoNotificacion } from '@/lib/notificacionTexto';
+import { diaLargoCorto } from '@/lib/reservaOnline/formatoFecha';
 
 const PANEL_WIDTH_MAX = 300;
 const MARGEN_PANTALLA = 20;
@@ -43,6 +44,7 @@ export function NotificacionesBell() {
   const { data, loading, error, fetchNotificaciones, marcarVistas } = useNotificacionesStore();
 
   const mensajes = data?.mensajes ?? [];
+  const reservasPagadas = data?.reservas_pagadas ?? [];
   const turnosManana = data?.turnos_manana ?? 0;
   const badgeCount = data?.no_vistos ?? 0;
 
@@ -143,11 +145,15 @@ export function NotificacionesBell() {
               </div>
             )}
 
-            {!loading && !error && mensajes.length === 0 && turnosManana === 0 && (
+            {!loading && !error && mensajes.length === 0 && reservasPagadas.length === 0 && turnosManana === 0 && (
               <p style={{ padding: 16, margin: 0, fontSize: 13, color: colors.subtext, textAlign: 'center' }}>
                 {t('empty')}
               </p>
             )}
+
+            {reservasPagadas.map(r => (
+              <ReservaPagadaRow key={`reserva-${r.id}`} reserva={r} onClick={() => { setAbierto(false); router.push(`/agenda?fecha=${r.fecha_hora.slice(0, 10)}`); }} />
+            ))}
 
             {mensajes.map(m => (
               <NotificacionRow key={m.id} mensaje={m} onClick={() => { setAbierto(false); router.push(`/agenda/notificaciones/${m.id}`); }} />
@@ -165,6 +171,41 @@ function formatTiempoRelativo(iso: string, tHaceUnMomento: string, tMin: (n: num
   if (minutos < 60) return tMin(minutos);
   const horas = Math.floor(minutos / 60);
   return tHoras(horas);
+}
+
+// Reserva online con seña pagada hoy. fecha_hora es la hora de pared del
+// turno (el backend la serializa sin zona), así que se corta el string en vez
+// de pasarla por Date. Al tocarla se abre la agenda en el día del turno
+// (/agenda?fecha=, que la página ya lee al montar).
+function ReservaPagadaRow({ reserva, onClick }: { reserva: NotificacionReservaPagada; onClick: () => void }) {
+  const t = useTranslations('common.NotificacionesBell');
+  const locale = useLocale();
+  const nombre = [reserva.cliente_nombre, reserva.cliente_apellido].filter(Boolean).join(' ') || t('clienteDesconocido');
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '12px 16px',
+        border: 'none', borderBottom: `1px solid ${colors.hairline}`,
+        backgroundColor: 'transparent', cursor: 'pointer', textAlign: 'left',
+      }}
+    >
+      <Globe size={16} color={colors.success} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, color: colors.text, lineHeight: 1.4 }}>
+          {t('reservaOnlinePagada', { nombre })}
+        </p>
+        <p style={{ margin: '2px 0 0', fontSize: 11, color: colors.subtext }}>
+          {t('reservaOnlineDetalle', {
+            fecha: diaLargoCorto(reserva.fecha_hora.slice(0, 10), locale),
+            hora: reserva.fecha_hora.slice(11, 16),
+          })}
+        </p>
+      </div>
+      <ChevronRight size={14} color={colors.subtext} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
+    </button>
+  );
 }
 
 function NotificacionRow({ mensaje, onClick }: { mensaje: NotificacionMensaje; onClick: () => void }) {

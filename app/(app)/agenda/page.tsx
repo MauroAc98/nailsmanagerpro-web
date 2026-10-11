@@ -30,7 +30,6 @@ import { agruparVisitas, pasosCancelables, turnoACancelar, visitaCancelable, typ
 import { urlWhatsappVisita } from '@/lib/visitasWhatsapp';
 import { useAuthStore } from '@/store/useAuthStore';
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
-import { AvisoReservaOnline } from '@/components/reservaOnline/AvisoReservaOnline';
 import { WeekStrip, getCurrentWeekDates } from '@/components/agenda/WeekStrip';
 import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
 import { horaDeHora, formatFechaMini, formatCellDate, parseFechaLocal, type ProfesionalLabel } from '@/components/agenda/agendaDateHelpers';
@@ -1008,7 +1007,6 @@ function AgendaContent() {
       {bannerGanador === 'recordatorios' && <RecordatoriosPendientesBanner onDismiss={dismissRecordatorios} />}
 
       {/* Aviso de reserva online pagada (oculto con la flag apagada). */}
-      <AvisoReservaOnline />
 
       {/* Resumen del mes — vistazo rápido, detalle completo en
           Configuración → Estadísticas. Se auto-oculta sin turnos este mes. */}
