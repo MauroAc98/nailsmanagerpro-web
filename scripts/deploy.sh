@@ -10,7 +10,9 @@ SSH_KEY="${DEPLOY_SSH_KEY:-$HOME/.ssh/turnetto_vps}"
 RELEASES_DIR="/var/www/pwa/releases"
 CURRENT_LINK="/var/www/pwa/current"
 SHARED_ENV="/var/www/pwa/shared/.env.production"
+SHARED_IMAGE_CACHE="/var/www/pwa/shared/cache/images"
 PM2_APP="pwa"
+PM2_RUN_USER="pwarun"
 KEEP_RELEASES=2
 HEALTH_URL="https://app.turnetto.com/"
 
@@ -45,6 +47,12 @@ echo "==> Extracting and wiring shared env..."
 # tar preserves the uploading machine's (Windows/git-bash synthetic) uid:gid, so
 # normalize ownership to root:root to match the rest of the release tree.
 ssh_remote "tar -xzf '/tmp/$(basename "$TARBALL")' -C '$REMOTE_RELEASE' && rm -f '/tmp/$(basename "$TARBALL")' && chown -R root:root '$REMOTE_RELEASE' && rm -f '$REMOTE_RELEASE/.env.production' && ln -s '$SHARED_ENV' '$REMOTE_RELEASE/.env.production'"
+
+# The server runs as $PM2_RUN_USER, not root, so it can't create .next/cache in
+# the root-owned release (EACCES on every next/image request, nothing cached).
+# Give it a writable .next/cache, and point the image cache at a shared dir so
+# optimized images survive deploys instead of being re-encoded after each one.
+ssh_remote "mkdir -p '$SHARED_IMAGE_CACHE' '$REMOTE_RELEASE/.next/cache' && chown -R '$PM2_RUN_USER:$PM2_RUN_USER' '$SHARED_IMAGE_CACHE' '$REMOTE_RELEASE/.next/cache' && rm -rf '$REMOTE_RELEASE/.next/cache/images' && ln -s '$SHARED_IMAGE_CACHE' '$REMOTE_RELEASE/.next/cache/images'"
 
 PREVIOUS_RELEASE="$(ssh_remote "readlink -f '$CURRENT_LINK'" || true)"
 
