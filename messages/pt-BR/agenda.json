@@ -255,11 +255,14 @@
     "readyButton": "Pronto"
   },
   "ResumenMesCard": {
-    "statsThisMonth": "Estatísticas deste mês",
-    "statsOfMonth": "Estatísticas de {mes}",
-    "appointmentsCompleted": "{count, plural, one {# agendamento concluído} other {# agendamentos concluídos}}",
-    "topServiceLabel": "serviço top",
-    "newClientsThisMonth": "{count, plural, one {# cliente novo este mês} other {# clientes novos este mês}}",
+    "monthToDate": "{mes} · até hoje",
+    "collected": "Recebido",
+    "vsMonth": "{pct}% vs. {mes}",
+    "attended": "atendimentos feitos",
+    "upcoming": "atendimentos por vir",
+    "cancelled": "cancelados",
+    "topService": "O mais pedido",
+    "newClients": "clientes novos",
     "hideAmount": "Ocultar valor",
     "showAmount": "Mostrar valor"
   },
