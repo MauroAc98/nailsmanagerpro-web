@@ -30,6 +30,8 @@ interface Props {
   cerrarLabel: string;
   profesionales: ProfesionalSheetOption[];
   selectedId: number | 'equipo';
+  // z-index del fondo oscuro. 39 por defecto; 40 si se abre desde otra BottomSheet.
+  backdropZIndex?: number;
 }
 
 export function EquipoIcono({ size = 32 }: { size?: number }) {
@@ -51,7 +53,7 @@ export function ProfesionalSheet(props: Props) {
 }
 
 function ProfesionalSheetAbierta({
-  onClose, onSelect, title, equipoLabel, equipoSubtitulo, cerrarLabel, profesionales, selectedId,
+  onClose, onSelect, title, equipoLabel, equipoSubtitulo, cerrarLabel, profesionales, selectedId, backdropZIndex = 39,
 }: Props) {
   const elegir = (sel: number | 'equipo') => {
     onSelect(sel);
@@ -62,7 +64,7 @@ function ProfesionalSheetAbierta({
     <>
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: 39, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
+        style={{ position: 'fixed', inset: 0, zIndex: backdropZIndex, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
       />
       <BottomSheet
         snapPoints={[0.6]}

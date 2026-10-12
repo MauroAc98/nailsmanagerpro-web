@@ -130,14 +130,15 @@
   "FiltroSheetContent": {
     "title": "Filtros",
     "clearAll": "Limpar tudo",
-    "searchClient": "Buscar cliente",
+    "searchClient": "Cliente",
     "clientNamePlaceholder": "Nome do cliente...",
-    "searchByDate": "Buscar por data",
+    "searchByDate": "Data",
     "datePlaceholder": "Escolher data",
-    "filterByService": "Filtrar por serviço",
+    "serviceLabel": "Serviço",
     "allServices": "Todos os serviços",
-    "filterByProfesional": "Filtrar por profissional",
+    "professionalLabel": "Profissional",
     "allTeam": "Toda a equipe",
+    "closeSheet": "Fechar",
     "viewResults": "Ver resultados"
   },
   "SelectorProfesionalDia": {

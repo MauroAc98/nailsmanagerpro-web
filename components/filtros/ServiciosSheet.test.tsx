@@ -97,3 +97,41 @@ describe('ServiciosSheet', () => {
     expect(screen.queryByText('Servicios')).not.toBeInTheDocument();
   });
 });
+
+describe('ServiciosSheet mode="single"', () => {
+  const setupSingle = (over: Partial<React.ComponentProps<typeof ServiciosSheet>> = {}) =>
+    setup({ mode: 'single', ctaLabel: undefined, ...over });
+
+  it('no muestra CTA, Cancelar ni Limpiar; sí Cerrar', async () => {
+    setupSingle();
+    await screen.findByText('Esmaltado');
+    expect(screen.queryByRole('button', { name: /^Ver / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Limpiar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeInTheDocument();
+  });
+
+  it('tocar un servicio confirma [id] y cierra', async () => {
+    const { props } = setupSingle({ selectedIds: [] });
+    await screen.findByText('Esmaltado');
+    fireEvent.click(screen.getByText('Esmaltado'));
+    expect(props.onConfirm).toHaveBeenCalledWith([2]);
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
+  it('"Todos" confirma [] y cierra', async () => {
+    const { props } = setupSingle({ selectedIds: [1] });
+    await screen.findByText('Esmaltado');
+    fireEvent.click(screen.getByText('Todos'));
+    expect(props.onConfirm).toHaveBeenCalledWith([]);
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
+  it('Cerrar cierra sin confirmar', async () => {
+    const { props } = setupSingle();
+    await screen.findByText('Esmaltado');
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(props.onClose).toHaveBeenCalled();
+    expect(props.onConfirm).not.toHaveBeenCalled();
+  });
+});
