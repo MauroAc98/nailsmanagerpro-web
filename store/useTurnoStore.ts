@@ -4,6 +4,7 @@ import {
   Turno,
   TurnoMes,
   CreateTurnoDto,
+  CreateLoteDto,
   UpdateTurnoDto,
   extraerMensajeError,
 } from '@/services/turnoService';
@@ -19,6 +20,10 @@ interface OperacionResult {
   message?: string;
   // `code` del 422 del backend cuando lo trae (ej. 'slot_held').
   code?: string;
+  // Alta en lote: índice (0-based) del turno que el backend rechazó.
+  indice?: number;
+  // Alta en lote exitosa: los turnos creados.
+  turnos?: Turno[];
   // Ids realmente cancelados al cancelar todo el combo.
   cancelados?: number[];
   // Al reprogramar un combo: si se aviso al cliente, y por que no.
@@ -64,6 +69,7 @@ interface TurnosState {
   fetchTurnosMes: (mes: string) => Promise<void>;
   fetchTurno: (id: number, opts?: { silent?: boolean }) => Promise<void>;
   crearTurno: (dto: CreateTurnoDto) => Promise<OperacionResult>;
+  crearLote: (dto: CreateLoteDto) => Promise<OperacionResult>;
   actualizarTurno: (id: number, dto: UpdateTurnoDto) => Promise<OperacionResult>;
   completarTurno: (
     id: number,
@@ -238,6 +244,32 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
       } catch (e) {
         const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
         return { success: false, message: extraerMensajeError(e), ...(code ? { code } : {}) };
+      }
+    });
+  },
+
+  // ─────────────────────────────────────────────
+  // crearLote — varios turnos de un mismo cliente (POST /turnos/lote, todo o nada).
+  // El 422 trae `message` ya prefijado "Turno N: …", `code` opcional e `indice` (0-based).
+  // ─────────────────────────────────────────────
+  crearLote: async (dto) => {
+    return withGlobalLoader(async () => {
+      try {
+        const { turnos } = await turnoService.createLote(dto);
+        await refrescarAgenda(get, set, get().fechaSeleccionada);
+        return { success: true, turnos };
+      } catch (e) {
+        const data = (e as { response?: { data?: { code?: string; indice?: number; message?: string } } })?.response?.data;
+        const code = data?.code;
+        const indice = typeof data?.indice === 'number' ? data.indice : undefined;
+        // Con `indice` el message ya viene prefijado y es el que corresponde mostrar;
+        // sin él (validación genérica de Laravel) vale lo mismo que en crearTurno.
+        const message = indice !== undefined && data?.message ? data.message : extraerMensajeError(e);
+        return {
+          success: false, message,
+          ...(code ? { code } : {}),
+          ...(indice !== undefined ? { indice } : {}),
+        };
       }
     });
   },

@@ -258,7 +258,20 @@
     "appointmentCreatedTitle": "Turno agendado",
     "manualConfirmationNotice": "El envío automático de confirmación no está disponible en este momento para tu WhatsApp. Enviala a mano:",
     "sendConfirmationWhatsapp": "Enviar confirmación por WhatsApp",
-    "readyButton": "Listo"
+    "readyButton": "Listo",
+    "addAnotherAppointment": "Agregar otro turno",
+    "appointmentN": "Turno {n}",
+    "day": "DÍA",
+    "confirmMany": "Confirmar {count} turnos",
+    "removeAppointment": "Quitar turno {n}",
+    "createdMany": "Turnos creados",
+    "editAppointmentSummary": "Editar turno {n}: {resumen}",
+    "blockError": "Turno {n}: {mensaje}",
+    "withProfessional": "con {nombre}",
+    "appointmentsCreatedTitle": "Turnos agendados",
+    "manualConfirmationNoticeMany": "El envío automático de confirmación no está disponible en este momento para tu WhatsApp. Enviá la confirmación de cada turno a mano:",
+    "sendShort": "WhatsApp",
+    "sendConfirmationFor": "Enviar confirmación por WhatsApp del turno {resumen}"
   },
   "ResumenMesCard": {
     "summaryOf": "Resumen de {mes}",

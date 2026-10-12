@@ -5,6 +5,8 @@
     "outsideBusinessHours": "El horario de atención es de {horaMin} a {horaMax}hs.",
     "maxTurnosPerClient": "El cliente ya tiene el máximo de {max} turnos para este día.",
     "serviceAlreadyBooked": "El cliente ya tiene agendado: {nombres} para este día.",
+    "serviciosFaltan": "Elegí al menos un servicio.",
+    "profesionalFalta": "Elegí quién atiende.",
     "unknownClientFallback": "otro cliente",
     "scheduleConflict": "Las {hora} cae dentro del turno de {cliente} ({servicios}, {desde} - {hasta}). Elegí otro horario."
   },
