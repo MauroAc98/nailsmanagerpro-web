@@ -78,7 +78,11 @@ describe('StoryCanvas — servicios elegidos (M1: categoría en el título + baj
     fecha: `2026-10-${String(i + 16).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
   }));
   const gapLista = () => Number.parseFloat((screen.getByTestId('story-lista') as HTMLElement).style.gap);
-  const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
+  // Espacio entre el encabezado y la lista: aire arriba de la línea + línea + aire abajo.
+  const margenTotal = () =>
+    Number.parseFloat((screen.getByTestId('story-linea-encabezado') as HTMLElement).style.marginTop)
+    + 1
+    + Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
 
   it('el título nombra la categoría y la línea chica queda como en producción', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
@@ -113,13 +117,14 @@ describe('StoryCanvas — servicios elegidos (M1: categoría en el título + baj
   it('en quincena el alto extra sale del margen y de los espacios entre filas', () => {
     const { unmount } = renderCanvas(null, quincena, 'Gabriela');
     const gapSin = gapLista();
-    const margenSin = margen();
+    const margenSin = margenTotal();
     unmount();
     renderCanvas(null, quincena, 'Gabriela', null, ocho);
-    expect(margen()).toBe(18);
-    // Bajada: 12px de separación + 2 renglones de 13px; margen nuevo 18.
-    const arriba = 12 + 13 * 2 + 18;
-    expect(15 * (gapSin - gapLista())).toBeCloseTo(arriba - margenSin, 0);
+    // Margen con servicios: 18 + los 4px que subió el encabezado.
+    expect(margenTotal()).toBe(22);
+    // Bajada: 12px de separación + 2 renglones de 13px.
+    const altoBajada = 12 + 13 * 2;
+    expect(15 * (gapSin - gapLista())).toBeCloseTo(altoBajada + margenTotal() - margenSin, 0);
   });
 
   it('vista de equipo (sin profesional): la línea chica es solo la fecha', () => {
@@ -132,6 +137,42 @@ describe('StoryCanvas — servicios elegidos (M1: categoría en el título + baj
     renderCanvas(null, unDia, 'Gabriela', null, { titulo: 'Servicios', servicios: [] });
     expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
     expect(screen.queryByTestId('story-servicios')).not.toBeInTheDocument();
+  });
+});
+
+describe('StoryCanvas — línea entre el encabezado y la lista', () => {
+  const filtro = { titulo: 'Depilación', servicios: ['Cera piernas', 'Cavado'] };
+  const margenTotal = () =>
+    Number.parseFloat((screen.getByTestId('story-linea-encabezado') as HTMLElement).style.marginTop)
+    + 1
+    + Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
+
+  it('hay una línea fina entre el encabezado y la lista, igual que la del pie', () => {
+    renderCanvas(null, variosDias, 'Gabriela');
+    const linea = screen.getByTestId('story-linea-encabezado') as HTMLElement;
+    expect(linea.style.height).toBe('1px');
+    expect(linea.style.background).toBe((screen.getByTestId('story-linea') as HTMLElement).style.background);
+    const cuerpo = screen.getByTestId('story-cuerpo');
+    expect(linea.compareDocumentPosition(cuerpo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('el encabezado sube 4px: el contenido arranca 4px antes de la zona segura', () => {
+    renderCanvas(null, variosDias, 'Gabriela');
+    const contenido = screen.getByTestId('story-contenido') as HTMLElement;
+    expect(Number.parseFloat(contenido.style.paddingTop)).toBe(safeAreaInsets(640).top - 4);
+  });
+
+  it('sin servicios el espacio entre encabezado y lista suma los 4px que subió, así la lista no se mueve', () => {
+    renderCanvas(null, variosDias, 'Gabriela');
+    expect(margenTotal()).toBe(Math.round(640 * 0.06) + 4);
+  });
+
+  it('con servicios también, y la línea queda centrada en ese espacio', () => {
+    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
+    expect(margenTotal()).toBe(18 + 4);
+    const arriba = Number.parseFloat((screen.getByTestId('story-linea-encabezado') as HTMLElement).style.marginTop);
+    const abajo = Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
+    expect(Math.abs(arriba - abajo)).toBeLessThanOrEqual(1);
   });
 });
 

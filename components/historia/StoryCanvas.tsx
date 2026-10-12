@@ -179,8 +179,18 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const lineasServicios = renglonesServicios.length;
   const altoFranja = conServicios ? SEPARACION_BAJADA + lineasServicios * ALTO_RENGLON_SERVICIOS : 0;
   const bodyMargenBase = Math.round(canvasHeight * 0.06);
-  const bodyMargenTop = conServicios ? MARGEN_CON_SERVICIOS : bodyMargenBase;
-  const altoADevolver = Math.max(0, altoFranja + bodyMargenTop - bodyMargenBase);
+  const margenEncabezadoLista = conServicios ? MARGEN_CON_SERVICIOS : bodyMargenBase;
+  const altoADevolver = Math.max(0, altoFranja + margenEncabezadoLista - bodyMargenBase);
+
+  // Línea fina entre el encabezado y la lista, igual que la del pie. El
+  // encabezado sube SUBIDA_ENCABEZADO px y ese espacio se suma al margen: la
+  // lista queda donde estaba y la línea cabe adentro del margen, centrada.
+  // Sube poco a propósito: la zona segura de arriba es lo que tapa la barra
+  // de perfil de Instagram/WhatsApp.
+  const SUBIDA_ENCABEZADO = 4;
+  const espacioEncabezadoLista = margenEncabezadoLista + SUBIDA_ENCABEZADO;
+  const aireArribaLinea = Math.round((espacioEncabezadoLista - 1) / 2);
+  const aireAbajoLinea  = espacioEncabezadoLista - 1 - aireArribaLinea;
   const gapLista = dias.length > 1 ? Math.max(2, gap - altoADevolver / (dias.length - 1)) : gap;
 
   // La franja desenfocada del encabezado cubre la insignia (44px); con
@@ -296,9 +306,10 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             alcanza para la legibilidad (con el text-shadow de cada
             elemento). */}
         <div
+          data-testid="story-contenido"
           style={{
             position: 'absolute', inset: 0,
-            padding: `${safe.top}px 18px ${safe.bottom}px`,
+            padding: `${safe.top - SUBIDA_ENCABEZADO}px 18px ${safe.bottom}px`,
             display: 'flex', flexDirection: 'column',
           }}
         >
@@ -374,8 +385,13 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             )}
             </div>
 
+            <div
+              data-testid="story-linea-encabezado"
+              style={{ height: 1, background: 'rgba(255,255,255,0.25)', marginTop: aireArribaLinea }}
+            />
+
             {/* Body */}
-            <div ref={cuerpoRef} data-testid="story-cuerpo" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
+            <div ref={cuerpoRef} data-testid="story-cuerpo" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: aireAbajoLinea, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
