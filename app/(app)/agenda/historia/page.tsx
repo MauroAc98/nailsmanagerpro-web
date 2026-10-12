@@ -235,6 +235,26 @@ function HistoriaContent() {
           </div>
         )}
 
+        {/* Date nav — junto a las pestañas de período: es la segunda mitad de
+            "cuándo" y no debe quedar separada por los filtros de "qué". */}
+        <div style={{
+          display: 'flex', alignItems: 'center', width: '100%', gap: 8, marginBottom: 16,
+          borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.surfaceSubtle, padding: '10px 14px',
+        }}>
+          <button onClick={() => handleNavegar(-1)} style={navButtonStyle}>
+            <ChevronLeft size={18} strokeWidth={2} color={colors.primaryDeep} />
+          </button>
+          <span style={{
+            flex: 1, fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 16,
+            textAlign: 'center', color: colors.textStrong,
+          }}>
+            {tituloNav}
+          </span>
+          <button onClick={() => handleNavegar(1)} style={navButtonStyle}>
+            <ChevronRight size={18} strokeWidth={2} color={colors.primaryDeep} />
+          </button>
+        </div>
+
         {/* Qué mostrar — profesional (invisible con ≤1 activa) y servicios.
             La fila de profesional cae en effectiveProfesionalId (jefa por
             default) cuando no hay pick explícito: tiene que coincidir con lo
@@ -323,25 +343,6 @@ function HistoriaContent() {
             return entranEnLaBajada(nombres) ? null : t('servicesDontFit');
           }}
         />
-
-        {/* Date nav */}
-        <div style={{
-          display: 'flex', alignItems: 'center', width: '100%', gap: 8, marginBottom: 16,
-          borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.surfaceSubtle, padding: '10px 14px',
-        }}>
-          <button onClick={() => handleNavegar(-1)} style={navButtonStyle}>
-            <ChevronLeft size={18} strokeWidth={2} color={colors.primaryDeep} />
-          </button>
-          <span style={{
-            flex: 1, fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 16,
-            textAlign: 'center', color: colors.textStrong,
-          }}>
-            {tituloNav}
-          </span>
-          <button onClick={() => handleNavegar(1)} style={navButtonStyle}>
-            <ChevronRight size={18} strokeWidth={2} color={colors.primaryDeep} />
-          </button>
-        </div>
 
         {hayContenido ? (
           <>
