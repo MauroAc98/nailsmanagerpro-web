@@ -30,6 +30,8 @@
     "emptyState": "¡Cargá tu primer servicio!",
     "sectionSinCategoria": "Sin categoría",
     "promoBadge": "PROMO",
+    "promoSummary": "{n, plural, one {# servicio} other {# servicios}} · {duracion}",
+    "promoWith": "con {nombre}",
     "manageCategoriesButton": "Gestionar categorías",
     "manageCategoriesHint": "Creá, editá o eliminá tus categorías de servicios",
     "categoryServiceCount": "{count, plural, one {# servicio} other {# servicios}}",

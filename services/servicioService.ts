@@ -45,6 +45,9 @@ export interface Servicio {
   // legacy. `modo_promo` es null en una promo sin componentes.
   modo_promo?: ModoPromo | null;
   componentes?: ComponentePromo[];
+  // Solo en el index: un resumen de cada paso de la promo, en orden, para la
+  // tarjeta de la lista. [] en un servicio común o una promo sin componentes.
+  componentes_resumen?: ResumenComponentePromo[];
   problemas?: ProblemaPromo[];
   // Valores VIVOS derivados de los componentes (la duracion/precio
   // persistidos del servicio pueden quedar viejos si un componente se edita).
@@ -60,6 +63,13 @@ export interface Servicio {
 }
 
 export type ModoPromo = 'secuencia' | 'paralelo';
+
+export interface ResumenComponentePromo {
+  nombre: string;
+  duracion_minutos: number;
+  profesional_id: number;
+  profesional_nombre: string;
+}
 
 export interface ComponentePromo {
   orden: number;
