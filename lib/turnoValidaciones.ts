@@ -60,7 +60,8 @@ export function validarTurno({
   const horaTurno = toMinutos(hora);
   if (horaTurno < horaMin || horaTurno > horaMax) {
     const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
-    return tStatic('validation.TurnoValidaciones.outsideBusinessHours', { horaMin: fmt(horaMin), horaMax: fmt(horaMax) });
+    const clave = horaMin === horaMax ? 'outsideBusinessHoursSingle' : 'outsideBusinessHours';
+    return tStatic(`validation.TurnoValidaciones.${clave}`, { hora: fmt(horaTurno), horaMin: fmt(horaMin), horaMax: fmt(horaMax) });
   }
 
   const turnosDelCliente = turnosDelDia.filter(t =>
