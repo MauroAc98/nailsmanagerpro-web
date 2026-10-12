@@ -7,6 +7,7 @@ import { agendaColors as colors } from '@/theme/agendaColors';
 import type { Servicio } from '@/services/servicioService';
 import type { CategoriaServicio } from '@/services/categoriaServicioService';
 import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
+import { AvisoAmbar } from '@/components/filtros/AvisoAmbar';
 import {
   agruparParaSeleccion,
   contarSeleccionados,
@@ -87,12 +88,9 @@ export function SeleccionServicios({ servicios, categorias, excluidos, onChange,
       </span>
 
       {noEntra && (
-        <span style={{
-          fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
-          background: colors.amberBg, color: colors.amberFg,
-        }}>
+        <AvisoAmbar>
           {t('seleccionNoEntra')}
-        </span>
+        </AvisoAmbar>
       )}
 
       <div style={{

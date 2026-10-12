@@ -3,7 +3,7 @@
 import type { CSSProperties } from 'react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 
 export interface ProfesionalOption {
   id:       number;
@@ -124,20 +124,12 @@ export default function SelectorProfesional({
                 color: selected ? selectedFg : colors.text,
               }}
             >
-              <span style={{
-                width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 9, fontWeight: 800,
-                backgroundColor: selected ? withAlpha(selectedFg, '3D') : withAlpha(color, '26'),
-                color: selected ? selectedFg : color,
-              }}>
-                {p.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  inicialesProfesional(p.nombre, p.apellido)
-                )}
-              </span>
+              <AvatarProfesional
+                nombre={p.nombre} apellido={p.apellido} color={p.color} avatarUrl={p.avatarUrl}
+                size={20} fontSize={9}
+                fondo={selected ? withAlpha(selectedFg, '3D') : undefined}
+                texto={selected ? selectedFg : undefined}
+              />
               {p.nombre}
             </button>
           );
