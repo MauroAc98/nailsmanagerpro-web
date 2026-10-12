@@ -2,7 +2,6 @@
   "AgendaPage": {
     "title": "Mi Agenda",
     "share": "COMPARTIR",
-    "team": "Profesionales",
     "noResultsFound": "No se encontraron turnos",
     "noAppointmentsToday": "No hay turnos para hoy",
     "noAppointmentsOn": "No hay turnos el {fecha}",
@@ -142,7 +141,9 @@
     "viewResults": "Ver resultados"
   },
   "SelectorProfesionalDia": {
-    "all": "Todo el equipo"
+    "all": "Todo el equipo",
+    "professionalRow": "Profesional",
+    "closeSheet": "Cerrar"
   },
   "AltaClienteRapidaSheet": {
     "title": "Nuevo cliente",
