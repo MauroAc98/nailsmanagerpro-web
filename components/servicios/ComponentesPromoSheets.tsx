@@ -34,6 +34,10 @@ export function PersonaAvatar({ profesional, size }: { profesional: Profesional;
   );
 }
 
+// Por encima de la barra fija de guardar del formulario (z 45), que de otro
+// modo tapa el final de la lista.
+const Z_SHEET = 50;
+
 // Bottom sheet montado solo mientras está abierto (el padre decide), con un
 // fondo que cierra al tocarlo; arrastrarlo hacia abajo también lo cierra.
 function Sheet({ title, subtitle, onClose, children }: {
@@ -43,9 +47,10 @@ function Sheet({ title, subtitle, onClose, children }: {
     <>
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: 39, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
+        style={{ position: 'fixed', inset: 0, zIndex: Z_SHEET - 1, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
       />
       <BottomSheet
+        zIndex={Z_SHEET}
         snapPoints={[0.7]}
         initialIndex={0}
         enablePanDownToClose
