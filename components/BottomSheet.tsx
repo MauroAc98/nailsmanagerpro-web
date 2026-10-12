@@ -46,6 +46,10 @@ interface BottomSheetProps {
   // asoma más ancho que el nav y se lee como un segundo contenedor aparte
   // en vez de fundirse en uno solo.
   sideInset?: number;
+  // Capa del sheet. 40 alcanza salvo que la pantalla tenga una barra fija
+  // propia (p. ej. la de guardar de los formularios de servicio, z 45) que
+  // si no tapa el final del contenido.
+  zIndex?: number;
 }
 
 const Z_INDEX = 40;
@@ -89,6 +93,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       backgroundColor = colors.surface,
       bottomOffset = 0,
       sideInset = 0,
+      zIndex = Z_INDEX,
     },
     ref,
   ) {
@@ -285,7 +290,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           left: sideInset,
           right: sideInset,
           bottom: effectiveBottomOffset,
-          zIndex: Z_INDEX,
+          zIndex,
           height: maxHeight,
           overflow: 'hidden',
           // Only the actual sheet (below) should capture clicks — the empty
