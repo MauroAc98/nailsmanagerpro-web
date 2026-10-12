@@ -196,9 +196,10 @@ describe('SheetNegocio — message preview', () => {
     });
     openPreview();
     const text = previewText(/queda reservado/);
-    expect(text).toContain('💳 Seña: *$5.000,00*');
+    // Los *…* de WhatsApp se muestran como negrita, sin los asteriscos.
+    expect(text).toContain('💳 Seña: $5.000,00');
     expect(text).toContain('🏦 Ana Pérez · Alias: ana.mp · CBU: 2850 0010 4009 4993 6823 58');
-    expect(text).toContain('⚠️ No responder a este mensaje: *Fernanda* no lo recibe.');
+    expect(text).toContain('⚠️ No responder a este mensaje: Fernanda no lo recibe.');
     expect(text).toContain('📲 Enviar el comprobante al');
     expect(text).toContain('Para cambios, avisar con 24 hs de anticipación.');
     // El texto viejo ya no aparece.
