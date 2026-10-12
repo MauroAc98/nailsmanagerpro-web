@@ -1,9 +1,12 @@
 'use client';
 
-import { agendaColors as colors } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Profesional } from '@/services/profesionalService';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
+import { NegocioIcono, ProfesionalSheet } from '@/components/filtros/ProfesionalSheet';
 
 interface Props {
   profesionales: Profesional[];
@@ -13,80 +16,49 @@ interface Props {
   labelNegocio: string;
 }
 
-function chipStyle(selected: boolean, color: string): React.CSSProperties {
-  return {
-    display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, maxWidth: '100%',
-    borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 14, cursor: 'pointer',
-    border: `1px solid ${selected ? color : colors.divider}`,
-    backgroundColor: selected ? color : colors.surface,
-    color: selected ? '#FFF' : colors.text,
-  };
-}
+const NEGOCIO = 'negocio';
 
-const badgeBase: React.CSSProperties = {
-  width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontSize: 9, fontWeight: 800,
-};
-
-const nombreStyle: React.CSSProperties = {
-  minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-};
-
-// Siempre hay exactamente una opción elegida: tocar la ya elegida no hace nada.
+// Siempre hay exactamente una opción elegida: volver a elegir la ya elegida no
+// avisa nada. Fila + hoja compartidas; "Del negocio" es un extra de la hoja.
 export default function SelectorProfesionalONegocio({ profesionales, value, onChange, labelNegocio }: Props) {
-  const negocioSel = value === null;
-  const colorNegocio = colors.primary;
+  const t = useTranslations('common.SelectorProfesionalONegocio');
+  const [abierta, setAbierta] = useState(false);
+  const elegida = value === null ? undefined : profesionales.find(p => p.id === value);
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      <button
-        type="button"
-        aria-pressed={negocioSel}
-        onClick={() => { if (!negocioSel) onChange(null); }}
-        style={chipStyle(negocioSel, colorNegocio)}
-      >
-        <span style={{
-          ...badgeBase,
-          backgroundColor: negocioSel ? withAlpha('#fff', '3D') : withAlpha(colorNegocio, '26'),
-          color: negocioSel ? '#fff' : colorNegocio,
-        }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M3 9l1.5-5h15L21 9" />
-            <path d="M3 9h18v0a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z" />
-            <path d="M5 12v8h14v-8" />
-          </svg>
-        </span>
-        <span style={nombreStyle}>{labelNegocio}</span>
-      </button>
-      {profesionales.map(p => {
-        const selected = value === p.id;
-        const color = p.color || colors.primary;
-        return (
-          <button
-            key={p.id}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => { if (!selected) onChange(p.id); }}
-            style={chipStyle(selected, color)}
-          >
-            <span style={{
-              ...badgeBase,
-              backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
-              color: selected ? '#fff' : color,
-            }}>
-              {p.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                inicialesProfesional(p.nombre, p.apellido)
-              )}
-            </span>
-            <span style={nombreStyle}>{p.nombre}</span>
-          </button>
-        );
-      })}
-    </div>
+    <>
+      <TarjetaQueMostrar>
+        <FilaQueMostrar
+          leading={elegida ? (
+            <AvatarProfesional
+              nombre={elegida.nombre}
+              apellido={elegida.apellido}
+              color={elegida.color}
+              avatarUrl={elegida.avatar_url}
+            />
+          ) : <NegocioIcono />}
+          titulo={t('title')}
+          valor={elegida ? elegida.nombre : labelNegocio}
+          activo
+          onClick={() => setAbierta(true)}
+        />
+      </TarjetaQueMostrar>
+
+      <ProfesionalSheet
+        open={abierta}
+        onClose={() => setAbierta(false)}
+        onSelect={sel => {
+          const nuevo = sel === NEGOCIO ? null : (sel as number);
+          if (nuevo !== value) onChange(nuevo);
+        }}
+        title={t('title')}
+        cerrarLabel={t('close')}
+        extras={[{ id: NEGOCIO, label: labelNegocio, icono: <NegocioIcono /> }]}
+        profesionales={profesionales.map(p => ({
+          id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+        }))}
+        selectedId={value ?? NEGOCIO}
+      />
+    </>
   );
 }

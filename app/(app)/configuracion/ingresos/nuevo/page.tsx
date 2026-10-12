@@ -186,7 +186,6 @@ export default function NuevoIngresoPage() {
             que gastos (chips, tocar de nuevo deselecciona → null). */}
         {mostrarSelectorProfesional && (
           <div>
-            <label style={labelStyle}>{t('professionalLabel')}</label>
             <SelectorProfesionalONegocio
               profesionales={activeProfesionales}
               value={profesionalElegido}

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Check, Users } from 'lucide-react';
+import { Check, Store, Users } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -17,19 +17,29 @@ export interface ProfesionalSheetOption {
   subtitulo?: string;
 }
 
-interface Props {
+// Opción que no es una profesional (p. ej. "Del negocio"); su id es un string.
+export interface ProfesionalSheetExtra<E extends string = string> {
+  id: E;
+  label: string;
+  subtitulo?: string;
+  icono: ReactNode;
+}
+
+interface Props<E extends string = never> {
   open: boolean;
   onClose: () => void;
-  // id de la profesional elegida, o 'equipo'.
-  onSelect: (sel: number | 'equipo') => void;
+  // id de la profesional elegida, 'equipo' o el id de un extra.
+  onSelect: (sel: number | 'equipo' | NoInfer<E>) => void;
   title: string;
   // Opcionales: sin equipoLabel no hay fila "todo el equipo" (pantallas que
   // siempre trabajan con una profesional).
   equipoLabel?: string;
   equipoSubtitulo?: string;
   cerrarLabel: string;
+  // Opcionales: filas extra después de "equipo" y antes de las profesionales.
+  extras?: ProfesionalSheetExtra<E>[];
   profesionales: ProfesionalSheetOption[];
-  selectedId: number | 'equipo';
+  selectedId: number | 'equipo' | NoInfer<E>;
   // z-index del fondo oscuro. 39 por defecto; 40 si se abre desde otra BottomSheet.
   backdropZIndex?: number;
 }
@@ -45,17 +55,29 @@ export function EquipoIcono({ size = 32 }: { size?: number }) {
   );
 }
 
+// Mismo círculo suave que EquipoIcono, con una tienda: la opción "Del negocio".
+export function NegocioIcono({ size = 32 }: { size?: number }) {
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: size / 2, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft,
+    }}>
+      <Store size={Math.round(size * 0.5)} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+    </span>
+  );
+}
+
 // Hoja de selección de profesional: tocar una fila elige y cierra (sin CTA).
 // Mismo armado que ServiciosSheet: BottomSheet sobre el nav + fondo oscuro.
-export function ProfesionalSheet(props: Props) {
+export function ProfesionalSheet<E extends string = never>(props: Props<E>) {
   if (!props.open) return null;
   return <ProfesionalSheetAbierta {...props} />;
 }
 
-function ProfesionalSheetAbierta({
-  onClose, onSelect, title, equipoLabel, equipoSubtitulo, cerrarLabel, profesionales, selectedId, backdropZIndex = 39,
-}: Props) {
-  const elegir = (sel: number | 'equipo') => {
+function ProfesionalSheetAbierta<E extends string = never>({
+  onClose, onSelect, title, equipoLabel, equipoSubtitulo, cerrarLabel, extras, profesionales, selectedId, backdropZIndex = 39,
+}: Props<E>) {
+  const elegir = (sel: number | 'equipo' | E) => {
     onSelect(sel);
     onClose();
   };
@@ -103,6 +125,16 @@ function ProfesionalSheetAbierta({
                 onClick={() => elegir('equipo')}
               />
             )}
+            {extras?.map(x => (
+              <Fila
+                key={x.id}
+                seleccionada={selectedId === x.id}
+                leading={x.icono}
+                nombre={x.label}
+                subtitulo={x.subtitulo}
+                onClick={() => elegir(x.id)}
+              />
+            ))}
             {profesionales.map(p => (
               <Fila
                 key={p.id}
