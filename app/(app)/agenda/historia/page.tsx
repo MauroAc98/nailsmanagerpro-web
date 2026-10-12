@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import SelectorProfesional from '@/components/SelectorProfesional';
+import { ServiciosSheet } from '@/components/ServiciosSheet';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
@@ -17,6 +18,10 @@ import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { useServiciosStore } from '@/store/useServicioStore';
+import {
+  ANCHO_LINEA_SERVICIOS, medirTextoServicios, serviciosEntranEnDosLineas, tituloFiltroServicios,
+} from '@/lib/historiaServicios';
 import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
 
@@ -40,18 +45,6 @@ function tabStyle(active: boolean): React.CSSProperties {
   };
 }
 
-// Pills del filtro por categoría — una sola fila con scroll horizontal si hay
-// muchas; flexShrink:0 + nowrap para que un nombre largo no se aplaste.
-function categoriaPillStyle(active: boolean): React.CSSProperties {
-  return {
-    flexShrink: 0, whiteSpace: 'nowrap', padding: '7px 14px', borderRadius: 999, cursor: 'pointer',
-    border: `1px solid ${active ? colors.primarySolid : colors.border}`,
-    background: active ? colors.primarySolid : colors.surface,
-    color: active ? colors.primaryFg : colors.subtext,
-    fontWeight: 600, fontSize: 12,
-  };
-}
-
 const sectionTabContainerStyle: React.CSSProperties = {
   display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 16, width: '100%',
 };
@@ -71,6 +64,14 @@ const navButtonStyle: React.CSSProperties = {
   background: colors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
+// Fila resumen de servicios — mismo lenguaje que el date nav (borde, fondo
+// suave, radio 18) y alto táctil >= 44px.
+const resumenServiciosStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 44, marginBottom: 14,
+  borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.surfaceSubtle,
+  padding: '8px 14px', cursor: 'pointer', textAlign: 'left',
+};
+
 const footerActionStyle: React.CSSProperties = {
   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   padding: '13px 0', borderRadius: 16, background: colors.surface, border: `1px solid ${colors.border}`, cursor: 'pointer',
@@ -87,14 +88,15 @@ function HistoriaContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [seccion, setSeccion] = useState<SeccionEditor>('agenda');
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
+  const [serviciosAbierto, setServiciosAbierto] = useState(false);
 
   const {
     modo, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight,
-    selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
-    selectedCategoriaId, setSelectedCategoriaId, categoriaSeleccionada,
+    esEquipo, setProfesionalSel, effectiveProfesionalId,
+    servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos,
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
@@ -109,16 +111,18 @@ function HistoriaContent() {
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  // Filtro por categoría — invisible si la cuenta no tiene ninguna. Con una
-  // elegida los horarios son de varias profesionales, así que el selector de
-  // profesional se oculta.
+  // Servicios y categorías: para el filtro por servicios (título del
+  // encabezado, agrupado y fotos de la hoja).
   const { categorias, fetchCategorias } = useCategoriasServicioStore();
   useEffect(() => {
     if (categorias.length === 0) fetchCategorias();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const mostrarSelectorCategoria   = categorias.length > 0;
+  const { servicios, fetchServicios } = useServiciosStore();
+  useEffect(() => {
+    if (servicios.length === 0) fetchServicios();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const activeProfesionales        = profesionales.filter(p => p.activo);
-  const mostrarSelectorProfesional = activeProfesionales.length > 1 && selectedCategoriaId === null;
+  const mostrarSelectorProfesional = activeProfesionales.length > 1;
   // La profesional del encabezado es la efectiva del selector (la dueña por
   // defecto al recargar, o la que se eligió): un único diseño para todas.
   const profesionalSeleccionada    = profesionalDelEncabezado(activeProfesionales, effectiveProfesionalId);
@@ -127,6 +131,17 @@ function HistoriaContent() {
   // ya excluye días/slots ocultados manualmente (diasAMostrar), solo para el
   // resumen arriba del canvas.
   const horariosVisibles = diasAMostrar.reduce((acc, dia) => acc + dia.slots.filter(s => s.libre).length, 0);
+
+  // Filtro por servicios: "Todos" ([]) deja el diseño de siempre; con algunos
+  // elegidos el encabezado pasa al A2 (categoría/s + línea de servicios).
+  const nombresServicios = serviciosElegidos.map(s => s.nombre);
+  const hayFiltroServicios = servicioIds.length > 0;
+  const tituloServicios = hayFiltroServicios
+    ? tituloFiltroServicios(serviciosElegidos, categorias, { fallback: t('servicesFallbackTitle'), y: t('servicesAnd') })
+    : '';
+  const entranServicios = serviciosEntranEnDosLineas(nombresServicios, ANCHO_LINEA_SERVICIOS, medirTextoServicios);
+  const bloqueaExportar = hayFiltroServicios && !entranServicios;
+  const nombreParaTodos = mostrarSelectorProfesional && !esEquipo ? profesionalSeleccionada?.nombre : undefined;
 
   // Tocar un texto libre directo en el canvas es posible desde cualquier
   // tab (el canvas se ve siempre) pero el editor de texto solo está montado
@@ -203,26 +218,6 @@ function HistoriaContent() {
           </div>
         )}
 
-        {/* Selector de categoría — "Todas" (null) es el default y mantiene el
-            comportamiento por profesional de siempre. */}
-        {mostrarSelectorCategoria && (
-          <div style={{ width: '100%', marginBottom: 14 }}>
-            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              {t('categoryLabel')}
-            </p>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-              <button onClick={() => setSelectedCategoriaId(null)} style={categoriaPillStyle(selectedCategoriaId === null)}>
-                {t('allCategories')}
-              </button>
-              {categorias.map(c => (
-                <button key={c.id} onClick={() => setSelectedCategoriaId(c.id)} style={categoriaPillStyle(selectedCategoriaId === c.id)}>
-                  {c.nombre}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Selector de profesional — invisible con ≤1 profesional activa */}
         {/* El pill cae en effectiveProfesionalId (jefa por default) cuando no
             hay pick explícito — confirmado con el usuario (2026-08-19): tiene
@@ -240,13 +235,62 @@ function HistoriaContent() {
             // 2026-10-01, mismo en otras 8 pantallas con selector de
             // profesional).
             profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
-            selectedId={selectedProfesionalId ?? effectiveProfesionalId}
-            onSelect={setSelectedProfesionalId}
+            selectedId={esEquipo ? null : effectiveProfesionalId}
+            // null = "Todo el equipo" (todasLabel); toggleable={false} para que
+            // tocar la profesional ya elegida no salte al equipo sin querer.
+            onSelect={id => setProfesionalSel(id ?? 'equipo')}
+            todasLabel={t('teamLabel')}
+            toggleable={false}
             selectedFg={colors.primaryFg}
             unselectedBorderColor={colors.border}
             pillFontWeight={600}
           />
         )}
+
+        {/* Servicios — una fila resumen que abre la hoja de selección. "Todos"
+            ([]) es el default. */}
+        {(serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+          <div style={{ width: '100%', marginBottom: 14 }}>
+            <button type="button" onClick={() => setServiciosAbierto(true)} style={{ ...resumenServiciosStyle, marginBottom: 0 }}>
+              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
+                {t('servicesLabel')}
+              </span>
+              <span style={{
+                flex: 1, minWidth: 0, textAlign: 'right', fontSize: 13, fontWeight: 600, color: colors.textStrong,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {hayFiltroServicios ? t('servicesSummary', { titulo: tituloServicios, count: servicioIds.length }) : t('servicesAll')}
+              </span>
+              <ChevronRight size={16} strokeWidth={2} color={colors.muted} style={{ flexShrink: 0 }} />
+            </button>
+            {bloqueaExportar && (
+              <p style={{
+                margin: '8px 0 0', fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
+                background: colors.amberBg, color: colors.amberFg,
+              }}>
+                {t('servicesDontFit')}
+              </p>
+            )}
+          </div>
+        )}
+
+        <ServiciosSheet
+          open={serviciosAbierto}
+          onClose={() => setServiciosAbierto(false)}
+          title={t('servicesSheetTitle')}
+          servicios={serviciosOfrecidos}
+          selectedIds={servicioIds}
+          onConfirm={setServicioIds}
+          todosLabel={nombreParaTodos ? t('servicesAllOf', { nombre: nombreParaTodos }) : t('servicesAllTeam')}
+          fotoCategoria={id => categorias.find(c => c.id === id)?.fondo_historia_url}
+          ctaLabel={count => t('showServices', { count })}
+          aviso={draft => {
+            const nombres = serviciosOfrecidos
+              .filter(s => draft.includes(s.id))
+              .map(s => s.nombre);
+            return serviciosEntranEnDosLineas(nombres, ANCHO_LINEA_SERVICIOS, medirTextoServicios) ? null : t('servicesDontFit');
+          }}
+        />
 
         {/* Date nav */}
         <div style={{
@@ -289,6 +333,7 @@ function HistoriaContent() {
               telefonoEstudio={telefonoEstudio}
               logoUrl={logoUrl}
               profesionalNombre={profesionalSeleccionada?.nombre}
+              filtroServicios={hayFiltroServicios ? { titulo: tituloServicios, servicios: nombresServicios } : undefined}
               dias={diasAMostrar}
               fondoUri={fondoUri}
               canvasWidth={canvasWidth}
@@ -418,11 +463,15 @@ function HistoriaContent() {
 
             {/* Footer actions */}
             <div style={{ width: '100%', marginTop: 22, display: 'flex', gap: 10 }}>
-              <button onClick={descargarImagen} style={footerActionStyle}>
+              <button onClick={descargarImagen} disabled={bloqueaExportar} style={{ ...footerActionStyle, opacity: bloqueaExportar ? 0.5 : 1 }}>
                 <Download size={18} strokeWidth={2} color={colors.text} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{t('save')}</span>
               </button>
-              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.primarySolid, border: 'none' }}>
+              <button
+                onClick={compartirImagen}
+                disabled={bloqueaExportar}
+                style={{ ...footerActionStyle, backgroundColor: colors.primarySolid, border: 'none', opacity: bloqueaExportar ? 0.5 : 1 }}
+              >
                 <Share2 size={18} strokeWidth={2} color={colors.primaryFg} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.primaryFg }}>{t('share')}</span>
               </button>

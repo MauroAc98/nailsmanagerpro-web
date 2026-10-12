@@ -24,10 +24,24 @@ describe('turnoService.getDisponibilidad', () => {
     });
   });
 
-  it('con categoriaId manda categoria_id y omite profesional_id aunque se pase', async () => {
-    await turnoService.getDisponibilidad('2026-10-01', '2026-10-31', 4, 9);
+  it('con servicioIds manda servicio_ids junto a profesional_id', async () => {
+    await turnoService.getDisponibilidad('2026-10-01', '2026-10-31', 4, [7, 8]);
     expect(api.get).toHaveBeenCalledWith('/turnos/disponibilidad', {
-      params: { desde: '2026-10-01', hasta: '2026-10-31', categoria_id: 9 },
+      params: { desde: '2026-10-01', hasta: '2026-10-31', profesional_id: 4, servicio_ids: [7, 8] },
+    });
+  });
+
+  it('con servicioIds y sin profesional manda solo servicio_ids (equipo)', async () => {
+    await turnoService.getDisponibilidad('2026-10-01', '2026-10-31', undefined, [7]);
+    expect(api.get).toHaveBeenCalledWith('/turnos/disponibilidad', {
+      params: { desde: '2026-10-01', hasta: '2026-10-31', servicio_ids: [7] },
+    });
+  });
+
+  it('con servicioIds vacío no manda servicio_ids', async () => {
+    await turnoService.getDisponibilidad('2026-10-01', '2026-10-31', 4, []);
+    expect(api.get).toHaveBeenCalledWith('/turnos/disponibilidad', {
+      params: { desde: '2026-10-01', hasta: '2026-10-31', profesional_id: 4 },
     });
   });
 });
