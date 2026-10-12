@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
@@ -12,7 +12,7 @@ import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
-import { contarLineasServicios, MAX_LINEAS_SERVICIOS, medirEtiquetaCategoria, medirTextoServicios } from '@/lib/historiaServicios';
+import { contarLineasServicios, ESPACIADO_LINEA_SERVICIOS, MAX_LINEAS_SERVICIOS, medirTextoServicios } from '@/lib/historiaServicios';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -158,32 +158,27 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  // Con servicios elegidos (G2, canvas 2026-10-11): el encabezado de
-  // producción no cambia; debajo va una franja con la etiqueta de la categoría
-  // y sus servicios (hasta 2 renglones), aire y una línea fina que la separa de
-  // la lista. En quincena el alto que suma la franja lo devuelven el margen y
-  // los espacios entre filas, así el total queda igual que en producción.
+  // Con servicios elegidos (M1, canvas 2026-10-12): el título nombra la
+  // categoría ("Turnos de Faciales") y, debajo del encabezado, los servicios
+  // van como bajada en mayúsculas chicas con espaciado (hasta 2 renglones). En
+  // quincena el alto que suma la bajada lo devuelven el margen y los espacios
+  // entre filas, así el total queda igual que en producción.
   const servicios = filtroServicios?.servicios ?? [];
   const conServicios = servicios.length > 0;
-  const etiquetaCategoria = (filtroServicios?.titulo ?? '').toUpperCase();
-  const ALTO_RENGLON_SERVICIOS = 15;
-  const SEPARACION_FRANJA = 10;
-  const AIRE_LINEA = 12;
+  const ALTO_RENGLON_SERVICIOS = 13;
+  const SEPARACION_BAJADA = 12;
+  const MARGEN_CON_SERVICIOS = 18;
   const lineasServicios = conServicios
-    ? Math.min(MAX_LINEAS_SERVICIOS, contarLineasServicios(
-        servicios, canvasWidth - 36, medirTextoServicios, medirEtiquetaCategoria(etiquetaCategoria),
-      ))
+    ? Math.min(MAX_LINEAS_SERVICIOS, contarLineasServicios(servicios, canvasWidth - 36, medirTextoServicios))
     : 0;
-  const altoFranja = conServicios
-    ? SEPARACION_FRANJA + lineasServicios * ALTO_RENGLON_SERVICIOS + AIRE_LINEA + 1
-    : 0;
+  const altoFranja = conServicios ? SEPARACION_BAJADA + lineasServicios * ALTO_RENGLON_SERVICIOS : 0;
   const bodyMargenBase = Math.round(canvasHeight * 0.06);
-  const bodyMargenTop = conServicios ? AIRE_LINEA : bodyMargenBase;
+  const bodyMargenTop = conServicios ? MARGEN_CON_SERVICIOS : bodyMargenBase;
   const altoADevolver = Math.max(0, altoFranja + bodyMargenTop - bodyMargenBase);
   const gapLista = dias.length > 1 ? Math.max(2, gap - altoADevolver / (dias.length - 1)) : gap;
 
   // La franja desenfocada del encabezado cubre la insignia (44px); con
-  // servicios se estira hasta cubrir también la franja.
+  // servicios se estira hasta cubrir también la bajada.
   const franjaEncabezado = tituloZonaAlto
     + Math.max(0, 44 + altoFranja - Math.round(canvasHeight * 0.10));
 
@@ -330,7 +325,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     (maxFontSize 10) — el título nunca queda más chico que la
                     info de los turnos. */}
                 <FitText
-                  text={tituloPrincipal}
+                  text={conServicios && filtroServicios ? t('availableTitleFor', { categoria: filtroServicios.titulo }) : tituloPrincipal}
                   maxFontSize={18}
                   minFontSize={13}
                   style={{
@@ -348,40 +343,29 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             </div>
 
             {conServicios && (
-              <>
-                <div
-                  data-testid="story-servicios"
-                  style={{
-                    marginTop: SEPARACION_FRANJA, fontSize: 11, lineHeight: `${ALTO_RENGLON_SERVICIOS}px`,
-                    color: 'rgba(255,255,255,0.88)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    maxHeight: ALTO_RENGLON_SERVICIOS * MAX_LINEAS_SERVICIOS, overflow: 'hidden',
-                  }}
-                >
-                  {/* Etiqueta sólida clara con texto oscuro: se distingue de los
-                      servicios aunque la foto de fondo sea clara (no depende
-                      de la sombra), y repite el tono del recuadro del logo. */}
-                  <span
-                    data-testid="story-etiqueta-categoria"
-                    style={{
-                      display: 'inline-block', verticalAlign: 1, padding: '0 8px', marginRight: 8, borderRadius: 8,
-                      fontSize: 9, fontWeight: 800, letterSpacing: 1.4, lineHeight: `${ALTO_RENGLON_SERVICIOS}px`,
-                      background: '#f3e9e4', color: '#3a2f31', textShadow: 'none',
-                    }}
-                  >
-                    {etiquetaCategoria}
-                  </span>
-                  {servicios.map((nombre, idx) => (
-                    <span key={idx}>
-                      {idx > 0 && <span style={{ opacity: 0.5 }}> · </span>}
-                      <span style={{ whiteSpace: 'nowrap' }}>{nombre}</span>
+              <div
+                data-testid="story-servicios"
+                style={{
+                  marginTop: SEPARACION_BAJADA, fontSize: 9, fontWeight: 600, letterSpacing: ESPACIADO_LINEA_SERVICIOS,
+                  lineHeight: `${ALTO_RENGLON_SERVICIOS}px`, color: 'rgba(255,255,255,0.78)',
+                  textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  maxHeight: ALTO_RENGLON_SERVICIOS * MAX_LINEAS_SERVICIOS, overflow: 'hidden',
+                }}
+              >
+                {/* Mayúsculas en el texto (no text-transform) para que la
+                    medición del aviso y la imagen exportada coincidan. El "·"
+                    va dentro del servicio siguiente: ningún renglón termina en
+                    un separador. */}
+                {servicios.map((nombre, idx) => (
+                  <Fragment key={idx}>
+                    {idx > 0 && ' '}
+                    <span style={{ whiteSpace: 'nowrap' }}>
+                      {idx > 0 && <span style={{ opacity: 0.55 }}>{'·  '}</span>}
+                      {nombre.toUpperCase()}
                     </span>
-                  ))}
-                </div>
-                <div
-                  data-testid="story-servicios-linea"
-                  style={{ height: 1, marginTop: AIRE_LINEA, background: 'rgba(255,255,255,0.25)' }}
-                />
-              </>
+                  </Fragment>
+                ))}
+              </div>
             )}
             </div>
 

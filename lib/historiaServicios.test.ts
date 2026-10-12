@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  medirEtiquetaCategoria,
   medirTextoServicios,
   serviciosEntran,
   tituloFiltroServicios,
@@ -52,7 +51,7 @@ describe('serviciosEntran', () => {
   });
 
   it('entra en dos líneas', () => {
-    // "AAAAAAAAAA" = 60 px; con " / " (18) -> dos nombres = 138 > 100.
+    // "AAAAAAAAAA" = 60 px; con " ·  " (24) -> dos nombres = 144 > 100.
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 2, 100, medir)).toBe(true);
   });
 
@@ -65,44 +64,24 @@ describe('serviciosEntran', () => {
   });
 
   it('cuenta el separador entre nombres de la misma línea', () => {
-    // 2 x 60 + 18 = 138 entra justo en 138, no en 137 (pero sí en 2 líneas).
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 138, medir)).toBe(true);
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 137, medir)).toBe(false);
+    // 2 x 60 + 24 = 144 entra justo en 144, no en 143 (pero sí en 2 líneas).
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 144, medir)).toBe(true);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 143, medir)).toBe(false);
   });
   it('con máximo 1 línea, lo que pide dos líneas no entra', () => {
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 100, medir)).toBe(false);
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 138, medir)).toBe(true);
-  });
-});
-
-describe('serviciosEntran con la etiqueta de la categoría al principio', () => {
-  const medir = (t: string) => t.length * 6;
-
-  it('la etiqueta ocupa lugar en el primer renglón', () => {
-    // 2 nombres de 60 + separador 18 = 138: sin etiqueta entra en 1 renglón de 140.
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 140, medir)).toBe(true);
-    // Con una etiqueta de 40 ya no entra en 1 renglón, pero sí en 2.
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 140, medir, 40)).toBe(false);
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 2, 140, medir, 40)).toBe(true);
-  });
-
-  it('si el primer nombre no entra al lado de la etiqueta, baja al segundo renglón', () => {
-    expect(serviciosEntran(['AAAAAAAAAA'], 1, 100, medir, 60)).toBe(false);
-    expect(serviciosEntran(['AAAAAAAAAA'], 2, 100, medir, 60)).toBe(true);
-  });
-});
-
-describe('medirEtiquetaCategoria', () => {
-  it('sin canvas 2D usa un fallback que incluye relleno y separación', () => {
-    expect(medirEtiquetaCategoria('ABCD')).toBeGreaterThan(medirTextoServicios('ABCD'));
-    expect(medirEtiquetaCategoria('')).toBeGreaterThan(0);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 144, medir)).toBe(true);
   });
 });
 
 describe('medirTextoServicios', () => {
-  it('sin canvas 2D (jsdom) usa el fallback proporcional al largo', () => {
-    expect(medirTextoServicios('abcd')).toBe(24);
+  it('mide la bajada en mayúsculas con su espaciado (sin canvas 2D usa un fallback)', () => {
+    // 4 letras: 6px cada una + 1.3px de espaciado por letra.
+    expect(medirTextoServicios('abcd')).toBeCloseTo(29.2);
     expect(medirTextoServicios('')).toBe(0);
   });
 
+  it('mide igual en minúsculas que en mayúsculas (la bajada va en mayúsculas)', () => {
+    expect(medirTextoServicios('Cavado')).toBe(medirTextoServicios('CAVADO'));
+  });
 });

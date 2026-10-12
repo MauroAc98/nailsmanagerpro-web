@@ -68,33 +68,41 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
   });
 });
 
-describe('StoryCanvas — servicios elegidos (G2: etiqueta + servicios + línea fina)', () => {
+describe('StoryCanvas — servicios elegidos (M1: categoría en el título + bajada)', () => {
   const filtro = { titulo: 'Uñas y Pestañas', servicios: ['Esmaltado', 'Kapping', 'Lifting'] };
+  const ocho = {
+    titulo: 'Depilación',
+    servicios: ['Cera piernas', 'Media pierna', 'Cavado', 'Axilas', 'Bozo', 'Brazos', 'Espalda', 'Glúteos'],
+  };
   const quincena: DisponibilidadDia[] = Array.from({ length: 16 }, (_, i) => ({
     fecha: `2026-10-${String(i + 16).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
   }));
   const gapLista = () => Number.parseFloat((screen.getByTestId('story-lista') as HTMLElement).style.gap);
   const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
 
-  it('el encabezado queda igual que en producción', () => {
+  it('el título nombra la categoría y la línea chica queda como en producción', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
+    expect(screen.getByText('Turnos de Uñas y Pestañas')).toBeInTheDocument();
     expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
+    expect(screen.queryByText('Turnos disponibles')).not.toBeInTheDocument();
   });
 
-  it('la categoría va en una etiqueta en mayúsculas delante de todos sus servicios', () => {
+  it('los servicios van como bajada en mayúsculas, sin etiqueta ni línea', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    const etiqueta = screen.getByTestId('story-etiqueta-categoria');
-    expect(etiqueta.textContent).toBe('UÑAS Y PESTAÑAS');
-    const franja = screen.getByTestId('story-servicios');
-    expect(franja.firstElementChild).toBe(etiqueta);
-    for (const n of filtro.servicios) expect(screen.getByText(n).style.whiteSpace).toBe('nowrap');
+    const bajada = screen.getByTestId('story-servicios');
+    expect(bajada.textContent).toContain('ESMALTADO');
+    expect(bajada.textContent).toContain('LIFTING');
+    expect(bajada.style.maxHeight).toBe('26px');
+    expect(screen.queryByTestId('story-etiqueta-categoria')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('story-servicios-linea')).not.toBeInTheDocument();
   });
 
-  it('hasta 2 renglones de servicios y una línea fina que los separa de la lista', () => {
-    renderCanvas(null, quincena, 'Gabriela', null, filtro);
-    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('30px');
-    expect(screen.getByTestId('story-servicios-linea')).toBeInTheDocument();
+  it('el "·" viaja con el servicio siguiente y cada servicio no se parte', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, filtro);
+    const items = screen.getByTestId('story-servicios').children;
+    expect(items[0].textContent).toBe('ESMALTADO');
+    expect(items[1].textContent?.startsWith('·')).toBe(true);
+    expect((items[1] as HTMLElement).style.whiteSpace).toBe('nowrap');
   });
 
   it('en quincena el alto extra sale del margen y de los espacios entre filas', () => {
@@ -102,27 +110,23 @@ describe('StoryCanvas — servicios elegidos (G2: etiqueta + servicios + línea 
     const gapSin = gapLista();
     const margenSin = margen();
     unmount();
-    renderCanvas(null, quincena, 'Gabriela', null, {
-      titulo: 'Depilación',
-      servicios: ['Cera piernas', 'Media pierna', 'Cavado', 'Axilas', 'Bozo', 'Brazos', 'Espalda', 'Glúteos'],
-    });
-    expect(margen()).toBe(12);
-    expect(gapLista()).toBeLessThan(gapSin);
-    // Lo que crece arriba (franja + línea + margen) lo devuelven los 15 espacios.
-    const franja = 10 + 15 * 2 + 12 + 1 + 12;
-    expect(15 * (gapSin - gapLista())).toBeCloseTo(franja - margenSin, 0);
+    renderCanvas(null, quincena, 'Gabriela', null, ocho);
+    expect(margen()).toBe(18);
+    // Bajada: 12px de separación + 2 renglones de 13px; margen nuevo 18.
+    const arriba = 12 + 13 * 2 + 18;
+    expect(15 * (gapSin - gapLista())).toBeCloseTo(arriba - margenSin, 0);
   });
 
   it('vista de equipo (sin profesional): la línea chica es solo la fecha', () => {
     renderCanvas(null, unDia, undefined, null, filtro);
+    expect(screen.getByText('Turnos de Uñas y Pestañas')).toBeInTheDocument();
     expect(screen.getByText('24 de sept')).toBeInTheDocument();
-    expect(screen.queryByText(/con /)).not.toBeInTheDocument();
   });
 
-  it('sin servicios no hay franja ni línea y la lista no cambia', () => {
+  it('sin servicios el encabezado y la lista quedan como en producción', () => {
     renderCanvas(null, unDia, 'Gabriela', null, { titulo: 'Servicios', servicios: [] });
+    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
     expect(screen.queryByTestId('story-servicios')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('story-servicios-linea')).not.toBeInTheDocument();
   });
 });
 
