@@ -11,7 +11,7 @@ import { StoryCanvas } from './StoryCanvas';
 // componente): esta prueba solo cubre el reemplazo del chip de fecha /
 // ícono genérico por el logo del negocio, no re-verifica todo el resto del
 // canvas (sin cobertura previa).
-function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string, telefono: string | null = null) {
+function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string, telefono: string | null = null, categoriaNombre?: string) {
   return render(
     <NextIntlClientProvider locale="es" messages={es}>
       <StoryCanvas
@@ -20,6 +20,7 @@ function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesi
         nombreEstudio="Turnetto"
         telefonoEstudio={telefono}
         profesionalNombre={profesionalNombre}
+        categoriaNombre={categoriaNombre}
         logoUrl={logoUrl}
         dias={dias}
         fondoUri={null}
@@ -64,6 +65,15 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
     const logos = screen.getAllByAltText('').filter(img => (img as HTMLImageElement).src.includes('logo'));
     expect(logos).toHaveLength(0);
     expect(screen.getByText('24')).toBeInTheDocument();
+  });
+});
+
+describe('StoryCanvas — categoría', () => {
+  it('con categoriaNombre la línea es "Categoría · fecha" y no lleva "con"', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, 'Uñas');
+    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
+    expect(screen.getByText('Uñas · 24 de sept')).toBeInTheDocument();
+    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
   });
 });
 
