@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, User, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, User, CheckCircle2, Plus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
@@ -22,9 +22,16 @@ import { useBloqueosAgendaStore } from '@/store/useBloqueosAgendaStore';
 import { Cliente } from '@/services/clienteService';
 import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
-import { validarTurno } from '@/lib/turnoValidaciones';
-import { advertenciaTurno } from '@/lib/turnoAdvertencias';
+import {
+  armarPayloadLote, bloqueNuevoDesde, detalleResumen, diaLargo, evaluarBloque, horaCorta12, itemsDeConfirmacion,
+  quitarBloque, tituloResumen,
+  type BloqueTurno, type ItemConfirmacion,
+} from '@/lib/turnosLote';
+import { slotService, type Slot } from '@/services/slotService';
 import { ClienteConTelefono } from '@/components/agenda/ClienteConTelefono';
+import { ResumenTurnoPlegado } from '@/components/agenda/ResumenTurnoPlegado';
+import { BloqueTurnoAbierto } from '@/components/agenda/BloqueTurnoAbierto';
+import { ElegirFechaBloqueSheet, type ElegirFechaBloqueHandle } from '@/components/agenda/ElegirFechaBloqueSheet';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { formatFecha, fechaDeHoy } from '@/lib/dateFormat';
@@ -49,12 +56,7 @@ function normalizarTexto(texto: string): string {
 }
 
 function formatHora12(hora24: string): string {
-  const parts = hora24.split(':').map(Number);
-  const h     = parts[0];
-  const m     = parts[1];
-  const ampm  = h >= 12 ? 'p. m.' : 'a. m.';
-  const h12   = h % 12 || 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${ampm} hs`;
+  return `${horaCorta12(hora24)} hs`;
 }
 
 // ─────────────────────────────────────────────
@@ -78,9 +80,12 @@ function NuevoTurnoContent() {
   const t            = useTranslations('agenda.NuevoTurnoPage');
   const searchParams = useSearchParams();
   const today        = fechaDeHoy();
-  const fecha        = searchParams.get('fecha') ?? today;
+  const fechaUrl     = searchParams.get('fecha') ?? today;
+  // Día del turno que se está editando: arranca en el de la URL; solo cambia con
+  // varios turnos (fila "Día" de cada bloque).
+  const [fecha, setFecha] = useState(fechaUrl);
 
-  const { crearTurno, turnos, fetchTurnos }  = useTurnoStore();
+  const { crearTurno, crearLote, turnos, fetchTurnos }  = useTurnoStore();
   const { servicios, fetchServicios }        = useServiciosStore();
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
@@ -104,11 +109,22 @@ function NuevoTurnoContent() {
   const [precioPromo,  setPrecioPromo]  = useState('');
   const [turnoCreado, setTurnoCreado] = useState<{
     cliente: Cliente;
-    servicios: string;
+    items: ItemConfirmacion[];   // uno por turno creado (uno solo en el alta simple)
+    lote?: boolean;
   } | null>(null);
 
   const now      = new Date();
   const initialH = String(now.getHours()).padStart(2, '0');
+
+  // Varios turnos: `bloques` guarda todos; el que está abierto (`activo`) se edita
+  // en los estados de siempre (servicios, profesional, hora, fecha) y su entrada
+  // en `bloques` queda vieja hasta que se pliega (ver bloqueEnCurso).
+  const [bloques, setBloques] = useState<BloqueTurno[]>([
+    { fecha: fechaUrl, hora: `${initialH}:00`, servicioIds: [], profesionalId: null },
+  ]);
+  const [activo, setActivo] = useState(0);
+  const enLote = bloques.length > 1;
+  const elegirFechaRef = useRef<ElegirFechaBloqueHandle>(null);
   const [horaSeleccionada, setHoraSeleccionada] = useState<Record<string, string>>({ hora: initialH, minuto: '00' });
   const [tempHora,         setTempHora]         = useState<Record<string, string>>({ hora: initialH, minuto: '00' });
 
@@ -128,14 +144,6 @@ function NuevoTurnoContent() {
   const activeProfesionales      = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   const profesionalSeleccionado  = activeProfesionales.find(p => p.id === selectedProfesionalId) ?? null;
-
-  // Profesional a considerar para el aviso no bloqueante de días/bloqueos:
-  // con selector visible, la elegida; sin selector (≤1 activa), la única
-  // activa (misma resolución de default que usan configuracion/servicios y
-  // configuracion/slots — ver profesionalJefa).
-  const profesionalParaAdvertencia = mostrarSelectorProfesional
-    ? profesionalSeleccionado
-    : profesionalJefa(activeProfesionales);
 
   // Cada profesional tiene sus propias horas de atención. Cuando cambia la
   // profesional elegida en el paso PROFESIONAL, refetch de slots escopeado a
@@ -165,7 +173,11 @@ function NuevoTurnoContent() {
         ? servicios.filter(s => s.activo && profesionalSeleccionado.servicios.some(ps => ps.id === s.id))
         : [])
     : servicios.filter(s => s.activo);
-  const serviciosDisponibles = [...serviciosBase, ...combos.filter(c => !serviciosBase.some(s => s.id === c.id))];
+  const serviciosConCombos = [...serviciosBase, ...combos.filter(c => !serviciosBase.some(s => s.id === c.id))];
+  // Con varios turnos no hay combos: el backend los rechaza en lote.
+  const serviciosDisponibles = enLote
+    ? serviciosConCombos.filter(s => !combos.some(c => c.id === s.id))
+    : serviciosConCombos;
 
   const seleccionaCombo = selectedServicioIds.length === 1 && combos.some(c => c.id === selectedServicioIds[0]);
   const mezclaCombo = selectedServicioIds.length > 1 && selectedServicioIds.some(id => combos.some(c => c.id === id));
@@ -182,14 +194,6 @@ function NuevoTurnoContent() {
       servicioService.getOne(ids[0]).then(d => setComboDetalle(prev => (prev === null ? d : prev))).catch(() => {});
     }
   };
-
-  // El choque de horario/repetición de servicio está escopeado por
-  // profesional en el backend (dos profesionales pueden compartir horario) —
-  // hay que espejar ese escope acá para que la validación previa no marque
-  // como ocupado un horario que en realidad pertenece a otra profesional.
-  const turnosDelDiaParaValidar = mostrarSelectorProfesional && selectedProfesionalId
-    ? turnos.filter(t => t.profesional_id === selectedProfesionalId)
-    : turnos;
 
   // `slots` es un store global compartido — al elegir una profesional se
   // dispara fetchSlots(selectedProfesionalId) (efecto de arriba), pero esa
@@ -227,39 +231,163 @@ function NuevoTurnoContent() {
     router.back();
   };
 
+  // Link wa.me de la confirmación manual de UN turno (el mismo mensaje en el alta simple
+  // y, por turno, en el alta de varios).
+  const urlConfirmacion = (cliente: Cliente, item: ItemConfirmacion) => whatsappHelper.buildUrl({
+    clienteNombre:   cliente.nombre,
+    clienteTelefono: cliente.telefono!,
+    servicio:        item.servicios,
+    fecha:           item.fecha,
+    hora:            item.hora,
+    tipo:            'confirmacion',
+    negocio:         user?.name ?? '',
+    direccion:       user?.direccion ?? null,
+    telefonoNegocio: user?.telefono ?? null,
+  });
+
+  // ─────────────────────────────────────────────
+  // Varios turnos (bloques)
+  // ─────────────────────────────────────────────
+  // El bloque abierto, con lo que hay ahora mismo en los campos.
+  const bloqueEnCurso = (): BloqueTurno => ({
+    fecha,
+    hora: `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`,
+    servicioIds: selectedServicioIds,
+    profesionalId: mostrarSelectorProfesional ? selectedProfesionalId : null,
+  });
+  // Todos los bloques con el abierto al día.
+  const bloquesAlDia = (): BloqueTurno[] => bloques.map((b, i) => (i === activo ? bloqueEnCurso() : b));
+
+  const cargarBloque = (b: BloqueTurno) => {
+    const [hora, minuto] = b.hora.split(':');
+    setFecha(b.fecha);
+    setHoraSeleccionada({ hora, minuto });
+    setSelectedServicioIds(b.servicioIds);
+    setSelectedProfesionalId(b.profesionalId);
+    setComboDetalle(null);
+    setPrecioPromo('');
+  };
+  const mostrarBloque = (lista: BloqueTurno[], indice: number) => {
+    setBloques(lista);
+    setActivo(indice);
+    cargarBloque(lista[indice]);
+  };
+
+  // Profesional a considerar para el aviso no bloqueante de días/bloqueos:
+  // con selector visible, la elegida; sin selector (≤1 activa), la única
+  // activa (misma resolución de default que usan configuracion/servicios y
+  // configuracion/slots — ver profesionalJefa).
+  const profesionalDelBloque = (b: BloqueTurno) => (mostrarSelectorProfesional
+    ? activeProfesionales.find(p => p.id === b.profesionalId) ?? null
+    : profesionalJefa(activeProfesionales));
+  const evaluar = (b: BloqueTurno, slotsDelBloque: Slot[] = slots) => evaluarBloque({
+    bloque: b, clienteId: selectedCliente!.id, servicios, turnos, slots: slotsDelBloque, bloqueos,
+    profesional: profesionalDelBloque(b), requiereProfesional: mostrarSelectorProfesional,
+  });
+  // Cada profesional tiene sus propias horas de atención: un bloque de otra profesional
+  // que la de los `slots` cargados se valida contra los suyos.
+  const slotsDelBloque = async (b: BloqueTurno): Promise<Slot[]> => {
+    if (!mostrarSelectorProfesional || b.profesionalId == null || b.profesionalId === ultimoProfesionalIdSolicitado) return slots;
+    try { return await slotService.getAll(b.profesionalId); } catch { return slots; }
+  };
+  const conNumero = (n: number, mensaje: string) => (enLote ? t('blockError', { n, mensaje }) : mensaje);
+
+  // Antes de plegar el bloque abierto: solo los errores duros; los avisos se confirman al final.
+  const validarBloqueAbierto = async (): Promise<boolean> => {
+    const { error } = evaluar(bloqueEnCurso());
+    if (error) { await alertDialog(conNumero(activo + 1, error)); return false; }
+    return true;
+  };
+
+  const handleAgregarTurno = async () => {
+    if (!selectedCliente || !(await validarBloqueAbierto())) return;
+    const actuales = bloquesAlDia();
+    mostrarBloque([...actuales, bloqueNuevoDesde(actuales[activo], `${initialH}:00`)], actuales.length);
+  };
+
+  const handleAbrirBloque = async (indice: number) => {
+    if (!(await validarBloqueAbierto())) return;
+    mostrarBloque(bloquesAlDia(), indice);
+  };
+
+  const handleQuitarBloque = () => {
+    const r = quitarBloque(bloquesAlDia(), activo);
+    mostrarBloque(r.bloques, r.activo);
+  };
+
+  const tituloDelBloque = (b: BloqueTurno) => tituloResumen(b.fecha, b.hora);
+  const detalleDelBloque = (b: BloqueTurno) => {
+    const prof = mostrarSelectorProfesional ? activeProfesionales.find(p => p.id === b.profesionalId) : null;
+    return detalleResumen(
+      b.servicioIds.map(id => servicios.find(s => s.id === id)?.nombre).filter((n): n is string => !!n),
+      prof ? t('withProfessional', { nombre: prof.nombre }) : null,
+    );
+  };
+
+  const handleConfirmarLote = async () => {
+    if (!selectedCliente || deshabilitado) return;
+    const todos = bloquesAlDia();
+
+    const avisos: (string | null)[] = [];
+    for (let i = 0; i < todos.length; i++) {
+      const { error, advertencia } = evaluar(todos[i], await slotsDelBloque(todos[i]));
+      if (error) {
+        mostrarBloque(todos, i);
+        await alertDialog(t('blockError', { n: i + 1, mensaje: error }));
+        return;
+      }
+      avisos.push(advertencia);
+    }
+    for (let i = 0; i < avisos.length; i++) {
+      const aviso = avisos[i];
+      if (aviso && !(await confirmDialog(t('blockError', { n: i + 1, mensaje: aviso })))) return;
+    }
+
+    setSaving(true);
+    const result = await crearLote(armarPayloadLote(selectedCliente.id, todos));
+    setSaving(false);
+    if (!result.success) {
+      const conIndice = result.indice !== undefined && result.indice < todos.length;
+      if (conIndice) mostrarBloque(todos, result.indice!);
+      await alertDialog(
+        result.code === 'slot_held'
+          ? (conIndice ? t('blockError', { n: result.indice! + 1, mensaje: t('comboSlotHeld') }) : t('comboSlotHeld'))
+          : (result.message ?? t('createError')),
+      );
+      return;
+    }
+
+    // Con envío manual de WhatsApp: pantalla de éxito con un botón por turno creado.
+    if (requiereEnvioManualWhatsapp && selectedCliente.telefono) {
+      const items: ItemConfirmacion[] = result.turnos?.length
+        ? itemsDeConfirmacion(result.turnos)
+        : todos.map(b => ({
+            fecha: b.fecha, hora: b.hora,
+            servicios: servicios.filter(s => b.servicioIds.includes(s.id)).map(s => s.nombre).join(' + '),
+          }));
+      setTurnoCreado({ cliente: selectedCliente, items, lote: true });
+    } else {
+      showToast(t('createdMany'));
+      router.back();
+    }
+  };
+
   const handleConfirmar = async () => {
+    if (enLote) return handleConfirmarLote();
     if (esCombo) return handleConfirmarCombo();
     if (!selectedCliente || selectedServicioIds.length === 0) return;
     if (mostrarSelectorProfesional && !selectedProfesionalId) return;
     if (slotsDesactualizados) return;
 
     const hora = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
-    const errorValidacion = validarTurno({
-      fecha,
-      hora,
-      clienteId: selectedCliente.id,
-      servicioIds: selectedServicioIds,
-      servicios,
-      turnosDelDia: turnosDelDiaParaValidar,
-      slots,
-      aplicarMaxPorCliente: true,
-    });
+    // Validación dura (alert) y, DESPUÉS, el aviso NO bloqueante de día no laborable o
+    // fecha bloqueada (confirm) — ver lib/turnoAdvertencias.ts. Ambos corren ANTES del
+    // submit real, sin duplicar ni suprimir el 422 del backend.
+    const { error: errorValidacion, advertencia } = evaluar(bloqueEnCurso());
     if (errorValidacion) {
       await alertDialog(errorValidacion);
       return;
     }
-
-    // Aviso NO bloqueante — a diferencia de validarTurno, un día no
-    // laborable o una fecha bloqueada no impiden agendar acá (ver
-    // lib/turnoAdvertencias.ts). Corre DESPUÉS de la validación dura y
-    // ANTES del submit real, sin duplicar ni suprimir el 422 del backend.
-    const duracionMinutosTurno = servicios
-      .filter(s => selectedServicioIds.includes(s.id))
-      .reduce((sum, s) => sum + s.duracion_minutos, 0);
-    const advertencia = advertenciaTurno({
-      fecha, hora, duracionMinutos: duracionMinutosTurno,
-      profesional: profesionalParaAdvertencia, bloqueos,
-    });
     if (advertencia) {
       const confirmado = await confirmDialog(advertencia);
       if (!confirmado) return;
@@ -287,7 +415,7 @@ function NuevoTurnoContent() {
         .join(' + ');
       setTurnoCreado({
         cliente: selectedCliente,
-        servicios: nombresServicios,
+        items: [{ fecha, hora, servicios: nombresServicios }],
       });
     } else {
       showToast(t('created'));
@@ -299,6 +427,9 @@ function NuevoTurnoContent() {
     saving || !selectedCliente || selectedServicioIds.length === 0 || mezclaCombo || problemasCombo.length > 0 ||
     (seleccionaCombo && !esCombo) ||
     (!seleccionaCombo && ((mostrarSelectorProfesional && !selectedProfesionalId) || slotsDesactualizados));
+
+  // "Agregar otro turno": con cliente elegido y sin promo-combo en el turno abierto.
+  const mostrarAgregar = !!selectedCliente && !seleccionaCombo && !mezclaCombo;
 
   const clientesFiltrados = clientes.filter(c =>
     c.activo && normalizarTexto(`${c.nombre} ${c.apellido} ${c.telefono ?? ''}`).includes(normalizarTexto(clienteBuscar))
@@ -313,12 +444,14 @@ function NuevoTurnoContent() {
       </div>
 
       <div style={{ padding: '4px 20px 18px' }}>
-        <p style={{
-          fontSize: 11, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 1.5,
-          textTransform: 'uppercase', margin: '0 0 4px',
-        }}>
-          {t('selectedDay', { fecha: formatFechaLarga(fecha) })}
-        </p>
+        {!enLote && (
+          <p style={{
+            fontSize: 11, fontWeight: 700, color: colors.primaryDeep, letterSpacing: 1.5,
+            textTransform: 'uppercase', margin: '0 0 4px',
+          }}>
+            {t('selectedDay', { fecha: formatFechaLarga(fecha) })}
+          </p>
+        )}
         <h1 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: colors.textStrong, margin: 0 }}>
           {t('title')}
         </h1>
@@ -332,24 +465,52 @@ function NuevoTurnoContent() {
           }}>
             <CheckCircle2 size={36} color={colors.success} strokeWidth={1.75} />
             <h2 style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 22, color: colors.textStrong, margin: '4px 0 0' }}>
-              {t('appointmentCreatedTitle')}
+              {turnoCreado.lote ? t('appointmentsCreatedTitle') : t('appointmentCreatedTitle')}
             </h2>
             <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>
-              {t('manualConfirmationNotice')}
+              {turnoCreado.lote ? t('manualConfirmationNoticeMany') : t('manualConfirmationNotice')}
             </p>
           </div>
-          <a
-            href={whatsappHelper.buildUrl({
-              clienteNombre:   turnoCreado.cliente.nombre,
-              clienteTelefono: turnoCreado.cliente.telefono!,
-              servicio:        turnoCreado.servicios,
-              fecha,
-              hora:            `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`,
-              tipo:            'confirmacion',
-              negocio:         user?.name ?? '',
-              direccion:       user?.direccion ?? null,
-              telefonoNegocio: user?.telefono ?? null,
-            })}
+          {/* Varios turnos: un botón de WhatsApp por turno (mismo mensaje que el turno simple). */}
+          {turnoCreado.lote && (
+            <div style={{ marginBottom: 12 }}>
+              {turnoCreado.items.map((item, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10,
+                  backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 16,
+                  boxShadow: shadows.card, padding: '12px 14px',
+                }}>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontFamily: agendaFontSerif, fontSize: 16, color: colors.textStrong }}>
+                      {tituloResumen(item.fecha, item.hora)}
+                    </span>
+                    <span style={{
+                      display: 'block', marginTop: 2, fontSize: 12, color: colors.subtext,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>
+                      {item.servicios}
+                    </span>
+                  </span>
+                  <a
+                    href={urlConfirmacion(turnoCreado.cliente, item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('sendConfirmationFor', { resumen: tituloResumen(item.fecha, item.hora) })}
+                    style={{
+                      flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, height: 40, padding: '0 14px',
+                      borderRadius: 12, backgroundColor: colors.whatsapp, color: colors.primaryFg,
+                      textDecoration: 'none', fontSize: 14, fontWeight: 700, boxSizing: 'border-box',
+                    }}
+                  >
+                    <WhatsappGlyph size={16} />
+                    {t('sendShort')}
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+          {!turnoCreado.lote && <a
+            href={urlConfirmacion(turnoCreado.cliente, turnoCreado.items[0])}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -361,7 +522,7 @@ function NuevoTurnoContent() {
           >
             <WhatsappGlyph size={18} />
             {t('sendConfirmationWhatsapp')}
-          </a>
+          </a>}
           <button
             onClick={() => router.back()}
             style={{
@@ -471,6 +632,28 @@ function NuevoTurnoContent() {
           )}
         </div>
 
+        {/* ─── Turnos ya cargados (plegados), antes del abierto ─── */}
+        {bloques.slice(0, activo).map((b, i) => (
+          <ResumenTurnoPlegado
+            key={i}
+            numero={i + 1}
+            titulo={tituloDelBloque(b)}
+            detalle={detalleDelBloque(b)}
+            ariaLabel={t('editAppointmentSummary', { n: i + 1, resumen: tituloDelBloque(b) })}
+            onClick={() => handleAbrirBloque(i)}
+          />
+        ))}
+
+        <BloqueTurnoAbierto
+          lote={enLote}
+          numero={activo + 1}
+          titulo={t('appointmentN', { n: activo + 1 })}
+          quitarLabel={t('removeAppointment', { n: activo + 1 })}
+          onQuitar={handleQuitarBloque}
+          diaLabel={t('day')}
+          diaTexto={diaLargo(fecha)}
+          onElegirDia={() => elegirFechaRef.current?.abrir()}
+        >
         {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa). Fila + hoja
             compartidas. Elección OBLIGATORIA: arranca sin elegir (sin fila
             "todo el equipo") y la fila lee la MISMA variable que el resto de la
@@ -565,10 +748,45 @@ function NuevoTurnoContent() {
         <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
         <div
           onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
-          style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer', marginBottom: 32 }}
+          style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer', marginBottom: enLote ? 0 : mostrarAgregar ? 14 : 32 }}
         >
           {formatHora12(`${horaSeleccionada.hora}:${horaSeleccionada.minuto}`)}
         </div>
+        </BloqueTurnoAbierto>
+
+        {/* ─── Turnos ya cargados (plegados), después del abierto ─── */}
+        {bloques.slice(activo + 1).map((b, k) => {
+          const i = activo + 1 + k;
+          return (
+            <ResumenTurnoPlegado
+              key={i}
+              numero={i + 1}
+              titulo={tituloDelBloque(b)}
+              detalle={detalleDelBloque(b)}
+              ariaLabel={t('editAppointmentSummary', { n: i + 1, resumen: tituloDelBloque(b) })}
+              onClick={() => handleAbrirBloque(i)}
+            />
+          );
+        })}
+
+        {/* ─── Agregar otro turno (misma persona). Sin combos: el backend los rechaza en lote. ─── */}
+        {mostrarAgregar && (
+          <button
+            type="button"
+            onClick={handleAgregarTurno}
+            disabled={deshabilitado}
+            style={{
+              width: '100%', height: 46, borderRadius: 12, marginBottom: 24,
+              border: `1.5px dashed ${colors.border}`, backgroundColor: 'transparent',
+              color: colors.primaryDeep, fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              opacity: deshabilitado ? 0.5 : 1,
+            }}
+          >
+            <Plus size={16} strokeWidth={2.2} color={colors.primarySolid} />
+            {t('addAnotherAppointment')}
+          </button>
+        )}
 
         {/* ─── Submit ─── */}
         <button
@@ -581,7 +799,7 @@ function NuevoTurnoContent() {
             opacity: deshabilitado && !saving ? 0.5 : 1,
           }}
         >
-          {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('confirmAppointment')}
+          {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : enLote ? t('confirmMany', { count: bloques.length }) : t('confirmAppointment')}
         </button>
       </div>
       )}
@@ -624,6 +842,8 @@ function NuevoTurnoContent() {
           </div>
         </div>
       )}
+
+      <ElegirFechaBloqueSheet ref={elegirFechaRef} fecha={fecha} onSelect={setFecha} />
 
       <AltaClienteRapidaSheet
         ref={altaClienteRef}

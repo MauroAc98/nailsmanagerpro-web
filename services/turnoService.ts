@@ -124,6 +124,22 @@ export interface CreateTurnoDto {
   precio_promo?: number;
 }
 
+// Varios turnos de un mismo cliente en una sola llamada (POST /turnos/lote).
+// Todo o nada; no admite combos. Cada item lleva el mismo formato que CreateTurnoDto.
+export interface CreateLoteDto {
+  cliente_id: number;
+  turnos: {
+    fecha_hora: string;   // "YYYY-MM-DD HH:MM"
+    servicio_ids: number[];
+    profesional_id?: number;
+  }[];
+}
+
+export interface CrearLoteRespuesta {
+  lote_id: number;
+  turnos: Turno[];
+}
+
 // Respuesta de reprogramar un combo entero. `notificacion` = 'omitida' cuando no
 // se pudo avisar al cliente por WhatsApp (`motivo` dice por que).
 export interface ReprogramarGrupoRespuesta {
@@ -196,6 +212,11 @@ export const turnoService = {
 
   create: async (dto: CreateTurnoDto): Promise<Turno> => {
     const { data } = await api.post<Turno>('/turnos', dto);
+    return data;
+  },
+
+  createLote: async (dto: CreateLoteDto): Promise<CrearLoteRespuesta> => {
+    const { data } = await api.post<CrearLoteRespuesta>('/turnos/lote', dto);
     return data;
   },
 
