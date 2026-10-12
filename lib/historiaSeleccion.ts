@@ -67,3 +67,18 @@ export const filtrarPorSeleccion = (servicios: Servicio[], excluidos: ExcluidosH
 
 export const contarSeleccionados = (servicios: Servicio[], excluidos: ExcluidosHistoria): number =>
   filtrarPorSeleccion(servicios, excluidos).length;
+
+// Puente con ServiciosSheet, que trabaja con ids SELECCIONADOS donde [] = todos.
+// Sin excluidos (o ninguno disponible) -> [] ("todos"); si no, los disponibles
+// que no están excluidos.
+export const idsSeleccionadosDesdeExcluidos = (disponibles: Servicio[], excluidos: ExcluidosHistoria): number[] =>
+  disponibles.some(s => excluidos.has(s.id))
+    ? filtrarPorSeleccion(disponibles, excluidos).map(s => s.id)
+    : [];
+
+// Inverso: [] = todos (nada excluido); si no, se excluye todo lo disponible que
+// no se eligió. Consecuencia: "ninguno" no es representable (vacío = todos).
+export const excluidosDesdeSeleccionados = (disponibles: Servicio[], ids: number[]): Set<number> =>
+  ids.length === 0
+    ? new Set()
+    : new Set(disponibles.filter(s => !ids.includes(s.id)).map(s => s.id));

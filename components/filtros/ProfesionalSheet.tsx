@@ -23,8 +23,10 @@ interface Props {
   // id de la profesional elegida, o 'equipo'.
   onSelect: (sel: number | 'equipo') => void;
   title: string;
-  equipoLabel: string;
-  equipoSubtitulo: string;
+  // Opcionales: sin equipoLabel no hay fila "todo el equipo" (pantallas que
+  // siempre trabajan con una profesional).
+  equipoLabel?: string;
+  equipoSubtitulo?: string;
   cerrarLabel: string;
   profesionales: ProfesionalSheetOption[];
   selectedId: number | 'equipo';
@@ -90,13 +92,15 @@ function ProfesionalSheetAbierta({
           </div>
 
           <div role="listbox" aria-label={title} style={{ padding: '4px 16px 12px' }}>
-            <Fila
-              seleccionada={selectedId === 'equipo'}
-              leading={<EquipoIcono />}
-              nombre={equipoLabel}
-              subtitulo={equipoSubtitulo}
-              onClick={() => elegir('equipo')}
-            />
+            {equipoLabel && (
+              <Fila
+                seleccionada={selectedId === 'equipo'}
+                leading={<EquipoIcono />}
+                nombre={equipoLabel}
+                subtitulo={equipoSubtitulo}
+                onClick={() => elegir('equipo')}
+              />
+            )}
             {profesionales.map(p => (
               <Fila
                 key={p.id}
