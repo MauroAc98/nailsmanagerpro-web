@@ -59,7 +59,7 @@ describe('BloqueosPage', () => {
   it('muestra un subtítulo que explica qué hace un bloqueo', () => {
     renderWithProviders(<BloqueosPage />);
 
-    expect(screen.getByText(/no van a poder reservarlos online/i)).toBeInTheDocument();
+    expect(screen.getByText(/dejan de figurar como disponibles para tus clientes/i)).toBeInTheDocument();
   });
 
   it('un bloqueo de todo el negocio sin horario muestra el ícono de local y "Todo el negocio" / "Todo el día"', () => {
