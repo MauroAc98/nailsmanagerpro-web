@@ -2,7 +2,8 @@
   "TurnoValidaciones": {
     "pastDateTime": "Não é possível agendar horários em uma data ou hora que já passou.",
     "noSlotsConfigured": "Você não tem horários de atendimento configurados. Configure-os em Ajustes.",
-    "outsideBusinessHours": "O horário de atendimento é das {horaMin} às {horaMax}h.",
+    "outsideBusinessHours": "Às {hora}h não é possível agendar. O horário de atendimento é das {horaMin} às {horaMax}h.",
+    "outsideBusinessHoursSingle": "Às {hora}h não é possível agendar. Só é possível iniciar um agendamento às {horaMin}h; cadastre mais horários em Horários disponíveis.",
     "maxTurnosPerClient": "O cliente já tem o máximo de {max} agendamentos para este dia.",
     "serviceAlreadyBooked": "O cliente já tem agendado: {nombres} para este dia.",
     "serviciosFaltan": "Escolha pelo menos um serviço.",
