@@ -274,6 +274,7 @@
     "promoHint": "Marque este serviço como promoção",
     "saving": "Salvando...",
     "submit": "Adicionar serviço",
+    "created": "Serviço criado",
     "saveError": "Não foi possível salvar o serviço.",
     "incompleteRow": "Preencha o serviço e quem faz em cada linha antes de salvar.",
     "componentsSaveError": "A promoção foi criada, mas não foi possível salvar os serviços incluídos. Revise e salve novamente por aqui.",
@@ -298,6 +299,7 @@
     "loadError": "Não foi possível carregar o serviço.",
     "saving": "Salvando...",
     "submit": "Salvar alterações",
+    "saved": "Alterações salvas",
     "saveError": "Não foi possível salvar o serviço.",
     "incompleteRow": "Preencha o serviço e quem faz em cada linha antes de salvar.",
     "promoNeedsComponents": "Escolha pelo menos um serviço e quem o realiza para salvar a promoção."

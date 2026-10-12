@@ -11,6 +11,7 @@ import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { SelectorCategoriaServicio } from '@/components/configuracion/SelectorCategoriaServicio';
 import DuracionPicker from '@/components/DuracionPicker';
 import { alertDialog } from '@/store/useConfirmStore';
+import { showToast } from '@/store/useToastStore';
 import { validarPrecioServicio } from '@/lib/validarPrecioServicio';
 import SenaPreviewServicio from '@/components/servicios/SenaPreviewServicio';
 import { FormSeccion, FilaPromo, BarraGuardar, FORM_PADDING_BOTTOM } from '@/components/servicios/FormServicioLayout';
@@ -195,6 +196,7 @@ function NuevoServicioContent() {
 
     if (result.success) {
       limpiarBorrador(CLAVE_BORRADOR);
+      showToast(t('created'));
       router.push('/configuracion/servicios');
     } else {
       await alertDialog(result.message ?? t('saveError'));
