@@ -68,68 +68,61 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
   });
 });
 
-describe('StoryCanvas — encabezado A2 (servicios elegidos)', () => {
+describe('StoryCanvas — servicios elegidos (G2: etiqueta + servicios + línea fina)', () => {
   const filtro = { titulo: 'Uñas y Pestañas', servicios: ['Esmaltado', 'Kapping', 'Lifting'] };
+  const quincena: DisponibilidadDia[] = Array.from({ length: 16 }, (_, i) => ({
+    fecha: `2026-10-${String(i + 16).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
+  }));
+  const gapLista = () => Number.parseFloat((screen.getByTestId('story-lista') as HTMLElement).style.gap);
+  const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
 
-  it('con filtroServicios: titular, línea "Turnos disponibles con X · fecha" y todos los servicios', () => {
+  it('el encabezado queda igual que en producción', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    expect(screen.getByText('Uñas y Pestañas')).toBeInTheDocument();
-    expect(screen.getByText('Turnos disponibles con Gabriela · 24 de sept')).toBeInTheDocument();
-    for (const n of filtro.servicios) expect(screen.getByText(n)).toBeInTheDocument();
-    // Sin renglón en mayúsculas arriba del titular.
-    expect(screen.queryByText(/TURNOS DISPONIBLES/)).not.toBeInTheDocument();
+    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
+    expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
   });
 
-  it('con filtroServicios el encabezado mantiene el tamaño de producción: logo a la izquierda, titular de 18px', () => {
-    renderCanvas('https://x/logo.png', unDia, 'Gabriela', null, filtro);
-    const logo = document.querySelector('img[src="https://x/logo.png"]') as HTMLElement;
-    const titular = screen.getByText('Uñas y Pestañas');
-    expect(titular.compareDocumentPosition(logo) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    expect(logo.style.width).toBe('44px');
-    expect(Number.parseFloat(titular.style.fontSize)).toBeLessThanOrEqual(18);
+  it('la categoría va en una etiqueta en mayúsculas delante de todos sus servicios', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, filtro);
+    const etiqueta = screen.getByTestId('story-etiqueta-categoria');
+    expect(etiqueta.textContent).toBe('UÑAS Y PESTAÑAS');
+    const franja = screen.getByTestId('story-servicios');
+    expect(franja.firstElementChild).toBe(etiqueta);
+    for (const n of filtro.servicios) expect(screen.getByText(n).style.whiteSpace).toBe('nowrap');
   });
 
-  it('los servicios admiten hasta 2 líneas en cualquier modo, quincena incluida', () => {
-    const quincena: DisponibilidadDia[] = Array.from({ length: 16 }, (_, i) => ({
-      fecha: `2026-10-${String(i + 16).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
-    }));
-    const { unmount } = renderCanvas(null, quincena, 'Gabriela', null, filtro);
-    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('32px');
+  it('hasta 2 renglones de servicios y una línea fina que los separa de la lista', () => {
+    renderCanvas(null, quincena, 'Gabriela', null, filtro);
+    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('30px');
+    expect(screen.getByTestId('story-servicios-linea')).toBeInTheDocument();
+  });
+
+  it('en quincena el alto extra sale del margen y de los espacios entre filas', () => {
+    const { unmount } = renderCanvas(null, quincena, 'Gabriela');
+    const gapSin = gapLista();
+    const margenSin = margen();
     unmount();
-    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
-    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('32px');
+    renderCanvas(null, quincena, 'Gabriela', null, {
+      titulo: 'Depilación',
+      servicios: ['Cera piernas', 'Media pierna', 'Cavado', 'Axilas', 'Bozo', 'Brazos', 'Espalda', 'Glúteos'],
+    });
+    expect(margen()).toBe(12);
+    expect(gapLista()).toBeLessThan(gapSin);
+    // Lo que crece arriba (franja + línea + margen) lo devuelven los 15 espacios.
+    const franja = 10 + 15 * 2 + 12 + 1 + 12;
+    expect(15 * (gapSin - gapLista())).toBeCloseTo(franja - margenSin, 0);
   });
 
-  it('el cuerpo no crece con la lista (minHeight 0): la lista se reparte en el alto que queda', () => {
-    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
-    expect((screen.getByTestId('story-cuerpo') as HTMLElement).style.minHeight).toBe('0');
-  });
-
-  it('vista de equipo (sin profesional): la línea no lleva "con"', () => {
+  it('vista de equipo (sin profesional): la línea chica es solo la fecha', () => {
     renderCanvas(null, unDia, undefined, null, filtro);
-    expect(screen.getByText('Turnos disponibles · 24 de sept')).toBeInTheDocument();
+    expect(screen.getByText('24 de sept')).toBeInTheDocument();
     expect(screen.queryByText(/con /)).not.toBeInTheDocument();
   });
 
-  it('cada nombre de servicio no se parte (nowrap)', () => {
-    renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    expect(screen.getByText('Kapping').style.whiteSpace).toBe('nowrap');
-  });
-
-  it('con servicios el margen entre header y lista baja respecto al diseño de siempre', () => {
-    const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
-    const { unmount } = renderCanvas(null, variosDias, 'Gabriela');
-    const sin = margen();
-    unmount();
-    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
-    const con = margen();
-    expect(con).toBeLessThan(sin);
-    expect(con).toBeGreaterThan(0);
-  });
-
-  it('filtroServicios con lista vacía usa el diseño de siempre', () => {
+  it('sin servicios no hay franja ni línea y la lista no cambia', () => {
     renderCanvas(null, unDia, 'Gabriela', null, { titulo: 'Servicios', servicios: [] });
-    expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
+    expect(screen.queryByTestId('story-servicios')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('story-servicios-linea')).not.toBeInTheDocument();
   });
 });
 

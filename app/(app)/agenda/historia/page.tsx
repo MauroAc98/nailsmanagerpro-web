@@ -20,7 +20,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import {
-  MAX_LINEAS_SERVICIOS, medirTextoServicios, serviciosEntran, tituloFiltroServicios,
+  MAX_LINEAS_SERVICIOS, medirEtiquetaCategoria, medirTextoServicios, serviciosEntran, tituloFiltroServicios,
 } from '@/lib/historiaServicios';
 import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
@@ -141,7 +141,11 @@ function HistoriaContent() {
     : '';
   // Mismo ancho que la línea de servicios en el canvas (padding 18px por lado).
   const anchoLineaServicios = Math.max(0, canvasWidth - 36);
-  const entranServicios = serviciosEntran(nombresServicios, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios);
+  // La etiqueta de la categoría va al principio del primer renglón de la franja.
+  const entranEnLaFranja = (nombres: string[], etiqueta: string) => serviciosEntran(
+    nombres, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios, medirEtiquetaCategoria(etiqueta),
+  );
+  const entranServicios = entranEnLaFranja(nombresServicios, tituloServicios);
   const bloqueaExportar = hayFiltroServicios && !entranServicios;
   const nombreParaTodos = mostrarSelectorProfesional && !esEquipo ? profesionalSeleccionada?.nombre : undefined;
 
@@ -287,10 +291,9 @@ function HistoriaContent() {
           fotoCategoria={id => categorias.find(c => c.id === id)?.fondo_historia_url}
           ctaLabel={count => t('showServices', { count })}
           aviso={draft => {
-            const nombres = serviciosOfrecidos
-              .filter(s => draft.includes(s.id))
-              .map(s => s.nombre);
-            return serviciosEntran(nombres, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios) ? null : t('servicesDontFit');
+            const elegidos = serviciosOfrecidos.filter(s => draft.includes(s.id));
+            const etiqueta = tituloFiltroServicios(elegidos, categorias, { fallback: t('servicesFallbackTitle'), y: t('servicesAnd') });
+            return entranEnLaFranja(elegidos.map(s => s.nombre), etiqueta) ? null : t('servicesDontFit');
           }}
         />
 

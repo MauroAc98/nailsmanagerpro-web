@@ -2,7 +2,7 @@
 // elegidos (ver StoryCanvas, prop `filtroServicios`).
 
 export const FUENTE_LINEA_SERVICIOS = '11px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-const SEPARADOR = ' / ';
+const SEPARADOR = ' · ';
 
 export function tituloFiltroServicios(
   servicios: { categoria_id: number | null }[],
@@ -24,16 +24,26 @@ export function contarLineasServicios(
   nombres: string[],
   anchoDisponible: number,
   medir: (texto: string) => number,
+  // Ancho ya ocupado al principio del primer renglón (la etiqueta de la
+  // categoría, con su separación).
+  anchoInicial = 0,
 ): number {
   if (nombres.length === 0) return 0;
   const sep = medir(SEPARADOR);
   let lineas = 1;
-  let usado = 0;
+  let usado = anchoInicial;
+  let hayNombre = false;
   for (const nombre of nombres) {
     const w = medir(nombre);
     if (w > anchoDisponible) return Infinity;
-    if (usado === 0) {
-      usado = w;
+    if (!hayNombre) {
+      hayNombre = true;
+      if (usado + w <= anchoDisponible) {
+        usado += w;
+      } else {
+        lineas += 1;
+        usado = w;
+      }
     } else if (usado + sep + w <= anchoDisponible) {
       usado += sep + w;
     } else {
@@ -49,13 +59,37 @@ export function serviciosEntran(
   maxLineas: number,
   anchoDisponible: number,
   medir: (texto: string) => number,
+  anchoInicial = 0,
 ): boolean {
-  return contarLineasServicios(nombres, anchoDisponible, medir) <= maxLineas;
+  return contarLineasServicios(nombres, anchoDisponible, medir, anchoInicial) <= maxLineas;
 }
 
-// Hasta 2 líneas en cualquier modo: la lista se reparte en el alto que queda
-// (ver lib/historia/repartoFilas), así que una quincena también las admite.
+// Hasta 2 renglones en cualquier modo. En una quincena el alto extra lo
+// devuelven el margen y los espacios entre filas (ver StoryCanvas).
 export const MAX_LINEAS_SERVICIOS = 2;
+
+// Etiqueta de la categoría delante de los servicios (StoryCanvas): 9px,
+// peso 800, mayúsculas, 1.4px de espaciado, 8px de relleno por lado y 8px de
+// separación con el primer servicio.
+export const FUENTE_ETIQUETA_CATEGORIA = '800 9px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const ESPACIADO_ETIQUETA = 1.4;
+const EXTRA_ETIQUETA = 8 * 2 + 8;
+
+let ctxEtiqueta: CanvasRenderingContext2D | null | undefined;
+
+export function medirEtiquetaCategoria(texto: string): number {
+  const mayus = texto.toUpperCase();
+  if (ctxEtiqueta === undefined) {
+    try {
+      ctxEtiqueta = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
+    } catch {
+      ctxEtiqueta = null;
+    }
+    if (ctxEtiqueta) ctxEtiqueta.font = FUENTE_ETIQUETA_CATEGORIA;
+  }
+  const texto9 = ctxEtiqueta ? ctxEtiqueta.measureText(mayus).width : mayus.length * 6.5;
+  return texto9 + mayus.length * ESPACIADO_ETIQUETA + EXTRA_ETIQUETA;
+}
 
 let ctx: CanvasRenderingContext2D | null | undefined;
 

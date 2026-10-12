@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  medirEtiquetaCategoria,
   medirTextoServicios,
   serviciosEntran,
   tituloFiltroServicios,
@@ -71,6 +72,30 @@ describe('serviciosEntran', () => {
   it('con máximo 1 línea, lo que pide dos líneas no entra', () => {
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 100, medir)).toBe(false);
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 138, medir)).toBe(true);
+  });
+});
+
+describe('serviciosEntran con la etiqueta de la categoría al principio', () => {
+  const medir = (t: string) => t.length * 6;
+
+  it('la etiqueta ocupa lugar en el primer renglón', () => {
+    // 2 nombres de 60 + separador 18 = 138: sin etiqueta entra en 1 renglón de 140.
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 140, medir)).toBe(true);
+    // Con una etiqueta de 40 ya no entra en 1 renglón, pero sí en 2.
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 140, medir, 40)).toBe(false);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 2, 140, medir, 40)).toBe(true);
+  });
+
+  it('si el primer nombre no entra al lado de la etiqueta, baja al segundo renglón', () => {
+    expect(serviciosEntran(['AAAAAAAAAA'], 1, 100, medir, 60)).toBe(false);
+    expect(serviciosEntran(['AAAAAAAAAA'], 2, 100, medir, 60)).toBe(true);
+  });
+});
+
+describe('medirEtiquetaCategoria', () => {
+  it('sin canvas 2D usa un fallback que incluye relleno y separación', () => {
+    expect(medirEtiquetaCategoria('ABCD')).toBeGreaterThan(medirTextoServicios('ABCD'));
+    expect(medirEtiquetaCategoria('')).toBeGreaterThan(0);
   });
 });
 
