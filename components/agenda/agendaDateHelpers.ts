@@ -46,7 +46,7 @@ export function parseFechaLocal(fechaStr: string): Date {
 // 2026-09-30). undefined/null = no se muestra (cuenta con ≤1 profesional
 // activa, o la vista ya está filtrada a una sola). apellido/avatarUrl son
 // opcionales porque solo alimentan el avatar (mismo componente que
-// SelectorProfesional): sin ellos, cae a iniciales con solo el nombre.
+// selector de profesional del día): sin ellos, cae a iniciales con solo el nombre.
 export interface ProfesionalLabel {
   nombre:     string;
   apellido?:  string | null;

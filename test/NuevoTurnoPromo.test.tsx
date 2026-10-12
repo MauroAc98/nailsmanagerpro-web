@@ -73,6 +73,11 @@ async function elegirClienteYServicio(nombreServicio: RegExp) {
   fireEvent.click(await screen.findByText('Marta Rios'));
   fireEvent.click(await screen.findByRole('button', { name: nombreServicio }));
 }
+const filaProfesional = (valor: string) => screen.getByRole('button', { name: `Profesional: ${valor}` });
+const elegirProfesional = (nombre: string) => {
+  fireEvent.click(screen.getByRole('button', { name: /^Profesional:/ }));
+  fireEvent.click(screen.getByRole('option', { name: new RegExp(nombre) }));
+};
 const confirmar = () => fireEvent.click(screen.getByRole('button', { name: 'Confirmar Turno' }));
 
 beforeEach(() => {
@@ -87,8 +92,8 @@ afterEach(() => vi.useRealTimers());
 describe('NuevoTurnoPage — turno comun (Rule L)', () => {
   it('con dos profesionales sigue pidiendo elegir una, no consulta la promo y manda el payload de siempre', async () => {
     montar();
-    expect(await screen.findByText('PROFESIONAL')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Ana$/ }));
+    expect(await screen.findByRole('button', { name: 'Profesional: Elegí una profesional' })).toBeInTheDocument();
+    elegirProfesional('Ana');
     await elegirClienteYServicio(/^Manicura/);
     confirmar();
 
@@ -97,6 +102,50 @@ describe('NuevoTurnoPage — turno comun (Rule L)', () => {
     }));
     expect(servicioService.getOne).not.toHaveBeenCalled();
     expect(screen.queryByText('QUÉ SE AGENDA')).not.toBeInTheDocument();
+  });
+});
+
+describe('NuevoTurnoPage — fila de profesional', () => {
+  it('arranca sin elegir, y al elegir en la hoja muestra el nombre y ofrece sus servicios', async () => {
+    montar();
+    expect(await screen.findByRole('button', { name: 'Profesional: Elegí una profesional' })).toBeInTheDocument();
+    elegirProfesional('Laura');
+    expect(filaProfesional('Laura')).toBeInTheDocument();
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^Semis pies/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Softgel/ })).not.toBeInTheDocument();
+  });
+
+  it('cambiar de profesional limpia los servicios tildados (mismo handler de siempre)', async () => {
+    montar();
+    elegirProfesional('Ana');
+    fireEvent.click(await screen.findByRole('button', { name: /^Softgel/ }));
+    elegirProfesional('Laura');
+    elegirProfesional('Ana');
+    fireEvent.click(await screen.findByText('Seleccionar...'));
+    fireEvent.click(await screen.findByText('Marta Rios'));
+    expect(screen.getByRole('button', { name: 'Confirmar Turno' })).toBeDisabled();
+  });
+
+  it('volver a elegir la misma profesional no la deselecciona ni borra los servicios', async () => {
+    montar();
+    elegirProfesional('Ana');
+    fireEvent.click(await screen.findByRole('button', { name: /^Softgel/ }));
+    elegirProfesional('Ana');
+    expect(filaProfesional('Ana')).toBeInTheDocument();
+    fireEvent.click(await screen.findByText('Seleccionar...'));
+    fireEvent.click(await screen.findByText('Marta Rios'));
+    confirmar();
+    await waitFor(() => expect(crearTurno).toHaveBeenCalledWith({
+      cliente_id: 5, servicio_ids: [2], fecha_hora: '2099-06-10 10:00', profesional_id: 1,
+    }));
+  });
+
+  it('con una sola profesional activa no se muestra la fila', async () => {
+    montar();
+    useProfesionalStore.setState({ profesionales: [ana] });
+    await screen.findByText('Seleccionar...');
+    expect(screen.queryByRole('button', { name: /^Profesional:/ })).not.toBeInTheDocument();
   });
 });
 
@@ -109,7 +158,7 @@ describe('NuevoTurnoPage — combo', () => {
     expect(screen.getByText('10:00 a 11:00')).toBeInTheDocument();
     expect(screen.getByText('Semis pies · con Laura')).toBeInTheDocument();
     expect(screen.getByText('11:00 a 11:45')).toBeInTheDocument();
-    expect(screen.queryByText('PROFESIONAL')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Profesional:/ })).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/tramo|paralelo|secuencia/i);
   });
 
@@ -185,7 +234,8 @@ describe('NuevoTurnoPage — combo', () => {
 
   it('no se puede combinar el combo con otros servicios en el mismo turno', async () => {
     montar();
-    fireEvent.click(await screen.findByRole('button', { name: /Ana$/ }));
+    await screen.findByRole('button', { name: /^Profesional:/ });
+    elegirProfesional('Ana');
     await elegirClienteYServicio(/^Combo pies y manos/);
     fireEvent.click(await screen.findByRole('button', { name: /^Manicura/ }));
 

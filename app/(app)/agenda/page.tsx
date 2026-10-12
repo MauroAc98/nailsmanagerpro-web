@@ -16,6 +16,7 @@ import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
 import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
 import { ServiciosSheet } from '@/components/filtros/ServiciosSheet';
 import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
@@ -421,93 +422,6 @@ function FiltroSheetContent({
   );
 }
 
-// ─────────────────────────────────────────────
-// SelectorProfesionalDia — pill dinámico de profesional, invisible para
-// cuentas con ≤1 profesional activa. Solo muestra profesionales que tienen
-// al menos un turno vigente ese día, más un "Todas" implícito que fusiona
-// la vista (comportamiento por defecto).
-// ─────────────────────────────────────────────
-function SelectorProfesionalDia({
-  profesionales,
-  filtroActivo,
-  onSeleccionar,
-}: {
-  profesionales: Profesional[];
-  filtroActivo:  number | null;
-  onSeleccionar: (id: number | null) => void;
-}) {
-  const t = useTranslations('agenda.SelectorProfesionalDia');
-  const todosSeleccionado = filtroActivo === null;
-  return (
-    <div style={{
-      display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-    }}>
-      <button
-        onClick={() => onSeleccionar(null)}
-        style={{
-          flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-          borderRadius: 20, padding: '4px 14px 4px 4px', fontSize: 12, fontWeight: 600,
-          border: `1px solid ${todosSeleccionado ? colors.primarySolid : colors.divider}`,
-          backgroundColor: todosSeleccionado ? colors.primarySolid : colors.surface,
-          color: todosSeleccionado ? colors.primaryFg : colors.text,
-          cursor: 'pointer', whiteSpace: 'nowrap',
-        }}
-      >
-        {/* Ícono de grupo — distingue de un vistazo la opción agregadora
-            ("todas") de las profesionales puntuales, que ahora llevan su
-            avatar con iniciales (Change: unificación de selectores). */}
-        <span style={{
-          width: 20, height: 20, borderRadius: 10, flexShrink: 0,
-          backgroundColor: todosSeleccionado ? withAlpha(colors.primaryFg, '3D') : withAlpha(colors.primary, '26'),
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-            stroke={todosSeleccionado ? colors.primaryFg : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        </span>
-        {t('all')}
-      </button>
-      {profesionales.map(p => {
-        const selected = filtroActivo === p.id;
-        const color = p.color || colors.primary;
-        return (
-          <button
-            key={p.id}
-            onClick={() => onSeleccionar(selected ? null : p.id)}
-            style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-              borderRadius: 20, padding: '4px 14px 4px 4px', fontSize: 12, fontWeight: 600,
-              border: `1px solid ${selected ? color : colors.divider}`,
-              backgroundColor: selected ? color : colors.surface,
-              color: selected ? colors.primaryFg : colors.text,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            <span style={{
-              width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, fontWeight: 800,
-              backgroundColor: selected ? withAlpha(colors.primaryFg, '3D') : withAlpha(color, '26'),
-              color: selected ? colors.primaryFg : color,
-            }}>
-              {p.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                inicialesProfesional(p.nombre, p.apellido)
-              )}
-            </span>
-            {p.nombre}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 // AgendaPage
@@ -521,6 +435,7 @@ function AgendaContent() {
   const t = useTranslations('agenda.AgendaPage');
   const tElegirFecha = useTranslations('agenda.ElegirFechaSheet');
   const tFiltro = useTranslations('agenda.FiltroSheetContent');
+  const tDia = useTranslations('agenda.SelectorProfesionalDia');
 
   const {
     turnos, turnosMes, loading,
@@ -571,6 +486,10 @@ function AgendaContent() {
   // renderizan acá (hermanas del filtro) y no dentro de él.
   const [servicioFiltroAbierto, setServicioFiltroAbierto] = useState(false);
   const [profesionalFiltroAbierto, setProfesionalFiltroAbierto] = useState(false);
+  // Hoja de profesional del selector de la pantalla principal (vive al final del
+  // JSX, junto a las del filtro: su fondo tiene que quedar por encima de la hoja
+  // "Turnos de hoy").
+  const [profesionalDiaAbierto, setProfesionalDiaAbierto] = useState(false);
 
   const hayFiltroActivo = !!textoBusqueda || servicioFiltro !== null || fechaFiltro !== null || profesionalFiltroBusqueda !== null;
   const hoy = fechaDeHoy();
@@ -604,6 +523,7 @@ function AgendaContent() {
   // ─────────────────────────────────────────────
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const profesionalDiaSeleccionada = activeProfesionales.find(p => p.id === profesionalFiltro) ?? null;
 
   const profesionalesById = useMemo(
     () => new Map(profesionales.map(p => [p.id, p])),
@@ -927,20 +847,28 @@ function AgendaContent() {
         <ResumenMesCard profesionalId={profesionalFiltro} viewDate={viewDate} />
       </div>
 
-      {/* Selector de profesional — invisible con ≤1 profesional activa
-          (único gate). Change 3: ahora lista SIEMPRE todas las profesionales
-          activas, no solo las que tienen turno en fechaSeleccionada — sigue
-          siendo un roster fijo, no un filtro atado al día del calendario. */}
+      {/* Profesional — misma fila + hoja que el resto de la app. Invisible con
+          ≤1 profesional activa (único gate). Lista SIEMPRE todas las activas
+          (roster fijo, no un filtro atado al día del calendario). La hoja
+          vive más abajo, junto a las del filtro. */}
       {mostrarSelectorProfesional && (
         <div style={{ padding: '0 20px 12px' }}>
-          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted }}>
-            {t('team')}
-          </p>
-          <SelectorProfesionalDia
-            profesionales={activeProfesionales}
-            filtroActivo={profesionalFiltro}
-            onSeleccionar={setProfesionalFiltro}
-          />
+          <TarjetaQueMostrar>
+            <FilaQueMostrar
+              leading={profesionalDiaSeleccionada ? (
+                <AvatarProfesional
+                  nombre={profesionalDiaSeleccionada.nombre}
+                  apellido={profesionalDiaSeleccionada.apellido}
+                  color={profesionalDiaSeleccionada.color}
+                  avatarUrl={profesionalDiaSeleccionada.avatar_url}
+                />
+              ) : <EquipoIcono />}
+              titulo={tDia('professionalRow')}
+              valor={profesionalDiaSeleccionada ? profesionalDiaSeleccionada.nombre : tDia('all')}
+              activo={profesionalDiaSeleccionada !== null}
+              onClick={() => setProfesionalDiaAbierto(true)}
+            />
+          </TarjetaQueMostrar>
         </div>
       )}
 
@@ -1115,6 +1043,19 @@ function AgendaContent() {
           id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
         }))}
         selectedId={profesionalFiltroBusqueda ?? 'equipo'}
+        backdropZIndex={40}
+      />
+      <ProfesionalSheet
+        open={profesionalDiaAbierto}
+        onClose={() => setProfesionalDiaAbierto(false)}
+        onSelect={sel => setProfesionalFiltro(sel === 'equipo' ? null : sel)}
+        title={tDia('professionalRow')}
+        equipoLabel={tDia('all')}
+        cerrarLabel={tDia('closeSheet')}
+        profesionales={activeProfesionales.map(p => ({
+          id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+        }))}
+        selectedId={profesionalFiltro ?? 'equipo'}
         backdropZIndex={40}
       />
 

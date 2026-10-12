@@ -8,14 +8,14 @@ interface Props {
   color?: string | null;
   avatarUrl?: string | null;
   size?: number;
-  // Overrides opcionales (pill de SelectorProfesional: tipografía fija y
+  // Overrides opcionales (pill del selector de profesional del día: tipografía fija y
   // colores propios cuando está seleccionado). Sin ellos: derivados del color.
   fontSize?: number;
   fondo?: string;
   texto?: string;
 }
 
-// Mismo avatar que las pills de SelectorProfesional (foto real o iniciales
+// Mismo avatar que las pills del selector de profesional del día (foto real o iniciales
 // sobre el color propio), a tamaño libre.
 export function AvatarProfesional({ nombre, apellido, color, avatarUrl, size = 32, fontSize, fondo, texto }: Props) {
   const c = color || colors.primary;

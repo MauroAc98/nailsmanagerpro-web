@@ -2,7 +2,6 @@
   "AgendaPage": {
     "title": "Minha Agenda",
     "share": "COMPARTILHAR",
-    "team": "Profissionais",
     "noResultsFound": "Nenhum agendamento encontrado",
     "noAppointmentsToday": "Não há agendamentos para hoje",
     "noAppointmentsOn": "Não há agendamentos em {fecha}",
@@ -142,7 +141,9 @@
     "viewResults": "Ver resultados"
   },
   "SelectorProfesionalDia": {
-    "all": "Toda a equipe"
+    "all": "Toda a equipe",
+    "professionalRow": "Profissional",
+    "closeSheet": "Fechar"
   },
   "AltaClienteRapidaSheet": {
     "title": "Novo cliente",
@@ -208,7 +209,9 @@
     "retry": "Tentar novamente",
     "noClientsFound": "Nenhum cliente encontrado.",
     "newClientOption": "+ Adicionar novo cliente",
-    "professional": "PROFISSIONAL",
+    "professional": "Profissional",
+    "chooseProfessional": "Escolha uma profissional",
+    "closeSheet": "Fechar",
     "services": "SERVIÇOS",
     "chooseProfessionalFirst": "Escolha quem atende para ver os serviços.",
     "noServicesAssigned": "Essa pessoa não tem serviços atribuídos.",
@@ -238,7 +241,9 @@
     "retry": "Tentar novamente",
     "noClientsFound": "Nenhum cliente encontrado.",
     "newClientOption": "+ Adicionar novo cliente",
-    "professional": "PROFISSIONAL",
+    "professional": "Profissional",
+    "chooseProfessional": "Escolha uma profissional",
+    "closeSheet": "Fechar",
     "services": "SERVIÇOS",
     "chooseProfessionalFirst": "Escolha quem atende para ver os serviços.",
     "noServicesAssigned": "Essa pessoa não tem serviços atribuídos.",
