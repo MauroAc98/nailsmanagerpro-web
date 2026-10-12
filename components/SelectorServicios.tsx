@@ -28,6 +28,11 @@ interface Props {
   // `single` only: omit the "Todos" row when clearing makes no sense (e.g. a
   // picker that must end with exactly one service).
   hideAll?:    boolean;
+  // `multi` only: first row meaning "no filter" — checked while nothing is
+  // selected; tapping it clears the selection (empty selection = all).
+  todosLabel?: string;
+  // Optional thumbnail per category (never for "Sin categoría").
+  fotoCategoria?: (categoriaId: number) => string | null | undefined;
 }
 
 function EstadoCheckbox({ estado }: { estado: EstadoCategoria }) {
@@ -78,7 +83,7 @@ function RadioIndicator({ selected }: { selected: boolean }) {
   );
 }
 
-export function SelectorServicios({ servicios, mode, selectedIds, onChange, hideAll }: Props) {
+export function SelectorServicios({ servicios, mode, selectedIds, onChange, hideAll, todosLabel, fotoCategoria }: Props) {
   const t = useTranslations('common.SelectorServicios');
 
   // Mismo patrón que configuracion/servicios/page.tsx: `categoriasReady`
@@ -202,7 +207,23 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
     </button>
   );
 
-  const pillSeleccionados = mode === 'multi' && serviciosSeleccionados.length > 0 && (
+  const filaTodosMulti = mode === 'multi' && todosLabel && (
+    <button
+      onClick={() => onChange([])}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+        padding: '10px 8px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+        background: 'none', border: 'none',
+      }}
+    >
+      <ServicioCheckbox checked={selectedIds.length === 0} />
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>
+        {todosLabel}
+      </span>
+    </button>
+  );
+
+  const pillSeleccionados =mode === 'multi' && serviciosSeleccionados.length > 0 && (
     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
       <span style={{
         borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700,
@@ -263,6 +284,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
           {buscador}
           {chipsSeleccionados}
           <div style={{ padding: '4px 8px 8px' }}>
+            {filaTodosMulti}
             {filaTodos}
             {visibles.length === 0 ? (
               <p style={{ padding: 20, textAlign: 'center', fontSize: 13, color: colors.subtext, margin: 0 }}>
@@ -298,6 +320,11 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
         {mode === 'single' && (
           <div style={{ padding: '4px 8px 0' }}>
             {filaTodos}
+          </div>
+        )}
+        {filaTodosMulti && (
+          <div style={{ padding: '4px 8px 0' }}>
+            {filaTodosMulti}
           </div>
         )}
         {secciones.length === 0 ? (
@@ -339,6 +366,14 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left',
                   }}
                 >
+                  {grupo.id !== null && fotoCategoria?.(grupo.id) && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={fotoCategoria(grupo.id) as string}
+                      alt=""
+                      style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  )}
                   <span style={{
                     flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, letterSpacing: 0.6,
                     textTransform: 'uppercase', color: colors.subtext,

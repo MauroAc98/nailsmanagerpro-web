@@ -10,5 +10,9 @@
     "expandCategory": "Expand category",
     "selectCategory": "Select category",
     "deselectCategory": "Deselect category"
+  },
+  "ServiciosSheet": {
+    "cancel": "Cancel",
+    "clear": "Clear"
   }
 }
