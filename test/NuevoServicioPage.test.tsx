@@ -25,6 +25,7 @@ import { slotService } from '@/services/slotService';
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useToastStore } from '@/store/useToastStore';
 import { routerMock, resetNavigationMock } from '@/test/mocks/nextNavigation';
 import NuevoServicioPage from '@/app/(app)/configuracion/servicios/nuevo/page';
 
@@ -66,6 +67,7 @@ const toggle = () => fireEvent.click(screen.getByRole('switch'));
 beforeEach(() => {
   vi.clearAllMocks();
   resetNavigationMock();
+  useToastStore.setState({ message: null });
   useAuthStore.setState({ user: null });
   window.sessionStorage.clear();
 });
@@ -82,6 +84,26 @@ describe('NuevoServicioPage — legacy form is unchanged (Rule L)', () => {
       nombre: 'Nuevo', duracion_minutos: 30, precio: 5000, es_promo: false, categoria_id: null,
     });
     expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
+  });
+
+  it('tells the user the servicio was created', async () => {
+    montar([ana, laura]);
+    await escribirNombre('Nuevo');
+    await escribirPrecio('5000');
+    guardar();
+
+    await waitFor(() => expect(useToastStore.getState().message).toBe('Servicio creado'));
+  });
+
+  it('shows no success notice when the save fails', async () => {
+    montar([ana, laura]);
+    vi.mocked(servicioService.create).mockRejectedValueOnce(new Error('boom'));
+    await escribirNombre('Nuevo');
+    await escribirPrecio('5000');
+    guardar();
+
+    await waitFor(() => expect(alertDialog).toHaveBeenCalled());
+    expect(useToastStore.getState().message).toBeNull();
   });
 
   it('promo with a single active professional: creates the plain promo with the normal fields', async () => {

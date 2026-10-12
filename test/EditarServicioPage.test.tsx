@@ -32,6 +32,7 @@ import { profesionalService, type Profesional } from '@/services/profesionalServ
 import { useServiciosStore } from '@/store/useServicioStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useToastStore } from '@/store/useToastStore';
 import type { User } from '@/services/authService';
 
 // Test-only helper: only `atiende_en_paralelo` matters for these cases, the
@@ -85,6 +86,14 @@ describe('EditarServicioPage — legacy form is unchanged (Rule L)', () => {
     expect(servicioService.getOne).not.toHaveBeenCalled();
     expect(servicioService.guardarComponentes).not.toHaveBeenCalled();
     expect(screen.queryByText('Servicios que incluye')).not.toBeInTheDocument();
+  });
+
+  it('tells the user the changes were saved', async () => {
+    useToastStore.setState({ message: null });
+    montar(servicio({}));
+    fireEvent.click(await screen.findByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(useToastStore.getState().message).toBe('Cambios guardados'));
   });
 
   it('legacy promo without components (2 professionals): no section content, no components call on save', async () => {
