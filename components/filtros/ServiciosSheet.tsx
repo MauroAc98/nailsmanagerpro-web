@@ -18,14 +18,19 @@ interface Props {
   // Committed selection; [] = all services.
   selectedIds: number[];
   onConfirm: (ids: number[]) => void;
-  // count = draft length (0 = all).
-  ctaLabel: (count: number) => string;
+  // 'multi' (default): draft + CTA. 'single': tap = choose and close, no CTA.
+  mode?: 'multi' | 'single';
+  // multi only. count = draft length (0 = all).
+  ctaLabel?: (count: number) => string;
   todosLabel?: string;
   fotoCategoria?: (categoriaId: number) => string | null | undefined;
   // Non-null => amber notice above the selector and the CTA is disabled.
   aviso?: (draftIds: number[]) => string | null;
   // Dato a la derecha de cada servicio (por defecto la duración).
   detalle?: (servicio: Servicio) => ReactNode;
+  // z-index del fondo oscuro. 39 por defecto; sube a 40 cuando la hoja se abre
+  // desde dentro de otra BottomSheet (z 40) para que el fondo quede encima.
+  backdropZIndex?: number;
 }
 
 const headerButton = {
@@ -42,7 +47,7 @@ export function ServiciosSheet(props: Props) {
 }
 
 function ServiciosSheetAbierta({
-  onClose, title, servicios, selectedIds, onConfirm, ctaLabel, todosLabel, fotoCategoria, aviso, detalle,
+  onClose, title, servicios, selectedIds, onConfirm, mode = 'multi', ctaLabel, todosLabel, fotoCategoria, aviso, detalle, backdropZIndex = 39,
 }: Props) {
   const t = useTranslations('common.ServiciosSheet');
   const [draft, setDraft] = useState<number[]>(selectedIds);
@@ -51,6 +56,13 @@ function ServiciosSheetAbierta({
   // draft from the committed selection.
   const mensaje = aviso?.(draft) ?? null;
   const bloqueado = mensaje !== null;
+
+  const single = mode === 'single';
+
+  const elegirUno = (ids: number[]) => {
+    onConfirm(ids);
+    onClose();
+  };
 
   const confirmar = () => {
     if (bloqueado) return;
@@ -62,7 +74,7 @@ function ServiciosSheetAbierta({
     <>
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: 39, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
+        style={{ position: 'fixed', inset: 0, zIndex: backdropZIndex, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
       />
       <BottomSheet
         snapPoints={[0.85]}
@@ -76,18 +88,26 @@ function ServiciosSheetAbierta({
             position: 'sticky', top: 0, zIndex: 1, backgroundColor: colors.surface,
             display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px',
           }}>
-            <button type="button" onClick={onClose} style={{ ...headerButton, textAlign: 'left' }}>
-              {t('cancel')}
-            </button>
+            {!single && (
+              <button type="button" onClick={onClose} style={{ ...headerButton, textAlign: 'left' }}>
+                {t('cancel')}
+              </button>
+            )}
             <span style={{
-              flex: 1, minWidth: 0, textAlign: 'center', fontSize: 16, fontWeight: 700, color: colors.textStrong,
+              flex: 1, minWidth: 0, textAlign: single ? 'left' : 'center', fontSize: 16, fontWeight: 700, color: colors.textStrong,
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
               {title}
             </span>
-            <button type="button" onClick={() => setDraft([])} style={{ ...headerButton, textAlign: 'right' }}>
-              {t('clear')}
-            </button>
+            {single ? (
+              <button type="button" onClick={onClose} style={{ ...headerButton, textAlign: 'right' }}>
+                {t('close')}
+              </button>
+            ) : (
+              <button type="button" onClick={() => setDraft([])} style={{ ...headerButton, textAlign: 'right' }}>
+                {t('clear')}
+              </button>
+            )}
           </div>
 
           <div style={{ flex: 1, padding: '8px 16px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -97,16 +117,17 @@ function ServiciosSheetAbierta({
               </AvisoAmbar>
             )}
             <SelectorServicios
-              mode="multi"
+              mode={single ? 'single' : 'multi'}
               servicios={servicios}
-              selectedIds={draft}
-              onChange={setDraft}
-              todosLabel={todosLabel}
+              selectedIds={single ? selectedIds : draft}
+              onChange={single ? elegirUno : setDraft}
+              todosLabel={single ? undefined : todosLabel}
               fotoCategoria={fotoCategoria}
               detalle={detalle}
             />
           </div>
 
+          {!single && ctaLabel && (
           <div style={{
             position: 'sticky', bottom: 0, zIndex: 1, backgroundColor: colors.surface,
             padding: '10px 16px 14px', borderTop: `1px solid ${colors.hairline}`,
@@ -128,6 +149,7 @@ function ServiciosSheetAbierta({
               {ctaLabel(draft.length)}
             </button>
           </div>
+          )}
         </div>
       </BottomSheet>
     </>

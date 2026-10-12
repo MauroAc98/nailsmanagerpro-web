@@ -182,6 +182,7 @@
   },
   "ServiciosSheet": {
     "cancel": "Cancelar",
+    "close": "Fechar",
     "clear": "Limpar"
   }
 }

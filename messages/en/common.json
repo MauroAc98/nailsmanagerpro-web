@@ -13,6 +13,7 @@
   },
   "ServiciosSheet": {
     "cancel": "Cancel",
+    "close": "Close",
     "clear": "Clear"
   }
 }

@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState, useRef, useCallback, useMemo } fr
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Camera, Check, SlidersHorizontal, X } from 'lucide-react';
+import { Camera, Check, LayoutGrid, SlidersHorizontal, X } from 'lucide-react';
 import { withAlpha } from '@/theme/colors';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -15,6 +15,10 @@ import { Turno } from '@/services/turnoService';
 import type { Servicio } from '@/services/servicioService';
 import type { Profesional } from '@/services/profesionalService';
 import { BottomSheet, BottomSheetHandle } from '@/components/BottomSheet';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { ServiciosSheet } from '@/components/filtros/ServiciosSheet';
+import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { SubscriptionWarningBanner, useSubscriptionWarningVisible } from '@/components/SubscriptionWarningBanner';
 import { PendientesDeCobroBanner, usePendientesDeCobroVisible } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from '@/components/RecordatoriosPendientesBanner';
@@ -94,14 +98,6 @@ function formatFechaCorta(fechaStr: string): string {
   const mes  = nombreMes(date, 'long', 'ninguna').slice(0, 3);
   return `${dia} ${d} de ${mes}`;
 }
-
-// ─────────────────────────────────────────────
-// Style constants
-// ─────────────────────────────────────────────
-const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1,
-  textTransform: 'uppercase', marginBottom: 8,
-};
 
 // ─────────────────────────────────────────────
 // FinalizadoCard — opacity 0.6, no swipe
@@ -254,12 +250,12 @@ function FiltroSheetContent({
   hayFiltroActivo,
   onChangeBusqueda,
   onLimpiarBusqueda,
-  onChangeServicioFiltro,
   onCambiarFecha,
-  onChangeProfesionalFiltro,
   onLimpiarTodo,
   onAplicar,
   onAbrirCalendarioFecha,
+  onAbrirServicios,
+  onAbrirProfesionales,
 }: {
   textoBusqueda: string;
   servicioFiltro: number | null;
@@ -271,15 +267,17 @@ function FiltroSheetContent({
   hayFiltroActivo: boolean;
   onChangeBusqueda: (txt: string) => void;
   onLimpiarBusqueda: () => void;
-  onChangeServicioFiltro: (ids: number[]) => void;
   onCambiarFecha: (fecha: string | null) => void;
-  onChangeProfesionalFiltro: (id: number | null) => void;
   onLimpiarTodo: () => void;
   onAplicar: () => void;
   onAbrirCalendarioFecha: () => void;
+  onAbrirServicios: () => void;
+  onAbrirProfesionales: () => void;
 }) {
   const t = useTranslations('agenda.FiltroSheetContent');
   const btnDeshabilitado = !hayFiltroActivo;
+  const servicioSeleccionado = servicioFiltro === null ? undefined : serviciosActivos.find(s => s.id === servicioFiltro);
+  const profesionalSeleccionado = profesionalFiltro === null ? undefined : profesionalesActivos.find(p => p.id === profesionalFiltro);
 
   return (
     <div style={{ padding: '0 20px 24px' }}>
@@ -360,127 +358,52 @@ function FiltroSheetContent({
         )}
       </button>
 
-      {/* Filtrar por servicio — fila de chips, mismo peso visual que
-          cliente/fecha/profesional en este sheet. Antes usaba
-          SelectorServicios (el acordeón por categoría de agenda/nuevo), que
-          acá se sentía como un componente aparte: traía buscador, chips de
-          seleccionados y checkboxes que no aplican a un filtro de selección
-          única — correcto para armar un turno, pesado para filtrar. */}
-      <p style={{ ...sectionLabelStyle, marginTop: 16 }}>
-        {t('filterByService')}
-      </p>
-      <div style={{ marginBottom: 20, display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <button
-          onClick={() => onChangeServicioFiltro([])}
-          style={{
-            flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-            border: `1px solid ${servicioFiltro === null ? colors.primarySolid : colors.divider}`,
-            backgroundColor: servicioFiltro === null ? colors.primarySolid : colors.surface,
-            color: servicioFiltro === null ? colors.primaryFg : colors.text,
-            cursor: 'pointer', whiteSpace: 'nowrap',
-          }}
-        >
-          {t('allServices')}
-        </button>
-        {serviciosActivos.map(s => {
-          const selected = servicioFiltro === s.id;
-          return (
-            <button
-              key={s.id}
-              onClick={() => onChangeServicioFiltro(selected ? [] : [s.id])}
-              style={{
-                flexShrink: 0, borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                border: `1px solid ${selected ? colors.primarySolid : colors.divider}`,
-                backgroundColor: selected ? colors.primarySolid : colors.surface,
-                color: selected ? colors.primaryFg : colors.text,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >
-              {s.nombre}
-            </button>
-          );
-        })}
+      {/* Servicio y profesional — mismo patrón "Qué mostrar" que historia de turnos y de
+          precios (FilaQueMostrar + hojas compartidas). Las hojas viven en el
+          padre (AgendaContent): este contenido está dentro de una BottomSheet
+          con transform, que atraparía un position: fixed. El servicio es de
+          selección única (el backend filtra por un solo servicio_id).
+          El selector de profesional sigue invisible con ≤1 activa
+          (mostrarSelectorProfesional) y es un criterio de búsqueda: trae TODOS
+          los turnos de la profesional, pasados y futuros. */}
+      <div style={{
+        width: '100%', background: colors.surface, border: `1px solid ${colors.divider}`,
+        borderRadius: 14, overflow: 'hidden', marginTop: 16, marginBottom: 20,
+      }}>
+        <FilaQueMostrar
+          leading={(
+            <span style={{
+              width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: colors.primarySoft,
+            }}>
+              <LayoutGrid size={16} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+            </span>
+          )}
+          titulo={t('serviceLabel')}
+          valor={servicioSeleccionado ? servicioSeleccionado.nombre : t('allServices')}
+          activo={servicioSeleccionado !== undefined}
+          onClick={onAbrirServicios}
+        />
+        {mostrarSelectorProfesional && (
+          <>
+            <div style={{ height: 1, background: colors.divider }} />
+            <FilaQueMostrar
+              leading={profesionalSeleccionado ? (
+                <AvatarProfesional
+                  nombre={profesionalSeleccionado.nombre}
+                  apellido={profesionalSeleccionado.apellido}
+                  color={profesionalSeleccionado.color}
+                  avatarUrl={profesionalSeleccionado.avatar_url}
+                />
+              ) : <EquipoIcono />}
+              titulo={t('professionalLabel')}
+              valor={profesionalSeleccionado ? profesionalSeleccionado.nombre : t('allTeam')}
+              activo={profesionalSeleccionado !== undefined}
+              onClick={onAbrirProfesionales}
+            />
+          </>
+        )}
       </div>
-
-      {/* Filtrar por profesional — invisible para cuentas con ≤1
-          profesional activa, mismo gating (mostrarSelectorProfesional /
-          activeProfesionales) que ya usa SelectorProfesionalDia más abajo
-          en esta pantalla. A diferencia de ese selector (que solo recorta
-          el día actual), este es un criterio de búsqueda: trae TODOS los
-          turnos de la profesional elegida, pasados y futuros. Pill style
-          copiado literal de SelectorProfesionalDia (avatar con iniciales +
-          "Todo el equipo" con ícono de grupo) — unificado esta sesión en
-          varios lugares de la app, ver SelectorProfesional.tsx/
-          inicialesProfesional.ts. */}
-      {mostrarSelectorProfesional && (
-        <>
-          <p style={sectionLabelStyle}>
-            {t('filterByProfesional')}
-          </p>
-          <div style={{ marginBottom: 20, display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <button
-              onClick={() => onChangeProfesionalFiltro(null)}
-              style={{
-                flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-                borderRadius: 20, padding: '4px 14px 4px 4px', fontSize: 12, fontWeight: 600,
-                border: `1px solid ${profesionalFiltro === null ? colors.primarySolid : colors.divider}`,
-                backgroundColor: profesionalFiltro === null ? colors.primarySolid : colors.surface,
-                color: profesionalFiltro === null ? colors.primaryFg : colors.text,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >
-              <span style={{
-                width: 20, height: 20, borderRadius: 10, flexShrink: 0,
-                backgroundColor: profesionalFiltro === null ? withAlpha(colors.primaryFg, '3D') : withAlpha(colors.primary, '26'),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                  stroke={profesionalFiltro === null ? colors.primaryFg : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </span>
-              {t('allTeam')}
-            </button>
-            {profesionalesActivos.map(p => {
-              const selected = profesionalFiltro === p.id;
-              const color = p.color || colors.primary;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => onChangeProfesionalFiltro(selected ? null : p.id)}
-                  style={{
-                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-                    borderRadius: 20, padding: '4px 14px 4px 4px', fontSize: 12, fontWeight: 600,
-                    border: `1px solid ${selected ? color : colors.divider}`,
-                    backgroundColor: selected ? color : colors.surface,
-                    color: selected ? colors.primaryFg : colors.text,
-                    cursor: 'pointer', whiteSpace: 'nowrap',
-                  }}
-                >
-                  <span style={{
-                    width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 9, fontWeight: 800,
-                    backgroundColor: selected ? withAlpha(colors.primaryFg, '3D') : withAlpha(color, '26'),
-                    color: selected ? colors.primaryFg : color,
-                  }}>
-                    {p.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      inicialesProfesional(p.nombre, p.apellido)
-                    )}
-                  </span>
-                  {p.nombre}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
 
       <button
         onClick={onAplicar}
@@ -597,6 +520,7 @@ function AgendaContent() {
   const [fechaInicial] = useState(() => fechaValidaDeQuery(searchParams.get('fecha')) ?? fechaDeHoy());
   const t = useTranslations('agenda.AgendaPage');
   const tElegirFecha = useTranslations('agenda.ElegirFechaSheet');
+  const tFiltro = useTranslations('agenda.FiltroSheetContent');
 
   const {
     turnos, turnosMes, loading,
@@ -643,6 +567,10 @@ function AgendaContent() {
   // "Filtrar") — este flag decide a cuál de las dos apunta el próximo tap
   // sobre un día del calendario (ver handleDayClickEnSheet más abajo).
   const [elegirFechaParaFiltro, setElegirFechaParaFiltro] = useState(false);
+  // Hojas de servicio / profesional abiertas desde el sheet "Filtrar". Se
+  // renderizan acá (hermanas del filtro) y no dentro de él.
+  const [servicioFiltroAbierto, setServicioFiltroAbierto] = useState(false);
+  const [profesionalFiltroAbierto, setProfesionalFiltroAbierto] = useState(false);
 
   const hayFiltroActivo = !!textoBusqueda || servicioFiltro !== null || fechaFiltro !== null || profesionalFiltroBusqueda !== null;
   const hoy = fechaDeHoy();
@@ -1152,14 +1080,43 @@ function AgendaContent() {
           hayFiltroActivo={hayFiltroActivo}
           onChangeBusqueda={handleBuscarCliente}
           onLimpiarBusqueda={handleLimpiarBusqueda}
-          onChangeServicioFiltro={handleChangeServicioFiltro}
           onCambiarFecha={handleCambiarFecha}
-          onChangeProfesionalFiltro={handleChangeProfesionalFiltroBusqueda}
           onLimpiarTodo={handleLimpiarTodo}
           onAplicar={() => filtroSheetRef.current?.close()}
           onAbrirCalendarioFecha={handleAbrirElegirFechaParaFiltro}
+          onAbrirServicios={() => setServicioFiltroAbierto(true)}
+          onAbrirProfesionales={() => setProfesionalFiltroAbierto(true)}
         />
       </BottomSheet>
+
+      {/* Hojas del filtro. Van DESPUÉS del sheet "Filtrar" en el DOM: la
+          BottomSheet fija z 40 (igual que el filtro), así que gana la que
+          viene después. El fondo propio sube de 39 a 40 para quedar sobre el
+          filtro (con 39 quedaba debajo). El filtro sigue montado: al cerrar
+          vuelve con su estado intacto. */}
+      <ServiciosSheet
+        open={servicioFiltroAbierto}
+        onClose={() => setServicioFiltroAbierto(false)}
+        mode="single"
+        title={tFiltro('serviceLabel')}
+        servicios={serviciosActivos}
+        selectedIds={servicioFiltro === null ? [] : [servicioFiltro]}
+        onConfirm={handleChangeServicioFiltro}
+        backdropZIndex={40}
+      />
+      <ProfesionalSheet
+        open={profesionalFiltroAbierto}
+        onClose={() => setProfesionalFiltroAbierto(false)}
+        onSelect={sel => handleChangeProfesionalFiltroBusqueda(sel === 'equipo' ? null : sel)}
+        title={tFiltro('professionalLabel')}
+        equipoLabel={tFiltro('allTeam')}
+        cerrarLabel={tFiltro('closeSheet')}
+        profesionales={activeProfesionales.map(p => ({
+          id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+        }))}
+        selectedId={profesionalFiltroBusqueda ?? 'equipo'}
+        backdropZIndex={40}
+      />
 
       {/* "Elegir fecha" sheet (Change 1) — hospeda el CalendarioMensual de
           siempre, sin cambios de lógica. Tocar un día ahí ES la confirmación
