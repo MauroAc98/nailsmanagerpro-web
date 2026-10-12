@@ -5,15 +5,17 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   ChevronLeft, ChevronRight, ImagePlus, Download, Share2, ImageOff,
-  CalendarDays, Type,
+  Type, Clock, Image as ImageIcon, LayoutGrid, Info,
 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import SelectorProfesional from '@/components/SelectorProfesional';
 import { ServiciosSheet } from '@/components/ServiciosSheet';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
+import { FilaQueMostrar } from '@/components/historia/FilaQueMostrar';
+import { ProfesionalSheet, EquipoIcono } from '@/components/historia/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/historia/AvatarProfesional';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -45,17 +47,13 @@ function tabStyle(active: boolean): React.CSSProperties {
   };
 }
 
-const sectionTabContainerStyle: React.CSSProperties = {
-  display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 16, width: '100%',
-};
-
-function sectionTabStyle(active: boolean): React.CSSProperties {
+// Botones de herramienta del editor (Horarios / Texto / Fondo).
+function herramientaStyle(active: boolean): React.CSSProperties {
   return {
-    flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 17, border: 'none', cursor: 'pointer',
-    background: active ? colors.primarySolid : 'transparent',
-    color:      active ? colors.primaryFg : colors.subtext,
-    fontWeight: 700, fontSize: 12,
-    boxShadow:  active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 0',
+    borderRadius: 14, cursor: 'pointer',
+    background: active ? colors.surface : 'transparent',
+    border: `1px solid ${active ? colors.divider : 'transparent'}`,
   };
 }
 
@@ -64,12 +62,10 @@ const navButtonStyle: React.CSSProperties = {
   background: colors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
-// Fila resumen de servicios — mismo lenguaje que el date nav (borde, fondo
-// suave, radio 18) y alto táctil >= 44px.
-const resumenServiciosStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 44, marginBottom: 14,
-  borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.surfaceSubtle,
-  padding: '8px 14px', cursor: 'pointer', textAlign: 'left',
+// Tarjeta "Qué mostrar": filas Profesional / Servicios.
+const tarjetaQueMostrarStyle: React.CSSProperties = {
+  width: '100%', background: colors.surface, border: `1px solid ${colors.divider}`,
+  borderRadius: 14, overflow: 'hidden',
 };
 
 const footerActionStyle: React.CSSProperties = {
@@ -89,6 +85,7 @@ function HistoriaContent() {
   const [seccion, setSeccion] = useState<SeccionEditor>('agenda');
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
   const [serviciosAbierto, setServiciosAbierto] = useState(false);
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
 
   const {
     modo, quincena, diasOcultos, slotsOcultos,
@@ -96,7 +93,7 @@ function HistoriaContent() {
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
     canvasRef, canvasWidth, canvasHeight, escalaVista,
     esEquipo, setProfesionalSel, effectiveProfesionalId,
-    servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos,
+    servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos, categoriaUnica,
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
@@ -149,6 +146,24 @@ function HistoriaContent() {
   );
   const entranServicios = entranEnLaBajada(nombresServicios);
   const bloqueaExportar = hayFiltroServicios && !entranServicios;
+  // Modo equipo: cuántas profesionales activas hacen al menos uno de los
+  // servicios elegidos (el fetch junta los horarios libres de todas ellas).
+  const cantidadProfesionalesDelFiltro = activeProfesionales.filter(
+    p => (p.servicios ?? []).some(sv => servicioIds.includes(sv.id)),
+  ).length;
+  // Misma variable que usa el fetch (esEquipo / effectiveProfesionalId).
+  const seleccionProfesional: number | 'equipo' = esEquipo || effectiveProfesionalId === null ? 'equipo' : effectiveProfesionalId;
+  const valorProfesional = esEquipo ? t('teamLabel') : (profesionalSeleccionada?.nombre ?? t('teamLabel'));
+  const fotoCategoriaUnica = categoriaUnica?.fondo_historia_url ?? null;
+  const opcionesProfesional = activeProfesionales.map(p => {
+    const nombresCategorias = Array.from(new Set(
+      (p.servicios ?? []).map(sv => categorias.find(c => c.id === sv.categoria_id)?.nombre).filter((n): n is string => !!n),
+    ));
+    return {
+      id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+      subtitulo: nombresCategorias.length > 0 ? nombresCategorias.join(', ') : undefined,
+    };
+  });
   const nombreParaTodos = mostrarSelectorProfesional && !esEquipo ? profesionalSeleccionada?.nombre : undefined;
 
   // Tocar un texto libre directo en el canvas es posible desde cualquier
@@ -197,18 +212,12 @@ function HistoriaContent() {
             período sin contenido (p. ej. "Día" de hoy vacío) y volver a
             elegir otro. Nunca deben quedar atrapados detrás del estado
             vacío de más abajo. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginBottom: 12 }}>
-          <CalendarDays size={16} color={colors.primaryDeep} />
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
-            {t('whatToShow')}
-          </span>
-          <div style={{ ...tabContainerStyle, marginBottom: 0, marginLeft: 'auto' }}>
-            {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
-              <button key={m} onClick={() => handleModo(m)} style={{ ...tabStyle(modo === m), padding: '6px 12px' }}>
-                {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
-              </button>
-            ))}
-          </div>
+        <div style={{ ...tabContainerStyle, width: '100%', marginBottom: 12 }}>
+          {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
+            <button key={m} onClick={() => handleModo(m)} style={tabStyle(modo === m)}>
+              {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
+            </button>
+          ))}
         </div>
 
         {/* Quincena tabs */}
@@ -226,61 +235,78 @@ function HistoriaContent() {
           </div>
         )}
 
-        {/* Selector de profesional — invisible con ≤1 profesional activa */}
-        {/* El pill cae en effectiveProfesionalId (jefa por default) cuando no
-            hay pick explícito — confirmado con el usuario (2026-08-19): tiene
-            que coincidir con lo que el fetch realmente trae (ver
-            useGenerarHistoria, ya corregido para filtrar por
-            effectiveProfesionalId con >1 profesional activa), no mostrar
-            "nada" mientras los datos sí muestran a alguien. */}
-        {mostrarSelectorProfesional && (
-          <SelectorProfesional
-            label={t('showScheduleOf')}
-            labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
-            // avatarUrl != avatar_url (ProfesionalOption vs Profesional) —
-            // sin este mapeo, Profesional pasa el typecheck (prop opcional)
-            // pero nunca muestra la foto real, solo iniciales (bug real
-            // 2026-10-01, mismo en otras 8 pantallas con selector de
-            // profesional).
-            profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
-            selectedId={esEquipo ? null : effectiveProfesionalId}
-            // null = "Todo el equipo" (todasLabel); toggleable={false} para que
-            // tocar la profesional ya elegida no salte al equipo sin querer.
-            onSelect={id => setProfesionalSel(id ?? 'equipo')}
-            todasLabel={t('teamLabel')}
-            toggleable={false}
-            selectedFg={colors.primaryFg}
-            unselectedBorderColor={colors.border}
-            pillFontWeight={600}
-          />
-        )}
-
-        {/* Servicios — una fila resumen que abre la hoja de selección. "Todos"
-            ([]) es el default. */}
-        {(serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+        {/* Qué mostrar — profesional (invisible con ≤1 activa) y servicios.
+            La fila de profesional cae en effectiveProfesionalId (jefa por
+            default) cuando no hay pick explícito: tiene que coincidir con lo
+            que el fetch realmente trae (confirmado con el usuario
+            2026-08-19). */}
+        {(mostrarSelectorProfesional || serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
           <div style={{ width: '100%', marginBottom: 14 }}>
-            <button type="button" onClick={() => setServiciosAbierto(true)} style={{ ...resumenServiciosStyle, marginBottom: 0 }}>
-              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
-                {t('servicesLabel')}
-              </span>
-              <span style={{
-                flex: 1, minWidth: 0, textAlign: 'right', fontSize: 13, fontWeight: 600, color: colors.textStrong,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {hayFiltroServicios ? t('servicesSummary', { titulo: tituloServicios, count: servicioIds.length }) : t('servicesAll')}
-              </span>
-              <ChevronRight size={16} strokeWidth={2} color={colors.muted} style={{ flexShrink: 0 }} />
-            </button>
-            {bloqueaExportar && (
-              <p style={{
-                margin: '8px 0 0', fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
-                background: colors.amberBg, color: colors.amberFg,
-              }}>
-                {t('servicesDontFit')}
+            <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: colors.muted }}>{t('whatToShow')}</p>
+            <div style={tarjetaQueMostrarStyle}>
+              {mostrarSelectorProfesional && (
+                <FilaQueMostrar
+                  leading={esEquipo || !profesionalSeleccionada ? <EquipoIcono /> : (
+                    // avatarUrl != avatar_url (ProfesionalOption vs Profesional):
+                    // sin este mapeo solo se verían las iniciales.
+                    <AvatarProfesional
+                      nombre={profesionalSeleccionada.nombre}
+                      apellido={profesionalSeleccionada.apellido}
+                      color={profesionalSeleccionada.color}
+                      avatarUrl={profesionalSeleccionada.avatar_url}
+                    />
+                  )}
+                  titulo={t('professionalLabel')}
+                  valor={valorProfesional}
+                  activo={!esEquipo}
+                  onClick={() => setProfesionalAbierto(true)}
+                />
+              )}
+              {mostrarSelectorProfesional && (serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+                <div style={{ height: 1, background: colors.divider }} />
+              )}
+              {(serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+                <FilaQueMostrar
+                  leading={fotoCategoriaUnica ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={fotoCategoriaUnica} alt="" style={{ width: 32, height: 32, borderRadius: 9, objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{
+                      width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: colors.primarySoft,
+                    }}>
+                      <LayoutGrid size={16} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+                    </span>
+                  )}
+                  titulo={t('servicesLabel')}
+                  valor={hayFiltroServicios ? t('servicesSummary', { titulo: tituloServicios, count: servicioIds.length }) : t('servicesAll')}
+                  activo={hayFiltroServicios}
+                  onClick={() => setServiciosAbierto(true)}
+                />
+              )}
+            </div>
+            {mostrarSelectorProfesional && esEquipo && (
+              <p style={{ margin: '8px 0 0', display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, lineHeight: 1.4, color: colors.muted }}>
+                <Info size={14} strokeWidth={2} color={colors.muted} style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+                {hayFiltroServicios && cantidadProfesionalesDelFiltro > 0
+                  ? t('teamContextServices', { count: cantidadProfesionalesDelFiltro })
+                  : t('teamContextAll')}
               </p>
             )}
           </div>
         )}
+
+        <ProfesionalSheet
+          open={profesionalAbierto}
+          onClose={() => setProfesionalAbierto(false)}
+          onSelect={setProfesionalSel}
+          title={t('professionalLabel')}
+          equipoLabel={t('teamLabel')}
+          equipoSubtitulo={t('teamSubtitle')}
+          cerrarLabel={t('closeSheet')}
+          profesionales={opcionesProfesional}
+          selectedId={seleccionProfesional}
+        />
 
         <ServiciosSheet
           open={serviciosAbierto}
@@ -364,10 +390,20 @@ function HistoriaContent() {
             <div style={{
               width: '100%', marginTop: 20, paddingTop: 18, borderTop: `1px solid ${colors.hairline}`,
             }}>
-              <div style={sectionTabContainerStyle}>
-                {(['agenda', 'texto', 'fondo'] as SeccionEditor[]).map(s => (
-                  <button key={s} onClick={() => setSeccion(s)} style={sectionTabStyle(seccion === s)}>
-                    {s === 'agenda' ? t('sectionAgenda') : s === 'texto' ? t('sectionText') : t('sectionBackground')}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, width: '100%' }}>
+                {([
+                  { s: 'agenda', Icono: Clock, label: t('sectionAgenda') },
+                  { s: 'texto', Icono: Type, label: t('sectionText') },
+                  { s: 'fondo', Icono: ImageIcon, label: t('sectionBackground') },
+                ] as { s: SeccionEditor; Icono: typeof Clock; label: string }[]).map(({ s, Icono, label }) => (
+                  <button key={s} type="button" aria-pressed={seccion === s} onClick={() => setSeccion(s)} style={herramientaStyle(seccion === s)}>
+                    <span style={{
+                      width: 40, height: 40, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: colors.primarySoft,
+                    }}>
+                      <Icono size={18} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.textStrong }}>{label}</span>
                   </button>
                 ))}
               </div>
@@ -478,7 +514,15 @@ function HistoriaContent() {
             </div>
 
             {/* Footer actions */}
-            <div style={{ width: '100%', marginTop: 22, display: 'flex', gap: 10 }}>
+            {bloqueaExportar && (
+              <p style={{
+                width: '100%', margin: '22px 0 0', fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
+                background: colors.amberBg, color: colors.amberFg, boxSizing: 'border-box',
+              }}>
+                {t('servicesDontFit')}
+              </p>
+            )}
+            <div style={{ width: '100%', marginTop: bloqueaExportar ? 10 : 22, display: 'flex', gap: 10 }}>
               <button onClick={descargarImagen} disabled={bloqueaExportar} style={{ ...footerActionStyle, opacity: bloqueaExportar ? 0.5 : 1 }}>
                 <Download size={18} strokeWidth={2} color={colors.text} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{t('save')}</span>
