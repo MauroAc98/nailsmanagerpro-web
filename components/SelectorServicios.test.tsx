@@ -72,7 +72,7 @@ describe('SelectorServicios — fotoCategoria', () => {
   it('muestra la miniatura de la categoría y no la de "Sin categoría"', async () => {
     const { categoriaServicioService } = await import('@/services/categoriaServicioService');
     vi.mocked(categoriaServicioService.getAll).mockResolvedValue([
-      { id: 10, user_id: 1, nombre: 'Uñas', created_at: '', updated_at: '' },
+      { id: 10, user_id: 1, nombre: 'Uñas', fondo_historia_url: null, created_at: '', updated_at: '' },
     ]);
     const servicios = [
       { ...servicio(1, 'Softgel', 90), categoria_id: 10 },

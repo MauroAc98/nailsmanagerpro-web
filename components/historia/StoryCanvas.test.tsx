@@ -11,7 +11,7 @@ import { StoryCanvas } from './StoryCanvas';
 // componente): esta prueba solo cubre el reemplazo del chip de fecha /
 // ícono genérico por el logo del negocio, no re-verifica todo el resto del
 // canvas (sin cobertura previa).
-function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string, telefono: string | null = null, categoriaNombre?: string) {
+function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesionalNombre?: string, telefono: string | null = null, filtroServicios?: { titulo: string; servicios: string[] }) {
   return render(
     <NextIntlClientProvider locale="es" messages={es}>
       <StoryCanvas
@@ -20,7 +20,7 @@ function renderCanvas(logoUrl: string | null, dias: DisponibilidadDia[], profesi
         nombreEstudio="Turnetto"
         telefonoEstudio={telefono}
         profesionalNombre={profesionalNombre}
-        categoriaNombre={categoriaNombre}
+        filtroServicios={filtroServicios}
         logoUrl={logoUrl}
         dias={dias}
         fondoUri={null}
@@ -68,12 +68,45 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
   });
 });
 
-describe('StoryCanvas — categoría', () => {
-  it('con categoriaNombre la línea es "Categoría · fecha" y no lleva "con"', () => {
-    renderCanvas(null, unDia, 'Gabriela', null, 'Uñas');
-    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
-    expect(screen.getByText('Uñas · 24 de sept')).toBeInTheDocument();
+describe('StoryCanvas — encabezado A2 (servicios elegidos)', () => {
+  const filtro = { titulo: 'Uñas y Pestañas', servicios: ['Esmaltado', 'Kapping', 'Lifting'] };
+
+  it('con filtroServicios: kicker, titular, "con X" y todos los servicios', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, filtro);
+    expect(screen.getByText('TURNOS DISPONIBLES · 24 DE SEPT')).toBeInTheDocument();
+    expect(screen.getByText('Uñas y Pestañas')).toBeInTheDocument();
+    expect(screen.getByText('con Gabriela')).toBeInTheDocument();
+    for (const n of filtro.servicios) expect(screen.getByText(n)).toBeInTheDocument();
+    // El diseño de siempre ya no aparece.
+    expect(screen.queryByText('Turnos disponibles')).not.toBeInTheDocument();
+    expect(screen.queryByText('con Gabriela · 24 de sept')).not.toBeInTheDocument();
+  });
+
+  it('vista de equipo (sin profesional): no hay "con"', () => {
+    renderCanvas(null, unDia, undefined, null, filtro);
+    expect(screen.getByText('Uñas y Pestañas')).toBeInTheDocument();
     expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
+  });
+
+  it('cada nombre de servicio no se parte (nowrap)', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, filtro);
+    expect(screen.getByText('Kapping').style.whiteSpace).toBe('nowrap');
+  });
+
+  it('con servicios el margen entre header y lista baja respecto al diseño de siempre', () => {
+    const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
+    const { unmount } = renderCanvas(null, variosDias, 'Gabriela');
+    const sin = margen();
+    unmount();
+    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
+    const con = margen();
+    expect(con).toBeLessThan(sin);
+    expect(con).toBeGreaterThan(0);
+  });
+
+  it('filtroServicios con lista vacía usa el diseño de siempre', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, { titulo: 'Servicios', servicios: [] });
+    expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
   });
 });
 

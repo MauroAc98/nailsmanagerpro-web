@@ -289,7 +289,6 @@ function HistoriaContent() {
               telefonoEstudio={telefonoEstudio}
               logoUrl={logoUrl}
               profesionalNombre={profesionalSeleccionada?.nombre}
-              categoriaNombre={categoriaSeleccionada?.nombre}
               dias={diasAMostrar}
               fondoUri={fondoUri}
               canvasWidth={canvasWidth}

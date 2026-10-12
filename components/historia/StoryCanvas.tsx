@@ -12,6 +12,7 @@ import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
+import { contarLineasServicios, medirTextoServicios } from '@/lib/historiaServicios';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -36,10 +37,11 @@ interface Props {
   // línea "con {nombre} · {fecha}" (ver lineaProfesional); el nombre del
   // negocio baja al pie.
   profesionalNombre?: string;
-  // Si se filtra por categoría, la línea chica pasa a "{categoría} · {fecha}"
-  // (los horarios son de varias profesionales, no de una) y gana sobre
-  // profesionalNombre.
-  categoriaNombre?: string;
+  // Encabezado A2. Con servicios elegidos (servicios.length > 0) el header
+  // pasa a: kicker "TURNOS DISPONIBLES · FECHA", titular (`titulo`: la
+  // categoría o categorías) + "con {profesional}", y debajo una línea con los
+  // nombres de los servicios (máx. 2 líneas). Sin esto, el diseño de siempre.
+  filtroServicios?: { titulo: string; servicios: string[] };
   // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
   // ícono genérico en el header, en los 3 modos (día/semana/mes), para
   // impulsar la marca del negocio en la imagen que se comparte (pedido
@@ -65,7 +67,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, categoriaNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, filtroServicios, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -83,11 +85,9 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // una sola línea chica "con {profesional} · {fecha}" (solo la fecha si no
   // hay profesional). El nombre del negocio va siempre en el pie, junto al
   // teléfono.
-  const lineaProfesional = categoriaNombre
-    ? categoriaNombre
-    : profesionalNombre
-      ? t('withProfessional', { nombre: profesionalNombre })
-      : null;
+  const lineaProfesional = profesionalNombre
+    ? t('withProfessional', { nombre: profesionalNombre })
+    : null;
   const tituloPrincipal = t('availableTitle');
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
@@ -158,7 +158,17 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  const bodyMargenTop = Math.round(canvasHeight * 0.06);
+  // Con servicios (A2) la línea de servicios ocupa ese espacio: el margen baja
+  // en el alto de las líneas que usa (1 o 2), nunca por debajo de 16px (mock
+  // A2 aprobado). Mismo reparto de líneas que el aviso de la hoja de servicios.
+  const servicios = filtroServicios?.servicios ?? [];
+  const conServicios = servicios.length > 0;
+  const ALTO_LINEA_SERVICIOS = 16;
+  const lineasServicios = Math.min(2, contarLineasServicios(servicios, canvasWidth - 36, medirTextoServicios));
+  const bodyMargenBase = Math.round(canvasHeight * 0.06);
+  const bodyMargenTop = conServicios
+    ? Math.max(16, bodyMargenBase - lineasServicios * ALTO_LINEA_SERVICIOS)
+    : bodyMargenBase;
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -249,6 +259,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 descarta las custom properties heredadas al capturar (mismo
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
+            <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
               {/* Con logo cargado, la foto del negocio ocupa este mismo
                   recuadro (mismo tamaño/radio que el chip de fecha) en los 3
@@ -294,6 +305,39 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               )}
 
               <div style={{ minWidth: 0, flex: 1 }}>
+                {conServicios && filtroServicios ? (
+                  <>
+                    <span style={{
+                      display: 'block', marginBottom: 5, fontSize: 9, fontWeight: 700, letterSpacing: 2.2,
+                      color: 'rgba(255,255,255,0.75)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                      whiteSpace: 'nowrap', overflow: 'hidden',
+                    }}>
+                      {`${tituloPrincipal.toUpperCase()} · ${titulo.toUpperCase()}`}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'nowrap' }}>
+                      <div style={{ flex: '0 1 auto', minWidth: 0 }}>
+                        <FitText
+                          text={filtroServicios.titulo}
+                          maxFontSize={30}
+                          minFontSize={14}
+                          style={{
+                            fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                            letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                          }}
+                        />
+                      </div>
+                      {lineaProfesional && (
+                        <span style={{
+                          flexShrink: 0, whiteSpace: 'nowrap', fontFamily: agendaFontSerif, fontStyle: 'italic',
+                          fontSize: 13, color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                        }}>
+                          {lineaProfesional}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
                 {/* maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
                     muy grande al lado de la fecha). minFontSize sigue por
                     encima del tope de FitText de los turnos en el body
@@ -314,11 +358,36 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 }}>
                   {lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo}
                 </span>
+                  </>
+                )}
               </div>
             </div>
 
+            {conServicios && (
+              <div
+                data-testid="story-servicios"
+                style={{
+                  marginTop: 8, fontSize: 11, lineHeight: `${ALTO_LINEA_SERVICIOS}px`,
+                  color: 'rgba(255,255,255,0.88)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  maxHeight: ALTO_LINEA_SERVICIOS * 2, overflow: 'hidden',
+                }}
+              >
+                <span style={{
+                  display: 'inline-block', width: 14, height: 1, background: 'rgba(255,255,255,0.6)',
+                  verticalAlign: 'middle', marginRight: 6,
+                }} />
+                {servicios.map((nombre, idx) => (
+                  <span key={idx}>
+                    {idx > 0 && <span style={{ opacity: 0.5 }}> / </span>}
+                    <span style={{ whiteSpace: 'nowrap' }}>{nombre}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+            </div>
+
             {/* Body */}
-            <div ref={cuerpoRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
+            <div ref={cuerpoRef} data-testid="story-cuerpo" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
