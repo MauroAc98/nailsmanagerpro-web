@@ -181,7 +181,8 @@ describe('SheetNegocio — message preview', () => {
     setup({ whatsappPideSena: false });
     openPreview();
     const text = previewText(/quedó confirmado/);
-    expect(text).toContain('Desde este número solo se envían avisos');
+    expect(text).toContain('⚠️ No responder a este mensaje: Fernanda no lo recibe.');
+    expect(text).toContain('📲 Para consultas o cambios, avisar al');
     expect(text).not.toContain('¡Te esperamos!');
     expect(text).not.toContain('no hace falta responder');
   });
@@ -222,7 +223,7 @@ describe('SheetNegocio — message preview', () => {
     openPreview();
     fireEvent.click(screen.getByRole('button', { name: 'Recordatorio' }));
     expect(previewText(/te recordamos tu turno de mañana/))
-      .toContain('Desde este número solo se envían avisos');
+      .toContain('⚠️ No responder a este mensaje:');
   });
 });
 

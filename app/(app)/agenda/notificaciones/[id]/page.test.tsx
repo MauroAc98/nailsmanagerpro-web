@@ -63,6 +63,16 @@ describe('DetalleNotificacionPage — reenvío manual', () => {
     expect(decodeURIComponent(href.split('text=')[1])).toBe('Hola Martina\n\nPara consultas, comunicate al 123.');
   });
 
+  it('también quita el aviso con la redacción nueva ("No responder a este mensaje")', () => {
+    seed(mensaje({
+      mensaje: 'Hola Martina\n\n⚠️ No responder a este mensaje: *Ana* no lo recibe.\n\n📲 Para consultas o cambios, avisar al 123 con 24 hs de anticipación.',
+    }));
+    renderWithProviders(<DetalleNotificacionPage />);
+
+    const href = screen.getByRole('link', { name: 'Enviar desde mi WhatsApp' }).getAttribute('href') ?? '';
+    expect(decodeURIComponent(href.split('text=')[1])).toBe('Hola Martina\n\n📲 Para consultas o cambios, avisar al 123 con 24 hs de anticipación.');
+  });
+
   it('al tocarlo lo marca como enviado a mano', async () => {
     seed(mensaje());
     renderWithProviders(<DetalleNotificacionPage />);

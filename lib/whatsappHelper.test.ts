@@ -13,22 +13,26 @@ const base: DatosPlantillaWhatsapp = {
 };
 
 describe('cuerpoPlantillaWhatsapp', () => {
-  it('builds confirmacion_turno with the approved wording (🕒 with "hs")', () => {
+  it('builds confirmacion_turno with the approved wording', () => {
     expect(cuerpoPlantillaWhatsapp('confirmacion', base)).toBe(
       'Hola Martina, tu turno en *Estudio Bella* quedó confirmado.\n\n' +
       '🗓️ 20/08 · 🕒 15:30 hs\n' +
       '✨ Manicura semipermanente\n' +
       '📍 Av. Siempreviva 742\n\n' +
-      '⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *Fernanda no lo recibe y no puede contestarte.*\n\n' +
-      'Para consultas o cambios de turno, comunicate al +54 9 11 2345-6789 con al menos 24 hs de anticipación.'
+      '⚠️ No responder a este mensaje: *Fernanda* no lo recibe.\n\n' +
+      '📲 Para consultas o cambios, avisar al +54 9 11 2345-6789 con 24 hs de anticipación.'
     );
   });
 
-  it('builds recordatorio_turno with 🕒 and no "hs", and the period inside the business bold', () => {
-    const body = cuerpoPlantillaWhatsapp('recordatorio', base);
-    expect(body).toContain('te recordamos tu turno de mañana en *Estudio Bella.*');
-    expect(body).toContain('🗓️ 20/08 · 🕒 15:30\n');
-    expect(body).not.toContain('🕒 15:30 hs');
+  it('builds recordatorio_turno with the approved wording (🕒 with "hs", period inside the business bold)', () => {
+    expect(cuerpoPlantillaWhatsapp('recordatorio', base)).toBe(
+      'Hola Martina, te recordamos tu turno de mañana en *Estudio Bella.*\n\n' +
+      '🗓️ 20/08 · 🕒 15:30 hs\n' +
+      '✨ Manicura semipermanente\n' +
+      '📍 Av. Siempreviva 742\n\n' +
+      '⚠️ No responder a este mensaje: *Fernanda* no lo recibe.\n\n' +
+      '📲 Para consultas o cambios, avisar al +54 9 11 2345-6789 con 24 hs de anticipación.'
+    );
   });
 
   it('drops the 📍 line when there is no address', () => {
@@ -39,8 +43,8 @@ describe('cuerpoPlantillaWhatsapp', () => {
 
   it('drops the contact line when there is no business phone', () => {
     const body = cuerpoPlantillaWhatsapp('recordatorio', { ...base, telefono: '' });
-    expect(body).not.toContain('comunicate al');
-    expect(body.endsWith('no puede contestarte.*')).toBe(true);
+    expect(body).not.toContain('📲');
+    expect(body.endsWith('*Fernanda* no lo recibe.')).toBe(true);
   });
 });
 
@@ -61,7 +65,7 @@ describe('whatsappHelper.buildUrl', () => {
     const texto = decodeURIComponent(url.split('text=')[1]);
     expect(texto).toContain('Hola Martina, tu turno en *Estudio Bella* quedó confirmado.');
     expect(texto).toContain('🗓️ 20/08 · 🕒 15:30 hs');
-    expect(texto).toContain('comunicate al +54 9 376 474-1700');
+    expect(texto).toContain('📲 Para consultas o cambios, avisar al +54 9 376 474-1700 con 24 hs de anticipación.');
   });
 
   it('never includes the "only notices" warning: a manual wa.me send comes from the salon\'s own WhatsApp', () => {
@@ -78,8 +82,8 @@ describe('whatsappHelper.buildUrl', () => {
     });
     const texto = decodeURIComponent(url.split('text=')[1]);
     expect(texto).not.toContain('⚠️');
-    expect(texto).not.toContain('no puede contestarte');
-    expect(texto).toContain('📍 Av. Siempreviva 742\n\nPara consultas o cambios de turno');
+    expect(texto).not.toContain('No responder');
+    expect(texto).toContain('📍 Av. Siempreviva 742\n\n📲 Para consultas o cambios');
   });
 
   it('drops the optional lines without leaving the notice behind', () => {
@@ -97,15 +101,33 @@ describe('whatsappHelper.buildUrl', () => {
     const texto = decodeURIComponent(url.split('text=')[1]);
     expect(texto).not.toContain('no lo recibe');
     expect(texto).not.toContain('📍');
-    expect(texto).not.toContain('comunicate al');
+    expect(texto).not.toContain('📲');
     expect(texto.endsWith('✨ Manicura')).toBe(true);
   });
 });
 
 describe('quitarAvisoUnidireccional', () => {
-  it('removes the warning paragraph from a backend-built message and keeps the rest intact', () => {
+  it('removes the new warning paragraph and keeps the rest intact', () => {
     const conAviso = cuerpoPlantillaWhatsapp('confirmacion', base);
+    expect(conAviso).toContain('⚠️ No responder a este mensaje:');
     expect(quitarAvisoUnidireccional(conAviso)).toBe(
+      'Hola Martina, tu turno en *Estudio Bella* quedó confirmado.\n\n' +
+      '🗓️ 20/08 · 🕒 15:30 hs\n' +
+      '✨ Manicura semipermanente\n' +
+      '📍 Av. Siempreviva 742\n\n' +
+      '📲 Para consultas o cambios, avisar al +54 9 11 2345-6789 con 24 hs de anticipación.'
+    );
+  });
+
+  it('regression: removes the OLD warning stored by the backend before the template change', () => {
+    const viejo =
+      'Hola Martina, tu turno en *Estudio Bella* quedó confirmado.\n\n' +
+      '🗓️ 20/08 · 🕒 15:30 hs\n' +
+      '✨ Manicura semipermanente\n' +
+      '📍 Av. Siempreviva 742\n\n' +
+      '⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *Fernanda no lo recibe y no puede contestarte.*\n\n' +
+      'Para consultas o cambios de turno, comunicate al +54 9 11 2345-6789 con al menos 24 hs de anticipación.';
+    expect(quitarAvisoUnidireccional(viejo)).toBe(
       'Hola Martina, tu turno en *Estudio Bella* quedó confirmado.\n\n' +
       '🗓️ 20/08 · 🕒 15:30 hs\n' +
       '✨ Manicura semipermanente\n' +
@@ -114,11 +136,17 @@ describe('quitarAvisoUnidireccional', () => {
     );
   });
 
-  it('works when the warning is the last paragraph', () => {
+  it('works when the new warning is the last paragraph', () => {
     const conAviso = cuerpoPlantillaWhatsapp('recordatorio', { ...base, telefono: '' });
-    const sinAviso = quitarAvisoUnidireccional(conAviso);
-    expect(sinAviso).not.toContain('⚠️');
-    expect(sinAviso.endsWith('📍 Av. Siempreviva 742')).toBe(true);
+    const limpio = quitarAvisoUnidireccional(conAviso);
+    expect(limpio).not.toContain('⚠️');
+    expect(limpio.endsWith('📍 Av. Siempreviva 742')).toBe(true);
+  });
+
+  it('never leaves three consecutive line breaks or surrounding whitespace', () => {
+    const limpio = quitarAvisoUnidireccional(cuerpoPlantillaWhatsapp('recordatorio', base));
+    expect(limpio).not.toMatch(/\n{3,}/);
+    expect(limpio).toBe(limpio.trim());
   });
 
   it('leaves a text without the warning untouched', () => {
