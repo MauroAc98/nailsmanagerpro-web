@@ -1,6 +1,8 @@
 {
   "EstadisticasPage": {
     "title": "Estadísticas",
+    "professionalLabel": "Profesional",
+    "closeSheet": "Cerrar",
     "loading": "Cargando...",
     "all": "Todo el equipo",
     "period": "turnos este período",

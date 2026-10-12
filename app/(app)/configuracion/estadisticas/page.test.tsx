@@ -27,8 +27,9 @@ vi.mock('next/dynamic', () => ({
     return null;
   },
 }));
+const equipo = vi.hoisted(() => ({ profesionales: [] as Record<string, unknown>[] }));
 vi.mock('@/store/useProfesionalStore', () => ({
-  useProfesionalStore: () => ({ profesionales: [], fetchProfesionales: vi.fn() }),
+  useProfesionalStore: () => ({ profesionales: equipo.profesionales, fetchProfesionales: vi.fn() }),
 }));
 vi.mock('@/services/statsService', () => ({
   statsService: {
@@ -66,6 +67,7 @@ beforeEach(() => {
   chartProps.acumulado = null;
   chartProps.burbujas = null;
   resetNavigationMock();
+  equipo.profesionales = [];
   localStorage.clear();
   getDashboard.mockReset();
   setMockLocation('/configuracion/estadisticas', 'mes=2026-10');
@@ -439,5 +441,50 @@ describe('Estadísticas — tocar un día para filtrar', () => {
     const martes = screen.getAllByRole('button', { name: /^martes 15hs/ });
     expect(sabado.every(c => c.style.opacity !== '0.3')).toBe(true);
     expect(martes.every(c => c.style.opacity === '0.3')).toBe(true);
+  });
+});
+
+describe('Estadísticas — filtro de profesional', () => {
+  const dos = [
+    { id: 1, nombre: 'Caro', apellido: null, color: '#C00', avatar_url: null, activo: true },
+    { id: 2, nombre: 'Lau', apellido: 'Paz', color: null, avatar_url: null, activo: true },
+  ];
+
+  it('con una sola profesional activa no hay fila de profesional', async () => {
+    equipo.profesionales = [dos[0]];
+    getDashboard.mockResolvedValue(dashboard());
+    renderWithProviders(<EstadisticasPage />);
+    await screen.findByTestId('hero-kpis');
+    expect(screen.queryByRole('button', { name: /^Profesional:/ })).toBeNull();
+  });
+
+  it('arranca en todo el equipo, sin filtrar', async () => {
+    equipo.profesionales = dos;
+    getDashboard.mockResolvedValue(dashboard());
+    renderWithProviders(<EstadisticasPage />);
+    expect(await screen.findByRole('button', { name: 'Profesional: Todo el equipo' })).toBeInTheDocument();
+    await waitFor(() => expect(getDashboard).toHaveBeenCalledWith('2026-10-01', '2026-10-31', undefined));
+  });
+
+  it('elegir una profesional en la hoja filtra los datos y la fila muestra la misma', async () => {
+    equipo.profesionales = dos;
+    getDashboard.mockResolvedValue(dashboard());
+    renderWithProviders(<EstadisticasPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Profesional: Todo el equipo' }));
+    fireEvent.click(screen.getByRole('option', { name: /Lau/ }));
+
+    expect(await screen.findByRole('button', { name: 'Profesional: Lau' })).toBeInTheDocument();
+    await waitFor(() => expect(getDashboard).toHaveBeenCalledWith('2026-10-01', '2026-10-31', 2));
+  });
+
+  it('volver a "Todo el equipo" quita el filtro', async () => {
+    equipo.profesionales = dos;
+    setMockLocation('/configuracion/estadisticas', 'mes=2026-10&profesional=1');
+    getDashboard.mockResolvedValue(dashboard());
+    renderWithProviders(<EstadisticasPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Profesional: Caro' }));
+    fireEvent.click(screen.getByRole('option', { name: /Todo el equipo/ }));
+
+    expect(await screen.findByRole('button', { name: 'Profesional: Todo el equipo' })).toBeInTheDocument();
   });
 });

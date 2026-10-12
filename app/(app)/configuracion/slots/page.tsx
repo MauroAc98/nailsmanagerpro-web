@@ -5,8 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
+import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { profesionalJefa } from '@/services/profesionalService';
@@ -34,12 +36,17 @@ function SlotsContent() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [horaSeleccionada, setHoraSeleccionada] = useState<Record<string, string>>({ hora: '09', minuto: '00' });
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
 
   // Multi-agenda — invisible para cuentas con ≤1 profesional activa (el caso
   // común hoy). Mismo criterio y patrón visual que la selección de
   // PROFESIONAL en app/(app)/agenda/nuevo/page.tsx.
   const activeProfesionales      = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const profesionalSeleccionada = activeProfesionales.find(p => p.id === selectedProfesionalId);
+  const opcionesProfesional = activeProfesionales.map(p => ({
+    id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+  }));
 
   useEffect(() => { fetchProfesionales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -132,44 +139,40 @@ function SlotsContent() {
         {t('subtitle')}
       </p>
 
-      {/* Selector de profesional — invisible con ≤1 profesional activa */}
+      {/* Selector de profesional — invisible con ≤1 profesional activa.
+          Fila + hoja compartidas. Sin "todo el equipo": los horarios son por
+          profesional y arrancan en la jefa; la fila y el fetch usan la MISMA
+          variable (selectedProfesionalId). */}
       {mostrarSelectorProfesional && (
-        <div style={{ padding: '0 20px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {activeProfesionales.map(p => {
-            const selected = selectedProfesionalId === p.id;
-            const color    = p.color || colors.primary;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setSelectedProfesionalId(p.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 14, cursor: 'pointer',
-                  border: `1px solid ${selected ? color : colors.divider}`,
-                  backgroundColor: selected ? color : colors.surface,
-                  color: selected ? '#FFF' : colors.text,
-                }}
-              >
-                <span style={{
-                  width: 22, height: 22, borderRadius: 11, flexShrink: 0, overflow: 'hidden',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 9, fontWeight: 800,
-                  backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
-                  color: selected ? '#fff' : color,
-                }}>
-                  {p.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    inicialesProfesional(p.nombre, p.apellido)
-                  )}
-                </span>
-                {p.nombre}
-              </button>
-            );
-          })}
+        <div style={{ padding: '0 20px 16px' }}>
+          <TarjetaQueMostrar>
+            <FilaQueMostrar
+              leading={profesionalSeleccionada ? (
+                <AvatarProfesional
+                  nombre={profesionalSeleccionada.nombre}
+                  apellido={profesionalSeleccionada.apellido}
+                  color={profesionalSeleccionada.color}
+                  avatarUrl={profesionalSeleccionada.avatar_url}
+                />
+              ) : <EquipoIcono />}
+              titulo={t('professionalLabel')}
+              valor={profesionalSeleccionada?.nombre ?? ''}
+              activo
+              onClick={() => setProfesionalAbierto(true)}
+            />
+          </TarjetaQueMostrar>
         </div>
       )}
+
+      <ProfesionalSheet
+        open={profesionalAbierto}
+        onClose={() => setProfesionalAbierto(false)}
+        onSelect={sel => { if (sel !== 'equipo') setSelectedProfesionalId(sel); }}
+        title={t('professionalLabel')}
+        cerrarLabel={t('closeSheet')}
+        profesionales={opcionesProfesional}
+        selectedId={selectedProfesionalId ?? 'equipo'}
+      />
 
       {/* Error */}
       {error && (

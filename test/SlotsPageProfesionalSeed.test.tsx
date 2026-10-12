@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent } from '@testing-library/react';
 import { renderWithProviders, screen, waitFor } from '@/test/render';
 
 // The "Cargar horarios" link opens this page with ?profesional=<id>: it is a
@@ -57,6 +58,20 @@ describe('SlotsPage — ?profesional seed', () => {
   it('defaults to the jefa without the param', async () => {
     montar('');
     await waitFor(() => expect(slotService.getAll).toHaveBeenCalledWith(1));
-    expect(screen.getByText('Laura')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Profesional: Ana' })).toBeInTheDocument();
+  });
+
+  it('picking another professional in the sheet changes the row and the slots shown', async () => {
+    montar('');
+    await waitFor(() => expect(slotService.getAll).toHaveBeenCalledWith(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Profesional: Ana' }));
+    // Sin "todo el equipo": solo las profesionales activas.
+    expect(screen.getAllByRole('option').map(o => o.textContent)).toEqual([
+      expect.stringContaining('Ana'), expect.stringContaining('Laura'),
+    ]);
+    fireEvent.click(screen.getByRole('option', { name: /Laura/ }));
+
+    expect(await screen.findByRole('button', { name: 'Profesional: Laura' })).toBeInTheDocument();
+    await waitFor(() => expect(slotService.getAll).toHaveBeenCalledWith(2));
   });
 });

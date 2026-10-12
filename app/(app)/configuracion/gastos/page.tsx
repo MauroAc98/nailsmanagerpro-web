@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import BackButton from '@/components/BackButton';
 import { Spinner } from '@/components/Spinner';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
 import { useGastosStore } from '@/store/useGastoStore';
 import { CATEGORIAS_GASTO, Gasto } from '@/services/gastoService';
 import { labelCategoriaGasto } from '@/lib/categoriaLabel';
@@ -18,7 +17,10 @@ import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { nombreMes, formatoYMD } from '@/lib/dateFormat';
 import { formatMonto } from '@/lib/money';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
+import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import {
   filtrarGastos,
   contarFiltrosActivos,
@@ -106,6 +108,16 @@ export default function GastosPage() {
   // mismo criterio que gastos/nuevo/page.tsx y agenda/nuevo/page.tsx.
   const activeProfesionales = useMemo(() => profesionales.filter(p => p.activo), [profesionales]);
   const mostrarFiltroProfesional = activeProfesionales.length > 1;
+  const profesionalFiltrada = filtros.profesionalId !== null
+    ? activeProfesionales.find(p => p.id === filtros.profesionalId)
+    : undefined;
+  const opcionesProfesional = useMemo(
+    () => activeProfesionales.map(p => ({
+      id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+    })),
+    [activeProfesionales],
+  );
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
 
   const cambiarMes = (delta: number) => {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -329,61 +341,38 @@ export default function GastosPage() {
                 />
               </div>
 
-              {/* Profesional — invisible con ≤1 profesional activa. */}
+              {/* Profesional — invisible con ≤1 profesional activa. Fila + hoja
+                  compartidas; null = todo el equipo. La fila y el filtro usan
+                  la MISMA variable (filtros.profesionalId). */}
               {mostrarFiltroProfesional && (
-                <div>
-                  <span style={filtroLabelStyle}>{t('filterProfesionalLabel')}</span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => setFiltros(f => ({ ...f, profesionalId: null }))}
-                      style={{ ...chipStyle(filtros.profesionalId === null, colors.primary), padding: '4px 14px 4px 4px' }}
-                    >
-                      {/* Ícono de grupo — mismo criterio que el "Todo el
-                          equipo" de Agenda: distingue la opción agregadora
-                          de las profesionales puntuales, que llevan su
-                          avatar con iniciales. */}
-                      <span style={{
-                        width: 20, height: 20, borderRadius: 10, flexShrink: 0,
-                        backgroundColor: filtros.profesionalId === null ? withAlpha('#fff', '3D') : withAlpha(colors.primary, '26'),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                          stroke={filtros.profesionalId === null ? '#fff' : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                      </span>
-                      {t('filterAllProfesionales')}
-                    </button>
-                    {activeProfesionales.map(p => {
-                      const selected = filtros.profesionalId === p.id;
-                      const color = p.color || colors.primary;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setFiltros(f => ({ ...f, profesionalId: selected ? null : p.id }))}
-                          style={{ ...chipStyle(selected, color), padding: '4px 14px 4px 4px' }}
-                        >
-                          <span style={{
-                            width: 20, height: 20, borderRadius: 10, flexShrink: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 9, fontWeight: 800,
-                            backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
-                            color: selected ? '#fff' : color,
-                          }}>
-                            {inicialesProfesional(p.nombre, p.apellido)}
-                          </span>
-                          {p.nombre}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <TarjetaQueMostrar>
+                  <FilaQueMostrar
+                    leading={profesionalFiltrada ? (
+                      <AvatarProfesional
+                        nombre={profesionalFiltrada.nombre}
+                        apellido={profesionalFiltrada.apellido}
+                        color={profesionalFiltrada.color}
+                        avatarUrl={profesionalFiltrada.avatar_url}
+                      />
+                    ) : <EquipoIcono />}
+                    titulo={t('filterProfesionalLabel')}
+                    valor={profesionalFiltrada ? profesionalFiltrada.nombre : t('filterAllProfesionales')}
+                    activo={profesionalFiltrada !== undefined}
+                    onClick={() => setProfesionalAbierto(true)}
+                  />
+                </TarjetaQueMostrar>
               )}
+
+              <ProfesionalSheet
+                open={profesionalAbierto}
+                onClose={() => setProfesionalAbierto(false)}
+                onSelect={sel => setFiltros(f => ({ ...f, profesionalId: sel === 'equipo' ? null : sel }))}
+                title={t('filterProfesionalLabel')}
+                equipoLabel={t('filterAllProfesionales')}
+                cerrarLabel={t('closeSheet')}
+                profesionales={opcionesProfesional}
+                selectedId={filtros.profesionalId ?? 'equipo'}
+              />
 
               {/* Fecha — sub-rango dentro del mes visible. Los inputs quedan
                   acotados a `rango` (min/max) para que no se elija un día

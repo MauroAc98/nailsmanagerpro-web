@@ -17,7 +17,10 @@ import { useOcultarMonto } from '@/hooks/useOcultarMonto';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
+import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { statsService, DashboardStats, PuntoGanancia, BucketOcupacion } from '@/services/statsService';
 import { extraerMensajeError } from '@/services/clienteService';
@@ -141,6 +144,7 @@ function EstadisticasContent() {
   const { profesionales, fetchProfesionales } = useProfesionalStore();
 
   const [viewDate, setViewDate] = useState<Date>(() => parseMesParam(searchParams.get('mes')));
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
   const [profesionalFiltro, setProfesionalFiltro] = useState<number | null>(() => {
     const p = searchParams.get('profesional');
     return p ? Number(p) : null;
@@ -197,6 +201,12 @@ function EstadisticasContent() {
 
   const activeProfesionales = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
+  const profesionalSeleccionada = profesionalFiltro !== null
+    ? activeProfesionales.find(p => p.id === profesionalFiltro)
+    : undefined;
+  const opcionesProfesional = activeProfesionales.map(p => ({
+    id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+  }));
   const nombreProfesionalActivo = profesionalFiltro
     ? activeProfesionales.find(p => p.id === profesionalFiltro)?.nombre
     : t('all');
@@ -579,74 +589,40 @@ function EstadisticasContent() {
         )}
 
         {/* Selector de profesional — invisible con ≤1 profesional activa.
-            Sin card propia (a diferencia del resto de las secciones): los
-            chips flotan directo sobre el fondo, mismo tratamiento que usa
-            el selector de "Historia de turnos". */}
+            Fila + hoja compartidas (igual que Historia de turnos). La fila y
+            los datos usan la MISMA variable (profesionalFiltro): null = todo el
+            equipo (vista agregada). */}
         {mostrarSelectorProfesional && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button
-              onClick={() => setProfesionalFiltro(null)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                border: `1px solid ${profesionalFiltro === null ? colors.primarySolid : colors.border}`,
-                backgroundColor: profesionalFiltro === null ? colors.primarySolid : colors.surface,
-                color: profesionalFiltro === null ? colors.primaryFg : colors.text,
-              }}
-            >
-              {/* Ícono de grupo — mismo criterio que Agenda/Gastos: distingue
-                  la opción agregadora de las profesionales puntuales, que
-                  llevan su avatar con iniciales. */}
-              <span style={{
-                width: 20, height: 20, borderRadius: 10, flexShrink: 0,
-                backgroundColor: profesionalFiltro === null ? withAlpha(colors.primaryFg, '3D') : withAlpha(colors.primary, '26'),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                  stroke={profesionalFiltro === null ? colors.primaryFg : colors.primaryDeep} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </span>
-              {t('all')}
-            </button>
-            {activeProfesionales.map(p => {
-              const selected = profesionalFiltro === p.id;
-              const color = p.color || colors.primary;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => setProfesionalFiltro(selected ? null : p.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    border: `1px solid ${selected ? color : colors.border}`,
-                    backgroundColor: selected ? color : colors.surface,
-                    color: selected ? '#FFF' : colors.text,
-                  }}
-                >
-                  <span style={{
-                    width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 9, fontWeight: 800,
-                    backgroundColor: selected ? withAlpha('#fff', '3D') : withAlpha(color, '26'),
-                    color: selected ? '#fff' : color,
-                  }}>
-                    {p.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      inicialesProfesional(p.nombre, p.apellido)
-                    )}
-                  </span>
-                  {p.nombre}
-                </button>
-              );
-            })}
+          <div style={{ width: '100%' }}>
+            <TarjetaQueMostrar>
+              <FilaQueMostrar
+                leading={profesionalSeleccionada ? (
+                  <AvatarProfesional
+                    nombre={profesionalSeleccionada.nombre}
+                    apellido={profesionalSeleccionada.apellido}
+                    color={profesionalSeleccionada.color}
+                    avatarUrl={profesionalSeleccionada.avatar_url}
+                  />
+                ) : <EquipoIcono />}
+                titulo={t('professionalLabel')}
+                valor={profesionalSeleccionada ? profesionalSeleccionada.nombre : t('all')}
+                activo={profesionalSeleccionada !== undefined}
+                onClick={() => setProfesionalAbierto(true)}
+              />
+            </TarjetaQueMostrar>
           </div>
         )}
+
+        <ProfesionalSheet
+          open={profesionalAbierto}
+          onClose={() => setProfesionalAbierto(false)}
+          onSelect={sel => setProfesionalFiltro(sel === 'equipo' ? null : sel)}
+          title={t('professionalLabel')}
+          equipoLabel={t('all')}
+          cerrarLabel={t('closeSheet')}
+          profesionales={opcionesProfesional}
+          selectedId={profesionalFiltro ?? 'equipo'}
+        />
 
         {rangoInvalido ? null : error ? (
           <div style={{

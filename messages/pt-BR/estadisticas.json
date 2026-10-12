@@ -1,6 +1,8 @@
 {
   "EstadisticasPage": {
     "title": "Estatísticas",
+    "professionalLabel": "Profissional",
+    "closeSheet": "Fechar",
     "loading": "Carregando...",
     "all": "Toda a equipe",
     "period": "agendamentos neste período",
