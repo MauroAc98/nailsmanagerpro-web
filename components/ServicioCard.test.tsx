@@ -44,6 +44,57 @@ describe('ServicioCard — swipe-to-delete resting peek', () => {
   });
 });
 
+describe('ServicioCard — de qué se compone una promo', () => {
+  const resumen = [
+    { nombre: 'Softgel', duracion_minutos: 60, profesional_id: 1, profesional_nombre: 'Ana' },
+    { nombre: 'Semis pies', duracion_minutos: 45, profesional_id: 2, profesional_nombre: 'Laura' },
+  ];
+
+  it('dibuja un paso por servicio, en orden, con quién lo hace y su duración', () => {
+    const { getByText, container } = renderWithProviders(
+      <ServicioCard
+        servicio={buildServicio({ nombre: 'Promo Madre', es_promo: true, duracion_minutos: 105, componentes_resumen: resumen })}
+        onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} showPromoBadge
+      />,
+    );
+    expect(getByText('Softgel')).toBeInTheDocument();
+    expect(getByText('Semis pies')).toBeInTheDocument();
+    expect(getByText('con Ana')).toBeInTheDocument();
+    expect(getByText('con Laura')).toBeInTheDocument();
+    expect(getByText('2 servicios · 1 h 45 min')).toBeInTheDocument();
+    expect(container.textContent!.indexOf('Softgel')).toBeLessThan(container.textContent!.indexOf('Semis pies'));
+  });
+
+  it('un servicio común no dibuja pasos', () => {
+    const { queryByText } = renderWithProviders(
+      <ServicioCard servicio={buildServicio({ componentes_resumen: [] })} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect(queryByText(/^con /)).not.toBeInTheDocument();
+    expect(queryByText(/servicios ·/)).not.toBeInTheDocument();
+  });
+
+  it('una promo sin componentes conserva la tarjeta de siempre', () => {
+    const { getByText, queryByText } = renderWithProviders(
+      <ServicioCard servicio={buildServicio({ es_promo: true })} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} showPromoBadge />,
+    );
+    expect(getByText('PROMO')).toBeInTheDocument();
+    expect(queryByText(/servicios ·/)).not.toBeInTheDocument();
+  });
+
+  it('tocar la tarjeta de una promo con pasos sigue abriendo su edición', () => {
+    const onEdit = vi.fn();
+    const { getByText } = renderWithProviders(
+      <ServicioCard
+        servicio={buildServicio({ nombre: 'Promo Madre', es_promo: true, componentes_resumen: resumen })}
+        onEdit={onEdit} onToggle={vi.fn()} onDelete={vi.fn()} showPromoBadge
+      />,
+    );
+    fireEvent.pointerUp(getByText('Promo Madre'));
+    fireEvent.click(getByText('Promo Madre'));
+    expect(onEdit).toHaveBeenCalled();
+  });
+});
+
 describe('ServicioCard — jerarquía visual', () => {
   it('muestra el precio como dato principal, siempre con dos decimales', () => {
     const { getByText } = renderWithProviders(

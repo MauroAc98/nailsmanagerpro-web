@@ -6,7 +6,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { useSortable } from '@dnd-kit/sortable';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
+import { Clock } from 'lucide-react';
 import { Servicio } from '@/services/servicioService';
+import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { formatMonto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/duracion';
 import PillToggle from '@/components/PillToggle';
@@ -44,6 +47,13 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
   const { cardRef, handlers } = useSwipeToDelete({ onTap: onEdit });
 
   const cardBg = servicio.activo ? colors.surface : colors.surfaceSubtle;
+
+  // Una promo con componentes se dibuja como la tarjeta de turnos: cabecera y
+  // un paso por servicio con quién lo hace. Cualquier otra tarjeta, igual que siempre.
+  const pasos = servicio.es_promo ? servicio.componentes_resumen ?? [] : [];
+  const conPasos = pasos.length > 0;
+  const profesionales = useProfesionalStore(s => s.profesionales);
+  const padIzq = 16 + SWIPE_PEEK;
 
   return (
     <div
@@ -92,9 +102,9 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
         {...handlers}
         style={{
           position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
-          display: 'flex', alignItems: 'center', gap: 12,
+          display: conPasos ? 'block' : 'flex', alignItems: 'center', gap: 12,
           backgroundColor: cardBg,
-          padding: `14px 14px 14px ${16 + SWIPE_PEEK}px`, cursor: 'pointer', userSelect: 'none',
+          padding: conPasos ? 0 : `14px 14px 14px ${padIzq}px`, cursor: 'pointer', userSelect: 'none',
         }}
       >
         {/* Barra lateral de estado: verde = activo, gris = pausado. Vive dentro
@@ -109,7 +119,7 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
             toggle / el handle / el chevron fuera de la card. Mismo criterio
             en la fila nombre+badge: minWidth:0 en el nombre, flexShrink:0 en
             el badge PROMO, así un nombre largo no lo empuja fuera. */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, ...(conPasos ? { padding: `14px 14px 12px ${padIzq}px` } : {}) }}>
           {/* Fila 1: el nombre manda, a todo el ancho (menos el grip), y se parte
               en las lineas que haga falta: nunca se recorta, asi que no hace
               falta popover. */}
@@ -179,12 +189,18 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
                   {t('pausedBadge')}
                 </span>
               )}
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
-                </svg>
-                {formatearDuracion(servicio.duracion_minutos)}
-              </span>
+              {conPasos ? (
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  {t('promoSummary', { n: pasos.length, duracion: formatearDuracion(servicio.duracion_minutos) })}
+                </span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.placeholder} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
+                  </svg>
+                  {formatearDuracion(servicio.duracion_minutos)}
+                </span>
+              )}
             </div>
             {precioLabel && (
               <span style={{
@@ -197,6 +213,51 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
             <PillToggle value={servicio.activo} onChange={onToggle} stopPropagation />
           </div>
         </div>
+
+        {conPasos && pasos.map((paso, i) => {
+          const prof = profesionales.find(p => p.id === paso.profesional_id);
+          const color = prof?.color || colors.primary;
+          return (
+            <div
+              key={i}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, boxSizing: 'border-box',
+                padding: `9px 14px 9px ${padIzq}px`, borderTop: `1px solid ${colors.divider}`,
+              }}
+            >
+              <span style={{
+                width: 58, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 2,
+                fontSize: 10, fontWeight: 600, color: colors.subtext, whiteSpace: 'nowrap',
+              }}>
+                <Clock size={10} strokeWidth={2.2} aria-hidden="true" style={{ flexShrink: 0 }} />
+                {formatearDuracion(paso.duracion_minutos)}
+              </span>
+              <div style={{ width: 1, alignSelf: 'stretch', backgroundColor: colors.divider }} />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontFamily: agendaFontSerif, fontStyle: 'italic', fontSize: 13, color: colors.subtext, overflowWrap: 'anywhere' }}>
+                  {paso.nombre}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                  <span style={{
+                    width: 16, height: 16, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 7, fontWeight: 800, backgroundColor: withAlpha(color, '26'), color,
+                  }}>
+                    {prof?.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={prof.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      inicialesProfesional(paso.profesional_nombre, prof?.apellido)
+                    )}
+                  </span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: colors.subtext, minWidth: 0, overflowWrap: 'anywhere' }}>
+                    {t('promoWith', { nombre: paso.profesional_nombre })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
 
       </div>
     </div>
