@@ -89,28 +89,20 @@ describe('StoryCanvas — encabezado A2 (servicios elegidos)', () => {
     expect(Number.parseFloat(titular.style.fontSize)).toBeLessThanOrEqual(18);
   });
 
-  it('en quincena los servicios ocupan 1 línea; en semana o día, hasta 2', () => {
-    const quincena: DisponibilidadDia[] = Array.from({ length: 15 }, (_, i) => ({
-      fecha: `2026-10-${String(i + 1).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
+  it('los servicios admiten hasta 2 líneas en cualquier modo, quincena incluida', () => {
+    const quincena: DisponibilidadDia[] = Array.from({ length: 16 }, (_, i) => ({
+      fecha: `2026-10-${String(i + 16).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
     }));
     const { unmount } = renderCanvas(null, quincena, 'Gabriela', null, filtro);
-    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('16px');
+    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('32px');
     unmount();
     renderCanvas(null, variosDias, 'Gabriela', null, filtro);
     expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('32px');
   });
 
-  it('en quincena encabezado + servicios + margen suman lo mismo que hoy (la lista no se mueve)', () => {
-    const quincena: DisponibilidadDia[] = Array.from({ length: 15 }, (_, i) => ({
-      fecha: `2026-10-${String(i + 1).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
-    }));
-    const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
-    const { unmount } = renderCanvas(null, quincena, 'Gabriela');
-    const sin = margen();
-    unmount();
-    renderCanvas(null, quincena, 'Gabriela', null, filtro);
-    // Línea de servicios: 8px de separación + 16px de alto.
-    expect(margen()).toBe(sin - 24);
+  it('el cuerpo no crece con la lista (minHeight 0): la lista se reparte en el alto que queda', () => {
+    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
+    expect((screen.getByTestId('story-cuerpo') as HTMLElement).style.minHeight).toBe('0');
   });
 
   it('vista de equipo (sin profesional): la línea no lleva "con"', () => {

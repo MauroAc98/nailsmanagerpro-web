@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ANCHO_LINEA_SERVICIOS,
   medirTextoServicios,
   serviciosEntran,
-  maxLineasServicios,
   tituloFiltroServicios,
 } from './historiaServicios';
 
@@ -76,22 +74,10 @@ describe('serviciosEntran', () => {
   });
 });
 
-describe('maxLineasServicios', () => {
-  it('quincena (más de 7 días): 1 línea; semana o día: 2', () => {
-    expect(maxLineasServicios(16)).toBe(1);
-    expect(maxLineasServicios(8)).toBe(1);
-    expect(maxLineasServicios(7)).toBe(2);
-    expect(maxLineasServicios(1)).toBe(2);
-  });
-});
-
 describe('medirTextoServicios', () => {
   it('sin canvas 2D (jsdom) usa el fallback proporcional al largo', () => {
     expect(medirTextoServicios('abcd')).toBe(24);
     expect(medirTextoServicios('')).toBe(0);
   });
 
-  it('el ancho de referencia es el del canvas menos el padding', () => {
-    expect(ANCHO_LINEA_SERVICIOS).toBe(344);
-  });
 });

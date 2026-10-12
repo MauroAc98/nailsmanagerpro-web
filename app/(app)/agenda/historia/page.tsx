@@ -20,7 +20,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { useServiciosStore } from '@/store/useServicioStore';
 import {
-  ANCHO_LINEA_SERVICIOS, maxLineasServicios, medirTextoServicios, serviciosEntran, tituloFiltroServicios,
+  MAX_LINEAS_SERVICIOS, medirTextoServicios, serviciosEntran, tituloFiltroServicios,
 } from '@/lib/historiaServicios';
 import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
@@ -139,7 +139,9 @@ function HistoriaContent() {
   const tituloServicios = hayFiltroServicios
     ? tituloFiltroServicios(serviciosElegidos, categorias, { fallback: t('servicesFallbackTitle'), y: t('servicesAnd') })
     : '';
-  const entranServicios = serviciosEntran(nombresServicios, maxLineasServicios(diasAMostrar.length), ANCHO_LINEA_SERVICIOS, medirTextoServicios);
+  // Mismo ancho que la línea de servicios en el canvas (padding 18px por lado).
+  const anchoLineaServicios = Math.max(0, canvasWidth - 36);
+  const entranServicios = serviciosEntran(nombresServicios, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios);
   const bloqueaExportar = hayFiltroServicios && !entranServicios;
   const nombreParaTodos = mostrarSelectorProfesional && !esEquipo ? profesionalSeleccionada?.nombre : undefined;
 
@@ -288,7 +290,7 @@ function HistoriaContent() {
             const nombres = serviciosOfrecidos
               .filter(s => draft.includes(s.id))
               .map(s => s.nombre);
-            return serviciosEntran(nombres, maxLineasServicios(diasAMostrar.length), ANCHO_LINEA_SERVICIOS, medirTextoServicios) ? null : t('servicesDontFit');
+            return serviciosEntran(nombres, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios) ? null : t('servicesDontFit');
           }}
         />
 

@@ -1,12 +1,6 @@
 // Helpers puros del encabezado A2 de la historia de turnos con servicios
 // elegidos (ver StoryCanvas, prop `filtroServicios`).
 
-// Ancho de referencia del canvas (380) menos el padding horizontal del
-// contenido (18 a cada lado) — el ancho disponible de la línea de servicios.
-export const ANCHO_CANVAS_REFERENCIA = 380;
-export const PADDING_HORIZONTAL_CANVAS = 18;
-export const ANCHO_LINEA_SERVICIOS = ANCHO_CANVAS_REFERENCIA - PADDING_HORIZONTAL_CANVAS * 2;
-
 export const FUENTE_LINEA_SERVICIOS = '11px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const SEPARADOR = ' / ';
 
@@ -59,12 +53,9 @@ export function serviciosEntran(
   return contarLineasServicios(nombres, anchoDisponible, medir) <= maxLineas;
 }
 
-// Una quincena (más de 7 días) no tiene alto de sobra: la línea de servicios
-// sale del margen entre el encabezado y la lista, y ahí entra una sola. En
-// semana o día sobra alto y pueden ir dos.
-export function maxLineasServicios(cantidadDias: number): number {
-  return cantidadDias > 7 ? 1 : 2;
-}
+// Hasta 2 líneas en cualquier modo: la lista se reparte en el alto que queda
+// (ver lib/historia/repartoFilas), así que una quincena también las admite.
+export const MAX_LINEAS_SERVICIOS = 2;
 
 let ctx: CanvasRenderingContext2D | null | undefined;
 

@@ -12,7 +12,8 @@ import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
-import { contarLineasServicios, maxLineasServicios, medirTextoServicios } from '@/lib/historiaServicios';
+import { contarLineasServicios, MAX_LINEAS_SERVICIOS, medirTextoServicios } from '@/lib/historiaServicios';
+import { repartirFilas } from '@/lib/historia/repartoFilas';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -121,6 +122,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const lineaRef  = useRef<HTMLDivElement>(null);
   const pieRef    = useRef<HTMLDivElement>(null);
   const [zonaPieMedida, setZonaPieMedida] = useState<number | null>(null);
+  const [altoCuerpo, setAltoCuerpo] = useState(0);
   useEffect(() => {
     const raiz = raizRef.current;
     const linea = lineaRef.current;
@@ -132,6 +134,9 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
         bottomRaiz: r.bottom, topLinea: l.top, alturaRenderizada: r.height, alturaCanvas: canvasHeight,
       });
       setZonaPieMedida(prev => (alto === null || prev === alto ? prev : alto));
+      // clientHeight = alto de layout (no le afecta un scale de la vista previa).
+      const altoMedido = cuerpoRef.current?.clientHeight ?? 0;
+      setAltoCuerpo(prev => (prev === altoMedido ? prev : altoMedido));
     };
     // Observar el canvas, el cuerpo y el pie: si cualquiera cambia de alto, la
     // línea cambia de lugar. ResizeObserver avisa también al empezar a observar.
@@ -158,26 +163,26 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  // Con servicios la línea de servicios sale de ese margen. En quincena
-  // (1 línea máx.) encabezado + servicios + margen suman lo mismo que hoy, así
-  // la lista no se mueve. En semana/día (2 líneas máx.) sobra alto: el margen
-  // baja pero no de 16px. Mismo reparto de líneas que el aviso de la hoja.
+  // Con servicios (hasta 2 líneas) la línea sale en parte de ese margen; el
+  // resto lo absorbe la lista, que se reparte en el alto medido del cuerpo
+  // (repartirFilas). Mismo reparto de líneas que el aviso de la hoja.
   const servicios = filtroServicios?.servicios ?? [];
   const conServicios = servicios.length > 0;
   const ALTO_LINEA_SERVICIOS = 16;
   const SEPARACION_SERVICIOS = 8;
-  const maxLineas = maxLineasServicios(dias.length);
+  const maxLineas = MAX_LINEAS_SERVICIOS;
   const lineasServicios = Math.min(maxLineas, contarLineasServicios(servicios, canvasWidth - 36, medirTextoServicios));
   const altoServicios = conServicios ? SEPARACION_SERVICIOS + lineasServicios * ALTO_LINEA_SERVICIOS : 0;
   const bodyMargenBase = Math.round(canvasHeight * 0.06);
-  const bodyMargenTop = !conServicios
-    ? bodyMargenBase
-    : maxLineas === 1
-      ? Math.max(4, bodyMargenBase - altoServicios)
-      : Math.max(16, bodyMargenBase - altoServicios);
+  const bodyMargenTop = conServicios ? Math.max(12, bodyMargenBase - altoServicios) : bodyMargenBase;
+
+  // Filas de Semana/Mes repartidas en el alto real del cuerpo: una quincena de
+  // 16 días entra siempre (si no alcanza, las filas se achican hasta 10px).
+  const reparto = repartirFilas(altoCuerpo, dias.length);
+  const fuenteFila = Math.min(10, Math.max(8, Math.floor(reparto.altoFila) - 3));
 
   // La franja desenfocada del encabezado cubre la insignia (44px) + una línea
-  // de servicios; con 2 líneas (semana/día) se estira lo que sobresale.
+  // de servicios; con 2 líneas se estira lo que sobresale.
   const franjaEncabezado = tituloZonaAlto
     + Math.max(0, 44 + altoServicios - Math.round(canvasHeight * 0.10));
 
@@ -366,7 +371,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             </div>
 
             {/* Body */}
-            <div ref={cuerpoRef} data-testid="story-cuerpo" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
+            <div ref={cuerpoRef} data-testid="story-cuerpo" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
@@ -386,7 +391,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   ))}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: reparto.gap ?? gap }}>
                   {dias.map((dia, idx) => {
                     const slotsLibres = dia.slots.filter(s => s.libre);
                     const estaCompleto = slotsLibres.length === 0;
@@ -400,12 +405,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                             divisores de cada fila quedaban desalineados
                             (ver pattern_flex_minwidth_long_names). */}
                         <span style={{
-                          width: 52, flexShrink: 0, color: '#fff', fontSize: 10, fontWeight: 700,
+                          width: 52, flexShrink: 0, color: '#fff', fontSize: fuenteFila, fontWeight: 700,
                           letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap',
                         }}>
                           {nombreDia(dia.fecha)}
                         </span>
-                        <div style={{ width: 1, height: 14, flexShrink: 0, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
+                        <div style={{ width: 1, height: reparto.altoFila, flexShrink: 0, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
                         {estaCompleto ? (
                           // Blanco atenuado, no primaryRaw (verde salvia de
                           // marca del sistema): esta imagen la comparten los
@@ -425,7 +430,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <FitText
                               text={horasTexto}
-                              maxFontSize={10}
+                              maxFontSize={fuenteFila}
                               style={{ color: '#fff', fontWeight: 400, letterSpacing: 0.3 }}
                             />
                           </div>
