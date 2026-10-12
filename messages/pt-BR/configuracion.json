@@ -96,6 +96,7 @@
   },
   "GastosPage": {
     "title": "Despesas",
+    "closeSheet": "Fechar",
     "loading": "Carregando despesas...",
     "emptyState": "Nenhuma despesa cadastrada neste mês",
     "summary": "{count, plural, one {# despesa} other {# despesas}} neste mês",
@@ -480,6 +481,8 @@
   },
   "SlotsPage": {
     "title": "Horários Disponíveis",
+    "professionalLabel": "Profissional",
+    "closeSheet": "Fechar",
     "subtitle": "Estes são os horários em que seus clientes podem reservar agendamentos.",
     "loading": "Carregando horários...",
     "emptyState": "Nenhum horário cadastrado. Toque em + para adicionar um.",

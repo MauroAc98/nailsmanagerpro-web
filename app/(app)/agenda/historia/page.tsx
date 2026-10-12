@@ -14,6 +14,7 @@ import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
 import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
 import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { BarraHerramientas } from '@/components/filtros/BarraHerramientas';
@@ -52,12 +53,6 @@ function tabStyle(active: boolean): React.CSSProperties {
 const navButtonStyle: React.CSSProperties = {
   width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
   background: colors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center',
-};
-
-// Tarjeta "Qué mostrar": filas Profesional / Servicios.
-const tarjetaQueMostrarStyle: React.CSSProperties = {
-  width: '100%', background: colors.surface, border: `1px solid ${colors.divider}`,
-  borderRadius: 14, overflow: 'hidden',
 };
 
 const footerActionStyle: React.CSSProperties = {
@@ -254,8 +249,7 @@ function HistoriaContent() {
             2026-08-19). */}
         {(mostrarSelectorProfesional || serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
           <div style={{ width: '100%', marginBottom: 14 }}>
-            <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: colors.muted }}>{t('whatToShow')}</p>
-            <div style={tarjetaQueMostrarStyle}>
+            <TarjetaQueMostrar caption={t('whatToShow')}>
               {mostrarSelectorProfesional && (
                 <FilaQueMostrar
                   leading={esEquipo || !profesionalSeleccionada ? <EquipoIcono /> : (
@@ -273,9 +267,6 @@ function HistoriaContent() {
                   activo={!esEquipo}
                   onClick={() => setProfesionalAbierto(true)}
                 />
-              )}
-              {mostrarSelectorProfesional && (serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
-                <div style={{ height: 1, background: colors.divider }} />
               )}
               {(serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
                 <FilaQueMostrar
@@ -296,7 +287,7 @@ function HistoriaContent() {
                   onClick={() => setServiciosAbierto(true)}
                 />
               )}
-            </div>
+            </TarjetaQueMostrar>
             {mostrarSelectorProfesional && esEquipo && (
               <p style={{ margin: '8px 0 0', display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, lineHeight: 1.4, color: colors.muted }}>
                 <Info size={14} strokeWidth={2} color={colors.muted} style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true" />

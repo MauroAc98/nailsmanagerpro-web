@@ -96,6 +96,7 @@
   },
   "GastosPage": {
     "title": "Gastos",
+    "closeSheet": "Cerrar",
     "loading": "Cargando gastos...",
     "emptyState": "Sin gastos cargados este mes",
     "summary": "{count, plural, one {# gasto} other {# gastos}} este mes",
@@ -498,6 +499,8 @@
   },
   "SlotsPage": {
     "title": "Horarios Disponibles",
+    "professionalLabel": "Profesional",
+    "closeSheet": "Cerrar",
     "subtitle": "Estos son los horarios en los que tus clientes pueden reservar turnos.",
     "loading": "Cargando horarios...",
     "emptyState": "No hay horarios cargados. Tocá + para agregar uno.",

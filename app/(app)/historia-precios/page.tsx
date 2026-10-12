@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ChevronLeft, ChevronRight, ImagePlus, LayoutGrid } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PillToggle from '@/components/PillToggle';
 import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
 import { ProfesionalSheet } from '@/components/filtros/ProfesionalSheet';
 import { ServiciosSheet } from '@/components/filtros/ServiciosSheet';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
@@ -47,12 +48,6 @@ function useCanvasScale() {
   const scale = width ? width / BASE_WIDTH : 1;
   return { width, height: BASE_HEIGHT * scale, scale };
 }
-
-// Tarjeta "Qué mostrar": filas Profesional / Servicios (igual que la historia de turnos).
-const tarjetaQueMostrarStyle: CSSProperties = {
-  width: '100%', background: colors.surface, border: `1px solid ${colors.divider}`,
-  borderRadius: 14, overflow: 'hidden',
-};
 
 export default function HistoriaPreciosPage() {
   const t      = useTranslations('historia.HistoriaPreciosPage');
@@ -166,8 +161,7 @@ export default function HistoriaPreciosPage() {
               variable que el contenido (servicios, fotos, nota). */}
           {(mostrarSelectorProfesional || serviciosDisponibles.length > 0) && (
             <div style={{ width: '100%', marginBottom: 14 }}>
-              <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: colors.muted }}>{t('whatToShow')}</p>
-              <div style={tarjetaQueMostrarStyle}>
+              <TarjetaQueMostrar caption={t('whatToShow')}>
                 {mostrarSelectorProfesional && profesionalEncabezado && (
                   <FilaQueMostrar
                     leading={(
@@ -185,9 +179,6 @@ export default function HistoriaPreciosPage() {
                     activo
                     onClick={() => setProfesionalAbierto(true)}
                   />
-                )}
-                {mostrarSelectorProfesional && profesionalEncabezado && serviciosDisponibles.length > 0 && (
-                  <div style={{ height: 1, background: colors.divider }} />
                 )}
                 {serviciosDisponibles.length > 0 && (
                   <FilaQueMostrar
@@ -207,7 +198,7 @@ export default function HistoriaPreciosPage() {
                     onClick={() => setServiciosAbierto(true)}
                   />
                 )}
-              </div>
+              </TarjetaQueMostrar>
             </div>
           )}
 
