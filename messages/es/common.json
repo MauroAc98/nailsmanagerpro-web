@@ -179,5 +179,9 @@
     "expandCategory": "Expandir categoría",
     "selectCategory": "Seleccionar categoría",
     "deselectCategory": "Deseleccionar categoría"
+  },
+  "ServiciosSheet": {
+    "cancel": "Cancelar",
+    "clear": "Limpiar"
   }
 }
