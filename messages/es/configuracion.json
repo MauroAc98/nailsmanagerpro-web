@@ -461,7 +461,8 @@
     "deleteConfirm": "¿Eliminás este bloqueo?",
     "deleteConfirmButton": "Eliminar",
     "deleted": "Bloqueo eliminado",
-    "deleteError": "No se pudo eliminar el bloqueo."
+    "deleteError": "No se pudo eliminar el bloqueo.",
+    "delete": "ELIMINAR"
   },
   "NuevoBloqueoPage": {
     "title": "Nuevo bloqueo",

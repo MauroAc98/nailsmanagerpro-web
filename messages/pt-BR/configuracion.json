@@ -443,7 +443,8 @@
     "deleteConfirm": "Excluir este bloqueio?",
     "deleteConfirmButton": "Excluir",
     "deleted": "Bloqueio excluído",
-    "deleteError": "Não foi possível excluir o bloqueio."
+    "deleteError": "Não foi possível excluir o bloqueio.",
+    "delete": "EXCLUIR"
   },
   "NuevoBloqueoPage": {
     "title": "Novo bloqueio",
