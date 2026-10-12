@@ -121,7 +121,7 @@ interface DatosPreview {
 // seña sí son reales (vienen de la cuenta / del formulario) porque son los
 // que el cliente va a ver tal cual.
 function textoPreview(d: DatosPreview): string {
-  const nombreCliente = 'Martina';
+  const nombreCliente = 'Fulana';
   const fecha = '20/08';
   const hora = '15:30';
   const servicio = 'Manicura semipermanente';

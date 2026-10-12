@@ -207,6 +207,16 @@ describe('SheetNegocio — message preview', () => {
     expect(text).not.toContain('quedó reservado');
   });
 
+  it('uses a generic sample client name ("Fulana"), never a name that could be a real client', () => {
+    setup({ whatsappPideSena: true, senaMonto: '5000' });
+    openPreview();
+    expect(previewText(/queda reservado/)).toContain('Hola Fulana,');
+    fireEvent.click(screen.getByRole('button', { name: 'Recordatorio' }));
+    const recordatorio = previewText(/te recordamos tu turno de mañana/);
+    expect(recordatorio).toContain('Hola Fulana');
+    expect(recordatorio).not.toContain('Martina');
+  });
+
   it('renders the reminder body on the recordatorio tab', () => {
     setup();
     openPreview();
