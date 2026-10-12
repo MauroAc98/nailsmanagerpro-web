@@ -71,21 +71,26 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
 describe('StoryCanvas — encabezado A2 (servicios elegidos)', () => {
   const filtro = { titulo: 'Uñas y Pestañas', servicios: ['Esmaltado', 'Kapping', 'Lifting'] };
 
-  it('con filtroServicios: kicker, titular, "con X" y todos los servicios', () => {
+  it('con filtroServicios: titular, línea "Turnos disponibles con X · fecha" y todos los servicios', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    expect(screen.getByText('TURNOS DISPONIBLES · 24 DE SEPT')).toBeInTheDocument();
     expect(screen.getByText('Uñas y Pestañas')).toBeInTheDocument();
-    expect(screen.getByText('con Gabriela')).toBeInTheDocument();
+    expect(screen.getByText('Turnos disponibles con Gabriela · 24 de sept')).toBeInTheDocument();
     for (const n of filtro.servicios) expect(screen.getByText(n)).toBeInTheDocument();
-    // El diseño de siempre ya no aparece.
-    expect(screen.queryByText('Turnos disponibles')).not.toBeInTheDocument();
-    expect(screen.queryByText('con Gabriela · 24 de sept')).not.toBeInTheDocument();
+    // Sin renglón en mayúsculas arriba del titular.
+    expect(screen.queryByText(/TURNOS DISPONIBLES/)).not.toBeInTheDocument();
   });
 
-  it('vista de equipo (sin profesional): no hay "con"', () => {
+  it('con filtroServicios el logo va a la derecha del texto', () => {
+    renderCanvas('https://x/logo.png', unDia, 'Gabriela', null, filtro);
+    const logo = document.querySelector('img[src="https://x/logo.png"]') as HTMLElement;
+    const titular = screen.getByText('Uñas y Pestañas');
+    expect(titular.compareDocumentPosition(logo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('vista de equipo (sin profesional): la línea no lleva "con"', () => {
     renderCanvas(null, unDia, undefined, null, filtro);
-    expect(screen.getByText('Uñas y Pestañas')).toBeInTheDocument();
-    expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
+    expect(screen.getByText('Turnos disponibles · 24 de sept')).toBeInTheDocument();
+    expect(screen.queryByText(/con /)).not.toBeInTheDocument();
   });
 
   it('cada nombre de servicio no se parte (nowrap)', () => {

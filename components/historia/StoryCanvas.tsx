@@ -170,6 +170,43 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
     ? Math.max(16, bodyMargenBase - lineasServicios * ALTO_LINEA_SERVICIOS)
     : bodyMargenBase;
 
+  // Con logo cargado, la foto del negocio ocupa este mismo recuadro (mismo
+  // tamaño/radio que el chip de fecha) en los 3 modos — decisión 2026-09-30
+  // tras canvas de diseño: un badge de fecha superpuesto no escala a
+  // semana/mes. Sin logo, chip de fecha en modo Día, ícono genérico en
+  // Semana/Mes. La foto va a color y sin `filter` en vivo: html-to-image la
+  // rasteriza como SVG foreignObject y WebKit combina mal ese filtro — la
+  // historia entera salía negra en Safari (real en prod 2026-10-01).
+  const insignia = logoUrl ? (
+    <img
+      src={logoUrl}
+      alt=""
+      style={{
+        flexShrink: 0, width: 44, height: 44, borderRadius: 12,
+        objectFit: 'cover',
+        border: '1.5px solid rgba(255,255,255,0.6)',
+      }}
+    />
+  ) : (
+    <span style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
+    }}>
+      {chipDiaNumero !== null ? (
+        <>
+          <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
+            {chipDiaLabel}
+          </span>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
+            {chipDiaNumero}
+          </span>
+        </>
+      ) : (
+        <CalendarDays size={18} color="#fff" strokeWidth={2} />
+      )}
+    </span>
+  );
+
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
     // capturado por html-to-image es el de más adentro (el que tiene `ref`)
@@ -260,84 +297,35 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
             <div>
+            {conServicios && filtroServicios ? (
+              // Con servicios: titular (categoría) y línea "Turnos disponibles
+              // con X · fecha" a la izquierda, logo a la derecha (opción 2 del
+              // canvas, elegida 2026-10-11 en lugar del renglón en mayúsculas).
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <FitText
+                    text={filtroServicios.titulo}
+                    maxFontSize={30}
+                    minFontSize={14}
+                    style={{
+                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                      letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    }}
+                  />
+                  <span style={{
+                    display: 'block', marginTop: 6, fontFamily: agendaFontSerif, fontStyle: 'italic',
+                    fontSize: 13, color: 'rgba(255,255,255,0.88)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  }}>
+                    {`${[tituloPrincipal, lineaProfesional].filter(Boolean).join(' ')} · ${titulo}`}
+                  </span>
+                </div>
+                {insignia}
+              </div>
+            ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-              {/* Con logo cargado, la foto del negocio ocupa este mismo
-                  recuadro (mismo tamaño/radio que el chip de fecha) en los 3
-                  modos — decisión 2026-09-30 tras canvas de diseño: un badge
-                  de fecha superpuesto no escala a semana/mes, así que se
-                  dropea la fecha del ícono y se apoya solo en el texto de
-                  abajo (que ya la muestra formateada para cada modo). Sin
-                  logo, se ve exactamente igual que siempre (chip de fecha en
-                  modo Día, ícono genérico en Semana/Mes).
-                  La foto va a color y sin `filter` en vivo: ese filtro vive
-                  dentro del árbol que html-to-image rasteriza como SVG
-                  foreignObject aparte, y WebKit lo combina mal con esa
-                  rasterización — la historia entera salía negra en Safari
-                  (real en prod 2026-10-01). */}
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt=""
-                  style={{
-                    flexShrink: 0, width: 44, height: 44, borderRadius: 12,
-                    objectFit: 'cover',
-                    border: '1.5px solid rgba(255,255,255,0.6)',
-                  }}
-                />
-              ) : (
-                <span style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
-                }}>
-                  {chipDiaNumero !== null ? (
-                    <>
-                      <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
-                        {chipDiaLabel}
-                      </span>
-                      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
-                        {chipDiaNumero}
-                      </span>
-                    </>
-                  ) : (
-                    <CalendarDays size={18} color="#fff" strokeWidth={2} />
-                  )}
-                </span>
-              )}
+              {insignia}
 
               <div style={{ minWidth: 0, flex: 1 }}>
-                {conServicios && filtroServicios ? (
-                  <>
-                    <span style={{
-                      display: 'block', marginBottom: 5, fontSize: 9, fontWeight: 700, letterSpacing: 2.2,
-                      color: 'rgba(255,255,255,0.75)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                      whiteSpace: 'nowrap', overflow: 'hidden',
-                    }}>
-                      {`${tituloPrincipal.toUpperCase()} · ${titulo.toUpperCase()}`}
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'nowrap' }}>
-                      <div style={{ flex: '0 1 auto', minWidth: 0 }}>
-                        <FitText
-                          text={filtroServicios.titulo}
-                          maxFontSize={30}
-                          minFontSize={14}
-                          style={{
-                            fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-                            letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                          }}
-                        />
-                      </div>
-                      {lineaProfesional && (
-                        <span style={{
-                          flexShrink: 0, whiteSpace: 'nowrap', fontFamily: agendaFontSerif, fontStyle: 'italic',
-                          fontSize: 13, color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                        }}>
-                          {lineaProfesional}
-                        </span>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
                 {/* maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
                     muy grande al lado de la fecha). minFontSize sigue por
                     encima del tope de FitText de los turnos en el body
@@ -358,24 +346,20 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 }}>
                   {lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo}
                 </span>
-                  </>
-                )}
               </div>
             </div>
+            )}
 
             {conServicios && (
               <div
                 data-testid="story-servicios"
                 style={{
-                  marginTop: 8, fontSize: 11, lineHeight: `${ALTO_LINEA_SERVICIOS}px`,
+                  marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.3)',
+                  fontSize: 11, lineHeight: `${ALTO_LINEA_SERVICIOS}px`,
                   color: 'rgba(255,255,255,0.88)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                   maxHeight: ALTO_LINEA_SERVICIOS * 2, overflow: 'hidden',
                 }}
               >
-                <span style={{
-                  display: 'inline-block', width: 14, height: 1, background: 'rgba(255,255,255,0.6)',
-                  verticalAlign: 'middle', marginRight: 6,
-                }} />
                 {servicios.map((nombre, idx) => (
                   <span key={idx}>
                     {idx > 0 && <span style={{ opacity: 0.5 }}> / </span>}
