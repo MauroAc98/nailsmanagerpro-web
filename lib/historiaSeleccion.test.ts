@@ -4,7 +4,9 @@ import type { CategoriaServicio } from '@/services/categoriaServicioService';
 import {
   agruparParaSeleccion,
   contarSeleccionados,
+  excluidosDesdeSeleccionados,
   filtrarPorSeleccion,
+  idsSeleccionadosDesdeExcluidos,
   quitarTodo,
   seleccionarTodo,
   toggleCategoria,
@@ -99,5 +101,38 @@ describe('filtrarPorSeleccion / contarSeleccionados', () => {
 
   it('cuenta los seleccionados', () => {
     expect(contarSeleccionados(servicios, new Set([1, 2]))).toBe(2);
+  });
+});
+
+describe('idsSeleccionadosDesdeExcluidos', () => {
+  it('sin excluidos devuelve [] (todos)', () => {
+    expect(idsSeleccionadosDesdeExcluidos(servicios, new Set())).toEqual([]);
+  });
+
+  it('con excluidos devuelve los disponibles no excluidos, en orden', () => {
+    expect(idsSeleccionadosDesdeExcluidos(servicios, new Set([2, 4]))).toEqual([1, 3]);
+  });
+
+  it('ignora excluidos que ya no están disponibles', () => {
+    expect(idsSeleccionadosDesdeExcluidos(servicios, new Set([999]))).toEqual([]);
+  });
+});
+
+describe('excluidosDesdeSeleccionados', () => {
+  it('[] significa todos: no excluye nada', () => {
+    expect(excluidosDesdeSeleccionados(servicios, [])).toEqual(new Set());
+  });
+
+  it('excluye todo lo disponible que no se eligió', () => {
+    expect(excluidosDesdeSeleccionados(servicios, [1, 3])).toEqual(new Set([2, 4]));
+  });
+
+  it('elegir todos equivale a no excluir nada', () => {
+    expect(excluidosDesdeSeleccionados(servicios, servicios.map(s => s.id))).toEqual(new Set());
+  });
+
+  it('ida y vuelta con idsSeleccionadosDesdeExcluidos', () => {
+    const excluidos = new Set([1, 4]);
+    expect(excluidosDesdeSeleccionados(servicios, idsSeleccionadosDesdeExcluidos(servicios, excluidos))).toEqual(excluidos);
   });
 });

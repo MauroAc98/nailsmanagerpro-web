@@ -61,6 +61,15 @@ describe('ProfesionalSheet', () => {
     expect(props.onClose).toHaveBeenCalled();
   });
 
+  it('sin equipoLabel no muestra la fila "Todo el equipo"', () => {
+    setup({ equipoLabel: undefined, equipoSubtitulo: undefined });
+    const filas = screen.getAllByRole('option');
+    expect(filas.map(f => f.textContent)).toEqual([
+      expect.stringContaining('Caro'), expect.stringContaining('Lau'),
+    ]);
+    expect(screen.queryByText('Todo el equipo')).toBeNull();
+  });
+
   it('Cerrar cierra sin seleccionar', () => {
     const props = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));

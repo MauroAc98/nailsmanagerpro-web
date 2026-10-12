@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ChevronLeft, ChevronRight, ImagePlus } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ChevronLeft, ChevronRight, ImagePlus, LayoutGrid } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PillToggle from '@/components/PillToggle';
-import SelectorProfesional from '@/components/SelectorProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { ProfesionalSheet } from '@/components/filtros/ProfesionalSheet';
+import { ServiciosSheet } from '@/components/filtros/ServiciosSheet';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { AvisoAmbar } from '@/components/filtros/AvisoAmbar';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useHistoriaPrecios } from '@/hooks/useHistoriaPrecios';
@@ -14,11 +18,12 @@ import { useServiciosStore } from '@/store/useServicioStore';
 import { HistoriaPreciosCanvas, BASE_WIDTH, BASE_HEIGHT } from '@/components/historia-precios/HistoriaPreciosCanvas';
 import { SelectorPlantilla } from '@/components/historia-precios/SelectorPlantilla';
 import { GestorFotos } from '@/components/historia-precios/GestorFotos';
-import { SeleccionServicios } from '@/components/historia-precios/SeleccionServicios';
 import { ModoHistorias } from '@/components/historia-precios/ModoHistorias';
 import { HistoriasFueraDePantalla } from '@/components/historia-precios/HistoriasFueraDePantalla';
 import { avisoNoEntran, etiquetaAccion, leyendaPosicion } from '@/lib/historia/exportarHistorias';
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
+import { excluidosDesdeSeleccionados, idsSeleccionadosDesdeExcluidos } from '@/lib/historiaSeleccion';
 
 // ─────────────────────────────────────────────
 // Responsive preview wrapper — HistoriaPreciosCanvas ALWAYS renders at its
@@ -43,9 +48,17 @@ function useCanvasScale() {
   return { width, height: BASE_HEIGHT * scale, scale };
 }
 
+// Tarjeta "Qué mostrar": filas Profesional / Servicios (igual que la historia de turnos).
+const tarjetaQueMostrarStyle: CSSProperties = {
+  width: '100%', background: colors.surface, border: `1px solid ${colors.divider}`,
+  borderRadius: 14, overflow: 'hidden',
+};
+
 export default function HistoriaPreciosPage() {
   const t      = useTranslations('historia.HistoriaPreciosPage');
   const tCard  = useTranslations('historia.TarjetaPrecios');
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
+  const [serviciosAbierto, setServiciosAbierto] = useState(false);
 
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { servicios, fetchServicios }         = useServiciosStore();
@@ -59,7 +72,7 @@ export default function HistoriaPreciosPage() {
   const {
     effectiveProfesionalId, serviciosActivos, serviciosDisponibles,
     excluidosIds, setExcluidosIds,
-    selectedProfesionalId, setSelectedProfesionalId,
+    setSelectedProfesionalId,
     modo, setModo, historias, cantidadPorCategoria, idxHistoria, historiaActual, irAnterior, irSiguiente,
     nombreNegocio, telefono,
     logoUrl, profesionalEncabezado, serie,
@@ -109,6 +122,16 @@ export default function HistoriaPreciosPage() {
   const nombreEncabezado           = profesionalEncabezado?.nombre?.trim() || undefined;
   const nombrePie                  = nombreNegocio;
   const serieEncabezado            = serie ?? undefined;
+  const opcionesProfesional = activeProfesionales.map(p => ({
+    id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+  }));
+  // Filtro de servicios: la sesión guarda los EXCLUIDOS, la hoja trabaja con
+  // los elegidos ([] = todos); ver lib/historiaSeleccion.
+  const hayFiltroServicios = serviciosActivos.length < serviciosDisponibles.length;
+  // "No entra en una imagen": se mide con la selección vigente (onFitChange),
+  // no con el borrador de la hoja; por eso el aviso va sobre Guardar/Compartir.
+  // Bloquea la exportación igual que antes (puedeCapturar exige entra).
+  const noEntra = hayFotos && modo === 'una' && !entra && !sinServicios;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.surface, paddingBottom: 60 }}>
@@ -136,23 +159,94 @@ export default function HistoriaPreciosPage() {
           paddingTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center',
           width: canvasWidth || '100%', margin: '0 auto',
         }}>
-          {/* Selector de profesional — invisible con ≤1 profesional activa,
-              mismo patrón que agenda/historia (ver useHistoriaPrecios:
-              selectedProfesionalId/effectiveProfesionalId). Permite que cada
-              profesional promocione sus propios precios/promos, no solo la
-              jefa (que es el default con el que arranca, ver
-              effectiveProfesionalId). */}
-          {mostrarSelectorProfesional && (
-            <SelectorProfesional
-              label={t('showPricesOf')}
-              // avatarUrl != avatar_url (ProfesionalOption vs Profesional) —
-              // sin este mapeo, Profesional pasa el typecheck (prop
-              // opcional) pero nunca muestra la foto real, solo iniciales.
-              profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
-              selectedId={selectedProfesionalId ?? effectiveProfesionalId}
-              onSelect={setSelectedProfesionalId}
-            />
+          {/* Qué mostrar — profesional (invisible con ≤1 activa) y servicios,
+              igual que la historia de turnos. Sin "Todo el equipo": la
+              historia de precios es por profesional y arranca en la jefa
+              (effectiveProfesionalId); la fila y la hoja usan esa MISMA
+              variable que el contenido (servicios, fotos, nota). */}
+          {(mostrarSelectorProfesional || serviciosDisponibles.length > 0) && (
+            <div style={{ width: '100%', marginBottom: 14 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: colors.muted }}>{t('whatToShow')}</p>
+              <div style={tarjetaQueMostrarStyle}>
+                {mostrarSelectorProfesional && profesionalEncabezado && (
+                  <FilaQueMostrar
+                    leading={(
+                      // avatarUrl != avatar_url (ProfesionalOption vs Profesional):
+                      // sin este mapeo solo se verían las iniciales.
+                      <AvatarProfesional
+                        nombre={profesionalEncabezado.nombre}
+                        apellido={profesionalEncabezado.apellido}
+                        color={profesionalEncabezado.color}
+                        avatarUrl={profesionalEncabezado.avatar_url}
+                      />
+                    )}
+                    titulo={t('professionalLabel')}
+                    valor={profesionalEncabezado.nombre}
+                    activo
+                    onClick={() => setProfesionalAbierto(true)}
+                  />
+                )}
+                {mostrarSelectorProfesional && profesionalEncabezado && serviciosDisponibles.length > 0 && (
+                  <div style={{ height: 1, background: colors.divider }} />
+                )}
+                {serviciosDisponibles.length > 0 && (
+                  <FilaQueMostrar
+                    leading={(
+                      <span style={{
+                        width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: colors.primarySoft,
+                      }}>
+                        <LayoutGrid size={16} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+                      </span>
+                    )}
+                    titulo={t('servicesLabel')}
+                    valor={hayFiltroServicios
+                      ? t('servicesSummary', { count: serviciosActivos.length, total: serviciosDisponibles.length })
+                      : t('servicesAll')}
+                    activo={hayFiltroServicios}
+                    onClick={() => setServiciosAbierto(true)}
+                  />
+                )}
+              </div>
+            </div>
           )}
+
+          <ProfesionalSheet
+            open={profesionalAbierto}
+            onClose={() => setProfesionalAbierto(false)}
+            onSelect={sel => { if (sel !== 'equipo') setSelectedProfesionalId(sel); }}
+            title={t('professionalLabel')}
+            cerrarLabel={t('closeSheet')}
+            profesionales={opcionesProfesional}
+            selectedId={effectiveProfesionalId}
+          />
+
+          <ServiciosSheet
+            open={serviciosAbierto}
+            onClose={() => setServiciosAbierto(false)}
+            title={t('servicesSheetTitle')}
+            servicios={serviciosDisponibles}
+            selectedIds={idsSeleccionadosDesdeExcluidos(serviciosDisponibles, excluidosIds)}
+            onConfirm={ids => setExcluidosIds(excluidosDesdeSeleccionados(serviciosDisponibles, ids))}
+            todosLabel={mostrarSelectorProfesional && profesionalEncabezado
+              ? t('servicesAllOf', { nombre: profesionalEncabezado.nombre })
+              : t('servicesAllTeam')}
+            fotoCategoria={id => categorias.find(c => c.id === id)?.fondo_historia_url}
+            ctaLabel={count => t('showServices', { count })}
+            detalle={s => (
+              <>
+                {s.es_promo && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', flexShrink: 0,
+                    background: colors.surfaceSubtle, color: colors.primaryDeep, borderRadius: 6, padding: '2px 6px',
+                  }}>{t('seleccionPromo')}</span>
+                )}
+                <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  {formatoPrecioTarjeta(s.precio)}
+                </span>
+              </>
+            )}
+          />
 
           {/* Preview + picker solo con al menos 1 foto subida — ninguna de
               las 8 plantillas actuales tiene minFotos:0 (a diferencia del
@@ -212,17 +306,6 @@ export default function HistoriaPreciosPage() {
                 <p style={{ margin: '10px 0 0', fontSize: 12.5, color: historiaActualNoEntra ? colors.amberFg : colors.subtext, textAlign: 'center' }}>
                   {leyendaPosicion({ actual: idxHistoria + 1, total: historias.length, nombre: historiaActual?.titulo ?? '', noEntra: historiaActualNoEntra }, t)}
                 </p>
-              )}
-
-              {/* Qué servicios entran en la historia — selección de sesión. */}
-              {serviciosDisponibles.length > 0 && (
-                <SeleccionServicios
-                  servicios={serviciosDisponibles}
-                  categorias={categorias}
-                  excluidos={excluidosIds}
-                  onChange={setExcluidosIds}
-                  noEntra={modo === 'una' && !entra}
-                />
               )}
 
               {/* Cómo repartir lo elegido: una historia o una por categoría. */}
@@ -371,7 +454,7 @@ export default function HistoriaPreciosPage() {
               {t('emptyPhotosState')}
             </p>
           )}
-          {hayFotos && !puedeCapturar && (
+          {hayFotos && !puedeCapturar && !noEntra && (
             <p style={{
               fontSize: 12, textAlign: 'center', margin: '16px 0 0',
               color: avisoVarias || (!sinServicios && !entra) ? colors.amberFg : colors.subtext,
@@ -381,7 +464,12 @@ export default function HistoriaPreciosPage() {
           )}
 
           {/* Footer actions */}
-          <div style={{ width: '100%', marginTop: 25, display: 'flex', gap: 10 }}>
+          {noEntra && (
+            <AvisoAmbar as="p" style={{ width: '100%', margin: '25px 0 0', boxSizing: 'border-box' }}>
+              {t('seleccionNoEntra')}
+            </AvisoAmbar>
+          )}
+          <div style={{ width: '100%', marginTop: noEntra ? 10 : 25, display: 'flex', gap: 10 }}>
             <button
               onClick={descargarImagen}
               disabled={botonesInactivos}

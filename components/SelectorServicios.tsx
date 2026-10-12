@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, ChevronDown, ChevronUp, Minus, Search, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
@@ -33,6 +33,8 @@ interface Props {
   todosLabel?: string;
   // Optional thumbnail per category (never for "Sin categoría").
   fotoCategoria?: (categoriaId: number) => string | null | undefined;
+  // Dato a la derecha de cada servicio; por defecto la duración.
+  detalle?: (servicio: Servicio) => ReactNode;
 }
 
 function EstadoCheckbox({ estado }: { estado: EstadoCategoria }) {
@@ -83,7 +85,7 @@ function RadioIndicator({ selected }: { selected: boolean }) {
   );
 }
 
-export function SelectorServicios({ servicios, mode, selectedIds, onChange, hideAll, todosLabel, fotoCategoria }: Props) {
+export function SelectorServicios({ servicios, mode, selectedIds, onChange, hideAll, todosLabel, fotoCategoria, detalle }: Props) {
   const t = useTranslations('common.SelectorServicios');
 
   // Mismo patrón que configuracion/servicios/page.tsx: `categoriasReady`
@@ -183,7 +185,9 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
         flex: 1, minWidth: 0, fontSize: 14, color: colors.text,
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>{s.nombre}</span>
-      <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0 }}>{formatearDuracion(s.duracion_minutos)}</span>
+      {detalle ? detalle(s) : (
+        <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0 }}>{formatearDuracion(s.duracion_minutos)}</span>
+      )}
     </button>
   );
 

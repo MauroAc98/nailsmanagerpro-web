@@ -39,6 +39,26 @@ describe('SelectorServicios — duración', () => {
   });
 });
 
+describe('SelectorServicios — detalle', () => {
+  const servicios = [servicio(1, 'Softgel', 90), servicio(2, 'Esmaltado', 45)];
+
+  it('con detalle reemplaza la duración por lo que devuelve', async () => {
+    renderWithProviders(
+      <SelectorServicios
+        servicios={servicios}
+        mode="multi"
+        selectedIds={[]}
+        onChange={vi.fn()}
+        detalle={s => <span>{`$${s.id}000`}</span>}
+      />,
+    );
+    expect(await screen.findByText('$1000')).toBeInTheDocument();
+    expect(screen.getByText('$2000')).toBeInTheDocument();
+    expect(screen.queryByText('1 h 30 min')).not.toBeInTheDocument();
+    expect(screen.queryByText('45 min')).not.toBeInTheDocument();
+  });
+});
+
 describe('SelectorServicios — todosLabel (multi)', () => {
   const servicios = [servicio(1, 'Softgel', 90), servicio(2, 'Esmaltado', 45)];
 

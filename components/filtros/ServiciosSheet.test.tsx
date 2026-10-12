@@ -32,6 +32,18 @@ describe('ServiciosSheet', () => {
     expect(cta()).toHaveTextContent('Ver 1');
   });
 
+  it('muestra la duración por defecto y el detalle cuando se pasa', async () => {
+    const { unmount } = setup();
+    await screen.findByText('Esmaltado');
+    expect(screen.getAllByText('30 min')).toHaveLength(2);
+    unmount();
+
+    setup({ detalle: s => <span>{`Precio ${s.id}`}</span> });
+    await screen.findByText('Esmaltado');
+    expect(screen.getByText('Precio 1')).toBeInTheDocument();
+    expect(screen.queryByText('30 min')).not.toBeInTheDocument();
+  });
+
   it('Cancelar cierra sin confirmar', async () => {
     const { props } = setup();
     await screen.findByText('Esmaltado');

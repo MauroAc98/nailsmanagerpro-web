@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { BottomSheet } from '@/components/BottomSheet';
 import { SelectorServicios } from '@/components/SelectorServicios';
@@ -24,6 +24,8 @@ interface Props {
   fotoCategoria?: (categoriaId: number) => string | null | undefined;
   // Non-null => amber notice above the selector and the CTA is disabled.
   aviso?: (draftIds: number[]) => string | null;
+  // Dato a la derecha de cada servicio (por defecto la duración).
+  detalle?: (servicio: Servicio) => ReactNode;
 }
 
 const headerButton = {
@@ -40,7 +42,7 @@ export function ServiciosSheet(props: Props) {
 }
 
 function ServiciosSheetAbierta({
-  onClose, title, servicios, selectedIds, onConfirm, ctaLabel, todosLabel, fotoCategoria, aviso,
+  onClose, title, servicios, selectedIds, onConfirm, ctaLabel, todosLabel, fotoCategoria, aviso, detalle,
 }: Props) {
   const t = useTranslations('common.ServiciosSheet');
   const [draft, setDraft] = useState<number[]>(selectedIds);
@@ -101,6 +103,7 @@ function ServiciosSheetAbierta({
               onChange={setDraft}
               todosLabel={todosLabel}
               fotoCategoria={fotoCategoria}
+              detalle={detalle}
             />
           </div>
 
