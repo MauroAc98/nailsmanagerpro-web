@@ -80,11 +80,37 @@ describe('StoryCanvas — encabezado A2 (servicios elegidos)', () => {
     expect(screen.queryByText(/TURNOS DISPONIBLES/)).not.toBeInTheDocument();
   });
 
-  it('con filtroServicios el logo va a la derecha del texto', () => {
+  it('con filtroServicios el encabezado mantiene el tamaño de producción: logo a la izquierda, titular de 18px', () => {
     renderCanvas('https://x/logo.png', unDia, 'Gabriela', null, filtro);
     const logo = document.querySelector('img[src="https://x/logo.png"]') as HTMLElement;
     const titular = screen.getByText('Uñas y Pestañas');
-    expect(titular.compareDocumentPosition(logo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(titular.compareDocumentPosition(logo) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(logo.style.width).toBe('44px');
+    expect(Number.parseFloat(titular.style.fontSize)).toBeLessThanOrEqual(18);
+  });
+
+  it('en quincena los servicios ocupan 1 línea; en semana o día, hasta 2', () => {
+    const quincena: DisponibilidadDia[] = Array.from({ length: 15 }, (_, i) => ({
+      fecha: `2026-10-${String(i + 1).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
+    }));
+    const { unmount } = renderCanvas(null, quincena, 'Gabriela', null, filtro);
+    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('16px');
+    unmount();
+    renderCanvas(null, variosDias, 'Gabriela', null, filtro);
+    expect(screen.getByTestId('story-servicios').style.maxHeight).toBe('32px');
+  });
+
+  it('en quincena encabezado + servicios + margen suman lo mismo que hoy (la lista no se mueve)', () => {
+    const quincena: DisponibilidadDia[] = Array.from({ length: 15 }, (_, i) => ({
+      fecha: `2026-10-${String(i + 1).padStart(2, '0')}`, slots: [{ hora: '10hs', libre: true }],
+    }));
+    const margen = () => Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
+    const { unmount } = renderCanvas(null, quincena, 'Gabriela');
+    const sin = margen();
+    unmount();
+    renderCanvas(null, quincena, 'Gabriela', null, filtro);
+    // Línea de servicios: 8px de separación + 16px de alto.
+    expect(margen()).toBe(sin - 24);
   });
 
   it('vista de equipo (sin profesional): la línea no lleva "con"', () => {

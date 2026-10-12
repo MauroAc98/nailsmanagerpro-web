@@ -12,7 +12,7 @@ import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
-import { contarLineasServicios, medirTextoServicios } from '@/lib/historiaServicios';
+import { contarLineasServicios, maxLineasServicios, medirTextoServicios } from '@/lib/historiaServicios';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -158,17 +158,33 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  // Con servicios (A2) la línea de servicios ocupa ese espacio: el margen baja
-  // en el alto de las líneas que usa (1 o 2), nunca por debajo de 16px (mock
-  // A2 aprobado). Mismo reparto de líneas que el aviso de la hoja de servicios.
+  // Con servicios la línea de servicios sale de ese margen. En quincena
+  // (1 línea máx.) encabezado + servicios + margen suman lo mismo que hoy, así
+  // la lista no se mueve. En semana/día (2 líneas máx.) sobra alto: el margen
+  // baja pero no de 16px. Mismo reparto de líneas que el aviso de la hoja.
   const servicios = filtroServicios?.servicios ?? [];
   const conServicios = servicios.length > 0;
   const ALTO_LINEA_SERVICIOS = 16;
-  const lineasServicios = Math.min(2, contarLineasServicios(servicios, canvasWidth - 36, medirTextoServicios));
+  const SEPARACION_SERVICIOS = 8;
+  const maxLineas = maxLineasServicios(dias.length);
+  const lineasServicios = Math.min(maxLineas, contarLineasServicios(servicios, canvasWidth - 36, medirTextoServicios));
+  const altoServicios = conServicios ? SEPARACION_SERVICIOS + lineasServicios * ALTO_LINEA_SERVICIOS : 0;
   const bodyMargenBase = Math.round(canvasHeight * 0.06);
-  const bodyMargenTop = conServicios
-    ? Math.max(16, bodyMargenBase - lineasServicios * ALTO_LINEA_SERVICIOS)
-    : bodyMargenBase;
+  const bodyMargenTop = !conServicios
+    ? bodyMargenBase
+    : maxLineas === 1
+      ? Math.max(4, bodyMargenBase - altoServicios)
+      : Math.max(16, bodyMargenBase - altoServicios);
+
+  // La franja desenfocada del encabezado cubre la insignia (44px) + una línea
+  // de servicios; con 2 líneas (semana/día) se estira lo que sobresale.
+  const franjaEncabezado = tituloZonaAlto
+    + Math.max(0, 44 + altoServicios - Math.round(canvasHeight * 0.10));
+
+  const tituloFila = conServicios && filtroServicios ? filtroServicios.titulo : tituloPrincipal;
+  const lineaFila = conServicios
+    ? `${[tituloPrincipal, lineaProfesional].filter(Boolean).join(' ')} · ${titulo}`
+    : lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo;
 
   // Con logo cargado, la foto del negocio ocupa este mismo recuadro (mismo
   // tamaño/radio que el chip de fecha) en los 3 modos — decisión 2026-09-30
@@ -249,7 +265,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             (mismo object-fit:cover que la foto base) y el wrapper con
             overflow:hidden solo destapa la franja correspondiente, así el
             blur queda alineado píxel a píxel con la foto de abajo. */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: tituloZonaAlto, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: franjaEncabezado, overflow: 'hidden' }}>
           <img
             src={fondoUri ?? '/default_bg.jpg'}
             alt=""
@@ -297,31 +313,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
             <div>
-            {conServicios && filtroServicios ? (
-              // Con servicios: titular (categoría) y línea "Turnos disponibles
-              // con X · fecha" a la izquierda, logo a la derecha (opción 2 del
-              // canvas, elegida 2026-10-11 en lugar del renglón en mayúsculas).
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <FitText
-                    text={filtroServicios.titulo}
-                    maxFontSize={30}
-                    minFontSize={14}
-                    style={{
-                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-                      letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                    }}
-                  />
-                  <span style={{
-                    display: 'block', marginTop: 6, fontFamily: agendaFontSerif, fontStyle: 'italic',
-                    fontSize: 13, color: 'rgba(255,255,255,0.88)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                  }}>
-                    {`${[tituloPrincipal, lineaProfesional].filter(Boolean).join(' ')} · ${titulo}`}
-                  </span>
-                </div>
-                {insignia}
-              </div>
-            ) : (
+            {/* Con servicios elegidos el encabezado mantiene exactamente el
+                tamaño de producción (insignia 44px, titular 18px, línea 11px):
+                tiene que entrar en la franja desenfocada y una quincena no
+                tiene alto de sobra. Solo cambian los textos: la categoría va
+                en el titular y "Turnos disponibles con X · fecha" en la línea
+                chica (canvas con medidas reales, aprobado 2026-10-11). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
               {insignia}
 
@@ -332,7 +329,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     (maxFontSize 10) — el título nunca queda más chico que la
                     info de los turnos. */}
                 <FitText
-                  text={tituloPrincipal}
+                  text={tituloFila}
                   maxFontSize={18}
                   minFontSize={13}
                   style={{
@@ -344,20 +341,18 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   display: 'block', marginTop: 4, fontSize: 11, fontWeight: 400,
                   color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                 }}>
-                  {lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo}
+                  {lineaFila}
                 </span>
               </div>
             </div>
-            )}
 
             {conServicios && (
               <div
                 data-testid="story-servicios"
                 style={{
-                  marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.3)',
-                  fontSize: 11, lineHeight: `${ALTO_LINEA_SERVICIOS}px`,
+                  marginTop: SEPARACION_SERVICIOS, fontSize: 11, lineHeight: `${ALTO_LINEA_SERVICIOS}px`,
                   color: 'rgba(255,255,255,0.88)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                  maxHeight: ALTO_LINEA_SERVICIOS * 2, overflow: 'hidden',
+                  maxHeight: ALTO_LINEA_SERVICIOS * maxLineas, overflow: 'hidden',
                 }}
               >
                 {servicios.map((nombre, idx) => (

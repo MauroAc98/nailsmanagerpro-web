@@ -50,12 +50,20 @@ export function contarLineasServicios(
   return lineas;
 }
 
-export function serviciosEntranEnDosLineas(
+export function serviciosEntran(
   nombres: string[],
+  maxLineas: number,
   anchoDisponible: number,
   medir: (texto: string) => number,
 ): boolean {
-  return contarLineasServicios(nombres, anchoDisponible, medir) <= 2;
+  return contarLineasServicios(nombres, anchoDisponible, medir) <= maxLineas;
+}
+
+// Una quincena (más de 7 días) no tiene alto de sobra: la línea de servicios
+// sale del margen entre el encabezado y la lista, y ahí entra una sola. En
+// semana o día sobra alto y pueden ir dos.
+export function maxLineasServicios(cantidadDias: number): number {
+  return cantidadDias > 7 ? 1 : 2;
 }
 
 let ctx: CanvasRenderingContext2D | null | undefined;

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ANCHO_LINEA_SERVICIOS,
   medirTextoServicios,
-  serviciosEntranEnDosLineas,
+  serviciosEntran,
+  maxLineasServicios,
   tituloFiltroServicios,
 } from './historiaServicios';
 
@@ -40,34 +41,47 @@ describe('tituloFiltroServicios', () => {
   });
 });
 
-describe('serviciosEntranEnDosLineas', () => {
+describe('serviciosEntran', () => {
   const medir = (t: string) => t.length * 6;
 
   it('lista vacía entra', () => {
-    expect(serviciosEntranEnDosLineas([], 100, medir)).toBe(true);
+    expect(serviciosEntran([], 2, 100, medir)).toBe(true);
   });
 
   it('entra en una línea', () => {
-    expect(serviciosEntranEnDosLineas(['Esmaltado', 'Kapping'], 300, medir)).toBe(true);
+    expect(serviciosEntran(['Esmaltado', 'Kapping'], 2, 300, medir)).toBe(true);
   });
 
   it('entra en dos líneas', () => {
     // "AAAAAAAAAA" = 60 px; con " / " (18) -> dos nombres = 138 > 100.
-    expect(serviciosEntranEnDosLineas(['AAAAAAAAAA', 'BBBBBBBBBB'], 100, medir)).toBe(true);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 2, 100, medir)).toBe(true);
   });
 
   it('necesita tres líneas', () => {
-    expect(serviciosEntranEnDosLineas(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 100, medir)).toBe(false);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 100, medir)).toBe(false);
   });
 
   it('un nombre más ancho que la línea no entra', () => {
-    expect(serviciosEntranEnDosLineas(['A'.repeat(30)], 100, medir)).toBe(false);
+    expect(serviciosEntran(['A'.repeat(30)], 2, 100, medir)).toBe(false);
   });
 
   it('cuenta el separador entre nombres de la misma línea', () => {
     // 2 x 60 + 18 = 138 entra justo en 138, no en 137 (pero sí en 2 líneas).
-    expect(serviciosEntranEnDosLineas(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 138, medir)).toBe(true);
-    expect(serviciosEntranEnDosLineas(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 137, medir)).toBe(false);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 138, medir)).toBe(true);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 137, medir)).toBe(false);
+  });
+  it('con máximo 1 línea, lo que pide dos líneas no entra', () => {
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 100, medir)).toBe(false);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 138, medir)).toBe(true);
+  });
+});
+
+describe('maxLineasServicios', () => {
+  it('quincena (más de 7 días): 1 línea; semana o día: 2', () => {
+    expect(maxLineasServicios(16)).toBe(1);
+    expect(maxLineasServicios(8)).toBe(1);
+    expect(maxLineasServicios(7)).toBe(2);
+    expect(maxLineasServicios(1)).toBe(2);
   });
 });
 
