@@ -15,10 +15,10 @@ export interface DatosPlantillaWhatsapp {
 }
 
 const avisoUnidireccional = (profesional: string): string =>
-  `⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *${profesional} no lo recibe y no puede contestarte.*`;
+  `⚠️ No responder a este mensaje: *${profesional}* no lo recibe.`;
 
 const lineaContacto = (telefono: string): string =>
-  `Para consultas o cambios de turno, comunicate al ${telefono} con al menos 24 hs de anticipación.`;
+  `📲 Para consultas o cambios, avisar al ${telefono} con 24 hs de anticipación.`;
 
 const armarCuerpo = (lineas: (string | null)[]): string =>
   lineas
@@ -56,15 +56,11 @@ export function cuerpoPlantillaWhatsapp(
     ? `Hola ${d.nombreCliente}, te recordamos tu turno de mañana en *${d.negocio}.*`
     : `Hola ${d.nombreCliente}, tu turno en *${d.negocio}* quedó confirmado.`;
 
-  // recordatorio_turno: 🕒 sin "hs"; confirmacion_turno: 🕒 con "hs".
-  const lineaFechaHora = tipo === 'recordatorio'
-    ? `🗓️ ${d.fecha} · 🕒 ${d.hora}`
-    : `🗓️ ${d.fecha} · 🕒 ${d.hora} hs`;
-
   return armarCuerpo([
     encabezado,
     '',
-    lineaFechaHora,
+    // Ambas plantillas llevan "hs" después de la hora.
+    `🗓️ ${d.fecha} · 🕒 ${d.hora} hs`,
     `✨ ${d.servicios}`,
     d.direccion ? `📍 ${d.direccion}` : null,
     '',
@@ -74,14 +70,16 @@ export function cuerpoPlantillaWhatsapp(
   ]);
 }
 
-// El aviso "Desde este número solo se envían avisos…" solo es cierto en el
-// envío automático (número de avisos de Turnetto). Un envío manual por wa.me
-// sale del WhatsApp del propio salón, donde el cliente SÍ puede responder.
+// El aviso "No responder a este mensaje…" solo es cierto en el envío
+// automático (número de avisos de Turnetto). Un envío manual por wa.me sale
+// del WhatsApp del propio salón, donde el cliente SÍ puede responder.
 // Para el texto ya armado por el backend (mensajeLegible), que trae el mismo
 // párrafo; el texto armado acá lo omite con `conAvisoUnidireccional: false`.
+// Reconoce también la redacción VIEJA ("Desde este número solo se envían
+// avisos.") porque los mensajes ya guardados en la base la conservan.
 export function quitarAvisoUnidireccional(texto: string): string {
   return texto
-    .replace(/^⚠️ Desde este número solo se envían avisos\..*$/m, '')
+    .replace(/^⚠️ (?:Desde este número solo se envían avisos\.|No responder a este mensaje:).*$/m, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
