@@ -366,7 +366,7 @@
     "thisService": "este servicio",
     "thisPerson": "Esa persona",
     "rowError": "Revisá esta fila: el servicio o quién lo hace no es válido.",
-    "priceSavings": "Suma {suma} · ahorrás {ahorro}",
+    "priceSavings": "Suma {suma} · {ahorro} menos que por separado",
     "priceSumOnly": "Suma de los servicios: {suma}"
   },
   "SelectorCategoriaServicio": {

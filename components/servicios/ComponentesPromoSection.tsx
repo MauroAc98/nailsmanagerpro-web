@@ -101,7 +101,9 @@ export default function ComponentesPromoSection({
   const hayServicios = componentes.some(c => c.servicioId !== null);
   const precioMostrado = precioComponentes.trim() && !Number.isNaN(parseFloat(precioComponentes))
     ? parseFloat(precioComponentes) : sumaComponentes;
-  const ahorro = ahorroPromo(sumaComponentes, precioComponentes);
+  // "Menos que por separado" solo dice algo con 2+ servicios elegidos.
+  const variosServicios = componentes.filter(c => c.servicioId !== null).length > 1;
+  const ahorro = variosServicios ? ahorroPromo(sumaComponentes, precioComponentes) : 0;
   const enlaceStyle = {
     background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: colors.primaryDeep,
   } as const;

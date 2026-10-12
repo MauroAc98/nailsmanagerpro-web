@@ -272,13 +272,18 @@ describe('NuevoServicioPage — promo first, duration and price only when they a
     expect(precio).toHaveValue(null);
     expect(precio).toHaveAttribute('placeholder', '13000');
     expect(screen.getByText(/Suma de los servicios: \$13\.?000,00/)).toBeInTheDocument();
-    expect(screen.queryByText(/ahorrás/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/menos que por separado/)).not.toBeInTheDocument();
 
+    // Con un solo servicio no hay "por separado" con qué comparar.
     fireEvent.change(precio, { target: { value: '10000' } });
-    expect(screen.getByText(/Suma \$13\.?000,00 · ahorrás \$3\.?000,00/)).toBeInTheDocument();
-    fireEvent.change(precio, { target: { value: '15000' } });
-    expect(screen.queryByText(/ahorrás/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Suma de los servicios: \$13\.?000,00/)).toBeInTheDocument();
+    expect(screen.queryByText(/menos que por separado/)).not.toBeInTheDocument();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Agregar servicio' }))[0]);
+    await elegirServicio('Semis pies');
+    expect(screen.getByText(/Suma \$22\.?000,00 · \$12\.?000,00 menos que por separado/)).toBeInTheDocument();
+    fireEvent.change(precio, { target: { value: '25000' } });
+    expect(screen.queryByText(/menos que por separado/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Suma de los servicios: \$22\.?000,00/)).toBeInTheDocument();
   });
 });
 
