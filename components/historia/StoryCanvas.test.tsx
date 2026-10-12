@@ -97,12 +97,17 @@ describe('StoryCanvas — servicios elegidos (M1: categoría en el título + baj
     expect(screen.queryByTestId('story-servicios-linea')).not.toBeInTheDocument();
   });
 
-  it('el "·" viaja con el servicio siguiente y cada servicio no se parte', () => {
-    renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    const items = screen.getByTestId('story-servicios').children;
-    expect(items[0].textContent).toBe('ESMALTADO');
-    expect(items[1].textContent?.startsWith('·')).toBe(true);
-    expect((items[1] as HTMLElement).style.whiteSpace).toBe('nowrap');
+  it('cada renglón de la bajada es un bloque sin cortes y ninguno empieza ni termina en "·"', () => {
+    renderCanvas(null, unDia, 'Gabriela', null, ocho);
+    const renglones = Array.from(screen.getByTestId('story-servicios').children) as HTMLElement[];
+    expect(renglones.length).toBeGreaterThan(0);
+    expect(renglones.length).toBeLessThanOrEqual(2);
+    for (const r of renglones) {
+      expect(r.style.whiteSpace).toBe('nowrap');
+      const texto = (r.textContent ?? '').trim();
+      expect(texto.startsWith('·')).toBe(false);
+      expect(texto.endsWith('·')).toBe(false);
+    }
   });
 
   it('en quincena el alto extra sale del margen y de los espacios entre filas', () => {

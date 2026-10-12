@@ -94,7 +94,7 @@ function HistoriaContent() {
     modo, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
-    canvasRef, canvasWidth, canvasHeight,
+    canvasRef, canvasWidth, canvasHeight, escalaVista,
     esEquipo, setProfesionalSel, effectiveProfesionalId,
     servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos,
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
@@ -141,6 +141,9 @@ function HistoriaContent() {
     : '';
   // Mismo ancho que la bajada de servicios en el canvas (padding 18px por lado).
   const anchoLineaServicios = Math.max(0, canvasWidth - 36);
+  // Tamaño en pantalla de la vista previa (la historia mide siempre canvasWidth x canvasHeight).
+  const vistaAncho = canvasWidth * escalaVista;
+  const vistaAlto  = canvasHeight * escalaVista;
   const entranEnLaBajada = (nombres: string[]) => serviciosEntran(
     nombres, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios,
   );
@@ -183,11 +186,11 @@ function HistoriaContent() {
         </h1>
       </div>
 
-      {/* width = canvasWidth, ver comentario original: todo lo que use
+      {/* width = vistaAncho (ancho en pantalla de la historia): todo lo que use
           width:'100%' abajo queda tan ancho como la imagen. */}
       <div style={{
         paddingTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        width: canvasWidth || '100%', margin: '0 auto',
+        width: vistaAncho, margin: '0 auto',
       }}>
 
         {/* Mode tabs — siempre visibles: es la única forma de salir de un
@@ -329,6 +332,13 @@ function HistoriaContent() {
               <p style={{ fontSize: 11, color: colors.subtext, margin: 0 }}>{t('visibleSlotsCount', { count: horariosVisibles })}</p>
             </div>
 
+            {/* Vista previa escalada: el contenedor de afuera mide lo que
+                ocupa en pantalla y el de adentro escala la historia, que se
+                dibuja siempre a tamaño fijo. El nodo exportado (canvasRef)
+                no lleva transform, así la imagen sale igual en cualquier
+                celular. */}
+            <div style={{ width: vistaAncho, height: vistaAlto, overflow: 'hidden', borderRadius: 16 * escalaVista }}>
+            <div style={{ width: canvasWidth, height: canvasHeight, transform: `scale(${escalaVista})`, transformOrigin: 'top left' }}>
             <StoryCanvas
               ref={canvasRef}
               titulo={titulo}
@@ -345,7 +355,10 @@ function HistoriaContent() {
               onMoverTexto={actualizarPosicion}
               onResizeTexto={redimensionarTexto}
               onEditarTexto={iniciarEdicionDesdeCanvas}
+              escala={escalaVista}
             />
+            </div>
+            </div>
 
             {/* Editor: Agenda / Texto / Fondo */}
             <div style={{
@@ -482,7 +495,7 @@ function HistoriaContent() {
           </>
         ) : (
           <div style={{
-            width: canvasWidth, height: canvasHeight / 3,
+            width: vistaAncho, height: vistaAlto / 3,
             background: colors.surfaceSubtle, borderRadius: 20, border: `1px solid ${colors.border}`,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 12, marginBottom: 15,

@@ -8,6 +8,10 @@ interface Props {
   onMover:   (id: string, x: number, y: number) => void;
   onResize:  (id: string, fontSize: number) => void;
   onEditar:  (id: string) => void;
+  // Escala de la vista previa (la historia se dibuja a tamaño fijo y se
+  // muestra escalada): el movimiento del dedo se divide por ella para que el
+  // texto siga al dedo en coordenadas de la historia.
+  escala?:   number;
 }
 
 const MIN_FONT_SIZE = 8;
@@ -28,7 +32,7 @@ const HIT_PADDING = 28;
 // the ratio between the current and initial two-finger distance scales
 // fontSize, mirroring the native pinch-zoom gesture users already know.
 // ─────────────────────────────────────────────
-export function TextoDraggable({ item, onMover, onResize, onEditar }: Props) {
+export function TextoDraggable({ item, onMover, onResize, onEditar, escala = 1 }: Props) {
   const [dragging,  setDragging]  = useState(false);
   const [pinching,  setPinching]  = useState(false);
   const [pos,       setPos]       = useState({ x: item.x, y: item.y });
@@ -84,9 +88,11 @@ export function TextoDraggable({ item, onMover, onResize, onEditar }: Props) {
     }
 
     if (!dragging) return;
-    const dx = e.clientX - startPointer.current.px;
-    const dy = e.clientY - startPointer.current.py;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved.current = true;
+    const dxPantalla = e.clientX - startPointer.current.px;
+    const dyPantalla = e.clientY - startPointer.current.py;
+    if (Math.abs(dxPantalla) > 3 || Math.abs(dyPantalla) > 3) moved.current = true;
+    const dx = dxPantalla / escala;
+    const dy = dyPantalla / escala;
     setPos({ x: startPos.current.x + dx, y: startPos.current.y + dy });
   };
 

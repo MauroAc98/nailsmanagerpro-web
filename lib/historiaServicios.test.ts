@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   medirTextoServicios,
+  repartirEnRenglones,
   serviciosEntran,
   tituloFiltroServicios,
 } from './historiaServicios';
@@ -71,6 +72,19 @@ describe('serviciosEntran', () => {
   it('con máximo 1 línea, lo que pide dos líneas no entra', () => {
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 100, medir)).toBe(false);
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 144, medir)).toBe(true);
+  });
+});
+
+describe('repartirEnRenglones', () => {
+  const medir = (t: string) => t.length * 6;
+
+  it('arma los renglones con los nombres de cada uno (el separador solo va entre nombres del mismo renglón)', () => {
+    // Ancho 100: "AAAAAAAAAA" (60) + " ·  " (24) + "BBB" (18) = 102 > 100 -> baja.
+    expect(repartirEnRenglones(['AAAAAAAAAA', 'BBB', 'CC'], 100, medir)).toEqual([['AAAAAAAAAA'], ['BBB', 'CC']]);
+  });
+
+  it('lista vacía: sin renglones', () => {
+    expect(repartirEnRenglones([], 100, medir)).toEqual([]);
   });
 });
 

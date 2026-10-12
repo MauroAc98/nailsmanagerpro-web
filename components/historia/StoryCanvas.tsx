@@ -12,7 +12,7 @@ import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
-import { contarLineasServicios, ESPACIADO_LINEA_SERVICIOS, MAX_LINEAS_SERVICIOS, medirTextoServicios } from '@/lib/historiaServicios';
+import { ESPACIADO_LINEA_SERVICIOS, MAX_LINEAS_SERVICIOS, medirTextoServicios, repartirEnRenglones } from '@/lib/historiaServicios';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -60,6 +60,9 @@ interface Props {
   onMoverTexto:   (id: string, x: number, y: number) => void;
   onResizeTexto:  (id: string, fontSize: number) => void;
   onEditarTexto:  (id: string) => void;
+  // Escala con la que se muestra en pantalla (la historia se dibuja a tamaño
+  // fijo, ver lib/historia/formatoHistoria): solo la usa el arrastre de textos.
+  escala?:        number;
 }
 
 // ─────────────────────────────────────────────
@@ -67,7 +70,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, filtroServicios, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, filtroServicios, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto, escala = 1 },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -168,9 +171,12 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const ALTO_RENGLON_SERVICIOS = 13;
   const SEPARACION_BAJADA = 12;
   const MARGEN_CON_SERVICIOS = 18;
-  const lineasServicios = conServicios
-    ? Math.min(MAX_LINEAS_SERVICIOS, contarLineasServicios(servicios, canvasWidth - 36, medirTextoServicios))
-    : 0;
+  // Mismos renglones que mide el aviso de la hoja: el "·" solo va entre
+  // servicios del mismo renglón, nunca al principio ni al final de uno.
+  const renglonesServicios = conServicios
+    ? repartirEnRenglones(servicios, canvasWidth - 36, medirTextoServicios).slice(0, MAX_LINEAS_SERVICIOS)
+    : [];
+  const lineasServicios = renglonesServicios.length;
   const altoFranja = conServicios ? SEPARACION_BAJADA + lineasServicios * ALTO_RENGLON_SERVICIOS : 0;
   const bodyMargenBase = Math.round(canvasHeight * 0.06);
   const bodyMargenTop = conServicios ? MARGEN_CON_SERVICIOS : bodyMargenBase;
@@ -353,17 +359,16 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 }}
               >
                 {/* Mayúsculas en el texto (no text-transform) para que la
-                    medición del aviso y la imagen exportada coincidan. El "·"
-                    va dentro del servicio siguiente: ningún renglón termina en
-                    un separador. */}
-                {servicios.map((nombre, idx) => (
-                  <Fragment key={idx}>
-                    {idx > 0 && ' '}
-                    <span style={{ whiteSpace: 'nowrap' }}>
-                      {idx > 0 && <span style={{ opacity: 0.55 }}>{'·  '}</span>}
-                      {nombre.toUpperCase()}
-                    </span>
-                  </Fragment>
+                    medición del aviso y la imagen exportada coincidan. */}
+                {renglonesServicios.map((renglon, r) => (
+                  <div key={r} style={{ whiteSpace: 'nowrap' }}>
+                    {renglon.map((nombre, idx) => (
+                      <Fragment key={idx}>
+                        {idx > 0 && <span style={{ opacity: 0.55 }}> ·&nbsp;&nbsp;</span>}
+                        <span>{nombre.toUpperCase()}</span>
+                      </Fragment>
+                    ))}
+                  </div>
                 ))}
               </div>
             )}
@@ -458,6 +463,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             onMover={onMoverTexto}
             onResize={onResizeTexto}
             onEditar={onEditarTexto}
+            escala={escala}
           />
         ))}
       </div>

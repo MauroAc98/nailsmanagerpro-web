@@ -21,31 +21,39 @@ export function tituloFiltroServicios(
   return `${nombres.slice(0, -1).join(', ')} ${textos.y} ${nombres[nombres.length - 1]}`;
 }
 
-// Reparto voraz en líneas: un nombre nunca se parte; el separador cuenta
-// entre dos nombres de la misma línea.
+// Reparto voraz en renglones: un nombre nunca se parte y el separador solo
+// cuenta (y se dibuja) entre nombres del mismo renglón. StoryCanvas dibuja
+// estos mismos renglones, así la imagen y el aviso de la hoja coinciden.
+export function repartirEnRenglones(
+  nombres: string[],
+  anchoDisponible: number,
+  medir: (texto: string) => number,
+): string[][] {
+  const sep = medir(SEPARADOR);
+  const renglones: string[][] = [];
+  let usado = 0;
+  for (const nombre of nombres) {
+    const w = medir(nombre);
+    const actual = renglones[renglones.length - 1];
+    if (actual && usado + sep + w <= anchoDisponible) {
+      actual.push(nombre);
+      usado += sep + w;
+    } else {
+      renglones.push([nombre]);
+      usado = w;
+    }
+  }
+  return renglones;
+}
+
 // Devuelve Infinity si un nombre solo ya no entra en el ancho.
 export function contarLineasServicios(
   nombres: string[],
   anchoDisponible: number,
   medir: (texto: string) => number,
 ): number {
-  if (nombres.length === 0) return 0;
-  const sep = medir(SEPARADOR);
-  let lineas = 1;
-  let usado = 0;
-  for (const nombre of nombres) {
-    const w = medir(nombre);
-    if (w > anchoDisponible) return Infinity;
-    if (usado === 0) {
-      usado = w;
-    } else if (usado + sep + w <= anchoDisponible) {
-      usado += sep + w;
-    } else {
-      lineas += 1;
-      usado = w;
-    }
-  }
-  return lineas;
+  if (nombres.some(n => medir(n) > anchoDisponible)) return Infinity;
+  return repartirEnRenglones(nombres, anchoDisponible, medir).length;
 }
 
 export function serviciosEntran(

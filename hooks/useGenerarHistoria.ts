@@ -13,6 +13,7 @@ import type { Servicio } from '@/services/servicioService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
 import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
+import { HISTORIA_ALTO, HISTORIA_ANCHO, PIXEL_RATIO_EXPORT, escalaVistaPrevia } from '@/lib/historia/formatoHistoria';
 import { useFotoEncabezado } from '@/hooks/useFotoEncabezado';
 
 export type Modo = 'dia' | 'semana' | 'mes';
@@ -29,12 +30,6 @@ export interface TextoLibre {
   fontSize: number;
 }
 
-// Ancho de exportación fijo — 1080px es la resolución estándar recomendada
-// por Instagram Stories y WhatsApp Estados (formato 9:16). canvasWidth es
-// puramente para el preview on-screen (viewport-relative, tope 420 CSS px);
-// sin este target fijo, toBlob() con pixelRatio:2 exportaba como máximo
-// 840x1493, por debajo de lo que ambas plataformas esperan.
-const STORY_EXPORT_WIDTH = 1080;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -223,20 +218,22 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const canvasRef      = useRef<HTMLDivElement>(null);
 
   // ─────────────────────────────────────────────
-  // Canvas size — igual que RN (SCREEN_WIDTH * 0.85), no un ancho fijo.
-  // Un fixed width no se adapta a celulares reales de distinto ancho;
-  // acá se recalcula con el viewport real, con un tope para desktop.
+  // Canvas size — la historia se dibuja SIEMPRE a HISTORIA_ANCHO x
+  // HISTORIA_ALTO (formato de historia 9:16, igual en cualquier celular) y se
+  // muestra escalada al 85% del ancho de pantalla (tope 420px). Antes se
+  // dibujaba al ancho de la pantalla y, con fuentes de tamaño fijo, en un
+  // celular chico el pie terminaba tapado por la barra de Instagram.
   // ─────────────────────────────────────────────
-  const [canvasWidth, setCanvasWidth] = useState(0);
+  const canvasWidth  = HISTORIA_ANCHO;
+  const canvasHeight = HISTORIA_ALTO;
+  const [escalaVista, setEscalaVista] = useState(1);
 
   useEffect(() => {
-    const update = () => setCanvasWidth(Math.min(420, window.innerWidth * 0.85));
+    const update = () => setEscalaVista(escalaVistaPrevia(window.innerWidth));
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
-
-  const canvasHeight = (canvasWidth * 16) / 9;
 
   // Cargar el fondo fijo guardado como default cada vez que cambia la
   // profesional "efectiva" (selección explícita, o la única activa).
@@ -735,13 +732,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
       setFondoUri(dataUrl);
     }
 
-    // pixelRatio calculado, no fijo — así el PNG exportado siempre sale a
-    // STORY_EXPORT_WIDTH de ancho real sin importar cuánto mida el preview
-    // en este viewport puntual.
-    const pixelRatio = STORY_EXPORT_WIDTH / canvasRef.current.getBoundingClientRect().width;
-
-    await toBlob(canvasRef.current, { pixelRatio });
-    return toBlob(canvasRef.current, { pixelRatio });
+    // El nodo mide siempre HISTORIA_ANCHO (la vista previa escala un
+    // contenedor de afuera, no el nodo): x3 da exactamente 1080 x 1920.
+    await toBlob(canvasRef.current, { pixelRatio: PIXEL_RATIO_EXPORT });
+    return toBlob(canvasRef.current, { pixelRatio: PIXEL_RATIO_EXPORT });
   }, []);
 
   const descargarImagen = useCallback(async () => {
@@ -807,7 +801,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
     fechaBase, modo, fondoUri, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
-    editandoId, canvasRef, canvasWidth, canvasHeight,
+    editandoId, canvasRef, canvasWidth, canvasHeight, escalaVista,
     profesionalSel, setProfesionalSel, esEquipo, effectiveProfesionalId,
     servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos, categoriaUnica,
     fondoFijoGuardado, nombreEstudio, telefonoEstudio, logoUrl,
