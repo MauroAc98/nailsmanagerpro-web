@@ -8,11 +8,11 @@ const profesionales = [
   { id: 2, nombre: 'Lau', apellido: 'Paz', color: null, avatarUrl: 'https://x/y.png' },
 ];
 
-function setup(over: Partial<React.ComponentProps<typeof ProfesionalSheet>> = {}) {
+function setup(over: Partial<React.ComponentProps<typeof ProfesionalSheet<string>>> = {}) {
   const props = {
     open: true, onClose: vi.fn(), onSelect: vi.fn(), title: 'Profesional',
     equipoLabel: 'Todo el equipo', equipoSubtitulo: 'Junta los horarios libres de todas',
-    cerrarLabel: 'Cerrar', profesionales, selectedId: 1 as number | 'equipo', ...over,
+    cerrarLabel: 'Cerrar', profesionales, selectedId: 1 as number | string, ...over,
   };
   renderWithProviders(<ProfesionalSheet {...props} />);
   return props;
@@ -68,6 +68,40 @@ describe('ProfesionalSheet', () => {
       expect.stringContaining('Caro'), expect.stringContaining('Lau'),
     ]);
     expect(screen.queryByText('Todo el equipo')).toBeNull();
+  });
+
+  describe('extras', () => {
+    const extras = [{ id: 'negocio', label: 'Del negocio', subtitulo: 'Gastos del salón', icono: <span data-testid="icono-negocio" /> }];
+
+    it('se muestran después de la fila de equipo y antes de las profesionales', () => {
+      setup({ extras });
+      const filas = screen.getAllByRole('option');
+      expect(filas.map(f => f.textContent)).toEqual([
+        expect.stringContaining('Todo el equipo'), expect.stringContaining('Del negocio'),
+        expect.stringContaining('Caro'), expect.stringContaining('Lau'),
+      ]);
+      expect(screen.getByText('Gastos del salón')).toBeInTheDocument();
+      expect(screen.getByTestId('icono-negocio')).toBeInTheDocument();
+    });
+
+    it('sin equipoLabel el extra va primero', () => {
+      setup({ extras, equipoLabel: undefined, equipoSubtitulo: undefined });
+      expect(screen.getAllByRole('option')[0].textContent).toContain('Del negocio');
+    });
+
+    it('marca con check el extra seleccionado', () => {
+      setup({ extras, selectedId: 'negocio' });
+      const filas = screen.getAllByRole('option');
+      expect(filas.map(f => f.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false', 'false']);
+      expect(filas[1].querySelector('svg.lucide-check')).not.toBeNull();
+    });
+
+    it('tocar un extra llama onSelect con su id y cierra', () => {
+      const props = setup({ extras });
+      fireEvent.click(screen.getByRole('option', { name: /Del negocio/ }));
+      expect(props.onSelect).toHaveBeenCalledWith('negocio');
+      expect(props.onClose).toHaveBeenCalled();
+    });
   });
 
   it('Cerrar cierra sin seleccionar', () => {

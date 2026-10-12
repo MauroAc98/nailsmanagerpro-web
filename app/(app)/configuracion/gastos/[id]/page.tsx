@@ -245,7 +245,6 @@ export default function EditarGastoPage() {
         {/* Profesional — invisible con ≤1 profesional activa. */}
         {mostrarSelectorProfesional && (
           <div>
-            <label style={labelStyle}>{t('professionalLabel')}</label>
             <SelectorProfesionalONegocio
               profesionales={activeProfesionales}
               value={selectedProfesionalId}

@@ -184,5 +184,9 @@
     "cancel": "Cancelar",
     "close": "Fechar",
     "clear": "Limpar"
+  },
+  "SelectorProfesionalONegocio": {
+    "title": "Profissional",
+    "close": "Fechar"
   }
 }

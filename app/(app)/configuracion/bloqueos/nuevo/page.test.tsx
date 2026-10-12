@@ -27,6 +27,12 @@ function seedStore(agregarBloqueo: AgregarBloqueoFn = vi.fn(async () => ({ succe
   return agregarBloqueo;
 }
 
+// La profesional se elige desde la fila "¿A quién afecta?" → hoja.
+function elegirProfesional(nombre: string | RegExp) {
+  fireEvent.click(screen.getByRole('button', { name: /^¿A quién afecta\?:/ }));
+  fireEvent.click(screen.getByRole('option', { name: nombre }));
+}
+
 beforeEach(() => {
   resetNavigationMock();
   seedStore();
@@ -37,6 +43,28 @@ beforeEach(() => {
 });
 
 describe('NuevoBloqueoPage', () => {
+  it('la fila de profesional arranca en "Todo el negocio" y la hoja lo ofrece primero', () => {
+    renderWithProviders(<NuevoBloqueoPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: '¿A quién afecta?: Todo el negocio' }));
+    const filas = screen.getAllByRole('option');
+    expect(filas.map(f => f.textContent)).toEqual([
+      expect.stringContaining('Todo el negocio'), expect.stringContaining('Lucía'),
+    ]);
+    expect(filas[0]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('volver a elegir "Todo el negocio" envía profesional_id null', async () => {
+    const agregarBloqueo = seedStore();
+    renderWithProviders(<NuevoBloqueoPage />);
+
+    elegirProfesional(/Lucía/);
+    elegirProfesional(/Todo el negocio/);
+    fireEvent.click(screen.getByText('Bloquear fecha'));
+
+    await waitFor(() => expect(agregarBloqueo).toHaveBeenCalledWith(expect.objectContaining({ profesional_id: null })));
+  });
+
   it('muestra un subtítulo que explica las dos formas de bloquear', () => {
     renderWithProviders(<NuevoBloqueoPage />);
 
@@ -62,7 +90,7 @@ describe('NuevoBloqueoPage', () => {
     expect(preview).toHaveTextContent('Todo el negocio');
     expect(preview).toHaveTextContent('Todo el día');
 
-    fireEvent.click(screen.getByText('Lucía'));
+    elegirProfesional(/Lucía/);
     expect(preview).toHaveTextContent('Lucía Gómez');
 
     fireEvent.click(screen.getByText('Un horario puntual'));
@@ -95,7 +123,7 @@ describe('NuevoBloqueoPage', () => {
     const agregarBloqueo = seedStore();
     renderWithProviders(<NuevoBloqueoPage />);
 
-    fireEvent.click(screen.getByText('Lucía'));
+    elegirProfesional(/Lucía/);
     fireEvent.click(screen.getByText('Un horario puntual'));
     fireEvent.change(screen.getByLabelText(/desde/i), { target: { value: '14:00' } });
     fireEvent.change(screen.getByLabelText(/hasta/i), { target: { value: '18:00' } });

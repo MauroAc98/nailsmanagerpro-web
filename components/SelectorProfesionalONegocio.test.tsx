@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { renderWithProviders, screen, fireEvent } from '@/test/render';
 import SelectorProfesionalONegocio from './SelectorProfesionalONegocio';
 import type { Profesional } from '@/services/profesionalService';
 
@@ -9,44 +9,62 @@ const profs = [
 ] as unknown as Profesional[];
 
 const setup = (value: number | null, onChange = vi.fn()) => {
-  render(<SelectorProfesionalONegocio profesionales={profs} value={value} onChange={onChange} labelNegocio="Del negocio" />);
+  renderWithProviders(<SelectorProfesionalONegocio profesionales={profs} value={value} onChange={onChange} labelNegocio="Del negocio" />);
   return onChange;
 };
 
+const abrir = () => fireEvent.click(screen.getByRole('button', { name: /^Profesional:/ }));
+
 describe('SelectorProfesionalONegocio', () => {
-  it('renderiza "Del negocio" primero', () => {
-    setup(1);
-    const botones = screen.getAllByRole('button');
-    expect(botones[0]).toHaveTextContent('Del negocio');
-    expect(botones).toHaveLength(3);
+  it('la fila muestra "Del negocio" cuando value es null', () => {
+    setup(null);
+    expect(screen.getByRole('button', { name: 'Profesional: Del negocio' })).toBeInTheDocument();
   });
 
-  it('tocar "Del negocio" avisa null', () => {
+  it('la fila muestra el nombre de la profesional elegida', () => {
+    setup(1);
+    expect(screen.getByRole('button', { name: 'Profesional: Ana' })).toBeInTheDocument();
+  });
+
+  it('la hoja lista "Del negocio" primero y después cada profesional', () => {
+    setup(1);
+    abrir();
+    const filas = screen.getAllByRole('option');
+    expect(filas.map(f => f.textContent)).toEqual([
+      expect.stringContaining('Del negocio'), expect.stringContaining('Ana'), expect.stringContaining('Bea'),
+    ]);
+  });
+
+  it('elegir "Del negocio" avisa null', () => {
     const onChange = setup(1);
-    fireEvent.click(screen.getByRole('button', { name: /Del negocio/ }));
+    abrir();
+    fireEvent.click(screen.getByRole('option', { name: /Del negocio/ }));
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('tocar una profesional avisa su id', () => {
+  it('elegir una profesional avisa su id', () => {
     const onChange = setup(null);
-    fireEvent.click(screen.getByRole('button', { name: /Bea/ }));
+    abrir();
+    fireEvent.click(screen.getByRole('option', { name: /Bea/ }));
     expect(onChange).toHaveBeenCalledWith(2);
   });
 
-  it('tocar la ya elegida no deselecciona', () => {
+  it('elegir la ya elegida no avisa nada', () => {
     const onChange = setup(1);
-    fireEvent.click(screen.getByRole('button', { name: /Ana/ }));
-    expect(onChange).not.toHaveBeenCalledWith(null);
-    expect(onChange.mock.calls.every(c => c[0] === 1)).toBe(true);
+    abrir();
+    fireEvent.click(screen.getByRole('option', { name: /Ana/ }));
+    expect(onChange).not.toHaveBeenCalled();
 
     const onChange2 = setup(null);
-    fireEvent.click(screen.getAllByRole('button', { name: /Del negocio/ })[1]);
-    expect(onChange2.mock.calls.every(c => c[0] === null)).toBe(true);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Profesional:/ })[1]);
+    fireEvent.click(screen.getByRole('option', { name: /Del negocio/ }));
+    expect(onChange2).not.toHaveBeenCalled();
   });
 
-  it('marca aria-pressed solo en la elegida', () => {
+  it('marca como seleccionada solo la elegida', () => {
     setup(null);
-    expect(screen.getByRole('button', { name: /Del negocio/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /Ana/ })).toHaveAttribute('aria-pressed', 'false');
+    abrir();
+    const filas = screen.getAllByRole('option');
+    expect(filas.map(f => f.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
   });
 });
