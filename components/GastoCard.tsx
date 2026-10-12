@@ -1,23 +1,12 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
 import { Gasto } from '@/services/gastoService';
 import { labelCategoriaGasto } from '@/lib/categoriaLabel';
 import { formatMonto } from '@/lib/money';
-
-// Mismos valores que ServicioCard/SwipeableTurnoCard — mismo gesto, mismo
-// feel. Design (Open Question) acepta esta duplicación: no hay un
-// `useSwipeToDelete` compartido todavía, extraerlo queda para un follow-up.
-const SWIPE_REVEAL    = 80;
-const SWIPE_THRESHOLD = 55;
-// Resting/closed offset — mismo criterio que SwipeableTurnoCard (Change 4,
-// agenda): un sliver del panel de eliminar queda visible en reposo en vez de
-// translateX(0), como pista de que la card se puede deslizar.
-const SWIPE_PEEK = 8;
-// La capa se desplaza -SWIPE_PEEK y el borde de la card recorta esos px: el
-// padding izquierdo suma SWIPE_PEEK para que el contenido no pierda margen.
+import { SWIPE_PEEK, SWIPE_REVEAL, useSwipeToDelete } from '@/hooks/useSwipeToDelete';
 
 // Mismo shape que ProfesionalLabel en agenda/page.tsx (SwipeableTurnoCard) —
 // dot de color + nombre, oculto cuando el gasto no tiene profesional_id.
@@ -44,52 +33,8 @@ function formatFechaCorta(fecha: string): string {
 export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }: Props) {
   const t = useTranslations('configuracion.GastosPage');
 
-  // Swipe-to-delete — misma técnica que ServicioCard/SwipeableTurnoCard: sin
-  // estado de React para el offset, mutación directa de style.transform vía
-  // refs (nada de setState por frame) para que el drag se sienta 1:1 con el
-  // dedo.
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const startX     = useRef(0);
-  const initOffset = useRef(0);
-  const liveOffset = useRef(-SWIPE_PEEK);
-  const dragged    = useRef(false);
-
-  const applyTransform = (offset: number, animate: boolean) => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transition = animate
-      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
-    cardRef.current.style.transform = `translateX(${offset}px)`;
-  };
-
-  const snapTo = (target: number) => {
-    liveOffset.current = target;
-    applyTransform(target, true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current     = e.touches[0].clientX;
-    initOffset.current = liveOffset.current;
-    dragged.current    = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const delta   = e.touches[0].clientX - startX.current;
-    if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
-    liveOffset.current = clamped;
-    applyTransform(clamped, false);
-  };
-
-  const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : -SWIPE_PEEK);
-  };
-
-  const handleCardClick = () => {
-    if (dragged.current) return;
-    if (liveOffset.current < -10) { snapTo(-SWIPE_PEEK); return; }
-    onEdit();
-  };
+  // Swipe-to-delete compartido (hooks/useSwipeToDelete): tocar la card cerrada edita.
+  const { cardRef, handlers } = useSwipeToDelete({ onTap: onEdit });
 
   return (
     <div
@@ -128,10 +73,7 @@ export default function GastoCard({ gasto, profesionalLabel, onEdit, onDelete }:
       {/* Foreground deslizable — todo el contenido de la card. */}
       <div
         ref={cardRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleCardClick}
+        {...handlers}
         style={{
           position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
           display: 'flex', alignItems: 'center', gap: 12,

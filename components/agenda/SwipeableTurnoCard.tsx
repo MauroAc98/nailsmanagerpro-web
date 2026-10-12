@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronRight, Clock } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
@@ -13,21 +12,13 @@ import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnlin
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
 import { formatearDuracion } from '@/lib/duracion';
+import { SWIPE_PEEK, SWIPE_REVEAL, useSwipeToDelete } from '@/hooks/useSwipeToDelete';
 import { IconoNotaTurno, tieneNotaTurno } from './IconoNotaTurno';
 import { fechaDeHora, horaDeHora, formatFechaMini, type ProfesionalLabel } from './agendaDateHelpers';
 
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
-const SWIPE_REVEAL    = 80;
-const SWIPE_THRESHOLD = 55;
-// Resting/closed offset for the swipe-to-cancel cards (redesign Change 4) —
-// a small sliver of the red CANCELAR panel stays visible at rest instead of
-// fully hidden (translateX(0)), hinting the card is swipeable. Drag bounds
-// stay [-SWIPE_REVEAL, 0] unchanged: the user can still drag all the way to
-// a flush 0 if they want, this only changes where the card SETTLES.
-const SWIPE_PEEK = 8;
-
 // ─────────────────────────────────────────────
 // SwipeableTurnoCard — PENDIENTE and EN_CURSO
 // onCancel is optional: when omitted, the swipe-reveal cancel panel and
@@ -51,56 +42,9 @@ export function SwipeableTurnoCard({
 }) {
   const t = useTranslations('agenda.SwipeableTurnoCard');
   const user = useAuthStore(s => s.user);
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const startX     = useRef(0);
-  const initOffset = useRef(0);
-  // Resting/closed state is -SWIPE_PEEK, not 0 (Change 4) — see the
-  // constant's comment above. Irrelevant for the !onCancel branch below:
-  // that branch never attaches cardRef or reads this ref.
-  const liveOffset = useRef(-SWIPE_PEEK);
-  const dragged    = useRef(false);
-
-  const applyTransform = (offset: number, animate: boolean) => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transition = animate
-      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
-    cardRef.current.style.transform = `translateX(${offset}px)`;
-  };
-
-  const snapTo = (target: number) => {
-    liveOffset.current = target;
-    applyTransform(target, true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current     = e.touches[0].clientX;
-    initOffset.current = liveOffset.current;
-    dragged.current    = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const delta   = e.touches[0].clientX - startX.current;
-    if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
-    liveOffset.current = clamped;
-    applyTransform(clamped, false);
-  };
-
-  const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : -SWIPE_PEEK);
-  };
-
-  const handleCardClick = () => {
-    if (dragged.current) return;
-    // -SWIPE_PEEK (-8) is NOT < -10, so the resting peek never misfires this
-    // "already open, tap to close" branch. Closing now snaps back to
-    // -SWIPE_PEEK (not 0) — the peek is the resting/closed state everywhere,
-    // dragging to a flush 0 is still possible but isn't where a tap-to-close
-    // should leave the card (Change 4).
-    if (liveOffset.current < -10) { snapTo(-SWIPE_PEEK); return; }
-    onPress?.();
-  };
+  // Swipe compartido (hooks/useSwipeToDelete). Se llama siempre (regla de hooks);
+  // en la rama !onCancel de abajo nunca se aplica cardRef ni handlers.
+  const { cardRef, handlers } = useSwipeToDelete({ onTap: onPress });
 
   const isEnCurso = turno.estado_visual === 'en_curso';
   // El mockup no tiñe la card entera en_curso — el fondo siempre es
@@ -363,10 +307,7 @@ export function SwipeableTurnoCard({
         {/* Foreground deslizable — también llena toda la región */}
         <div
           ref={cardRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onClick={handleCardClick}
+          {...handlers}
           // paddingLeft: compensa los px que el peek recorta del lado izquierdo.
           style={{ ...restStyle, position: 'absolute', inset: 0, right: -1, paddingLeft: SWIPE_PEEK, transform: `translateX(${-SWIPE_PEEK}px)` }}
         >
