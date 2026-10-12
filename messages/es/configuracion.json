@@ -447,7 +447,7 @@
   },
   "BloqueosPage": {
     "title": "Bloqueos",
-    "subtitle": "Cerrá fechas u horarios puntuales: tus clientes no van a poder reservarlos online, y tu agenda te avisa si igual agendás ahí.",
+    "subtitle": "Los días u horarios que marques dejan de figurar como disponibles para tus clientes, y tu agenda te avisa si igual cargás un turno ahí.",
     "loading": "Cargando bloqueos...",
     "emptyTitle": "No tenés ningún bloqueo cargado.",
     "emptyText": "Usalos para cerrar vacaciones, feriados o cualquier día u horario en el que el negocio no atiende.",
@@ -458,7 +458,8 @@
     "deleteConfirm": "¿Eliminás este bloqueo?",
     "deleteConfirmButton": "Eliminar",
     "deleted": "Bloqueo eliminado",
-    "deleteError": "No se pudo eliminar el bloqueo."
+    "deleteError": "No se pudo eliminar el bloqueo.",
+    "delete": "ELIMINAR"
   },
   "NuevoBloqueoPage": {
     "title": "Nuevo bloqueo",
