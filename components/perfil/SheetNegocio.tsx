@@ -100,7 +100,7 @@ interface DatosPreview {
   telefono: string;
   direccion: string;
   // Cuando el salón activó "pedir seña", la confirmación real es la
-  // plantilla reserva_turno_sena — el preview la muestra con estos datos.
+  // plantilla reserva_turno_sena_v2 — el preview la muestra con estos datos.
   pideSena: boolean;
   senaMonto: string;
   senaTitular: string;
@@ -112,7 +112,7 @@ interface DatosPreview {
 // El texto de `confirmacion_turno` y `recordatorio_turno` sale de
 // cuerpoPlantillaWhatsapp() (lib/whatsappHelper) — misma fuente que usa el
 // envío manual por wa.me, así el preview y lo que realmente llega al chat no
-// pueden divergir. `reserva_turno_sena` se arma acá abajo porque nunca se
+// pueden divergir. `reserva_turno_sena_v2` se arma acá abajo porque nunca se
 // manda a mano. El backend (NailsManagerProApi) tiene su propia copia de los
 // tres: si el texto cambia en Meta hay que tocar los dos lados.
 //
@@ -121,7 +121,7 @@ interface DatosPreview {
 // seña sí son reales (vienen de la cuenta / del formulario) porque son los
 // que el cliente va a ver tal cual.
 function textoPreview(d: DatosPreview): string {
-  const nombreCliente = 'Martina';
+  const nombreCliente = 'Fulana';
   const fecha = '20/08';
   const hora = '15:30';
   const servicio = 'Manicura semipermanente';
@@ -139,14 +139,14 @@ function textoPreview(d: DatosPreview): string {
   }
 
   if (d.pideSena) {
-    // reserva_turno_sena
-    const aviso = `⚠️ Desde este número solo se envían avisos. Si respondés a este mensaje, *${profesional} no lo recibe y no puede contestarte.*`;
+    // reserva_turno_sena_v2 (re-aprobada en Meta como utility, 2026-10-12): mismo
+    // texto que WhatsappTemplate::mensajeLegible('reserva_sena') del backend.
     const montoN = montoComoNumero(d.senaMonto);
     const monto = montoN != null && montoN > 0 ? formatearMontoSena(montoN) : '(cargá el monto de la seña)';
     const cuenta = armarDatosCuentaSena({
       titular: d.senaTitular, entidad: d.senaEntidad, alias: d.senaAlias, cbu: d.senaCbu,
     }) || '(cargá los datos de la cuenta)';
-    return `Hola ${nombreCliente}, tu turno en *${d.negocio}* quedó reservado.\n\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\nPara confirmar tu turno se debe abonar una seña de ${monto}.\n\n*Datos para el pago:*\n${cuenta}\n\n${aviso}\n\nComunicate al ${tel} para enviar el comprobante de la seña o por consultas y cambios de turno. Los cambios deben avisarse con al menos 24 hs de anticipación.`;
+    return `Hola ${nombreCliente}, tu turno en *${d.negocio}* queda reservado.\n\n🗓️ ${fecha} · 🕒 ${hora} hs\n✨ ${servicio}\n📍 ${dir}\n\n💳 Seña: *${monto}*\n🏦 ${cuenta}\n\n⚠️ No responder a este mensaje: *${profesional}* no lo recibe.\n📲 Enviar el comprobante al ${tel}. Para cambios, avisar con 24 hs de anticipación.`;
   }
 
   // confirmacion_turno

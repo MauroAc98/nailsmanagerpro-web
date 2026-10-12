@@ -186,7 +186,7 @@ describe('SheetNegocio — message preview', () => {
     expect(text).not.toContain('no hace falta responder');
   });
 
-  it('shows the reserva_turno_sena body with formatted amount and account line when seña is on', () => {
+  it('shows the reserva_turno_sena_v2 body with formatted amount and account line when seña is on', () => {
     setup({
       whatsappPideSena: true,
       senaMonto: '5000',
@@ -195,10 +195,26 @@ describe('SheetNegocio — message preview', () => {
       senaCbu: '2850001040094993682358',
     });
     openPreview();
-    const text = previewText(/quedó reservado/);
-    expect(text).toContain('una seña de $5.000,00');
-    expect(text).toContain('Ana Pérez · Alias: ana.mp · CBU: 2850 0010 4009 4993 6823 58');
-    expect(text).toContain('enviar el comprobante de la seña');
+    const text = previewText(/queda reservado/);
+    // Los *…* de WhatsApp se muestran como negrita, sin los asteriscos.
+    expect(text).toContain('💳 Seña: $5.000,00');
+    expect(text).toContain('🏦 Ana Pérez · Alias: ana.mp · CBU: 2850 0010 4009 4993 6823 58');
+    expect(text).toContain('⚠️ No responder a este mensaje: Fernanda no lo recibe.');
+    expect(text).toContain('📲 Enviar el comprobante al');
+    expect(text).toContain('Para cambios, avisar con 24 hs de anticipación.');
+    // El texto viejo ya no aparece.
+    expect(text).not.toContain('Datos para el pago');
+    expect(text).not.toContain('quedó reservado');
+  });
+
+  it('uses a generic sample client name ("Fulana"), never a name that could be a real client', () => {
+    setup({ whatsappPideSena: true, senaMonto: '5000' });
+    openPreview();
+    expect(previewText(/queda reservado/)).toContain('Hola Fulana,');
+    fireEvent.click(screen.getByRole('button', { name: 'Recordatorio' }));
+    const recordatorio = previewText(/te recordamos tu turno de mañana/);
+    expect(recordatorio).toContain('Hola Fulana');
+    expect(recordatorio).not.toContain('Martina');
   });
 
   it('renders the reminder body on the recordatorio tab', () => {
