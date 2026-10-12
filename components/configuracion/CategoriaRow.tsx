@@ -1,17 +1,9 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
-
-// Mismos valores que ServicioCard — mismo gesto de swipe-to-delete, mismo feel.
-// No se importa desde ahí a propósito: ServicioCard mezcla swipe con
-// drag-and-drop de dnd-kit; esta fila es solo swipe.
-const SWIPE_REVEAL    = 80;
-const SWIPE_THRESHOLD = 55;
-// Sliver del panel de eliminar visible en reposo, como pista de que la fila
-// se desliza (misma convención que ServicioCard / SwipeableTurnoCard).
-const SWIPE_PEEK = 8;
+import { SWIPE_PEEK, SWIPE_REVEAL, useSwipeToDelete } from '@/hooks/useSwipeToDelete';
 
 interface Props {
   nombre:   string;
@@ -29,51 +21,9 @@ interface Props {
 export default function CategoriaRow({ nombre, detalle, detalleTenue = false, onOpen, onDelete }: Props) {
   const t = useTranslations('configuracion.CategoriasPage');
 
-  // Sin estado de React para el offset: mutación directa de style.transform
-  // vía ref (nada de setState por frame) para que el drag siga 1:1 al dedo.
-  const capaRef    = useRef<HTMLDivElement>(null);
-  const startX     = useRef(0);
-  const initOffset = useRef(0);
-  const liveOffset = useRef(-SWIPE_PEEK);
-  const dragged    = useRef(false);
-
-  const aplicar = (offset: number, animar: boolean) => {
-    if (!capaRef.current) return;
-    capaRef.current.style.transition = animar
-      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
-    capaRef.current.style.transform = `translateX(${offset}px)`;
-  };
-
-  const snapTo = (target: number) => {
-    liveOffset.current = target;
-    aplicar(target, true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current     = e.touches[0].clientX;
-    initOffset.current = liveOffset.current;
-    dragged.current    = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const delta = e.touches[0].clientX - startX.current;
-    if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
-    liveOffset.current = clamped;
-    aplicar(clamped, false);
-  };
-
-  const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : -SWIPE_PEEK);
-  };
-
-  const handleClick = () => {
-    if (dragged.current) return;
-    // Con el panel abierto, el primer toque lo cierra en vez de abrir la fila.
-    if (liveOffset.current < -10) { snapTo(-SWIPE_PEEK); return; }
-    onOpen();
-  };
+  // Swipe-to-delete compartido (hooks/useSwipeToDelete): con el panel abierto,
+  // el primer toque lo cierra en vez de abrir la fila.
+  const { cardRef: capaRef, handlers } = useSwipeToDelete({ onTap: onOpen });
 
   return (
     <div
@@ -109,10 +59,7 @@ export default function CategoriaRow({ nombre, detalle, detalleTenue = false, on
         role="button"
         tabIndex={0}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleClick}
+        {...handlers}
         style={{
           position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
           display: 'flex', alignItems: 'center', gap: 12, minHeight: 60, boxSizing: 'border-box',

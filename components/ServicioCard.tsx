@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslations } from 'next-intl';
 import { CSS } from '@dnd-kit/utilities';
 import { useSortable } from '@dnd-kit/sortable';
@@ -10,18 +10,7 @@ import { Servicio } from '@/services/servicioService';
 import { formatMonto } from '@/lib/money';
 import { formatearDuracion } from '@/lib/duracion';
 import PillToggle from '@/components/PillToggle';
-
-// Mismos valores que agenda/page.tsx (SwipeableTurnoCard) — mismo gesto,
-// mismo feel. No se importa desde ahí a propósito: ese archivo es solo
-// referencia para esta tarea, no se toca ni se extrae un componente común.
-const SWIPE_REVEAL    = 80;
-const SWIPE_THRESHOLD = 55;
-// Resting/closed offset — mismo criterio que SwipeableTurnoCard (Change 4,
-// agenda): un sliver del panel de eliminar queda visible en reposo en vez de
-// translateX(0), como pista de que la card se puede deslizar.
-const SWIPE_PEEK = 8;
-// La capa se desplaza -SWIPE_PEEK y el borde de la card recorta esos px: el
-// padding izquierdo suma SWIPE_PEEK para que el contenido no pierda margen.
+import { SWIPE_PEEK, SWIPE_REVEAL, useSwipeToDelete } from '@/hooks/useSwipeToDelete';
 
 interface Props {
   servicio: Servicio;
@@ -48,55 +37,11 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
     transform, transition, isDragging,
   } = useSortable({ id: servicio.id, disabled: !draggable });
 
-  // Swipe-to-delete — misma técnica que SwipeableTurnoCard en agenda/page.tsx:
-  // sin estado de React para el offset, mutación directa de style.transform
-  // vía refs (nada de setState por frame) para que el drag se sienta 1:1
-  // con el dedo. setNodeRef/transform de dnd-kit van en el contenedor
-  // exterior (mueve la card entera al reordenar); este ref/transform propio
-  // va en la capa interior que se desliza — dos transforms independientes,
-  // cada uno en su propio nodo, para que no se pisen entre sí.
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const startX     = useRef(0);
-  const initOffset = useRef(0);
-  const liveOffset = useRef(-SWIPE_PEEK);
-  const dragged    = useRef(false);
-
-  const applyTransform = (offset: number, animate: boolean) => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transition = animate
-      ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
-    cardRef.current.style.transform = `translateX(${offset}px)`;
-  };
-
-  const snapTo = (target: number) => {
-    liveOffset.current = target;
-    applyTransform(target, true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current     = e.touches[0].clientX;
-    initOffset.current = liveOffset.current;
-    dragged.current    = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const delta   = e.touches[0].clientX - startX.current;
-    if (Math.abs(delta) > 5) dragged.current = true;
-    const clamped = Math.min(0, Math.max(-SWIPE_REVEAL, initOffset.current + delta));
-    liveOffset.current = clamped;
-    applyTransform(clamped, false);
-  };
-
-  const handleTouchEnd = () => {
-    snapTo(liveOffset.current < -SWIPE_THRESHOLD ? -SWIPE_REVEAL : -SWIPE_PEEK);
-  };
-
-  const handleCardClick = () => {
-    if (dragged.current) return;
-    if (liveOffset.current < -10) { snapTo(-SWIPE_PEEK); return; }
-    onEdit();
-  };
+  // Swipe-to-delete compartido (hooks/useSwipeToDelete). setNodeRef/transform de
+  // dnd-kit van en el contenedor exterior (mueve la card entera al reordenar);
+  // este cardRef/transform propio va en la capa interior que se desliza — dos
+  // transforms independientes, cada uno en su propio nodo, para que no se pisen.
+  const { cardRef, handlers } = useSwipeToDelete({ onTap: onEdit });
 
   const cardBg = servicio.activo ? colors.surface : colors.surfaceSubtle;
 
@@ -144,10 +89,7 @@ export default function ServicioCard({ servicio, onEdit, onToggle, onDelete, dra
           única capa del componente). */}
       <div
         ref={cardRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleCardClick}
+        {...handlers}
         style={{
           position: 'relative', transform: `translateX(${-SWIPE_PEEK}px)`,
           display: 'flex', alignItems: 'center', gap: 12,
