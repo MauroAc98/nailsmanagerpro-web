@@ -816,8 +816,10 @@ function AgendaContent() {
             de Next: en producción devuelve el original de 1270 px para cualquier
             ancho, y achicarlo tanto en el navegador deja el borde entrecortado. */}
         <Image src="/logo-turnetto-encabezado.png" alt="Turnetto" width={160} height={126} priority unoptimized style={{ width: 'auto', height: 40, marginLeft: 13 }} />
+        {/* Compartir primero y la campana al borde derecho (pedido puntual);
+            el panel de la campana mide su posición real al abrirse, así que el
+            cambio de lugar no lo desborda. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <NotificacionesBell />
           <button
             onClick={() => router.push(`/agenda/historia?fecha=${fechaSeleccionada}`)}
             style={{
@@ -829,6 +831,7 @@ function AgendaContent() {
             <Camera size={16} color={colors.text} strokeWidth={1.8} />
             {t('share')}
           </button>
+          <NotificacionesBell />
         </div>
       </div>
 
