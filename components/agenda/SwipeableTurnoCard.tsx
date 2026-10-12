@@ -195,7 +195,7 @@ export function SwipeableTurnoCard({
             perderlo si el "..." recorta la lista de servicios. */}
         {profesionalLabel && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            {/* Mismo avatar que SelectorProfesional (foto real o iniciales
+            {/* Mismo avatar que el selector de profesional del día (foto real o iniciales
                 sobre el color de la profesional) — reutiliza el componente
                 ya establecido en vez de un punto de color nuevo. */}
             <span style={{

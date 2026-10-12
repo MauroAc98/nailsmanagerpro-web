@@ -9,8 +9,10 @@ import { IdeaDelTurno } from '@/components/agenda/IdeaDelTurno';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { reservaOnlineHabilitada } from '@/lib/reservaOnline/flag';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
+import { ProfesionalSheet, SinProfesionalIcono } from '@/components/filtros/ProfesionalSheet';
 import { SelectorServicios } from '@/components/SelectorServicios';
 import { AltaClienteRapidaSheet, type AltaClienteRapidaHandle } from '@/components/clientes/AltaClienteRapidaSheet';
 import { useTurnoStore } from '@/store/useTurnoStore';
@@ -99,6 +101,7 @@ export default function EditarTurnoPage() {
   const [selectedCliente,     setSelectedCliente]     = useState<Cliente | null>(null);
   const [selectedServicioIds, setSelectedServicioIds] = useState<number[]>([]);
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [clienteBuscar,       setClienteBuscar]       = useState('');
   const [showHoraPicker,      setShowHoraPicker]      = useState(false);
@@ -595,47 +598,44 @@ export default function EditarTurnoPage() {
           )}
         </div>
 
-        {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa) */}
+        {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa). Fila + hoja
+            compartidas. Elección OBLIGATORIA: arranca sin elegir (sin fila
+            "todo el equipo") y la fila lee la MISMA variable que el resto de la
+            pantalla (selectedProfesionalId). */}
         {mostrarSelectorProfesional && (
-          <>
-            <p style={sectionLabelStyle}>{t('professional')}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-              {activeProfesionales.map(p => {
-                const selected = selectedProfesionalId === p.id;
-                const color = p.color || colors.primary;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => handleSeleccionarProfesional(p.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      borderRadius: 20, padding: '4px 16px 4px 4px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                      border: `1px solid ${selected ? color : colors.border}`,
-                      backgroundColor: selected ? color : colors.surface,
-                      color: selected ? colors.primaryFg : colors.text,
-                    }}
-                  >
-                    <span style={{
-                      width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 800,
-                      backgroundColor: selected ? withAlpha(colors.primaryFg, '3D') : withAlpha(color, '26'),
-                      color: selected ? colors.primaryFg : color,
-                    }}>
-                      {p.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        inicialesProfesional(p.nombre, p.apellido)
-                      )}
-                    </span>
-                    {p.nombre}
-                  </button>
-                );
-              })}
-            </div>
-          </>
+          <div style={{ marginBottom: 20 }}>
+            <TarjetaQueMostrar>
+              <FilaQueMostrar
+                leading={profesionalSeleccionado ? (
+                  <AvatarProfesional
+                    nombre={profesionalSeleccionado.nombre}
+                    apellido={profesionalSeleccionado.apellido}
+                    color={profesionalSeleccionado.color}
+                    avatarUrl={profesionalSeleccionado.avatar_url}
+                  />
+                ) : <SinProfesionalIcono />}
+                titulo={t('professional')}
+                valor={profesionalSeleccionado ? profesionalSeleccionado.nombre : t('chooseProfessional')}
+                activo={profesionalSeleccionado !== null}
+                onClick={() => setProfesionalAbierto(true)}
+              />
+            </TarjetaQueMostrar>
+          </div>
         )}
+        <ProfesionalSheet
+          open={profesionalAbierto}
+          onClose={() => setProfesionalAbierto(false)}
+          // Volver a tocar la ya elegida no hace nada: el handler alterna
+          // (la deselecciona y borra los servicios), y acá la elección es
+          // obligatoria, así que deseleccionar solo dejaría la pantalla vacía.
+          onSelect={sel => { if (sel !== 'equipo' && sel !== selectedProfesionalId) handleSeleccionarProfesional(sel); }}
+          title={t('professional')}
+          cerrarLabel={t('closeSheet')}
+          profesionales={activeProfesionales.map(p => ({
+            id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+          }))}
+          selectedId={selectedProfesionalId ?? 'equipo'}
+        />
 
         {/* ─── SERVICIOS ─── */}
         <p style={sectionLabelStyle}>{t('services')}</p>

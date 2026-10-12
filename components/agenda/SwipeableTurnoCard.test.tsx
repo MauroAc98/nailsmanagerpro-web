@@ -139,7 +139,7 @@ describe('SwipeableTurnoCard — profesional como texto "con {nombre}" (Change 6
     expect(screen.getByText('con Natalia')).toBeInTheDocument();
   });
 
-  it('sin avatarUrl, el mini-avatar cae a iniciales (mismo criterio que SelectorProfesional)', () => {
+  it('sin avatarUrl, el mini-avatar cae a iniciales (mismo criterio que el selector de profesional del día)', () => {
     renderWithProviders(
       <SwipeableTurnoCard
         turno={buildTurno()}

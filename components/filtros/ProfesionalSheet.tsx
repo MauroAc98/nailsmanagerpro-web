@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Check, Store, Users } from 'lucide-react';
+import { Check, Store, User, Users } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -63,6 +63,18 @@ export function NegocioIcono({ size = 32 }: { size?: number }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft,
     }}>
       <Store size={Math.round(size * 0.5)} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+    </span>
+  );
+}
+
+// Mismo círculo suave con una persona neutra: "todavía no elegiste a nadie".
+export function SinProfesionalIcono({ size = 32 }: { size?: number }) {
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: size / 2, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSubtle,
+    }}>
+      <User size={Math.round(size * 0.5)} strokeWidth={2} color={colors.muted} aria-hidden="true" />
     </span>
   );
 }

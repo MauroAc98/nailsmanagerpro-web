@@ -487,20 +487,16 @@ function SelectorProfesionalDia({
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            <span style={{
-              width: 20, height: 20, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, fontWeight: 800,
-              backgroundColor: selected ? withAlpha(colors.primaryFg, '3D') : withAlpha(color, '26'),
-              color: selected ? colors.primaryFg : color,
-            }}>
-              {p.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                inicialesProfesional(p.nombre, p.apellido)
-              )}
-            </span>
+            <AvatarProfesional
+              nombre={p.nombre}
+              apellido={p.apellido}
+              color={p.color}
+              avatarUrl={p.avatar_url}
+              size={20}
+              fontSize={9}
+              fondo={selected ? withAlpha(colors.primaryFg, '3D') : undefined}
+              texto={selected ? colors.primaryFg : undefined}
+            />
             {p.nombre}
           </button>
         );

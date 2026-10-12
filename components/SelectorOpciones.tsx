@@ -27,7 +27,7 @@ interface Props<T extends string> {
 // configuracion/apariencia/page.tsx e idioma/page.tsx: ambas pantallas
 // tenían este layout calcado 1:1 (idioma/page.tsx ya lo documentaba en un
 // comentario propio antes de esta extracción). Mismo criterio que
-// components/SelectorProfesional.tsx: props explícitas para lo que varía
+// el antiguo selector de profesional: props explícitas para lo que varía
 // de verdad entre las dos pantallas, sin flexibilidad de más.
 export default function SelectorOpciones<T extends string>({ opciones, selected, onSelect, loadingValue = null }: Props<T>) {
   return (
