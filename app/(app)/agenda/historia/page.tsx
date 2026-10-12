@@ -8,14 +8,16 @@ import {
   Type, Clock, Image as ImageIcon, LayoutGrid, Info,
 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import { ServiciosSheet } from '@/components/ServiciosSheet';
+import { ServiciosSheet } from '@/components/filtros/ServiciosSheet';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
-import { FilaQueMostrar } from '@/components/historia/FilaQueMostrar';
-import { ProfesionalSheet, EquipoIcono } from '@/components/historia/ProfesionalSheet';
-import { AvatarProfesional } from '@/components/historia/AvatarProfesional';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { ProfesionalSheet, EquipoIcono } from '@/components/filtros/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { BarraHerramientas } from '@/components/filtros/BarraHerramientas';
+import { AvisoAmbar } from '@/components/filtros/AvisoAmbar';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
@@ -44,16 +46,6 @@ function tabStyle(active: boolean): React.CSSProperties {
     color:       active ? colors.primaryFg : colors.subtext,
     fontWeight:  700, fontSize: 11, letterSpacing: active ? 0 : 0.5,
     boxShadow:   active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
-  };
-}
-
-// Botones de herramienta del editor (Horarios / Texto / Fondo).
-function herramientaStyle(active: boolean): React.CSSProperties {
-  return {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 0',
-    borderRadius: 14, cursor: 'pointer',
-    background: active ? colors.surface : 'transparent',
-    border: `1px solid ${active ? colors.divider : 'transparent'}`,
   };
 }
 
@@ -391,23 +383,15 @@ function HistoriaContent() {
             <div style={{
               width: '100%', marginTop: 20, paddingTop: 18, borderTop: `1px solid ${colors.hairline}`,
             }}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16, width: '100%' }}>
-                {([
-                  { s: 'agenda', Icono: Clock, label: t('sectionAgenda') },
-                  { s: 'texto', Icono: Type, label: t('sectionText') },
-                  { s: 'fondo', Icono: ImageIcon, label: t('sectionBackground') },
-                ] as { s: SeccionEditor; Icono: typeof Clock; label: string }[]).map(({ s, Icono, label }) => (
-                  <button key={s} type="button" aria-pressed={seccion === s} onClick={() => setSeccion(s)} style={herramientaStyle(seccion === s)}>
-                    <span style={{
-                      width: 40, height: 40, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: colors.primarySoft,
-                    }}>
-                      <Icono size={18} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.textStrong }}>{label}</span>
-                  </button>
-                ))}
-              </div>
+              <BarraHerramientas
+                items={[
+                  { id: 'agenda', icono: Clock, label: t('sectionAgenda') },
+                  { id: 'texto', icono: Type, label: t('sectionText') },
+                  { id: 'fondo', icono: ImageIcon, label: t('sectionBackground') },
+                ]}
+                activo={seccion}
+                onChange={id => setSeccion(id as SeccionEditor)}
+              />
 
               {seccion === 'agenda' && (
                 <div>
@@ -516,12 +500,9 @@ function HistoriaContent() {
 
             {/* Footer actions */}
             {bloqueaExportar && (
-              <p style={{
-                width: '100%', margin: '22px 0 0', fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
-                background: colors.amberBg, color: colors.amberFg, boxSizing: 'border-box',
-              }}>
+              <AvisoAmbar as="p" style={{ width: '100%', margin: '22px 0 0', boxSizing: 'border-box' }}>
                 {t('servicesDontFit')}
-              </p>
+              </AvisoAmbar>
             )}
             <div style={{ width: '100%', marginTop: bloqueaExportar ? 10 : 22, display: 'flex', gap: 10 }}>
               <button onClick={descargarImagen} disabled={bloqueaExportar} style={{ ...footerActionStyle, opacity: bloqueaExportar ? 0.5 : 1 }}>

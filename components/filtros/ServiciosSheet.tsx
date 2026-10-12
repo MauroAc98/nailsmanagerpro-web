@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BottomSheet } from '@/components/BottomSheet';
 import { SelectorServicios } from '@/components/SelectorServicios';
+import { AvisoAmbar } from './AvisoAmbar';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import type { Servicio } from '@/services/servicioService';
@@ -89,12 +90,9 @@ function ServiciosSheetAbierta({
 
           <div style={{ flex: 1, padding: '8px 16px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {mensaje && (
-              <span style={{
-                fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
-                background: colors.amberBg, color: colors.amberFg,
-              }}>
+              <AvisoAmbar>
                 {mensaje}
-              </span>
+              </AvisoAmbar>
             )}
             <SelectorServicios
               mode="multi"
