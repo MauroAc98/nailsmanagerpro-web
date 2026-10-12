@@ -5,17 +5,25 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   ChevronLeft, ChevronRight, ImagePlus, Download, Share2, ImageOff,
-  CalendarDays, Type,
+  Type, Clock, Image as ImageIcon, LayoutGrid, Info,
 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import SelectorProfesional from '@/components/SelectorProfesional';
+import { ServiciosSheet } from '@/components/ServiciosSheet';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { withAlpha } from '@/theme/colors';
 import { useGenerarHistoria, Modo } from '@/hooks/useGenerarHistoria';
 import { StoryCanvas } from '@/components/historia/StoryCanvas';
+import { FilaQueMostrar } from '@/components/historia/FilaQueMostrar';
+import { ProfesionalSheet, EquipoIcono } from '@/components/historia/ProfesionalSheet';
+import { AvatarProfesional } from '@/components/historia/AvatarProfesional';
 import { TextoLibreInput } from '@/components/historia/TextoLibreInput';
 import { AgendaEditor } from '@/components/historia/AgendaEditor';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { useServiciosStore } from '@/store/useServicioStore';
+import {
+  MAX_LINEAS_SERVICIOS, medirTextoServicios, serviciosEntran, tituloFiltroServicios,
+} from '@/lib/historiaServicios';
 import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
 
@@ -39,23 +47,25 @@ function tabStyle(active: boolean): React.CSSProperties {
   };
 }
 
-const sectionTabContainerStyle: React.CSSProperties = {
-  display: 'flex', background: colors.surfaceSubtle, borderRadius: 20, padding: 3, marginBottom: 16, width: '100%',
-};
-
-function sectionTabStyle(active: boolean): React.CSSProperties {
+// Botones de herramienta del editor (Horarios / Texto / Fondo).
+function herramientaStyle(active: boolean): React.CSSProperties {
   return {
-    flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 17, border: 'none', cursor: 'pointer',
-    background: active ? colors.primarySolid : 'transparent',
-    color:      active ? colors.primaryFg : colors.subtext,
-    fontWeight: 700, fontSize: 12,
-    boxShadow:  active ? `0 2px 6px ${withAlpha(colors.primary, '59')}` : 'none',
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 0',
+    borderRadius: 14, cursor: 'pointer',
+    background: active ? colors.surface : 'transparent',
+    border: `1px solid ${active ? colors.divider : 'transparent'}`,
   };
 }
 
 const navButtonStyle: React.CSSProperties = {
   width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
   background: colors.primarySoft, display: 'flex', alignItems: 'center', justifyContent: 'center',
+};
+
+// Tarjeta "Qué mostrar": filas Profesional / Servicios.
+const tarjetaQueMostrarStyle: React.CSSProperties = {
+  width: '100%', background: colors.surface, border: `1px solid ${colors.divider}`,
+  borderRadius: 14, overflow: 'hidden',
 };
 
 const footerActionStyle: React.CSSProperties = {
@@ -74,13 +84,16 @@ function HistoriaContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [seccion, setSeccion] = useState<SeccionEditor>('agenda');
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
+  const [serviciosAbierto, setServiciosAbierto] = useState(false);
+  const [profesionalAbierto, setProfesionalAbierto] = useState(false);
 
   const {
     modo, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis, editandoId,
-    canvasRef, canvasWidth, canvasHeight,
-    selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
+    canvasRef, canvasWidth, canvasHeight, escalaVista,
+    esEquipo, setProfesionalSel, effectiveProfesionalId,
+    servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos, categoriaUnica,
     handleModo, handleNavegar, setQuincena, setDiasOcultos, setSlotsOcultos,
     toggleDiaOculto, toggleSlot, toggleHoraEnTodos,
     agregarTexto, iniciarEdicion, cancelarEdicion,
@@ -95,6 +108,16 @@ function HistoriaContent() {
   useEffect(() => {
     if (profesionales.length === 0) fetchProfesionales();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Servicios y categorías: para el filtro por servicios (título del
+  // encabezado, agrupado y fotos de la hoja).
+  const { categorias, fetchCategorias } = useCategoriasServicioStore();
+  useEffect(() => {
+    if (categorias.length === 0) fetchCategorias();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const { servicios, fetchServicios } = useServiciosStore();
+  useEffect(() => {
+    if (servicios.length === 0) fetchServicios();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const activeProfesionales        = profesionales.filter(p => p.activo);
   const mostrarSelectorProfesional = activeProfesionales.length > 1;
   // La profesional del encabezado es la efectiva del selector (la dueña por
@@ -105,6 +128,43 @@ function HistoriaContent() {
   // ya excluye días/slots ocultados manualmente (diasAMostrar), solo para el
   // resumen arriba del canvas.
   const horariosVisibles = diasAMostrar.reduce((acc, dia) => acc + dia.slots.filter(s => s.libre).length, 0);
+
+  // Filtro por servicios: "Todos" ([]) deja el diseño de siempre; con algunos
+  // elegidos el encabezado pasa al A2 (categoría/s + línea de servicios).
+  const nombresServicios = serviciosElegidos.map(s => s.nombre);
+  const hayFiltroServicios = servicioIds.length > 0;
+  const tituloServicios = hayFiltroServicios
+    ? tituloFiltroServicios(serviciosElegidos, categorias, { fallback: t('servicesFallbackTitle'), y: t('servicesAnd') })
+    : '';
+  // Mismo ancho que la bajada de servicios en el canvas (padding 18px por lado).
+  const anchoLineaServicios = Math.max(0, canvasWidth - 36);
+  // Tamaño en pantalla de la vista previa (la historia mide siempre canvasWidth x canvasHeight).
+  const vistaAncho = canvasWidth * escalaVista;
+  const vistaAlto  = canvasHeight * escalaVista;
+  const entranEnLaBajada = (nombres: string[]) => serviciosEntran(
+    nombres, MAX_LINEAS_SERVICIOS, anchoLineaServicios, medirTextoServicios,
+  );
+  const entranServicios = entranEnLaBajada(nombresServicios);
+  const bloqueaExportar = hayFiltroServicios && !entranServicios;
+  // Modo equipo: cuántas profesionales activas hacen al menos uno de los
+  // servicios elegidos (el fetch junta los horarios libres de todas ellas).
+  const cantidadProfesionalesDelFiltro = activeProfesionales.filter(
+    p => (p.servicios ?? []).some(sv => servicioIds.includes(sv.id)),
+  ).length;
+  // Misma variable que usa el fetch (esEquipo / effectiveProfesionalId).
+  const seleccionProfesional: number | 'equipo' = esEquipo || effectiveProfesionalId === null ? 'equipo' : effectiveProfesionalId;
+  const valorProfesional = esEquipo ? t('teamLabel') : (profesionalSeleccionada?.nombre ?? t('teamLabel'));
+  const fotoCategoriaUnica = categoriaUnica?.fondo_historia_url ?? null;
+  const opcionesProfesional = activeProfesionales.map(p => {
+    const nombresCategorias = Array.from(new Set(
+      (p.servicios ?? []).map(sv => categorias.find(c => c.id === sv.categoria_id)?.nombre).filter((n): n is string => !!n),
+    ));
+    return {
+      id: p.id, nombre: p.nombre, apellido: p.apellido, color: p.color, avatarUrl: p.avatar_url,
+      subtitulo: nombresCategorias.length > 0 ? nombresCategorias.join(', ') : undefined,
+    };
+  });
+  const nombreParaTodos = mostrarSelectorProfesional && !esEquipo ? profesionalSeleccionada?.nombre : undefined;
 
   // Tocar un texto libre directo en el canvas es posible desde cualquier
   // tab (el canvas se ve siempre) pero el editor de texto solo está montado
@@ -141,29 +201,23 @@ function HistoriaContent() {
         </h1>
       </div>
 
-      {/* width = canvasWidth, ver comentario original: todo lo que use
+      {/* width = vistaAncho (ancho en pantalla de la historia): todo lo que use
           width:'100%' abajo queda tan ancho como la imagen. */}
       <div style={{
         paddingTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        width: canvasWidth || '100%', margin: '0 auto',
+        width: vistaAncho, margin: '0 auto',
       }}>
 
         {/* Mode tabs — siempre visibles: es la única forma de salir de un
             período sin contenido (p. ej. "Día" de hoy vacío) y volver a
             elegir otro. Nunca deben quedar atrapados detrás del estado
             vacío de más abajo. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginBottom: 12 }}>
-          <CalendarDays size={16} color={colors.primaryDeep} />
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.subtext }}>
-            {t('whatToShow')}
-          </span>
-          <div style={{ ...tabContainerStyle, marginBottom: 0, marginLeft: 'auto' }}>
-            {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
-              <button key={m} onClick={() => handleModo(m)} style={{ ...tabStyle(modo === m), padding: '6px 12px' }}>
-                {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
-              </button>
-            ))}
-          </div>
+        <div style={{ ...tabContainerStyle, width: '100%', marginBottom: 12 }}>
+          {(['dia', 'semana', 'mes'] as Modo[]).map(m => (
+            <button key={m} onClick={() => handleModo(m)} style={tabStyle(modo === m)}>
+              {m === 'dia' ? t('tabDay') : m === 'semana' ? t('tabWeek') : t('tabMonth')}
+            </button>
+          ))}
         </div>
 
         {/* Quincena tabs */}
@@ -181,32 +235,8 @@ function HistoriaContent() {
           </div>
         )}
 
-        {/* Selector de profesional — invisible con ≤1 profesional activa */}
-        {/* El pill cae en effectiveProfesionalId (jefa por default) cuando no
-            hay pick explícito — confirmado con el usuario (2026-08-19): tiene
-            que coincidir con lo que el fetch realmente trae (ver
-            useGenerarHistoria, ya corregido para filtrar por
-            effectiveProfesionalId con >1 profesional activa), no mostrar
-            "nada" mientras los datos sí muestran a alguien. */}
-        {mostrarSelectorProfesional && (
-          <SelectorProfesional
-            label={t('showScheduleOf')}
-            labelStyle={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1, textTransform: 'uppercase' }}
-            // avatarUrl != avatar_url (ProfesionalOption vs Profesional) —
-            // sin este mapeo, Profesional pasa el typecheck (prop opcional)
-            // pero nunca muestra la foto real, solo iniciales (bug real
-            // 2026-10-01, mismo en otras 8 pantallas con selector de
-            // profesional).
-            profesionales={activeProfesionales.map(p => ({ ...p, avatarUrl: p.avatar_url }))}
-            selectedId={selectedProfesionalId ?? effectiveProfesionalId}
-            onSelect={setSelectedProfesionalId}
-            selectedFg={colors.primaryFg}
-            unselectedBorderColor={colors.border}
-            pillFontWeight={600}
-          />
-        )}
-
-        {/* Date nav */}
+        {/* Date nav — junto a las pestañas de período: es la segunda mitad de
+            "cuándo" y no debe quedar separada por los filtros de "qué". */}
         <div style={{
           display: 'flex', alignItems: 'center', width: '100%', gap: 8, marginBottom: 16,
           borderRadius: 18, border: `1px solid ${colors.border}`, backgroundColor: colors.surfaceSubtle, padding: '10px 14px',
@@ -225,6 +255,95 @@ function HistoriaContent() {
           </button>
         </div>
 
+        {/* Qué mostrar — profesional (invisible con ≤1 activa) y servicios.
+            La fila de profesional cae en effectiveProfesionalId (jefa por
+            default) cuando no hay pick explícito: tiene que coincidir con lo
+            que el fetch realmente trae (confirmado con el usuario
+            2026-08-19). */}
+        {(mostrarSelectorProfesional || serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+          <div style={{ width: '100%', marginBottom: 14 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: colors.muted }}>{t('whatToShow')}</p>
+            <div style={tarjetaQueMostrarStyle}>
+              {mostrarSelectorProfesional && (
+                <FilaQueMostrar
+                  leading={esEquipo || !profesionalSeleccionada ? <EquipoIcono /> : (
+                    // avatarUrl != avatar_url (ProfesionalOption vs Profesional):
+                    // sin este mapeo solo se verían las iniciales.
+                    <AvatarProfesional
+                      nombre={profesionalSeleccionada.nombre}
+                      apellido={profesionalSeleccionada.apellido}
+                      color={profesionalSeleccionada.color}
+                      avatarUrl={profesionalSeleccionada.avatar_url}
+                    />
+                  )}
+                  titulo={t('professionalLabel')}
+                  valor={valorProfesional}
+                  activo={!esEquipo}
+                  onClick={() => setProfesionalAbierto(true)}
+                />
+              )}
+              {mostrarSelectorProfesional && (serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+                <div style={{ height: 1, background: colors.divider }} />
+              )}
+              {(serviciosOfrecidos.length > 0 || hayFiltroServicios) && (
+                <FilaQueMostrar
+                  leading={fotoCategoriaUnica ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={fotoCategoriaUnica} alt="" style={{ width: 32, height: 32, borderRadius: 9, objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{
+                      width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: colors.primarySoft,
+                    }}>
+                      <LayoutGrid size={16} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+                    </span>
+                  )}
+                  titulo={t('servicesLabel')}
+                  valor={hayFiltroServicios ? t('servicesSummary', { titulo: tituloServicios, count: servicioIds.length }) : t('servicesAll')}
+                  activo={hayFiltroServicios}
+                  onClick={() => setServiciosAbierto(true)}
+                />
+              )}
+            </div>
+            {mostrarSelectorProfesional && esEquipo && (
+              <p style={{ margin: '8px 0 0', display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, lineHeight: 1.4, color: colors.muted }}>
+                <Info size={14} strokeWidth={2} color={colors.muted} style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+                {hayFiltroServicios && cantidadProfesionalesDelFiltro > 0
+                  ? t('teamContextServices', { count: cantidadProfesionalesDelFiltro })
+                  : t('teamContextAll')}
+              </p>
+            )}
+          </div>
+        )}
+
+        <ProfesionalSheet
+          open={profesionalAbierto}
+          onClose={() => setProfesionalAbierto(false)}
+          onSelect={setProfesionalSel}
+          title={t('professionalLabel')}
+          equipoLabel={t('teamLabel')}
+          equipoSubtitulo={t('teamSubtitle')}
+          cerrarLabel={t('closeSheet')}
+          profesionales={opcionesProfesional}
+          selectedId={seleccionProfesional}
+        />
+
+        <ServiciosSheet
+          open={serviciosAbierto}
+          onClose={() => setServiciosAbierto(false)}
+          title={t('servicesSheetTitle')}
+          servicios={serviciosOfrecidos}
+          selectedIds={servicioIds}
+          onConfirm={setServicioIds}
+          todosLabel={nombreParaTodos ? t('servicesAllOf', { nombre: nombreParaTodos }) : t('servicesAllTeam')}
+          fotoCategoria={id => categorias.find(c => c.id === id)?.fondo_historia_url}
+          ctaLabel={count => t('showServices', { count })}
+          aviso={draft => {
+            const nombres = serviciosOfrecidos.filter(s => draft.includes(s.id)).map(s => s.nombre);
+            return entranEnLaBajada(nombres) ? null : t('servicesDontFit');
+          }}
+        />
+
         {hayContenido ? (
           <>
             {/* Caption "Vista previa" — estandarizado con
@@ -240,6 +359,13 @@ function HistoriaContent() {
               <p style={{ fontSize: 11, color: colors.subtext, margin: 0 }}>{t('visibleSlotsCount', { count: horariosVisibles })}</p>
             </div>
 
+            {/* Vista previa escalada: el contenedor de afuera mide lo que
+                ocupa en pantalla y el de adentro escala la historia, que se
+                dibuja siempre a tamaño fijo. El nodo exportado (canvasRef)
+                no lleva transform, así la imagen sale igual en cualquier
+                celular. */}
+            <div style={{ width: vistaAncho, height: vistaAlto, overflow: 'hidden', borderRadius: 16 * escalaVista }}>
+            <div style={{ width: canvasWidth, height: canvasHeight, transform: `scale(${escalaVista})`, transformOrigin: 'top left' }}>
             <StoryCanvas
               ref={canvasRef}
               titulo={titulo}
@@ -247,6 +373,7 @@ function HistoriaContent() {
               telefonoEstudio={telefonoEstudio}
               logoUrl={logoUrl}
               profesionalNombre={profesionalSeleccionada?.nombre}
+              filtroServicios={hayFiltroServicios ? { titulo: tituloServicios, servicios: nombresServicios } : undefined}
               dias={diasAMostrar}
               fondoUri={fondoUri}
               canvasWidth={canvasWidth}
@@ -255,16 +382,29 @@ function HistoriaContent() {
               onMoverTexto={actualizarPosicion}
               onResizeTexto={redimensionarTexto}
               onEditarTexto={iniciarEdicionDesdeCanvas}
+              escala={escalaVista}
             />
+            </div>
+            </div>
 
             {/* Editor: Agenda / Texto / Fondo */}
             <div style={{
               width: '100%', marginTop: 20, paddingTop: 18, borderTop: `1px solid ${colors.hairline}`,
             }}>
-              <div style={sectionTabContainerStyle}>
-                {(['agenda', 'texto', 'fondo'] as SeccionEditor[]).map(s => (
-                  <button key={s} onClick={() => setSeccion(s)} style={sectionTabStyle(seccion === s)}>
-                    {s === 'agenda' ? t('sectionAgenda') : s === 'texto' ? t('sectionText') : t('sectionBackground')}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, width: '100%' }}>
+                {([
+                  { s: 'agenda', Icono: Clock, label: t('sectionAgenda') },
+                  { s: 'texto', Icono: Type, label: t('sectionText') },
+                  { s: 'fondo', Icono: ImageIcon, label: t('sectionBackground') },
+                ] as { s: SeccionEditor; Icono: typeof Clock; label: string }[]).map(({ s, Icono, label }) => (
+                  <button key={s} type="button" aria-pressed={seccion === s} onClick={() => setSeccion(s)} style={herramientaStyle(seccion === s)}>
+                    <span style={{
+                      width: 40, height: 40, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: colors.primarySoft,
+                    }}>
+                      <Icono size={18} strokeWidth={2} color={colors.primaryDeep} aria-hidden="true" />
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.textStrong }}>{label}</span>
                   </button>
                 ))}
               </div>
@@ -375,12 +515,24 @@ function HistoriaContent() {
             </div>
 
             {/* Footer actions */}
-            <div style={{ width: '100%', marginTop: 22, display: 'flex', gap: 10 }}>
-              <button onClick={descargarImagen} style={footerActionStyle}>
+            {bloqueaExportar && (
+              <p style={{
+                width: '100%', margin: '22px 0 0', fontSize: 12.5, lineHeight: 1.4, padding: '8px 12px', borderRadius: 10,
+                background: colors.amberBg, color: colors.amberFg, boxSizing: 'border-box',
+              }}>
+                {t('servicesDontFit')}
+              </p>
+            )}
+            <div style={{ width: '100%', marginTop: bloqueaExportar ? 10 : 22, display: 'flex', gap: 10 }}>
+              <button onClick={descargarImagen} disabled={bloqueaExportar} style={{ ...footerActionStyle, opacity: bloqueaExportar ? 0.5 : 1 }}>
                 <Download size={18} strokeWidth={2} color={colors.text} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{t('save')}</span>
               </button>
-              <button onClick={compartirImagen} style={{ ...footerActionStyle, backgroundColor: colors.primarySolid, border: 'none' }}>
+              <button
+                onClick={compartirImagen}
+                disabled={bloqueaExportar}
+                style={{ ...footerActionStyle, backgroundColor: colors.primarySolid, border: 'none', opacity: bloqueaExportar ? 0.5 : 1 }}
+              >
                 <Share2 size={18} strokeWidth={2} color={colors.primaryFg} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: colors.primaryFg }}>{t('share')}</span>
               </button>
@@ -388,7 +540,7 @@ function HistoriaContent() {
           </>
         ) : (
           <div style={{
-            width: canvasWidth, height: canvasHeight / 3,
+            width: vistaAncho, height: vistaAlto / 3,
             background: colors.surfaceSubtle, borderRadius: 20, border: `1px solid ${colors.border}`,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 12, marginBottom: 15,

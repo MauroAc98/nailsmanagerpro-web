@@ -271,9 +271,17 @@ export const turnoService = {
 
   // profesionalId opcional — mismo patrón que getByMes/slotService.getAll:
   // el backend filtra server-side, cae al default de la cuenta si se omite.
-  getDisponibilidad: async (desde: string, hasta: string, profesionalId?: number): Promise<DisponibilidadDia[]> => {
+  // servicioIds opcional (axios lo manda como servicio_ids[]): sin profesional
+  // el backend junta los horarios libres de las profesionales activas que
+  // hacen al menos uno de esos servicios; con profesional, solo esa
+  // profesional (vacío si no hace ninguno). [] equivale a omitirlo.
+  getDisponibilidad: async (desde: string, hasta: string, profesionalId?: number, servicioIds?: number[]): Promise<DisponibilidadDia[]> => {
     const { data } = await api.get<DisponibilidadDia[]>('/turnos/disponibilidad', {
-      params: { desde, hasta, ...(profesionalId ? { profesional_id: profesionalId } : {}) },
+      params: {
+        desde, hasta,
+        ...(profesionalId ? { profesional_id: profesionalId } : {}),
+        ...(servicioIds && servicioIds.length > 0 ? { servicio_ids: servicioIds } : {}),
+      },
     });
     return data;
   },

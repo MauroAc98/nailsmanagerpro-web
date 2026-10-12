@@ -4,14 +4,23 @@ import { turnoService, DisponibilidadDia, extraerMensajeError } from '@/services
 import { withGlobalLoader } from '@/store/helpers/withGlobalLoader';
 import { alertDialog } from '@/store/useConfirmStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
+import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
+import { useServiciosStore } from '@/store/useServicioStore';
+import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import { useAuthStore } from '@/store/useAuthStore';
 import { profesionalJefa } from '@/services/profesionalService';
+import type { Servicio } from '@/services/servicioService';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { tStatic } from '@/store/useLocaleStore';
 import { fetchAsDataUrl, resizeFondoFile, prepararImagenesParaCaptura } from '@/lib/historia/captura';
+import { HISTORIA_ALTO, HISTORIA_ANCHO, PIXEL_RATIO_EXPORT, escalaVistaPrevia } from '@/lib/historia/formatoHistoria';
 import { useFotoEncabezado } from '@/hooks/useFotoEncabezado';
 
 export type Modo = 'dia' | 'semana' | 'mes';
+
+// Qué agenda se muestra: una profesional puntual o "Todo el equipo". Se modela
+// explícito (no como null) porque null ya significa "todavía no eligió" → jefa.
+export type SeleccionProfesional = number | 'equipo';
 
 export interface TextoLibre {
   id:       string;
@@ -21,12 +30,6 @@ export interface TextoLibre {
   fontSize: number;
 }
 
-// Ancho de exportación fijo — 1080px es la resolución estándar recomendada
-// por Instagram Stories y WhatsApp Estados (formato 9:16). canvasWidth es
-// puramente para el preview on-screen (viewport-relative, tope 420 CSS px);
-// sin este target fijo, toBlob() con pixelRatio:2 exportaba como máximo
-// 840x1493, por debajo de lo que ambas plataformas esperan.
-const STORY_EXPORT_WIDTH = 1080;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -96,10 +99,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const [textoInput,     setTextoInput]     = useState('');
   const [mostrarEmojis,  setMostrarEmojis]  = useState(false);
   const [editandoId,     setEditandoId]     = useState<string | null>(null);
-  // Multi-agenda — null = profesional default de la cuenta (comportamiento
-  // de siempre). El nombre para mostrar en el canvas se resuelve en la
-  // pantalla, que tiene acceso a useProfesionalStore; el hook solo maneja el id.
-  const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
+  // Multi-agenda — null = todavía no eligió (comportamiento de siempre: la
+  // jefa). 'equipo' = horarios combinados de todas las profesionales activas.
+  // El nombre para mostrar en el canvas se resuelve en la pantalla, que tiene
+  // acceso a useProfesionalStore; el hook solo maneja el id.
+  const [seleccion, setSeleccion] = useState<SeleccionProfesional | null>(null);
+  // Servicios elegidos para la historia — [] = todos (sin filtro).
+  const [servicioIds, setServicioIdsCrudo] = useState<number[]>([]);
 
   // ─────────────────────────────────────────────
   // Fondo fijo por profesional — el hook sí lee useProfesionalStore acá
@@ -112,6 +118,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // sentido).
   // ─────────────────────────────────────────────
   const { profesionales, guardarFondoHistoria, borrarFondoHistoria } = useProfesionalStore();
+  const categorias = useCategoriasServicioStore(s => s.categorias);
+  const guardarFondoCategoria = useCategoriasServicioStore(s => s.guardarFondoHistoria);
+  const borrarFondoCategoria = useCategoriasServicioStore(s => s.borrarFondoHistoria);
+  const servicios = useServiciosStore(s => s.servicios);
   const nombreEstudio = useAuthStore(s => s.user?.name ?? null);
   const telefonoEstudio = useAuthStore(s => s.user?.telefono ?? null);
   // El logo, como fondoFijoGuardado más abajo, es una URL del backend servida
@@ -126,16 +136,63 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // La profesional efectiva (la dueña por defecto, o la que se eligió en el
   // selector) manda en el encabezado: su avatar si tiene, y si no el logo del
   // negocio. Siempre a color.
+  // "Todo el equipo" solo existe con >1 profesional activa (el selector no se
+  // muestra con una sola): con una, se ignora y todo sigue como siempre.
+  const multiProfesional = activeProfesionales.length > 1;
+  const esEquipo = seleccion === 'equipo' && multiProfesional;
+  const jefaId = useMemo(() => profesionalJefa(profesionales)?.id ?? null, [profesionales]);
+  // null en modo equipo (no hay una profesional puntual). Esta es LA variable
+  // del pill seleccionado y del scope del fetch — tienen que ser la misma.
   const effectiveProfesionalId = useMemo(() => {
-    if (selectedProfesionalId) return selectedProfesionalId;
-    return profesionalJefa(profesionales)?.id ?? null;
-  }, [selectedProfesionalId, profesionales]);
+    if (esEquipo) return null;
+    if (typeof seleccion === 'number') return seleccion;
+    return jefaId;
+  }, [esEquipo, seleccion, jefaId]);
+  // Dueña del fondo fijo guardado: la efectiva, o la jefa en modo equipo.
+  const profesionalFondoId = effectiveProfesionalId ?? jefaId;
+  const profesionalSel: SeleccionProfesional | null = esEquipo ? 'equipo' : effectiveProfesionalId;
+
+  // Servicios activos de la cuenta; los ofrecidos son los de la profesional
+  // elegida (con >1 activa) o todos (equipo / cuenta de una sola).
+  const serviciosActivos = useMemo(() => servicios.filter(s => s.activo), [servicios]);
+  const ofrecidosPara = useCallback((profesionalId: number | null): Servicio[] => {
+    if (!multiProfesional || profesionalId === null) return serviciosActivos;
+    const prof = activeProfesionales.find(p => p.id === profesionalId);
+    if (!prof) return [];
+    const hace = new Set(prof.servicios.map(sv => sv.id));
+    return serviciosActivos.filter(sv => hace.has(sv.id));
+  }, [multiProfesional, serviciosActivos, activeProfesionales]);
+  const serviciosOfrecidos = useMemo(
+    () => ofrecidosPara(effectiveProfesionalId),
+    [ofrecidosPara, effectiveProfesionalId]
+  );
+  // En el orden en que SelectorServicios los agrupa: categoría y luego orden.
+  const serviciosElegidos = useMemo(
+    () => agruparServiciosPorCategoria(serviciosActivos.filter(s => servicioIds.includes(s.id)), categorias)
+      .flatMap(g => g.servicios),
+    [serviciosActivos, servicioIds, categorias]
+  );
+  // Si TODOS los elegidos son de una misma categoría, esa categoría manda el
+  // fondo (y recibe los guardados/quitados); con mezcla o sin elegir, no hay.
+  const categoriaUnica = useMemo(() => {
+    if (serviciosElegidos.length === 0) return null;
+    const id = serviciosElegidos[0].categoria_id;
+    if (id === null || serviciosElegidos.some(s => s.categoria_id !== id)) return null;
+    return categorias.find(c => c.id === id) ?? null;
+  }, [serviciosElegidos, categorias]);
+  const fondoDeCategoria = categoriaUnica?.fondo_historia_url ?? null;
   // Foto del recuadro del encabezado (avatar efectivo o logo, proxiada y
   // horneada): lógica compartida con la historia de precios.
+  // En modo equipo no hay una profesional puntual: el encabezado usa solo el
+  // logo del negocio (null → elegirFotoEncabezado cae al logo).
   const logoUrl = useFotoEncabezado(activeProfesionales, effectiveProfesionalId, logoNegocioCrudo);
+  // El fondo fijo sale de la categoría única de los servicios elegidos si
+  // tiene uno; si no, de la profesional (la efectiva, o la jefa en equipo).
   const fondoFijoGuardado = useMemo(
-    () => activeProfesionales.find(p => p.id === effectiveProfesionalId)?.fondo_historia_url ?? null,
-    [activeProfesionales, effectiveProfesionalId]
+    () => fondoDeCategoria
+      ?? activeProfesionales.find(p => p.id === profesionalFondoId)?.fondo_historia_url
+      ?? null,
+    [fondoDeCategoria, activeProfesionales, profesionalFondoId]
   );
 
   // fondoFijoGuardado es una URL pública del backend, servida sin
@@ -161,20 +218,22 @@ export function useGenerarHistoria(fechaInicial?: string) {
   const canvasRef      = useRef<HTMLDivElement>(null);
 
   // ─────────────────────────────────────────────
-  // Canvas size — igual que RN (SCREEN_WIDTH * 0.85), no un ancho fijo.
-  // Un fixed width no se adapta a celulares reales de distinto ancho;
-  // acá se recalcula con el viewport real, con un tope para desktop.
+  // Canvas size — la historia se dibuja SIEMPRE a HISTORIA_ANCHO x
+  // HISTORIA_ALTO (formato de historia 9:16, igual en cualquier celular) y se
+  // muestra escalada al 85% del ancho de pantalla (tope 420px). Antes se
+  // dibujaba al ancho de la pantalla y, con fuentes de tamaño fijo, en un
+  // celular chico el pie terminaba tapado por la barra de Instagram.
   // ─────────────────────────────────────────────
-  const [canvasWidth, setCanvasWidth] = useState(0);
+  const canvasWidth  = HISTORIA_ANCHO;
+  const canvasHeight = HISTORIA_ALTO;
+  const [escalaVista, setEscalaVista] = useState(1);
 
   useEffect(() => {
-    const update = () => setCanvasWidth(Math.min(420, window.innerWidth * 0.85));
+    const update = () => setEscalaVista(escalaVistaPrevia(window.innerWidth));
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
-
-  const canvasHeight = (canvasWidth * 16) / 9;
 
   // Cargar el fondo fijo guardado como default cada vez que cambia la
   // profesional "efectiva" (selección explícita, o la única activa).
@@ -183,9 +242,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
   // render en cascada que un setState dentro de un effect generaría). Solo
   // corre cuando effectiveProfesionalId realmente cambia, así que un fondo
   // elegido "por esta vez" en la misma profesional no se pisa solo.
-  const [profesionalSincronizada, setProfesionalSincronizada] = useState(effectiveProfesionalId);
-  if (profesionalSincronizada !== effectiveProfesionalId) {
-    setProfesionalSincronizada(effectiveProfesionalId);
+  // La "key" incluye la categoría cuando es ella la que aporta el fondo:
+  // cambiar de profesional a categoría (o entre categorías) también recarga el
+  // fondo fijo correspondiente.
+  const fuenteFondo = fondoDeCategoria && categoriaUnica ? `c${categoriaUnica.id}` : `p${profesionalFondoId}`;
+  const [fuenteSincronizada, setFuenteSincronizada] = useState(fuenteFondo);
+  if (fuenteSincronizada !== fuenteFondo) {
+    setFuenteSincronizada(fuenteFondo);
     setFondoUri(proxiedFondoFijoGuardado);
   }
 
@@ -262,8 +325,13 @@ export function useGenerarHistoria(fechaInicial?: string) {
     return `${nombreMes(fechaBase, 'long')} ${fechaBase.getFullYear()}`;
   }, [fechaBase, modo]);
 
+  // Servicios que se mandan al backend: los elegidos; en modo equipo sin
+  // elegir, TODOS los activos (así el backend junta a todas las profesionales).
+  // Como clave string para no re-pedir por cambios de identidad del array.
+  const idsParaFetchKey = (servicioIds.length > 0 ? servicioIds : esEquipo ? serviciosActivos.map(s => s.id) : []).join(',');
+
   // ─────────────────────────────────────────────
-  // Fetch effect — runs on fechaBase/modo changes only
+  // Fetch effect — runs on fechaBase/modo/profesional/servicios changes
   // ─────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
@@ -280,8 +348,11 @@ export function useGenerarHistoria(fechaInicial?: string) {
           // — con una sola, se mantiene el fetch sin scope de siempre, para
           // no excluir turnos viejos con profesional_id null de antes de
           // multi-agenda.
-          const filtro = activeProfesionales.length > 1 ? (effectiveProfesionalId ?? undefined) : undefined;
-          const data = await turnoService.getDisponibilidad(desde, hasta, filtro);
+          // En modo equipo effectiveProfesionalId es null → sin profesional y
+          // con servicio_ids (el backend junta a las que hacen alguno).
+          const filtro = multiProfesional ? (effectiveProfesionalId ?? undefined) : undefined;
+          const ids = idsParaFetchKey ? idsParaFetchKey.split(',').map(Number) : undefined;
+          const data = await turnoService.getDisponibilidad(desde, hasta, filtro, ids);
           if (cancelled) return;
           setAgendaGenerada(data);
 
@@ -298,7 +369,25 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
     cargar();
     return () => { cancelled = true; };
-  }, [fechaBase, modo, effectiveProfesionalId, activeProfesionales.length]);
+  }, [fechaBase, modo, effectiveProfesionalId, multiProfesional, idsParaFetchKey]);
+
+  // Elegir otra profesional o otros servicios cambia los horarios de fondo: lo
+  // ocultado a mano sobre los anteriores ya no aplica (igual que al cambiar de
+  // período).
+  const setServicioIds = useCallback((ids: number[]) => {
+    setServicioIdsCrudo(ids);
+    setDiasOcultos([]);
+    setSlotsOcultos([]);
+  }, []);
+
+  // Cambiar de profesional descarta los servicios elegidos que ella no hace.
+  const setProfesionalSel = useCallback((sel: SeleccionProfesional) => {
+    setSeleccion(sel);
+    const hace = new Set(ofrecidosPara(sel === 'equipo' ? null : sel).map(s => s.id));
+    setServicioIdsCrudo(prev => prev.filter(id => hace.has(id)));
+    setDiasOcultos([]);
+    setSlotsOcultos([]);
+  }, [ofrecidosPara]);
 
   // ─────────────────────────────────────────────
   // Reset (mode switch / date nav) — fondoUri untouched
@@ -527,7 +616,17 @@ export function useGenerarHistoria(fechaInicial?: string) {
 
       if (!guardarFijo) return;
 
-      let profesionalId = effectiveProfesionalId;
+      // Con servicios de una sola categoría el fondo fijo es de la categoría,
+      // no de una profesional.
+      if (categoriaUnica) {
+        const resultadoCategoria = await guardarFondoCategoria(categoriaUnica.id, archivoParaSubir);
+        if (!resultadoCategoria.success) {
+          await alertDialog(resultadoCategoria.message ?? tStatic('historia.HistoriaPage.couldNotSaveFixedBackground'));
+        }
+        return;
+      }
+
+      let profesionalId = profesionalFondoId;
 
       // Si todavía no hay ninguna profesional resuelta puede ser que el
       // fetch de /profesionales (disparado al entrar a la pantalla) no
@@ -538,7 +637,7 @@ export function useGenerarHistoria(fechaInicial?: string) {
       // genuino sin identificar.
       if (!profesionalId) {
         await useProfesionalStore.getState().fetchProfesionales();
-        profesionalId = selectedProfesionalId ?? profesionalJefa(useProfesionalStore.getState().profesionales)?.id ?? null;
+        profesionalId = (typeof seleccion === 'number' ? seleccion : null) ?? profesionalJefa(useProfesionalStore.getState().profesionales)?.id ?? null;
       }
 
       if (!profesionalId) {
@@ -551,17 +650,22 @@ export function useGenerarHistoria(fechaInicial?: string) {
         await alertDialog(resultado.message ?? tStatic('historia.HistoriaPage.couldNotSaveFixedBackground'));
       }
     })();
-  }, [effectiveProfesionalId, selectedProfesionalId, guardarFondoHistoria]);
+  }, [profesionalFondoId, seleccion, categoriaUnica, guardarFondoHistoria, guardarFondoCategoria]);
 
   const quitarFondoFijo = useCallback(async () => {
-    if (!effectiveProfesionalId) return;
-    const resultado = await borrarFondoHistoria(effectiveProfesionalId);
+    // Se borra el fondo que efectivamente se está mostrando: el de la
+    // categoría si es ella la que lo aporta, si no el de la profesional.
+    const fuenteId = fondoDeCategoria && categoriaUnica ? categoriaUnica.id : profesionalFondoId;
+    if (!fuenteId) return;
+    const resultado = fondoDeCategoria && categoriaUnica
+      ? await borrarFondoCategoria(categoriaUnica.id)
+      : await borrarFondoHistoria(fuenteId);
     if (resultado.success) {
       setFondoUri(null);
     } else {
       await alertDialog(resultado.message ?? tStatic('historia.HistoriaPage.couldNotRemoveFixedBackground'));
     }
-  }, [effectiveProfesionalId, borrarFondoHistoria]);
+  }, [profesionalFondoId, fondoDeCategoria, categoriaUnica, borrarFondoHistoria, borrarFondoCategoria]);
 
   // ─────────────────────────────────────────────
   // Capture helper — rasterize StoryCanvas DOM node.
@@ -628,13 +732,10 @@ export function useGenerarHistoria(fechaInicial?: string) {
       setFondoUri(dataUrl);
     }
 
-    // pixelRatio calculado, no fijo — así el PNG exportado siempre sale a
-    // STORY_EXPORT_WIDTH de ancho real sin importar cuánto mida el preview
-    // en este viewport puntual.
-    const pixelRatio = STORY_EXPORT_WIDTH / canvasRef.current.getBoundingClientRect().width;
-
-    await toBlob(canvasRef.current, { pixelRatio });
-    return toBlob(canvasRef.current, { pixelRatio });
+    // El nodo mide siempre HISTORIA_ANCHO (la vista previa escala un
+    // contenedor de afuera, no el nodo): x3 da exactamente 1080 x 1920.
+    await toBlob(canvasRef.current, { pixelRatio: PIXEL_RATIO_EXPORT });
+    return toBlob(canvasRef.current, { pixelRatio: PIXEL_RATIO_EXPORT });
   }, []);
 
   const descargarImagen = useCallback(async () => {
@@ -700,8 +801,9 @@ export function useGenerarHistoria(fechaInicial?: string) {
     fechaBase, modo, fondoUri, quincena, diasOcultos, slotsOcultos,
     agendaGenerada, diasQuincena, diasAMostrar, hayContenido, titulo, tituloNav,
     textosCanvas, textoInput, setTextoInput, mostrarEmojis, setMostrarEmojis,
-    editandoId, canvasRef, canvasWidth, canvasHeight,
-    selectedProfesionalId, setSelectedProfesionalId, effectiveProfesionalId,
+    editandoId, canvasRef, canvasWidth, canvasHeight, escalaVista,
+    profesionalSel, setProfesionalSel, esEquipo, effectiveProfesionalId,
+    servicioIds, setServicioIds, serviciosOfrecidos, serviciosElegidos, categoriaUnica,
     fondoFijoGuardado, nombreEstudio, telefonoEstudio, logoUrl,
 
     // navigation / mode

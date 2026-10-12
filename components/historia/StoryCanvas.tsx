@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
@@ -12,6 +12,7 @@ import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
+import { ESPACIADO_LINEA_SERVICIOS, MAX_LINEAS_SERVICIOS, medirTextoServicios, repartirEnRenglones } from '@/lib/historiaServicios';
 
 function nombreDia(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
@@ -36,6 +37,11 @@ interface Props {
   // línea "con {nombre} · {fecha}" (ver lineaProfesional); el nombre del
   // negocio baja al pie.
   profesionalNombre?: string;
+  // Encabezado A2. Con servicios elegidos (servicios.length > 0) el header
+  // pasa a: kicker "TURNOS DISPONIBLES · FECHA", titular (`titulo`: la
+  // categoría o categorías) + "con {profesional}", y debajo una línea con los
+  // nombres de los servicios (máx. 2 líneas). Sin esto, el diseño de siempre.
+  filtroServicios?: { titulo: string; servicios: string[] };
   // Foto/logo del negocio (User.logo_url) — reemplaza al chip de fecha /
   // ícono genérico en el header, en los 3 modos (día/semana/mes), para
   // impulsar la marca del negocio en la imagen que se comparte (pedido
@@ -54,6 +60,9 @@ interface Props {
   onMoverTexto:   (id: string, x: number, y: number) => void;
   onResizeTexto:  (id: string, fontSize: number) => void;
   onEditarTexto:  (id: string) => void;
+  // Escala con la que se muestra en pantalla (la historia se dibuja a tamaño
+  // fijo, ver lib/historia/formatoHistoria): solo la usa el arrastre de textos.
+  escala?:        number;
 }
 
 // ─────────────────────────────────────────────
@@ -61,7 +70,7 @@ interface Props {
 // forwardRef exposes the outer node for html-to-image capture.
 // ─────────────────────────────────────────────
 export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanvas(
-  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto },
+  { titulo, nombreEstudio, telefonoEstudio, profesionalNombre, filtroServicios, logoUrl, dias, fondoUri, canvasWidth, canvasHeight, textosLibres, onMoverTexto, onResizeTexto, onEditarTexto, escala = 1 },
   ref
 ) {
   const t = useTranslations('historia.StoryCanvas');
@@ -152,7 +161,79 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // al canvas, no un 14px fijo que quedaba pegado al degradado del header
   // (que llega hasta tituloZonaAlto). Abajo del body alcanza con poco: el
   // divisor + footer ya tienen su propio margen.
-  const bodyMargenTop = Math.round(canvasHeight * 0.06);
+  // Con servicios elegidos (M1, canvas 2026-10-12): el título nombra la
+  // categoría ("Turnos de Faciales") y, debajo del encabezado, los servicios
+  // van como bajada en mayúsculas chicas con espaciado (hasta 2 renglones). En
+  // quincena el alto que suma la bajada lo devuelven el margen y los espacios
+  // entre filas, así el total queda igual que en producción.
+  const servicios = filtroServicios?.servicios ?? [];
+  const conServicios = servicios.length > 0;
+  const ALTO_RENGLON_SERVICIOS = 13;
+  const SEPARACION_BAJADA = 12;
+  const MARGEN_CON_SERVICIOS = 18;
+  // Mismos renglones que mide el aviso de la hoja: el "·" solo va entre
+  // servicios del mismo renglón, nunca al principio ni al final de uno.
+  const renglonesServicios = conServicios
+    ? repartirEnRenglones(servicios, canvasWidth - 36, medirTextoServicios).slice(0, MAX_LINEAS_SERVICIOS)
+    : [];
+  const lineasServicios = renglonesServicios.length;
+  const altoFranja = conServicios ? SEPARACION_BAJADA + lineasServicios * ALTO_RENGLON_SERVICIOS : 0;
+  const bodyMargenBase = Math.round(canvasHeight * 0.06);
+  const margenEncabezadoLista = conServicios ? MARGEN_CON_SERVICIOS : bodyMargenBase;
+  const altoADevolver = Math.max(0, altoFranja + margenEncabezadoLista - bodyMargenBase);
+
+  // Línea fina entre el encabezado y la lista, igual que la del pie. El
+  // encabezado sube SUBIDA_ENCABEZADO px y ese espacio se suma al margen: la
+  // lista queda donde estaba y la línea cabe adentro del margen, centrada.
+  // Sube poco a propósito: la zona segura de arriba es lo que tapa la barra
+  // de perfil de Instagram/WhatsApp.
+  const SUBIDA_ENCABEZADO = 4;
+  const espacioEncabezadoLista = margenEncabezadoLista + SUBIDA_ENCABEZADO;
+  const aireArribaLinea = Math.round((espacioEncabezadoLista - 1) / 2);
+  const aireAbajoLinea  = espacioEncabezadoLista - 1 - aireArribaLinea;
+  const gapLista = dias.length > 1 ? Math.max(2, gap - altoADevolver / (dias.length - 1)) : gap;
+
+  // La franja desenfocada del encabezado cubre la insignia (44px); con
+  // servicios se estira hasta cubrir también la bajada.
+  const franjaEncabezado = tituloZonaAlto
+    + Math.max(0, 44 + altoFranja - Math.round(canvasHeight * 0.10));
+
+  // Con logo cargado, la foto del negocio ocupa este mismo recuadro (mismo
+  // tamaño/radio que el chip de fecha) en los 3 modos — decisión 2026-09-30
+  // tras canvas de diseño: un badge de fecha superpuesto no escala a
+  // semana/mes. Sin logo, chip de fecha en modo Día, ícono genérico en
+  // Semana/Mes. La foto va a color y sin `filter` en vivo: html-to-image la
+  // rasteriza como SVG foreignObject y WebKit combina mal ese filtro — la
+  // historia entera salía negra en Safari (real en prod 2026-10-01).
+  const insignia = logoUrl ? (
+    <img
+      src={logoUrl}
+      alt=""
+      style={{
+        flexShrink: 0, width: 44, height: 44, borderRadius: 12,
+        objectFit: 'cover',
+        border: '1.5px solid rgba(255,255,255,0.6)',
+      }}
+    />
+  ) : (
+    <span style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
+    }}>
+      {chipDiaNumero !== null ? (
+        <>
+          <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
+            {chipDiaLabel}
+          </span>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
+            {chipDiaNumero}
+          </span>
+        </>
+      ) : (
+        <CalendarDays size={18} color="#fff" strokeWidth={2} />
+      )}
+    </span>
+  );
 
   return (
     // Wrapper solo para el look on-screen (esquinas redondeadas). El nodo
@@ -196,7 +277,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             (mismo object-fit:cover que la foto base) y el wrapper con
             overflow:hidden solo destapa la franja correspondiente, así el
             blur queda alineado píxel a píxel con la foto de abajo. */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: tituloZonaAlto, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: franjaEncabezado, overflow: 'hidden' }}>
           <img
             src={fondoUri ?? '/default_bg.jpg'}
             alt=""
@@ -225,9 +306,10 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             alcanza para la legibilidad (con el text-shadow de cada
             elemento). */}
         <div
+          data-testid="story-contenido"
           style={{
             position: 'absolute', inset: 0,
-            padding: `${safe.top}px 18px ${safe.bottom}px`,
+            padding: `${safe.top - SUBIDA_ENCABEZADO}px 18px ${safe.bottom}px`,
             display: 'flex', flexDirection: 'column',
           }}
         >
@@ -243,49 +325,15 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 descarta las custom properties heredadas al capturar (mismo
                 problema que primaryRaw/primaryDeepRaw resuelven en
                 theme/colors.ts). */}
+            <div>
+            {/* Con servicios elegidos el encabezado mantiene exactamente el
+                tamaño de producción (insignia 44px, titular 18px, línea 11px):
+                tiene que entrar en la franja desenfocada y una quincena no
+                tiene alto de sobra. Solo cambian los textos: la categoría va
+                en el titular y "Turnos disponibles con X · fecha" en la línea
+                chica (canvas con medidas reales, aprobado 2026-10-11). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-              {/* Con logo cargado, la foto del negocio ocupa este mismo
-                  recuadro (mismo tamaño/radio que el chip de fecha) en los 3
-                  modos — decisión 2026-09-30 tras canvas de diseño: un badge
-                  de fecha superpuesto no escala a semana/mes, así que se
-                  dropea la fecha del ícono y se apoya solo en el texto de
-                  abajo (que ya la muestra formateada para cada modo). Sin
-                  logo, se ve exactamente igual que siempre (chip de fecha en
-                  modo Día, ícono genérico en Semana/Mes).
-                  La foto va a color y sin `filter` en vivo: ese filtro vive
-                  dentro del árbol que html-to-image rasteriza como SVG
-                  foreignObject aparte, y WebKit lo combina mal con esa
-                  rasterización — la historia entera salía negra en Safari
-                  (real en prod 2026-10-01). */}
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt=""
-                  style={{
-                    flexShrink: 0, width: 44, height: 44, borderRadius: 12,
-                    objectFit: 'cover',
-                    border: '1.5px solid rgba(255,255,255,0.6)',
-                  }}
-                />
-              ) : (
-                <span style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
-                }}>
-                  {chipDiaNumero !== null ? (
-                    <>
-                      <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
-                        {chipDiaLabel}
-                      </span>
-                      <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
-                        {chipDiaNumero}
-                      </span>
-                    </>
-                  ) : (
-                    <CalendarDays size={18} color="#fff" strokeWidth={2} />
-                  )}
-                </span>
-              )}
+              {insignia}
 
               <div style={{ minWidth: 0, flex: 1 }}>
                 {/* maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
@@ -294,7 +342,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                     (maxFontSize 10) — el título nunca queda más chico que la
                     info de los turnos. */}
                 <FitText
-                  text={tituloPrincipal}
+                  text={conServicios && filtroServicios ? t('availableTitleFor', { categoria: filtroServicios.titulo }) : tituloPrincipal}
                   maxFontSize={18}
                   minFontSize={13}
                   style={{
@@ -311,8 +359,39 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
               </div>
             </div>
 
+            {conServicios && (
+              <div
+                data-testid="story-servicios"
+                style={{
+                  marginTop: SEPARACION_BAJADA, fontSize: 9, fontWeight: 600, letterSpacing: ESPACIADO_LINEA_SERVICIOS,
+                  lineHeight: `${ALTO_RENGLON_SERVICIOS}px`, color: 'rgba(255,255,255,0.78)',
+                  textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                  maxHeight: ALTO_RENGLON_SERVICIOS * MAX_LINEAS_SERVICIOS, overflow: 'hidden',
+                }}
+              >
+                {/* Mayúsculas en el texto (no text-transform) para que la
+                    medición del aviso y la imagen exportada coincidan. */}
+                {renglonesServicios.map((renglon, r) => (
+                  <div key={r} style={{ whiteSpace: 'nowrap' }}>
+                    {renglon.map((nombre, idx) => (
+                      <Fragment key={idx}>
+                        {idx > 0 && <span style={{ opacity: 0.55 }}> ·&nbsp;&nbsp;</span>}
+                        <span>{nombre.toUpperCase()}</span>
+                      </Fragment>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            </div>
+
+            <div
+              data-testid="story-linea-encabezado"
+              style={{ height: 1, background: 'rgba(255,255,255,0.25)', marginTop: aireArribaLinea }}
+            />
+
             {/* Body */}
-            <div ref={cuerpoRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: bodyMargenTop, marginBottom: 14 }}>
+            <div ref={cuerpoRef} data-testid="story-cuerpo" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: aireAbajoLinea, marginBottom: 14 }}>
               {esModoDia ? (
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', alignContent: 'center',
@@ -332,7 +411,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   ))}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap }}>
+                <div data-testid="story-lista" style={{ display: 'flex', flexDirection: 'column', gap: gapLista }}>
                   {dias.map((dia, idx) => {
                     const slotsLibres = dia.slots.filter(s => s.libre);
                     const estaCompleto = slotsLibres.length === 0;
@@ -400,6 +479,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
             onMover={onMoverTexto}
             onResize={onResizeTexto}
             onEditar={onEditarTexto}
+            escala={escala}
           />
         ))}
       </div>
