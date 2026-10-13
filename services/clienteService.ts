@@ -77,7 +77,17 @@ export const clienteService = {
   },
 };
 
+// Pedido que no llegó a tener respuesta del servidor (sin red, corte, timeout
+// por señal débil): no es un "error inesperado", es un problema de conexión.
+export const esErrorDeRed =(e: unknown): boolean => {
+  if (!e || typeof e !== 'object') return false;
+  const err = e as { response?: unknown; code?: string; message?: string };
+  if (err.response != null) return false;
+  return ['ERR_NETWORK', 'ECONNABORTED', 'ETIMEDOUT'].includes(err.code ?? '') || err.message === 'Network Error';
+};
+
 export const extraerMensajeError = (e: unknown): string => {
+  if (esErrorDeRed(e)) return tStatic('common.Errors.networkError');
   if (e && typeof e === 'object' && 'response' in e) {
     const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
     // Laravel pone el mensaje específico de un campo bajo `errors.<campo>[0]`

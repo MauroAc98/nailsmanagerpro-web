@@ -249,9 +249,13 @@ export default function ClientesPage() {
             <Spinner />
           </div>
         ) : clientesPagina.length === 0 ? (
-          <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
-            {buscarInput || estado !== 'todos' ? t('noResults') : t('emptyState')}
-          </p>
+          // Con error la lista vacía es "no se pudo cargar", no "no hay clientes":
+          // el aviso de arriba ya lo dice, así que no se muestra el vacío.
+          error ? null : (
+            <p style={{ textAlign: 'center', marginTop: 50, color: colors.subtext, fontSize: 16 }}>
+              {buscarInput || estado !== 'todos' ? t('noResults') : t('emptyState')}
+            </p>
+          )
         ) : (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {totalClientesPagina > 0 && (
