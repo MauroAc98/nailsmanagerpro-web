@@ -35,35 +35,43 @@ export function PieContacto({ nombre, telefono, lineaRef, pieRef }: Props) {
         data-testid="story-linea"
         style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0.45), rgba(255,255,255,0.04))', margin: '0 0 12px' }}
       />
-      <div ref={pieRef} style={{ display: 'flex', alignItems: 'flex-end', gap: 12, textShadow: SOMBRA }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, fontSize: 8, fontWeight: 700,
-            letterSpacing: '0.2em', lineHeight: '10px', textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.72)', whiteSpace: 'nowrap',
-          }}>
-            <span>{t('reserveCta')}</span>
-          </div>
-          {/* El nombre baja de renglón antes que cortarse. Sin nombre, el
-              teléfono ocupa su lugar en grande y no queda nada a la derecha. */}
-          {nombre ? (
-            <div style={{ marginTop: 5, fontFamily: agendaFontSerif, fontSize: 20, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff' }}>
-              {nombre}
-            </div>
-          ) : tel ? (
-            <div style={{ marginTop: 5, fontSize: 16, fontWeight: 600, lineHeight: 1.1, whiteSpace: 'nowrap', color: '#fff' }}>
-              {tel}
-            </div>
-          ) : null}
+      <div ref={pieRef} style={{ textShadow: SOMBRA }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, fontSize: 8, fontWeight: 700,
+          letterSpacing: '0.2em', lineHeight: '10px', textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.72)', whiteSpace: 'nowrap',
+        }}>
+          <span>{t('reserveCta')}</span>
         </div>
-        {nombre && tel && (
-          <span style={{
-            flexShrink: 0, paddingBottom: 3, fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
-            fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: '#fff',
-          }}>
+        {/* Nombre y teléfono comparten renglón y se alinean por la línea de
+            base del PRIMER renglón del nombre (alignItems: baseline), sea
+            cual sea su largo. El nombre baja de renglón antes que cortarse
+            (nunca overflow/ellipsis) y por eso va en 13px: uno largo ocupa
+            menos alto. Sin nombre, el teléfono ocupa su lugar en grande. */}
+        {nombre ? (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 5 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontFamily: agendaFontSerif, fontSize: 13, lineHeight: 1.2,
+                letterSpacing: '-0.02em', color: '#fff', overflowWrap: 'anywhere',
+              }}>
+                {nombre}
+              </div>
+            </div>
+            {tel && (
+              <span style={{
+                flexShrink: 0, fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
+                fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: '#fff',
+              }}>
+                {tel}
+              </span>
+            )}
+          </div>
+        ) : tel ? (
+          <div style={{ marginTop: 5, fontSize: 16, fontWeight: 600, lineHeight: 1.1, whiteSpace: 'nowrap', color: '#fff' }}>
             {tel}
-          </span>
-        )}
+          </div>
+        ) : null}
       </div>
     </>
   );
