@@ -19,7 +19,10 @@ const horasDeLaRueda = (): string[] => Array.from(rueda().children).map((c) => c
 const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`${nombre}$`) });
 // "Quién te atiende" arranca plegado en una fila con "Cambiar": se abre para elegir.
 const abrirBloque = async () => {
-  await userEvent.click(await screen.findByRole('button', { name: 'Cambiar quién te atiende' }));
+  // Margen amplio: el primer render del archivo (arranque en frio) puede tardar mas de 1 s bajo carga.
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Cambiar quién te atiende' }, { timeout: 4000 }),
+  );
 };
 const abrirQuien = async () => {
   await abrirBloque();
@@ -612,16 +615,39 @@ describe('HorarioScreen', () => {
         expect(pedidosDias[pedidosDias.length - 1].profesionalId).toBeDefined();
       });
 
-      it('"Ir al próximo día con lugar" usa la lista (una lectura) y no recorre dia por dia', async () => {
-        const { pedidosDias, consultadas } = conDias(['2026-09-22', '2026-09-25']);
+      it('ofrece el dia con lugar mas cercano (de la lista, una lectura) y salta al tocarlo, sin recorrer dia por dia', async () => {
+        const { consultadas } = conDias(['2026-09-22', '2026-09-25']);
         renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-        await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+        const despues = await screen.findByTestId('cercano-despues');
+        expect(despues).toHaveTextContent('Martes 22');
+        // hoy (sabado 19) es el primer dia reservable: no hay "antes"
+        expect(screen.queryByTestId('cercano-antes')).toBeNull();
+        await userEvent.click(despues);
         await waitFor(() => expect(hayRueda()).toBe(true));
         expect(screen.getByText(/Martes 22/)).toBeInTheDocument();
-        // solo la del dia elegido (19 y 22); nunca los intermedios
+        // solo se consultan el dia elegido (19) y los sugeridos; nunca los intermedios
         expect(consultadas).not.toContain('2026-09-20');
         expect(consultadas).not.toContain('2026-09-21');
-        expect(pedidosDias[pedidosDias.length - 1].fechas[0]).toBe('2026-09-20');
+      });
+
+      it('con dias a los dos lados ofrece "antes" y "despues"', async () => {
+        // El martes 22 queda sin horarios (la agenda arranca el 23); con lugar: el 20 y el 25.
+        conDias(['2026-09-20', '2026-09-25'], '2026-09-23');
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Semana siguiente' }));
+        await userEvent.click(screen.getByTestId('week-day-2026-09-22'));
+        expect(await screen.findByTestId('cercano-antes')).toHaveTextContent('Domingo 20');
+        expect(screen.getByTestId('cercano-despues')).toHaveTextContent('Viernes 25');
+        expect(screen.getByTestId('cercano-antes')).toHaveTextContent('2 días antes');
+        expect(screen.getByTestId('cercano-despues')).toHaveTextContent('3 días después');
+      });
+
+      it('con una profesional elegida y sin lugar ofrece "Ver con cualquier profesional"', async () => {
+        conDias(['2026-09-22']);
+        useReservaOnlineStore.getState().setProfesional(1);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Ver con cualquier profesional' }));
+        expect(useReservaOnlineStore.getState().profesionalId).toBe('any');
       });
 
       it('si la lista viene vacia dice que no hay lugar en 30 dias, con la sugerencia, sin recorrer', async () => {
