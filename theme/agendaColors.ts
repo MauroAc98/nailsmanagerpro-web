@@ -70,8 +70,12 @@ export const agendaShadows = {
   // separarse de la página. No es theme-scoped (a diferencia de --ag-*): en
   // oscuro la separación ya la da el color de fondo/superficie, así que una
   // sombra un poco más marcada ahí no molesta.
-  card: '0 2px 6px rgba(43, 34, 38, 0.10)',
-  sheet: '0 -8px 28px rgba(0, 0, 0, 0.14)',
+  // 2026-10-13: ahora son variables por tema (--ag-shadow-* en globals.css) para
+  // poder dar más profundidad en claro sin tocar el oscuro. El segundo valor de
+  // var() es el de antes: si un componente se renderiza fuera de un
+  // AgendaThemeScope (sin la variable) conserva la sombra que tenía.
+  card: 'var(--ag-shadow-card, 0 2px 6px rgba(43, 34, 38, 0.10))',
+  sheet: 'var(--ag-shadow-sheet, 0 -8px 28px rgba(0, 0, 0, 0.14))',
 };
 
 // The app's single serif — self-hosted next/font/google (app/layout.tsx),
