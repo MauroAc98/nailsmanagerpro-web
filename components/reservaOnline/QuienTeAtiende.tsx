@@ -2,7 +2,9 @@
 
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import type { ProfesionalPublico } from '@/lib/reservaOnline/types';
 import { agendaColors as colors, agendaShadows } from '@/theme/agendaColors';
+import { AvatarProfesional } from './AvatarProfesional';
 
 const tramo = (activo: boolean) =>
   ({
@@ -51,6 +53,10 @@ export function QuienTeAtiende({
   sinPersonaUnica,
   resumen,
   aviso,
+  plegado = false,
+  onCambiar,
+  onListo,
+  avatares = [],
   children,
 }: {
   // Muestra el control "Una persona" / "Una por servicio".
@@ -63,9 +69,57 @@ export function QuienTeAtiende({
   resumen?: string | null;
   // Aviso de una linea (p. ej. la elegida ya no hace el servicio); se va al tocar una opcion.
   aviso?: string | null;
+  // Plegado: una sola fila con quien atiende y "Cambiar" (la eleccion por defecto,
+  // "Cualquiera", no ocupa media pantalla). Desplegado es el bloque completo, con
+  // "Listo" para volver a plegarlo cuando lo abrio la persona.
+  plegado?: boolean;
+  onCambiar?: () => void;
+  onListo?: () => void;
+  // Las profesionales que se muestran apiladas en la fila plegada.
+  avatares?: ProfesionalPublico[];
   children: ReactNode;
 }) {
   const t = useTranslations('reservaOnline');
+  if (plegado) {
+    return (
+      <section
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginBottom: 14, borderRadius: 22,
+          background: colors.surface, border: `1px solid ${colors.border}`, boxShadow: agendaShadows.card,
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          {avatares.map((p, i) => (
+            <span
+              key={p.id}
+              style={{
+                marginLeft: i === 0 ? 0 : -12, borderRadius: '50%', border: `2px solid ${colors.surface}`, display: 'flex',
+              }}
+            >
+              <AvatarProfesional nombre={p.nombre} avatarUrl={p.avatarUrl} size={avatares.length === 1 ? 40 : 30} />
+            </span>
+          ))}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, color: colors.sub }}>{t('horario.quienAtiende')}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: colors.strong, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {resumen}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onCambiar}
+          aria-label={t('horario.cambiarQuien')}
+          style={{
+            minHeight: 44, padding: '0 16px', borderRadius: 12, cursor: 'pointer', background: 'transparent',
+            border: `1px solid ${colors.border}`, color: colors.primaryDeep, fontSize: 14, fontWeight: 700, flexShrink: 0,
+          }}
+        >
+          {t('horario.cambiar')}
+        </button>
+      </section>
+    );
+  }
   return (
     <section
       style={{
@@ -75,10 +129,23 @@ export function QuienTeAtiende({
     >
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.strong }}>{t('horario.quienAtiende')}</h3>
-        {resumen && (
-          <span style={{ minWidth: 0, textAlign: 'right', fontSize: 12, fontWeight: 600, color: colors.primaryDeep }}>
-            {resumen}
-          </span>
+        {onListo ? (
+          <button
+            type="button"
+            onClick={onListo}
+            style={{
+              minHeight: 32, padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 700, color: colors.primaryDeep,
+            }}
+          >
+            {t('horario.listo')}
+          </button>
+        ) : (
+          resumen && (
+            <span style={{ minWidth: 0, textAlign: 'right', fontSize: 12, fontWeight: 600, color: colors.primaryDeep }}>
+              {resumen}
+            </span>
+          )
         )}
       </div>
       {puedeElegirModo && (

@@ -10,6 +10,7 @@ import { WeekStrip } from '@/components/agenda/WeekStrip';
 import { parseFechaLocal } from '@/components/agenda/agendaDateHelpers';
 import { getService } from '@/lib/reservaOnline';
 import { aMinutos, hhmm } from '@/lib/reservaOnline/adapters/mock';
+import { diasCercanos } from '@/lib/reservaOnline/diasCercanos';
 import { sumarDias } from '@/lib/reservaOnline/diasDesde';
 import { diaLargoCorto, hoyDelSalon } from '@/lib/reservaOnline/formatoFecha';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
@@ -24,6 +25,7 @@ import {
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { colors as baseColors } from '@/theme/colors';
+import { DiasCercanos, type DiaCercano } from './DiasCercanos';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { ElegirPersona } from './ElegirPersona';
 import { NoDisponibleAun } from './NoDisponibleAun';
@@ -88,6 +90,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const [ahoraMs] = useState(() => ahora());
   const hoy = hoyDelSalon(ahoraMs);
   const [fechaSel, setFechaSel] = useState<string>(() => fechaGuardada ?? hoy);
+  // Si la persona abrio "Quien te atiende" (ver abajo, donde se arma el resumen).
+  const [quienAbiertoPorPersona, setQuienAbiertoPorPersona] = useState(false);
   // Retencion: al entrar se suelta el hold anterior (si lo habia) ANTES de pedir
   // horarios, asi el horario propio vuelve a figurar libre.
   const [liberado, setLiberado] = useState(false);
@@ -226,11 +230,30 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
 
   const horas = useMemo(() => disp?.slots.map((s) => s.hora) ?? [], [disp]);
 
+  // Dia elegido sin horarios: el dia con lugar mas cercano ANTES y DESPUES, de los
+  // que ya se conocen para toda la ventana (`diasConHorarios`). Solo hace falta
+  // pedir el primer horario de esos dos dias para mostrarlo.
+  const sinHorarios = error?.code === 'validation' || (disp !== null && disp.slots.length === 0);
+  const cercanos = diasConHorarios
+    ? diasCercanos(diasConHorarios, fecha, { primero: primerDia, ultimo: ultimoDia })
+    : null;
+  const hayCercanos = !!cercanos && (cercanos.antes !== null || cercanos.despues !== null);
+  const { data: detalleCercanos } = useCarga(
+    () =>
+      sinHorarios && cercanos && hayCercanos
+        ? Promise.all(
+            [cercanos.antes, cercanos.despues].map(async (f) =>
+              f ? { fecha: f, disp: await getService().getAvailability(slug, { fecha: f, ...consulta }) } : null,
+            ),
+          )
+        : Promise.resolve(null),
+    `${slug}|cercanos|${fecha}|${cercanos?.antes ?? ''}|${cercanos?.despues ?? ''}|${claveGrupos}|${sinHorarios}`,
+  );
+
   if (!listo) return null;
   if (noDisponible) return <NoDisponibleAun />;
   if (sinReservas || error?.code === 'not_found') return <NoDisponibleAun variante="negocio" />;
 
-  const sinHorarios = error?.code === 'validation' || (disp !== null && disp.slots.length === 0);
   const errorDeCarga = error && error.code !== 'validation';
   // La rueda siempre apunta a una hora libre: la elegida (si sigue libre) o la primera.
   const horaEnStore = fechaGuardada === fecha ? horaGuardada : null;
@@ -255,6 +278,21 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     : profesionalId === 'any'
       ? []
       : [nombreDe(profesionalId)];
+  // El bloque "Quien te atiende" arranca plegado (una fila con "Cambiar"): la eleccion
+  // por defecto, "Cualquiera", no tiene por que ocupar media pantalla. Se despliega
+  // solo cuando hay algo que la persona tiene que ver: el aviso de que su eleccion
+  // anterior ya no sirve, o que nadie hace todos los servicios juntos.
+  const quienForzado = !!avisoReset || sinPersonaUnica;
+  const quienAbierto = quienAbiertoPorPersona || quienForzado;
+  // Quienes se muestran apiladas en la fila plegada: las elegidas, o las que
+  // podrian atender si es "Cualquiera".
+  const avataresResumen = (
+    asignaciones
+      ? [...new Set(asignaciones.map((g) => g.profesionalId ?? 0))].map((id) => salon?.profesionales.find((p) => p.id === id))
+      : profesionalId === 'any'
+        ? (compatibles ?? salon?.profesionales ?? []).slice(0, 3)
+        : [salon?.profesionales.find((p) => p.id === profesionalId)]
+  ).filter((p): p is NonNullable<typeof p> => !!p);
   const resumenElegido = nombresElegidos.length
     ? t('horario.resumenCon', {
         nombres: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(nombresElegidos),
@@ -383,6 +421,20 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     }
   };
 
+  // Un dia cercano con su primer horario y con quien seria (las del primer horario).
+  const diaCercano = (f: string | null, i: number): DiaCercano | null => {
+    if (!f) return null;
+    const primero = detalleCercanos?.[i]?.disp.slots[0];
+    const nombres = [...new Set((primero?.profesionalIds ?? []).map(nombreDe).filter(Boolean))];
+    return {
+      fecha: f,
+      hora: primero?.hora ?? null,
+      quien: nombres.length
+        ? t('horario.resumenCon', { nombres: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(nombres) })
+        : null,
+    };
+  };
+
   const botonSecundario = {
     background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
     color: colors.primaryDeep, padding: '10px 0',
@@ -404,6 +456,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       {salon && salon.profesionales.length > 1 && !hayPromoFija && !(opciones && compatibles) && <QuienSkeleton />}
       {salon && servicios && opciones && compatibles && !hayPromoFija && (asignaciones || compatibles.length > 0) && (
         <QuienTeAtiende
+          plegado={!quienAbierto}
+          onCambiar={() => setQuienAbiertoPorPersona(true)}
+          onListo={quienAbiertoPorPersona && !quienForzado ? () => setQuienAbiertoPorPersona(false) : undefined}
+          avatares={avataresResumen}
           puedeElegirModo={puedeDividir && !sinPersonaUnica}
           porServicio={!!asignaciones}
           onModo={(porServicio) => {
@@ -464,10 +520,28 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       )}
       {sinHorarios && !cargando && (
         <div style={{ marginBottom: 14 }}>
-          <Mensaje>{t('horario.sinHorarios')}</Mensaje>
-          <BotonPrimario disabled={buscando} onClick={irAlProximoDia}>
-            {buscando ? t('horario.buscando') : t('horario.irProximoDia')}
-          </BotonPrimario>
+          {hayCercanos && cercanos ? (
+            <DiasCercanos
+              fecha={fecha}
+              antes={diaCercano(cercanos.antes, 0)}
+              despues={diaCercano(cercanos.despues, 1)}
+              onElegir={elegirDia}
+            />
+          ) : (
+            <>
+              <Mensaje>{t('horario.sinHorarios')}</Mensaje>
+              <BotonPrimario disabled={buscando} onClick={irAlProximoDia}>
+                {buscando ? t('horario.buscando') : t('horario.irProximoDia')}
+              </BotonPrimario>
+            </>
+          )}
+          {typeof profesionalId === 'number' && !asignaciones && (
+            <div style={{ textAlign: 'center', marginTop: 4 }}>
+              <button type="button" onClick={() => setProfesional('any')} style={botonSecundario}>
+                {t('horario.verConCualquiera')}
+              </button>
+            </div>
+          )}
           <div style={{ textAlign: 'center', marginTop: 4 }}>
             <button type="button" onClick={abrirCalendario} style={botonSecundario}>
               {t('horario.elegirOtroDia')}

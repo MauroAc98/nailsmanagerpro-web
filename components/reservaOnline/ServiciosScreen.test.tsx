@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, renderWithProviders, screen, within } from '@/test/render';
+import { renderWithProviders, screen, within } from '@/test/render';
 import userEvent from '@testing-library/user-event';
 import { setServiceParaTests } from '@/lib/reservaOnline';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
@@ -68,6 +68,48 @@ describe('ServiciosScreen', () => {
     const nombre = (await screen.findAllByText('Esmaltado semipermanente'))[0];
     expect(nombre.style.textOverflow).toBe('');
     expect(nombre.style.overflowWrap).toBe('anywhere');
+  });
+
+  describe('servicio sin turnos', () => {
+    const conSinTurnos = (idSinTurnos: number) => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      svc.getServices = async (slug, q) =>
+        (await original(slug, q)).map((s) => (s.id === idSinTurnos ? { ...s, sinTurnos: true } : s));
+      return svc;
+    };
+
+    it('pide la lista con conTurnos', async () => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      const pedir = vi.fn(original);
+      svc.getServices = pedir;
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Retiro de esmalte');
+      expect(pedir).toHaveBeenCalledWith('demo', { conTurnos: true });
+    });
+
+    it('se muestra deshabilitado, con el motivo, y no se puede elegir', async () => {
+      conSinTurnos(2);
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Retiro de esmalte');
+      const tarjeta = screen.getByTestId('servicio-sin-turnos');
+      expect(tarjeta).toHaveAttribute('aria-disabled', 'true');
+      expect(within(tarjeta).getByText('Retiro de esmalte')).toBeInTheDocument();
+      expect(within(tarjeta).getByText('Sin turnos disponibles por ahora')).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: 'Retiro de esmalte' })).toBeNull();
+
+      await userEvent.click(tarjeta);
+      expect(useReservaOnlineStore.getState().servicioIds).toEqual([]);
+    });
+
+    it('si un servicio ya elegido pasa a no tener turnos, se saca de la seleccion', async () => {
+      useReservaOnlineStore.getState().setServicios([2]);
+      conSinTurnos(2);
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByTestId('servicio-sin-turnos');
+      expect(useReservaOnlineStore.getState().servicioIds).toEqual([]);
+    });
   });
 
   it('un servicio sin precio dice "Precio a consultar" en vez de "Desde $0,00"', async () => {
@@ -295,41 +337,30 @@ describe('ServiciosScreen', () => {
     });
   });
 
-  describe('pista de categorias con mas para deslizar', () => {
-    function simularDesborde(
-      el: HTMLElement,
-      { scrollWidth, clientWidth, scrollLeft = 0 }: { scrollWidth: number; clientWidth: number; scrollLeft?: number },
-    ) {
-      Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scrollWidth });
-      Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth });
-      Object.defineProperty(el, 'scrollLeft', { configurable: true, value: scrollLeft, writable: true });
-    }
-
-    it('si queda contenido oculto a la derecha, muestra la pista', async () => {
+  describe('fila de categorias', () => {
+    it('con pocas categorias (hasta 4) se ven como pastillas en varias lineas, sin carrusel ni selector', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
       const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
-      simularDesborde(grupo, { scrollWidth: 600, clientWidth: 350 });
-      fireEvent.scroll(grupo);
-      expect(screen.getByTestId('pista-categorias')).toBeInTheDocument();
+      expect(grupo.style.flexWrap).toBe('wrap');
+      expect(grupo.style.overflowX).toBe('');
+      expect(screen.queryByRole('combobox', { name: /Categoría/ })).toBeNull();
     });
 
-    it('si todas las categorias ya entran, no muestra la pista', async () => {
+    it('con mas de 4 categorias se usa un selector de una sola linea y filtra', async () => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      svc.getServices = async (slug, q) =>
+        (await original(slug, q)).map((s) => ({ ...s, categoria: { id: 10 + s.id, nombre: `Cat ${s.id}` } }));
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
-      const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
-      simularDesborde(grupo, { scrollWidth: 340, clientWidth: 350 });
-      fireEvent.scroll(grupo);
-      expect(screen.queryByTestId('pista-categorias')).toBeNull();
-    });
+      const selector = await screen.findByRole('combobox', { name: /Categoría/ });
+      expect(screen.queryByRole('group', { name: 'Filtrar por categoría' })).toBeNull();
 
-    it('al llegar al final del scroll, la pista desaparece', async () => {
-      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
-      const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
-      simularDesborde(grupo, { scrollWidth: 600, clientWidth: 350, scrollLeft: 0 });
-      fireEvent.scroll(grupo);
-      expect(screen.getByTestId('pista-categorias')).toBeInTheDocument();
-      simularDesborde(grupo, { scrollWidth: 600, clientWidth: 350, scrollLeft: 250 });
-      fireEvent.scroll(grupo);
-      expect(screen.queryByTestId('pista-categorias')).toBeNull();
+      await userEvent.selectOptions(selector, 'Cat 1');
+      expect(screen.getByText('Esmaltado semipermanente')).toBeInTheDocument();
+      expect(screen.queryByText('Kapping gel')).toBeNull();
+
+      await userEvent.selectOptions(selector, 'Todos');
+      expect(screen.getByText('Kapping gel')).toBeInTheDocument();
     });
   });
 

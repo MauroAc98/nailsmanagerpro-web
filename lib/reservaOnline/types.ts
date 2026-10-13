@@ -62,6 +62,9 @@ export interface BookableService {
   // Promo con componentes: cada servicio ya trae su profesional fija. Se reserva
   // sola (no se combina con otros servicios) y la clienta no elige profesional.
   promoComponentizada?: boolean;
+  // true = no tiene ningun inicio libre en la ventana reservable (solo viene si
+  // se pidio con `conTurnos`). Es una foto: la autoridad final es el hold.
+  sinTurnos?: boolean;
   // Solo en promos componentizadas: como se encadenan los componentes (null =
   // el backend no guardo modo: rige la secuencia) y el detalle en orden.
   modoPromo?: ModoPlan | null;
@@ -122,6 +125,9 @@ export interface DiasQuery {
 
 export interface ServicesQuery {
   profesionalId?: number;
+  // Pide que cada servicio marque si no tiene turnos (`sinTurnos`). Cuesta calcular
+  // disponibilidad en el backend: solo la pantalla de servicios lo pide.
+  conTurnos?: boolean;
 }
 
 // Condiciones de la reserva (mock hasta que exista el backend de settings).

@@ -17,6 +17,17 @@ const rueda = (): HTMLElement => document.querySelector('[data-drum]') as HTMLEl
 const horasDeLaRueda = (): string[] => Array.from(rueda().children).map((c) => c.textContent ?? '');
 // Pill del selector compartido: su nombre accesible es "<inicial><nombre>".
 const pill = (nombre: string) => screen.getByRole('button', { name: new RegExp(`${nombre}$`) });
+// "Quién te atiende" arranca plegado en una fila con "Cambiar": se abre para elegir.
+const abrirBloque = async () => {
+  // Margen amplio: el primer render del archivo (arranque en frio) puede tardar mas de 1 s bajo carga.
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Cambiar quién te atiende' }, { timeout: 4000 }),
+  );
+};
+const abrirQuien = async () => {
+  await abrirBloque();
+  await screen.findByRole('button', { name: /Lucía$/ });
+};
 const hayRueda = () => document.querySelector('[data-drum]') !== null;
 // Gira la rueda hasta `hora` (el alto de cada item es 44px).
 function girarA(hora: string) {
@@ -67,7 +78,7 @@ describe('HorarioScreen', () => {
 
   it('muestra el selector de profesional y la tira de semana de la agenda con flechas y boton Calendario', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    expect(await screen.findByRole('button', { name: /Lucía$/ })).toBeInTheDocument();
+    await abrirQuien();
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
     // 2026-09-19 es sabado: semana lunes 14 a domingo 20
     expect(screen.getByText('14 – 20 de sept')).toBeInTheDocument();
@@ -79,7 +90,7 @@ describe('HorarioScreen', () => {
 
   it('los dias anteriores a hoy estan deshabilitados y la flecha de semana anterior tambien', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     expect(screen.getByTestId('week-day-2026-09-18')).toBeDisabled();
     expect(screen.getByTestId('week-day-2026-09-19')).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Semana anterior' })).toBeDisabled();
@@ -113,6 +124,7 @@ describe('HorarioScreen', () => {
     await waitFor(() => expect(horasDeLaRueda()).toContain('14:00'));
     girarA('10:30');
     expect(useReservaOnlineStore.getState().hora).toBe('10:30');
+    await abrirQuien();
     await userEvent.click(pill('Ana'));
     expect(useReservaOnlineStore.getState().profesionalId).toBe(1);
     expect(useReservaOnlineStore.getState().hora).toBeNull();
@@ -150,7 +162,7 @@ describe('HorarioScreen', () => {
 
   it('el boton Calendario abre el calendario mensual: dias pasados deshabilitados, dias reservables no', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     expect(document.querySelector('[data-calendario-abierto="true"]')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
     expect(document.querySelector('[data-calendario-abierto="true"]')).not.toBeNull();
@@ -161,7 +173,7 @@ describe('HorarioScreen', () => {
 
   it('el ultimo dia reservable del calendario es hoy + 30; el siguiente esta deshabilitado', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     await userEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
     // hoy 2026-09-19 + 30 = 2026-10-19: mes siguiente con la flecha de la cabecera (0 = cerrar, 1 = mes anterior)
     const contenedor = document.querySelector('[data-calendario-abierto]') as HTMLElement;
@@ -172,7 +184,7 @@ describe('HorarioScreen', () => {
 
   it('elegir un dia en el calendario lo selecciona, refetchea y cierra; uno deshabilitado no hace nada', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     await userEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
     fireEvent.click(screen.getByTestId('cal-day-2026-09-18'));
     expect(screen.getByText('14 – 20 de sept')).toBeInTheDocument();
@@ -313,6 +325,32 @@ describe('HorarioScreen', () => {
     expect(otra.reservaId).toBeDefined(); // estaba liberado
   });
 
+  describe('"Quién te atiende" plegado', () => {
+    it('arranca plegado: una fila con la eleccion por defecto y "Cambiar", sin las opciones a la vista', async () => {
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByRole('button', { name: 'Cambiar quién te atiende' })).toBeInTheDocument();
+      expect(screen.getByText('Cualquiera disponible')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Listo' })).toBeNull();
+    });
+
+    it('"Cambiar" despliega las opciones y "Listo" las vuelve a plegar, conservando la eleccion', async () => {
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await abrirQuien();
+      await userEvent.click(pill('Lucía'));
+      await userEvent.click(screen.getByRole('button', { name: 'Listo' }));
+      expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
+      expect(screen.getByText('Con Lucía')).toBeInTheDocument();
+      expect(useReservaOnlineStore.getState().profesionalId).toBe(2);
+    });
+
+    it('plegado, la fila nombra a quien atiende cuando hay una elegida', async () => {
+      useReservaOnlineStore.getState().setProfesional(1);
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      expect(await screen.findByText('Con Ana')).toBeInTheDocument();
+    });
+  });
+
   it('el subtitulo muestra la duracion total del turno', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     expect(await screen.findByRole('heading', { name: '¿Cuándo venís?' })).toBeInTheDocument();
@@ -321,10 +359,10 @@ describe('HorarioScreen', () => {
 
   it('usa el selector compartido de la agenda: "Cualquiera" primero y elegida, luego las profesionales', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     const nombres = screen.getAllByRole('button').filter((b) => b.hasAttribute('aria-pressed'));
     // con 2 servicios, el control "Una persona / Una por servicio" va antes de las pastillas
-    expect(nombres.map((b) => b.textContent)).toEqual(['Una persona', 'Una por servicio', 'ANLUCualquiera', 'ANAna', 'LULucía']);
+    expect(nombres.map((b) => b.textContent)).toEqual(['Con la misma persona', 'Elegir quién hace cada uno', 'ANLUCualquiera', 'ANAna', 'LULucía']);
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
     expect(pill('Ana')).toHaveAttribute('aria-pressed', 'false');
   });
@@ -343,7 +381,7 @@ describe('HorarioScreen', () => {
       },
     });
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     expect(document.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
   });
 
@@ -359,14 +397,14 @@ describe('HorarioScreen', () => {
       },
     });
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     const imgs = Array.from(pill('Cualquiera').querySelectorAll('img')).map((i) => i.getAttribute('src'));
     expect(imgs).toEqual(['https://cdn.test/1.jpg', 'https://cdn.test/2.jpg']);
   });
 
   it('elegir una profesional la marca y tocarla de nuevo vuelve a "Cualquiera"', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-    await screen.findByRole('button', { name: /Lucía$/ });
+    await abrirQuien();
     await userEvent.click(pill('Lucía'));
     expect(useReservaOnlineStore.getState().profesionalId).toBe(2);
     expect(pill('Lucía')).toHaveAttribute('aria-pressed', 'true');
@@ -392,6 +430,7 @@ describe('HorarioScreen', () => {
       useReservaOnlineStore.getState().setServicios([1]);
       lucíaNoHaceElServicio1();
       renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await abrirBloque();
       expect(await screen.findByRole('button', { name: /Ana$/ })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
     });
@@ -409,6 +448,7 @@ describe('HorarioScreen', () => {
       useReservaOnlineStore.getState().setServicios([1, 2]);
       lucíaNoHaceElServicio1();
       renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await abrirBloque();
       expect(await screen.findByRole('button', { name: /Ana$/ })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
     });
@@ -429,9 +469,9 @@ describe('HorarioScreen', () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     // El salon ya cargo (se pide en paralelo); los servicios siguen pendientes.
     await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByRole('button', { name: /Lucía$/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cambiar quién te atiende' })).toBeNull();
     liberar();
-    expect(await screen.findByRole('button', { name: /Lucía$/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Cambiar quién te atiende' })).toBeInTheDocument();
   });
 
   it('con una sola profesional no se muestra el selector', async () => {
@@ -454,6 +494,7 @@ describe('HorarioScreen', () => {
     await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:00'));
     girarA('10:30');
     expect(screen.getByText(/Lunes 21/).closest('div')).toHaveTextContent('Lunes 21 · 10:30 con cualquier profesional');
+    await abrirQuien();
     await userEvent.click(pill('Lucía'));
     await waitFor(() => expect(horasDeLaRueda()[0]).toBe('09:30')); // Lucia arranca a las 09:30
     girarA('10:30');
@@ -568,21 +609,45 @@ describe('HorarioScreen', () => {
         await waitFor(() => expect(pedidosDias.length).toBeGreaterThan(0));
         const antes = pedidosDias.length;
         expect(pedidosDias[antes - 1].profesionalId).toBeUndefined();
-        await userEvent.click(await screen.findByRole('button', { name: /Lucía$/ }));
+        await abrirQuien();
+        await userEvent.click(pill('Lucía'));
         await waitFor(() => expect(pedidosDias.length).toBeGreaterThan(antes));
         expect(pedidosDias[pedidosDias.length - 1].profesionalId).toBeDefined();
       });
 
-      it('"Ir al próximo día con lugar" usa la lista (una lectura) y no recorre dia por dia', async () => {
-        const { pedidosDias, consultadas } = conDias(['2026-09-22', '2026-09-25']);
+      it('ofrece el dia con lugar mas cercano (de la lista, una lectura) y salta al tocarlo, sin recorrer dia por dia', async () => {
+        const { consultadas } = conDias(['2026-09-22', '2026-09-25']);
         renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
-        await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+        const despues = await screen.findByTestId('cercano-despues');
+        expect(despues).toHaveTextContent('Martes 22');
+        // hoy (sabado 19) es el primer dia reservable: no hay "antes"
+        expect(screen.queryByTestId('cercano-antes')).toBeNull();
+        await userEvent.click(despues);
         await waitFor(() => expect(hayRueda()).toBe(true));
         expect(screen.getByText(/Martes 22/)).toBeInTheDocument();
-        // solo la del dia elegido (19 y 22); nunca los intermedios
+        // solo se consultan el dia elegido (19) y los sugeridos; nunca los intermedios
         expect(consultadas).not.toContain('2026-09-20');
         expect(consultadas).not.toContain('2026-09-21');
-        expect(pedidosDias[pedidosDias.length - 1].fechas[0]).toBe('2026-09-20');
+      });
+
+      it('con dias a los dos lados ofrece "antes" y "despues"', async () => {
+        // El martes 22 queda sin horarios (la agenda arranca el 23); con lugar: el 20 y el 25.
+        conDias(['2026-09-20', '2026-09-25'], '2026-09-23');
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Semana siguiente' }));
+        await userEvent.click(screen.getByTestId('week-day-2026-09-22'));
+        expect(await screen.findByTestId('cercano-antes')).toHaveTextContent('Domingo 20');
+        expect(screen.getByTestId('cercano-despues')).toHaveTextContent('Viernes 25');
+        expect(screen.getByTestId('cercano-antes')).toHaveTextContent('2 días antes');
+        expect(screen.getByTestId('cercano-despues')).toHaveTextContent('3 días después');
+      });
+
+      it('con una profesional elegida y sin lugar ofrece "Ver con cualquier profesional"', async () => {
+        conDias(['2026-09-22']);
+        useReservaOnlineStore.getState().setProfesional(1);
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await userEvent.click(await screen.findByRole('button', { name: 'Ver con cualquier profesional' }));
+        expect(useReservaOnlineStore.getState().profesionalId).toBe('any');
       });
 
       it('si la lista viene vacia dice que no hay lugar en 30 dias, con la sugerencia, sin recorrer', async () => {
@@ -615,8 +680,8 @@ describe('HorarioScreen', () => {
 
 describe('HorarioScreen: quién te atiende (una persona / una por servicio)', () => {
   afterEach(() => setServiceParaTests(null));
-  const UNA_PERSONA = 'Una persona';
-  const UNA_POR_SERVICIO = 'Una por servicio';
+  const UNA_PERSONA = 'Con la misma persona';
+  const UNA_POR_SERVICIO = 'Elegir quién hace cada uno';
 
   // Registra lo que la pantalla le pide al servicio (sobre el mock con agenda real).
   function espiar() {
@@ -651,6 +716,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     await waitFor(() => expect(hayRueda()).toBe(true));
     expect(consultas[0]).toMatchObject({ servicioIds: [1, 2], profesionalId: undefined });
     expect(consultas[0].asignaciones).toBeUndefined();
+    await abrirBloque();
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -659,6 +725,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     expect(await screen.findByText('Quién te atiende')).toBeInTheDocument();
+    await abrirBloque();
     expect(screen.getByRole('button', { name: UNA_PERSONA })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: UNA_POR_SERVICIO })).toHaveAttribute('aria-pressed', 'false');
     // el selector viejo y el link largo ya no existen
@@ -670,6 +737,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await abrirBloque();
     for (const nombre of [UNA_PERSONA, UNA_POR_SERVICIO]) {
       const boton = await screen.findByRole('button', { name: nombre });
       expect(parseInt(boton.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
@@ -681,6 +749,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     await preparar([1]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await waitFor(() => expect(hayRueda()).toBe(true));
+    await abrirBloque();
     expect(screen.getByText('Quién te atiende')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: UNA_POR_SERVICIO })).toBeNull();
     expect(pill('Cualquiera')).toHaveAttribute('aria-pressed', 'true');
@@ -690,6 +759,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     const { consultas, holds } = espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await abrirBloque();
     await userEvent.click(await screen.findByRole('button', { name: UNA_POR_SERVICIO }));
     await waitFor(() => expect(consultas.at(-1)?.asignaciones).toHaveLength(2));
     const grupos = consultas.at(-1)!.asignaciones!;
@@ -710,6 +780,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     const { consultas } = espiar();
     await preparar([1, 2]);
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await abrirBloque();
     await userEvent.click(await screen.findByRole('button', { name: UNA_POR_SERVICIO }));
     await userEvent.click(await screen.findByRole('button', { name: UNA_PERSONA }));
     await waitFor(() => expect(consultas.at(-1)?.asignaciones).toBeUndefined());
@@ -734,6 +805,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     espiar();
     await preparar([3, 4]); // Kapping gel: solo Ana; Pedicura spa: Ana y Lucía
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await abrirBloque();
     await userEvent.click(await screen.findByRole('button', { name: UNA_POR_SERVICIO }));
     const aviso = await screen.findByText(/^Solo .+ hace este servicio$/);
     expect(aviso).toBeInTheDocument();
@@ -760,6 +832,7 @@ describe('HorarioScreen: quién te atiende (una persona / una por servicio)', ()
     expect(await screen.findByTestId('quien-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: UNA_PERSONA })).toBeNull();
     soltar();
+    await abrirBloque();
     expect(await screen.findByRole('button', { name: UNA_PERSONA })).toBeInTheDocument();
     expect(screen.queryByTestId('quien-skeleton')).toBeNull();
   });

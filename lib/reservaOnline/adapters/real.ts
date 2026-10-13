@@ -25,6 +25,8 @@ interface ServicioDto {
   // {id,url,orden} que usa el editor de fotos, ver servicioService).
   fotos: string[];
   es_promo_componentizada?: boolean;
+  // Solo con ?con_turnos=1.
+  sin_turnos?: boolean;
   // Solo en promos componentizadas.
   modo_promo?: ModoPlan | null;
   componentes?: {
@@ -86,6 +88,7 @@ const aServicio = (d: ServicioDto): BookableService => ({
   categoria: d.categoria ? { id: d.categoria.id, nombre: d.categoria.nombre } : null,
   fotos: d.fotos,
   promoComponentizada: d.es_promo_componentizada ?? false,
+  ...(d.sin_turnos !== undefined ? { sinTurnos: d.sin_turnos } : {}),
   ...(d.componentes
     ? {
         modoPromo: d.modo_promo ?? null,
@@ -154,7 +157,11 @@ export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
       return aTerminos(await pedir(() => http.get<TerminosDto>(`${base(slug)}/terminos`)));
     },
     async getServices(slug, query) {
-      const params = query?.profesionalId ? { profesional_id: query.profesionalId } : undefined;
+      const filtros = {
+        ...(query?.profesionalId ? { profesional_id: query.profesionalId } : {}),
+        ...(query?.conTurnos ? { con_turnos: 1 } : {}),
+      };
+      const params = Object.keys(filtros).length > 0 ? filtros : undefined;
       const data = await pedir(() => http.get<ServicioDto[]>(`${base(slug)}/servicios`, { params }));
       return data.map(aServicio);
     },

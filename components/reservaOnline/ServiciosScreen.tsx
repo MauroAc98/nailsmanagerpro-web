@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso, rutaServicio } from '@/lib/reservaOnline/rutas';
@@ -18,6 +18,9 @@ import { BarraInferior, BotonPrimario, Hueso, Mensaje, PasoHeader } from './ui';
 const GAP_TARJETA = 14;
 
 const MAX_PASOS_VISIBLES = 3;
+
+// Hasta cuantas categorias se muestran como pastillas; con mas, un selector.
+const MAX_CATEGORIAS_EN_PASTILLAS = 4;
 
 // Encabezado de la tarjeta: etiqueta PROMO, nombre y categoria. El nombre NUNCA
 // se recorta: la clienta decide con el, asi que se parte en las lineas que haga
@@ -134,6 +137,48 @@ function Circulo({ elegido }: { elegido: boolean }) {
   );
 }
 
+// Servicio sin ningun turno libre en la ventana reservable: se muestra, pero
+// apagado y sin poder elegirse, con el motivo a la vista. Ocultarlo haria creer
+// que el negocio no lo ofrece. Es una foto del momento: la autoridad final es el
+// hold al reservar.
+function TarjetaSinTurnos({ s, mostrarCategoria }: { s: BookableService; mostrarCategoria: boolean }) {
+  const t = useTranslations('reservaOnline.servicios');
+  return (
+    <div
+      data-testid="servicio-sin-turnos"
+      aria-disabled="true"
+      style={{
+        borderRadius: 16, padding: GAP_TARJETA, marginBottom: 12, width: '100%', boxSizing: 'border-box',
+        background: colors.surface2, border: `2px dashed ${colors.border}`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: GAP_TARJETA, opacity: 0.7 }}>
+        <CabeceraServicio s={s} mostrarCategoria={mostrarCategoria} />
+        <span
+          aria-hidden="true"
+          style={{
+            width: 36, height: 36, borderRadius: 18, flexShrink: 0, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', background: colors.border,
+          }}
+        >
+          <IcoReloj color={colors.muted} size={18} />
+        </span>
+      </div>
+      <div
+        style={{
+          display: 'inline-block', marginTop: 10, padding: '6px 12px', borderRadius: 999,
+          background: colors.amberBg, color: colors.amberFg, fontSize: 13, fontWeight: 600,
+        }}
+      >
+        {t('sinTurnos')}
+      </div>
+      <div style={{ opacity: 0.7 }}>
+        <PieServicio s={s} />
+      </div>
+    </div>
+  );
+}
+
 // Forma del layout real (tira de pastillas de filtro + tarjetas de servicio
 // con circulo de estado), para que no salte nada al llegar los servicios.
 function ServiciosSkeleton() {
@@ -165,12 +210,22 @@ function ServiciosSkeleton() {
 export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   const t = useTranslations('reservaOnline');
   const listo = useGuardaPaso(slug, 'servicios', ir);
+  // `conTurnos`: solo esta pantalla pide que el backend marque los servicios sin
+  // turnos (calcular disponibilidad cuesta); el resto de las llamadas no lo manda.
   const { data: servicios, error, cargando, reintentar } = useCarga(
-    () => getService().getServices(slug),
+    () => getService().getServices(slug, { conTurnos: true }),
     slug,
   );
   const seleccion = useReservaOnlineStore((s) => s.servicioIds);
   const setServicios = useReservaOnlineStore((s) => s.setServicios);
+
+  // Un servicio elegido antes que ahora no tiene turnos no puede seguir en la
+  // seleccion: dejaria la reserva en un callejon sin salida.
+  useEffect(() => {
+    if (!servicios) return;
+    const conservar = seleccion.filter((id) => !servicios.find((s) => s.id === id)?.sinTurnos);
+    if (conservar.length !== seleccion.length) setServicios(conservar);
+  }, [servicios, seleccion, setServicios]);
 
   // Filtro de categoria: 'todos' | id de categoria | 'otros' (sin categoria).
   // Solo cambia lo visible; la seleccion vive en el store y no se toca.
@@ -183,24 +238,6 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       if (!sig.delete(id)) sig.add(id);
       return sig;
     });
-
-  // Pista de que la fila de categorias se puede deslizar: un degrade + flecha
-  // sutil en el borde derecho, visible solo mientras queda contenido oculto a
-  // la derecha (no al llegar al final, ni si todas las pills ya entran).
-  const filaRef = useRef<HTMLDivElement>(null);
-  const [hayMasCategorias, setHayMasCategorias] = useState(false);
-  useEffect(() => {
-    const el = filaRef.current;
-    if (!el) return;
-    const revisar = () => setHayMasCategorias(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
-    revisar();
-    el.addEventListener('scroll', revisar);
-    window.addEventListener('resize', revisar);
-    return () => {
-      el.removeEventListener('scroll', revisar);
-      window.removeEventListener('resize', revisar);
-    };
-  }, [servicios]);
 
   if (!listo) return null;
   // 404 = el negocio desactivó la reserva online: reintentar no sirve, se avisa.
@@ -219,6 +256,10 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
     ...[...categorias].map(([id, nombre]) => ({ clave: id, texto: nombre })),
     ...(hayOtros ? [{ clave: 'otros' as const, texto: t('servicios.filtroOtros') }] : []),
   ];
+  // Hasta MAX_CATEGORIAS_EN_PASTILLAS categorias se ven todas como pastillas (en
+  // varias lineas si hace falta); con mas, un selector: ocupa una sola linea sin
+  // importar cuantas haya y no deja la ultima pastilla cortada en el borde.
+  const usarSelector = pills.length - 1 > MAX_CATEGORIAS_EN_PASTILLAS;
 
   // Una promo con profesional fija se reserva sola: elegirla suelta lo demas, y
   // elegir otra cosa suelta la promo.
@@ -245,68 +286,66 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       )}
       {cargando && !error && <ServiciosSkeleton />}
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
-      {hayFiltros && (
-        <div style={{ position: 'relative', marginBottom: 2 }}>
-          {/* Scrollbar nativa oculta (Firefox via scrollbarWidth, Chrome/Android
-              via el selector de abajo): sin esto, apenas la fila desborda
-              aparece la barra del navegador compitiendo con la pista propia
-              de "hay mas" — reportado en produccion. */}
-          <style>{'[data-fila-categorias]::-webkit-scrollbar { display: none; }'}</style>
-          <div
-            ref={filaRef}
-            data-fila-categorias=""
-            role="group"
-            aria-label={t('servicios.filtrosAria')}
-            style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, scrollbarWidth: 'none' }}
+      {hayFiltros && usarSelector && (
+        <label
+          style={{
+            position: 'relative', display: 'flex', alignItems: 'center', gap: 8, minHeight: 48, boxSizing: 'border-box',
+            padding: '0 16px', marginBottom: 14, borderRadius: 14, background: colors.surface,
+            border: `1px solid ${colors.border}`, fontSize: 15,
+          }}
+        >
+          <span style={{ color: colors.sub, flexShrink: 0 }}>{t('servicios.categoriaEtiqueta')}</span>
+          <select
+            value={String(filtro)}
+            onChange={(e) => setFiltro(pills.find((p) => String(p.clave) === e.target.value)?.clave ?? 'todos')}
+            style={{
+              flex: 1, minWidth: 0, minHeight: 46, appearance: 'none', background: 'transparent', border: 'none',
+              outline: 'none', cursor: 'pointer', textAlign: 'right', textAlignLast: 'right', paddingRight: 24,
+              fontSize: 15, fontWeight: 700, color: colors.strong,
+            }}
           >
-            {pills.map((p) => {
-              const activa = filtro === p.clave;
-              return (
-                <button
-                  key={String(p.clave)}
-                  type="button"
-                  aria-pressed={activa}
-                  onClick={() => setFiltro(p.clave)}
-                  style={{
-                    flexShrink: 0, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 13.5, fontWeight: 600,
-                    padding: '8px 16px', borderRadius: 999,
-                    background: activa ? colors.strong : colors.surface,
-                    color: activa ? colors.surface : colors.strong,
-                    border: `1px solid ${activa ? colors.strong : colors.border}`,
-                  }}
-                >
-                  {p.texto}
-                </button>
-              );
-            })}
-          </div>
-          {/* Pista de "hay mas, desliza": termina justo donde termina esta
-              fila (misma columna que las tarjetas), nunca mas alla. */}
-          {hayMasCategorias && (
-            <div
-              data-testid="pista-categorias"
-              aria-hidden="true"
-              style={{
-                position: 'absolute', top: 0, right: 0, bottom: 12, width: 40, pointerEvents: 'none',
-                background: `linear-gradient(to right, transparent, ${colors.bg} 75%)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-              }}
-            >
-              <span
+            {pills.map((p) => (
+              <option key={String(p.clave)} value={String(p.clave)}>{p.texto}</option>
+            ))}
+          </select>
+          <svg
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2.5" strokeLinecap="round"
+            strokeLinejoin="round" aria-hidden="true" style={{ position: 'absolute', right: 16, pointerEvents: 'none' }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </label>
+      )}
+      {hayFiltros && !usarSelector && (
+        <div
+          role="group"
+          aria-label={t('servicios.filtrosAria')}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 14 }}
+        >
+          {pills.map((p) => {
+            const activa = filtro === p.clave;
+            return (
+              <button
+                key={String(p.clave)}
+                type="button"
+                aria-pressed={activa}
+                onClick={() => setFiltro(p.clave)}
                 style={{
-                  width: 22, height: 22, borderRadius: 11, background: colors.bg, border: `1px solid ${colors.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  maxWidth: '100%', overflowWrap: 'anywhere', textAlign: 'center', cursor: 'pointer', fontSize: 14,
+                  fontWeight: 600, minHeight: 40, padding: '8px 16px', borderRadius: 999,
+                  background: activa ? colors.strong : colors.surface,
+                  color: activa ? colors.surface : colors.strong,
+                  border: `1px solid ${activa ? colors.strong : colors.border}`,
                 }}
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </span>
-            </div>
-          )}
+                {p.texto}
+              </button>
+            );
+          })}
         </div>
       )}
       {visibles.map((s) => {
+        if (s.sinTurnos) return <TarjetaSinTurnos key={s.id} s={s} mostrarCategoria={filtro === 'todos'} />;
         const elegido = seleccion.includes(s.id);
         const conFotos = s.fotos.length > 0;
         const tarjeta = {
