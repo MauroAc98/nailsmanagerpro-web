@@ -10,6 +10,7 @@ vi.mock('@/services/turnoService', async () => {
     turnoService: {
       ...actual.turnoService,
       buscarPorProfesional: vi.fn(),
+      buscarPorCliente: vi.fn(),
       // Mockeado también acá — el test de exclusión mutua invoca la acción
       // real buscarPorServicio, que sin esto dispara un GET real vía
       // lib/api (no hay mock de red en este archivo).
@@ -35,6 +36,7 @@ beforeEach(() => {
     ultimoServicioId: null,
     ultimaFecha: null,
     ultimoProfesionalId: null,
+    ultimoClienteId: null,
   });
 });
 
@@ -102,7 +104,82 @@ describe('buscarPorProfesional', () => {
   });
 });
 
+describe('buscarPorCliente', () => {
+  const mockedBuscarPorCliente = vi.mocked(turnoService.buscarPorCliente);
+
+  beforeEach(() => {
+    mockedBuscarPorCliente.mockReset();
+    useTurnoStore.setState({ ultimoClienteId: null });
+  });
+
+  it('carga turnosBusqueda y guarda ultimoClienteId cuando se pasa un id', async () => {
+    const turnosFake = [{ id: 1 }] as never;
+    mockedBuscarPorCliente.mockResolvedValue(turnosFake);
+
+    await useTurnoStore.getState().buscarPorCliente(5);
+
+    expect(mockedBuscarPorCliente).toHaveBeenCalledWith(5);
+    expect(useTurnoStore.getState().turnosBusqueda).toEqual(turnosFake);
+    expect(useTurnoStore.getState().ultimoClienteId).toBe(5);
+    expect(useTurnoStore.getState().cargandoBusqueda).toBe(false);
+  });
+
+  it('limpia turnosBusqueda y ultimoClienteId cuando se pasa null', async () => {
+    useTurnoStore.setState({ turnosBusqueda: [{ id: 1 }] as never, ultimoClienteId: 5 });
+
+    await useTurnoStore.getState().buscarPorCliente(null);
+
+    expect(mockedBuscarPorCliente).not.toHaveBeenCalled();
+    expect(useTurnoStore.getState().turnosBusqueda).toEqual([]);
+    expect(useTurnoStore.getState().ultimoClienteId).toBeNull();
+  });
+
+  it('es mutuamente excluyente con los otros criterios (los resetea)', async () => {
+    useTurnoStore.setState({ ultimaBusqueda: 'ana', ultimoServicioId: 3, ultimaFecha: '2026-09-18', ultimoProfesionalId: 7 });
+    mockedBuscarPorCliente.mockResolvedValue([] as never);
+
+    await useTurnoStore.getState().buscarPorCliente(5);
+
+    const s = useTurnoStore.getState();
+    expect(s.ultimaBusqueda).toBe('');
+    expect(s.ultimoServicioId).toBeNull();
+    expect(s.ultimaFecha).toBeNull();
+    expect(s.ultimoProfesionalId).toBeNull();
+  });
+
+  it('buscarPorServicio resetea ultimoClienteId (exclusión en el otro sentido)', async () => {
+    useTurnoStore.setState({ ultimoClienteId: 5 });
+
+    await useTurnoStore.getState().buscarPorServicio(3);
+
+    expect(useTurnoStore.getState().ultimoClienteId).toBeNull();
+  });
+
+  it('descarta una respuesta vieja si mientras tanto se eligió OTRA clienta', async () => {
+    let resolverPrimera: (v: never) => void;
+    const primera = new Promise<never>(resolve => { resolverPrimera = resolve; });
+    mockedBuscarPorCliente.mockReturnValueOnce(primera as never);
+    mockedBuscarPorCliente.mockResolvedValueOnce([{ id: 99 }] as never);
+
+    const p1 = useTurnoStore.getState().buscarPorCliente(5);
+    const p2 = useTurnoStore.getState().buscarPorCliente(6);
+    resolverPrimera!([{ id: 1 }] as never);
+    await Promise.all([p1, p2]);
+
+    expect(useTurnoStore.getState().ultimoClienteId).toBe(6);
+    expect(useTurnoStore.getState().turnosBusqueda).toEqual([{ id: 99 }]);
+  });
+});
+
 describe('limpiarBusqueda', () => {
+  it('resetea ultimoClienteId junto con los demás criterios', () => {
+    useTurnoStore.setState({ ultimoClienteId: 5, turnosBusqueda: [{ id: 1 }] as never });
+
+    useTurnoStore.getState().limpiarBusqueda();
+
+    expect(useTurnoStore.getState().ultimoClienteId).toBeNull();
+  });
+
   it('resetea ultimoProfesionalId junto con los demás criterios', () => {
     useTurnoStore.setState({ ultimoProfesionalId: 7, turnosBusqueda: [{ id: 1 }] as never });
 

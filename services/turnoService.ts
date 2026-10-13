@@ -176,6 +176,7 @@ export type FiltrosTurnos =
   | { buscar: string }
   | { servicio_id: number }
   | { profesional_id: number }
+  | { cliente_id: number }
   | { desde: string; hasta: string };
 
 // ─────────────────────────────────────────────
@@ -193,6 +194,7 @@ export const turnoService = {
   buscarPorServicio:    (id: number):     Promise<Turno[]> => turnoService.getTurnos({ servicio_id: id }),
   buscarPorFecha:       (fecha: string):  Promise<Turno[]> => turnoService.getTurnos({ fecha }),
   buscarPorProfesional: (id: number):     Promise<Turno[]> => turnoService.getTurnos({ profesional_id: id }),
+  buscarPorCliente:     (id: number):     Promise<Turno[]> => turnoService.getTurnos({ cliente_id: id }),
   buscarPorRango:       (desde: string, hasta: string): Promise<Turno[]> => turnoService.getTurnos({ desde, hasta }),
 
   // profesionalId opcional — el backend filtra server-side cuando se manda,

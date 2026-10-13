@@ -68,6 +68,7 @@ interface TurnosState {
   ultimoServicioId: number | null;
   ultimaFecha: string | null;
   ultimoProfesionalId: number | null;
+  ultimoClienteId: number | null;
 
   fetchTurnos: (fecha: string) => Promise<void>;
   fetchTurnosMes: (mes: string) => Promise<void>;
@@ -89,6 +90,7 @@ interface TurnosState {
   buscarPorServicio: (id: number | null) => Promise<void>;
   buscarPorFecha: (fecha: string | null) => Promise<void>;
   buscarPorProfesional: (id: number | null) => Promise<void>;
+  buscarPorCliente: (id: number | null) => Promise<void>;
   limpiarBusqueda: () => void;
 }
 
@@ -103,8 +105,8 @@ const refrescarAgenda = async (
   set: (partial: Partial<TurnosState>) => void,
   fecha: string,
 ): Promise<void> => {
-  const { ultimaBusqueda, ultimoServicioId, ultimaFecha, ultimoProfesionalId } = get();
-  const hayFiltro = ultimaBusqueda.trim().length > 0 || ultimoServicioId !== null || ultimaFecha !== null || ultimoProfesionalId !== null;
+  const { ultimaBusqueda, ultimoServicioId, ultimaFecha, ultimoProfesionalId, ultimoClienteId } = get();
+  const hayFiltro = ultimaBusqueda.trim().length > 0 || ultimoServicioId !== null || ultimaFecha !== null || ultimoProfesionalId !== null || ultimoClienteId !== null;
   const mes = fecha.slice(0, 7);
 
   if (hayFiltro) set({ cargandoBusqueda: true });
@@ -129,6 +131,8 @@ const refrescarAgenda = async (
       tareas.push(get().buscarPorFecha(ultimaFecha));
     } else if (ultimoProfesionalId !== null) {
       tareas.push(get().buscarPorProfesional(ultimoProfesionalId));
+    } else if (ultimoClienteId !== null) {
+      tareas.push(get().buscarPorCliente(ultimoClienteId));
     }
 
     await Promise.all(tareas);
@@ -162,6 +166,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   ultimoServicioId: null,
   ultimaFecha: null,
   ultimoProfesionalId: null,
+  ultimoClienteId: null,
 
   setFechaSeleccionada: (fecha) => set({ fechaSeleccionada: fecha }),
   marcarFechaDeRetorno: (fecha) => set({ fechaDeRetorno: fecha }),
@@ -358,11 +363,11 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     if (nombre.trim().length === 0) {
       set({
         turnosBusqueda: [], buscando: false, cargandoBusqueda: false,
-        ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null,
+        ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null, ultimoClienteId: null,
       });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimaBusqueda: nombre, ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimaBusqueda: nombre, ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null, ultimoClienteId: null });
     try {
       const resultados = await turnoService.buscarPorNombre(nombre);
       // Descarta si mientras tanto se tipeó otra búsqueda — sin esto, una
@@ -382,7 +387,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
       set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimoServicioId: null });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimoServicioId: id, ultimaBusqueda: '', ultimaFecha: null, ultimoProfesionalId: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimoServicioId: id, ultimaBusqueda: '', ultimaFecha: null, ultimoProfesionalId: null, ultimoClienteId: null });
     try {
       const resultados = await turnoService.buscarPorServicio(id);
       if (get().ultimoServicioId !== id) return;
@@ -399,7 +404,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
       set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimaFecha: null });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimaFecha: fecha, ultimaBusqueda: '', ultimoServicioId: null, ultimoProfesionalId: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimaFecha: fecha, ultimaBusqueda: '', ultimoServicioId: null, ultimoProfesionalId: null, ultimoClienteId: null });
     try {
       const resultados = await turnoService.buscarPorFecha(fecha);
       if (get().ultimaFecha !== fecha) return;
@@ -416,7 +421,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
       set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimoProfesionalId: null });
       return;
     }
-    set({ buscando: true, cargandoBusqueda: true, ultimoProfesionalId: id, ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null });
+    set({ buscando: true, cargandoBusqueda: true, ultimoProfesionalId: id, ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null, ultimoClienteId: null });
     try {
       const resultados = await turnoService.buscarPorProfesional(id);
       // Descarta si mientras tanto se pidió OTRA profesional — mismo
@@ -430,6 +435,25 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     }
   },
 
+  buscarPorCliente: async (id) => {
+    if (id === null) {
+      set({ turnosBusqueda: [], buscando: false, cargandoBusqueda: false, ultimoClienteId: null });
+      return;
+    }
+    set({ buscando: true, cargandoBusqueda: true, ultimoClienteId: id, ultimaBusqueda: '', ultimoServicioId: null, ultimaFecha: null, ultimoProfesionalId: null });
+    try {
+      const resultados = await turnoService.buscarPorCliente(id);
+      // Descarta si mientras tanto se eligió OTRA clienta (mismo criterio que
+      // buscarPorServicio/buscarPorProfesional).
+      if (get().ultimoClienteId !== id) return;
+      set({ turnosBusqueda: resultados });
+    } catch (e) {
+      console.error('buscarPorCliente:', extraerMensajeError(e));
+    } finally {
+      if (get().ultimoClienteId === id) set({ cargandoBusqueda: false });
+    }
+  },
+
   limpiarBusqueda: () => set({
     turnosBusqueda: [],
     buscando: false,
@@ -438,5 +462,6 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
     ultimoServicioId: null,
     ultimaFecha: null,
     ultimoProfesionalId: null,
+    ultimoClienteId: null,
   }),
 }));
