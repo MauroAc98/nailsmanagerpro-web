@@ -337,6 +337,85 @@ describe('ServiciosScreen', () => {
     });
   });
 
+  describe('buscador de servicios', () => {
+    // 5 servicios del demo + "Laminado de pestañas" + 10 de relleno = 16 (> 12: aparece el buscador).
+    const conMuchosServicios = () => {
+      const svc = prepararServicio();
+      const original = svc.getServices.bind(svc);
+      svc.getServices = async (slug, q) => [
+        ...(await original(slug, q)),
+        { id: 200, nombre: 'Laminado de pestañas', duracionMinutos: 45, precio: 12000, categoria: null, fotos: [] },
+        ...Array.from({ length: 10 }, (_, i) => ({
+          id: 300 + i, nombre: `Servicio de relleno ${i + 1}`, duracionMinutos: 30, precio: 5000, categoria: null, fotos: [],
+        })),
+      ];
+    };
+    const campo = () => screen.findByRole('searchbox', { name: 'Buscar servicio' });
+
+    it('con pocos servicios no hay buscador (estorbaria)', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Retiro de esmalte');
+      expect(screen.queryByRole('searchbox')).toBeNull();
+    });
+
+    it('con muchos servicios aparece, y filtra por parte del nombre en todas las categorias', async () => {
+      conMuchosServicios();
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'lamin');
+      expect(screen.getByRole('checkbox', { name: 'Laminado de pestañas' })).toBeInTheDocument();
+      expect(screen.queryByText('Retiro de esmalte')).toBeNull();
+      expect(screen.getByText('1 resultado · buscando en todas las categorías')).toBeInTheDocument();
+      // mientras se busca, el filtro de categoria no compite
+      expect(screen.queryByRole('group', { name: 'Filtrar por categoría' })).toBeNull();
+    });
+
+    it('marca la parte que coincide', async () => {
+      conMuchosServicios();
+      const { container } = renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'lamin');
+      expect(container.querySelector('mark')?.textContent).toBe('Lamin');
+    });
+
+    it('ignora tildes y mayusculas: "PESTANAS" encuentra "pestañas"', async () => {
+      conMuchosServicios();
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'PESTANAS');
+      expect(screen.getByRole('checkbox', { name: 'Laminado de pestañas' })).toBeInTheDocument();
+    });
+
+    it('sin resultados: lo dice y "Borrar busqueda" vuelve a mostrar todo', async () => {
+      conMuchosServicios();
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'xyz');
+      expect(screen.getByText('No encontramos servicios con “xyz”')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Borrar búsqueda' }));
+      expect(await screen.findByText('Retiro de esmalte')).toBeInTheDocument();
+      expect(screen.queryByText(/No encontramos servicios/)).toBeNull();
+    });
+
+    it('la ✕ borra el texto y la lista vuelve completa', async () => {
+      conMuchosServicios();
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'lamin');
+      await userEvent.click(screen.getByRole('button', { name: 'Borrar el texto' }));
+      expect(await screen.findByText('Retiro de esmalte')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Borrar el texto' })).toBeNull();
+    });
+
+    it('la seleccion se conserva al buscar y avisa de lo elegido fuera de la busqueda', async () => {
+      conMuchosServicios();
+      // El negocio activo tiene que ser el de la pantalla: si no, useGuardaPaso reinicia la seleccion.
+      useReservaOnlineStore.getState().activarSlug('demo');
+      useReservaOnlineStore.getState().setServicios([1]);
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'lamin');
+      expect(screen.getByText('1 servicio elegido fuera de esta búsqueda')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Continuar · 1 servicio' })).toBeEnabled();
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Laminado de pestañas' }));
+      expect(useReservaOnlineStore.getState().servicioIds).toEqual([1, 200]);
+    });
+  });
+
   describe('fila de categorias', () => {
     it('con pocas categorias (hasta 4) se ven como pastillas en varias lineas, sin carrusel ni selector', async () => {
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
