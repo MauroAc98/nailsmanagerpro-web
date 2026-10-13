@@ -9,6 +9,7 @@ import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
 import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendientesStore';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import { useAuth } from '@/hooks/useAuth';
+import { ConexionBanner } from '@/components/ConexionBanner';
 
 // NAV_BUBBLE_SIZE/NAV_BUBBLE_POKE/NAV_CLEARANCE/NAV_Z_INDEX vienen de
 // constants/layout.ts — cualquier fixed que se posicione relativo al nav
@@ -89,13 +90,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (document.visibilityState === 'visible') refrescar();
     };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    // Al volver la red se re-consulta lo que pudo quedar viejo o fallido.
+    window.addEventListener('online', refrescar);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', refrescar);
+    };
   }, [checkSubscription, fetchPendientes, fetchRecordatoriosPendientes, fetchNotificaciones]);
 
   const TABS = TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.background }}>
+      <ConexionBanner />
       <div style={{
         flex: 1,
         overflow: 'auto',

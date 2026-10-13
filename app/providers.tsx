@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useRefrescoEstadoNegocio } from '@/hooks/useRefrescoEstadoNegocio';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme, useThemeStore } from '@/store/useThemeStore';
+import { initConexion } from '@/store/useConexionStore';
 import { agendaColors } from '@/theme/agendaColors';
 import { initLocale, useLocaleStore } from '@/store/useLocaleStore';
 import { Loader } from '@/components/Loader';
@@ -104,6 +105,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     useAuthStore.getState().inicializar();
     initTheme();
+    initConexion();
     initLocale();
     setMounted(true);
   }, []);

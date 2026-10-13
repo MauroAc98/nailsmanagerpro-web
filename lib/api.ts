@@ -2,6 +2,12 @@ import axios from 'axios';
 import { logAuthEvent } from '@/lib/logAuthEvent';
 import { limpiarCachesDeSesion } from '@/lib/limpiarCachesSw';
 
+// Intent-only, igual que la sesión: el interceptor no toca ningún store, solo
+// avisa por `window` si la API respondió (hay conexión) o no. Lo escucha
+// initConexion() en store/useConexionStore.ts.
+const avisarConexion = (conectado: boolean) =>
+  window.dispatchEvent(new CustomEvent('app:conexion', { detail: { conectado } }));
+
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   // Bound every request so a hung connection can never wedge the caller
@@ -41,9 +47,17 @@ api.interceptors.request.use((config) => {
 // the store to run the authoritative transition. `app/providers.tsx` listens
 // and delegates to `handleSessionRevoked()` / `recheckSubscription()`.
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    avisarConexion(true);
+    return response;
+  },
   (error) => {
     const status = error.response?.status;
+
+    // Sin respuesta del servidor (corte de red, timeout por mala señal): se
+    // avisa al usuario. Un error con respuesta (401, 422, 500...) prueba que
+    // hay conexión. Un pedido cancelado a propósito no dice nada.
+    if (!axios.isCancel(error)) avisarConexion(error.response != null);
 
     if (status === 401) {
       try {
