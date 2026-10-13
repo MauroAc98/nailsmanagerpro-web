@@ -6,6 +6,7 @@ import { linkComoLlegar } from '@/lib/reservaOnline/calendario';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useCarga, type Ir } from './hooks';
+import { formatMonto } from '@/lib/money';
 import { IcoBrillo, IcoCalendario, IcoCheck, IcoEscudo, IcoPin } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
 import { Avatar, BarraInferior, BotonPrimario, Hueso, Mensaje, Tarjeta } from './ui';
@@ -62,9 +63,17 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
   const nombres = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
     salon.profesionales.map((p) => primerNombre(p.nombre)),
   );
+  // La duda de plata mas comun es cuanto es la sena: se dice aca, no recien en el paso 4.
+  // Sin el dato (porcentaje sin valor, monto 0) queda el texto de siempre: no se inventa un numero.
+  const textoSena =
+    terminos.senaTipo === 'porcentaje' && terminos.senaPorcentaje
+      ? t('entry.como2Porcentaje', { pct: terminos.senaPorcentaje })
+      : terminos.senaTipo === 'fijo' && terminos.deposito
+        ? t('entry.como2Fija', { monto: `$${formatMonto(terminos.deposito)}` })
+        : t('entry.como2');
   const pasos = [
     { icono: <IcoBrillo color={colors.primaryDeep} />, texto: t('entry.como1') },
-    { icono: <IcoEscudo color={colors.primaryDeep} />, texto: t('entry.como2') },
+    { icono: <IcoEscudo color={colors.primaryDeep} />, texto: textoSena },
     { icono: <IcoCheck color={colors.primaryDeep} size={15} sw={3} />, texto: t('entry.como3') },
   ];
 
@@ -175,6 +184,10 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: colors.sub, marginTop: 12 }}>
           <IcoCalendario color={colors.primaryDeep} />
           {t('entry.cancelacion', { horas: terminos.ventanaCancelacionHoras })}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: colors.sub, marginTop: 8 }}>
+          <IcoCheck color={colors.primaryDeep} size={15} sw={3} />
+          {t('entry.sinCuenta')}
         </div>
       </div>
 
