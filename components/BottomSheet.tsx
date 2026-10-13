@@ -53,6 +53,8 @@ interface BottomSheetProps {
 }
 
 const Z_INDEX = 40;
+// Espera tras el último resize antes de recalcular el alto del sheet.
+const RESIZE_SETTLE_MS = 120;
 
 type TouchHandler = (e: TouchEvent) => void;
 const noopTouch: TouchHandler = () => undefined;
@@ -63,8 +65,20 @@ const noopTouch: TouchHandler = () => undefined;
 // pero ese extra es 0 en Safari normal, así que nunca se notaba ahí. Sin
 // sumarlo acá, el sheet (z-index 40, sin relación con el nav) pinta encima
 // de la franja superior de los botones del nav exactamente en esa medida.
-function useSafeAreaBottom(): number {
-  const [value, setValue] = useState(0);
+//
+// El alto del viewport y el safe area se miden JUNTOS y se publican en un solo
+// estado: si cada uno se actualizara por su lado, durante un instante el sheet
+// calcularía su alto con un valor nuevo y otro viejo (salto visible, mayor
+// cuanto más alto el snap). En un resize (barra del navegador, teclado,
+// bloquear/desbloquear el teléfono) el navegador dispara varios eventos con
+// alturas intermedias, así que se espera a que se estabilicen; `onResizeStart`
+// deja al llamador congelar la transición mientras tanto.
+function useViewportMetrics(onResizeStart: () => void) {
+  const [metrics, setMetrics] = useState({ viewportHeight: 0, safeAreaBottom: 0 });
+  const onResizeStartRef = useRef(onResizeStart);
+  useEffect(() => {
+    onResizeStartRef.current = onResizeStart;
+  });
 
   useEffect(() => {
     const probe = document.createElement("div");
@@ -72,18 +86,28 @@ function useSafeAreaBottom(): number {
       "position:absolute;visibility:hidden;height:0;padding-bottom:env(safe-area-inset-bottom)";
     document.body.appendChild(probe);
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const measure = () =>
-      setValue(parseFloat(getComputedStyle(probe).paddingBottom) || 0);
+      setMetrics({
+        viewportHeight: window.innerHeight,
+        safeAreaBottom: parseFloat(getComputedStyle(probe).paddingBottom) || 0,
+      });
+    const onResize = () => {
+      onResizeStartRef.current();
+      clearTimeout(timer);
+      timer = setTimeout(measure, RESIZE_SETTLE_MS);
+    };
     measure();
 
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("resize", measure);
+      clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
       document.body.removeChild(probe);
     };
   }, []);
 
-  return value;
+  return metrics;
 }
 
 export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
@@ -127,8 +151,11 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     // "how much of it is showing right now" between renders.
     const visibleHeightRef = useRef(0);
 
-    const [viewportHeight, setViewportHeight] = useState(0);
-    const safeAreaBottom = useSafeAreaBottom();
+    const { viewportHeight, safeAreaBottom } = useViewportMetrics(() => {
+      if (sheetRef.current && !draggingRef.current) {
+        sheetRef.current.style.transition = "none";
+      }
+    });
     const effectiveBottomOffset = bottomOffset + safeAreaBottom;
     const availableHeight = Math.max(0, viewportHeight - effectiveBottomOffset);
     // Resting (non-dragging) snap index — real React state so the rendered
@@ -137,13 +164,6 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     // that only self-corrected because snapPoints happened to be a fresh
     // array reference every render.
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
-
-    useEffect(() => {
-      const update = () => setViewportHeight(window.innerHeight);
-      update();
-      window.addEventListener("resize", update);
-      return () => window.removeEventListener("resize", update);
-    }, []);
 
     const heightForIndex = useCallback(
       (index: number) => (index < 0 ? 0 : snapPoints[index] * availableHeight),
@@ -346,6 +366,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     // capture is taken, so native scroll is never taken away.
     const touchMode = useRef<"idle" | "pending" | "sheet" | "scroll">("idle");
     const touchStartY = useRef(0);
+    const touchStartX = useRef(0);
     const touchImpl = useRef<Record<'start' | 'move' | 'end', TouchHandler>>({
       start: noopTouch,
       move: noopTouch,
@@ -362,6 +383,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           }
           touchMode.current = "pending";
           touchStartY.current = e.touches[0].clientY;
+          touchStartX.current = e.touches[0].clientX || 0;
         },
         move: (e) => {
           const mode = touchMode.current;
@@ -369,7 +391,15 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           const y = e.touches[0].clientY;
           if (mode === "pending") {
             const dy = y - touchStartY.current; // down = positive
-            if (Math.abs(dy) < TOUCH_SLOP) return;
+            const dx = (e.touches[0].clientX || 0) - touchStartX.current;
+            if (Math.max(Math.abs(dx), Math.abs(dy)) < TOUCH_SLOP) return;
+            // Gesto mayormente horizontal (swipe de una tarjeta): no es del
+            // sheet. Sin esto, un poco de deriva vertical al deslizar movía el
+            // sheet arriba/abajo un instante y volvía a su snap.
+            if (Math.abs(dx) > Math.abs(dy)) {
+              touchMode.current = "scroll";
+              return;
+            }
             const el = contentRef.current;
             const canScroll = el
               ? el.scrollHeight - el.clientHeight > 1
