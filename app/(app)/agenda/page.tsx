@@ -431,7 +431,15 @@ function AgendaContent() {
   // Deep link de las notificaciones (`/agenda?fecha=YYYY-MM-DD`). Se lee una
   // sola vez al montar; un valor inválido se ignora y rige el default (hoy).
   const searchParams = useSearchParams();
-  const [fechaInicial] = useState(() => fechaValidaDeQuery(searchParams.get('fecha')) ?? fechaDeHoy());
+  // Orden: deep link `?fecha=`, luego el día que dejó "nuevo turno" al guardar
+  // (se lee sin consumir acá — el inicializador corre dos veces en StrictMode —
+  // y se limpia en el efecto de montaje), y por último hoy.
+  const [fechaInicial] = useState(
+    () =>
+      fechaValidaDeQuery(searchParams.get('fecha')) ??
+      fechaValidaDeQuery(useTurnoStore.getState().fechaDeRetorno) ??
+      fechaDeHoy(),
+  );
   const t = useTranslations('agenda.AgendaPage');
   const tElegirFecha = useTranslations('agenda.ElegirFechaSheet');
   const tFiltro = useTranslations('agenda.FiltroSheetContent');
@@ -546,6 +554,7 @@ function AgendaContent() {
   // Mount: load today's data (o el día del deep link `?fecha=`)
   useEffect(() => {
     const today = fechaInicial;
+    useTurnoStore.getState().limpiarFechaDeRetorno();
     setFechaSeleccionada(today);
     fetchTurnos(today);
     fetchTurnosMes(today.slice(0, 7));

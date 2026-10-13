@@ -81,6 +81,7 @@ beforeEach(() => {
   crearTurno.mockResolvedValue({ success: true });
   crearLote.mockResolvedValue({ success: true });
   useAuthStore.setState({ user: null });
+  useTurnoStore.setState({ fechaDeRetorno: null });
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2099-06-01T10:00:00'));
 });
@@ -99,6 +100,8 @@ describe('NuevoTurnoPage — un solo turno (igual que siempre)', () => {
     await waitFor(() => expect(crearTurno).toHaveBeenCalledWith({ cliente_id: 5, servicio_ids: [1], fecha_hora: '2099-06-10 10:00' }));
     expect(crearLote).not.toHaveBeenCalled();
     expect(routerMock.back).toHaveBeenCalled();
+    // La agenda reabre en el día del turno creado, no en hoy.
+    expect(useTurnoStore.getState().fechaDeRetorno).toBe('2099-06-10');
   });
 
   it('el botón "Agregar otro turno" no aparece hasta elegir cliente', async () => {
@@ -176,6 +179,8 @@ describe('NuevoTurnoPage — varios turnos', () => {
     }));
     expect(crearTurno).not.toHaveBeenCalled();
     await waitFor(() => expect(routerMock.back).toHaveBeenCalled());
+    // Con fechas distintas vuelve a la más temprana.
+    expect(useTurnoStore.getState().fechaDeRetorno).toBe('2099-06-10');
   });
 
   it('un 422 con índice muestra el mensaje y abre ese turno', async () => {
@@ -190,6 +195,7 @@ describe('NuevoTurnoPage — varios turnos', () => {
     expect(screen.getByText('Turno 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Editar turno 2:/ })).toBeInTheDocument();
     expect(routerMock.back).not.toHaveBeenCalled();
+    expect(useTurnoStore.getState().fechaDeRetorno).toBeNull();
   });
 
   it('tocar un turno plegado lo reabre y pliega el que estaba abierto', async () => {

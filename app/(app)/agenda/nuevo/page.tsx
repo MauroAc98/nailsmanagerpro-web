@@ -86,7 +86,7 @@ function NuevoTurnoContent() {
   // varios turnos (fila "Día" de cada bloque).
   const [fecha, setFecha] = useState(fechaUrl);
 
-  const { crearTurno, crearLote, turnos, fetchTurnos }  = useTurnoStore();
+  const { crearTurno, crearLote, turnos, fetchTurnos, marcarFechaDeRetorno }  = useTurnoStore();
   const { servicios, fetchServicios }        = useServiciosStore();
   const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
@@ -228,6 +228,7 @@ function NuevoTurnoContent() {
       await alertDialog(result.code === 'slot_held' ? t('comboSlotHeld') : (result.message ?? t('createError')));
       return;
     }
+    marcarFechaDeRetorno(fecha);
     showToast(t('created'));
     router.back();
   };
@@ -358,6 +359,10 @@ function NuevoTurnoContent() {
       return;
     }
 
+    // La agenda vuelve a la fecha más temprana del lote (los bloques pueden
+    // tener fechas distintas).
+    marcarFechaDeRetorno(todos.map(b => b.fecha).sort()[0]);
+
     // Con envío manual de WhatsApp: pantalla de éxito con un botón por turno creado.
     if (requiereEnvioManualWhatsapp && selectedCliente.telefono) {
       const items: ItemConfirmacion[] = result.turnos?.length
@@ -409,6 +414,7 @@ function NuevoTurnoContent() {
       return;
     }
 
+    marcarFechaDeRetorno(fecha);
     if (requiereEnvioManualWhatsapp && selectedCliente.telefono) {
       const nombresServicios = servicios
         .filter(s => selectedServicioIds.includes(s.id))
