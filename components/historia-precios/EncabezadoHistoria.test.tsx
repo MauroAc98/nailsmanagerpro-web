@@ -89,7 +89,7 @@ describe('EncabezadoHistoria · estilo sobre la foto', () => {
     expect(linea().style.textOverflow).toBe('ellipsis');
   });
 
-  it('con foto: círculo de 44x44 con anillo (box-shadow, nunca filter) y cover', () => {
+  it('con foto: círculo de 44x44 con anillo de bordes (nunca box-shadow ni filter) y cover', () => {
     renderEncabezado({ logoUrl: 'data:image/png;base64,eA==' });
     const img = screen.getByTestId('encabezado-foto') as HTMLImageElement;
     expect(img.getAttribute('src')).toBe('data:image/png;base64,eA==');
@@ -97,18 +97,21 @@ describe('EncabezadoHistoria · estilo sobre la foto', () => {
     expect(img.style.height).toBe('44px');
     expect(img.style.borderRadius).toBe('50%');
     expect(img.style.objectFit).toBe('cover');
-    expect(img.style.boxShadow).not.toBe('');
+    // Safari pinta mal el halo de un box-shadow con spread (ver AnilloInsignia).
+    expect(img.style.boxShadow).toBe('');
     expect(img.style.filter).toBe('');
+    expect(img.parentElement?.querySelectorAll('[data-anillo]')).toHaveLength(2);
     expect(screen.queryByTestId('encabezado-icono')).toBeNull();
   });
 
-  it('sin foto: círculo de vidrio con anillo y el ícono Tag blanco', () => {
+  it('sin foto: círculo de vidrio con anillo de bordes y el ícono Tag blanco', () => {
     renderEncabezado({ logoUrl: null });
     expect(screen.queryByTestId('encabezado-foto')).toBeNull();
     const icono = screen.getByTestId('encabezado-icono');
     expect(icono.style.width).toBe('44px');
     expect(icono.style.borderRadius).toBe('50%');
-    expect(icono.style.boxShadow).not.toBe('');
+    expect(icono.style.boxShadow).toBe('');
+    expect(icono.parentElement?.querySelectorAll('[data-anillo]')).toHaveLength(2);
     expect(icono.querySelector('svg')?.getAttribute('class')).toContain('lucide-tag');
   });
 

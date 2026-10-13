@@ -6,6 +6,7 @@ import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { agendaFontSerif } from '@/theme/agendaColors';
+import { AnilloInsignia } from '@/components/historia/AnilloInsignia';
 import { PieContacto } from '@/components/historia/PieContacto';
 import { FitText } from '@/components/historia/FitText';
 import { nombreDia as nombreDiaIntl, nombreMes as nombreMesIntl } from '@/lib/dateFormat';
@@ -224,45 +225,43 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // mismo círculo en los 3 modos — decisión 2026-09-30 tras canvas de diseño:
   // un badge de fecha superpuesto no escala a semana/mes. Sin foto: la fecha
   // en modo Día y mes + año en Semana/Mes, en un círculo de vidrio. El anillo
-  // es un box-shadow (no un `filter` en vivo: html-to-image rasteriza como SVG
-  // foreignObject y WebKit combina mal ese filtro — la historia entera salía
-  // negra en Safari, real en prod 2026-10-01).
-  const ANILLO_INSIGNIA = '0 0 0 1.5px rgba(255,255,255,0.85), 0 0 0 4.5px rgba(255,255,255,0.22)';
-  const insignia = logoUrl ? (
-    <img
-      src={logoUrl}
-      alt=""
-      style={{
-        flexShrink: 0, width: 44, height: 44, borderRadius: '50%',
-        objectFit: 'cover', boxShadow: ANILLO_INSIGNIA,
-      }}
-    />
-  ) : (
-    <span style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, width: 44, height: 44, borderRadius: '50%', boxShadow: ANILLO_INSIGNIA,
-      background: 'linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08))', color: '#fff',
-    }}>
-      {chipDiaNumero !== null ? (
-        <>
-          <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.18em', paddingLeft: '0.18em', textTransform: 'uppercase', opacity: 0.85 }}>
-            {chipDiaLabel}
-          </span>
-          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 21, lineHeight: 1, marginTop: 1 }}>
-            {chipDiaNumero}
-          </span>
-        </>
+  // lo arma AnilloInsignia con bordes (no box-shadow ni `filter`: ver ahí por qué).
+  const insignia = (
+    <AnilloInsignia tamano={44} testId="story-insignia">
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt=""
+          style={{ position: 'relative', width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
+        />
       ) : (
-        <>
-          <span style={{ fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 17, lineHeight: 1 }}>
-            {chipMes}
-          </span>
-          <span style={{ fontSize: 6.5, fontWeight: 700, letterSpacing: '0.2em', paddingLeft: '0.2em', opacity: 0.8, marginTop: 3 }}>
-            {chipAnio}
-          </span>
-        </>
+        <span style={{
+          position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08))', color: '#fff',
+        }}>
+          {chipDiaNumero !== null ? (
+            <>
+              <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.18em', paddingLeft: '0.18em', textTransform: 'uppercase', opacity: 0.85 }}>
+                {chipDiaLabel}
+              </span>
+              <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 21, lineHeight: 1, marginTop: 1 }}>
+                {chipDiaNumero}
+              </span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 17, lineHeight: 1 }}>
+                {chipMes}
+              </span>
+              <span style={{ fontSize: 6.5, fontWeight: 700, letterSpacing: '0.2em', paddingLeft: '0.2em', opacity: 0.8, marginTop: 3 }}>
+                {chipAnio}
+              </span>
+            </>
+          )}
+        </span>
       )}
-    </span>
+    </AnilloInsignia>
   );
 
   return (
