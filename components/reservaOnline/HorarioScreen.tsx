@@ -540,7 +540,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
               </BotonPrimario>
             </>
           )}
-          {typeof profesionalId === 'number' && !asignaciones && (
+          {/* Una promo de profesional fija no tiene a quien cambiar: la fija la promo. */}
+          {typeof profesionalId === 'number' && !asignaciones && !hayPromoFija && (
             <div style={{ textAlign: 'center', marginTop: 4 }}>
               <button type="button" onClick={() => setProfesional('any')} style={botonSecundario}>
                 {t('horario.verConCualquiera')}
