@@ -42,6 +42,10 @@ interface TurnosState {
   // pidió OTRO mes (ej. navegar rápido entre meses del calendario).
   mesSolicitado: string | null;
   fechaSeleccionada: string;
+  // Día al que la agenda debe abrir UNA vez, la próxima vez que se monte. Lo
+  // deja "nuevo turno" al guardar: volver con router.back() remonta la agenda
+  // sin ?fecha= y caía en hoy, escondiendo el turno recién creado.
+  fechaDeRetorno: string | null;
 
   turnoActual: Turno | null;
   loadingTurno: boolean;
@@ -78,6 +82,8 @@ interface TurnosState {
   cancelarTurno: (id: number, motivoCancelacion: string, alcance?: 'grupo') => Promise<OperacionResult>;
   reprogramarGrupo: (grupoId: number, fechaHora: string) => Promise<OperacionResult>;
   setFechaSeleccionada: (fecha: string) => void;
+  marcarFechaDeRetorno: (fecha: string) => void;
+  limpiarFechaDeRetorno: () => void;
 
   buscarPorNombre: (nombre: string) => Promise<void>;
   buscarPorServicio: (id: number | null) => Promise<void>;
@@ -142,6 +148,7 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   errorMes: null,
   mesSolicitado: null,
   fechaSeleccionada: fechaDeHoy(),
+  fechaDeRetorno: null,
 
   turnoActual: null,
   loadingTurno: false,
@@ -157,6 +164,8 @@ export const useTurnoStore = create<TurnosState>((set, get) => ({
   ultimoProfesionalId: null,
 
   setFechaSeleccionada: (fecha) => set({ fechaSeleccionada: fecha }),
+  marcarFechaDeRetorno: (fecha) => set({ fechaDeRetorno: fecha }),
+  limpiarFechaDeRetorno: () => set({ fechaDeRetorno: null }),
 
   // ─────────────────────────────────────────────
   // fetchTurnos — sets fechaSeleccionada then fetches
