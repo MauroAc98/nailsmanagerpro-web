@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
@@ -32,6 +32,8 @@ const monto = (n: number) => `$${formatMonto(n)}`;
 
 // Espera tras dejar de tipear antes de buscar en el servidor (igual que Clientes).
 const ESPERA_BUSQUEDA_MS = 500;
+// Cuánto se ve el loader al cambiar de pestaña o filtro, aunque los datos estén en caché.
+const TRANSICION_MS = 350;
 // Alto estimado de una tarjeta hasta que la lista la mide.
 const ALTO_ESTIMADO = 110;
 
@@ -198,29 +200,11 @@ function FilaCobro({ turno, profesional, onUsarLista, onCargar }: FilaProps) {
   );
 }
 
-// Fila de carga con la forma de FilaCobro: dos barras a la izquierda y una a
-// la derecha. Solo la primera avisa "cargando" a lectores de pantalla.
-function FilaCobroEsqueleto({ etiqueta }: { etiqueta?: string }) {
-  return (
-    <div
-      data-testid="cobro-esqueleto"
-      {...(etiqueta ? { role: 'status', 'aria-label': etiqueta } : {})}
-      style={{ ...cardStyle, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
-    >
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <Skeleton width="55%" height={14} />
-        <Skeleton width="80%" height={12} />
-      </div>
-      <Skeleton width={64} height={16} />
-    </div>
-  );
-}
-
 // Lo que dibuja la lista: la cabecera (título, resumen, filtros) es la fila 0,
 // así toda la pantalla scrollea junta y las alturas se miden solas.
 type Item =
   | { tipo: 'encabezado' }
-  | { tipo: 'esqueleto'; primero: boolean }
+  | { tipo: 'cargando' }
   | { tipo: 'vacio' }
   | { tipo: 'turno'; turno: TurnoConCobro }
   | { tipo: 'mas' };
@@ -246,8 +230,12 @@ function FilaLista({
     case 'encabezado':
       contenido = encabezado;
       break;
-    case 'esqueleto':
-      contenido = <FilaCobroEsqueleto etiqueta={item.primero ? textoCargando : undefined} />;
+    case 'cargando':
+      contenido = (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+          <Spinner label={textoCargando} size={40} />
+        </div>
+      );
       break;
     case 'vacio':
       contenido = <p style={{ textAlign: 'center', color: colors.subtext, margin: 0, fontSize: 14, padding: '22px 0' }}>{textoVacio}</p>;
@@ -323,6 +311,21 @@ function CobrosContenido() {
   useLayoutEffect(() => {
     cargarPrimeraPagina({ turno: turnoFiltro, pago: pagoFiltro, periodo: periodoEfectivo, buscar: buscarAplicado });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnoFiltro, pagoFiltro, periodoEfectivo, buscarAplicado]);
+
+  // Al cambiar de contenido (pestaña, chip, período, búsqueda) se muestra el
+  // loader un instante aunque haya copia cacheada: el corte directo se ve brusco.
+  // La primera carga ya tiene su loader por `cargando`.
+  const [enTransicion, setEnTransicion] = useState(false);
+  const primeraVez = useRef(true);
+  useLayoutEffect(() => {
+    if (primeraVez.current) {
+      primeraVez.current = false;
+      return;
+    }
+    setEnTransicion(true);
+    const timer = setTimeout(() => setEnTransicion(false), TRANSICION_MS);
+    return () => clearTimeout(timer);
   }, [turnoFiltro, pagoFiltro, periodoEfectivo, buscarAplicado]);
 
   const referencias = useMemo(() => new Map(servicios.map(s => [s.id, s.precio])), [servicios]);
@@ -559,14 +562,12 @@ function CobrosContenido() {
 
   const items = useMemo<Item[]>(() => {
     const lista: Item[] = [{ tipo: 'encabezado' }];
-    if (turnos.length === 0) {
-      if (cargando) lista.push({ tipo: 'esqueleto', primero: true }, { tipo: 'esqueleto', primero: false }, { tipo: 'esqueleto', primero: false });
-      else lista.push({ tipo: 'vacio' });
-    }
+    if (enTransicion || (turnos.length === 0 && cargando)) lista.push({ tipo: 'cargando' });
+    else if (turnos.length === 0) lista.push({ tipo: 'vacio' });
     else lista.push(...turnos.map((turno): Item => ({ tipo: 'turno', turno })));
-    if (cargandoMas) lista.push({ tipo: 'mas' });
+    if (cargandoMas && !enTransicion) lista.push({ tipo: 'mas' });
     return lista;
-  }, [turnos, cargando, cargandoMas]);
+  }, [turnos, cargando, cargandoMas, enTransicion]);
 
   // Al cambiar los filtros las alturas medidas dejan de valer.
   const alturas = useDynamicRowHeight({
