@@ -51,6 +51,10 @@
     "retry": "Tentar novamente",
     "dismiss": "Fechar aviso"
   },
+  "ThemeToggle": {
+    "toDark": "Mudar para o modo escuro",
+    "toLight": "Mudar para o modo claro"
+  },
   "NotificacionesBell": {
     "title": "Notificações",
     "turnosManana": "{count, plural, one {Você tem # agendamento amanhã} other {Você tem # agendamentos amanhã}}",

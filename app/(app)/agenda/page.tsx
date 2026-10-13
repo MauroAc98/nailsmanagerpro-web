@@ -24,6 +24,7 @@ import { SubscriptionWarningBanner, useSubscriptionWarningVisible } from '@/comp
 import { PendientesDeCobroBanner, usePendientesDeCobroVisible } from '@/components/PendientesDeCobroBanner';
 import { RecordatoriosPendientesBanner, useRecordatoriosPendientesVisible } from '@/components/RecordatoriosPendientesBanner';
 import { NotificacionesBell } from '@/components/NotificacionesBell';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { Spinner } from '@/components/Spinner';
 import { ResumenMesCard } from '@/components/agenda/ResumenMesCard';
 import { useMarcasMesProfesional } from '@/hooks/useMarcasMesProfesional';
@@ -817,6 +818,7 @@ function AgendaContent() {
             <Camera size={16} color={colors.text} strokeWidth={1.8} />
             {t('share')}
           </button>
+          <ThemeToggleButton />
           <NotificacionesBell />
         </div>
       </div>

@@ -94,6 +94,16 @@ describe('BottomSheet touch on content', () => {
     expect(onChange).toHaveBeenCalled();
   });
 
+  it('ignores a mostly-horizontal swipe (card swipe) even with some vertical drift', () => {
+    const { wrapper, onChange } = renderSheet();
+    setScrollable(wrapper, 400, 500);
+    fireEvent.touchStart(wrapper, { touches: [{ clientX: 300, clientY: 500 }] });
+    fireEvent.touchMove(wrapper, { touches: [{ clientX: 250, clientY: 510 }] });
+    fireEvent.touchMove(wrapper, { touches: [{ clientX: 150, clientY: 530 }] });
+    fireEvent.touchEnd(wrapper, { touches: [] });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('snaps (does not stay stuck) when the browser cancels the gesture', () => {
     const { wrapper, onChange } = renderSheet();
     setScrollable(wrapper, 400, 500);
@@ -102,6 +112,18 @@ describe('BottomSheet touch on content', () => {
     fireEvent.touchMove(wrapper, { touches: [{ clientY: 400 }] });
     fireEvent.touchCancel(wrapper, { touches: [] });
     expect(onChange).toHaveBeenCalled();
+  });
+});
+
+describe('BottomSheet viewport resize', () => {
+  it('adjusts instantly (no leftover snap transition) when the viewport height changes', () => {
+    const { wrapper } = renderSheet();
+    const sheet = wrapper.parentElement as HTMLElement;
+    sheet.style.transition = 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    Object.defineProperty(window, 'innerHeight', { value: 700, configurable: true });
+    fireEvent(window, new Event('resize'));
+    expect(sheet.style.transition).toBe('none');
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
   });
 });
 

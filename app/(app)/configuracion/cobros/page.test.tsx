@@ -290,14 +290,24 @@ describe('Cobros — resumen y lista', () => {
     expect(screen.getByText('No hay turnos esperando precio. ¡Todo al día!')).toBeInTheDocument();
   });
 
-  it('primera visita de una pestaña: muestra esqueletos con forma de fila, sin spinner ni "vacío"', () => {
+  it('primera visita de una pestaña: muestra el loader de la app, sin "vacío"', () => {
     poner({ cargando: true });
     renderPage();
-    expect(screen.getAllByTestId('cobro-esqueleto')).toHaveLength(3);
-    expect(screen.getByRole('status', { name: 'Cargando...' })).not.toHaveClass('loader-spinner');
+    expect(screen.getByRole('status', { name: 'Cargando...' })).toHaveClass('loader-spinner');
     expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
     expect(screen.queryByText('No hay turnos con esos filtros.')).not.toBeInTheDocument();
     expect(screen.queryByText('No hay turnos esperando precio. ¡Todo al día!')).not.toBeInTheDocument();
+  });
+
+  it('al cambiar de pestaña muestra el loader un instante aunque haya datos cacheados', async () => {
+    poner({ turnos: [turno(1, { nombre: 'Camila', fecha: '2026-10-09 15:30:00', estado: 'confirmado' })], cargando: false });
+    renderPage();
+    expect(screen.getByText(/Camila/)).toBeInTheDocument();
+    fireEvent.click(pestana(/^Cobrados/));
+    expect(screen.getByRole('status', { name: 'Cargando...' })).toHaveClass('loader-spinner');
+    expect(screen.queryByText(/Camila/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/Camila/)).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: 'Cargando...' })).not.toBeInTheDocument();
   });
 
   it('en "Cobrados", mientras carga por primera vez no muestra un $0 engañoso', () => {
