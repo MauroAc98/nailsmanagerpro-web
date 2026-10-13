@@ -9,6 +9,7 @@ import { formatearDuracion } from '@/lib/reservaOnline/totales';
 import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
+import OpcionesSheet from '@/components/cobros/OpcionesSheet';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
@@ -230,6 +231,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   // Filtro de categoria: 'todos' | id de categoria | 'otros' (sin categoria).
   // Solo cambia lo visible; la seleccion vive en el store y no se toca.
   const [filtro, setFiltro] = useState<'todos' | 'otros' | number>('todos');
+  const [selectorAbierto, setSelectorAbierto] = useState(false);
   // Promos con mas de 3 pasos que la clienta desplego (solo UI, no se guarda).
   const [desplegadas, setDesplegadas] = useState<Set<number>>(new Set());
   const alternarDesplegada = (id: number) =>
@@ -287,34 +289,44 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       {cargando && !error && <ServiciosSkeleton />}
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
       {hayFiltros && usarSelector && (
-        <label
-          style={{
-            position: 'relative', display: 'flex', alignItems: 'center', gap: 8, minHeight: 48, boxSizing: 'border-box',
-            padding: '0 16px', marginBottom: 14, borderRadius: 14, background: colors.surface,
-            border: `1px solid ${colors.border}`, fontSize: 15,
-          }}
-        >
-          <span style={{ color: colors.sub, flexShrink: 0 }}>{t('servicios.categoriaEtiqueta')}</span>
-          <select
-            value={String(filtro)}
-            onChange={(e) => setFiltro(pills.find((p) => String(p.clave) === e.target.value)?.clave ?? 'todos')}
+        // Hoja inferior (la misma de Cobros) y no un <select> nativo: el desplegable
+        // del navegador no respeta el modo oscuro (salia blanco con letras claras).
+        <>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setSelectorAbierto(true)}
             style={{
-              flex: 1, minWidth: 0, minHeight: 46, appearance: 'none', background: 'transparent', border: 'none',
-              outline: 'none', cursor: 'pointer', textAlign: 'right', textAlignLast: 'right', paddingRight: 24,
-              fontSize: 15, fontWeight: 700, color: colors.strong,
+              width: '100%', display: 'flex', alignItems: 'center', gap: 8, minHeight: 48, boxSizing: 'border-box',
+              padding: '0 16px', marginBottom: 14, borderRadius: 14, cursor: 'pointer', fontSize: 15,
+              background: colors.surface, border: `1px solid ${colors.border}`,
             }}
           >
-            {pills.map((p) => (
-              <option key={String(p.clave)} value={String(p.clave)}>{p.texto}</option>
-            ))}
-          </select>
-          <svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2.5" strokeLinecap="round"
-            strokeLinejoin="round" aria-hidden="true" style={{ position: 'absolute', right: 16, pointerEvents: 'none' }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </label>
+            <span style={{ color: colors.sub, flexShrink: 0 }}>{t('servicios.categoriaEtiqueta')}</span>
+            <span
+              style={{
+                flex: 1, minWidth: 0, textAlign: 'right', fontWeight: 700, color: colors.strong,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}
+            >
+              {pills.find((p) => p.clave === filtro)?.texto}
+            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <OpcionesSheet
+            visible={selectorAbierto}
+            titulo={t('servicios.categoriaEtiqueta')}
+            valor={String(filtro)}
+            opciones={pills.map((p) => ({ valor: String(p.clave), texto: p.texto }))}
+            onElegir={(v) => {
+              setFiltro(pills.find((p) => String(p.clave) === v)?.clave ?? 'todos');
+              setSelectorAbierto(false);
+            }}
+            onCerrar={() => setSelectorAbierto(false)}
+          />
+        </>
       )}
       {hayFiltros && !usarSelector && (
         <div

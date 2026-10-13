@@ -343,23 +343,29 @@ describe('ServiciosScreen', () => {
       const grupo = await screen.findByRole('group', { name: 'Filtrar por categoría' });
       expect(grupo.style.flexWrap).toBe('wrap');
       expect(grupo.style.overflowX).toBe('');
-      expect(screen.queryByRole('combobox', { name: /Categoría/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Categoría/ })).toBeNull();
     });
 
-    it('con mas de 4 categorias se usa un selector de una sola linea y filtra', async () => {
+    it('con mas de 4 categorias se usa un boton de una sola linea que abre una hoja con las opciones, y filtra', async () => {
       const svc = prepararServicio();
       const original = svc.getServices.bind(svc);
       svc.getServices = async (slug, q) =>
         (await original(slug, q)).map((s) => ({ ...s, categoria: { id: 10 + s.id, nombre: `Cat ${s.id}` } }));
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
-      const selector = await screen.findByRole('combobox', { name: /Categoría/ });
+      const boton = await screen.findByRole('button', { name: /^Categoría/ });
+      expect(boton).toHaveTextContent('Todos');
       expect(screen.queryByRole('group', { name: 'Filtrar por categoría' })).toBeNull();
+      // nada de <select> nativo: su desplegable no respeta el modo oscuro
+      expect(document.querySelector('select')).toBeNull();
 
-      await userEvent.selectOptions(selector, 'Cat 1');
+      await userEvent.click(boton);
+      await userEvent.click(await screen.findByRole('button', { name: 'Cat 1' }));
       expect(screen.getByText('Esmaltado semipermanente')).toBeInTheDocument();
       expect(screen.queryByText('Kapping gel')).toBeNull();
+      expect(screen.getByRole('button', { name: /^Categoría/ })).toHaveTextContent('Cat 1');
 
-      await userEvent.selectOptions(selector, 'Todos');
+      await userEvent.click(screen.getByRole('button', { name: /^Categoría/ }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Todos' }));
       expect(screen.getByText('Kapping gel')).toBeInTheDocument();
     });
   });
