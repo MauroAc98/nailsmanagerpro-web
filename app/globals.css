@@ -57,8 +57,11 @@
      bajando los tres canales por igual, se desatura y lee "marrón apagado"
      en vez del color de marca). */
   --color-primary-solid: #4e6b4d;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.09);
-  --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.15);
+  /* 2026-10-13: dos capas (una de contacto y una difusa) en vez de una sola
+     de 3px al 9%: con tarjeta blanca sobre fondo claro la separación era casi
+     solo el borde y todo se leía plano. */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.08);
+  --shadow-sheet: 0 -6px 24px rgba(0, 0, 0, 0.18);
 
   --color-warning-bg: #fff3cd;
   --color-warning-fg: #856404;
@@ -276,6 +279,10 @@ body {
      ya usa --color-border del tema base (mismo motivo que --ag-sub arriba). */
   --ag-border: #c9b2b6;
   --ag-hairline: #efe6e7;
+  /* Sombras de la escala Agenda (agendaShadows). Dos capas, tinte cálido: antes
+     eran 0 2px 6px al 10%. Ajustar la profundidad del modo claro se hace acá. */
+  --ag-shadow-card: 0 1px 2px rgba(43, 34, 38, 0.08), 0 4px 12px rgba(43, 34, 38, 0.11);
+  --ag-shadow-sheet: 0 -10px 32px rgba(0, 0, 0, 0.18);
   --ag-primary: var(--color-primary);
   --ag-primary-deep: var(--color-primary-deep);
   --ag-primary-solid: var(--color-primary-solid);
@@ -312,6 +319,10 @@ body {
   --ag-muted: #776b70;
   --ag-border: #352d38;
   --ag-hairline: #2a232e;
+  /* Igual que antes del cambio de sombras del modo claro: en oscuro la separación
+     ya la da el color de fondo/superficie. */
+  --ag-shadow-card: 0 2px 6px rgba(43, 34, 38, 0.10);
+  --ag-shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.14);
   --ag-primary: var(--color-primary);
   --ag-primary-deep: var(--color-primary-deep);
   --ag-primary-solid: var(--color-primary-solid);
