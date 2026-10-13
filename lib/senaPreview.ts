@@ -63,21 +63,43 @@ function mcd(a: number, b: number): number {
   return b === 0 ? a : mcd(b, a % b);
 }
 
-// Precio sugerido (modo porcentaje): cubre el costo de MP para que la
-// profesional reciba lo que quería y deja precio y seña en múltiplos de $100.
-// P_min = ceil(p / (1 - t/100)); se redondea al múltiplo de
-// lcm(100, 10000 / mcd(10000, pct)) más cercano hacia arriba.
+// Redondeo de las sugerencias: SIEMPRE cubre el costo (nunca baja del mínimo) y la
+// clienta nunca ve montos raros. Si la suba necesaria cabe en $500 se redondea hacia
+// arriba a múltiplos de $500; si la pasa, a múltiplos de $1000. `multiploBase` fuerza un
+// múltiplo adicional (con seña por porcentaje, el que deja la seña en múltiplos de $100).
+const UMBRAL_SUBA = 500;
+const PASO_CHICO = 500;
+const PASO_GRANDE = 1000;
+
+function mcm(a: number, b: number): number {
+  return (a * b) / mcd(a, b);
+}
+
+function techoAMultiplo(minimo: number, paso: number): number {
+  return Math.ceil(minimo / paso - 1e-9) * paso;
+}
+
+function redondearCubriendo(original: number, minimo: number, multiploBase = 1): number {
+  const chico = techoAMultiplo(minimo, mcm(PASO_CHICO, multiploBase));
+  if (chico - original <= UMBRAL_SUBA) return chico;
+  return techoAMultiplo(minimo, mcm(PASO_GRANDE, multiploBase));
+}
+
+// Precio sugerido (modo porcentaje): cubre el costo de MP para que la profesional
+// reciba lo que quería. P_min = ceil(p / (1 - t/100)); se redondea con
+// redondearCubriendo, y el precio además es múltiplo del paso que deja la SEÑA
+// (precio × pct) en múltiplos de $100 (10000 / mcd(10000, pct)).
+// Sin costo que cubrir (t = 0) el precio queda como está.
 export function precioSugeridoSena(precio: number, c: SenaPreviewConfig): number | null {
   if (c.sena_tipo !== 'porcentaje' || !configValida(c)) return null;
   if (!(precio > 0) || !Number.isFinite(precio)) return null;
   const pct = c.sena_porcentaje as number;
   if (!Number.isInteger(pct)) return null;
   if (typeof c.comision_mp_vigente !== 'number' || !Number.isFinite(c.comision_mp_vigente)) return null;
+  if (tasaCosto(c) === 0) return precio;
 
   const pMin = Math.ceil(precio / (1 - tasaCosto(c) / 100) - 1e-9);
-  const base = 10000 / mcd(10000, pct);
-  const paso = (100 * base) / mcd(100, base);
-  return Math.ceil(pMin / paso) * paso;
+  return redondearCubriendo(precio, pMin, 10000 / mcd(10000, pct));
 }
 
 export interface DesgloseSena {
@@ -99,12 +121,13 @@ export function desgloseSena(sena: number, c: SenaPreviewConfig): DesgloseSena |
 }
 
 // Seña fija más alta que, descontados comisión de MP (con IVA) y retención,
-// deja al menos `monto` neto. Siempre redondea HACIA ARRIBA a múltiplos de 100.
+// deja al menos `monto` neto. Siempre redondea HACIA ARRIBA (múltiplos de 500 o de
+// 1000, ver redondearCubriendo). Sin costo que cubrir (t = 0) queda como está.
 export function senaFijaSugerida(monto: number, c: SenaPreviewConfig): number | null {
   const comision = c.comision_mp_vigente;
   if (!(monto > 0) || typeof comision !== 'number' || !Number.isFinite(comision)) return null;
-  const bruta = monto / (1 - tasaCosto(c) / 100);
-  return Math.ceil(bruta / 100 - 1e-9) * 100;
+  if (tasaCosto(c) === 0) return monto;
+  return redondearCubriendo(monto, monto / (1 - tasaCosto(c) / 100));
 }
 
 export function calcularSenaPreview(precio: number, c: SenaPreviewConfig): SenaPreview | null {
