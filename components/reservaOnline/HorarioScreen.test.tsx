@@ -553,6 +553,27 @@ describe('HorarioScreen', () => {
       expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     });
 
+    it('si la lista de dias recibe "demasiados pedidos" NO recorre dia por dia: corta y avisa', async () => {
+      const base = prepararServicio();
+      const consultadas: string[] = [];
+      setServiceParaTests({
+        ...base,
+        getDiasConDisponibilidad: async () => {
+          throw new ReservaOnlineError('rate_limited');
+        },
+        getAvailability: async (_slug, q) => {
+          consultadas.push(q.fecha);
+          return { fecha: q.fecha, duracionTotalMinutos: 75, slots: [] };
+        },
+      });
+      renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+      await userEvent.click(await screen.findByRole('button', { name: 'Ir al próximo día con lugar' }));
+      expect(await screen.findByText('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.')).toBeInTheDocument();
+      // solo la lectura inicial del dia elegido; ningun pedido mas
+      expect(consultadas).toEqual(['2026-09-19']);
+      expect(screen.queryByRole('button', { name: 'Continuar' })).toBeDisabled();
+    });
+
     it('"Ir al próximo día con lugar" busca dia por dia y salta al primero con horarios', async () => {
       const consultadas = sinLugarHasta('2026-09-22');
       renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);

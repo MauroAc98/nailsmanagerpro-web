@@ -346,6 +346,7 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     setBuscando(true);
     setSinLugarProximos(false);
     setErrorRetener(false);
+    setAvisoRetener(null);
     try {
       const desdeManana = sumarDias(fecha, 1);
       const conLugar = await getService().getDiasConDisponibilidad(slug, {
@@ -371,8 +372,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
         }
       }
       setSinLugarProximos(true);
-    } catch {
-      setErrorRetener(true);
+    } catch (e) {
+      // Demasiados pedidos: se corta y se avisa; seguir pidiendo solo lo empeora.
+      if (e instanceof ReservaOnlineError && e.code === 'rate_limited') setAvisoRetener('rate_limited');
+      else setErrorRetener(true);
     } finally {
       setBuscando(false);
     }
@@ -514,7 +517,9 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       {cargando && <HorarioSkeleton />}
       {errorDeCarga && (
         <>
-          <Mensaje tono="error">{t('horario.errorCarga')}</Mensaje>
+          <Mensaje tono="error">
+            {error.code === 'rate_limited' ? t('errores.limiteIntentos') : t('horario.errorCarga')}
+          </Mensaje>
           <button type="button" onClick={reintentar}>{t('comun.reintentar')}</button>
         </>
       )}

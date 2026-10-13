@@ -1,5 +1,5 @@
 import type { AxiosInstance } from 'axios';
-import type { ReservaOnlineReads } from '../service';
+import { ReservaOnlineError, type ReservaOnlineReads } from '../service';
 import { asignacionesAWire, asignacionesDe } from '../asignaciones';
 import type { Availability, BookableService, Fecha, ModoPlan, ReservationTerms, SalonInfo } from '../types';
 import { traducirErrorHttp } from './errores';
@@ -182,7 +182,10 @@ export function createRealReads(http: AxiosInstance): ReservaOnlineReads {
           for (const d of data.dias) conLugar.add(d.fecha);
           i = j + 1;
         }
-      } catch {
+      } catch (e) {
+        // Demasiados pedidos: reintentar enseguida (o recorrer dia por dia) solo
+        // empeora; que lo decida quien llama (mostrar el aviso y esperar).
+        if (e instanceof ReservaOnlineError && e.code === 'rate_limited') throw e;
         return null;
       }
       return pedidas.filter((f) => conLugar.has(f));
