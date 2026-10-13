@@ -34,6 +34,6 @@ describe('HistoriasFueraDePantalla · encabezado', () => {
     );
     expect(screen.getAllByTestId('encabezado-serie').map(e => e.textContent)).toEqual(['1/3', '2/3', '3/3']);
     expect(screen.getAllByTestId('encabezado-foto')).toHaveLength(3);
-    screen.getAllByTestId('encabezado-linea').forEach(l => expect(l.textContent).toMatch(/^Precios · con Ana · /));
+    screen.getAllByTestId('encabezado-linea').forEach(l => expect(l.textContent).toMatch(/con Ana\d\/3$/));
   });
 });

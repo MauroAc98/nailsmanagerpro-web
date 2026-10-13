@@ -8,7 +8,7 @@
   "StoryCanvas": {
     "availableTitle": "Turnos <em>disponibles</em>",
     "availableTitleFor": "Turnos de <em>{categoria}</em>",
-    "withProfessional": "con {nombre}",
+    "pricesTitleFor": "Precios de <em>{categoria}</em>",
     "withProfessionalRich": "con <b>{nombre}</b>",
     "complete": "Completo"
   },

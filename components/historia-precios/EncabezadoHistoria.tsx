@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Tag } from 'lucide-react';
 import { agendaFontSerif } from '@/theme/agendaColors';
@@ -14,7 +15,9 @@ import { FitText } from '@/components/historia/FitText';
 // entran en él: ambos van en UNA línea (FitText) y el alto no depende del texto.
 export const ENCABEZADO_TILE = 44;
 export const ENCABEZADO_GAP = 4;
-const ENCABEZADO_PADDING_X = 18;
+// Margen lateral del encabezado. También lo usa el pie (HistoriaPreciosCanvas)
+// para que los dos arranquen en el mismo eje izquierdo.
+export const ENCABEZADO_PADDING_X = 18;
 
 // Cuánto se sube el encabezado respecto del borde de la safe area superior
 // (11%): ahí queda un poco alto sobre la foto, y 30px de subida siguen
@@ -57,23 +60,47 @@ interface Props {
   canvasHeight: number;
 }
 
+// Anillo de la insignia: box-shadow (nunca `filter`), igual que la de turnos.
+const ANILLO = '0 0 0 1.5px rgba(255,255,255,0.85), 0 0 0 4.5px rgba(255,255,255,0.22)';
+
+// "Uñas y Pestañas" -> "Uñas y " + <em>Pestañas</em>: la palabra clave en
+// cursiva, igual que "Turnos de <em>Lash</em>" en la historia de turnos.
+function conUltimaPalabraEnCursiva(texto: string) {
+  const i = texto.lastIndexOf(' ');
+  return (
+    <>
+      {i >= 0 ? texto.slice(0, i + 1) : ''}
+      <em style={{ fontStyle: 'italic' }}>{i >= 0 ? texto.slice(i + 1) : texto}</em>
+    </>
+  );
+}
+
 // EncabezadoHistoria — encabezado de la historia de precios, directamente sobre
-// la foto (no dentro de la tarjeta), con el mismo patrón que la historia de
-// turnos (StoryCanvas): recuadro 44x44, título serif y UNA línea chica, todo en
-// blanco con sombra. Colores fijos (rgba/hex): html-to-image descarta las custom
-// properties. La foto va sin `filter`: en Safari un filtro dentro de lo capturado
-// dejaba la historia entera negra.
+// la foto (no dentro de la tarjeta), espejo del de la historia de turnos
+// (StoryCanvas): etiqueta chica espaciada arriba, título serif de 24px con la
+// palabra clave en cursiva y la insignia circular como sello a la derecha, todo
+// en blanco con sombra. Etiqueta (10px) + 5px + título (~25px) entran en el
+// alto de la insignia (44px), así el alto no depende del texto. Colores fijos
+// (rgba/hex): html-to-image descarta las custom properties. La foto va sin
+// `filter`: en Safari un filtro dentro de lo capturado dejaba la historia
+// entera negra.
 export function EncabezadoHistoria({ titulo, subtitulo, profesionalNombre, logoUrl, serie, canvasHeight }: Props) {
-  // Mismo texto "con {nombre}" que la historia de turnos (una sola fuente).
+  // Mismo texto "con {nombre}" (con el nombre en negrita) que la historia de turnos.
   const tStory = useTranslations('historia.StoryCanvas');
-  const tituloGrande = subtitulo || titulo;
   const ahora = new Date();
   const periodo = `${nombreMes(ahora, 'long')} ${ahora.getFullYear()}`;
-  const linea = [
-    subtitulo ? titulo : null,
-    profesionalNombre ? tStory('withProfessional', { nombre: profesionalNombre }) : null,
+  const enCursiva = (chunks: ReactNode) => <em style={{ fontStyle: 'italic' }}>{chunks}</em>;
+  // Etiqueta: Período — con Ana, unidas por una rayita (como la de turnos); la
+  // posición en la serie ("1/4") va al final, pegada a la derecha.
+  const piezas = [
     periodo,
-  ].filter(Boolean).join(' · ');
+    profesionalNombre
+      ? tStory.rich('withProfessionalRich', {
+        nombre: profesionalNombre,
+        b: (chunks) => <b style={{ color: '#fff', fontWeight: 700 }}>{chunks}</b>,
+      })
+      : null,
+  ].filter(Boolean);
 
   return (
     <div
@@ -84,14 +111,62 @@ export function EncabezadoHistoria({ titulo, subtitulo, profesionalNombre, logoU
         display: 'flex', alignItems: 'center', gap: 12,
       }}
     >
+      <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+        <FitText
+          testId="encabezado-linea"
+          text={(
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              {piezas.map((pieza, i) => (
+                <Fragment key={i}>
+                  {i > 0 && (
+                    <span
+                      aria-hidden
+                      style={{ flexShrink: 0, width: 16, height: 1, margin: '0 8px', background: 'rgba(255,255,255,0.55)' }}
+                    />
+                  )}
+                  <span style={{ whiteSpace: 'nowrap' }}>{pieza}</span>
+                </Fragment>
+              ))}
+              {serie && (
+                <>
+                  <span style={{ flex: 1, minWidth: 8 }} />
+                  <span data-testid="encabezado-serie" style={{ flexShrink: 0, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                    {`${serie.actual}/${serie.total}`}
+                  </span>
+                </>
+              )}
+            </span>
+          )}
+          maxFontSize={8}
+          minFontSize={6}
+          style={{
+            fontWeight: 700, letterSpacing: '0.2em', lineHeight: '10px', textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.72)', textShadow: SOMBRA, textOverflow: 'ellipsis',
+          }}
+        />
+        <div style={{ marginTop: 5 }}>
+          <FitText
+            testId="encabezado-titulo"
+            text={subtitulo
+              ? tStory.rich('pricesTitleFor', { categoria: subtitulo, em: enCursiva })
+              : conUltimaPalabraEnCursiva(titulo)}
+            maxFontSize={24}
+            minFontSize={13}
+            style={{
+              fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+              letterSpacing: '-0.025em', lineHeight: 1.05, textShadow: SOMBRA,
+            }}
+          />
+        </div>
+      </div>
       {logoUrl ? (
         <img
           data-testid="encabezado-foto"
           src={logoUrl}
           alt=""
           style={{
-            flexShrink: 0, width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: 12, objectFit: 'cover',
-            border: '1.5px solid rgba(255,255,255,0.6)',
+            flexShrink: 0, width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: '50%', objectFit: 'cover',
+            boxShadow: ANILLO,
           }}
         />
       ) : (
@@ -99,46 +174,12 @@ export function EncabezadoHistoria({ titulo, subtitulo, profesionalNombre, logoU
           data-testid="encabezado-icono"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: 12,
-            backgroundColor: 'rgba(255,255,255,0.18)',
+            flexShrink: 0, width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: '50%',
+            boxShadow: ANILLO,
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08))',
           }}
         >
           <Tag size={20} color="#fff" strokeWidth={2} />
-        </span>
-      )}
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <FitText
-          testId="encabezado-titulo"
-          text={tituloGrande}
-          maxFontSize={20}
-          minFontSize={13}
-          style={{
-            fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-            letterSpacing: '-0.02em', lineHeight: 1.05, textShadow: SOMBRA,
-          }}
-        />
-        <div style={{ marginTop: 4 }}>
-          <FitText
-            testId="encabezado-linea"
-            text={linea}
-            maxFontSize={11}
-            minFontSize={9}
-            style={{
-              fontWeight: 400, color: 'rgba(255,255,255,0.9)', textShadow: SOMBRA, textOverflow: 'ellipsis',
-            }}
-          />
-        </div>
-      </div>
-      {serie && (
-        <span
-          data-testid="encabezado-serie"
-          style={{
-            flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1,
-            backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff',
-            borderRadius: 999, padding: '4px 9px',
-          }}
-        >
-          {`${serie.actual}/${serie.total}`}
         </span>
       )}
     </div>
