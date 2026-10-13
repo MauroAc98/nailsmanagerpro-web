@@ -247,9 +247,11 @@ export function createMockService(opts: MockOptions = {}): MockReservaOnlineServ
       .servicios.filter(
         (x) => query?.profesionalId === undefined || x.profesionalIds.includes(query.profesionalId),
       )
-      .map(({ id, nombre, duracionMinutos, precio, categoria, fotos, promoComponentizada, modoPromo, componentes }) => ({
+      .map(({ id, nombre, duracionMinutos, precio, categoria, fotos, promoComponentizada, modoPromo, componentes, sinTurnos }) => ({
         id, nombre, duracionMinutos, precio, categoria: categoria ? { ...categoria } : null, fotos: [...fotos],
         ...(promoComponentizada ? { promoComponentizada } : {}),
+        // Solo cuando se pide `conTurnos`, igual que el backend real.
+        ...(query?.conTurnos && sinTurnos !== undefined ? { sinTurnos } : {}),
         ...(componentes ? { modoPromo: modoPromo ?? null, componentes: componentes.map((c) => ({ ...c })) } : {}),
       }));
 

@@ -29,6 +29,8 @@
     "verFotosMuestra": "Ver {count, plural, one {# foto} other {# fotos}} de amostra",
     "verRestantes": "Ver {count, plural, one {o # restante} other {os # restantes}}",
     "verMenos": "Ver menos",
+    "sinTurnos": "Sem horários disponíveis por enquanto",
+    "categoriaEtiqueta": "Categoria",
     "fotos": "{count, plural, one {# foto} other {# fotos}}",
     "verFotos": "Ver fotos de {nombre}",
     "notaPrecios": "Os preços são de referência: o valor final depende do design e é confirmado no negócio.",

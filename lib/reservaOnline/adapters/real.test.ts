@@ -231,6 +231,24 @@ describe('real: mapeo', () => {
     expect(pedidos[0]).toContain('"profesional_id":3');
   });
 
+  it('getServices pide con_turnos solo si se indica y mapea sin_turnos', async () => {
+    const pedidos: string[] = [];
+    await nuevo(pedidos).getServices('ana');
+    expect(pedidos[0]).not.toContain('con_turnos');
+    await nuevo(pedidos).getServices('ana', { conTurnos: true });
+    expect(pedidos[1]).toContain('"con_turnos":1');
+
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) =>
+        respuesta(config, 200, [
+          { id: 1, nombre: 'S', duracion_minutos: 30, precio: 100, categoria: null, fotos: [], sin_turnos: true },
+        ]),
+    });
+    const [s] = await createRealReads(http).getServices('ana', { conTurnos: true });
+    expect(s.sinTurnos).toBe(true);
+  });
+
   it('un error de red (sin respuesta) se traduce a unknown', async () => {
     const http = crearPublicHttp({
       baseURL: 'https://api.test/api',
