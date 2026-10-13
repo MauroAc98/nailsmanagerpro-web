@@ -34,7 +34,7 @@ export function BootSplash() {
       }} />
 
       {/* El logo transparente (no icon-192.png, que es un cuadrado con fondo
-          blanco opaco: sobre el hueso o el modo oscuro se veía un recuadro
+          blanco opaco: sobre el modo oscuro se veía un recuadro
           blanco). Mismo logo que el splash nativo de iOS (scripts/generar-splash.py). */}
       <Image
         src="/logo-turnetto.png"

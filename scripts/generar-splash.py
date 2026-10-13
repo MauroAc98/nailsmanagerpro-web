@@ -1,7 +1,7 @@
 """Genera las imágenes de splash de iOS en public/splash.
 
 Por cada tamaño de lib/appleSplash.ts crea dos PNG con el logo centrado:
-  apple-splash-<tamaño>.png        fondo hueso   (--color-surface en modo claro)
+  apple-splash-<tamaño>.png        fondo blanco  (--color-surface en modo claro)
   apple-splash-dark-<tamaño>.png   fondo oscuro  (--color-surface en modo oscuro)
 
 El fondo coincide con el del BootSplash de la app, así el paso del splash nativo
@@ -21,7 +21,7 @@ SALIDA = RAIZ / "public" / "splash"
 TAMANOS = RAIZ / "lib" / "appleSplash.ts"
 
 FONDOS = {
-    "": (0xFA, 0xF6, 0xF0),       # #faf6f0
+    "": (0xFF, 0xFF, 0xFF),       # #ffffff
     "dark-": (0x1E, 0x1E, 0x22),  # #1e1e22
 }
 # Tamaño máximo con el que se dibuja el logo (px del splash). El archivo es de
