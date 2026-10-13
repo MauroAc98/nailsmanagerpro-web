@@ -9,6 +9,8 @@ import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agenda
 import { CENTRO_FALLBACK, esUbicacionValida } from '@/lib/ubicacion';
 import { geocodeUbicacion } from '@/lib/geocodeUbicacion';
 import { obtenerGps } from '@/lib/obtenerGps';
+import { URL_TILES_LOCATIONIQ } from '@/lib/mapaTiles';
+import { Spinner } from '@/components/Spinner';
 import { MapaBuscador } from './MapaBuscador';
 
 interface Props {
@@ -42,6 +44,10 @@ const ATRIBUCION_LOCATIONIQ =
   '<a href="https://locationiq.com">Search by LocationIQ.com</a> ' +
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+// Tope para el loader inicial: si el evento `load` de la capa nunca llega (red caída,
+// key inválida), el mapa no se queda tapado para siempre.
+const TOPE_LOADER_MS = 8000;
+
 export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
   const t = useTranslations('perfil.SheetDatosPersonales');
   const contenedorRef = useRef<HTMLDivElement>(null);
@@ -52,6 +58,9 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
   // guardado -> geocode -> fallback, y solo si el pin sigue intacto).
   const pinTocadoRef = useRef(false);
   const [buscandoGps, setBuscandoGps] = useState(false);
+  // Tapa el mapa hasta que cargan los primeros tiles: sin esto se veía el gris de Leaflet
+  // con los tiles apareciendo a pedazos (y, antes, ampliados y pixelados).
+  const [cargandoMapa, setCargandoMapa] = useState(true);
 
   useEffect(() => {
     if (!contenedorRef.current || mapaRef.current) return;
@@ -68,11 +77,18 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
     );
     mapaRef.current = mapa;
 
-    L.tileLayer('https://{s}-tiles.locationiq.com/v3/streets/r/{z}/{x}/{y}.png?key={key}', {
+    const capa = L.tileLayer(URL_TILES_LOCATIONIQ, {
       key: process.env.NEXT_PUBLIC_LOCATIONIQ_KEY ?? '',
       attribution: ATRIBUCION_LOCATIONIQ,
       maxZoom: 19,
     } as L.TileLayerOptions).addTo(mapa);
+
+    const terminarCarga = () => {
+      clearTimeout(timeoutLoader);
+      setCargandoMapa(false);
+    };
+    const timeoutLoader = setTimeout(terminarCarga, TOPE_LOADER_MS);
+    capa.on('load', terminarCarga);
 
     const marcador = L.marker([centroInicial.lat, centroInicial.lng], {
       icon: crearPinIcon(),
@@ -101,12 +117,15 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
     if (!tieneGuardada) {
       obtenerGps().then((resultado) => {
         if (!resultado || pinTocadoRef.current || !mapaRef.current) return;
-        mapaRef.current.setView([resultado.lat, resultado.lon], 16);
+        // Sin animar: con animación Leaflet ampliaba los tiles del zoom 13 hasta que
+        // llegaban los del 16, y eso era lo que se veía pixelado al comienzo.
+        mapaRef.current.setView([resultado.lat, resultado.lon], 16, { animate: false });
         marcadorRef.current?.setLatLng([resultado.lat, resultado.lon]);
       });
     }
 
     return () => {
+      clearTimeout(timeoutLoader);
       mapa.remove();
       mapaRef.current = null;
       marcadorRef.current = null;
@@ -151,6 +170,14 @@ export function MapaPicker({ latitud, longitud, onPinMovido }: Props) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />
+      {cargandoMapa && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 1000, backgroundColor: '#000',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Spinner size={40} variante="sobreOscuro" label={t('mapLoading')} />
+        </div>
+      )}
       <MapaBuscador onBuscar={buscar} />
       <button
         type="button"
