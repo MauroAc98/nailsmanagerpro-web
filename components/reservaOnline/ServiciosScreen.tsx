@@ -281,6 +281,25 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   });
   // Servicios ya elegidos que la busqueda actual no muestra (siguen elegidos).
   const elegidosFuera = buscando ? seleccion.filter((id) => !visibles.some((v) => v.id === id)).length : 0;
+
+  // En "Todos" la lista se agrupa con un subtitulo por categoria (y las tarjetas ya no
+  // la repiten). Con una categoria elegida el filtro ya lo dice, y buscando los
+  // resultados mezclan categorias: ahi la lista es plana y cada tarjeta lleva la suya.
+  const agrupar = hayFiltros && !buscando && filtro === 'todos';
+  const bloques: { clave: string; titulo: string | null; items: BookableService[] }[] = [];
+  if (agrupar) {
+    for (const s of visibles) {
+      const clave = s.categoria ? `c${s.categoria.id}` : 'otros';
+      let bloque = bloques.find((b) => b.clave === clave);
+      if (!bloque) {
+        bloque = { clave, titulo: s.categoria?.nombre ?? t('servicios.filtroOtros'), items: [] };
+        bloques.push(bloque);
+      }
+      bloque.items.push(s);
+    }
+  } else {
+    bloques.push({ clave: 'todos', titulo: null, items: visibles });
+  }
   const pills: { clave: 'todos' | 'otros' | number; texto: string }[] = [
     { clave: 'todos', texto: t('servicios.filtroTodos') },
     ...[...categorias].map(([id, nombre]) => ({ clave: id, texto: nombre })),
@@ -395,7 +414,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
             onClick={() => setSelectorAbierto(true)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 8, minHeight: 48, boxSizing: 'border-box',
-              padding: '0 16px', marginBottom: 14, borderRadius: 14, cursor: 'pointer', fontSize: 15,
+              padding: '0 16px', marginBottom: 20, borderRadius: 14, cursor: 'pointer', fontSize: 15,
               background: colors.surface, border: `1px solid ${colors.border}`,
             }}
           >
@@ -429,7 +448,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
         <div
           role="group"
           aria-label={t('servicios.filtrosAria')}
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 14 }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 20 }}
         >
           {pills.map((p) => {
             const activa = filtro === p.clave;
@@ -453,9 +472,21 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
           })}
         </div>
       )}
-      {visibles.map((s) => {
+      {bloques.map((bloque, indice) => (
+        <section key={bloque.clave}>
+          {bloque.titulo !== null && (
+            <h2
+              style={{
+                margin: `${indice === 0 ? 8 : 22}px 0 8px`, fontSize: 12, fontWeight: 700, letterSpacing: 0.8,
+                color: colors.sub, textTransform: 'uppercase',
+              }}
+            >
+              {bloque.titulo}
+            </h2>
+          )}
+      {bloque.items.map((s) => {
         if (s.sinTurnos) {
-          return <TarjetaSinTurnos key={s.id} s={s} mostrarCategoria={filtro === 'todos' || buscando} busqueda={buscando ? busqueda : ''} />;
+          return <TarjetaSinTurnos key={s.id} s={s} mostrarCategoria={buscando} busqueda={buscando ? busqueda : ''} />;
         }
         const elegido = seleccion.includes(s.id);
         const conFotos = s.fotos.length > 0;
@@ -488,7 +519,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
                 background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <CabeceraServicio s={s} mostrarCategoria={filtro === 'todos' || buscando} busqueda={buscando ? busqueda : ''} />
+              <CabeceraServicio s={s} mostrarCategoria={buscando} busqueda={buscando ? busqueda : ''} />
               <Circulo elegido={elegido} />
             </button>
             {s.promoComponentizada && s.componentes && s.componentes.length > 0 && (
@@ -520,6 +551,8 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
           </div>
         );
       })}
+        </section>
+      ))}
 
       <BarraInferior>
         {elegidosFuera > 0 && (

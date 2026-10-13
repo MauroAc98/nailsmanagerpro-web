@@ -393,6 +393,14 @@ describe('ServiciosScreen', () => {
       expect(screen.queryByText(/No encontramos servicios/)).toBeNull();
     });
 
+    it('buscando no agrupa por categoria: lista plana con la categoria en cada tarjeta', async () => {
+      conMuchosServicios();
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await userEvent.type(await campo(), 'esmaltado');
+      expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
+      expect(within(screen.getByRole('checkbox', { name: 'Esmaltado semipermanente' })).getByText('Manicura')).toBeInTheDocument();
+    });
+
     it('la ✕ borra el texto y la lista vuelve completa', async () => {
       conMuchosServicios();
       renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
@@ -413,6 +421,35 @@ describe('ServiciosScreen', () => {
       expect(screen.getByRole('button', { name: 'Continuar · 1 servicio' })).toBeEnabled();
       await userEvent.click(screen.getByRole('checkbox', { name: 'Laminado de pestañas' }));
       expect(useReservaOnlineStore.getState().servicioIds).toEqual([1, 200]);
+    });
+  });
+
+  describe('agrupado por categoria', () => {
+    it('en "Todos" cada categoria es un subtitulo y las tarjetas no la repiten', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Kapping gel');
+      const titulos = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+      expect(titulos).toEqual(['Manicura', 'Pedicura', 'Promociones', 'Otros']);
+      const tarjeta = screen.getByRole('checkbox', { name: 'Kapping gel' });
+      expect(within(tarjeta).queryByText('Manicura')).toBeNull();
+    });
+
+    it('cada servicio queda bajo el subtitulo de su categoria', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Kapping gel');
+      const manicura = screen.getByRole('heading', { name: 'Manicura' }).closest('section') as HTMLElement;
+      expect(within(manicura).getByText('Kapping gel')).toBeInTheDocument();
+      expect(within(manicura).queryByText('Pedicura spa')).toBeNull();
+      const otros = screen.getByRole('heading', { name: 'Otros' }).closest('section') as HTMLElement;
+      expect(within(otros).getByText('Retiro de esmalte')).toBeInTheDocument();
+    });
+
+    it('con una categoria elegida no hay subtitulos (el filtro ya lo dice)', async () => {
+      renderWithProviders(<ServiciosScreen slug="demo" ir={() => {}} />);
+      await screen.findByText('Kapping gel');
+      const grupo = screen.getByRole('group', { name: 'Filtrar por categoría' });
+      await userEvent.click(within(grupo).getByRole('button', { name: 'Pedicura' }));
+      expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
     });
   });
 
