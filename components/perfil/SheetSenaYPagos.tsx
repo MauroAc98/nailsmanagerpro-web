@@ -285,16 +285,19 @@ export function SheetSenaYPagos({
             <p style={{ ...errorStyle, marginTop: 0, marginBottom: 12 }}>{errorPorcentajeMostrado}</p>
           )}
           {conCalculo ? (
-            desgloseEjemplo && (
-              <div style={{ ...calculadoraStyle, marginBottom: 0 }}>
-                <span style={avisoStyle}>{t('exampleLabel')}</span>
-                <span style={montoGrandeStyle}>{dinero(montoEjemplo)}</span>
-                <div style={{ ...filaStyle, alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 14, color: colors.subtext }}>{t('fixedNet')}</span>
-                  <span style={llegaStyle}>{dinero(desgloseEjemplo.llega)}</span>
+            <>
+              {desgloseEjemplo && (
+                <div style={{ ...calculadoraStyle, marginBottom: 0 }}>
+                  <span style={avisoStyle}>{t('exampleLabel')}</span>
+                  <span style={montoGrandeStyle}>{dinero(montoEjemplo)}</span>
+                  <div style={{ ...filaStyle, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 14, color: colors.subtext }}>{t('fixedNet')}</span>
+                    <span style={llegaStyle}>{dinero(desgloseEjemplo.llega)}</span>
+                  </div>
                 </div>
-              </div>
-            )
+              )}
+              <p style={{ ...avisoStyle, margin: '12px 0 0' }}>{t('percentHint')}</p>
+            </>
           ) : (
             <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>
           )}
