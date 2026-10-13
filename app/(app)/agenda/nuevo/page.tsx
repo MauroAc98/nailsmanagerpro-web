@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, User, CheckCircle2, Plus } from 'lucide-react';
+import { CheckCircle2, Plus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
@@ -28,7 +28,7 @@ import {
   type BloqueTurno, type ItemConfirmacion,
 } from '@/lib/turnosLote';
 import { slotService, type Slot } from '@/services/slotService';
-import { ClienteConTelefono } from '@/components/agenda/ClienteConTelefono';
+import { ClienteSelector } from '@/components/agenda/ClienteSelector';
 import { ResumenTurnoPlegado } from '@/components/agenda/ResumenTurnoPlegado';
 import { BloqueTurnoAbierto } from '@/components/agenda/BloqueTurnoAbierto';
 import { ElegirFechaBloqueSheet, type ElegirFechaBloqueHandle } from '@/components/agenda/ElegirFechaBloqueSheet';
@@ -48,12 +48,6 @@ import { Spinner } from '@/components/Spinner';
 function formatFechaLarga(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
   return formatFecha(d, 'diaSemanaFechaMes');
-}
-
-// Ignora acentos al comparar ("jose" matchea "José") — sin esto una
-// búsqueda sin tilde no encontraba clientes con nombres acentuados.
-function normalizarTexto(texto: string): string {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 function formatHora12(hora24: string): string {
@@ -88,7 +82,7 @@ function NuevoTurnoContent() {
 
   const { crearTurno, crearLote, turnos, fetchTurnos, marcarFechaDeRetorno }  = useTurnoStore();
   const { servicios, fetchServicios }        = useServiciosStore();
-  const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
+  const { clientes, fetchClientes } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
@@ -101,8 +95,6 @@ function NuevoTurnoContent() {
   const [selectedServicioIds,  setSelectedServicioIds]  = useState<number[]>([]);
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [profesionalAbierto, setProfesionalAbierto] = useState(false);
-  const [showClienteDropdown,  setShowClienteDropdown]  = useState(false);
-  const [clienteBuscar,        setClienteBuscar]        = useState('');
   const [showHoraPicker,       setShowHoraPicker]       = useState(false);
   const [saving,               setSaving]               = useState(false);
   // Combo (promo con componentes): detalle de la promo elegida y precio manual opcional.
@@ -438,9 +430,6 @@ function NuevoTurnoContent() {
   // "Agregar otro turno": con cliente elegido y sin promo-combo en el turno abierto.
   const mostrarAgregar = !!selectedCliente && !seleccionaCombo && !mezclaCombo;
 
-  const clientesFiltrados = clientes.filter(c =>
-    c.activo && normalizarTexto(`${c.nombre} ${c.apellido} ${c.telefono ?? ''}`).includes(normalizarTexto(clienteBuscar))
-  );
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: colors.background, paddingBottom: 100 }}>
@@ -547,96 +536,20 @@ function NuevoTurnoContent() {
 
         {/* ─── CLIENTE ─── */}
         <p style={sectionLabelStyle}>{t('client')}</p>
-        <div style={{ marginBottom: 20, position: 'relative' }}>
-          <div
-            onClick={() => setShowClienteDropdown(prev => !prev)}
-            style={{
-              ...inputStyle,
-              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-              borderRadius: showClienteDropdown ? '12px 12px 0 0' : 12,
-              borderColor: showClienteDropdown ? colors.primaryDeep : colors.border,
+        <div style={{ marginBottom: 20 }}>
+          <ClienteSelector
+            value={selectedCliente}
+            onChange={setSelectedCliente}
+            onNuevo={() => altaClienteRef.current?.open()}
+            labels={{
+              placeholder: t('select'),
+              searchByName: t('searchByName'),
+              noResults: t('noClientsFound'),
+              loading: t('loadingClients'),
+              retry: t('retry'),
+              newClient: t('newClientOption'),
             }}
-          >
-            <User size={18} strokeWidth={1.8} color={colors.muted} style={{ flexShrink: 0 }} />
-            {selectedCliente ? (
-              <ClienteConTelefono cliente={selectedCliente} variante="campo" />
-            ) : (
-              <span style={{
-                flex: 1, minWidth: 0, color: colors.placeholder, fontSize: 15,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {t('select')}
-              </span>
-            )}
-            <ChevronDown
-              size={16} strokeWidth={2} color={colors.muted}
-              style={{ flexShrink: 0, transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-            />
-          </div>
-
-          {showClienteDropdown && (
-            <div style={{
-              border: `1px solid ${colors.border}`, borderTop: 'none',
-              borderRadius: '0 0 12px 12px', backgroundColor: colors.surface,
-              maxHeight: 220, overflowY: 'auto',
-            }}>
-              <input
-                autoFocus
-                placeholder={t('searchByName')}
-                value={clienteBuscar}
-                onChange={e => setClienteBuscar(e.target.value)}
-                style={{
-                  padding: '10px 14px', border: 'none', borderBottom: `1px solid ${colors.border}`,
-                  width: '100%', boxSizing: 'border-box', outline: 'none', fontSize: 14,
-                  backgroundColor: 'transparent', color: colors.text,
-                }}
-              />
-              {/* Alta rápida sin salir del turno — arriba de todo, no al
-                  final de la lista: con muchos clientes cargados había que
-                  scrollear toda la lista para llegar a esta opción (feedback
-                  real). Antes de esto había que ir a /clientes/nuevo y
-                  volver, perdiendo lo ya cargado en el turno. */}
-              <div
-                onClick={() => { setShowClienteDropdown(false); altaClienteRef.current?.open(); }}
-                style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: colors.primaryDeep, borderBottom: `1px solid ${colors.hairline}` }}
-              >
-                {t('newClientOption')}
-              </div>
-              {clientesLoading && clientes.length === 0 && (
-                <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
-                  <Spinner size={24} label={t('loadingClients')} />
-                </div>
-              )}
-              {!clientesLoading && clientesError && clientes.length === 0 && (
-                <div style={{ padding: '14px', textAlign: 'center' }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 14, color: colors.dangerBorder }}>{clientesError}</p>
-                  <button
-                    onClick={() => fetchClientes()}
-                    style={{
-                      border: `1px solid ${colors.border}`, borderRadius: 10, padding: '6px 14px',
-                      background: 'transparent', color: colors.text, fontSize: 13, cursor: 'pointer',
-                    }}
-                  >
-                    {t('retry')}
-                  </button>
-                </div>
-              )}
-              {!clientesLoading && !clientesError && clientes.length > 0 && clientesFiltrados.length === 0 && (
-                <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
-                  {t('noClientsFound')}
-                </p>
-              )}
-              {clientesFiltrados.map(c => (
-                <div
-                  key={c.id}
-                  onClick={() => { setSelectedCliente(c); setShowClienteDropdown(false); setClienteBuscar(''); }}
-                  style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: `1px solid ${colors.hairline}` }}
-                >
-                  <ClienteConTelefono cliente={c} variante="fila" />
-                </div>
-              ))}
-            </div>
-          )}
+          />
         </div>
 
         {/* ─── Turnos ya cargados (plegados), antes del abierto ─── */}
