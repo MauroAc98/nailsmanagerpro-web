@@ -134,6 +134,9 @@
     "senaLinea": "Sinal {monto}",
     "volverMp": "Voltar ao Mercado Pago",
     "yaPague": "Já paguei · atualizar status",
+    "errorActualizarTitulo": "Não foi possível atualizar o status",
+    "errorActualizarDetalle": "Pode ser a sua conexão. Se você já pagou, seu horário será confirmado do mesmo jeito.",
+    "reservarDeNuevo": "Reservar novamente",
     "conProfesional": "com {profesional}",
     "valorFinal": "O valor final é confirmado no negócio conforme o seu design.",
     "cambiarNota": "Precisa mudar? Reagende ou cancele pelo link que enviamos por WhatsApp. Grátis até {horas} h antes."
