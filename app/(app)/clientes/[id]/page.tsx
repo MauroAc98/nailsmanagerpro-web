@@ -9,6 +9,7 @@ import { useClientesStore } from '@/store/useClienteStore';
 import { clienteService } from '@/services/clienteService';
 import { alertDialog } from '@/store/useConfirmStore';
 import { PAISES, phoneUtils } from '@/lib/phoneUtils';
+import { Spinner } from '@/components/Spinner';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -102,7 +103,7 @@ export default function EditarClientePage() {
   if (loadingCliente) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: colors.subtext }}>{t('loading')}</p>
+        <Spinner label={t('loading')} />
       </div>
     );
   }

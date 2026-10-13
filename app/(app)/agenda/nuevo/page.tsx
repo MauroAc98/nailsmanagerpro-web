@@ -40,6 +40,7 @@ import { whatsappHelper } from '@/lib/whatsappHelper';
 import { useAuthStore } from '@/store/useAuthStore';
 import { servicioService, type Servicio } from '@/services/servicioService';
 import { advertenciaDelCombo, tramosDelCombo } from '@/lib/comboManual';
+import { Spinner } from '@/components/Spinner';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -596,9 +597,9 @@ function NuevoTurnoContent() {
                 {t('newClientOption')}
               </div>
               {clientesLoading && clientes.length === 0 && (
-                <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
-                  {t('loadingClients')}
-                </p>
+                <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
+                  <Spinner size={24} label={t('loadingClients')} />
+                </div>
               )}
               {!clientesLoading && clientesError && clientes.length === 0 && (
                 <div style={{ padding: '14px', textAlign: 'center' }}>
@@ -799,7 +800,7 @@ function NuevoTurnoContent() {
             opacity: deshabilitado && !saving ? 0.5 : 1,
           }}
         >
-          {slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : enLote ? t('confirmMany', { count: bloques.length }) : t('confirmAppointment')}
+          {slotsDesactualizados ? <Spinner size={18} variante="sobreOscuro" label={t('loadingSchedule')} /> : saving ? t('saving') : enLote ? t('confirmMany', { count: bloques.length }) : t('confirmAppointment')}
         </button>
       </div>
       )}
@@ -859,7 +860,7 @@ function NuevoTurnoContent() {
 export default function NuevoTurnoPage() {
   const t = useTranslations('agenda.NuevoTurnoPage');
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
+    <Suspense fallback={<div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner label={t('loading')} /></div>}>
       <NuevoTurnoContent />
     </Suspense>
   );

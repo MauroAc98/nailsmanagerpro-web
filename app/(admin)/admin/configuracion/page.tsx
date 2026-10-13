@@ -6,6 +6,7 @@ import { isAxiosError } from 'axios';
 import { ArrowLeft, CircleCheck } from 'lucide-react';
 import { adminService } from '@/services/adminService';
 import { colors, shadows } from '@/theme/colors';
+import { Spinner } from '@/components/Spinner';
 
 function extraerMensajeError(e: unknown, fallback: string): string {
   if (isAxiosError(e)) {
@@ -86,7 +87,7 @@ export default function ConfiguracionPage() {
         )}
 
         {cargando ? (
-          <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', padding: '16px 0' }}>Cargando…</p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}><Spinner variante="base" label="Cargando" /></div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }} noValidate>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

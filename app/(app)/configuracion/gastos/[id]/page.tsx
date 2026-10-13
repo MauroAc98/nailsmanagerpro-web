@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
+import { Spinner } from '@/components/Spinner';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -167,7 +168,7 @@ export default function EditarGastoPage() {
   if (loadingGasto) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: colors.subtext }}>{t('loading')}</p>
+        <Spinner label={t('loading')} />
       </div>
     );
   }

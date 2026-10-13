@@ -25,6 +25,7 @@ import { avisoNoEntran, etiquetaAccion, leyendaPosicion } from '@/lib/historia/e
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
 import { excluidosDesdeSeleccionados, idsSeleccionadosDesdeExcluidos } from '@/lib/historiaSeleccion';
+import { Spinner } from '@/components/Spinner';
 
 // ─────────────────────────────────────────────
 // Responsive preview wrapper — HistoriaPreciosCanvas ALWAYS renders at its
@@ -142,8 +143,8 @@ export default function HistoriaPreciosPage() {
       </div>
 
       {cargando ? (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+        <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+          <Spinner label={t('loading')} />
         </div>
       ) : !effectiveProfesionalId ? (
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>

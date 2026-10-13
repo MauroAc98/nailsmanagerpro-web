@@ -17,6 +17,7 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { NAV_CLEARANCE } from '@/constants/layout';
 import { SlotCard } from '@/components/configuracion/SlotCard';
+import { Spinner } from '@/components/Spinner';
 
 const HORAS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
@@ -183,8 +184,8 @@ function SlotsContent() {
 
       {/* Loading */}
       {loading && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+        <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+          <Spinner label={t('loading')} />
         </div>
       )}
 

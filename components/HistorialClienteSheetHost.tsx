@@ -10,6 +10,7 @@ import { useProfesionalStore } from '@/store/useProfesionalStore';
 import type { Profesional } from '@/services/profesionalService';
 import { clienteService, Cliente } from '@/services/clienteService';
 import type { Turno } from '@/services/turnoService';
+import { Spinner } from '@/components/Spinner';
 
 type FiltroEstado = 'todos' | 'completado' | 'cancelado';
 
@@ -114,7 +115,7 @@ export function HistorialClienteSheetHost() {
         )}
 
         {loading ? (
-          <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>{tCommon('cargando')}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}><Spinner label={tCommon('cargando')} /></div>
         ) : error ? (
           <p style={{ fontSize: 14, color: colors.danger, margin: 0 }}>{t('loadError')}</p>
         ) : turnos.length === 0 ? (

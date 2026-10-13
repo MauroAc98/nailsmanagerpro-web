@@ -7,6 +7,7 @@ import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 import { turnoService, TurnoManana } from '@/services/turnoService';
 import { extraerMensajeError } from '@/services/clienteService';
+import { Spinner } from '@/components/Spinner';
 
 function horaDeHora(fechaHora: string): string {
   return fechaHora.slice(11, 16);
@@ -86,7 +87,7 @@ export default function TurnosMananaPage() {
 
       <div style={{ padding: '0 20px' }}>
         {loading && (
-          <p style={{ fontSize: 14, color: colors.subtext, marginTop: 12 }}>{t('loading')}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0' }}><Spinner label={t('loading')} /></div>
         )}
 
         {!loading && error && (

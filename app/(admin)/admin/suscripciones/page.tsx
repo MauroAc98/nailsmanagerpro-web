@@ -6,6 +6,7 @@ import { isAxiosError } from 'axios';
 import { ArrowLeft, Search, Building2, X, CircleCheck, TriangleAlert, RefreshCw, Ban, RotateCcw, CalendarClock } from 'lucide-react';
 import { adminService, NegocioLookupResult, SubscriptionStatus } from '@/services/adminService';
 import { colors, shadows, withAlpha } from '@/theme/colors';
+import { Spinner } from '@/components/Spinner';
 
 // Mismo formateo que app/(app)/perfil/page.tsx (formatFechaCorta) — no se
 // extrajo a un helper compartido porque esta es la única otra pantalla que
@@ -390,7 +391,7 @@ export default function SuscripcionesPage() {
         )}
 
         {cargando && !seleccionado && (
-          <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', padding: '16px 0' }}>Cargando negocios…</p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}><Spinner variante="base" label="Cargando negocios" /></div>
         )}
 
         {errorCarga && !seleccionado && (

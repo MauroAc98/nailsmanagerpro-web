@@ -29,6 +29,7 @@ import {
 } from '@/lib/historiaServicios';
 import { profesionalDelEncabezado } from '@/lib/historia/fotoEncabezado';
 import { confirmDialog } from '@/store/useConfirmStore';
+import { Spinner } from '@/components/Spinner';
 
 type SeccionEditor = 'agenda' | 'texto' | 'fondo';
 
@@ -543,7 +544,7 @@ function HistoriaContent() {
 export default function HistoriaPage() {
   const t = useTranslations('historia.HistoriaPage');
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
+    <Suspense fallback={<div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner label={t('loading')} /></div>}>
       <HistoriaContent />
     </Suspense>
   );

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, shadows, withAlpha } from '@/theme/colors';
+import { Spinner } from '@/components/Spinner';
 
 function ResetPasswordForm() {
   const t = useTranslations('auth.ResetPasswordPage');
@@ -276,7 +277,7 @@ function ResetPasswordFallback() {
   const t = useTranslations('auth.ResetPasswordPage');
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {t('loading')}
+      <Spinner variante="base" label={t('loading')} />
     </div>
   );
 }

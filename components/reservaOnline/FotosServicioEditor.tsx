@@ -10,6 +10,7 @@ import { useCarga } from './hooks';
 import { IcoAtras, IcoMas } from './iconos';
 import { Etiqueta, Mensaje } from './ui';
 import { VisorFotos } from './VisorFotos';
+import { Spinner } from '@/components/Spinner';
 
 const boton: CSSProperties = {
   width: 26, height: 26, borderRadius: 13, border: 'none', padding: 0, cursor: 'pointer',
@@ -45,7 +46,7 @@ export function FotosServicioEditor({ servicioId }: { servicioId: number }) {
   const [visorIndice, setVisorIndice] = useState<number | null>(null);
 
   if (error) return <Mensaje tono="error">{tc('errores.generico')}</Mensaje>;
-  if (!data) return <Mensaje>{tc('comun.cargando')}</Mensaje>;
+  if (!data) return <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Spinner label={tc('comun.cargando')} /></div>;
 
   const fotos = editadas ?? data;
 

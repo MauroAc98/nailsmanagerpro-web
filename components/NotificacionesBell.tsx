@@ -9,6 +9,7 @@ import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import type { NotificacionMensaje, NotificacionReservaPagada } from '@/services/turnoService';
 import { claveTextoNotificacion } from '@/lib/notificacionTexto';
 import { diaLargoCorto } from '@/lib/reservaOnline/formatoFecha';
+import { Spinner } from '@/components/Spinner';
 
 const PANEL_WIDTH_MAX = 300;
 const MARGEN_PANTALLA = 20;
@@ -125,9 +126,9 @@ export function NotificacionesBell() {
             )}
 
             {loading && !data && (
-              <p style={{ padding: 16, margin: 0, fontSize: 13, color: colors.subtext, textAlign: 'center' }}>
-                {t('loading')}
-              </p>
+              <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
+                <Spinner size={24} label={t('loading')} />
+              </div>
             )}
 
             {!loading && error && !data && (

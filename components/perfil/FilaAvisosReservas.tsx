@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import PillToggle from '@/components/PillToggle';
 import { useAvisosReservas } from '@/hooks/useAvisosReservas';
+import { Spinner } from '@/components/Spinner';
 
 const ERRORES = {
   unavailable: 'errorUnavailable',
@@ -31,7 +32,6 @@ export function FilaAvisosReservas() {
     estado === 'ios-needs-install' ? t('iosNeedsInstall')
     : estado === 'unsupported' ? t('unsupported')
     : estado === 'denied' ? t('denied')
-    : estado === null ? t('loading')
     : estado === 'on' ? t('subtitleOn')
     : t('subtitleOff');
 
@@ -59,7 +59,7 @@ export function FilaAvisosReservas() {
         )}
       </div>
       <div style={{ fontSize: 12.5, lineHeight: 1.4, color: colors.subtext, margin: '8px 0 0 44px' }}>
-        {explicacion}
+        {estado === null ? <Spinner size={16} label={t('loading')} /> : explicacion}
       </div>
       {error && (
         <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.4, color: colors.danger, margin: '6px 0 0 44px' }}>
