@@ -51,6 +51,10 @@
     "retry": "Reintentar",
     "dismiss": "Cerrar aviso"
   },
+  "ThemeToggle": {
+    "toDark": "Cambiar a modo oscuro",
+    "toLight": "Cambiar a modo claro"
+  },
   "NotificacionesBell": {
     "title": "Notificaciones",
     "turnosManana": "{count, plural, one {Tenés # turno para mañana} other {Tenés # turnos para mañana}}",
