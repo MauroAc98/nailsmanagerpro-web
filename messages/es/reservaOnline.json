@@ -87,6 +87,9 @@
     "apellido": "Apellido",
     "whatsapp": "WhatsApp",
     "whatsappAyuda": "Te mandamos la confirmación y el recordatorio por acá.",
+    "faltaCompletar": "Falta completar: {campos}",
+    "campoNombre": "nombre",
+    "campoApellido": "apellido",
     "codigoPais": "Código de país",
     "privacidad": "Usamos tu número solo para gestionar tu turno.",
     "subtitle": "Los usamos solo para gestionar tu turno.",
@@ -154,7 +157,7 @@
   "errores": {
     "generico": "No pudimos completar la operación. Probá de nuevo.",
     "noEncontrado": "No encontramos este negocio.",
-    "whatsappInvalido": "Ingresá tu número con código de área, sin 0 ni 15. Ej.: 376 512 3456.",
+    "whatsappInvalido": "Escribí tu número con el código de área, sin el 0 ni el 15 del principio. Ej.: 376 512 3456.",
     "noDisponibleTitulo": "Todavía no está disponible",
     "noDisponibleDetalle": "La reserva online no está disponible en este momento. Volvé a intentarlo más tarde.",
     "negocioNoDisponibleTitulo": "Este negocio no recibe reservas online",

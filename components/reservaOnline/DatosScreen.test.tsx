@@ -34,12 +34,32 @@ describe('DatosScreen', () => {
     expect(await screen.findByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
+  // El boton gris no dice por que: se dice exactamente que falta.
+  it('mientras falta algo, sobre el botón dice qué falta; completo, desaparece', async () => {
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    expect(await screen.findByText('Falta completar: nombre, apellido y WhatsApp')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Nombre'), 'Marta');
+    expect(screen.getByText('Falta completar: apellido y WhatsApp')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    expect(screen.getByText('Falta completar: WhatsApp')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '376 512 3456');
+    expect(screen.queryByText(/Falta completar/)).toBeNull();
+  });
+
+  it('un WhatsApp incompleto cuenta como faltante', async () => {
+    renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
+    await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
+    await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
+    await userEvent.type(screen.getByLabelText('WhatsApp'), '1155');
+    expect(screen.getByText('Falta completar: WhatsApp')).toBeInTheDocument();
+  });
+
   it('un WhatsApp sin codigo de pais bloquea Continuar y muestra el error', async () => {
     renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     await userEvent.type(await screen.findByLabelText('Nombre'), 'Marta');
     await userEvent.type(screen.getByLabelText('Apellido'), 'Ríos');
     await userEvent.type(screen.getByLabelText('WhatsApp'), '1155');
-    expect(screen.getByRole('alert')).toHaveTextContent('Ingresá tu número con código de área');
+    expect(screen.getByRole('alert')).toHaveTextContent('Escribí tu número con el código de área, sin el 0 ni el 15 del principio.');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
@@ -243,10 +263,10 @@ describe('DatosScreen', () => {
     expect(useReservaOnlineStore.getState().cliente.whatsapp).toBe('+5493765123456');
   });
 
-  it('titulo con subtitulo, ayuda del WhatsApp y linea de privacidad', async () => {
+  it('titulo, ayuda del WhatsApp y UNA sola linea de privacidad (antes estaba dicha dos veces)', async () => {
     renderWithProviders(<DatosScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
     expect(await screen.findByRole('heading', { name: 'Tus datos' })).toBeInTheDocument();
-    expect(screen.getByText('Los usamos solo para gestionar tu turno.')).toBeInTheDocument();
+    expect(screen.queryByText('Los usamos solo para gestionar tu turno.')).toBeNull();
     expect(screen.getByText('Te mandamos la confirmación y el recordatorio por acá.')).toBeInTheDocument();
     expect(screen.getByText('Usamos tu número solo para gestionar tu turno.')).toBeInTheDocument();
   });
