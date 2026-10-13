@@ -58,6 +58,17 @@ describe('traducirErrorHttp', () => {
     expect(traducirErrorHttp(axiosError(422, { message: 'no' })).code).toBe('validation');
   });
 
+  it('un 429 sin `code` (el limitador de pedidos de Laravel: "Too Many Attempts.") es rate_limited, no unknown', () => {
+    expect(traducirErrorHttp(axiosError(429, { message: 'Too Many Attempts.' })).code).toBe('rate_limited');
+    expect(traducirErrorHttp(axiosError(429)).code).toBe('rate_limited');
+  });
+
+  it('un 429 sin `code` toma el tiempo de espera del encabezado Retry-After', () => {
+    const err = Object.assign(axiosError(429, { message: 'Too Many Attempts.' }), {});
+    (err.response.headers as Record<string, string>)['retry-after'] = '37';
+    expect(traducirErrorHttp(err).retryAfterSeconds).toBe(37);
+  });
+
   it('cualquier otro status o un error de red cae en unknown', () => {
     expect(traducirErrorHttp(axiosError(500, {})).code).toBe('unknown');
     expect(traducirErrorHttp(Object.assign(new Error('red'), { isAxiosError: true })).code).toBe('unknown');

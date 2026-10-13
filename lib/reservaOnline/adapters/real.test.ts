@@ -312,6 +312,16 @@ describe('real: fotos y avatar', () => {
     expect(pedidos).toHaveLength(2);
   });
 
+  it('un 429 (demasiados pedidos) NO se oculta como "no se": se propaga para que la UI no salga a recorrer dia por dia', async () => {
+    const http = crearPublicHttp({
+      baseURL: 'https://api.test/api',
+      adapter: (config) => respuesta(config, 429, { message: 'Too Many Attempts.' }),
+    });
+    await expect(
+      createRealReads(http).getDiasConDisponibilidad('ana', { fechas: ['2026-09-25'], servicioIds: [7] }),
+    ).rejects.toMatchObject({ code: 'rate_limited' });
+  });
+
   it('cualquier error (404, 422, red) devuelve null para que la UI degrade sin puntos', async () => {
     expect(await nuevo().getDiasConDisponibilidad('nadie', { fechas: ['2026-09-25'], servicioIds: [7] })).toBeNull();
     expect(await nuevo().getDiasConDisponibilidad('ana', { fechas: ['2026-09-25'], servicioIds: [] })).toBeNull();

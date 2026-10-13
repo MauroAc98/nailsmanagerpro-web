@@ -39,7 +39,7 @@ const CODIGOS_CONOCIDOS: Record<string, ReservaOnlineErrorCode> = {
 // Traductor unico de errores HTTP -> ReservaOnlineError, usado por lecturas y
 // escrituras (decision D5). Prioriza el `code` del cuerpo; sin `code` (las
 // lecturas todavia no lo mandan) cae al status: 404 -> not_found,
-// 422 -> validation, cualquier otro (red, 5xx, 429 sin code) -> unknown.
+// 422 -> validation, 429 -> rate_limited, cualquier otro (red, 5xx) -> unknown.
 export function traducirErrorHttp(err: unknown): ReservaOnlineError {
   if (isAxiosError(err) && err.response) {
     const cuerpo = err.response.data as CuerpoError | undefined;
@@ -47,6 +47,12 @@ export function traducirErrorHttp(err: unknown): ReservaOnlineError {
     if (codigo) return new ReservaOnlineError(codigo, cuerpo?.message, cuerpo?.retry_after_seconds);
     if (err.response.status === 404) return new ReservaOnlineError('not_found', cuerpo?.message);
     if (err.response.status === 422) return new ReservaOnlineError('validation', cuerpo?.message);
+    // El limitador de pedidos de Laravel responde 429 sin `code` ("Too Many
+    // Attempts.") y con el tiempo de espera en el encabezado Retry-After.
+    if (err.response.status === 429) {
+      const espera = Number(err.response.headers?.['retry-after']);
+      return new ReservaOnlineError('rate_limited', cuerpo?.message, Number.isFinite(espera) && espera > 0 ? espera : undefined);
+    }
   }
   return new ReservaOnlineError('unknown', err instanceof Error ? err.message : undefined);
 }
