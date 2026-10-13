@@ -101,6 +101,8 @@
   "resumen": {
     "title": "Revise e confirme",
     "senaTitulo": "Sinal para reservar",
+    "senaPorcentaje": "{porcentaje}% do valor de referência dos seus serviços",
+    "senaCalculando": "Calculando seu sinal",
     "senaDetalle": "Faz parte do valor final. O restante é definido no negócio conforme o seu design e pago lá.",
     "pagar": "Pagar sinal com",
     "pagando": "Criando sua reserva…",
@@ -114,7 +116,7 @@
     "conPersona": "com {profesional}",
     "enTotal": "No total",
     "tuIdea": "Sua ideia",
-    "tiempoPagar": "Você tem {minutos} minutos para pagar e garantir o horário",
+    "tiempoPagar": "Ao tocar em Pagar, você tem {minutos} min para concluir o pagamento no Mercado Pago",
     "cancelacion": "Cancelamento grátis até {horas} h antes",
     "whatsappConfirmacion": "Enviamos a confirmação por WhatsApp para",
     "editarWhatsapp": "Editar",
