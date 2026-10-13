@@ -56,3 +56,62 @@ describe('BottomSheet content wrapper', () => {
     expect(onChange).toHaveBeenCalled();
   });
 });
+
+function touchDrag(el: HTMLElement, fromY: number, toY: number) {
+  fireEvent.touchStart(el, { touches: [{ clientY: fromY }] });
+  fireEvent.touchMove(el, { touches: [{ clientY: (fromY + toY) / 2 }] });
+  fireEvent.touchMove(el, { touches: [{ clientY: toY }] });
+  fireEvent.touchEnd(el, { touches: [] });
+}
+
+describe('BottomSheet touch on content', () => {
+  it('drags the sheet when a scrollable list is at its top and the finger pulls down', () => {
+    const { wrapper, onChange } = renderSheet();
+    setScrollable(wrapper, 2000, 500);
+    touchDrag(wrapper, 300, 500);
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('leaves a scrollable list to native scroll when it is scrolled down', () => {
+    const { wrapper, onChange } = renderSheet();
+    setScrollable(wrapper, 2000, 500);
+    (wrapper as unknown as { scrollTop: number }).scrollTop = 300;
+    touchDrag(wrapper, 300, 500);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves a scrollable list to native scroll when the finger goes up', () => {
+    const { wrapper, onChange } = renderSheet();
+    setScrollable(wrapper, 2000, 500);
+    touchDrag(wrapper, 500, 300);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('drags the sheet on touch when the list has nothing to scroll', () => {
+    const { wrapper, onChange } = renderSheet();
+    setScrollable(wrapper, 400, 500);
+    touchDrag(wrapper, 500, 300);
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('snaps (does not stay stuck) when the browser cancels the gesture', () => {
+    const { wrapper, onChange } = renderSheet();
+    setScrollable(wrapper, 400, 500);
+    fireEvent.touchStart(wrapper, { touches: [{ clientY: 500 }] });
+    fireEvent.touchMove(wrapper, { touches: [{ clientY: 460 }] });
+    fireEvent.touchMove(wrapper, { touches: [{ clientY: 400 }] });
+    fireEvent.touchCancel(wrapper, { touches: [] });
+    expect(onChange).toHaveBeenCalled();
+  });
+});
+
+describe('BottomSheet handle', () => {
+  it('snaps on pointercancel instead of staying stuck mid-drag', () => {
+    const { wrapper, onChange } = renderSheet();
+    const handle = wrapper.previousElementSibling as HTMLElement;
+    fireEvent.pointerDown(handle, { pointerId: 1, clientY: 500 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientY: 440 });
+    fireEvent.pointerCancel(handle, { pointerId: 1 });
+    expect(onChange).toHaveBeenCalled();
+  });
+});

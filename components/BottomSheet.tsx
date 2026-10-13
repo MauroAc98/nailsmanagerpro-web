@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, {
   forwardRef,
@@ -7,8 +7,8 @@ import React, {
   useImperativeHandle,
   useRef,
   useState,
-} from 'react';
-import { colors, shadows } from '@/theme/colors';
+} from "react";
+import { colors, shadows } from "@/theme/colors";
 
 // ─────────────────────────────────────────────
 // BottomSheet — plain pointer-event drag sheet, mirrors the subset of
@@ -54,6 +54,9 @@ interface BottomSheetProps {
 
 const Z_INDEX = 40;
 
+type TouchHandler = (e: TouchEvent) => void;
+const noopTouch: TouchHandler = () => undefined;
+
 // bottomOffset llega como número fijo (altura del nav, sin safe area) — en
 // standalone PWA sobre iPhone el nav real ocupa bottomOffset + safe area
 // (mismo cálculo que paddingBottom del contenido en app/(app)/layout.tsx),
@@ -64,16 +67,18 @@ function useSafeAreaBottom(): number {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
-    const probe = document.createElement('div');
-    probe.style.cssText = 'position:absolute;visibility:hidden;height:0;padding-bottom:env(safe-area-inset-bottom)';
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      "position:absolute;visibility:hidden;height:0;padding-bottom:env(safe-area-inset-bottom)";
     document.body.appendChild(probe);
 
-    const measure = () => setValue(parseFloat(getComputedStyle(probe).paddingBottom) || 0);
+    const measure = () =>
+      setValue(parseFloat(getComputedStyle(probe).paddingBottom) || 0);
     measure();
 
-    window.addEventListener('resize', measure);
+    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener('resize', measure);
+      window.removeEventListener("resize", measure);
       document.body.removeChild(probe);
     };
   }, []);
@@ -136,8 +141,8 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     useEffect(() => {
       const update = () => setViewportHeight(window.innerHeight);
       update();
-      window.addEventListener('resize', update);
-      return () => window.removeEventListener('resize', update);
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
     }, []);
 
     const heightForIndex = useCallback(
@@ -153,7 +158,9 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
         if (!el) return;
         const clamped = Math.min(maxHeight, Math.max(0, px));
         visibleHeightRef.current = clamped;
-        el.style.transition = animate ? 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none';
+        el.style.transition = animate
+          ? "transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+          : "none";
         el.style.transform = `translateY(${maxHeight - clamped}px)`;
       },
       [maxHeight],
@@ -191,42 +198,58 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     // Below this velocity (px/ms — ~0.5 ≈ 500px/s) a release is treated as a
     // slow drag and snaps to the nearest point by distance, same as before.
     const FLICK_VELOCITY_THRESHOLD = 0.5;
+    // A release this long after the last move is a rest, not a flick.
+    const VELOCITY_STALE_MS = 100;
+    // Finger travel (px) before a touch is classified as sheet-drag or scroll.
+    const TOUCH_SLOP = 6;
 
-    const handlePointerDown = (e: React.PointerEvent) => {
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      dragStartY.current = e.clientY;
+    const startDrag = (clientY: number, timeStamp: number) => {
+      dragStartY.current = clientY;
       dragStartHeight.current = visibleHeightRef.current;
       draggingRef.current = true;
-      lastMove.current = { y: e.clientY, t: e.timeStamp };
+      lastMove.current = { y: clientY, t: timeStamp };
       velocityRef.current = 0;
       applyVisibleHeight(dragStartHeight.current, false); // cancel any in-flight transition
     };
 
-    const handlePointerMove = (e: React.PointerEvent) => {
-      if (!draggingRef.current) return;
-      const delta = dragStartY.current - e.clientY; // dragging up = positive
-      const minHeight = enablePanDownToClose ? 0 : snapPoints[0] * availableHeight;
-      const next = Math.min(maxHeight, Math.max(minHeight, dragStartHeight.current + delta));
+    const moveDrag = (clientY: number, timeStamp: number) => {
+      const delta = dragStartY.current - clientY; // dragging up = positive
+      const minHeight = enablePanDownToClose
+        ? 0
+        : snapPoints[0] * availableHeight;
+      const next = Math.min(
+        maxHeight,
+        Math.max(minHeight, dragStartHeight.current + delta),
+      );
       applyVisibleHeight(next, false);
 
-      const dt = e.timeStamp - lastMove.current.t;
+      const dt = timeStamp - lastMove.current.t;
       if (dt > 0) {
-        const instVelocity = (lastMove.current.y - e.clientY) / dt; // up = positive
+        const instVelocity = (lastMove.current.y - clientY) / dt; // up = positive
         // Exponential smoothing so one jittery sample can't dominate the
         // flick decision, while still weighting the most recent movement
         // (what a native fling gesture actually measures) over the start.
         velocityRef.current = velocityRef.current * 0.7 + instVelocity * 0.3;
       }
-      lastMove.current = { y: e.clientY, t: e.timeStamp };
+      lastMove.current = { y: clientY, t: timeStamp };
     };
 
-    const handlePointerUp = (e: React.PointerEvent) => {
+    // Shared release for pointer-up, pointer-cancel and touch-end/cancel.
+    // Cancel MUST land here too: when the browser takes over a gesture it
+    // sends pointercancel instead of pointerup, and without a handler the
+    // sheet stayed stuck mid-drag with draggingRef = true.
+    const endDrag = (timeStamp: number) => {
       if (!draggingRef.current) return;
       draggingRef.current = false;
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
 
-      const allIndices = enablePanDownToClose ? [-1, ...snapPoints.map((_, i) => i)] : snapPoints.map((_, i) => i);
-      const velocity = velocityRef.current;
+      const allIndices = enablePanDownToClose
+        ? [-1, ...snapPoints.map((_, i) => i)]
+        : snapPoints.map((_, i) => i);
+      // Velocity is only updated on move events, so a finger that stopped
+      // and then lifted would otherwise release with the stale speed of its
+      // last move and fly to the next snap by accident.
+      const stale = timeStamp - lastMove.current.t > VELOCITY_STALE_MS;
+      const velocity = stale ? 0 : velocityRef.current;
 
       if (Math.abs(velocity) > FLICK_VELOCITY_THRESHOLD) {
         // Fast flick: go to the next snap point in that direction from
@@ -236,13 +259,19 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
         // its start, the same way a native sheet responds to a fling.
         const direction = velocity > 0 ? 1 : -1; // up = positive = toward a taller index
         const fromPos = allIndices.indexOf(currentIndex);
-        const target = allIndices[Math.min(allIndices.length - 1, Math.max(0, fromPos + direction))];
+        const target =
+          allIndices[
+            Math.min(allIndices.length - 1, Math.max(0, fromPos + direction))
+          ];
         goToIndex(target, true);
         return;
       }
 
       const currentHeight = visibleHeightRef.current;
-      const candidates = allIndices.map((index) => ({ index, px: index < 0 ? 0 : snapPoints[index] * availableHeight }));
+      const candidates = allIndices.map((index) => ({
+        index,
+        px: index < 0 ? 0 : snapPoints[index] * availableHeight,
+      }));
 
       let closest = candidates[0];
       let closestDistance = Math.abs(closest.px - currentHeight);
@@ -257,11 +286,37 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       goToIndex(closest.index, true);
     };
 
-    // Content drag only moves the sheet when the list has nothing to scroll.
-    // A scrollable list is left entirely to native scrolling (the sheet is
-    // dragged from the handle) — starting a sheet-drag here would capture
-    // the pointer and kill the browser scroll for that gesture.
+    const releaseCapture = (e: React.PointerEvent) => {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // already released (e.g. after pointercancel)
+      }
+    };
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      startDrag(e.clientY, e.timeStamp);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+      if (!draggingRef.current) return;
+      moveDrag(e.clientY, e.timeStamp);
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+      if (!draggingRef.current) return;
+      releaseCapture(e);
+      endDrag(e.timeStamp);
+    };
+
+    // Mouse / pen on the content: only moves the sheet when the list has
+    // nothing to scroll. Touch is handled by the native touch listeners
+    // below — a pointer-event drag can't work on a touch-action:pan-y
+    // element, because the browser claims the vertical pan and fires
+    // pointercancel, which is what left the sheet stuck.
     const handleContentPointerDown = (e: React.PointerEvent) => {
+      if (e.pointerType === "touch") return;
       const el = contentRef.current;
       const canScroll = el ? el.scrollHeight - el.clientHeight > 1 : false;
       if (canScroll) {
@@ -283,46 +338,121 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       handlePointerUp(e);
     };
 
+    // Touch on the content, classified on the first meaningful move by
+    // direction: the sheet drags when the list has nothing to scroll, or when
+    // the list is at its top and the finger pulls down; otherwise the browser
+    // scrolls natively. preventDefault (needs a non-passive listener) stops
+    // the browser from also scrolling while the sheet moves. No pointer
+    // capture is taken, so native scroll is never taken away.
+    const touchMode = useRef<"idle" | "pending" | "sheet" | "scroll">("idle");
+    const touchStartY = useRef(0);
+    const touchImpl = useRef<Record<'start' | 'move' | 'end', TouchHandler>>({
+      start: noopTouch,
+      move: noopTouch,
+      end: noopTouch,
+    });
+    // Refreshed after every render so the listeners below (attached once)
+    // always see the latest closures; assigning in an effect, not in render.
+    useEffect(() => {
+      touchImpl.current = {
+        start: (e) => {
+          if (e.touches.length !== 1) {
+            touchMode.current = "idle";
+            return;
+          }
+          touchMode.current = "pending";
+          touchStartY.current = e.touches[0].clientY;
+        },
+        move: (e) => {
+          const mode = touchMode.current;
+          if (mode === "idle" || mode === "scroll") return;
+          const y = e.touches[0].clientY;
+          if (mode === "pending") {
+            const dy = y - touchStartY.current; // down = positive
+            if (Math.abs(dy) < TOUCH_SLOP) return;
+            const el = contentRef.current;
+            const canScroll = el
+              ? el.scrollHeight - el.clientHeight > 1
+              : false;
+            const atTop = !el || el.scrollTop <= 0;
+            if (!canScroll || (atTop && dy > 0)) {
+              touchMode.current = "sheet";
+              startDrag(y, e.timeStamp);
+            } else {
+              touchMode.current = "scroll";
+              return;
+            }
+          }
+          if (e.cancelable) e.preventDefault();
+          moveDrag(y, e.timeStamp);
+        },
+        end: (e) => {
+          const wasSheet = touchMode.current === "sheet";
+          touchMode.current = "idle";
+          if (wasSheet) endDrag(e.timeStamp);
+        },
+      };
+    });
+
+    useEffect(() => {
+      const el = contentRef.current;
+      if (!el) return;
+      const onStart = (e: TouchEvent) => touchImpl.current.start(e);
+      const onMove = (e: TouchEvent) => touchImpl.current.move(e);
+      const onEnd = (e: TouchEvent) => touchImpl.current.end(e);
+      el.addEventListener("touchstart", onStart, { passive: true });
+      el.addEventListener("touchmove", onMove, { passive: false });
+      el.addEventListener("touchend", onEnd);
+      el.addEventListener("touchcancel", onEnd);
+      return () => {
+        el.removeEventListener("touchstart", onStart);
+        el.removeEventListener("touchmove", onMove);
+        el.removeEventListener("touchend", onEnd);
+        el.removeEventListener("touchcancel", onEnd);
+      };
+    }, []);
+
     return (
       <div
         style={{
-          position: 'fixed',
+          position: "fixed",
           left: sideInset,
           right: sideInset,
           bottom: effectiveBottomOffset,
           zIndex,
           height: maxHeight,
-          overflow: 'hidden',
+          overflow: "hidden",
           // Only the actual sheet (below) should capture clicks — the empty
           // space above it within this fixed-height clipping box must let
           // clicks fall through to whatever is underneath, same as when the
           // old height-driven div simply had zero size there.
-          pointerEvents: 'none',
+          pointerEvents: "none",
         }}
       >
         <div
           ref={sheetRef}
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: 0,
             right: 0,
             bottom: 0,
             height: maxHeight,
             backgroundColor,
-            borderRadius: '20px 20px 0 0',
+            borderRadius: "20px 20px 0 0",
             boxShadow: shadows.sheet,
-            display: 'flex',
-            flexDirection: 'column',
+            display: "flex",
+            flexDirection: "column",
             transform: `translateY(${maxHeight - heightForIndex(currentIndex)}px)`,
-            pointerEvents: 'auto',
-            willChange: 'transform',
+            pointerEvents: "auto",
+            willChange: "transform",
           }}
         >
           <div
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            style={{ touchAction: 'none', cursor: 'grab', flexShrink: 0 }}
+            onPointerCancel={handlePointerUp}
+            style={{ touchAction: "none", cursor: "grab", flexShrink: 0 }}
           >
             <div
               style={{
@@ -330,7 +460,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
                 height: 4,
                 borderRadius: 2,
                 background: handleColor,
-                margin: '10px auto',
+                margin: "10px auto",
               }}
             />
           </div>
@@ -339,15 +469,19 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             onPointerDown={handleContentPointerDown}
             onPointerMove={handleContentPointerMove}
             onPointerUp={handleContentPointerUp}
+            onPointerCancel={handleContentPointerUp}
             style={{
               flex: 1,
-              overflowY: 'auto',
+              overflowY: "auto",
+              // Keep the scroll chain from leaking into the page behind (iOS
+              // rubber-band / Android pull-to-refresh) at the list's edges.
+              overscrollBehavior: "contain",
               minHeight: 0,
               // pan-y: the browser scrolls the list vertically; horizontal
               // gestures (e.g. SwipeableTurnoCard) stay with JS handlers.
-              // The sheet-drag vs scroll decision is made in
-              // handleContentPointerDown, not by touch-action.
-              touchAction: 'pan-y',
+              // The sheet-drag vs scroll decision is made in the
+              // touch listeners, not by touch-action.
+              touchAction: "pan-y",
             }}
           >
             {children}
