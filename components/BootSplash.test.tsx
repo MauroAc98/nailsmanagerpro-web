@@ -11,7 +11,7 @@ describe('BootSplash', () => {
     expect(logo?.getAttribute('src')).not.toContain('icon-192');
   });
 
-  it('el fondo es el de la superficie del tema (hueso en claro, oscuro en oscuro), igual que el splash nativo', () => {
+  it('el fondo es el de la superficie del tema (blanco en claro, oscuro en oscuro), igual que el splash nativo', () => {
     render(<BootSplash />);
 
     expect(screen.getByTestId('boot-splash').style.backgroundColor).toBe('var(--color-surface)');

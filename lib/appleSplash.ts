@@ -3,7 +3,7 @@
 // logo; con una imagen a medida por dispositivo Safari la muestra 1:1.
 //
 // Cada tamaño tiene dos imágenes, para que el destello previo a la app no sea un
-// blanco ajeno a ella: `apple-splash-<tamaño>.png` (hueso, como --color-surface
+// blanco ajeno a ella: `apple-splash-<tamaño>.png` (blanco, como --color-surface
 // en claro) y `apple-splash-dark-<tamaño>.png` (como --color-surface en oscuro).
 // Se eligen por `prefers-color-scheme`. Se generan con scripts/generar-splash.py.
 export const APPLE_SPLASH_SCREENS = [
