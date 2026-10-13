@@ -28,8 +28,10 @@ export function ClienteConTelefono({ cliente, variante }: Props) {
 
   return (
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 15, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis' }}>{nombre}</div>
-      {telefono && <div style={{ marginTop: 2, fontSize: 12, color: colors.subtext }}>{telefono}</div>}
+      {/* nowrap: las filas de las listas virtualizadas tienen alto fijo, un
+          nombre largo se corta con "…" en vez de pasar a dos renglones. */}
+      <div style={{ fontSize: 15, color: colors.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nombre}</div>
+      {telefono && <div style={{ marginTop: 2, fontSize: 12, color: colors.subtext, whiteSpace: 'nowrap' }}>{telefono}</div>}
     </div>
   );
 }

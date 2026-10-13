@@ -15,7 +15,6 @@ import { SelectorServicios } from '@/components/SelectorServicios';
 import { AltaClienteRapidaSheet, type AltaClienteRapidaHandle } from '@/components/clientes/AltaClienteRapidaSheet';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { useClientesStore } from '@/store/useClienteStore';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useBloqueosAgendaStore } from '@/store/useBloqueosAgendaStore';
@@ -82,7 +81,6 @@ function NuevoTurnoContent() {
 
   const { crearTurno, crearLote, turnos, fetchTurnos, marcarFechaDeRetorno }  = useTurnoStore();
   const { servicios, fetchServicios }        = useServiciosStore();
-  const { clientes, fetchClientes } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
@@ -122,7 +120,6 @@ function NuevoTurnoContent() {
   const [tempHora,         setTempHora]         = useState<Record<string, string>>({ hora: initialH, minuto: '00' });
 
   useEffect(() => {
-    if (clientes.length === 0) fetchClientes();
     if (servicios.length === 0) fetchServicios();
     if (slots.length === 0) fetchSlots();
     if (profesionales.length === 0) fetchProfesionales();
