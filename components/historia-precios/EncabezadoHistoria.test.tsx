@@ -35,26 +35,42 @@ describe('EncabezadoHistoria · reserva compartida', () => {
 });
 
 describe('EncabezadoHistoria · contenido', () => {
-  it("modo una sin profesional: título 'Lista de precios' y la línea es solo el período", () => {
+  // El aire entre piezas de la etiqueta es una rayita dibujada (no texto), así
+  // que el textContent las une sin separador.
+  it("modo una sin profesional: título 'Lista de precios' y la etiqueta es solo el período", () => {
     renderEncabezado();
     expect(titulo().textContent).toBe('Lista de precios');
     expect(linea().textContent).toBe(periodo);
   });
 
-  it("modo una con profesional: 'con Ana · Período'", () => {
+  it("modo una con profesional: 'Período — con Ana'", () => {
     renderEncabezado({ profesionalNombre: 'Ana' });
-    expect(linea().textContent).toBe(`con Ana · ${periodo}`);
+    expect(linea().textContent).toBe(`${periodo}con Ana`);
+    expect(linea().querySelector('b')?.textContent).toBe('Ana');
   });
 
-  it("modo categoría: título = categoría; línea 'Lista de precios · con Ana · Período'", () => {
+  it("modo categoría: título 'Precios de Pies' (espejo de 'Turnos de Lash'); etiqueta 'Período — con Ana'", () => {
     renderEncabezado({ subtitulo: 'Pies', profesionalNombre: 'Ana' });
-    expect(titulo().textContent).toBe('Pies');
-    expect(linea().textContent).toBe(`Lista de precios · con Ana · ${periodo}`);
+    expect(titulo().textContent).toBe('Precios de Pies');
+    expect(titulo().querySelector('em')?.textContent).toBe('Pies');
+    expect(linea().textContent).toBe(`${periodo}con Ana`);
   });
 
-  it("modo categoría sin profesional: 'Lista de precios · Período'", () => {
+  it("modo categoría sin profesional: la etiqueta es solo el período", () => {
     renderEncabezado({ subtitulo: 'Pies' });
-    expect(linea().textContent).toBe(`Lista de precios · ${periodo}`);
+    expect(linea().textContent).toBe(periodo);
+  });
+
+  it('modo una: el título lleva la última palabra en cursiva', () => {
+    renderEncabezado();
+    expect(titulo().querySelector('em')?.textContent).toBe('precios');
+  });
+
+  it('la etiqueta va sobre el título y la insignia queda a la derecha', () => {
+    renderEncabezado({ logoUrl: 'data:image/png;base64,eA==' });
+    const foto = screen.getByTestId('encabezado-foto');
+    expect(linea().compareDocumentPosition(titulo()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(titulo().compareDocumentPosition(foto) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -64,46 +80,48 @@ describe('EncabezadoHistoria · estilo sobre la foto', () => {
     expect(titulo().style.color).toBe('rgb(255, 255, 255)');
     expect(titulo().style.textShadow).toMatch(/2px 6px.*0\.85|0\.85.*2px 6px/);
     expect(titulo().style.whiteSpace).toBe('nowrap');
-    expect(titulo().style.fontSize).toBe('20px');
-    expect(linea().style.color).toBe('rgba(255, 255, 255, 0.9)');
+    expect(titulo().style.fontSize).toBe('24px');
+    expect(linea().style.color).toBe('rgba(255, 255, 255, 0.72)');
     expect(linea().style.textShadow).toMatch(/2px 6px.*0\.85|0\.85.*2px 6px/);
     expect(linea().style.whiteSpace).toBe('nowrap');
-    expect(linea().style.fontSize).toBe('11px');
+    expect(linea().style.fontSize).toBe('8px');
+    expect(linea().style.textTransform).toBe('uppercase');
     expect(linea().style.textOverflow).toBe('ellipsis');
   });
 
-  it('con foto: recuadro 44x44, radio 12, borde blanco translúcido y cover', () => {
+  it('con foto: círculo de 44x44 con anillo (box-shadow, nunca filter) y cover', () => {
     renderEncabezado({ logoUrl: 'data:image/png;base64,eA==' });
     const img = screen.getByTestId('encabezado-foto') as HTMLImageElement;
     expect(img.getAttribute('src')).toBe('data:image/png;base64,eA==');
     expect(img.style.width).toBe('44px');
     expect(img.style.height).toBe('44px');
-    expect(img.style.borderRadius).toBe('12px');
+    expect(img.style.borderRadius).toBe('50%');
     expect(img.style.objectFit).toBe('cover');
-    expect(img.style.border).toContain('1.5px solid');
+    expect(img.style.boxShadow).not.toBe('');
     expect(img.style.filter).toBe('');
     expect(screen.queryByTestId('encabezado-icono')).toBeNull();
   });
 
-  it('sin foto: recuadro translúcido con el ícono Tag blanco', () => {
+  it('sin foto: círculo de vidrio con anillo y el ícono Tag blanco', () => {
     renderEncabezado({ logoUrl: null });
     expect(screen.queryByTestId('encabezado-foto')).toBeNull();
     const icono = screen.getByTestId('encabezado-icono');
     expect(icono.style.width).toBe('44px');
-    expect(icono.style.borderRadius).toBe('12px');
-    expect(icono.style.backgroundColor).toBe('rgba(255, 255, 255, 0.18)');
+    expect(icono.style.borderRadius).toBe('50%');
+    expect(icono.style.boxShadow).not.toBe('');
     expect(icono.querySelector('svg')?.getAttribute('class')).toContain('lucide-tag');
   });
 
-  it('contador de serie: solo con serie, "1/4", blanco sobre translúcido', () => {
+  it('contador de serie: solo con serie, "1/4" como texto al final de la etiqueta (sin pill)', () => {
     const { unmount } = renderEncabezado({ subtitulo: 'Pies' });
     expect(screen.queryByTestId('encabezado-serie')).toBeNull();
     unmount();
     renderEncabezado({ subtitulo: 'Pies', serie: { actual: 1, total: 4 } });
-    const pill = screen.getByTestId('encabezado-serie');
-    expect(pill.textContent).toBe('1/4');
-    expect(pill.style.borderRadius).toBe('999px');
-    expect(pill.style.backgroundColor).toBe('rgba(255, 255, 255, 0.2)');
-    expect(pill.style.color).toBe('rgb(255, 255, 255)');
+    const serie = screen.getByTestId('encabezado-serie');
+    expect(serie.textContent).toBe('1/4');
+    expect(linea().contains(serie)).toBe(true);
+    expect(serie.style.borderRadius).toBe('');
+    expect(serie.style.backgroundColor).toBe('');
+    expect(serie.style.color).toBe('rgb(255, 255, 255)');
   });
 });

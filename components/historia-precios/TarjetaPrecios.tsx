@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Servicio } from '@/services/servicioService';
+import { agendaFontSerif } from '@/theme/agendaColors';
 import { EstiloTokens } from './estilos';
 import { formatoPrecioTarjeta } from '@/lib/formatoPrecioTarjeta';
 import { NIVELES_DENSIDAD, elegirDensidad, type DensidadTokens, type ResultadoDensidad } from '@/lib/historiaDensidad';
@@ -67,7 +68,23 @@ const PADDING_BOTTOM = 16;
 // — lands the card at ~73% of the canvas width, matching the reference
 // Canva price-list's narrower, more deliberate card vs. the previous
 // near-edge-to-edge (~91%) layout.
-const OUTER_PADDING_X = 54;
+// Ahora la tarjeta arranca en el mismo eje que el encabezado y el pie (18px):
+// con el header y el pie alineados a la izquierda, una tarjeta metida 54px
+// quedaba corrida (rediseño editorial 2026-10-13).
+const OUTER_PADDING_X = 18;
+
+// Tamaños de la carta por nivel de densidad: el nombre va en serif (más grande
+// que el sans de antes a igual legibilidad) y el precio en sans. Bajan con la
+// densidad, pero nunca del piso de 12px de NIVELES_DENSIDAD.
+const FUENTE_NOMBRE_CARTA = [16, 15.5, 14, 13];
+const FUENTE_PRECIO_CARTA = [15, 14.5, 13.5, 13];
+// Subtítulos "Servicios"/"Promociones": siempre más grandes que el nombre de una
+// fila para que se lean como encabezado de sección, y bajan con la densidad.
+const FUENTE_SUBTITULO_CARTA = [26, 25, 22, 20];
+// Color pleno de los subtítulos (tinta oscura en las plantillas claras, blanco
+// en las oscuras): los nombres de las filas usan tokens.nombreColor (~75%).
+const SUBTITULO_OSCURO = '#2B2226';
+const SUBTITULO_CLARO  = '#FFFFFF';
 
 // Acento fijo para el chrome nuevo de esta tarjeta (barra bajo el título,
 // pill de sección, nombre del negocio) — a pedido explícito del usuario: un
@@ -87,15 +104,12 @@ const OUTER_PADDING_X = 54;
 // ver tokens.claro (estilos.ts), no es una variante por mood/marca como
 // tokens.precioColor.
 const ACCENT_OSCURO    = '#57534E';
-const ACCENT_OSCURO_BG = 'rgba(87,83,78,0.14)';
 const ACCENT_CLARO     = '#E8E5E1';
-const ACCENT_CLARO_BG  = 'rgba(255,255,255,0.14)';
 
 export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'center', variante = 'flotante', align = 'center', nivelDensidad, onFitChange, reservaInferior = 0, reservaSuperior = 0 }: Props) {
   const t = useTranslations('historia.TarjetaPrecios');
   const esPanel = variante === 'panel';
   const accent   = tokens.claro ? ACCENT_OSCURO    : ACCENT_CLARO;
-  const accentBg = tokens.claro ? ACCENT_OSCURO_BG : ACCENT_CLARO_BG;
 
   // Servicios y promociones combinados en una sola tarjeta (antes eran 2
   // imágenes separadas, ver useHistoriaPrecios). Los sub-headers solo se
@@ -105,12 +119,6 @@ export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'cent
   const serviciosRegulares = servicios.filter(s => !s.es_promo);
   const serviciosPromo     = servicios.filter(s => s.es_promo);
   const mostrarSubheaders  = serviciosRegulares.length > 0 && serviciosPromo.length > 0;
-
-  // Última fila visible de la lista — no lleva línea divisoria: justo abajo
-  // ya está el divisor de la nota, y las dos juntas se leían como
-  // ruido. Los divisores entre filas quedan; solo se saca el que colgaba al
-  // final de la lista.
-  const ultimoServicioId = (serviciosPromo.length > 0 ? serviciosPromo : serviciosRegulares).at(-1)?.id;
 
   // Densidad — la tarjeta ocupa el alto COMPLETO del canvas a propósito (ver
   // estilos.ts, 2026-08-18 octava actualización). El canvas es fijo, así que
@@ -174,6 +182,10 @@ export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'cent
   );
   const d: DensidadTokens = NIVELES_DENSIDAD[nivel];
   const { rowGap, groupGap, rowPaddingY } = d;
+  const fuenteNombre = FUENTE_NOMBRE_CARTA[nivel];
+  const fuentePrecio = FUENTE_PRECIO_CARTA[nivel];
+  const fuenteSubtitulo = FUENTE_SUBTITULO_CARTA[nivel];
+  const colorSubtitulo  = tokens.claro ? SUBTITULO_OSCURO : SUBTITULO_CLARO;
   const justifyContent = align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : 'center';
   return (
     <div
@@ -191,7 +203,7 @@ export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'cent
         data-densidad={nivel}
         style={{
           display: 'flex', flexDirection: 'column',
-          padding: `${d.cardPaddingY}px 20px`, borderRadius: esPanel ? 12 : 18,
+          padding: `${d.cardPaddingY}px 24px`, borderRadius: esPanel ? 12 : 20,
           background: tokens.cardBackground,
           border: `1px solid ${tokens.cardBorder}`,
           // Sombra más sutil (era 4px/16px blur — 5x más difusa que
@@ -202,26 +214,24 @@ export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'cent
           boxShadow: esPanel ? 'none' : '0 2px 8px rgba(0,0,0,0.10)',
         }}
       >
-        {/* Nombre en minúscula/oración (no versalita con tracking) y precio
-            a un tamaño/peso mucho más parejo con el nombre — la referencia
-            no hace que ninguno de los dos "grite" sobre el otro, la
-            jerarquía es puramente posicional (izq/der), no tipográfica.
-            Línea divisoria bajo cada fila (tokens.dividerColor, ver mock v0)
-            — reemplaza el espaciado puro sin bordes de la versión anterior. */}
+        {/* Estilo "carta": nombre en serif a la izquierda, una línea de
+            puntos (la misma de la lista de días de la historia de turnos) y el
+            precio en sans a la derecha. Sin línea divisoria por fila: la guía
+            de puntos ya une cada nombre con su precio. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: groupGap }}>
           {serviciosRegulares.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
-              {mostrarSubheaders && <SectionPill texto={t('sectionServicios')} accent={accent} accentBg={accentBg} />}
+              {mostrarSubheaders && <SectionLabel texto={t('sectionServicios')} accent={colorSubtitulo} fuente={fuenteSubtitulo} />}
               {serviciosRegulares.map(servicio => (
-                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} fuenteNombre={d.fuenteNombre} fuentePrecio={d.fuentePrecio} sinBorde={servicio.id === ultimoServicioId} />
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} fuenteNombre={fuenteNombre} fuentePrecio={fuentePrecio} />
               ))}
             </div>
           )}
           {serviciosPromo.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
-              {mostrarSubheaders && <SectionPill texto={t('sectionPromociones')} accent={accent} accentBg={accentBg} />}
+              {mostrarSubheaders && <SectionLabel texto={t('sectionPromociones')} accent={colorSubtitulo} fuente={fuenteSubtitulo} />}
               {serviciosPromo.map(servicio => (
-                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} fuenteNombre={d.fuenteNombre} fuentePrecio={d.fuentePrecio} sinBorde={servicio.id === ultimoServicioId} />
+                <FilaServicio key={servicio.id} servicio={servicio} tokens={tokens} paddingY={rowPaddingY} fuenteNombre={fuenteNombre} fuentePrecio={fuentePrecio} />
               ))}
             </div>
           )}
@@ -234,30 +244,28 @@ export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'cent
             historia de turnos. */}
         {nota && (
           <div
+            data-testid="tarjeta-nota"
             style={{
-              marginTop: d.footerMarginTop, paddingTop: d.footerPaddingTop, borderTop: `1px solid ${tokens.dividerColor}`,
+              marginTop: d.footerMarginTop, paddingTop: d.footerPaddingTop,
+              // Hilo fino con degradado (nace en el borde izquierdo, como el
+              // del encabezado y el pie) en vez de una línea plana.
+              backgroundImage: `linear-gradient(90deg, ${tokens.dividerColor}, rgba(0,0,0,0))`,
+              backgroundSize: '100% 1px', backgroundRepeat: 'no-repeat', backgroundPosition: 'top',
             }}
           >
-            {/* Recuadro con el tinte grafito (accentBg, mismo que
-                SectionPill) — la nota pasó de letra chica al pie a "leé
-                esto": el cliente tiene que verla (seña, retiro aparte,
-                etc.). Texto en `accent`, no en nombreColor apagado, para
-                que se lea de verdad sin gritar más que la lista de precios. */}
-            <div
+            {/* La nota (seña, retiro aparte, etc.) va en serif cursiva, con la
+                voz de la marca, en vez del recuadro tintado de antes. Texto en
+                `accent`, no en nombreColor apagado, para que se lea de verdad
+                sin gritar más que la lista de precios. */}
+            <p
               style={{
-                width: '100%', boxSizing: 'border-box',
-                backgroundColor: accentBg, borderRadius: 10, padding: '8px 12px',
+                margin: 0, whiteSpace: 'pre-line', textAlign: notaAlineacion,
+                fontFamily: agendaFontSerif, fontStyle: 'italic', fontSize: 11.5, fontWeight: 400,
+                lineHeight: 1.5, color: accent,
               }}
             >
-              <p
-                style={{
-                  margin: 0, whiteSpace: 'pre-line', textAlign: notaAlineacion,
-                  fontSize: 9, fontWeight: 400, lineHeight: 1.55, color: accent,
-                }}
-              >
-                {nota}
-              </p>
-            </div>
+              {nota}
+            </p>
           </div>
         )}
       </div>
@@ -265,23 +273,36 @@ export function TarjetaPrecios({ tokens, servicios, nota, notaAlineacion = 'cent
   );
 }
 
-// SectionPill — header de sección ("SERVICIOS"/"PROMOCIONES"): label en
-// negrita dentro de un pill + regla horizontal que llena el resto del ancho.
-// Reemplaza el span de 9px/opacidad 0.55 de antes, que se fundía con el
-// fondo (feedback real: "no resaltan los subtítulos/categorías"). Sin ícono
-// — versión anterior lo tenía (mano/regalo), feedback real: "no me convence,
-// quitarlos". `accent`/`accentBg` llegan resueltos desde TarjetaPrecios (ya
-// eligió la variante clara/oscura según tokens.claro) — este componente no
-// decide el color, solo lo aplica.
-function SectionPill({ texto, accent, accentBg }: { texto: string; accent: string; accentBg: string }) {
+// SectionLabel — subtítulo de sección ("Servicios"/"Promociones"): una palabra en
+// serif cursiva, con la misma voz que el título del encabezado, + un hilo que
+// nace pegado a la palabra y se desvanece hacia la derecha (el mismo degradado
+// de las líneas del encabezado y el pie). Sin ícono — versión anterior lo tenía
+// (mano/regalo), feedback real: "no me convence, quitarlos". `accent` llega
+// resuelto desde TarjetaPrecios (ya eligió la variante clara/oscura según
+// tokens.claro) — este componente no decide el color, solo lo aplica.
+function SectionLabel({ texto, accent, fuente }: { texto: string; accent: string; fuente: number }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ backgroundColor: accentBg, borderRadius: 999, padding: '5px 14px' }}>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: accent }}>
-          {texto}
-        </span>
-      </div>
-      <div style={{ flex: 1, height: 1, backgroundColor: accentBg }} />
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+      {/* Color pleno (los nombres de las filas van al 75%) y peso 500: el
+          subtítulo tiene que mandar sobre los servicios, no igualarlos. */}
+      <span
+        data-testid="tarjeta-subtitulo"
+        style={{
+          fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 500, fontSize: fuente,
+          lineHeight: 1, letterSpacing: '-0.02em', color: accent,
+        }}
+      >
+        {texto}
+      </span>
+      {/* En baseline el borde inferior de un hueco cae sobre la línea base:
+          se sube unos px para que el hilo quede a media altura de la palabra. */}
+      <div
+        aria-hidden
+        style={{
+          flex: 1, height: 1, opacity: 0.4, transform: 'translateY(-4px)',
+          background: `linear-gradient(90deg, ${accent}, rgba(0,0,0,0))`,
+        }}
+      />
     </div>
   );
 }
@@ -290,23 +311,34 @@ function SectionPill({ texto, accent, accentBg }: { texto: string; accent: strin
 // servicios y el de promociones (ver split por es_promo en TarjetaPrecios).
 // `paddingY` llega desde TarjetaPrecios (ver NIVELES_DENSIDAD) — mismo criterio de
 // densidad que el resto de la tarjeta, no un valor propio.
-function FilaServicio({ servicio, tokens, paddingY, fuenteNombre, fuentePrecio, sinBorde = false }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number; fuenteNombre: number; fuentePrecio: number; sinBorde?: boolean }) {
+function FilaServicio({ servicio, tokens, paddingY, fuenteNombre, fuentePrecio }: { servicio: Servicio; tokens: EstiloTokens; paddingY: number; fuenteNombre: number; fuentePrecio: number }) {
   return (
     <div
       style={{
-        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
-        paddingBottom: sinBorde ? 0 : paddingY,
-        borderBottom: sinBorde ? undefined : `1px solid ${tokens.dividerColor}`,
+        display: 'flex', alignItems: 'baseline', paddingBottom: paddingY,
       }}
     >
       <span
         style={{
-          flex: 1, minWidth: 0, fontSize: fuenteNombre, fontWeight: 400, letterSpacing: 0.2,
+          flex: '0 1 auto', minWidth: 0, fontFamily: agendaFontSerif, fontSize: fuenteNombre, fontWeight: 400,
+          letterSpacing: '-0.01em', lineHeight: 1.15,
           color: tokens.nombreColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}
       >
         {servicio.nombre}
       </span>
+      {/* Guía de puntos: ocupa lo que sobra entre el nombre y el precio. Con
+          baseline, el borde inferior de un hueco cae sobre la línea base del
+          texto; se sube unos px para que quede a media altura de las
+          minúsculas. Opacidad aparte para no teñir también el texto. */}
+      <span
+        aria-hidden
+        data-testid="tarjeta-guia"
+        style={{
+          flex: 1, minWidth: 14, margin: '0 10px', opacity: 0.4,
+          borderBottom: `1px dotted ${tokens.nombreColor}`, transform: 'translateY(-4px)',
+        }}
+      />
       <span
         style={{
           // tokens.precioFontWeight (no un valor fijo): varía por plantilla

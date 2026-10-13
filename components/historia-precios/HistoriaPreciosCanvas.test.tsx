@@ -4,7 +4,7 @@ import { within } from '@testing-library/react';
 import type { Servicio } from '@/services/servicioService';
 import { TEMPLATES } from './catalogo';
 import { HistoriaPreciosCanvas, FOOTER_RESERVA, BASE_HEIGHT } from './HistoriaPreciosCanvas';
-import { reservaSuperiorEncabezado, alturaZonaEncabezado } from './EncabezadoHistoria';
+import { reservaSuperiorEncabezado, alturaZonaEncabezado, ENCABEZADO_PADDING_X } from './EncabezadoHistoria';
 
 function servicio(id: number): Servicio {
   return {
@@ -44,8 +44,17 @@ describe('HistoriaPreciosCanvas · pie', () => {
     const pie = screen.getByTestId('historia-precios-pie');
     expect(within(pie).getByText('Salón Luz')).toBeTruthy();
     expect(within(pie).queryByText('Ana')).toBeNull();
-    expect(screen.getByTestId('encabezado-linea').textContent).toMatch(/^con Ana · /);
+    expect(screen.getByTestId('encabezado-linea').textContent).toMatch(/con Ana$/);
     expect(screen.getAllByText('Reservá tu turno')).toHaveLength(1);
+  });
+
+  it('el pie arranca en el mismo eje izquierdo que el encabezado', () => {
+    renderCanvas();
+    const pie = screen.getByTestId('historia-precios-pie');
+    const encabezado = screen.getByTestId('encabezado-historia');
+    expect(pie.style.paddingLeft).toBe(`${ENCABEZADO_PADDING_X}px`);
+    expect(pie.style.paddingRight).toBe(`${ENCABEZADO_PADDING_X}px`);
+    expect(encabezado.style.paddingLeft).toBe(`${ENCABEZADO_PADDING_X}px`);
   });
 
   it('sin teléfono muestra solo el nombre', () => {
@@ -69,7 +78,7 @@ describe('HistoriaPreciosCanvas · pie', () => {
 describe('HistoriaPreciosCanvas · subtítulo', () => {
   it('pasa el subtítulo al encabezado', () => {
     renderCanvas({ subtitulo: 'Pies' });
-    expect(screen.getByTestId('encabezado-titulo').textContent).toBe('Pies');
+    expect(screen.getByTestId('encabezado-titulo').textContent).toBe('Precios de Pies');
   });
   it('sin subtítulo el título es "Precios" y la línea no arranca con "con"', () => {
     renderCanvas();
@@ -85,7 +94,7 @@ describe('HistoriaPreciosCanvas · encabezado sobre la foto', () => {
     expect(within(screen.getByTestId('tarjeta-card')).queryByTestId('encabezado-historia')).toBeNull();
     expect((screen.getByTestId('encabezado-foto') as HTMLImageElement).getAttribute('src')).toBe('data:image/png;base64,eA==');
     expect(screen.getByTestId('encabezado-serie').textContent).toBe('2/5');
-    expect(screen.getByTestId('encabezado-linea').textContent).toMatch(/^Precios · con Ana · /);
+    expect(screen.getByTestId('encabezado-linea').textContent).toMatch(/con Ana2\/5$/);
     expect(screen.getByTestId('encabezado-titulo').style.color).toBe('rgb(255, 255, 255)');
     expect(within(screen.getByTestId('historia-precios-pie')).getByText('Salón Luz')).toBeTruthy();
   });

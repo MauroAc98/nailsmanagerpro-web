@@ -118,6 +118,73 @@ describe('TarjetaPrecios · ajuste al contenido', () => {
   });
 });
 
+describe('TarjetaPrecios · estilo carta', () => {
+  it('cada fila lleva nombre en serif, guía de puntos y precio, sin línea divisoria', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ servicios: lista(3) });
+    expect(screen.getAllByTestId('tarjeta-guia')).toHaveLength(3);
+    const nombre = screen.getByText('Servicio 1');
+    expect(nombre.style.fontFamily).toContain('--font-agenda-serif');
+    const fila = nombre.parentElement as HTMLElement;
+    expect(fila.style.borderBottom).toBe('');
+    expect((screen.getAllByTestId('tarjeta-guia')[0] as HTMLElement).style.borderBottom).toContain('dotted');
+  });
+
+  it('con servicios y promociones, los subtítulos van en serif cursiva y más grandes que un nombre', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ servicios: [servicio(1), servicio(2, { es_promo: true })] });
+    const subtitulos = screen.getAllByTestId('tarjeta-subtitulo');
+    expect(subtitulos.map(s => s.textContent)).toEqual(['Servicios', 'Promociones']);
+    for (const s of subtitulos) {
+      expect(s.style.fontStyle).toBe('italic');
+      expect(s.style.fontFamily).toContain('--font-agenda-serif');
+      expect(s.style.textTransform).toBe('');
+      expect(parseFloat(s.style.fontSize)).toBeGreaterThan(parseFloat(screen.getByText('Servicio 1').style.fontSize));
+      // Manda sobre los nombres: más grueso y en color pleno (no el ~75% de las filas).
+      expect(s.style.fontWeight).toBe('500');
+      expect(s.style.color).not.toBe(screen.getByText('Servicio 1').style.color);
+    }
+  });
+
+  it('con un solo grupo no muestra subtítulos', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ servicios: lista(3) });
+    expect(screen.queryByTestId('tarjeta-subtitulo')).toBeNull();
+  });
+
+  it('no muestra la duración del servicio', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ servicios: [servicio(1, { duracion_minutos: 90 })] });
+    expect(within(card()).queryByText(/90/)).toBeNull();
+    expect(within(card()).queryByText(/min/i)).toBeNull();
+  });
+
+  it('la tarjeta arranca en el mismo eje de 18px que el encabezado y el pie', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta();
+    const c = screen.getByTestId('tarjeta-contenedor');
+    expect(c.style.paddingLeft).toBe('18px');
+    expect(c.style.paddingRight).toBe('18px');
+  });
+
+  it('el nombre baja de tamaño con la densidad pero nunca del piso de 12px', () => {
+    alturasPorNivel = [1200, 1100, 1000, 900];
+    renderTarjeta();
+    expect(parseFloat(screen.getByText('Servicio 1').style.fontSize)).toBeGreaterThanOrEqual(12);
+  });
+
+  it('la nota va en serif cursiva con un hilo arriba, sin recuadro tintado', () => {
+    alturasPorNivel = [500, 400, 300, 250];
+    renderTarjeta({ nota: 'Seña del 50%' });
+    const p = screen.getByText('Seña del 50%');
+    expect(p.style.fontStyle).toBe('italic');
+    expect(p.style.fontFamily).toContain('--font-agenda-serif');
+    const caja = screen.getByTestId('tarjeta-nota');
+    expect(caja.style.backgroundImage).toContain('linear-gradient');
+    expect(p.parentElement).toBe(caja);
+  });
+});
+
 describe('TarjetaPrecios · pie fuera de la tarjeta', () => {
   it('no renderiza CTA ni teléfono dentro de la tarjeta; la nota sigue al pie', () => {
     alturasPorNivel = [500, 400, 300, 250];

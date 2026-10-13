@@ -6,7 +6,7 @@ import { Servicio } from '@/services/servicioService';
 import { TEMPLATES } from './catalogo';
 import { TarjetaPrecios } from './TarjetaPrecios';
 import { PieContacto } from '@/components/historia/PieContacto';
-import { EncabezadoHistoria, alturaZonaEncabezado, reservaSuperiorEncabezado } from './EncabezadoHistoria';
+import { EncabezadoHistoria, ENCABEZADO_PADDING_X, alturaZonaEncabezado, reservaSuperiorEncabezado } from './EncabezadoHistoria';
 import type { ResultadoDensidad } from '@/lib/historiaDensidad';
 
 export const BASE_WIDTH  = 420;
@@ -23,7 +23,9 @@ export const BASE_HEIGHT = (BASE_WIDTH * 16) / 9;
 const FOOTER_ALTO = 72;
 const FOOTER_PADDING_BOTTOM = Math.round(BASE_HEIGHT * 0.07);
 export const FOOTER_RESERVA = FOOTER_ALTO + FOOTER_PADDING_BOTTOM;
-const FOOTER_PADDING_X = 40;
+// Mismo margen lateral que el encabezado: el pie ya no va centrado sino alineado
+// a la izquierda, así que los dos tienen que arrancar en el mismo eje.
+const FOOTER_PADDING_X = ENCABEZADO_PADDING_X;
 
 interface Props {
   templateId:    TemplateId;
