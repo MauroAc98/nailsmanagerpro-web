@@ -53,6 +53,7 @@
     "tomado": "Esse horário acabou de ser ocupado. Escolha outro.",
     "labelHora": "Escolha o horário",
     "resumenLibres": "{n, plural, one {# horário livre} other {# horários livres}} · de {desde} a {hasta}",
+    "resumenUnHorario": "Resta 1 horário livre: {hora}",
     "ocupaRango": "Seu atendimento ocupa de <b>{inicio}</b> a <b>{fin}</b>.",
     "irProximoDia": "Ir para o próximo dia com vaga",
     "elegirOtroDia": "Escolher outro dia",

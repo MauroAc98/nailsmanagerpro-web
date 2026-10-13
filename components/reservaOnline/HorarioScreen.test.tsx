@@ -131,6 +131,21 @@ describe('HorarioScreen', () => {
     await waitFor(() => expect(horasDeLaRueda()).not.toContain('14:00'));
   });
 
+  it('con un solo horario libre no inventa un rango ("de 13:15 a 13:15"): dice cuál queda', async () => {
+    const base = prepararServicio();
+    setServiceParaTests({
+      ...base,
+      getAvailability: async (slug, q) => {
+        const r = await base.getAvailability(slug, q);
+        return { ...r, slots: r.slots.slice(0, 1) };
+      },
+    });
+    renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+    await irAlDia('2026-09-21');
+    expect(await screen.findByText(/^Queda 1 horario libre: \d{2}:\d{2}$/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 horario libre · de/)).toBeNull();
+  });
+
   it('muestra el resumen de horarios libres (plural) con el rango de la rueda', async () => {
     renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
     await irAlDia('2026-09-21');
