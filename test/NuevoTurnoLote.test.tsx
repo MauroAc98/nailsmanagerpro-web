@@ -54,7 +54,7 @@ function montar(search = 'fecha=2099-06-10') {
   vi.mocked(servicioService.getOne).mockResolvedValue(combo);
   useServiciosStore.setState({ servicios: [manicura, softgel, combo], fetchServicios: vi.fn() });
   useProfesionalStore.setState({ profesionales: [ana], fetchProfesionales: vi.fn() });
-  useClientesStore.setState({ clientes: [marta], fetchClientes: vi.fn() });
+  useClientesStore.setState({ clientes: [marta], clientesPagina: [marta], fetchClientes: vi.fn(), cargarPrimeraPagina: vi.fn(), cargarSiguientePagina: vi.fn() });
   useSlotsStore.setState({ slots: [{ id: 1, hora: '09:00', activo: true }, { id: 2, hora: '18:00', activo: true }] as never, fetchSlots: vi.fn(), loading: false, ultimoProfesionalIdSolicitado: null });
   useBloqueosAgendaStore.setState({ bloqueos: [], fetchBloqueos: vi.fn() });
   useTurnoStore.setState({ turnos: [], fetchTurnos: vi.fn(), crearTurno, crearLote });
