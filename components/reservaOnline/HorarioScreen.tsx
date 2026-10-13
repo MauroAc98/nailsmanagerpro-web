@@ -88,6 +88,8 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
   const [ahoraMs] = useState(() => ahora());
   const hoy = hoyDelSalon(ahoraMs);
   const [fechaSel, setFechaSel] = useState<string>(() => fechaGuardada ?? hoy);
+  // Si la persona abrio "Quien te atiende" (ver abajo, donde se arma el resumen).
+  const [quienAbiertoPorPersona, setQuienAbiertoPorPersona] = useState(false);
   // Retencion: al entrar se suelta el hold anterior (si lo habia) ANTES de pedir
   // horarios, asi el horario propio vuelve a figurar libre.
   const [liberado, setLiberado] = useState(false);
@@ -255,6 +257,21 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
     : profesionalId === 'any'
       ? []
       : [nombreDe(profesionalId)];
+  // El bloque "Quien te atiende" arranca plegado (una fila con "Cambiar"): la eleccion
+  // por defecto, "Cualquiera", no tiene por que ocupar media pantalla. Se despliega
+  // solo cuando hay algo que la persona tiene que ver: el aviso de que su eleccion
+  // anterior ya no sirve, o que nadie hace todos los servicios juntos.
+  const quienForzado = !!avisoReset || sinPersonaUnica;
+  const quienAbierto = quienAbiertoPorPersona || quienForzado;
+  // Quienes se muestran apiladas en la fila plegada: las elegidas, o las que
+  // podrian atender si es "Cualquiera".
+  const avataresResumen = (
+    asignaciones
+      ? [...new Set(asignaciones.map((g) => g.profesionalId ?? 0))].map((id) => salon?.profesionales.find((p) => p.id === id))
+      : profesionalId === 'any'
+        ? (compatibles ?? salon?.profesionales ?? []).slice(0, 3)
+        : [salon?.profesionales.find((p) => p.id === profesionalId)]
+  ).filter((p): p is NonNullable<typeof p> => !!p);
   const resumenElegido = nombresElegidos.length
     ? t('horario.resumenCon', {
         nombres: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(nombresElegidos),
@@ -404,6 +421,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
       {salon && salon.profesionales.length > 1 && !hayPromoFija && !(opciones && compatibles) && <QuienSkeleton />}
       {salon && servicios && opciones && compatibles && !hayPromoFija && (asignaciones || compatibles.length > 0) && (
         <QuienTeAtiende
+          plegado={!quienAbierto}
+          onCambiar={() => setQuienAbiertoPorPersona(true)}
+          onListo={quienAbiertoPorPersona && !quienForzado ? () => setQuienAbiertoPorPersona(false) : undefined}
+          avatares={avataresResumen}
           puedeElegirModo={puedeDividir && !sinPersonaUnica}
           porServicio={!!asignaciones}
           onModo={(porServicio) => {
