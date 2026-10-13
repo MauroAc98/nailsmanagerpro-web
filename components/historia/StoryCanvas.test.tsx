@@ -132,11 +132,30 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
     expect(screen.getByText('Completo')).toBeInTheDocument();
   });
 
-  it('la foto es un círculo con anillo (box-shadow, nunca filter)', () => {
+  it('la foto es un círculo con anillo hecho de bordes (nunca filter ni box-shadow)', () => {
     renderCanvas('https://cdn.turnetto.com/logo.jpg', unDia);
     const logo = screen.getAllByAltText('').find(img => (img as HTMLImageElement).src.includes('logo.jpg')) as HTMLImageElement;
     expect(logo.style.borderRadius).toBe('50%');
-    expect(logo.style.boxShadow).not.toBe('');
+    // Safari (html-to-image -> SVG foreignObject) pinta mal el halo de un box-shadow con
+    // spread sobre un elemento redondeado: lo dibuja relleno y tapa parte de la foto
+    // (real en prod 2026-10-13). El anillo se arma con dos bordes concéntricos.
+    expect(logo.style.boxShadow).toBe('');
+    const insignia = screen.getByTestId('story-insignia');
+    expect(insignia.style.boxShadow).toBe('');
+    const anillos = insignia.querySelectorAll('[data-anillo]');
+    expect(anillos).toHaveLength(2);
+    for (const a of Array.from(anillos) as HTMLElement[]) {
+      expect(a.style.borderRadius).toBe('50%');
+      expect(a.style.boxShadow).toBe('');
+      expect(a.style.borderStyle).toBe('solid');
+    }
+  });
+
+  it('el chip de fecha (sin foto) también arma su anillo con bordes, sin box-shadow', () => {
+    renderCanvas(null, unDia);
+    const insignia = screen.getByTestId('story-insignia');
+    expect(insignia.querySelectorAll('[data-anillo]')).toHaveLength(2);
+    expect(insignia.innerHTML).not.toMatch(/box-shadow/);
   });
 
   it('modo día, sin logoUrl (negocio sin foto subida): se ve el chip de fecha de siempre', () => {

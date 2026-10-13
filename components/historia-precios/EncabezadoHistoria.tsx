@@ -6,6 +6,7 @@ import { Tag } from 'lucide-react';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { nombreMes } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
+import { AnilloInsignia } from '@/components/historia/AnilloInsignia';
 import { FitText } from '@/components/historia/FitText';
 
 // Medidas del encabezado sobre la foto. Constantes (no medidas) y compartidas
@@ -59,9 +60,6 @@ interface Props {
   serie?:       { actual: number; total: number };
   canvasHeight: number;
 }
-
-// Anillo de la insignia: box-shadow (nunca `filter`), igual que la de turnos.
-const ANILLO = '0 0 0 1.5px rgba(255,255,255,0.85), 0 0 0 4.5px rgba(255,255,255,0.22)';
 
 // "Uñas y Pestañas" -> "Uñas y " + <em>Pestañas</em>: la palabra clave en
 // cursiva, igual que "Turnos de <em>Lash</em>" en la historia de turnos.
@@ -159,29 +157,29 @@ export function EncabezadoHistoria({ titulo, subtitulo, profesionalNombre, logoU
           />
         </div>
       </div>
-      {logoUrl ? (
-        <img
-          data-testid="encabezado-foto"
-          src={logoUrl}
-          alt=""
-          style={{
-            flexShrink: 0, width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: '50%', objectFit: 'cover',
-            boxShadow: ANILLO,
-          }}
-        />
-      ) : (
-        <span
-          data-testid="encabezado-icono"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: '50%',
-            boxShadow: ANILLO,
-            background: 'linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08))',
-          }}
-        >
-          <Tag size={20} color="#fff" strokeWidth={2} />
-        </span>
-      )}
+      <AnilloInsignia tamano={ENCABEZADO_TILE}>
+        {logoUrl ? (
+          <img
+            data-testid="encabezado-foto"
+            src={logoUrl}
+            alt=""
+            style={{
+              position: 'relative', width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: '50%', objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <span
+            data-testid="encabezado-icono"
+            style={{
+              position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: ENCABEZADO_TILE, height: ENCABEZADO_TILE, borderRadius: '50%',
+              background: 'linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08))',
+            }}
+          >
+            <Tag size={20} color="#fff" strokeWidth={2} />
+          </span>
+        )}
+      </AnilloInsignia>
     </div>
   );
 }
