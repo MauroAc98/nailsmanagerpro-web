@@ -51,6 +51,9 @@
     "retry": "Reintentar",
     "dismiss": "Cerrar aviso"
   },
+  "ConexionBanner": {
+    "message": "Sin conexión a internet. La información podría no estar actualizada y los cambios no se guardarán hasta que se restablezca la conexión."
+  },
   "ThemeToggle": {
     "toDark": "Cambiar a modo oscuro",
     "toLight": "Cambiar a modo claro"
@@ -170,7 +173,8 @@
     "alertButtonDefault": "OK"
   },
   "Errors": {
-    "unexpectedError": "Error inesperado"
+    "unexpectedError": "Error inesperado",
+    "networkError": "No se pudo conectar con el servidor. Revise su conexión a internet e intente nuevamente."
   },
   "SelectorServicios": {
     "filterPlaceholder": "Buscar servicio...",

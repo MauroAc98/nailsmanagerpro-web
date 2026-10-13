@@ -8,6 +8,11 @@ import { useLocaleStore, setLocale, tStatic } from '@/store/useLocaleStore';
 import { logAuthEvent } from '@/lib/logAuthEvent';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { limpiarCachesDeSesion } from '@/lib/limpiarCachesSw';
+import { esErrorDeRed } from '@/services/clienteService';
+
+// Sin red un login/perfil fallido no debe leerse como "credenciales
+// incorrectas" ni como un error genérico: se avisa del problema de conexión.
+const sinRed = (e: unknown) => (esErrorDeRed(e) ? tStatic('common.Errors.networkError') : undefined);
 
 // sessionStorage (no localStorage): sobrevive a un refresh accidental dentro
 // de la misma pestaña, pero se limpia al cerrarla — evita repetir la
@@ -428,6 +433,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
       } catch (e: any) {
         const message =
+          sinRed(e) ??
           e.response?.data?.message ??
           e.response?.data?.errors?.email?.[0] ??
           tStatic('auth.Errors.loginFailed');
@@ -468,6 +474,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
       } catch (e: any) {
         const message =
+          sinRed(e) ??
           e.response?.data?.message ??
           e.response?.data?.errors?.password_actual?.[0] ??
           tStatic('auth.Errors.passwordUpdateFailed');
@@ -541,7 +548,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const user = await authService.updatePerfil(data);
         set({ user, loading: false });
       } catch (e: any) {
-        const message = e.response?.data?.message ?? tStatic('auth.Errors.profileUpdateFailed');
+        const message = sinRed(e) ?? e.response?.data?.message ?? tStatic('auth.Errors.profileUpdateFailed');
         set({ loading: false, error: message });
         throw e;
       }
@@ -576,6 +583,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
       } catch (e: any) {
         const message =
+          sinRed(e) ??
           e.response?.data?.message ??
           e.response?.data?.errors?.email?.[0] ??
           tStatic('auth.Errors.codeSendFailed');
@@ -597,6 +605,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
       } catch (e: any) {
         const message =
+          sinRed(e) ??
           e.response?.data?.message ??
           e.response?.data?.errors?.code?.[0] ??
           tStatic('auth.Errors.passwordUpdateFailed');
