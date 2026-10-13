@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agendaColors';
+import { Spinner } from '@/components/Spinner';
 import { MapaErrorBoundary } from './MapaErrorBoundary';
 
 // `MapaPicker` es lo único que toca `window`/Leaflet (design D3) — se carga
@@ -13,7 +14,13 @@ import { MapaErrorBoundary } from './MapaErrorBoundary';
 // las APIs de Leaflet).
 const MapaPicker = dynamic(() => import('./MapaPicker').then(m => m.MapaPicker), {
   ssr: false,
-  loading: () => null,
+  // Mismo spinner sobre negro que el loader inicial del propio mapa: el paso de
+  // "bajando el módulo" a "cargando tiles" no parpadea.
+  loading: () => (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Spinner size={40} variante="sobreOscuro" />
+    </div>
+  ),
 });
 
 interface Props {

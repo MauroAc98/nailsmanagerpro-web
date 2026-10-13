@@ -107,6 +107,8 @@ export function SheetDatosPersonales({
   // puntual en vez de dejar un ícono de imagen rota; una ubicación nueva
   // genera otra URL y vuelve a intentar.
   const [urlFallida, setUrlFallida] = useState<string | null>(null);
+  // URL cuya imagen ya terminó de cargar; la vista previa se muestra recién entonces.
+  const [urlCargada, setUrlCargada] = useState<string | null>(null);
   const urlVistaPrevia = ubicacionCargada
     ? urlMapaEstatico(latitud as number, longitud as number, process.env.NEXT_PUBLIC_LOCATIONIQ_KEY)
     : null;
@@ -273,10 +275,21 @@ export function SheetDatosPersonales({
             {urlVistaPrevia && urlVistaPrevia !== urlFallida && (
               // eslint-disable-next-line @next/next/no-img-element -- mapa estático externo (LocationIQ), no un asset optimizable
               <img
+                // Si la imagen ya estaba en caché, `load` pudo dispararse antes de enganchar
+                // onLoad: se revisa `complete` para no dejarla invisible para siempre.
+                ref={(el) => {
+                  if (el?.complete && el.naturalWidth > 0 && urlCargada !== urlVistaPrevia) setUrlCargada(urlVistaPrevia);
+                }}
                 src={urlVistaPrevia}
                 alt={t('locationPreviewAlt')}
+                onLoad={() => setUrlCargada(urlVistaPrevia)}
                 onError={() => setUrlFallida(urlVistaPrevia)}
-                style={{ display: 'block', width: '100%', height: 150, objectFit: 'cover', backgroundColor: colors.surfaceSubtle }}
+                style={{
+                  display: 'block', width: '100%', height: 150, objectFit: 'cover', backgroundColor: colors.surfaceSubtle,
+                  // Invisible hasta que termina de bajar (el gris de fondo hace de placeholder) y
+                  // aparece con un fundido: así nunca se ve el mapa dibujándose a pedazos.
+                  opacity: urlCargada === urlVistaPrevia ? 1 : 0, transition: 'opacity 0.25s ease',
+                }}
               />
             )}
             <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -37,8 +37,11 @@ function setup(overrides: Partial<Props> = {}) {
     onClose: vi.fn(),
     ...overrides,
   };
-  renderWithProviders(<SheetDatosPersonales {...props} />);
-  return props;
+  const vista = renderWithProviders(<SheetDatosPersonales {...props} />);
+  // Para volver a renderizar con otras props (p. ej. otra ubicación) sin perder el estado.
+  return Object.assign(props, {
+    rerenderCon: (nuevas: Partial<Props>) => vista.rerender(<SheetDatosPersonales {...props} {...nuevas} />),
+  });
 }
 
 describe('SheetDatosPersonales — teléfono', () => {
@@ -77,6 +80,29 @@ describe('SheetDatosPersonales — location card', () => {
     setup({ latitud: -27.4692, longitud: -58.8306 });
     const img = screen.getByRole('img', { name: 'Vista previa de la ubicación' });
     expect(img.getAttribute('src')).toContain('maps.locationiq.com/v3/staticmap');
+    vi.unstubAllEnvs();
+  });
+
+  it('loaded state: the preview stays hidden until the image finishes loading, so it never shows half-drawn', () => {
+    vi.stubEnv('NEXT_PUBLIC_LOCATIONIQ_KEY', 'abc123');
+    setup({ latitud: -27.4692, longitud: -58.8306 });
+    const img = screen.getByRole('img', { name: 'Vista previa de la ubicación' });
+    expect(img.style.opacity).toBe('0');
+
+    fireEvent.load(img);
+
+    expect(img.style.opacity).toBe('1');
+    vi.unstubAllEnvs();
+  });
+
+  it('loaded state: a new location hides the preview again until its own image loads', () => {
+    vi.stubEnv('NEXT_PUBLIC_LOCATIONIQ_KEY', 'abc123');
+    const props = setup({ latitud: -27.4692, longitud: -58.8306 });
+    fireEvent.load(screen.getByRole('img', { name: 'Vista previa de la ubicación' }));
+
+    props.rerenderCon({ latitud: -27.5, longitud: -58.9 });
+
+    expect(screen.getByRole('img', { name: 'Vista previa de la ubicación' }).style.opacity).toBe('0');
     vi.unstubAllEnvs();
   });
 

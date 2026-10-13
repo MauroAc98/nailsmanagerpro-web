@@ -121,6 +121,7 @@
     "mapSearchButton": "Buscar",
     "mapSearchNotFound": "Não encontramos esse endereço. Tente outro.",
     "mapUseGpsButton": "Usar minha localização",
+    "mapLoading": "Carregando o mapa",
     "mapUseGpsFailed": "Não conseguimos obter sua localização. Tente marcar no mapa.",
     "mapCancel": "Cancelar",
     "mapConfirm": "Pronto",
