@@ -1,25 +1,43 @@
 'use client';
 
-import { forwardRef, Fragment, useEffect, useRef, useState } from 'react';
+import { forwardRef, Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarDays } from 'lucide-react';
 import { DisponibilidadDia } from '@/services/turnoService';
 import { TextoLibre } from '@/hooks/useGenerarHistoria';
 import { TextoDraggable } from '@/components/historia/TextoDraggable';
 import { agendaFontSerif } from '@/theme/agendaColors';
 import { PieContacto } from '@/components/historia/PieContacto';
 import { FitText } from '@/components/historia/FitText';
-import { nombreDia as nombreDiaIntl } from '@/lib/dateFormat';
+import { nombreDia as nombreDiaIntl, nombreMes as nombreMesIntl } from '@/lib/dateFormat';
 import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
-import { ESPACIADO_LINEA_SERVICIOS, MAX_LINEAS_SERVICIOS, medirTextoServicios, repartirEnRenglones } from '@/lib/historiaServicios';
+import { MAX_LINEAS_SERVICIOS, TAMANO_LINEA_SERVICIOS, medirTextoServicios, repartirEnRenglones } from '@/lib/historiaServicios';
 
-function nombreDia(fecha: string): string {
+// Misma pila que el resto de la app (globals.css): la fila de horas va en serif
+// y los números vuelven a esta fuente para leerse parejos.
+const FUENTE_SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+function partesDia(fecha: string): { abrev: string; numero: number } {
   const d = new Date(fecha + 'T00:00:00');
   // Intl da la abreviatura de es-* con punto final ("jue.", "mié.") — se
   // saca acá para que en la imagen quede "JUE 3", no "JUE. 3".
-  const abrev = nombreDiaIntl(d, 'short', 'mayusculas').replace(/\.+$/, '');
-  return `${abrev} ${d.getDate()}`;
+  return { abrev: nombreDiaIntl(d, 'short', 'mayusculas').replace(/\.+$/, ''), numero: d.getDate() };
+}
+
+// ["10hs", "14hs"] -> números sueltos + "hs" una sola vez al final ("10 · 14 hs"),
+// así no se repite la unidad en cada hora. Si alguna hora tiene otro formato,
+// se muestran todas tal cual.
+function partirHoras(horas: string[]): { numeros: string[]; unidad: string | null } {
+  const partes = horas.map(h => /^(\d{1,2}(?::\d{2})?)\s*(hs)$/i.exec(h.trim()));
+  if (partes.length === 0 || !partes.every(Boolean)) return { numeros: horas, unidad: null };
+  return { numeros: partes.map(m => m![1]), unidad: partes[0]![2] };
+}
+
+// Punto medio entre horas, tenue para que mande el número.
+function SeparadorHoras() {
+  return (
+    <span data-testid="story-separador-hora" aria-hidden style={{ opacity: 0.55, margin: '0 0.45em', fontStyle: 'italic' }}>·</span>
+  );
 }
 
 interface Props {
@@ -76,22 +94,26 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const t = useTranslations('historia.StoryCanvas');
   const esModoDia = dias.length === 1;
 
-  // Chip de fecha en el header — solo tiene sentido en modo Día (una fecha
-  // puntual). En Semana/Mes no hay "un" día que mostrar ahí: inventar uno
-  // (el primero del rango, por ejemplo) sugeriría que solo ese día tiene
-  // turnos. Ahí el chip cae a un ícono genérico en vez de un número.
+  // Chip de fecha en el header — el número de día solo tiene sentido en modo
+  // Día (una fecha puntual). En Semana/Mes no hay "un" día que mostrar ahí:
+  // inventar uno (el primero del rango, por ejemplo) sugeriría que solo ese
+  // día tiene turnos. Ahí el chip muestra mes y año del primer día, que es
+  // verdad para un mes o una quincena (una semana que cruza de mes muestra el
+  // mes en que arranca).
   const fechaChip     = esModoDia && dias[0] ? new Date(dias[0].fecha + 'T00:00:00') : null;
   const chipDiaLabel  = fechaChip ? nombreDiaIntl(fechaChip, 'short', 'mayusculas') : null;
   const chipDiaNumero = fechaChip ? fechaChip.getDate() : null;
+  const fechaInicio   = dias[0] ? new Date(dias[0].fecha + 'T00:00:00') : null;
+  // Intl da la abreviatura con punto final ("oct.") — se saca como en nombreDia.
+  const chipMes  = fechaInicio ? nombreMesIntl(fechaInicio, 'short', 'primera').replace(/\.+$/, '') : '';
+  const chipAnio = fechaInicio ? String(fechaInicio.getFullYear()) : '';
 
-  // Un único diseño para todas las cuentas: "Turnos disponibles" de título y
-  // una sola línea chica "con {profesional} · {fecha}" (solo la fecha si no
-  // hay profesional). El nombre del negocio va siempre en el pie, junto al
-  // teléfono.
-  const lineaProfesional = profesionalNombre
-    ? t('withProfessional', { nombre: profesionalNombre })
-    : null;
-  const tituloPrincipal = t('availableTitle');
+  // Un único diseño para todas las cuentas: arriba una etiqueta chica
+  // "{fecha} — con {profesional}" (solo la fecha si no hay profesional) y
+  // debajo el título "Turnos disponibles", con la palabra clave en cursiva.
+  // El nombre del negocio va siempre en el pie, junto al teléfono.
+  const enNegrita = (chunks: ReactNode) => <b style={{ color: '#fff', fontWeight: 700 }}>{chunks}</b>;
+  const enCursiva = (chunks: ReactNode) => <em style={{ fontStyle: 'italic' }}>{chunks}</em>;
 
   // Safe area — Instagram/WhatsApp tapan el borde superior e inferior de la
   // historia con su propio chrome y, en celus más altos que 9:16, recortan
@@ -168,8 +190,8 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   // entre filas, así el total queda igual que en producción.
   const servicios = filtroServicios?.servicios ?? [];
   const conServicios = servicios.length > 0;
-  const ALTO_RENGLON_SERVICIOS = 13;
-  const SEPARACION_BAJADA = 12;
+  const ALTO_RENGLON_SERVICIOS = 14;
+  const SEPARACION_BAJADA = 10;
   const MARGEN_CON_SERVICIOS = 18;
   // Mismos renglones que mide el aviso de la hoja: el "·" solo va entre
   // servicios del mismo renglón, nunca al principio ni al final de uno.
@@ -198,39 +220,47 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
   const franjaEncabezado = tituloZonaAlto
     + Math.max(0, 44 + altoFranja - Math.round(canvasHeight * 0.10));
 
-  // Con logo cargado, la foto del negocio ocupa este mismo recuadro (mismo
-  // tamaño/radio que el chip de fecha) en los 3 modos — decisión 2026-09-30
-  // tras canvas de diseño: un badge de fecha superpuesto no escala a
-  // semana/mes. Sin logo, chip de fecha en modo Día, ícono genérico en
-  // Semana/Mes. La foto va a color y sin `filter` en vivo: html-to-image la
-  // rasteriza como SVG foreignObject y WebKit combina mal ese filtro — la
-  // historia entera salía negra en Safari (real en prod 2026-10-01).
+  // Con logo cargado, la foto del negocio (o de la profesional) ocupa este
+  // mismo círculo en los 3 modos — decisión 2026-09-30 tras canvas de diseño:
+  // un badge de fecha superpuesto no escala a semana/mes. Sin foto: la fecha
+  // en modo Día y mes + año en Semana/Mes, en un círculo de vidrio. El anillo
+  // es un box-shadow (no un `filter` en vivo: html-to-image rasteriza como SVG
+  // foreignObject y WebKit combina mal ese filtro — la historia entera salía
+  // negra en Safari, real en prod 2026-10-01).
+  const ANILLO_INSIGNIA = '0 0 0 1.5px rgba(255,255,255,0.85), 0 0 0 4.5px rgba(255,255,255,0.22)';
   const insignia = logoUrl ? (
     <img
       src={logoUrl}
       alt=""
       style={{
-        flexShrink: 0, width: 44, height: 44, borderRadius: 12,
-        objectFit: 'cover',
-        border: '1.5px solid rgba(255,255,255,0.6)',
+        flexShrink: 0, width: 44, height: 44, borderRadius: '50%',
+        objectFit: 'cover', boxShadow: ANILLO_INSIGNIA,
       }}
     />
   ) : (
     <span style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)',
+      flexShrink: 0, width: 44, height: 44, borderRadius: '50%', boxShadow: ANILLO_INSIGNIA,
+      background: 'linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08))', color: '#fff',
     }}>
       {chipDiaNumero !== null ? (
         <>
-          <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: 1, color: '#fff', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.18em', paddingLeft: '0.18em', textTransform: 'uppercase', opacity: 0.85 }}>
             {chipDiaLabel}
           </span>
-          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 19, lineHeight: 1, color: '#fff', marginTop: 1 }}>
+          <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 21, lineHeight: 1, marginTop: 1 }}>
             {chipDiaNumero}
           </span>
         </>
       ) : (
-        <CalendarDays size={18} color="#fff" strokeWidth={2} />
+        <>
+          <span style={{ fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, fontSize: 17, lineHeight: 1 }}>
+            {chipMes}
+          </span>
+          <span style={{ fontSize: 6.5, fontWeight: 700, letterSpacing: '0.2em', paddingLeft: '0.2em', opacity: 0.8, marginTop: 3 }}>
+            {chipAnio}
+          </span>
+        </>
       )}
     </span>
   );
@@ -333,50 +363,79 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                 en el titular y "Turnos disponibles con X · fecha" en la línea
                 chica (canvas con medidas reales, aprobado 2026-10-11). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-              {insignia}
-
-              <div style={{ minWidth: 0, flex: 1 }}>
-                {/* maxFontSize bajado (22->18, feedback 2026-08-17: quedaba
-                    muy grande al lado de la fecha). minFontSize sigue por
-                    encima del tope de FitText de los turnos en el body
-                    (maxFontSize 10) — el título nunca queda más chico que la
-                    info de los turnos. */}
-                <FitText
-                  text={conServicios && filtroServicios ? t('availableTitleFor', { categoria: filtroServicios.titulo }) : tituloPrincipal}
-                  maxFontSize={18}
-                  minFontSize={13}
+              {/* Texto a la izquierda, en el mismo borde que los días de la
+                  lista; la insignia queda de sello a la derecha. Etiqueta (10px)
+                  + 5px + título (24px) = 39px: entra en los 44px de la insignia,
+                  así el encabezado no crece. */}
+              <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                <div
+                  data-testid="story-kicker"
                   style={{
-                    fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
-                    letterSpacing: '-0.02em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    display: 'flex', alignItems: 'center', gap: 8, fontSize: 8, fontWeight: 700,
+                    letterSpacing: '0.2em', lineHeight: '10px', textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.72)', whiteSpace: 'nowrap', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                   }}
-                />
-                <span style={{
-                  display: 'block', marginTop: 4, fontSize: 11, fontWeight: 400,
-                  color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 6px rgba(0,0,0,0.85)',
-                }}>
-                  {lineaProfesional ? `${lineaProfesional} · ${titulo}` : titulo}
-                </span>
+                >
+                  <span>{titulo}</span>
+                  {profesionalNombre && (
+                    <>
+                      <span aria-hidden style={{ width: 16, height: 1, flexShrink: 0, background: 'rgba(255,255,255,0.55)' }} />
+                      <span>{t.rich('withProfessionalRich', { nombre: profesionalNombre, b: enNegrita })}</span>
+                    </>
+                  )}
+                </div>
+                {/* maxFontSize 24: con la fecha ya fuera de la fila del título
+                    (feedback 2026-08-17: 22 quedaba grande "al lado de la
+                    fecha") hay ancho de sobra. FitText lo baja hasta 13 si la
+                    categoría es larga — nunca por debajo de la info de los
+                    turnos del body (maxFontSize 10). */}
+                <div style={{ marginTop: 5 }}>
+                  <FitText
+                    testId="story-titulo"
+                    text={conServicios && filtroServicios
+                      ? t.rich('availableTitleFor', { categoria: filtroServicios.titulo, em: enCursiva })
+                      : t.rich('availableTitle', { em: enCursiva })}
+                    maxFontSize={24}
+                    minFontSize={13}
+                    style={{
+                      fontFamily: agendaFontSerif, fontWeight: 400, color: '#fff', textAlign: 'left',
+                      letterSpacing: '-0.025em', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.85)',
+                    }}
+                  />
+                </div>
               </div>
+
+              {insignia}
             </div>
 
             {conServicios && (
               <div
                 data-testid="story-servicios"
                 style={{
-                  marginTop: SEPARACION_BAJADA, fontSize: 9, fontWeight: 600, letterSpacing: ESPACIADO_LINEA_SERVICIOS,
-                  lineHeight: `${ALTO_RENGLON_SERVICIOS}px`, color: 'rgba(255,255,255,0.78)',
+                  marginTop: SEPARACION_BAJADA, fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400,
+                  fontSize: TAMANO_LINEA_SERVICIOS, lineHeight: `${ALTO_RENGLON_SERVICIOS}px`, color: 'rgba(255,255,255,0.88)',
                   textShadow: '0 2px 6px rgba(0,0,0,0.85)',
                   maxHeight: ALTO_RENGLON_SERVICIOS * MAX_LINEAS_SERVICIOS, overflow: 'hidden',
                 }}
               >
-                {/* Mayúsculas en el texto (no text-transform) para que la
-                    medición del aviso y la imagen exportada coincidan. */}
+                {/* Los nombres van tal cual se escriben (cursiva, sin
+                    mayúsculas ni espaciado) y se miden con la misma fuente
+                    (medirTextoServicios), así el aviso y la imagen coinciden. */}
                 {renglonesServicios.map((renglon, r) => (
                   <div key={r} style={{ whiteSpace: 'nowrap' }}>
                     {renglon.map((nombre, idx) => (
                       <Fragment key={idx}>
-                        {idx > 0 && <span style={{ opacity: 0.55 }}> ·&nbsp;&nbsp;</span>}
-                        <span>{nombre.toUpperCase()}</span>
+                        {idx > 0 && (
+                          <span
+                            data-testid="story-separador"
+                            aria-hidden
+                            style={{
+                              display: 'inline-block', width: 4, height: 4, margin: '0 6px', verticalAlign: 'middle',
+                              background: 'rgba(255,255,255,0.6)', transform: 'rotate(45deg)',
+                            }}
+                          />
+                        )}
+                        <span>{nombre}</span>
                       </Fragment>
                     ))}
                   </div>
@@ -387,7 +446,7 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
 
             <div
               data-testid="story-linea-encabezado"
-              style={{ height: 1, background: 'rgba(255,255,255,0.25)', marginTop: aireArribaLinea }}
+              style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0.45), rgba(255,255,255,0.04))', marginTop: aireArribaLinea }}
             />
 
             {/* Body */}
@@ -415,43 +474,77 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   {dias.map((dia, idx) => {
                     const slotsLibres = dia.slots.filter(s => s.libre);
                     const estaCompleto = slotsLibres.length === 0;
-                    const horasTexto = slotsLibres.map(s => s.hora).join(' · ');
+                    const { abrev, numero } = partesDia(dia.fecha);
 
                     return (
-                      <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                        {/* flexShrink:0 + whiteSpace:nowrap — sin esto, una
-                            fila con muchas horas ("09hs · 17hs · 19hs") le
-                            comía ancho a esta columna y al divisor, y los
-                            divisores de cada fila quedaban desalineados
-                            (ver pattern_flex_minwidth_long_names). */}
-                        <span style={{
-                          width: 52, flexShrink: 0, color: '#fff', fontSize: 10, fontWeight: 700,
-                          letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap',
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', lineHeight: '14px' }}>
+                        {/* Estilo "carta": el día a la izquierda, las horas a la
+                            derecha y una línea de puntos que las une. El día
+                            lleva flexShrink:0 + whiteSpace:nowrap y un ancho
+                            fijo — sin eso, una fila con muchas horas le comía
+                            ancho y las líneas de puntos de cada fila quedaban
+                            desalineadas (ver pattern_flex_minwidth_long_names).
+                            El día va en sans (abreviatura chica y tenue, número
+                            en negrita); la fila mide 14px, así la quincena no
+                            se aprieta. */}
+                        <span data-testid="story-dia" style={{
+                          width: 40, flexShrink: 0, color: '#fff', display: 'flex', alignItems: 'baseline',
+                          gap: 6, whiteSpace: 'nowrap',
                         }}>
-                          {nombreDia(dia.fecha)}
+                          <span style={{
+                            minWidth: 20, fontSize: 8, fontWeight: 700, letterSpacing: '0.16em',
+                            textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)',
+                          }}>
+                            {abrev}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{numero}</span>
                         </span>
-                        <div style={{ width: 1, height: 14, flexShrink: 0, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
+                        <span
+                          aria-hidden
+                          style={{
+                            flex: 1, minWidth: 12, margin: '0 8px', alignSelf: 'center',
+                            borderBottom: '1px dotted rgba(255,255,255,0.4)', transform: 'translateY(1px)',
+                          }}
+                        />
                         {estaCompleto ? (
                           // Blanco atenuado, no primaryRaw (verde salvia de
                           // marca del sistema): esta imagen la comparten los
                           // negocios que alquilan la app y el color del
                           // sistema no los representa — mismo criterio que el
                           // footer y que el acento de TarjetaPrecios. Además
-                          // "COMPLETO" es el estado SIN turnos, tiene que
+                          // "Completo" es el estado SIN turnos, tiene que
                           // recederse frente a las horas disponibles en
                           // blanco pleno, no gritar con un color.
                           <span style={{
-                            color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: 600,
-                            fontStyle: 'italic', letterSpacing: 0.5,
+                            color: 'rgba(255,255,255,0.5)', fontFamily: agendaFontSerif, fontSize: 12, fontStyle: 'italic', flexShrink: 0,
                           }}>
                             {t('complete')}
                           </span>
                         ) : (
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                          // flex 0 1 auto + maxWidth: el bloque mide lo que
+                          // miden las horas (queda pegado a la derecha) y solo
+                          // se achica si no entran en el ancho que deja el día.
+                          <div style={{ flex: '0 1 auto', minWidth: 0, maxWidth: canvasWidth - 36 - 40 - 28 }}>
                             <FitText
-                              text={horasTexto}
-                              maxFontSize={10}
-                              style={{ color: '#fff', fontWeight: 400, letterSpacing: 0.3 }}
+                              testId="story-horas"
+                              text={(() => {
+                                const { numeros, unidad } = partirHoras(slotsLibres.map(s => s.hora));
+                                return (
+                                  <>
+                                    {numeros.map((n, i) => (
+                                      <Fragment key={i}>
+                                        {i > 0 && <SeparadorHoras />}
+                                        <span style={{ fontFamily: FUENTE_SANS, fontStyle: 'normal', fontWeight: 500, fontSize: '0.875em', fontVariantNumeric: 'tabular-nums' }}>{n}</span>
+                                      </Fragment>
+                                    ))}
+                                    {unidad && (
+                                      <span data-testid="story-unidad" style={{ fontSize: '0.7em', opacity: 0.65, marginLeft: '0.3em', fontStyle: 'normal' }}>{unidad}</span>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                              maxFontSize={12}
+                              style={{ color: '#fff', fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, textAlign: 'right' }}
                             />
                           </div>
                         )}

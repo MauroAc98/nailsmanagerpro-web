@@ -60,6 +60,85 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
     expect(logos).toHaveLength(1);
   });
 
+  it('modo semana, sin logoUrl: el círculo muestra mes y año del primer día, no un ícono genérico', () => {
+    renderCanvas(null, variosDias);
+    expect(screen.getByText('Sept')).toBeInTheDocument();
+    expect(screen.getByText('2026')).toBeInTheDocument();
+    // El "24" aparece una sola vez: es el número de la fila de la lista, no un chip de fecha.
+    expect(screen.getAllByText('24')).toHaveLength(1);
+  });
+
+  it('modo semana: cada día separa la abreviatura del número, y las horas el número del "hs"', () => {
+    renderCanvas(null, variosDias);
+    const dias = screen.getAllByTestId('story-dia');
+    expect(dias).toHaveLength(2);
+    expect(dias[0]).toHaveTextContent(/^JUE24$/);
+    const horas = screen.getAllByTestId('story-horas')[0];
+    expect(horas).toHaveTextContent('10hs');
+    expect(screen.getAllByTestId('story-unidad')[0]).toHaveTextContent('hs');
+  });
+
+  it('modo semana: el "hs" aparece una sola vez por día, no en cada hora, y una línea de puntos une día y horas', () => {
+    const dosHoras: DisponibilidadDia[] = [
+      { fecha: '2026-09-24', slots: [{ hora: '10hs', libre: true }, { hora: '14hs', libre: true }, { hora: '16hs', libre: true }] },
+      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
+    ];
+    renderCanvas(null, dosHoras);
+    const [primera] = screen.getAllByTestId('story-horas');
+    // El aire entre horas es margen (no espacios de texto).
+    expect(primera.textContent).toBe('10·14·16hs');
+    expect(primera.querySelectorAll('[data-testid="story-unidad"]')).toHaveLength(1);
+    const fila = screen.getAllByTestId('story-dia')[0].parentElement as HTMLElement;
+    expect((fila.children[1] as HTMLElement).style.borderBottom).toContain('dotted');
+  });
+
+  it('modo semana: horas con minutos ("9:30hs") conservan los minutos y comparten un solo "hs"', () => {
+    renderCanvas(null, [
+      { fecha: '2026-09-24', slots: [{ hora: '9hs', libre: true }, { hora: '9:30hs', libre: true }, { hora: '14:30hs', libre: true }] },
+      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
+    ]);
+    const [primera] = screen.getAllByTestId('story-horas');
+    expect(primera.textContent).toBe('9·9:30·14:30hs');
+    expect(primera.querySelectorAll('[data-testid="story-unidad"]')).toHaveLength(1);
+  });
+
+  it('modo semana: si una hora no termina en "hs" se muestran todas tal cual, sin unidad suelta', () => {
+    renderCanvas(null, [
+      { fecha: '2026-09-24', slots: [{ hora: '10:30', libre: true }, { hora: '14hs', libre: true }] },
+      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
+    ]);
+    const [primera] = screen.getAllByTestId('story-horas');
+    expect(primera.textContent).toBe('10:30·14hs');
+    expect(primera.querySelector('[data-testid="story-unidad"]')).toBeNull();
+  });
+
+  it('modo semana: entre horas del mismo día hay un punto medio tenue, y ninguno al borde', () => {
+    const dosHoras: DisponibilidadDia[] = [
+      { fecha: '2026-09-24', slots: [{ hora: '10hs', libre: true }, { hora: '14hs', libre: true }] },
+      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
+    ];
+    renderCanvas(null, dosHoras);
+    expect(screen.getAllByTestId('story-separador-hora')).toHaveLength(1);
+    const texto = screen.getAllByTestId('story-horas')[0].textContent ?? '';
+    expect(texto.startsWith('·')).toBe(false);
+    expect(texto.endsWith('·')).toBe(false);
+  });
+
+  it('modo semana: un día sin horas libres dice "Completo"', () => {
+    renderCanvas(null, [
+      { fecha: '2026-09-24', slots: [{ hora: '10hs', libre: false }] },
+      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
+    ]);
+    expect(screen.getByText('Completo')).toBeInTheDocument();
+  });
+
+  it('la foto es un círculo con anillo (box-shadow, nunca filter)', () => {
+    renderCanvas('https://cdn.turnetto.com/logo.jpg', unDia);
+    const logo = screen.getAllByAltText('').find(img => (img as HTMLImageElement).src.includes('logo.jpg')) as HTMLImageElement;
+    expect(logo.style.borderRadius).toBe('50%');
+    expect(logo.style.boxShadow).not.toBe('');
+  });
+
   it('modo día, sin logoUrl (negocio sin foto subida): se ve el chip de fecha de siempre', () => {
     renderCanvas(null, unDia);
     const logos = screen.getAllByAltText('').filter(img => (img as HTMLImageElement).src.includes('logo'));
@@ -84,34 +163,55 @@ describe('StoryCanvas — servicios elegidos (M1: categoría en el título + baj
     + 1
     + Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
 
-  it('el título nombra la categoría y la línea chica queda como en producción', () => {
+  it('el título nombra la categoría (en cursiva) y la etiqueta lleva fecha y profesional', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
-    expect(screen.getByText('Turnos de Uñas y Pestañas')).toBeInTheDocument();
-    expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
-    expect(screen.queryByText('Turnos disponibles')).not.toBeInTheDocument();
+    const titulo = screen.getByTestId('story-titulo');
+    expect(titulo).toHaveTextContent('Turnos de Uñas y Pestañas');
+    expect(titulo.querySelector('em')).toHaveTextContent('Uñas y Pestañas');
+    expect(screen.getByTestId('story-kicker')).toHaveTextContent(/24 de sept\s*con Gabriela/);
+    expect(titulo).not.toHaveTextContent('disponibles');
   });
 
-  it('los servicios van como bajada en mayúsculas, sin etiqueta ni línea', () => {
+  it('los servicios van como bajada tal cual se escriben, sin etiqueta ni línea', () => {
     renderCanvas(null, unDia, 'Gabriela', null, filtro);
     const bajada = screen.getByTestId('story-servicios');
-    expect(bajada.textContent).toContain('ESMALTADO');
-    expect(bajada.textContent).toContain('LIFTING');
-    expect(bajada.style.maxHeight).toBe('26px');
+    expect(bajada.textContent).toContain('Esmaltado');
+    expect(bajada.textContent).toContain('Lifting');
+    expect(bajada.textContent).not.toContain('ESMALTADO');
+    expect(bajada.style.maxHeight).toBe('42px');
     expect(screen.queryByTestId('story-etiqueta-categoria')).not.toBeInTheDocument();
     expect(screen.queryByTestId('story-servicios-linea')).not.toBeInTheDocument();
   });
 
-  it('cada renglón de la bajada es un bloque sin cortes y ninguno empieza ni termina en "·"', () => {
+  it('una categoría con muchos servicios usa hasta 3 renglones y la lista de quincena sigue entrando', () => {
+    const muchos = {
+      titulo: 'Pestañas',
+      servicios: [
+        'Extensiones clásicas', 'Extensiones volumen ruso', 'Service / Retoque', 'Lifting de pestañas',
+        'Tintura de pestañas', 'Laminado de cejas', 'Diseño de cejas', 'Henna de cejas',
+      ],
+    };
+    renderCanvas(null, quincena, 'Gabriela', null, muchos);
+    const renglones = screen.getByTestId('story-servicios').children.length;
+    expect(renglones).toBe(3);
+    // El alto que suma la tercera línea sale de los espacios entre filas, que no bajan del mínimo.
+    expect(gapLista()).toBeGreaterThanOrEqual(2);
+  });
+
+  it('cada renglón de la bajada es un bloque sin cortes y ninguno empieza ni termina en un separador', () => {
     renderCanvas(null, unDia, 'Gabriela', null, ocho);
     const renglones = Array.from(screen.getByTestId('story-servicios').children) as HTMLElement[];
     expect(renglones.length).toBeGreaterThan(0);
-    expect(renglones.length).toBeLessThanOrEqual(2);
+    expect(renglones.length).toBeLessThanOrEqual(3);
     for (const r of renglones) {
       expect(r.style.whiteSpace).toBe('nowrap');
-      const texto = (r.textContent ?? '').trim();
-      expect(texto.startsWith('·')).toBe(false);
-      expect(texto.endsWith('·')).toBe(false);
+      expect(r.firstElementChild).not.toHaveAttribute('data-testid', 'story-separador');
+      expect(r.lastElementChild).not.toHaveAttribute('data-testid', 'story-separador');
     }
+    // Entre dos servicios del mismo renglón hay exactamente un separador.
+    const separadores = screen.getAllByTestId('story-separador').length;
+    const servicios = renglones.reduce((n, r) => n + r.querySelectorAll(':scope > span:not([data-testid])').length, 0);
+    expect(separadores).toBe(servicios - renglones.length);
   });
 
   it('en quincena el alto extra sale del margen y de los espacios entre filas', () => {
@@ -122,20 +222,21 @@ describe('StoryCanvas — servicios elegidos (M1: categoría en el título + baj
     renderCanvas(null, quincena, 'Gabriela', null, ocho);
     // Margen con servicios: 18 + los 4px que subió el encabezado.
     expect(margenTotal()).toBe(22);
-    // Bajada: 12px de separación + 2 renglones de 13px.
-    const altoBajada = 12 + 13 * 2;
+    // Bajada: 10px de separación + N renglones de 14px.
+    const altoBajada = 10 + 14 * screen.getByTestId('story-servicios').children.length;
     expect(15 * (gapSin - gapLista())).toBeCloseTo(altoBajada + margenTotal() - margenSin, 0);
   });
 
   it('vista de equipo (sin profesional): la línea chica es solo la fecha', () => {
     renderCanvas(null, unDia, undefined, null, filtro);
-    expect(screen.getByText('Turnos de Uñas y Pestañas')).toBeInTheDocument();
-    expect(screen.getByText('24 de sept')).toBeInTheDocument();
+    expect(screen.getByTestId('story-titulo')).toHaveTextContent('Turnos de Uñas y Pestañas');
+    expect(screen.getByTestId('story-kicker')).toHaveTextContent('24 de sept');
+    expect(screen.getByTestId('story-kicker')).not.toHaveTextContent('con');
   });
 
   it('sin servicios el encabezado y la lista quedan como en producción', () => {
     renderCanvas(null, unDia, 'Gabriela', null, { titulo: 'Servicios', servicios: [] });
-    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
+    expect(screen.getByTestId('story-titulo')).toHaveTextContent('Turnos disponibles');
     expect(screen.queryByTestId('story-servicios')).not.toBeInTheDocument();
   });
 });
@@ -147,11 +248,10 @@ describe('StoryCanvas — línea entre el encabezado y la lista', () => {
     + 1
     + Number.parseFloat((screen.getByTestId('story-cuerpo') as HTMLElement).style.marginTop);
 
-  it('hay una línea fina entre el encabezado y la lista, igual que la del pie', () => {
+  it('hay una línea fina entre el encabezado y la lista', () => {
     renderCanvas(null, variosDias, 'Gabriela');
     const linea = screen.getByTestId('story-linea-encabezado') as HTMLElement;
     expect(linea.style.height).toBe('1px');
-    expect(linea.style.background).toBe((screen.getByTestId('story-linea') as HTMLElement).style.background);
     const cuerpo = screen.getByTestId('story-cuerpo');
     expect(linea.compareDocumentPosition(cuerpo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -177,28 +277,33 @@ describe('StoryCanvas — línea entre el encabezado y la lista', () => {
 });
 
 describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
-  it('título "Turnos disponibles" y una sola línea "con Gabriela · fecha"', () => {
+  it('título "Turnos disponibles" y una etiqueta "fecha — con Gabriela" arriba', () => {
     renderCanvas(null, unDia, 'Gabriela');
-    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
-    expect(screen.getByText('con Gabriela · 24 de sept')).toBeInTheDocument();
-    // Ya no existe el encabezado "solo negocio": ni la leyenda en mayúsculas
-    // ni la fecha suelta.
+    const titulo = screen.getByTestId('story-titulo');
+    expect(titulo).toHaveTextContent('Turnos disponibles');
+    expect(titulo.querySelector('em')).toHaveTextContent('disponibles');
+    const etiqueta = screen.getByTestId('story-kicker');
+    expect(etiqueta).toHaveTextContent(/24 de sept\s*con Gabriela/);
+    // El nombre de la profesional va en negrita; la etiqueta está sobre el título.
+    expect(etiqueta.querySelector('b')).toHaveTextContent('Gabriela');
+    expect(etiqueta.compareDocumentPosition(titulo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Ya no existe el encabezado "solo negocio": ni la leyenda en mayúsculas.
     expect(screen.queryByText('TURNOS DISPONIBLES')).not.toBeInTheDocument();
-    expect(screen.queryByText('24 de sept')).not.toBeInTheDocument();
   });
 
   it('sin profesional resuelta, el mismo diseño con solo la fecha (sin "con")', () => {
     renderCanvas(null, unDia);
-    expect(screen.getByText('Turnos disponibles')).toBeInTheDocument();
-    expect(screen.getByText('24 de sept')).toBeInTheDocument();
+    expect(screen.getByTestId('story-titulo')).toHaveTextContent('Turnos disponibles');
+    expect(screen.getByTestId('story-kicker')).toHaveTextContent('24 de sept');
     expect(screen.queryByText(/^con /)).not.toBeInTheDocument();
+    expect(screen.getByTestId('story-kicker')).not.toHaveTextContent('con');
   });
 
   it('el nombre del negocio nunca es el título: va al pie, una sola vez', () => {
     renderCanvas(null, unDia, 'Gabriela');
     const negocio = screen.getAllByText('Turnetto');
     expect(negocio).toHaveLength(1);
-    const con = screen.getByText('con Gabriela · 24 de sept');
+    const con = screen.getByTestId('story-kicker');
     expect(con.compareDocumentPosition(negocio[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -223,46 +328,35 @@ describe('StoryCanvas — diseño único (siempre con la profesional)', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByText('con Natalia · 24 de sept')).toBeInTheDocument();
+    expect(screen.getByTestId('story-kicker')).toHaveTextContent(/24 de sept\s*con Natalia/);
     expect(screen.getByText('Natalia Acosta Studio')).toBeInTheDocument();
   });
 
-  it('con teléfono, el pie une negocio y teléfono en una línea, sin ícono', () => {
+  it('con teléfono, el pie pone el negocio a la izquierda y el teléfono a la derecha, sin ícono', () => {
     renderCanvas(null, unDia, 'Gabriela', '5491155551234');
     const negocio = screen.getByText('Turnetto');
     const telefono = screen.getByText(/^\+/);
-    // Misma fila: negocio primero, después el grupo "ícono + teléfono".
-    const fila = negocio.parentElement as HTMLElement;
-    expect(fila.contains(telefono)).toBe(true);
+    // Misma fila: negocio primero (columna que crece), después el teléfono.
+    const fila = telefono.parentElement as HTMLElement;
+    expect(fila.contains(negocio)).toBe(true);
     expect(negocio.compareDocumentPosition(telefono) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(fila.style.display).toBe('flex');
     // Sin ícono de WhatsApp en el pie: solo texto.
     expect(fila.querySelector('svg')).toBeNull();
   });
 
-  // Nombre (serif) y teléfono (otra tipografía) en cajas flex distintas se
-  // veían corridos: el nombre quedaba más abajo y fuera de la línea del
-  // teléfono. Como texto corrido en una sola línea (inline) comparten la misma
-  // línea base por construcción, sin depender de cómo cada fuente arma su caja.
-  it('el pie pone nombre, guion y teléfono como texto corrido en la misma línea (no en cajas flex)', () => {
+  // El nombre baja de renglón antes que cortarse, y el teléfono nunca se parte
+  // ni cede ancho: ocupa lo que necesita pegado al borde derecho.
+  it('el pie no recorta el nombre con "…" y el teléfono no se parte ni se achica', () => {
     renderCanvas(null, unDia, 'Gabriela', '5491155551234');
     const negocio = screen.getByText('Turnetto');
     const telefono = screen.getByText(/^\+/);
-    const fila = negocio.parentElement as HTMLElement;
-    const guion = fila.querySelector('[aria-hidden]') as HTMLElement;
-
-    // Misma línea de texto: el contenedor no es flex y los tres son inline.
-    expect(fila.style.display).not.toBe('flex');
-    for (const el of [negocio, guion, telefono]) {
-      expect(el.parentElement).toBe(fila);
-      expect(['', 'inline']).toContain(el.style.display);
-    }
-    // La altura de línea la define la fila, igual para los tres.
-    expect(fila.style.lineHeight).not.toBe('');
-    for (const el of [negocio, guion, telefono]) expect(el.style.lineHeight).toBe('');
-    // El nombre no se recorta con "…" (no overflow hidden) y el teléfono no se parte.
     expect(negocio.style.overflow).not.toBe('hidden');
     expect(negocio.style.textOverflow).not.toBe('ellipsis');
     expect(telefono.style.whiteSpace).toBe('nowrap');
+    expect(telefono.style.flexShrink).toBe('0');
+    // La columna del nombre puede achicarse (minWidth 0) para dejarle lugar al teléfono.
+    expect(Number.parseFloat((negocio.parentElement as HTMLElement).style.minWidth)).toBe(0);
   });
 });
 

@@ -6,10 +6,11 @@
     "reserveCta": "Reservá tu turno"
   },
   "StoryCanvas": {
-    "availableTitle": "Turnos disponibles",
-    "availableTitleFor": "Turnos de {categoria}",
+    "availableTitle": "Turnos <em>disponibles</em>",
+    "availableTitleFor": "Turnos de <em>{categoria}</em>",
     "withProfessional": "con {nombre}",
-    "complete": "COMPLETO"
+    "withProfessionalRich": "con <b>{nombre}</b>",
+    "complete": "Completo"
   },
   "HistoriaPage": {
     "title": "Historia de turnos",

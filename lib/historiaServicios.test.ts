@@ -52,7 +52,7 @@ describe('serviciosEntran', () => {
   });
 
   it('entra en dos líneas', () => {
-    // "AAAAAAAAAA" = 60 px; con " ·  " (24) -> dos nombres = 144 > 100.
+    // "AAAAAAAAAA" = 60 px; con el separador (16) -> dos nombres = 136 > 100.
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 2, 100, medir)).toBe(true);
   });
 
@@ -65,13 +65,13 @@ describe('serviciosEntran', () => {
   });
 
   it('cuenta el separador entre nombres de la misma línea', () => {
-    // 2 x 60 + 24 = 144 entra justo en 144, no en 143 (pero sí en 2 líneas).
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 144, medir)).toBe(true);
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 143, medir)).toBe(false);
+    // 2 x 60 + 16 = 136 entra justo en 136, no en 135 (pero sí en 2 líneas).
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 136, medir)).toBe(true);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'], 2, 135, medir)).toBe(false);
   });
   it('con máximo 1 línea, lo que pide dos líneas no entra', () => {
     expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 100, medir)).toBe(false);
-    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 144, medir)).toBe(true);
+    expect(serviciosEntran(['AAAAAAAAAA', 'BBBBBBBBBB'], 1, 136, medir)).toBe(true);
   });
 });
 
@@ -79,8 +79,8 @@ describe('repartirEnRenglones', () => {
   const medir = (t: string) => t.length * 6;
 
   it('arma los renglones con los nombres de cada uno (el separador solo va entre nombres del mismo renglón)', () => {
-    // Ancho 100: "AAAAAAAAAA" (60) + " ·  " (24) + "BBB" (18) = 102 > 100 -> baja.
-    expect(repartirEnRenglones(['AAAAAAAAAA', 'BBB', 'CC'], 100, medir)).toEqual([['AAAAAAAAAA'], ['BBB', 'CC']]);
+    // Ancho 90: "AAAAAAAAAA" (60) + separador (16) + "BBB" (18) = 94 > 90 -> baja.
+    expect(repartirEnRenglones(['AAAAAAAAAA', 'BBB', 'CC'], 90, medir)).toEqual([['AAAAAAAAAA'], ['BBB', 'CC']]);
   });
 
   it('lista vacía: sin renglones', () => {
@@ -89,13 +89,13 @@ describe('repartirEnRenglones', () => {
 });
 
 describe('medirTextoServicios', () => {
-  it('mide la bajada en mayúsculas con su espaciado (sin canvas 2D usa un fallback)', () => {
-    // 4 letras: 6px cada una + 1.3px de espaciado por letra.
-    expect(medirTextoServicios('abcd')).toBeCloseTo(29.2);
+  it('mide la bajada tal cual se escribe (sin canvas 2D usa un fallback con margen)', () => {
+    // 4 letras: 5.5px cada una, más el 3% de margen por la serif más ancha.
+    expect(medirTextoServicios('abcd')).toBeCloseTo(22 * 1.03);
     expect(medirTextoServicios('')).toBe(0);
   });
 
-  it('mide igual en minúsculas que en mayúsculas (la bajada va en mayúsculas)', () => {
-    expect(medirTextoServicios('Cavado')).toBe(medirTextoServicios('CAVADO'));
+  it('no agrega espaciado por letra: el ancho crece en proporción al largo', () => {
+    expect(medirTextoServicios('abcdabcd')).toBeCloseTo(2 * medirTextoServicios('abcd'));
   });
 });
