@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
@@ -125,6 +126,7 @@ const btnSecundario = {
 } as const;
 
 export default function SuscripcionesPage() {
+  const rutaAdmin = useRutaAdmin();
   const [negocios, setNegocios] = useState<NegocioLookupResult[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
@@ -336,7 +338,7 @@ export default function SuscripcionesPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', backgroundColor: colors.background }}>
       <div style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column' }}>
         <Link
-          href="/"
+          href={rutaAdmin('/')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.subtext, textDecoration: 'none', marginBottom: 20 }}
         >
           <ArrowLeft size={16} />

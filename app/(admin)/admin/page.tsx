@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, RefreshCw, Settings, Wallet, Activity } from 'lucide-react';
@@ -12,12 +13,13 @@ import { colors, shadows } from '@/theme/colors';
 // creación de negocio; Phase 5 suma el de búsqueda/renovación de
 // suscripciones acá mismo.
 export default function AdminHomePage() {
+  const rutaAdmin = useRutaAdmin();
   const router = useRouter();
   const { admin, logout } = useAdminAuthStore();
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push(rutaAdmin('/login'));
   };
 
   return (
@@ -28,7 +30,7 @@ export default function AdminHomePage() {
       </p>
 
       <Link
-        href="/negocios/nuevo"
+        href={rutaAdmin('/negocios/nuevo')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -50,7 +52,7 @@ export default function AdminHomePage() {
       </Link>
 
       <Link
-        href="/suscripciones"
+        href={rutaAdmin('/suscripciones')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -72,7 +74,7 @@ export default function AdminHomePage() {
       </Link>
 
       <Link
-        href="/configuracion"
+        href={rutaAdmin('/configuracion')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -94,7 +96,7 @@ export default function AdminHomePage() {
       </Link>
 
       <Link
-        href="/mercadopago"
+        href={rutaAdmin('/mercadopago')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -116,7 +118,7 @@ export default function AdminHomePage() {
       </Link>
 
       <Link
-        href="/uso"
+        href={rutaAdmin('/uso')}
         style={{
           display: 'flex',
           alignItems: 'center',

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
@@ -24,6 +25,7 @@ function extraerMensajeError(e: unknown, fallback: string): string {
 }
 
 export default function MercadoPagoConexionesPage() {
+  const rutaAdmin = useRutaAdmin();
   const [salones, setSalones] = useState<MercadoPagoNegocioConexion[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function MercadoPagoConexionesPage() {
     >
       <div style={{ width: '100%', maxWidth: 560, display: 'flex', flexDirection: 'column' }}>
         <Link
-          href="/"
+          href={rutaAdmin('/')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

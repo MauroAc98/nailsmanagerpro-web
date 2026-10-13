@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useState } from 'react';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
@@ -54,6 +55,7 @@ function extraerMensajeGeneral(e: unknown): string {
 }
 
 export default function NuevoNegocioPage() {
+  const rutaAdmin = useRutaAdmin();
   const [valores, setValores] = useState<CrearNegocioPayload>(CAMPOS_VACIOS);
   const [erroresDeCampo, setErroresDeCampo] = useState<Partial<Record<Campo, string>>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
@@ -205,7 +207,7 @@ export default function NuevoNegocioPage() {
               Crear otro negocio
             </button>
             <Link
-              href="/"
+              href={rutaAdmin('/')}
               style={{ flex: 1, height: 48, borderRadius: 14, backgroundColor: colors.surface, color: colors.textStrong, fontSize: 14, fontWeight: 600, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
             >
               Volver al panel
@@ -220,7 +222,7 @@ export default function NuevoNegocioPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', backgroundColor: colors.background }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
         <Link
-          href="/"
+          href={rutaAdmin('/')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.subtext, textDecoration: 'none', marginBottom: 20 }}
         >
           <ArrowLeft size={16} />

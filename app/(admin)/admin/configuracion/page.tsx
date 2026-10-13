@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
@@ -19,6 +20,7 @@ function extraerMensajeError(e: unknown, fallback: string): string {
 }
 
 export default function ConfiguracionPage() {
+  const rutaAdmin = useRutaAdmin();
   const [diasPrueba, setDiasPrueba] = useState('10');
   const [comisionMp, setComisionMp] = useState('6.29');
   const [cargando, setCargando] = useState(true);
@@ -68,7 +70,7 @@ export default function ConfiguracionPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', backgroundColor: colors.background }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
         <Link
-          href="/"
+          href={rutaAdmin('/')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.subtext, textDecoration: 'none', marginBottom: 20 }}
         >
           <ArrowLeft size={16} />
