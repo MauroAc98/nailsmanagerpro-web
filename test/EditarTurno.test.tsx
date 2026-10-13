@@ -43,7 +43,7 @@ const marta: Cliente = { id: 5, nombre: 'Marta', apellido: 'Rios', telefono: '+5
 const tramo = (turno_id: number, profesional_id: number, nombre: string, hora: string, dur: number, estado = 'confirmado') =>
   ({ turno_id, profesional_id, profesional_nombre: nombre, fecha_hora: `2099-06-10T${hora}:00`, duracion_total_minutos: dur, estado });
 const turno = (over: Partial<Turno> = {}): Turno => ({
-  id: 1, cliente_id: 5, cliente: { nombre: 'Marta', apellido: 'Rios' }, servicios: [{ id: 2, nombre: 'Softgel' }],
+  id: 1, cliente_id: 5, cliente: { nombre: 'Marta', apellido: 'Rios', telefono: '+543765252395' }, servicios: [{ id: 2, nombre: 'Softgel' }],
   fecha_hora: '2099-06-10 10:00:00', duracion_total_minutos: 60, estado: 'confirmado', estado_visual: 'confirmado',
   profesional_id: 1, grupo_id: null, ...over,
 } as Turno);
@@ -53,11 +53,16 @@ const enGrupo = (tramos = [tramo(1, 1, 'Ana', '10:00', 60), tramo(2, 2, 'Laura',
 const actualizarTurno = vi.fn();
 const reprogramarGrupo = vi.fn();
 const fetchTurno = vi.fn();
+const fetchClientes = vi.fn();
+const cargarPrimeraPagina = vi.fn();
 
 function montar(t: Turno) {
   useServiciosStore.setState({ servicios: [softgel, semis], fetchServicios: vi.fn() });
   useProfesionalStore.setState({ profesionales: [ana, laura], fetchProfesionales: vi.fn() });
-  useClientesStore.setState({ clientes: [marta], fetchClientes: vi.fn() });
+  useClientesStore.setState({
+    clientes: [], clientesPagina: [marta], cargandoPagina: false, error: null,
+    fetchClientes, cargarPrimeraPagina, cargarSiguientePagina: vi.fn(),
+  });
   useSlotsStore.setState({
     slots: [{ id: 1, hora: '09:00', activo: true }, { id: 2, hora: '18:00', activo: true }] as never,
     fetchSlots: vi.fn(), loading: false, ultimoProfesionalIdSolicitado: 1,
@@ -122,29 +127,59 @@ describe('EditarTurnoPage — selector de cliente', () => {
     fireEvent.click((await screen.findAllByText('Marta Rios'))[0]);
   };
 
-  it('el campo muestra el teléfono del cliente elegido', async () => {
+  it('el campo muestra el teléfono del cliente del turno, tomado del propio turno', async () => {
     montar(turno());
 
     expect(await screen.findByText('+543765252395')).toBeInTheDocument();
   });
 
+  it('no carga la lista completa de clientes al abrir la pantalla', async () => {
+    montar(turno());
+    await screen.findByText('+543765252395');
+
+    expect(fetchClientes).not.toHaveBeenCalled();
+    expect(cargarPrimeraPagina).not.toHaveBeenCalled(); // la página se pide recién al abrir el selector
+  });
+
   it('con dos clientes del mismo nombre, la lista muestra el teléfono de cada uno', async () => {
     montar(turno());
-    useClientesStore.setState({ clientes: [marta, otraMarta] });
+    useClientesStore.setState({ clientesPagina: [marta, otraMarta] });
     await abrirSelector();
 
     expect((await screen.findAllByText('+543764000111')).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('+543765252395').length).toBeGreaterThanOrEqual(2); // campo + fila
   });
 
-  it('se puede buscar por teléfono', async () => {
+  it('al abrir pide la primera página de clientes activos', async () => {
     montar(turno());
-    useClientesStore.setState({ clientes: [marta, otraMarta] });
     await abrirSelector();
+
+    expect(cargarPrimeraPagina).toHaveBeenCalledWith('', 'activos');
+  });
+
+  it('la búsqueda por teléfono se hace en el servidor', async () => {
+    montar(turno());
+    await abrirSelector();
+    cargarPrimeraPagina.mockClear();
     fireEvent.change(await screen.findByPlaceholderText('Buscar por nombre...'), { target: { value: '4000111' } });
 
-    await waitFor(() => expect(screen.queryAllByText('+543765252395')).toHaveLength(1)); // solo el campo
+    await waitFor(() => expect(cargarPrimeraPagina).toHaveBeenCalledWith('4000111', 'activos'));
+  });
+
+  it('elegir otro cliente reemplaza al del turno', async () => {
+    montar(turno());
+    useClientesStore.setState({ clientesPagina: [marta, otraMarta] });
+    await abrirSelector();
+    fireEvent.click((await screen.findAllByText('+543764000111'))[0]);
+
+    await waitFor(() => expect(screen.queryAllByText('+543765252395')).toHaveLength(0));
     expect(screen.getAllByText('+543764000111').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('si el cliente del turno fue eliminado, el campo queda vacío y la pantalla no se rompe', async () => {
+    montar(turno({ cliente_id: null as never, cliente: null as never }));
+
+    expect(await screen.findByText('Seleccionar...')).toBeInTheDocument();
   });
 });
 

@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, User } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { IdeaDelTurno } from '@/components/agenda/IdeaDelTurno';
 import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
@@ -17,7 +16,6 @@ import { SelectorServicios } from '@/components/SelectorServicios';
 import { AltaClienteRapidaSheet, type AltaClienteRapidaHandle } from '@/components/clientes/AltaClienteRapidaSheet';
 import { useTurnoStore } from '@/store/useTurnoStore';
 import { useServiciosStore } from '@/store/useServicioStore';
-import { useClientesStore } from '@/store/useClienteStore';
 import { useSlotsStore } from '@/store/useSlotsStore';
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useBloqueosAgendaStore } from '@/store/useBloqueosAgendaStore';
@@ -26,7 +24,7 @@ import { profesionalJefa } from '@/services/profesionalService';
 import { DrumPicker } from '@/components/DrumPicker';
 import { validarTurno } from '@/lib/turnoValidaciones';
 import { advertenciaTurno } from '@/lib/turnoAdvertencias';
-import { ClienteConTelefono } from '@/components/agenda/ClienteConTelefono';
+import { ClienteSelector } from '@/components/agenda/ClienteSelector';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { resumenMovimiento, tramosPendientes } from '@/lib/gruposTurnos';
 import { advertenciaDelCombo, tramosAMover } from '@/lib/comboManual';
@@ -45,12 +43,6 @@ import { Spinner } from '@/components/Spinner';
 function formatFechaLarga(fecha: string): string {
   const d = new Date(fecha + 'T00:00:00');
   return formatFecha(d, 'diaSemanaFechaMes');
-}
-
-// Ignora acentos al comparar ("jose" matchea "José") — sin esto una
-// búsqueda sin tilde no encontraba clientes con nombres acentuados.
-function normalizarTexto(texto: string): string {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 function formatHora12(hora24: string): string {
@@ -89,7 +81,6 @@ export default function EditarTurnoPage() {
 
   const { actualizarTurno, reprogramarGrupo, fetchTurno, turnoActual, loadingTurno, errorTurno, turnos, fetchTurnos } = useTurnoStore();
   const { servicios, fetchServicios }   = useServiciosStore();
-  const { clientes, fetchClientes, loading: clientesLoading, error: clientesError } = useClientesStore();
   const { slots, fetchSlots, loading: slotsLoading, ultimoProfesionalIdSolicitado } = useSlotsStore();
   const { profesionales, fetchProfesionales } = useProfesionalStore();
   const { bloqueos, fetchBloqueos } = useBloqueosAgendaStore();
@@ -98,13 +89,10 @@ export default function EditarTurnoPage() {
   const altaClienteRef = useRef<AltaClienteRapidaHandle>(null);
 
   const [fecha,               setFecha]               = useState('');
-  const [turnoClienteId,      setTurnoClienteId]      = useState<number | null>(null);
   const [selectedCliente,     setSelectedCliente]     = useState<Cliente | null>(null);
   const [selectedServicioIds, setSelectedServicioIds] = useState<number[]>([]);
   const [selectedProfesionalId, setSelectedProfesionalId] = useState<number | null>(null);
   const [profesionalAbierto, setProfesionalAbierto] = useState(false);
-  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
-  const [clienteBuscar,       setClienteBuscar]       = useState('');
   const [showHoraPicker,      setShowHoraPicker]      = useState(false);
   const [saving,              setSaving]              = useState(false);
   // Turno de un combo: mover solo este turno (como siempre) o todo el combo. Fecha/hora del
@@ -120,7 +108,6 @@ export default function EditarTurnoPage() {
 
   // Load turno and store data on mount
   useEffect(() => {
-    if (clientes.length === 0) fetchClientes();
     if (servicios.length === 0) fetchServicios();
     if (slots.length === 0) fetchSlots();
     if (profesionales.length === 0) fetchProfesionales();
@@ -138,20 +125,21 @@ export default function EditarTurnoPage() {
     setSelectedServicioIds(turnoActual.servicios.filter(s => s != null).map(s => s.id));
     setHoraSeleccionada({ hora: h, minuto: m });
     setTempHora({ hora: h, minuto: m });
-    setTurnoClienteId(turnoActual.cliente_id);
+    // El cliente viene en la respuesta del turno: no hace falta cargar la lista
+    // de clientes para encontrarlo. Solo se completa si todavía no hay uno
+    // elegido (así una elección de la dueña no se pisa). cliente_id/cliente
+    // pueden ser null si el cliente se eliminó.
+    if (turnoActual.cliente_id != null && turnoActual.cliente) {
+      const { nombre, apellido, telefono } = turnoActual.cliente;
+      setSelectedCliente(prev => prev ?? {
+        id: turnoActual.cliente_id, nombre, apellido, telefono: telefono ?? '', activo: true,
+      });
+    }
     // Preserva la profesional ya asignada al turno — si se omite acá el
     // backend re-resolvería al default de la cuenta en cada edición.
     setSelectedProfesionalId(turnoActual.profesional_id ?? null);
     fetchTurnos(dateStr);
   }, [turnoActual]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Match cliente once both clientes and turnoClienteId are available
-  useEffect(() => {
-    if (turnoClienteId !== null && clientes.length > 0 && selectedCliente === null) {
-      const found = clientes.find(c => c.id === turnoClienteId) ?? null;
-      if (found) setSelectedCliente(found);
-    }
-  }, [turnoClienteId, clientes, selectedCliente]);
 
   // ─────────────────────────────────────────────
   // Multi-agenda — invisible para cuentas con ≤1 profesional activa.
@@ -343,9 +331,6 @@ export default function EditarTurnoPage() {
     }
   };
 
-  const clientesFiltrados = clientes.filter(c =>
-    c.activo && normalizarTexto(`${c.nombre} ${c.apellido} ${c.telefono ?? ''}`).includes(normalizarTexto(clienteBuscar))
-  );
 
   if (loadingTurno) {
     return (
@@ -507,96 +492,20 @@ export default function EditarTurnoPage() {
         {!enCombo && (<>
         {/* ─── CLIENTE ─── */}
         <p style={sectionLabelStyle}>{t('client')}</p>
-        <div style={{ marginBottom: 20, position: 'relative' }}>
-          <div
-            onClick={() => setShowClienteDropdown(prev => !prev)}
-            style={{
-              ...inputStyle,
-              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-              borderRadius: showClienteDropdown ? '12px 12px 0 0' : 12,
-              borderColor: showClienteDropdown ? colors.primaryDeep : colors.border,
+        <div style={{ marginBottom: 20 }}>
+          <ClienteSelector
+            value={selectedCliente}
+            onChange={setSelectedCliente}
+            onNuevo={() => altaClienteRef.current?.open()}
+            labels={{
+              placeholder: t('select'),
+              searchByName: t('searchByName'),
+              noResults: t('noClientsFound'),
+              loading: t('loadingClients'),
+              retry: t('retry'),
+              newClient: t('newClientOption'),
             }}
-          >
-            <User size={18} strokeWidth={1.8} color={colors.muted} style={{ flexShrink: 0 }} />
-            {selectedCliente ? (
-              <ClienteConTelefono cliente={selectedCliente} variante="campo" />
-            ) : (
-              <span style={{
-                flex: 1, minWidth: 0, color: colors.placeholder, fontSize: 15,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {t('select')}
-              </span>
-            )}
-            <ChevronDown
-              size={16} strokeWidth={2} color={colors.muted}
-              style={{ flexShrink: 0, transform: showClienteDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-            />
-          </div>
-
-          {showClienteDropdown && (
-            <div style={{
-              border: `1px solid ${colors.border}`, borderTop: 'none',
-              borderRadius: '0 0 12px 12px', backgroundColor: colors.surface,
-              maxHeight: 220, overflowY: 'auto',
-            }}>
-              <input
-                autoFocus
-                placeholder={t('searchByName')}
-                value={clienteBuscar}
-                onChange={e => setClienteBuscar(e.target.value)}
-                style={{
-                  padding: '10px 14px', border: 'none', borderBottom: `1px solid ${colors.border}`,
-                  width: '100%', boxSizing: 'border-box', outline: 'none', fontSize: 14,
-                  backgroundColor: 'transparent', color: colors.text,
-                }}
-              />
-              {/* Alta rápida sin salir del turno — arriba de todo, no al
-                  final de la lista: con muchos clientes cargados había que
-                  scrollear toda la lista para llegar a esta opción (feedback
-                  real). Antes de esto había que ir a /clientes/nuevo y
-                  volver, perdiendo lo ya cargado en el turno. */}
-              <div
-                onClick={() => { setShowClienteDropdown(false); altaClienteRef.current?.open(); }}
-                style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: colors.primaryDeep, borderBottom: `1px solid ${colors.hairline}` }}
-              >
-                {t('newClientOption')}
-              </div>
-              {clientesLoading && clientes.length === 0 && (
-                <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
-                  <Spinner size={24} label={t('loadingClients')} />
-                </div>
-              )}
-              {!clientesLoading && clientesError && clientes.length === 0 && (
-                <div style={{ padding: '14px', textAlign: 'center' }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 14, color: colors.dangerBorder }}>{clientesError}</p>
-                  <button
-                    onClick={() => fetchClientes()}
-                    style={{
-                      border: `1px solid ${colors.border}`, borderRadius: 10, padding: '6px 14px',
-                      background: 'transparent', color: colors.text, fontSize: 13, cursor: 'pointer',
-                    }}
-                  >
-                    {t('retry')}
-                  </button>
-                </div>
-              )}
-              {!clientesLoading && !clientesError && clientes.length > 0 && clientesFiltrados.length === 0 && (
-                <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
-                  {t('noClientsFound')}
-                </p>
-              )}
-              {clientesFiltrados.map(c => (
-                <div
-                  key={c.id}
-                  onClick={() => { setSelectedCliente(c); setShowClienteDropdown(false); setClienteBuscar(''); }}
-                  style={{ padding: '12px 14px', cursor: 'pointer', fontSize: 15, color: colors.text, borderBottom: `1px solid ${colors.hairline}` }}
-                >
-                  <ClienteConTelefono cliente={c} variante="fila" />
-                </div>
-              ))}
-            </div>
-          )}
+          />
         </div>
 
         {/* ─── PROFESIONAL ─── (invisible con ≤1 profesional activa). Fila + hoja
