@@ -13,7 +13,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 export function FitText({
   text, maxFontSize, minFontSize = 6, style, testId,
 }: {
-  text: string;
+  text: React.ReactNode;
   maxFontSize: number;
   minFontSize?: number;
   style?: React.CSSProperties;

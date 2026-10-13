@@ -4,14 +4,22 @@ import { renderWithProviders, screen } from '@/test/render';
 import { PieContacto } from './PieContacto';
 
 describe('PieContacto', () => {
-  it('muestra CTA, nombre, guion largo y teléfono en una sola línea', () => {
+  it('muestra la etiqueta, el nombre a la izquierda y el teléfono a la derecha, sin guion', () => {
     renderWithProviders(<PieContacto nombre="Salón Luz" telefono="5491155550000" />);
-    expect(screen.getByText('Reservá tu turno')).toBeTruthy();
-    expect(screen.getByText('Salón Luz')).toBeTruthy();
-    expect(screen.getByText('—')).toBeTruthy();
+    const cta = screen.getByText('Reservá tu turno');
+    const nombre = screen.getByText('Salón Luz');
     const tel = screen.getByText(/^\+/);
+    expect(cta.parentElement?.style.textTransform).toBe('uppercase');
+    expect(screen.queryByText('—')).toBeNull();
+    expect(cta.compareDocumentPosition(nombre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(nombre.compareDocumentPosition(tel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(tel.style.whiteSpace).toBe('nowrap');
     expect(tel.style.fontWeight).toBe('600');
+  });
+
+  it('sin nombre, el teléfono ocupa su lugar debajo de la etiqueta y no se repite a la derecha', () => {
+    renderWithProviders(<PieContacto nombre={null} telefono="5491155550000" />);
+    expect(screen.getAllByText(/^\+/)).toHaveLength(1);
   });
 
   it('solo nombre: sin guion ni teléfono', () => {

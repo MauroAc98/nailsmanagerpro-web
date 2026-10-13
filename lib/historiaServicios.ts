@@ -1,12 +1,17 @@
 // Helpers puros del encabezado A2 de la historia de turnos con servicios
 // elegidos (ver StoryCanvas, prop `filtroServicios`).
 
-// Bajada de servicios de StoryCanvas: 9px, peso 600, mayúsculas y 1.3px de
-// espaciado por letra. El separador "·" viaja con el servicio siguiente
-// (" ·  ": espacio, punto y dos espacios duros).
-export const FUENTE_LINEA_SERVICIOS = '600 9px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-export const ESPACIADO_LINEA_SERVICIOS = 1.3;
-const SEPARADOR = ' ·  ';
+// Bajada de servicios de StoryCanvas: serif cursiva de 11px, tal cual se
+// escribe el nombre (sin mayúsculas ni espaciado). El separador es un rombo
+// chico dibujado (no un "·" de texto, que queda bajo y desparejo en cursiva y
+// se confunde con el de las horas): ocupa un ancho fijo, 4px de rombo más 6px
+// de aire a cada lado, y viaja con el servicio siguiente.
+export const TAMANO_LINEA_SERVICIOS = 11;
+export const ANCHO_SEPARADOR_SERVICIOS = 16;
+const FUENTE_RESPALDO = 'Georgia, serif';
+// Playfair es más ancha que Georgia: el margen evita que el aviso diga "entra"
+// y la imagen se corte.
+const MARGEN_MEDIDA = 1.03;
 
 export function tituloFiltroServicios(
   servicios: { categoria_id: number | null }[],
@@ -29,7 +34,7 @@ export function repartirEnRenglones(
   anchoDisponible: number,
   medir: (texto: string) => number,
 ): string[][] {
-  const sep = medir(SEPARADOR);
+  const sep = ANCHO_SEPARADOR_SERVICIOS;
   const renglones: string[][] = [];
   let usado = 0;
   for (const nombre of nombres) {
@@ -65,11 +70,21 @@ export function serviciosEntran(
   return contarLineasServicios(nombres, anchoDisponible, medir) <= maxLineas;
 }
 
-// Hasta 2 renglones en cualquier modo. En una quincena el alto extra lo
-// devuelven el margen y los espacios entre filas (ver StoryCanvas).
-export const MAX_LINEAS_SERVICIOS = 2;
+// Hasta 3 renglones en cualquier modo (cabe la categoría con más servicios).
+// En una quincena el alto extra lo devuelven el margen y los espacios entre
+// filas (ver StoryCanvas).
+export const MAX_LINEAS_SERVICIOS = 3;
 
 let ctx: CanvasRenderingContext2D | null | undefined;
+
+// El canvas 2D no entiende var(--font-agenda-serif): se lee el nombre real de
+// la familia que next/font dejó en <html>.
+function fuenteLineaServicios(): string {
+  const familia = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--font-agenda-serif').trim()
+    : '';
+  return `italic 400 ${TAMANO_LINEA_SERVICIOS}px ${familia ? `${familia}, ` : ''}${FUENTE_RESPALDO}`;
+}
 
 export function medirTextoServicios(texto: string): number {
   if (ctx === undefined) {
@@ -78,9 +93,8 @@ export function medirTextoServicios(texto: string): number {
     } catch {
       ctx = null;
     }
-    if (ctx) ctx.font = FUENTE_LINEA_SERVICIOS;
+    if (ctx) ctx.font = fuenteLineaServicios();
   }
-  const mayus = texto.toUpperCase();
-  const base = ctx ? ctx.measureText(mayus).width : mayus.length * 6;
-  return base + mayus.length * ESPACIADO_LINEA_SERVICIOS;
+  const base = ctx ? ctx.measureText(texto).width : texto.length * 5.5;
+  return base * MARGEN_MEDIDA;
 }

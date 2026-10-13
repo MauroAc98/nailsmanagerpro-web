@@ -6,10 +6,11 @@
     "reserveCta": "Reserve seu horário"
   },
   "StoryCanvas": {
-    "availableTitle": "Horários disponíveis",
-    "availableTitleFor": "Horários de {categoria}",
+    "availableTitle": "Horários <em>disponíveis</em>",
+    "availableTitleFor": "Horários de <em>{categoria}</em>",
     "withProfessional": "com {nombre}",
-    "complete": "COMPLETO"
+    "withProfessionalRich": "com <b>{nombre}</b>",
+    "complete": "Completo"
   },
   "HistoriaPage": {
     "title": "Gerar story",
