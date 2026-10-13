@@ -37,6 +37,7 @@ import { formatMonto } from '@/lib/money';
 import { filaDePago } from '@/lib/cobros';
 import { usePendientesDeCobroStore } from '@/store/usePendientesDeCobroStore';
 import { pedirPreciosServicios } from '@/store/usePrecioServiciosStore';
+import { Spinner } from '@/components/Spinner';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -348,8 +349,8 @@ export default function EditarTurnoPage() {
 
   if (loadingTurno) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: colors.background, padding: 40, textAlign: 'center', color: colors.subtext }}>
-        {t('loadingAppointment')}
+      <div style={{ minHeight: '100vh', backgroundColor: colors.background, padding: 40, display: 'flex', justifyContent: 'center' }}>
+        <Spinner label={t('loadingAppointment')} />
       </div>
     );
   }
@@ -562,9 +563,9 @@ export default function EditarTurnoPage() {
                 {t('newClientOption')}
               </div>
               {clientesLoading && clientes.length === 0 && (
-                <p style={{ padding: '14px', margin: 0, fontSize: 14, color: colors.subtext, textAlign: 'center' }}>
-                  {t('loadingClients')}
-                </p>
+                <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
+                  <Spinner size={24} label={t('loadingClients')} />
+                </div>
               )}
               {!clientesLoading && clientesError && clientes.length === 0 && (
                 <div style={{ padding: '14px', textAlign: 'center' }}>
@@ -704,7 +705,7 @@ export default function EditarTurnoPage() {
             ) ? 0.5 : 1,
           }}
         >
-          {enCombo ? (saving ? t('saving') : t('moverCombo')) : slotsDesactualizados ? t('loadingSchedule') : saving ? t('saving') : t('saveChanges')}
+          {enCombo ? (saving ? t('saving') : t('moverCombo')) : slotsDesactualizados ? <Spinner size={18} variante="sobreOscuro" label={t('loadingSchedule')} /> : saving ? t('saving') : t('saveChanges')}
         </button>
       </div>
 

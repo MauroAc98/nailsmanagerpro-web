@@ -15,6 +15,7 @@ import PillToggle from '@/components/PillToggle';
 import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { formatearDiasAtencion } from '@/lib/formatearDiasAtencion';
 import { useAbreviaturasDias } from '@/hooks/useAbreviaturasDias';
+import { Spinner } from '@/components/Spinner';
 
 function ProfesionalCard({
   profesional,
@@ -208,8 +209,8 @@ export default function ProfesionalesPage() {
 
       {/* Loading */}
       {loading && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+        <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+          <Spinner label={t('loading')} />
         </div>
       )}
 

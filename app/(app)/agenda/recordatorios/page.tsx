@@ -10,6 +10,7 @@ import { useRecordatoriosPendientesStore } from '@/store/useRecordatoriosPendien
 import { useProfesionalStore } from '@/store/useProfesionalStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { whatsappHelper } from '@/lib/whatsappHelper';
+import { Spinner } from '@/components/Spinner';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -65,9 +66,7 @@ export default function RecordatoriosPendientesPage() {
 
       <div style={{ padding: '0 20px' }}>
         {loading && (
-          <p style={{ fontSize: 14, color: colors.subtext, marginTop: 12 }}>
-            {t('loading')}
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0' }}><Spinner label={t('loading')} /></div>
         )}
 
         {!loading && error && (

@@ -23,6 +23,7 @@ import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria
 import CategoriaHeader from '@/components/configuracion/CategoriaHeader';
 import { contarPorEstado, filtrarPorEstado, type FiltroEstado } from '@/lib/serviciosPorEstado';
 import { FiltroPills } from '@/components/FiltroPills';
+import { Spinner } from '@/components/Spinner';
 
 // ReorderableSection — un grupo (una categoría, o "Sin categoría") con su
 // propio DndContext/SortableContext, así arrastrar nunca mezcla ids entre
@@ -336,8 +337,8 @@ export default function ServiciosPage() {
 
       {/* Loading */}
       {loading && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+        <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+          <Spinner label={t('loading')} />
         </div>
       )}
 
@@ -366,8 +367,8 @@ export default function ServiciosPage() {
           ) : !categoriasReady ? (
             // Categorías todavía no asentaron (ver efecto de fetchCategorias
             // arriba) — evita el flash de todo bajo "Sin categoria".
-            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-              <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+            <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+              <Spinner label={t('loading')} />
             </div>
           ) : (
             // Un flat, sorted `ReorderableSection` por categoría, sin

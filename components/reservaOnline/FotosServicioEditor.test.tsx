@@ -36,6 +36,15 @@ describe('FotosServicioEditor', () => {
 
   const montar = () => renderWithProviders(<FotosServicioEditor servicioId={ID} />);
 
+  it('mientras carga muestra el spinner (role=status) y no el texto, y despues lo reemplaza', async () => {
+    mockServicio([]);
+    montar();
+    expect(screen.getByRole('status', { name: 'Cargando…' })).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).toBeNull();
+    expect(await screen.findByText('Fotos de tus trabajos')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('sin fotos muestra la ayuda y solo el mosaico "Agregar"', async () => {
     mockServicio([]);
     montar();

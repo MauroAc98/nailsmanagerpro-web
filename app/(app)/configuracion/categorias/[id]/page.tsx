@@ -8,6 +8,7 @@ import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } fro
 import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { categoriaServicioService } from '@/services/categoriaServicioService';
 import { alertDialog } from '@/store/useConfirmStore';
+import { Spinner } from '@/components/Spinner';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -79,7 +80,7 @@ export default function EditarCategoriaPage() {
   if (loadingCategoria) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: colors.subtext }}>{t('loading')}</p>
+        <Spinner label={t('loading')} />
       </div>
     );
   }

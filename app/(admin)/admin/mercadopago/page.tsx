@@ -7,6 +7,7 @@ import { ArrowLeft, Wallet, ChevronDown, ChevronUp, CircleCheck, Copy } from 'lu
 import { adminService, MercadoPagoNegocioConexion } from '@/services/adminService';
 import { colors, shadows } from '@/theme/colors';
 import { etiquetaSenaAdmin } from '@/lib/adminSena';
+import { Spinner } from '@/components/Spinner';
 
 // Fase 1 de Mercado Pago: cada negocio tiene su PROPIA cuenta, cargada a
 // mano por el equipo de Turnetto (sin OAuth propio — ver admin/whatsapp/
@@ -87,9 +88,7 @@ export default function MercadoPagoConexionesPage() {
         </div>
 
         {cargando && (
-          <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', padding: '16px 0' }}>
-            Cargando conexiones…
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}><Spinner variante="base" label="Cargando conexiones" /></div>
         )}
 
         {errorCarga && !cargando && (

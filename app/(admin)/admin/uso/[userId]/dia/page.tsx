@@ -7,6 +7,7 @@ import { isAxiosError } from 'axios';
 import { ArrowLeft } from 'lucide-react';
 import { adminService, UsoDetalleNegocioPorDiaResponse } from '@/services/adminService';
 import { colors, shadows, withAlpha } from '@/theme/colors';
+import { Spinner } from '@/components/Spinner';
 
 function extraerMensajeError(e: unknown, fallback: string): string {
   if (isAxiosError(e)) {
@@ -86,7 +87,7 @@ export default function UsoDetalleNegocioPorDiaPage() {
           Volver al detalle del negocio
         </Link>
 
-        {cargando && <p style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', padding: '16px 0' }}>Cargando...</p>}
+        {cargando && <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}><Spinner variante="base" label="Cargando" /></div>}
 
         {!cargando && error && (
           <div style={{ padding: '12px 16px', borderRadius: 12, backgroundColor: colors.dangerBg, borderLeft: `4px solid ${colors.dangerBorder}`, display: 'flex', flexDirection: 'column', gap: 10 }} role="alert">

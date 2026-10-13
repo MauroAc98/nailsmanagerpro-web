@@ -13,6 +13,7 @@ import { confirmDialog, alertDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
 import { nombreDia, nombreMes } from '@/lib/dateFormat';
 import { NAV_CLEARANCE } from '@/constants/layout';
+import { Spinner } from '@/components/Spinner';
 
 // "Domingo, 5 de enero de 2099" — mismo orden "de {mes} de {año}" que
 // funciona sin cambios en pt-BR ("Domingo, 5 de janeiro de 2099").
@@ -88,8 +89,8 @@ export default function BloqueosPage() {
 
         {/* Loading */}
         {loading && (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: colors.subtext, fontSize: 15 }}>{t('loading')}</p>
+          <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+            <Spinner label={t('loading')} />
           </div>
         )}
 

@@ -27,6 +27,7 @@ import { extraerMensajeError } from '@/services/clienteService';
 import { nombreMes, nombreDia, diasSemanaCortos, formatoYMD } from '@/lib/dateFormat';
 import { labelCategoriaIngreso } from '@/lib/categoriaLabel';
 import { formatMonto } from '@/lib/money';
+import { Spinner } from '@/components/Spinner';
 
 // Recharts pesa ~100KB: se carga solo al entrar a esta pantalla (no en el
 // bundle de Agenda ni del resto), y sin SSR — mide el contenedor con
@@ -642,7 +643,7 @@ function EstadisticasContent() {
             </button>
           </div>
         ) : loading ? (
-          <p style={{ textAlign: 'center', color: colors.subtext, fontSize: 14, marginTop: 40 }}>{t('loading')}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}><Spinner label={t('loading')} /></div>
         ) : (
           <>
             {/* Héroe — ganancia neta (lo que importa) + comparación con el mes
@@ -1175,7 +1176,7 @@ function EstadisticasContent() {
 export default function EstadisticasPage() {
   const t = useTranslations('estadisticas.EstadisticasPage');
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: colors.subtext }}>{t('loading')}</div>}>
+    <Suspense fallback={<div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner label={t('loading')} /></div>}>
       <EstadisticasContent />
     </Suspense>
   );

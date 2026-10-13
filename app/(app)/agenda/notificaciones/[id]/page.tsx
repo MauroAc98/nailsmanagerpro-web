@@ -10,6 +10,7 @@ import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { quitarAvisoUnidireccional } from '@/lib/whatsappHelper';
+import { Spinner } from '@/components/Spinner';
 
 // Renderiza *texto* en negrita, igual que WhatsApp interpreta los
 // asteriscos — mismo helper que components/perfil/SheetNegocio.tsx
@@ -79,7 +80,7 @@ export default function DetalleNotificacionPage() {
 
       <div style={{ padding: '0 20px' }}>
         {loading && !mensaje && (
-          <p style={{ fontSize: 14, color: colors.subtext, marginTop: 12 }}>{t('loading')}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0' }}><Spinner label={t('loading')} /></div>
         )}
 
         {!loading && !mensaje && (
