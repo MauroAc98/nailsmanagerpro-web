@@ -177,7 +177,7 @@ describe('SenaPreviewServicio — price suggestion', () => {
   it('percentage mode, price edited: one question and one button with the amount that gets applied', () => {
     setup('18000');
     expect(screen.getByText(
-      'Para que te lleguen los $9.000 completos, podés cobrar $20.000 (hoy $18.000): la seña sube a $10.000.',
+      'Con $20.000 (hoy $18.000) la seña sube a $10.000 y la comisión de Mercado Pago queda cubierta.',
     )).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Usar $20.000' })).toBeInTheDocument();
   });

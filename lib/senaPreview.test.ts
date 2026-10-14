@@ -80,10 +80,9 @@ describe('calcularSenaPreview', () => {
   });
 });
 
-// Regla de redondeo de la sugerencia: SIEMPRE cubre el costo (nunca baja del mínimo) y la
-// clienta nunca ve montos raros. Si la suba necesaria cabe en $500 se redondea hacia arriba
-// a múltiplos de $500; si la pasa, a múltiplos de $1000. Con seña por porcentaje, además, la
-// SEÑA que resulta (precio × pct) es siempre múltiplo de $100.
+// Redondeo de las sugerencias: SIEMPRE cubre el costo y el paso se adapta al precio. Se usa
+// el paso más grande (1000, 500, 100, 50, 10, 1) cuyo redondeo hacia arriba suma como mucho
+// un 5% sobre el mínimo que cubre. Así un precio chico nunca salta de golpe a otro enorme.
 describe('precioSugeridoSena', () => {
   it('18000 at 50% with 7.61 -> 20000 (deposit 10000, she receives 9239 >= 9000)', () => {
     expect(precioSugeridoSena(18000, pct(50))).toBe(20000);
@@ -93,40 +92,44 @@ describe('precioSugeridoSena', () => {
     expect(p.llega).toBe(9239);
   });
 
-  it('una suba chica (hasta $500) redondea a múltiplos de 500; una grande, a múltiplos de 1000', () => {
-    expect(precioSugeridoSena(4000, pct(100))).toBe(4500); // mínimo 4330, suba 500
-    expect(precioSugeridoSena(8000, pct(100))).toBe(9000); // mínimo 8659, la suba pasa de 500
-    expect(precioSugeridoSena(18000, pct(100))).toBe(20000);
+  it('el paso se adapta al precio (tabla de ejemplos, 30% con 7,61)', () => {
+    const casos: Array<[number, number]> = [
+      [100, 110], [500, 550], [1000, 1100], [3000, 3300], [4000, 4500], [5000, 5500],
+      [8000, 9000], [18000, 20000], [22000, 24000], [25000, 28000], [40000, 44000], [48000, 52000],
+    ];
+    for (const [precio, esperado] of casos) {
+      expect(precioSugeridoSena(precio, pct(30)), String(precio)).toBe(esperado);
+    }
   });
 
-  it('con servicios baratos el paso de 500 puede ser un salto grande, pero siempre cubre', () => {
-    expect(precioSugeridoSena(1000, pct(100))).toBe(1500); // mínimo 1083
+  it('un precio chico no salta a un múltiplo de mil (100 -> 110, no 1000)', () => {
+    expect(precioSugeridoSena(100, pct(30))).toBe(110);
   });
 
-  it('el porcentaje manda el paso mínimo para que la seña quede redonda (25% -> pasos de 2000)', () => {
-    expect(precioSugeridoSena(10000, pct(25))).toBe(12000); // seña 3000
+  it('el porcentaje no condiciona el redondeo del precio (no hay que dejar la seña redonda)', () => {
+    expect(precioSugeridoSena(10000, pct(25))).toBe(11000);
+    expect(precioSugeridoSena(10000, pct(33))).toBe(11000);
   });
 
-  it('SIEMPRE cubre y SIEMPRE queda redondo, para muchos porcentajes y precios', () => {
-    const porcentajes = [10, 20, 25, 30, 40, 50, 60, 75, 100];
-    const precios = [1000, 1500, 2500, 3300, 4000, 5200, 8000, 12500, 18000, 27300, 40000];
+  it('SIEMPRE cubre y nunca suma más de 5% sobre el mínimo, para muchos porcentajes y precios', () => {
+    const porcentajes = [10, 20, 25, 30, 33, 40, 50, 60, 75, 100];
+    const precios = [100, 250, 500, 1000, 1500, 2500, 3300, 4000, 5200, 8000, 12500, 18000, 27300, 40000];
     for (const porcentaje of porcentajes) {
       for (const precio of precios) {
         const sug = precioSugeridoSena(precio, pct(porcentaje))!;
         const etiqueta = `${porcentaje}% sobre ${precio}`;
+        const minimo = Math.ceil(precio / (1 - 0.0761) - 1e-9);
         // cubre: lo que llega, descontado el costo, no baja de la seña que quería
         const senaQueria = (precio * porcentaje) / 100;
         expect((sug * porcentaje / 100) * (1 - 0.0761), etiqueta).toBeGreaterThanOrEqual(senaQueria - 1e-6);
-        // redondo: precio múltiplo de 500 (de 1000 si la suba pasa de 500) y seña múltiplo de 100
-        expect(sug % 500, etiqueta).toBe(0);
-        if (sug - precio > 500) expect(sug % 1000, etiqueta).toBe(0);
-        expect((sug * porcentaje / 100) % 100, etiqueta).toBe(0);
+        expect(sug, etiqueta).toBeGreaterThanOrEqual(minimo);
+        expect((sug - minimo) / minimo, etiqueta).toBeLessThanOrEqual(0.05 + 1e-9);
       }
     }
   });
 
   it('adds the retention to the rate', () => {
-    // t = 11.61 -> 18000 / .8839 = 20364.5 -> la suba pasa de 500 -> 21000
+    // t = 11.61 -> 18000 / .8839 = 20364.5 -> 21000
     expect(precioSugeridoSena(18000, pct(50, { retencion_iibb_porcentaje: 4 }))).toBe(21000);
   });
 
@@ -140,11 +143,10 @@ describe('precioSugeridoSena', () => {
     expect(precioSugeridoSena(18100, pct(50, { comision_mp_vigente: 0 }))).toBe(18100);
   });
 
-  it('is null for price 0 / invalid, fixed mode, non-integer pct, invalid config or unknown commission', () => {
+  it('is null for price 0 / invalid, fixed mode, invalid config or unknown commission', () => {
     expect(precioSugeridoSena(0, pct(50))).toBeNull();
     expect(precioSugeridoSena(-10, pct(50))).toBeNull();
     expect(precioSugeridoSena(18000, fijo(5000))).toBeNull();
-    expect(precioSugeridoSena(18000, pct(12.5))).toBeNull();
     expect(precioSugeridoSena(18000, pct(0))).toBeNull();
     expect(precioSugeridoSena(18000, pct(50, { comision_mp_vigente: null }))).toBeNull();
   });
@@ -166,28 +168,28 @@ describe('desgloseSena (monto fijo, sin precio)', () => {
 
 describe('senaFijaSugerida', () => {
   it('raises the seña, rounded UP, so the net covers the typed amount', () => {
-    // 5000 / (1 - 0.0761) = 5411,7 -> suba 412 (hasta 500) -> 5500
+    // 5000 / (1 - 0.0761) = 5411,7 -> 5412 -> paso de 500 (suba de 88) -> 5500
     expect(senaFijaSugerida(5000, { comision_mp_vigente: 7.61 })).toBe(5500);
     const d = desgloseSena(5500, { comision_mp_vigente: 7.61 })!;
     expect(d.llega).toBeGreaterThanOrEqual(5000);
   });
-  it('una suba chica (hasta $500) redondea a múltiplos de 500; una grande, a múltiplos de 1000', () => {
-    expect(senaFijaSugerida(3000, { comision_mp_vigente: 7.61 })).toBe(3500);
+  it('el paso se adapta al monto (nunca más de 5% sobre el mínimo)', () => {
+    expect(senaFijaSugerida(3000, { comision_mp_vigente: 7.61 })).toBe(3300);
     expect(senaFijaSugerida(4000, { comision_mp_vigente: 7.61 })).toBe(4500);
-    expect(senaFijaSugerida(10000, { comision_mp_vigente: 7.61 })).toBe(11000); // mínimo 10824, la suba pasa de 500
-    expect(senaFijaSugerida(25000, { comision_mp_vigente: 7.61 })).toBe(28000); // mínimo 27060 -> de a 1000
+    expect(senaFijaSugerida(10000, { comision_mp_vigente: 7.61 })).toBe(11000);
+    expect(senaFijaSugerida(25000, { comision_mp_vigente: 7.61 })).toBe(28000);
   });
-  it('SIEMPRE cubre y SIEMPRE queda redonda', () => {
+  it('SIEMPRE cubre y nunca suma más de 5% sobre el mínimo', () => {
     for (const monto of [1000, 1500, 2000, 3000, 4500, 5000, 7500, 10000, 15000, 25000, 40000]) {
       const sug = senaFijaSugerida(monto, { comision_mp_vigente: 7.61 })!;
+      const minimo = Math.ceil(monto / (1 - 0.0761) - 1e-9);
       expect(sug * (1 - 0.0761), String(monto)).toBeGreaterThanOrEqual(monto - 1e-6);
-      expect(sug % 500, String(monto)).toBe(0);
-      if (sug - monto > 500) expect(sug % 1000, String(monto)).toBe(0);
+      expect((sug - minimo) / minimo, String(monto)).toBeLessThanOrEqual(0.05 + 1e-9);
     }
   });
   it('accounts for the tax retention', () => {
-    // 5000 / (1 - 0.0961) = 5531,3 -> la suba pasa de 500 -> 6000
-    expect(senaFijaSugerida(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 })).toBe(6000);
+    // 5000 / (1 - 0.0961) = 5531,3 -> 5532 -> paso de 100 -> 5600
+    expect(senaFijaSugerida(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 })).toBe(5600);
   });
   it('sin costo que cubrir (t = 0) no toca el monto', () => {
     expect(senaFijaSugerida(100, { comision_mp_vigente: 0 })).toBe(100);

@@ -282,7 +282,7 @@
     "mpFee": "Comisión de Mercado Pago ({rate}%)",
     "taxRetention": "Retención de impuestos",
     "netReceived": "Te llegan",
-    "coverQuestion": "Para que te lleguen los {sena} completos, podés cobrar {precio} (hoy {actual}): la seña sube a {senaNueva}.",
+    "coverQuestion": "Con {precio} (hoy {actual}) la seña sube a {senaNueva} y la comisión de Mercado Pago queda cubierta.",
     "coverButton": "Usar {precio}",
     "adjusted": "Precio ajustado. Antes: {precio}",
     "undo": "Deshacer"
