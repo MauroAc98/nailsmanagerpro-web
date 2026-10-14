@@ -6,7 +6,7 @@ import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agenda
 import { useAuthStore } from '@/store/useAuthStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { formatMonto, formatMontoEntero } from '@/lib/money';
-import { calcularSenaPreview, precioSugeridoSena, senaConfigurada } from '@/lib/senaPreview';
+import { calcularSenaPreview, PASO_SENA_PORCENTAJE, precioSugeridoSena, senaConfigurada } from '@/lib/senaPreview';
 import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
 
 interface Props {
@@ -145,9 +145,10 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   }
 
   const hayRetencion = p.retencion > 0;
-  // La seña por porcentaje sube al múltiplo de 500: si no coincide con el % exacto, se aclara.
+  // La seña por porcentaje sube al múltiplo de 500. Solo el detalle explica ese redondeo, y solo
+  // si ocurrió: si ya era múltiplo, o si la seña es el precio entero, no hay nada que aclarar.
   const senaExacta = Math.round(valor * (user.sena_porcentaje ?? 0)) / 100;
-  const origenPorcentaje = p.sena === senaExacta ? 'originPercent' : 'originPercentRounded';
+  const redondeada = porcentaje && p.sena !== senaExacta && p.sena < valor;
   // Se ofrece cubrir la comisión solo si el precio se tocó en esta pantalla.
   const tocado = valor !== parsearMonto(precioInicial ?? '');
   const sugerido = onUsarPrecio && (tocado || verSugerencia) ? precioSugeridoSena(valor, user) : null;
@@ -158,7 +159,6 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   // empuja sola (la seña es un % del precio: cada ajuste volvería a ofrecer otro),
   // la profesional la pide con un botón.
   const mostrarPista = !!onUsarPrecio && porcentaje && !tocado && !verSugerencia && !confirmado && p.llega < p.sena;
-  const cubre = p.llega >= p.sena;
 
   const usar = () => {
     if (sugerido === null || !onUsarPrecio) return;
@@ -173,7 +173,6 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   };
 
   const enNegrita = (chunks: ReactNode) => <b style={cifraStyle}>{chunks}</b>;
-  const atenuado = (chunks: ReactNode) => <span style={{ color: colors.subtext }}>{chunks}</span>;
 
   const bannerStyle = {
     backgroundColor: colors.primarySoft, borderRadius: 14, padding: 14,
@@ -200,30 +199,18 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
       {titulo}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* Vista normal: solo dos cifras firmes (lo que deja el cliente y lo que se queda MP).
+            No se muestra "lo que llega del servicio": el precio del catálogo es un "desde". */}
+        <p style={fraseStyle}>{t.rich('leaves', { sena: monto(p.sena), b: enNegrita })}</p>
         <p style={fraseStyle}>
-          {t.rich('leaves', {
-            sena: monto(p.sena),
-            origen: porcentaje
-              ? t(origenPorcentaje, { pct: user.sena_porcentaje ?? 0, precio: monto(valor) })
-              : t('originFixed'),
-            b: enNegrita,
-            m: atenuado,
-          })}
-        </p>
-        <p style={fraseStyle}>
-          {t.rich('receives', {
-            llega: monto(p.llega),
-            b: chunks => (
-              <b style={{ ...cifraStyle, color: cubre ? colors.primaryDeep : colors.amberFg }}>{chunks}</b>
-            ),
-          })}
+          {t.rich(hayRetencion ? 'keepsWithRetention' : 'keeps', { costos: monto(p.cargo + p.retencion), b: enNegrita })}
         </p>
       </div>
 
       {confirmado && anterior !== null && (
         <div style={{ ...bannerStyle, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <span style={{ fontSize: 13, lineHeight: 1.35, color: colors.text, minWidth: 0 }}>
-            {t('adjusted', { precio: monto(anterior) })}
+            {t('adjusted', { precio: monto(valor), anterior: monto(anterior) })}
           </span>
           <button type="button" onClick={deshacer} style={{ ...botonStyle, width: 'auto', flexShrink: 0, padding: '0 14px', minHeight: 40, fontSize: 13 }}>
             {t('undo')}
@@ -233,9 +220,8 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
       {!confirmado && sugerido !== null && sugerido !== valor && sugerencia && (
         <div style={ofertaStyle}>
           <span style={{ fontSize: 14, lineHeight: 1.45, color: colors.text }}>
-            {t('coverQuestion', {
-              sena: monto(p.sena), precio: monto(sugerido), actual: monto(valor),
-              senaNueva: monto(sugerencia.sena),
+            {t(sugerencia.sena !== p.sena ? 'coverQuestionSena' : 'coverQuestion', {
+              precio: monto(sugerido), actual: monto(valor), senaNueva: monto(sugerencia.sena),
             })}
           </span>
           <button type="button" onClick={usar} style={botonStyle}>{t('coverButton', { precio: monto(sugerido) })}</button>
@@ -253,6 +239,24 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
       </button>
       {verDetalle && (
         <div style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {porcentaje && (
+            <div style={{ ...filaStyle, fontSize: 14, color: colors.text }}>
+              <span style={etiquetaStyle}>{t('detailPrice')}</span>
+              <span style={montoStyle}>{monto(valor)}</span>
+            </div>
+          )}
+          {redondeada && (
+            <>
+              <div style={{ ...filaStyle, fontSize: 14, color: colors.text }}>
+                <span style={etiquetaStyle}>{t('detailPercent', { pct: user.sena_porcentaje ?? 0 })}</span>
+                <span style={montoStyle}>{monto(senaExacta)}</span>
+              </div>
+              <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                <span style={etiquetaStyle}>{t('detailRounding', { paso: monto(PASO_SENA_PORCENTAJE) })}</span>
+                <span style={montoStyle}>{`+ ${monto(p.sena - senaExacta)}`}</span>
+              </div>
+            </>
+          )}
           <div style={{ ...filaStyle, fontSize: 14, color: colors.text }}>
             <span style={etiquetaStyle}>{t('detailPays')}</span>
             <span style={montoStyle}>{monto(p.sena)}</span>
@@ -272,6 +276,7 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
             <span style={etiquetaStyle}>{t('netReceived')}</span>
             <span style={{ ...montoStyle, fontSize: 17 }}>{monto(p.llega)}</span>
           </div>
+          {redondeada && <p style={notaStyle}>{t('detailRoundingNote')}</p>}
         </div>
       )}
 
