@@ -7,7 +7,7 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import PillToggle from '@/components/PillToggle';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { formatMonto } from '@/lib/money';
-import { desgloseSena, senaFijaSugerida } from '@/lib/senaPreview';
+import { calcularSena, desgloseSena, senaFijaSugerida } from '@/lib/senaPreview';
 import { SheetInput } from './SheetInput';
 import type { SenaCampo, SenaModo } from '@/lib/senaConfig';
 
@@ -145,7 +145,8 @@ export function SheetSenaYPagos({
   const conCalculo = reservaOnlineActiva && comisionVigente != null;
   const desglose = reservaOnlineActiva && montoFijo !== null ? desgloseSena(montoFijo, configCalculo) : null;
   const porcentajeValido = Number.isFinite(porcentajeElegido) && porcentajeElegido >= 1 && porcentajeElegido <= 100;
-  const montoEjemplo = (PRECIO_EJEMPLO * porcentajeElegido) / 100;
+  // Igual que la seña real: el porcentaje se redondea hacia arriba al múltiplo de 500.
+  const montoEjemplo = calcularSena(PRECIO_EJEMPLO, { sena_tipo: 'porcentaje', sena_porcentaje: porcentajeElegido });
   const desgloseEjemplo = conCalculo && senaTipo === 'porcentaje' && porcentajeValido
     ? desgloseSena(montoEjemplo, configCalculo)
     : null;
