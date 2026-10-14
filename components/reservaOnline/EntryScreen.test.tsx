@@ -92,8 +92,44 @@ describe('EntryScreen', () => {
     renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
     await screen.findByRole('heading', { name: 'Studio Demo' });
     expect(screen.getByText('Elegí servicios y horario')).toBeInTheDocument();
-    expect(screen.getByText('Pagá una seña')).toBeInTheDocument();
+    expect(screen.getByText('Pagá una seña de $5.000,00')).toBeInTheDocument();
     expect(screen.getByText('Turno confirmado')).toBeInTheDocument();
+  });
+
+  // La duda de plata mas comun: cuanto es la seña. Antes recien aparecia en el paso 4.
+  it('el paso de la seña dice cuánto es: el monto si es fijo, el porcentaje si es por porcentaje', async () => {
+    const svc = prepararServicio();
+    setServiceParaTests({
+      ...svc,
+      getTerms: async (slug: string) => ({
+        ...(await svc.getTerms(slug)),
+        senaTipo: 'porcentaje' as const,
+        deposito: null,
+        senaPorcentaje: 30,
+      }),
+    });
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    expect(await screen.findByText('Pagá una seña del 30%')).toBeInTheDocument();
+  });
+
+  it('sin el dato de la seña, el paso queda como antes ("Pagá una seña"), sin inventar un monto', async () => {
+    const svc = prepararServicio();
+    setServiceParaTests({
+      ...svc,
+      getTerms: async (slug: string) => ({
+        ...(await svc.getTerms(slug)),
+        senaTipo: 'porcentaje' as const,
+        deposito: null,
+        senaPorcentaje: null,
+      }),
+    });
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    expect(await screen.findByText('Pagá una seña')).toBeInTheDocument();
+  });
+
+  it('aclara que no hace falta crear una cuenta', async () => {
+    renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
+    expect(await screen.findByText('No necesitás crear una cuenta')).toBeInTheDocument();
   });
 
   it('"Te atienden" lista a las profesionales con iniciales', async () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ClipboardEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { PAISES, phoneUtils } from '@/lib/phoneUtils';
 import { getService } from '@/lib/reservaOnline';
 import { rutaPaso } from '@/lib/reservaOnline/rutas';
@@ -48,6 +48,7 @@ export function DatosScreen({
   cadaMs?: number;
 }) {
   const t = useTranslations('reservaOnline');
+  const locale = useLocale();
   const listo = useGuardaPaso(slug, 'datos', ir);
   const cliente = useReservaOnlineStore((s) => s.cliente);
   const nota = useReservaOnlineStore((s) => s.nota);
@@ -78,6 +79,12 @@ export function DatosScreen({
   const whatsappValido = esWhatsappCompleto(cliente.whatsapp);
   const mostrarError = whatsappVisible.length > 0 && !whatsappValido;
   const completo = cliente.nombre.trim() !== '' && cliente.apellido.trim() !== '' && whatsappValido;
+  // Que falta, para decirlo sobre el boton gris en vez de dejar a la persona adivinando.
+  const faltantes = [
+    cliente.nombre.trim() === '' ? t('datos.campoNombre') : null,
+    cliente.apellido.trim() === '' ? t('datos.campoApellido') : null,
+    !whatsappValido ? t('datos.whatsapp') : null,
+  ].filter((c): c is string => c !== null);
 
   const aplicarWhatsapp = (visible: string, codigo: string) => {
     setWhatsappCrudo(visible);
@@ -141,7 +148,6 @@ export function DatosScreen({
     <div>
       <PasoHeader
         titulo={t('datos.title')}
-        subtitulo={t('datos.subtitle')}
         paso={3}
         onVolver={() => ir(rutaPaso(slug, 'horario'))}
         pill={<HoldPill restanteMs={restanteMs} />}
@@ -229,6 +235,13 @@ export function DatosScreen({
       {errorGuardar && <Mensaje tono="error">{t('errores.generico')}</Mensaje>}
 
       <BarraInferior>
+        {!completo && (
+          <div style={{ textAlign: 'center', fontSize: 13, color: colors.amberFg, marginBottom: 8 }}>
+            {t('datos.faltaCompletar', {
+              campos: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(faltantes),
+            })}
+          </div>
+        )}
         <BotonPrimario disabled={!completo || enviando} onClick={continuar}>
           {t('comun.continuar')}
         </BotonPrimario>

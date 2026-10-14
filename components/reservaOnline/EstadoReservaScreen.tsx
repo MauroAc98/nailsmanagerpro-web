@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getService, SLUGS_MOCK } from '@/lib/reservaOnline';
 import type { ReservaOnlineService } from '@/lib/reservaOnline';
@@ -91,6 +91,23 @@ function AnilloCuentaRegresiva({ restanteMs, totalMs }: { restanteMs: number; to
   );
 }
 
+// Boton secundario de ancho completo con area tactil de 48px (los textos sueltos de 13px
+// eran la salida de pantallas clave: "Ya pagué", "Volver al inicio").
+function BotonSecundarioEstado({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%', minHeight: 48, borderRadius: 14, cursor: 'pointer', fontSize: 15, fontWeight: 600,
+        background: 'transparent', border: `1px solid ${colors.border}`, color: colors.strong,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 function IconoCirculo({ fondo, children }: { fondo: string; children: ReactNode }) {
   return (
     <div style={{ width: 84, height: 84, borderRadius: 42, background: fondo, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -131,7 +148,15 @@ export function EstadoReservaScreen({
   }, `${slug}|${id}`);
   const reloj = useAhora(ahora, cadaMs);
 
-  const estado = data?.estado;
+  // useCarga borra `data` ante cualquier error, y el polling usa el mismo hook: un
+  // corte de red mientras se espera el pago dejaba la pantalla vacia (y la persona
+  // pudo haber pagado). Se guarda lo ultimo bueno y se sigue mostrando, con un aviso.
+  const [ultimo, setUltimo] = useState<typeof data>(null);
+  if (data && data !== ultimo) setUltimo(data);
+  const errorFinal = error?.code === 'creation_disabled' || error?.code === 'not_found';
+  const vista = data ?? (error && !errorFinal ? ultimo : null);
+
+  const estado = vista?.estado;
   const vencioLaVentana = estado?.status === 'pending_payment' && reloj >= estado.expiresAtMs;
 
   // Al cruzar el vencimiento se vuelve a pedir el estado: el servidor decide.
@@ -157,19 +182,35 @@ export function EstadoReservaScreen({
     if (confirmada) useReservaOnlineStore.getState().confirmar();
   }, [confirmada]);
 
-  if (error) {
+  // Con un error y nada que mostrar: el mensaje, pero siempre con una salida.
+  if (error && !vista) {
     // El kill switch del backend (RESERVAS_CREACION_HABILITADA=false) tambien
     // corta la lectura del estado: a pantalla completa, nunca "no encontrada".
     if (error.code === 'creation_disabled') return <NoDisponibleAun />;
     // Bug real: el polling automatico (o "Ya pague" tocado varias veces)
     // podia gatillar el limite de reservas-estado, y caia al error generico
     // en vez del aviso especifico que ya usan Horario/Resumen/Datos.
-    if (error.code === 'rate_limited') return <Mensaje tono="error">{t('errores.limiteIntentos')}</Mensaje>;
-    return <Mensaje tono="error">{error.code === 'not_found' ? t('estado.noEncontrada') : t('errores.generico')}</Mensaje>;
+    const mensaje =
+      error.code === 'rate_limited'
+        ? t('errores.limiteIntentos')
+        : error.code === 'not_found'
+          ? t('estado.noEncontrada')
+          : t('errores.generico');
+    return (
+      <div>
+        <Mensaje tono="error">{mensaje}</Mensaje>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+          {error.code !== 'not_found' && (
+            <BotonPrimario onClick={reintentar}>{t('comun.reintentar')}</BotonPrimario>
+          )}
+          <BotonSecundarioEstado onClick={() => ir(rutaPaso(slug))}>{t('estado.volverInicio')}</BotonSecundarioEstado>
+        </div>
+      </div>
+    );
   }
-  if (!data || !estado) return <EstadoReservaSkeleton />;
+  if (!vista || !estado) return <EstadoReservaSkeleton />;
 
-  const { salon, servicios, terminos } = data;
+  const { salon, servicios, terminos } = vista;
   const resumen = estado.summary;
   // null/0 = seña por porcentaje sin total conocido: no se muestra como si fuera un precio.
   const montoSena =
@@ -312,7 +353,7 @@ export function EstadoReservaScreen({
           <button
             type="button"
             onClick={() => ir(rutaPaso(slug))}
-            style={{ display: 'block', margin: '14px auto 0', background: 'none', border: 'none', fontSize: 13, fontWeight: 600, color: colors.primaryDeep, cursor: 'pointer' }}
+            style={{ display: 'block', margin: '6px auto 0', minHeight: 44, padding: '0 16px', background: 'none', border: 'none', fontSize: 14, fontWeight: 600, color: colors.primaryDeep, cursor: 'pointer' }}
           >
             {t('estado.volverInicio')}
           </button>
@@ -323,8 +364,13 @@ export function EstadoReservaScreen({
 
   if (estado.status === 'cancelled') {
     return (
-      <div style={centrado}>
-        <h1 style={tituloEstilo}>{t('estado.canceladaTitulo')}</h1>
+      <div>
+        <div style={centrado}>
+          <h1 style={tituloEstilo}>{t('estado.canceladaTitulo')}</h1>
+        </div>
+        <BarraInferior>
+          <BotonPrimario onClick={() => ir(rutaPaso(slug))}>{t('estado.reservarDeNuevo')}</BotonPrimario>
+        </BarraInferior>
       </div>
     );
   }
@@ -340,6 +386,33 @@ export function EstadoReservaScreen({
         <h1 style={tituloEstilo}>{t('estado.pendienteTitulo')}</h1>
         <div style={textoEstilo}>{t('estado.pendienteDetalle')}</div>
       </div>
+      {/* Un error al actualizar (corte de red, limite de intentos) no reemplaza la pantalla:
+          se sigue viendo lo ultimo y se avisa, con una salida. La persona pudo haber pagado. */}
+      {error && (
+        <div
+          role="status"
+          style={{ marginTop: 18, padding: '14px 16px', borderRadius: 14, background: colors.amberBg, textAlign: 'left' }}
+        >
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: colors.amberFg }}>
+            {error.code === 'rate_limited' ? t('errores.limiteIntentos') : t('estado.errorActualizarTitulo')}
+          </div>
+          {error.code !== 'rate_limited' && (
+            <div style={{ fontSize: 13.5, color: colors.text, lineHeight: 1.45, marginTop: 4 }}>
+              {t('estado.errorActualizarDetalle')}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={reintentar}
+            style={{
+              minHeight: 44, marginTop: 10, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
+              background: 'transparent', border: `1px solid ${colors.amberFg}`, color: colors.amberFg, fontSize: 14, fontWeight: 700,
+            }}
+          >
+            {t('comun.reintentar')}
+          </button>
+        </div>
+      )}
       <div style={{ paddingTop: 26 }}>
         <Tarjeta estilo={{ borderRadius: 16, padding: '14px 16px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: colors.strong }}>
@@ -379,16 +452,9 @@ export function EstadoReservaScreen({
             {t('estado.volverMp')}
           </a>
         )}
-        <button
-          type="button"
-          onClick={reintentar}
-          style={{
-            display: 'block', margin: '14px auto 0', background: 'none', border: 'none', fontSize: 13, color: colors.sub,
-            cursor: 'pointer',
-          }}
-        >
-          {t('estado.yaPague')}
-        </button>
+        <div style={{ marginTop: 10 }}>
+          <BotonSecundarioEstado onClick={reintentar}>{t('estado.yaPague')}</BotonSecundarioEstado>
+        </div>
       </BarraInferior>
     </div>
   );

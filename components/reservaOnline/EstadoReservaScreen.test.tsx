@@ -381,6 +381,79 @@ describe('EstadoReservaScreen', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Hiciste muchos intentos. Esperá un momento y volvé a intentarlo.');
   });
 
+  // Un corte de red mientras se espera el pago NO puede dejar a la persona con una
+  // pantalla vacia: pudo haber pagado. Se conserva lo ultimo que se vio y se avisa.
+  describe('error de red', () => {
+    const conRed = () => {
+      const red = { caida: false };
+      setServiceParaTests({
+        ...svc,
+        getReservationStatus: async (...args: Parameters<typeof svc.getReservationStatus>) => {
+          if (red.caida) throw new ReservaOnlineError('unknown');
+          return svc.getReservationStatus(...args);
+        },
+      });
+      return red;
+    };
+
+    it('durante la espera del pago conserva la pantalla, avisa con claridad y ofrece Reintentar', async () => {
+      const red = conRed();
+      montar();
+      await screen.findByRole('heading', { name: 'Esperando tu pago' });
+      red.caida = true;
+      expect(await screen.findByText('No pudimos actualizar el estado')).toBeInTheDocument();
+      expect(screen.getByText(/Si ya pagaste, tu turno se confirma igual/)).toBeInTheDocument();
+      // sigue viéndose lo que ya estaba (no se reemplaza todo por un texto)
+      expect(screen.getByRole('heading', { name: 'Esperando tu pago' })).toBeInTheDocument();
+      expect(screen.getByText('Viernes 25 · 13:00')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    });
+
+    it('al volver la conexión y reintentar, el aviso desaparece', async () => {
+      const red = conRed();
+      montar();
+      await screen.findByRole('heading', { name: 'Esperando tu pago' });
+      red.caida = true;
+      await screen.findByText('No pudimos actualizar el estado');
+      red.caida = false;
+      await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+      await waitFor(() => expect(screen.queryByText('No pudimos actualizar el estado')).toBeNull());
+      expect(screen.getByRole('heading', { name: 'Esperando tu pago' })).toBeInTheDocument();
+    });
+
+    it('"Ya pagué · actualizar estado" es un botón con área táctil de 44 px o más (es la acción clave tras pagar)', async () => {
+      montar();
+      const boton = await screen.findByRole('button', { name: 'Ya pagué · actualizar estado' });
+      expect(parseInt(boton.style.minHeight || boton.style.height, 10)).toBeGreaterThanOrEqual(44);
+    });
+
+    it('si falla al entrar (sin ningún dato todavía) hay salida: Reintentar y Volver al inicio', async () => {
+      conRed().caida = true;
+      const ir = montar();
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos completar la operación. Probá de nuevo.');
+      expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Volver al inicio' }));
+      expect(ir).toHaveBeenCalledWith('/reservar/demo');
+    });
+
+    it('reserva inexistente: además del mensaje hay salida (Volver al inicio), sin Reintentar que no serviría', async () => {
+      const ir = vi.fn();
+      renderWithProviders(<EstadoReservaScreen slug="demo" id="nada" ir={ir} ahora={ahora} />);
+      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No encontramos esta reserva.'));
+      expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Volver al inicio' }));
+      expect(ir).toHaveBeenCalledWith('/reservar/demo');
+    });
+  });
+
+  it('cancelada: ofrece "Reservar de nuevo" (antes quedaba sin ninguna salida)', async () => {
+    await svc.cancelReservation('demo', 'mock-1');
+    const ir = montar();
+    await screen.findByText('Esta reserva fue cancelada');
+    await userEvent.click(screen.getByRole('button', { name: 'Reservar de nuevo' }));
+    expect(ir).toHaveBeenCalledWith('/reservar/demo');
+  });
+
   describe('seña sin monto conocido (deposito null o 0)', () => {
     const sinDeposito = (deposito: number | null, status?: 'confirmed') => {
       setServiceParaTests({
