@@ -14,31 +14,11 @@ import { safeAreaInsets } from '@/lib/historia/safeArea';
 import { zonaPieDesdeLinea } from '@/lib/historia/zonaPie';
 import { MAX_LINEAS_SERVICIOS, TAMANO_LINEA_SERVICIOS, medirTextoServicios, repartirEnRenglones } from '@/lib/historiaServicios';
 
-// Misma pila que el resto de la app (globals.css): la fila de horas va en serif
-// y los números vuelven a esta fuente para leerse parejos.
-const FUENTE_SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-
 function partesDia(fecha: string): { abrev: string; numero: number } {
   const d = new Date(fecha + 'T00:00:00');
   // Intl da la abreviatura de es-* con punto final ("jue.", "mié.") — se
   // saca acá para que en la imagen quede "JUE 3", no "JUE. 3".
   return { abrev: nombreDiaIntl(d, 'short', 'mayusculas').replace(/\.+$/, ''), numero: d.getDate() };
-}
-
-// ["10hs", "14hs"] -> números sueltos + "hs" una sola vez al final ("10 · 14 hs"),
-// así no se repite la unidad en cada hora. Si alguna hora tiene otro formato,
-// se muestran todas tal cual.
-function partirHoras(horas: string[]): { numeros: string[]; unidad: string | null } {
-  const partes = horas.map(h => /^(\d{1,2}(?::\d{2})?)\s*(hs)$/i.exec(h.trim()));
-  if (partes.length === 0 || !partes.every(Boolean)) return { numeros: horas, unidad: null };
-  return { numeros: partes.map(m => m![1]), unidad: partes[0]![2] };
-}
-
-// Punto medio entre horas, tenue para que mande el número.
-function SeparadorHoras() {
-  return (
-    <span data-testid="story-separador-hora" aria-hidden style={{ opacity: 0.55, margin: '0 0.45em', fontStyle: 'italic' }}>·</span>
-  );
 }
 
 interface Props {
@@ -473,77 +453,49 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
                   {dias.map((dia, idx) => {
                     const slotsLibres = dia.slots.filter(s => s.libre);
                     const estaCompleto = slotsLibres.length === 0;
+                    const horasTexto = slotsLibres.map(s => s.hora).join(' · ');
                     const { abrev, numero } = partesDia(dia.fecha);
 
                     return (
-                      <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', lineHeight: '14px' }}>
-                        {/* Estilo "carta": el día a la izquierda, las horas a la
-                            derecha y una línea de puntos que las une. El día
-                            lleva flexShrink:0 + whiteSpace:nowrap y un ancho
-                            fijo — sin eso, una fila con muchas horas le comía
-                            ancho y las líneas de puntos de cada fila quedaban
-                            desalineadas (ver pattern_flex_minwidth_long_names).
-                            El día va en sans (abreviatura chica y tenue, número
-                            en negrita); la fila mide 14px, así la quincena no
-                            se aprieta. */}
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        {/* flexShrink:0 + whiteSpace:nowrap — sin esto, una
+                            fila con muchas horas ("09hs · 17hs · 19hs") le
+                            comía ancho a esta columna y al divisor, y los
+                            divisores de cada fila quedaban desalineados
+                            (ver pattern_flex_minwidth_long_names). */}
+                        {/* Abreviatura en una columna de ancho fijo y el número a
+                            continuación: así los números de todas las filas
+                            quedan alineados ("MIÉ 3" no corre a "JUE 24"). */}
                         <span data-testid="story-dia" style={{
-                          width: 40, flexShrink: 0, color: '#fff', display: 'flex', alignItems: 'baseline',
-                          gap: 6, whiteSpace: 'nowrap',
+                          width: 52, flexShrink: 0, color: '#fff', fontSize: 10, fontWeight: 700,
+                          letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap',
+                          display: 'flex', alignItems: 'baseline', gap: 6,
                         }}>
-                          <span style={{
-                            minWidth: 20, fontSize: 8, fontWeight: 700, letterSpacing: '0.16em',
-                            textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)',
-                          }}>
-                            {abrev}
-                          </span>
-                          <span style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{numero}</span>
+                          <span style={{ minWidth: 24 }}>{abrev}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{numero}</span>
                         </span>
-                        <span
-                          aria-hidden
-                          style={{
-                            flex: 1, minWidth: 12, margin: '0 8px', alignSelf: 'center',
-                            borderBottom: '1px dotted rgba(255,255,255,0.4)', transform: 'translateY(1px)',
-                          }}
-                        />
+                        <div style={{ width: 1, height: 14, flexShrink: 0, background: 'rgba(255,255,255,0.35)', margin: '0 8px' }} />
                         {estaCompleto ? (
                           // Blanco atenuado, no primaryRaw (verde salvia de
                           // marca del sistema): esta imagen la comparten los
                           // negocios que alquilan la app y el color del
                           // sistema no los representa — mismo criterio que el
                           // footer y que el acento de TarjetaPrecios. Además
-                          // "Completo" es el estado SIN turnos, tiene que
+                          // "COMPLETO" es el estado SIN turnos, tiene que
                           // recederse frente a las horas disponibles en
                           // blanco pleno, no gritar con un color.
                           <span style={{
-                            color: 'rgba(255,255,255,0.5)', fontFamily: agendaFontSerif, fontSize: 12, fontStyle: 'italic', flexShrink: 0,
+                            color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: 600,
+                            fontStyle: 'italic', letterSpacing: 0.5,
                           }}>
                             {t('complete')}
                           </span>
                         ) : (
-                          // flex 0 1 auto + maxWidth: el bloque mide lo que
-                          // miden las horas (queda pegado a la derecha) y solo
-                          // se achica si no entran en el ancho que deja el día.
-                          <div style={{ flex: '0 1 auto', minWidth: 0, maxWidth: canvasWidth - 36 - 40 - 28 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             <FitText
-                              testId="story-horas"
-                              text={(() => {
-                                const { numeros, unidad } = partirHoras(slotsLibres.map(s => s.hora));
-                                return (
-                                  <>
-                                    {numeros.map((n, i) => (
-                                      <Fragment key={i}>
-                                        {i > 0 && <SeparadorHoras />}
-                                        <span style={{ fontFamily: FUENTE_SANS, fontStyle: 'normal', fontWeight: 500, fontSize: '0.875em', fontVariantNumeric: 'tabular-nums' }}>{n}</span>
-                                      </Fragment>
-                                    ))}
-                                    {unidad && (
-                                      <span data-testid="story-unidad" style={{ fontSize: '0.7em', opacity: 0.65, marginLeft: '0.3em', fontStyle: 'normal' }}>{unidad}</span>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                              maxFontSize={12}
-                              style={{ color: '#fff', fontFamily: agendaFontSerif, fontStyle: 'italic', fontWeight: 400, textAlign: 'right' }}
+                              text={horasTexto}
+                              maxFontSize={10}
+                              style={{ color: '#fff', fontWeight: 400, letterSpacing: 0.3 }}
                             />
                           </div>
                         )}

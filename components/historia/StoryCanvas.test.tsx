@@ -65,63 +65,16 @@ describe('StoryCanvas — logo del negocio en el lugar del chip de fecha / ícon
     expect(screen.getByText('Sept')).toBeInTheDocument();
     expect(screen.getByText('2026')).toBeInTheDocument();
     // El "24" aparece una sola vez: es el número de la fila de la lista, no un chip de fecha.
-    expect(screen.getAllByText('24')).toHaveLength(1);
+    expect(screen.getAllByText("24")).toHaveLength(1);
   });
 
-  it('modo semana: cada día separa la abreviatura del número, y las horas el número del "hs"', () => {
-    renderCanvas(null, variosDias);
-    const dias = screen.getAllByTestId('story-dia');
-    expect(dias).toHaveLength(2);
-    expect(dias[0]).toHaveTextContent(/^JUE24$/);
-    const horas = screen.getAllByTestId('story-horas')[0];
-    expect(horas).toHaveTextContent('10hs');
-    expect(screen.getAllByTestId('story-unidad')[0]).toHaveTextContent('hs');
-  });
-
-  it('modo semana: el "hs" aparece una sola vez por día, no en cada hora, y una línea de puntos une día y horas', () => {
-    const dosHoras: DisponibilidadDia[] = [
-      { fecha: '2026-09-24', slots: [{ hora: '10hs', libre: true }, { hora: '14hs', libre: true }, { hora: '16hs', libre: true }] },
-      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
-    ];
-    renderCanvas(null, dosHoras);
-    const [primera] = screen.getAllByTestId('story-horas');
-    // El aire entre horas es margen (no espacios de texto).
-    expect(primera.textContent).toBe('10·14·16hs');
-    expect(primera.querySelectorAll('[data-testid="story-unidad"]')).toHaveLength(1);
-    const fila = screen.getAllByTestId('story-dia')[0].parentElement as HTMLElement;
-    expect((fila.children[1] as HTMLElement).style.borderBottom).toContain('dotted');
-  });
-
-  it('modo semana: horas con minutos ("9:30hs") conservan los minutos y comparten un solo "hs"', () => {
+  it('modo semana: cada día es una fila con la abreviatura y el número del día y sus horas separadas por punto medio', () => {
     renderCanvas(null, [
-      { fecha: '2026-09-24', slots: [{ hora: '9hs', libre: true }, { hora: '9:30hs', libre: true }, { hora: '14:30hs', libre: true }] },
-      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
-    ]);
-    const [primera] = screen.getAllByTestId('story-horas');
-    expect(primera.textContent).toBe('9·9:30·14:30hs');
-    expect(primera.querySelectorAll('[data-testid="story-unidad"]')).toHaveLength(1);
-  });
-
-  it('modo semana: si una hora no termina en "hs" se muestran todas tal cual, sin unidad suelta', () => {
-    renderCanvas(null, [
-      { fecha: '2026-09-24', slots: [{ hora: '10:30', libre: true }, { hora: '14hs', libre: true }] },
-      { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
-    ]);
-    const [primera] = screen.getAllByTestId('story-horas');
-    expect(primera.textContent).toBe('10:30·14hs');
-    expect(primera.querySelector('[data-testid="story-unidad"]')).toBeNull();
-  });
-
-  it('modo semana: entre horas del mismo día hay un punto medio tenue, y ninguno al borde', () => {
-    const dosHoras: DisponibilidadDia[] = [
       { fecha: '2026-09-24', slots: [{ hora: '10hs', libre: true }, { hora: '14hs', libre: true }] },
       { fecha: '2026-09-25', slots: [{ hora: '11hs', libre: true }] },
-    ];
-    renderCanvas(null, dosHoras);
-    expect(screen.getAllByTestId('story-separador-hora')).toHaveLength(1);
-    const texto = screen.getAllByTestId('story-horas')[0].textContent ?? '';
-    expect(texto.startsWith('·')).toBe(false);
-    expect(texto.endsWith('·')).toBe(false);
+    ]);
+    expect(screen.getAllByTestId('story-dia')[0]).toHaveTextContent(/^JUE24$/);
+    expect(screen.getByText('10hs · 14hs')).toBeInTheDocument();
   });
 
   it('modo semana: un día sin horas libres dice "Completo"', () => {
