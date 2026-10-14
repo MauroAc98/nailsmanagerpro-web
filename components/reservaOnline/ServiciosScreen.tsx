@@ -10,6 +10,7 @@ import type { BookableService } from '@/lib/reservaOnline/types';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import OpcionesSheet from '@/components/cobros/OpcionesSheet';
+import { coincide, normalizarBusqueda, partirPorCoincidencia } from '@/lib/reservaOnline/buscarServicios';
 import { useCarga, useGuardaPaso, type Ir } from './hooks';
 import { IcoBrillo, IcoCheck, IcoReloj } from './iconos';
 import { NoDisponibleAun } from './NoDisponibleAun';
@@ -23,12 +24,30 @@ const MAX_PASOS_VISIBLES = 3;
 // Hasta cuantas categorias se muestran como pastillas; con mas, un selector.
 const MAX_CATEGORIAS_EN_PASTILLAS = 4;
 
+// El buscador por nombre solo aparece con mas servicios que estos: en un negocio
+// chico el campo estorbaria y las categorias alcanzan.
+const MIN_SERVICIOS_PARA_BUSCAR = 12;
+
+// El nombre con la parte buscada marcada. Sin coincidencia (o sin busqueda) es el
+// texto simple de siempre, sin fragmentos.
+function nombreMarcado(nombre: string, busqueda: string) {
+  const partes = partirPorCoincidencia(nombre, busqueda);
+  if (!partes.some((p) => p.coincide)) return nombre;
+  return partes.map((f, i) =>
+    f.coincide ? (
+      <mark key={i} style={{ background: colors.primarySoft, color: 'inherit', borderRadius: 3 }}>{f.texto}</mark>
+    ) : (
+      <span key={i}>{f.texto}</span>
+    ),
+  );
+}
+
 // Encabezado de la tarjeta: etiqueta PROMO, nombre y categoria. El nombre NUNCA
 // se recorta: la clienta decide con el, asi que se parte en las lineas que haga
 // falta. Tipografia mas grande que el resto de la app: esta pantalla la usa
 // cualquier clienta, incluidas personas mayores, y es la primera decision de
 // todo el flujo.
-function CabeceraServicio({ s, mostrarCategoria }: { s: BookableService; mostrarCategoria: boolean }) {
+function CabeceraServicio({ s, mostrarCategoria, busqueda = '' }: { s: BookableService; mostrarCategoria: boolean; busqueda?: string }) {
   return (
     <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
       {s.promoComponentizada && <EtiquetaPromo />}
@@ -38,7 +57,7 @@ function CabeceraServicio({ s, mostrarCategoria }: { s: BookableService; mostrar
           marginTop: s.promoComponentizada ? 5 : 0,
         }}
       >
-        {s.nombre}
+        {nombreMarcado(s.nombre, busqueda)}
       </div>
       {mostrarCategoria && s.categoria && (
         <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 2 }}>{s.categoria.nombre}</div>
@@ -142,7 +161,7 @@ function Circulo({ elegido }: { elegido: boolean }) {
 // apagado y sin poder elegirse, con el motivo a la vista. Ocultarlo haria creer
 // que el negocio no lo ofrece. Es una foto del momento: la autoridad final es el
 // hold al reservar.
-function TarjetaSinTurnos({ s, mostrarCategoria }: { s: BookableService; mostrarCategoria: boolean }) {
+function TarjetaSinTurnos({ s, mostrarCategoria, busqueda }: { s: BookableService; mostrarCategoria: boolean; busqueda?: string }) {
   const t = useTranslations('reservaOnline.servicios');
   return (
     <div
@@ -154,7 +173,7 @@ function TarjetaSinTurnos({ s, mostrarCategoria }: { s: BookableService; mostrar
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: GAP_TARJETA, opacity: 0.7 }}>
-        <CabeceraServicio s={s} mostrarCategoria={mostrarCategoria} />
+        <CabeceraServicio s={s} mostrarCategoria={mostrarCategoria} busqueda={busqueda} />
         <span
           aria-hidden="true"
           style={{
@@ -232,6 +251,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   // Solo cambia lo visible; la seleccion vive en el store y no se toca.
   const [filtro, setFiltro] = useState<'todos' | 'otros' | number>('todos');
   const [selectorAbierto, setSelectorAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   // Promos con mas de 3 pasos que la clienta desplego (solo UI, no se guarda).
   const [desplegadas, setDesplegadas] = useState<Set<number>>(new Set());
   const alternarDesplegada = (id: number) =>
@@ -249,10 +269,37 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
   for (const s of servicios ?? []) if (s.categoria) categorias.set(s.categoria.id, s.categoria.nombre);
   const hayOtros = (servicios ?? []).some((s) => !s.categoria);
   const hayFiltros = categorias.size > 0;
+  // Buscar por nombre: solo con muchos servicios, y en TODAS las categorias (mientras
+  // hay texto el filtro de categoria no se aplica, para no esconder resultados sin
+  // que se note).
+  const hayBuscador = (servicios ?? []).length > MIN_SERVICIOS_PARA_BUSCAR;
+  const buscando = hayBuscador && normalizarBusqueda(busqueda) !== '';
   const visibles = (servicios ?? []).filter((s) => {
+    if (buscando) return coincide(s.nombre, busqueda);
     if (!hayFiltros || filtro === 'todos') return true;
     return filtro === 'otros' ? !s.categoria : s.categoria?.id === filtro;
   });
+  // Servicios ya elegidos que la busqueda actual no muestra (siguen elegidos).
+  const elegidosFuera = buscando ? seleccion.filter((id) => !visibles.some((v) => v.id === id)).length : 0;
+
+  // En "Todos" la lista se agrupa con un subtitulo por categoria (y las tarjetas ya no
+  // la repiten). Con una categoria elegida el filtro ya lo dice, y buscando los
+  // resultados mezclan categorias: ahi la lista es plana y cada tarjeta lleva la suya.
+  const agrupar = hayFiltros && !buscando && filtro === 'todos';
+  const bloques: { clave: string; titulo: string | null; items: BookableService[] }[] = [];
+  if (agrupar) {
+    for (const s of visibles) {
+      const clave = s.categoria ? `c${s.categoria.id}` : 'otros';
+      let bloque = bloques.find((b) => b.clave === clave);
+      if (!bloque) {
+        bloque = { clave, titulo: s.categoria?.nombre ?? t('servicios.filtroOtros'), items: [] };
+        bloques.push(bloque);
+      }
+      bloque.items.push(s);
+    }
+  } else {
+    bloques.push({ clave: 'todos', titulo: null, items: visibles });
+  }
   const pills: { clave: 'todos' | 'otros' | number; texto: string }[] = [
     { clave: 'todos', texto: t('servicios.filtroTodos') },
     ...[...categorias].map(([id, nombre]) => ({ clave: id, texto: nombre })),
@@ -288,7 +335,76 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
       )}
       {cargando && !error && <ServiciosSkeleton />}
       {servicios && servicios.length === 0 && <Mensaje>{t('servicios.vacio')}</Mensaje>}
-      {hayFiltros && usarSelector && (
+      {hayBuscador && (
+        <>
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, minHeight: 48, boxSizing: 'border-box',
+              padding: '0 8px 0 14px', marginBottom: buscando ? 8 : 10, borderRadius: 14, background: colors.surface,
+              border: `1px solid ${buscando ? colors.primarySolid : colors.border}`,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            {/* type="text" + role="searchbox": el campo type="search" trae su propia X nativa y duplicaria la nuestra. */}
+            <input
+              type="text"
+              role="searchbox"
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              aria-label={t('servicios.buscarAria')}
+              placeholder={t('servicios.buscarPlaceholder')}
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              style={{
+                flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', padding: 0,
+                fontSize: 16, fontFamily: 'inherit', color: colors.text,
+              }}
+            />
+            {busqueda && (
+              <button
+                type="button"
+                aria-label={t('servicios.borrarTexto')}
+                onClick={() => setBusqueda('')}
+                style={{
+                  width: 36, height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.sub} strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {buscando && visibles.length > 0 && (
+            <p style={{ margin: '0 0 10px', fontSize: 12.5, color: colors.sub }}>
+              {t('servicios.resultadosBusqueda', { count: visibles.length })}
+            </p>
+          )}
+          {buscando && visibles.length === 0 && (
+            <div style={{ padding: '32px 16px', marginBottom: 12, borderRadius: 16, textAlign: 'center', background: colors.surface, border: `1px solid ${colors.border}` }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.strong, marginBottom: 6 }}>
+                {t('servicios.sinResultados', { q: busqueda.trim() })}
+              </div>
+              <div style={{ fontSize: 14, color: colors.sub, lineHeight: 1.5, marginBottom: 16 }}>{t('servicios.sinResultadosAyuda')}</div>
+              <button
+                type="button"
+                onClick={() => setBusqueda('')}
+                style={{
+                  minHeight: 46, padding: '0 20px', borderRadius: 12, cursor: 'pointer', background: 'transparent',
+                  border: `1px solid ${colors.primarySolid}`, color: colors.primaryDeep, fontSize: 15, fontWeight: 700,
+                }}
+              >
+                {t('servicios.borrarBusqueda')}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+      {hayFiltros && !buscando && usarSelector && (
         // Hoja inferior (la misma de Cobros) y no un <select> nativo: el desplegable
         // del navegador no respeta el modo oscuro (salia blanco con letras claras).
         <>
@@ -298,7 +414,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
             onClick={() => setSelectorAbierto(true)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 8, minHeight: 48, boxSizing: 'border-box',
-              padding: '0 16px', marginBottom: 14, borderRadius: 14, cursor: 'pointer', fontSize: 15,
+              padding: '0 16px', marginBottom: 20, borderRadius: 14, cursor: 'pointer', fontSize: 15,
               background: colors.surface, border: `1px solid ${colors.border}`,
             }}
           >
@@ -328,11 +444,11 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
           />
         </>
       )}
-      {hayFiltros && !usarSelector && (
+      {hayFiltros && !buscando && !usarSelector && (
         <div
           role="group"
           aria-label={t('servicios.filtrosAria')}
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 14 }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 20 }}
         >
           {pills.map((p) => {
             const activa = filtro === p.clave;
@@ -356,8 +472,22 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
           })}
         </div>
       )}
-      {visibles.map((s) => {
-        if (s.sinTurnos) return <TarjetaSinTurnos key={s.id} s={s} mostrarCategoria={filtro === 'todos'} />;
+      {bloques.map((bloque, indice) => (
+        <section key={bloque.clave}>
+          {bloque.titulo !== null && (
+            <h2
+              style={{
+                margin: `${indice === 0 ? 8 : 22}px 0 8px`, fontSize: 12, fontWeight: 700, letterSpacing: 0.8,
+                color: colors.sub, textTransform: 'uppercase',
+              }}
+            >
+              {bloque.titulo}
+            </h2>
+          )}
+      {bloque.items.map((s) => {
+        if (s.sinTurnos) {
+          return <TarjetaSinTurnos key={s.id} s={s} mostrarCategoria={buscando} busqueda={buscando ? busqueda : ''} />;
+        }
         const elegido = seleccion.includes(s.id);
         const conFotos = s.fotos.length > 0;
         const tarjeta = {
@@ -389,7 +519,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
                 background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <CabeceraServicio s={s} mostrarCategoria={filtro === 'todos'} />
+              <CabeceraServicio s={s} mostrarCategoria={buscando} busqueda={buscando ? busqueda : ''} />
               <Circulo elegido={elegido} />
             </button>
             {s.promoComponentizada && s.componentes && s.componentes.length > 0 && (
@@ -421,8 +551,15 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
           </div>
         );
       })}
+        </section>
+      ))}
 
       <BarraInferior>
+        {elegidosFuera > 0 && (
+          <div role="status" style={{ textAlign: 'center', fontSize: 12.5, color: colors.sub, marginBottom: 8 }}>
+            {t('servicios.elegidosFuera', { count: elegidosFuera })}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: colors.sub, marginBottom: 10, lineHeight: 1.4 }}>
           <IcoBrillo color={colors.primaryDeep} />
           <span>{t('servicios.notaPrecios')}</span>
