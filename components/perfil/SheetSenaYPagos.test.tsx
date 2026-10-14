@@ -175,7 +175,7 @@ describe('SheetSenaYPagos — porcentaje', () => {
   it('explains why the percentage is rounded, once and apart from the price suggestion', () => {
     setup({ ...pct, comisionVigente: 7.61 });
     expect(screen.getByText(
-      'La seña se redondea a múltiplos de $500: así al cliente le resulta fácil completar el pago en el local.',
+      'La seña se redondea hacia arriba, normalmente a múltiplos de $500: así al cliente le resulta fácil completar el pago en el local.',
     )).toBeInTheDocument();
   });
 
@@ -204,7 +204,7 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   it('without online booking shows only a small line and no calculator', () => {
     setup({ ...pct, reservaOnlineActiva: false });
-    expect(screen.getByText('Del precio de cada servicio, redondeada hacia arriba a múltiplos de $500.')).toBeInTheDocument();
+    expect(screen.getByText('Del precio de cada servicio, redondeada hacia arriba.')).toBeInTheDocument();
     expect(screen.queryByText('Te llegan')).toBeNull();
     expect(screen.queryByText(/Ejemplo con un servicio/)).toBeNull();
   });

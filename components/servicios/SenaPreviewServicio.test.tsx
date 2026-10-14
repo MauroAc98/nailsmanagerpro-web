@@ -101,12 +101,29 @@ describe('SenaPreviewServicio', () => {
     expect(screen.queryByText(/se redondea/)).toBeNull();
   });
 
-  it('no rounding rows when the deposit is the whole price (tiny price or 100%)', () => {
-    setUser({ sena_porcentaje: 30 });
-    setup('30'); // 30% = 9 -> 500 -> capped at the price
+  it('no rounding rows when the deposit is the whole price', () => {
+    setUser({ sena_porcentaje: 100 });
+    setup('600'); // 100% = 600 -> paso 500 -> 1000 -> tope en el precio
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    expect(screen.queryByText(/Redondeo a/)).toBeNull();
+    expect(screen.queryByText(/se redondea/)).toBeNull();
+  });
+
+  it('a tiny price keeps a tiny deposit: 100 at 30% is 30, not the whole price', () => {
+    setUser({ sena_porcentaje: 30 });
+    setup('100', { precioInicial: '100' });
+    expect(screen.getByText('$30')).toBeInTheDocument(); // seña exacta, paso 10
+    expect(screen.getByText('$2')).toBeInTheDocument(); // round(30 * 7.61 / 100)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    expect(screen.queryByText(/Redondeo a/)).toBeNull();
+  });
+
+  it('the rounding row names the step that was actually used (1111 at 30% -> 400, step 100)', () => {
+    setUser({ sena_porcentaje: 30 });
+    setup('1111'); // 333,3 -> paso 100 -> 400
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    expect(screen.getByText('Redondeo a $100')).toBeInTheDocument();
     expect(screen.queryByText('Redondeo a $500')).toBeNull();
-    expect(screen.queryByText(/el 30%/)).toBeNull();
   });
 
   it('follows a different commission instead of a hardcoded 7,6', () => {
