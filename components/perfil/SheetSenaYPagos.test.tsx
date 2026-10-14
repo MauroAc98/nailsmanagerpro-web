@@ -132,14 +132,51 @@ describe('SheetSenaYPagos — porcentaje', () => {
     expect(screen.getAllByRole('button', { name: /^\d+%$/ })).toHaveLength(4);
   });
 
-  it('with online booking shows an example calculator using desgloseSena', () => {
+  it('with online booking shows an example in three figures: what the client leaves, what Mercado Pago keeps, what arrives', () => {
     setup({ ...pct, comisionVigente: 7.61 });
     const d = desgloseSena(3000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
-    expect(screen.getByText('Ejemplo con un servicio de $10.000 · el cliente paga')).toBeInTheDocument();
+    expect(screen.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
+    expect(screen.getByText('El cliente deja')).toBeInTheDocument();
     expect(screen.getByText(dinero(3000))).toBeInTheDocument();
-    expect(screen.getByText('Te llegan')).toBeInTheDocument();
+    expect(screen.getByText('Mercado Pago se queda')).toBeInTheDocument();
+    expect(screen.getByText(dinero(d!.cargo))).toBeInTheDocument(); // $228
+    expect(screen.getByText('De la seña te llegan')).toBeInTheDocument();
     expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
     expect(screen.queryByText(/Del precio de cada servicio/)).toBeNull();
+  });
+
+  it('the example lists the tax retention only when there is one', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    expect(screen.queryByText('Retención de impuestos')).toBeNull();
+  });
+
+  it('says first how it works: the client pays the deposit through Mercado Pago, which keeps a commission', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    expect(screen.getByText('Cómo funciona')).toBeInTheDocument();
+    expect(screen.getByText(/deja una seña y la paga por Mercado Pago/)).toBeInTheDocument();
+    expect(screen.getByText(/se queda con una comisión de cada seña/)).toBeInTheDocument();
+  });
+
+  it('the "how it works" explanation also shows for a fixed amount', () => {
+    setup({ senaTipo: 'fijo', comisionVigente: 7.61 });
+    expect(screen.getByText('Cómo funciona')).toBeInTheDocument();
+  });
+
+  it('no "how it works" without online booking (the WhatsApp deposit is a bank transfer)', () => {
+    setup({ ...pct, reservaOnlineActiva: false });
+    expect(screen.queryByText('Cómo funciona')).toBeNull();
+  });
+
+  it('no "how it works" when no deposit is asked', () => {
+    setup({ senaTipo: 'ninguna' });
+    expect(screen.queryByText('Cómo funciona')).toBeNull();
+  });
+
+  it('explains why the percentage is rounded, once and apart from the price suggestion', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    expect(screen.getByText(
+      'La seña se redondea a múltiplos de $500: así al cliente le resulta fácil completar el pago en el local.',
+    )).toBeInTheDocument();
   });
 
   it('the example amount is rounded up to a multiple of 500 like the real deposit (33% of $10.000 -> $3.500)', () => {
@@ -151,12 +188,12 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   it('with online booking tells where the price suggestion shows up', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(/Para no perder plata por la comisión, editá el precio de un servicio/)).toBeInTheDocument();
+    expect(screen.getByText(/Si querés cubrir esa comisión, abrí un servicio y te sugerimos un precio. Es opcional./)).toBeInTheDocument();
   });
 
   it('without online booking there is no hint (no commission to cover)', () => {
     setup({ ...pct, reservaOnlineActiva: false });
-    expect(screen.queryByText(/editá el precio de un servicio/)).toBeNull();
+    expect(screen.queryByText(/te sugerimos un precio/)).toBeNull();
   });
 
   it('the example follows the chosen percentage and the declared retention', () => {

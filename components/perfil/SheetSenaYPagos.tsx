@@ -241,6 +241,14 @@ export function SheetSenaYPagos({
         </button>
       </div>
 
+      {/* Primero el porqué: sin esto, Mercado Pago y la comisión aparecen de la nada. */}
+      {conCalculo && senaTipo !== 'ninguna' && (
+        <div style={{ ...calculadoraStyle, gap: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>{t('howItWorksTitle')}</span>
+          <span style={{ fontSize: 13.5, color: colors.text, lineHeight: 1.45 }}>{t('howItWorksBody')}</span>
+        </div>
+      )}
+
       <div style={{ marginBottom: 16 }}>
         <SegmentedControl
           ariaLabel={t('depositModeLabel')}
@@ -290,14 +298,28 @@ export function SheetSenaYPagos({
               {desgloseEjemplo && (
                 <div style={{ ...calculadoraStyle, marginBottom: 0 }}>
                   <span style={avisoStyle}>{t('exampleLabel')}</span>
-                  <span style={montoGrandeStyle}>{dinero(montoEjemplo)}</span>
                   <div style={{ ...filaStyle, alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 14, color: colors.subtext }}>{t('fixedNet')}</span>
+                    <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleClientLeaves')}</span>
+                    <span style={montoGrandeStyle}>{dinero(montoEjemplo)}</span>
+                  </div>
+                  <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                    <span style={{ minWidth: 0 }}>{t('exampleMpKeeps')}</span>
+                    <span style={montoStyle}>{dinero(desgloseEjemplo.cargo)}</span>
+                  </div>
+                  {desgloseEjemplo.retencion > 0 && (
+                    <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                      <span style={{ minWidth: 0 }}>{t('fixedRetention')}</span>
+                      <span style={montoStyle}>{dinero(desgloseEjemplo.retencion)}</span>
+                    </div>
+                  )}
+                  <div style={{ ...filaStyle, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleNet')}</span>
                     <span style={llegaStyle}>{dinero(desgloseEjemplo.llega)}</span>
                   </div>
                 </div>
               )}
-              <p style={{ ...avisoStyle, margin: '12px 0 0' }}>{t('percentHint')}</p>
+              <p style={{ ...avisoStyle, margin: '12px 0 0' }}>{t('percentRounding')}</p>
+              <p style={{ ...avisoStyle, margin: '8px 0 0' }}>{t('percentHint')}</p>
             </>
           ) : (
             <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>
