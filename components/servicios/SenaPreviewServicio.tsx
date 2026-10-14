@@ -55,6 +55,8 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   // sugerir.
   const [aplicado, setAplicado] = useState<{ anterior: string; nuevo: string } | null>(null);
   const [verDetalle, setVerDetalle] = useState(false);
+  // La profesional pidió ver la sugerencia sin haber tocado el precio.
+  const [verSugerencia, setVerSugerencia] = useState(false);
 
   if (!(activa ?? reservaOnlineActivaParaNegocio(user)) || !user) return null;
 
@@ -145,13 +147,14 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   const hayRetencion = p.retencion > 0;
   // Se ofrece cubrir la comisión solo si el precio se tocó en esta pantalla.
   const tocado = valor !== parsearMonto(precioInicial ?? '');
-  const sugerido = onUsarPrecio && tocado ? precioSugeridoSena(valor, user) : null;
+  const sugerido = onUsarPrecio && (tocado || verSugerencia) ? precioSugeridoSena(valor, user) : null;
   const sugerencia = sugerido !== null ? calcularSenaPreview(sugerido, user) : null;
   const confirmado = aplicado !== null && precio === aplicado.nuevo;
   const anterior = aplicado ? parsearMonto(aplicado.anterior) : null;
-  // Pista: el precio no cubre la comisión pero todavía no se tocó, así que no hay
-  // oferta. Le dice cómo hacerla aparecer.
-  const mostrarPista = !!onUsarPrecio && porcentaje && !tocado && !confirmado && p.llega < p.sena;
+  // Pista: el precio no cubre la comisión y todavía no hay oferta. La oferta no se
+  // empuja sola (la seña es un % del precio: cada ajuste volvería a ofrecer otro),
+  // la profesional la pide con un botón.
+  const mostrarPista = !!onUsarPrecio && porcentaje && !tocado && !verSugerencia && !confirmado && p.llega < p.sena;
   const cubre = p.llega >= p.sena;
 
   const usar = () => {
@@ -167,7 +170,6 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   };
 
   const enNegrita = (chunks: ReactNode) => <b style={cifraStyle}>{chunks}</b>;
-  const enNegritaChica = (chunks: ReactNode) => <b>{chunks}</b>;
   const atenuado = (chunks: ReactNode) => <span style={{ color: colors.subtext }}>{chunks}</span>;
 
   const bannerStyle = {
@@ -225,20 +227,21 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
           </button>
         </div>
       )}
-      {!confirmado && sugerido !== null && sugerencia && (
+      {!confirmado && sugerido !== null && sugerido !== valor && sugerencia && (
         <div style={ofertaStyle}>
           <span style={{ fontSize: 14, lineHeight: 1.45, color: colors.text }}>
             {t('coverQuestion', {
-              sena: monto(p.sena), precio: monto(sugerido), pct: user.sena_porcentaje ?? 0,
-              senaNueva: monto(sugerencia.sena), llega: monto(sugerencia.llega),
+              sena: monto(p.sena), precio: monto(sugerido), actual: monto(valor),
+              senaNueva: monto(sugerencia.sena),
             })}
           </span>
           <button type="button" onClick={usar} style={botonStyle}>{t('coverButton', { precio: monto(sugerido) })}</button>
         </div>
       )}
       {mostrarPista && (
-        <div style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: 12, fontSize: 13.5, lineHeight: 1.45, color: colors.text }}>
-          {t.rich('hint', { sena: monto(p.sena), b: enNegritaChica })}
+        <div style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 13.5, lineHeight: 1.45, color: colors.text }}>{t('hint')}</span>
+          <button type="button" onClick={() => setVerSugerencia(true)} style={enlaceStyle}>{t('seeSuggestion')}</button>
         </div>
       )}
 
