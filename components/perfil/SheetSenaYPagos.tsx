@@ -6,7 +6,7 @@ import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import PillToggle from '@/components/PillToggle';
 import { parsearMonto } from '@/lib/parsearMonto';
-import { formatMonto } from '@/lib/money';
+import { formatMonto, formatMontoEntero } from '@/lib/money';
 import { calcularSena, desgloseSena, senaFijaSugerida } from '@/lib/senaPreview';
 import { SheetInput } from './SheetInput';
 import type { SenaCampo, SenaModo } from '@/lib/senaConfig';
@@ -145,8 +145,10 @@ export function SheetSenaYPagos({
   const conCalculo = reservaOnlineActiva && comisionVigente != null;
   const desglose = reservaOnlineActiva && montoFijo !== null ? desgloseSena(montoFijo, configCalculo) : null;
   const porcentajeValido = Number.isFinite(porcentajeElegido) && porcentajeElegido >= 1 && porcentajeElegido <= 100;
-  // Igual que la seña real: el porcentaje se redondea hacia arriba al múltiplo de 500.
-  const montoEjemplo = calcularSena(PRECIO_EJEMPLO, { sena_tipo: 'porcentaje', sena_porcentaje: porcentajeElegido });
+  // Igual que la seña real: cubre la comisión y se redondea hacia arriba.
+  const montoEjemplo = calcularSena(PRECIO_EJEMPLO, {
+    ...configCalculo, sena_tipo: 'porcentaje', sena_porcentaje: porcentajeElegido,
+  });
   const desgloseEjemplo = conCalculo && senaTipo === 'porcentaje' && porcentajeValido
     ? desgloseSena(montoEjemplo, configCalculo)
     : null;
@@ -316,10 +318,12 @@ export function SheetSenaYPagos({
                     <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleNet')}</span>
                     <span style={llegaStyle}>{dinero(desgloseEjemplo.llega)}</span>
                   </div>
+                  <span style={avisoStyle}>
+                    {t('exampleCovers', { pct: porcentajeElegido, monto: `$${formatMontoEntero((PRECIO_EJEMPLO * porcentajeElegido) / 100)}` })}
+                  </span>
                 </div>
               )}
               <p style={{ ...avisoStyle, margin: '12px 0 0' }}>{t('percentRounding')}</p>
-              <p style={{ ...avisoStyle, margin: '8px 0 0' }}>{t('percentHint')}</p>
             </>
           ) : (
             <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>

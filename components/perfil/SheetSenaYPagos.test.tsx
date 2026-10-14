@@ -134,15 +134,21 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   it('with online booking shows an example in three figures: what the client leaves, what Mercado Pago keeps, what arrives', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    const d = desgloseSena(3000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
+    // 30% de $10.000 = $3.000; la seña que cubre la comisión es $3.500 (3.000 / 0,9239 = 3.247 -> 3.500)
+    const d = desgloseSena(3500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
     expect(screen.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
     expect(screen.getByText('El cliente deja')).toBeInTheDocument();
-    expect(screen.getByText(dinero(3000))).toBeInTheDocument();
+    expect(screen.getByText(dinero(3500))).toBeInTheDocument();
     expect(screen.getByText('Mercado Pago se queda')).toBeInTheDocument();
-    expect(screen.getByText(dinero(d!.cargo))).toBeInTheDocument(); // $228
+    expect(screen.getByText(dinero(d!.cargo))).toBeInTheDocument(); // $266
     expect(screen.getByText('De la seña te llegan')).toBeInTheDocument();
-    expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
+    expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument(); // $3.234
     expect(screen.queryByText(/Del precio de cada servicio/)).toBeNull();
+  });
+
+  it('the example says that what arrives covers the whole percentage', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    expect(screen.getByText('Así te llega completo el 30% del servicio ($3.000).')).toBeInTheDocument();
   });
 
   it('the example lists the tax retention only when there is one', () => {
@@ -153,8 +159,8 @@ describe('SheetSenaYPagos — porcentaje', () => {
   it('says first how it works: the client pays the deposit through Mercado Pago, which keeps a commission', () => {
     setup({ ...pct, comisionVigente: 7.61 });
     expect(screen.getByText('Cómo funciona')).toBeInTheDocument();
-    expect(screen.getByText(/deja una seña y la paga por Mercado Pago/)).toBeInTheDocument();
-    expect(screen.getByText(/se queda con una comisión de cada seña/)).toBeInTheDocument();
+    expect(screen.getByText(/deja una seña y la paga por Mercado Pago, que se queda con una comisión/)).toBeInTheDocument();
+    expect(screen.getByText(/La seña ya la incluye: a vos te llega completo el porcentaje que elegís/)).toBeInTheDocument();
   });
 
   it('the "how it works" explanation also shows for a fixed amount', () => {
@@ -179,26 +185,22 @@ describe('SheetSenaYPagos — porcentaje', () => {
     )).toBeInTheDocument();
   });
 
-  it('the example amount is rounded up to a multiple of 500 like the real deposit (33% of $10.000 -> $3.500)', () => {
+  it('the example amount covers the cost and is rounded up like the real deposit (33% of $10.000 -> $4.000)', () => {
     setup({ ...pct, senaPorcentaje: '33', comisionVigente: 7.61 });
-    const d = desgloseSena(3500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
-    expect(screen.getByText(dinero(3500))).toBeInTheDocument();
+    const d = desgloseSena(4000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 }); // 3.300 / 0,9239 = 3.572
+    expect(screen.getByText(dinero(4000))).toBeInTheDocument();
     expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
   });
 
-  it('with online booking tells where the price suggestion shows up', () => {
+  it('there is no price suggestion text: the deposit already covers the commission', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(/Si querés cubrir esa comisión, abrí un servicio y te sugerimos un precio. Es opcional./)).toBeInTheDocument();
-  });
-
-  it('without online booking there is no hint (no commission to cover)', () => {
-    setup({ ...pct, reservaOnlineActiva: false });
-    expect(screen.queryByText(/te sugerimos un precio/)).toBeNull();
+    expect(screen.queryByText(/te sugerimos|precio sugerido|subir el precio|ajustar el precio/i)).toBeNull();
   });
 
   it('the example follows the chosen percentage and the declared retention', () => {
     setup({ ...pct, senaPorcentaje: '50', retiene: true, retencion: '2' });
-    const d = desgloseSena(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 });
+    // 50% de $10.000 = $5.000; con 7,61 + 2 de retención: 5.000 / 0,9039 = 5.532 -> 6.000
+    const d = desgloseSena(6000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 });
     expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
   });
 

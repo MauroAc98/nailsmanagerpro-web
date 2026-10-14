@@ -258,11 +258,6 @@
     "error_limite": "Llegaste al máximo de 30 categorías.",
     "error_minima": "Tenés que dejar al menos una categoría."
   },
-  "AvisoComisionSena": {
-    "body": "Mercado Pago se queda una parte de cada seña. Si querés, podés ajustar el precio de tus servicios para cubrirla. Es opcional.",
-    "seeFirst": "Ver cuánto es en {nombre}",
-    "close": "Ahora no"
-  },
   "SenaPreviewServicio": {
     "sectionTitle": "Seña de la reserva online",
     "notConfigured": "Todavía no configuraste la seña. Definila para ver cuánto paga tu cliente y cuánto te llega después de la comisión de Mercado Pago.",
