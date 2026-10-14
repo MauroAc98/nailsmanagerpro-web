@@ -142,6 +142,16 @@ describe('SheetSenaYPagos — porcentaje', () => {
     expect(screen.queryByText('Del precio de cada servicio.')).toBeNull();
   });
 
+  it('with online booking tells where the price suggestion shows up', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    expect(screen.getByText(/Para que te lleguen completos los montos de la seña, editá el precio de un servicio/)).toBeInTheDocument();
+  });
+
+  it('without online booking there is no hint (no commission to cover)', () => {
+    setup({ ...pct, reservaOnlineActiva: false });
+    expect(screen.queryByText(/editá el precio de un servicio/)).toBeNull();
+  });
+
   it('the example follows the chosen percentage and the declared retention', () => {
     setup({ ...pct, senaPorcentaje: '50', retiene: true, retencion: '2' });
     const d = desgloseSena(5000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 2 });

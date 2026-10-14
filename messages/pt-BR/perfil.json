@@ -61,6 +61,7 @@
     "modeNone": "Sem sinal",
     "noneLine": "Os horários são confirmados sem pedir sinal.",
     "percentOfPrice": "Do preço de cada serviço.",
+    "percentHint": "Para que os valores do sinal cheguem completos para você, edite o preço de um serviço e sugerimos quanto cobrar.",
     "exampleLabel": "Exemplo com um serviço de $10.000 · o cliente paga",
     "fixedAmountLabel": "O cliente paga",
     "fixedClientPays": "O cliente paga",
