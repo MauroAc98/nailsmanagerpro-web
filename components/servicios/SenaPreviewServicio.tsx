@@ -39,6 +39,10 @@ const etiquetaStyle = { minWidth: 0 } as const;
 const fraseStyle = { margin: 0, fontSize: 15, lineHeight: 1.5, color: colors.text } as const;
 const cifraStyle = { fontSize: 17, fontWeight: 700, whiteSpace: 'nowrap' } as const;
 
+// Lo que queda del precio total una vez descontado lo que se lleva Mercado Pago (y la retención)
+// de la seña. Es lo que la sugerencia de precio cuida.
+const llegaDelTotal = (p: { precio: number; cargo: number; retencion: number }) => p.precio - p.cargo - p.retencion;
+
 // Tarjeta "Seña de la reserva online" del formulario de servicio. En reposo dice
 // dos cosas: cuánto deja el cliente de seña (y de dónde sale) y cuánto le llega a
 // la profesional después de la comisión de Mercado Pago. La cuenta completa queda
@@ -221,6 +225,13 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
             ),
           })}
         </p>
+        {/* La sugerencia de precio cuida el precio TOTAL: si la seña redondeada no cambia, los
+            montos de arriba quedan iguales y esta es la cifra que se mueve. */}
+        {porcentaje && (
+          <p style={fraseStyle}>
+            {t.rich('receivesTotal', { precio: monto(valor), total: monto(llegaDelTotal(p)), b: enNegrita })}
+          </p>
+        )}
       </div>
 
       {confirmado && anterior !== null && (
@@ -236,9 +247,9 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
       {!confirmado && sugerido !== null && sugerido !== valor && sugerencia && (
         <div style={ofertaStyle}>
           <span style={{ fontSize: 14, lineHeight: 1.45, color: colors.text }}>
-            {t('coverQuestion', {
-              sena: monto(p.sena), precio: monto(sugerido), actual: monto(valor),
-              senaNueva: monto(sugerencia.sena),
+            {t(sugerencia.sena !== p.sena ? 'coverQuestionSena' : 'coverQuestion', {
+              precio: monto(sugerido), actual: monto(valor),
+              senaNueva: monto(sugerencia.sena), total: monto(llegaDelTotal(sugerencia)),
             })}
           </span>
           <button type="button" onClick={usar} style={botonStyle}>{t('coverButton', { precio: monto(sugerido) })}</button>

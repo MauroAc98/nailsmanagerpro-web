@@ -197,13 +197,52 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
   });
 });
 
+// La sugerencia busca que no se pierda plata sobre el PRECIO TOTAL. Cuando la seña redondeada
+// no cambia entre el precio de hoy y el sugerido, los montos de la seña quedan idénticos: lo
+// que tiene que cambiar (y mostrarse) es lo que llega del precio total.
+describe('SenaPreviewServicio — the total keeps up with the suggestion', () => {
+  beforeEach(() => setUser({ sena_porcentaje: 30 }));
+
+  it('shows what arrives from the total price, after the commission on the deposit', () => {
+    setup('11300'); // seña 3.390 -> 3.500, comisión 266
+    expect(screen.getByText('$3.234')).toBeInTheDocument();
+    expect(screen.getByText('$11.034')).toBeInTheDocument(); // 11.300 - 266
+  });
+
+  it('when the deposit does not change, the offer talks about the total, not about a deposit that "rises"', () => {
+    setup('11300');
+    expect(screen.getByText(
+      'Con $11.600 (hoy $11.300) la comisión de Mercado Pago queda cubierta: del precio total te llegan $11.334.',
+    )).toBeInTheDocument();
+    expect(screen.queryByText(/la seña sube/)).toBeNull();
+    expect(screen.queryByText(/la seña pasa/)).toBeNull();
+  });
+
+  it('after "Usar", the total line moves even though the deposit amounts are identical', () => {
+    setup('11300');
+    fireEvent.click(screen.getByRole('button', { name: 'Usar $11.600' }));
+    expect(screen.getByLabelText('precio')).toHaveValue('11600');
+    expect(screen.getByText('(el 30% de $11.600, redondeada hacia arriba)')).toBeInTheDocument();
+    expect(screen.getByText('$3.234')).toBeInTheDocument(); // misma seña, misma comisión
+    expect(screen.getByText('$11.334')).toBeInTheDocument(); // 11.600 - 266: acá se ve el cambio
+    expect(screen.queryByText('$11.034')).toBeNull();
+  });
+
+  it('a fixed deposit has no "total price" line (the suggestion is about the deposit itself)', () => {
+    setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
+    setup('18000');
+    expect(screen.queryByText(/Del precio total/)).toBeNull();
+  });
+});
+
 describe('SenaPreviewServicio — price suggestion', () => {
   beforeEach(() => setUser({ sena_porcentaje: 50 }));
 
   it('percentage mode, price edited: one question and one button with the amount that gets applied', () => {
     setup('18000');
+    // 50% de 18.800 = 9.400 -> 9.500 (la seña cambia): 18.800 - 723 = 18.077 del precio total.
     expect(screen.getByText(
-      'Con $18.800 (hoy $18.000) la seña sube a $9.500 y la comisión de Mercado Pago queda cubierta.',
+      'Con $18.800 (hoy $18.000) la seña pasa a $9.500 y la comisión de Mercado Pago queda cubierta: del precio total te llegan $18.077.',
     )).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Usar $18.800' })).toBeInTheDocument();
   });
