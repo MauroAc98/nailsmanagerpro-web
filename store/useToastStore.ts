@@ -7,6 +7,8 @@ import { create } from 'zustand';
 // Rendered by the single <ToastHost /> mounted once in app/providers.tsx.
 
 const DURATION_MS = 2500;
+// Un aviso más largo que "Cambios guardados" necesita más tiempo de lectura.
+const DURATION_LARGO_MS = 6000;
 
 interface ToastState {
   message: string | null;
@@ -24,7 +26,7 @@ export const useToastStore = create<ToastState>(() => ({
 // A new toast replaces whatever is currently showing and restarts the timer
 // (last-one-wins, no queue) — success feedback is low-stakes enough that
 // dropping an overlapped one silently is preferable to stacking dialogs.
-export function showToast(message: string) {
+export function showToast(message: string, opts: { largo?: boolean } = {}) {
   if (hideTimer) clearTimeout(hideTimer);
   const id = ++nextId;
   useToastStore.setState({ message, toastId: id });
@@ -32,5 +34,5 @@ export function showToast(message: string) {
     if (useToastStore.getState().toastId === id) {
       useToastStore.setState({ message: null });
     }
-  }, DURATION_MS);
+  }, opts.largo ? DURATION_LARGO_MS : DURATION_MS);
 }

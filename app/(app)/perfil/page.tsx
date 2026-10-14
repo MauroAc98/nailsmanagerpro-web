@@ -473,7 +473,14 @@ export default function PerfilPage() {
         setPassword('');
         setPasswordConfirmation('');
       }
-      showToast(
+      // Seña por porcentaje con reserva online: la comisión de MP sale de la seña, y
+      // el precio sugerido de cada servicio es la forma de cubrirla. Es el momento
+      // en que la profesional lo puede entender, así que el aviso va acá.
+      const avisoComision = sheetActivo === 'senaYPagos'
+        && payloadSena?.sena_tipo === 'porcentaje'
+        && reservaOnlineActivaParaNegocio(user);
+      if (avisoComision) showToast(t('senaSavedCommission'), { largo: true });
+      else showToast(
         sheetActivo === 'password' ? t('passwordUpdated') :
         (sheetActivo === 'negocio' || sheetActivo === 'senaYPagos') ? t('changesSaved') :
         t('dataSaved')
