@@ -258,6 +258,10 @@
     "error_limite": "Você atingiu o máximo de 30 categorias.",
     "error_minima": "Você precisa manter pelo menos uma categoria."
   },
+  "AvisoComisionSena": {
+    "body": "O Mercado Pago cobra uma comissão por cada sinal. Abra um serviço e toque em «Ver preço sugerido» para cobrar um preço que a cubra.",
+    "close": "Fechar aviso"
+  },
   "NuevoServicioPage": {
     "title": "Novo serviço",
     "loading": "Carregando...",
