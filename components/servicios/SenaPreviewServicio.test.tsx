@@ -91,12 +91,12 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('− $360')).toBeInTheDocument(); // round(9000 * 4 / 100)
   });
 
-  it('fixed mode: says it is a fixed amount and NO price suggestion or hint', () => {
+  it('fixed mode: says it is a fixed amount and NO price suggestion or button', () => {
     setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
     setup('20000', { precioInicial: '20000' });
     expect(screen.getByText('$5.000')).toBeInTheDocument();
     expect(screen.getByText('(monto fijo)')).toBeInTheDocument();
-    expect(screen.queryByText(/cambiá el precio/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
   });
 
@@ -177,45 +177,51 @@ describe('SenaPreviewServicio — price suggestion', () => {
   it('percentage mode, price edited: one question and one button with the amount that gets applied', () => {
     setup('18000');
     expect(screen.getByText(
-      '¿Querés que te lleguen los $9.000 completos? Con un precio de $20.000 la seña (50%) sube a $10.000 y te llegan $9.239.',
+      'Para que te lleguen los $9.000 completos, podés cobrar $20.000 (hoy $18.000): la seña sube a $10.000.',
     )).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Usar $20.000' })).toBeInTheDocument();
   });
 
-  it('a service just opened (price untouched) shows NO offer but a hint on how to get it', () => {
+  it('a service just opened (price untouched) shows NO offer but a button to see the suggestion', () => {
     setup('18000', { precioInicial: '18000' });
-    expect(screen.queryByText(/¿Querés que te lleguen/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.getByText(/Si querés que te lleguen los \$9\.000 completos,/)).toBeInTheDocument();
-    expect(screen.getByText('cambiá el precio')).toBeInTheDocument();
+    expect(screen.getByText(/Mercado Pago cobra una comisión por cada pago online/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver precio sugerido' })).toBeInTheDocument();
   });
 
-  it('the hint does not show when the price was touched (the offer takes over)', () => {
+  it('tapping "Ver precio sugerido" reveals the offer without touching the price', () => {
+    setup('18000', { precioInicial: '18000' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver precio sugerido' }));
+    expect(screen.getByRole('button', { name: 'Usar $20.000' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
+  });
+
+  it('the button does not show when the price was touched (the offer takes over)', () => {
     setup('18000');
-    expect(screen.queryByText('cambiá el precio')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
   });
 
   it('compares the opening price as a number (a saved "18000.00" equals "18000")', () => {
     setup('18000', { precioInicial: '18000.00' });
     expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.getByText('cambiá el precio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver precio sugerido' })).toBeInTheDocument();
   });
 
-  it('no commission to cover (0%): no offer and no hint', () => {
+  it('no commission to cover (0%): no offer and no button', () => {
     setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
     setup('18000', { precioInicial: '18000' });
-    expect(screen.queryByText('cambiá el precio')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
   });
 
-  it('editing the price after opening swaps the hint for the offer, and going back brings the hint back', () => {
+  it('editing the price after opening swaps the button for the offer, and going back brings the button back', () => {
     setup('18000', { precioInicial: '18000' });
     fireEvent.change(screen.getByLabelText('precio'), { target: { value: '20000' } });
     expect(screen.getByRole('button', { name: 'Usar $22.000' })).toBeInTheDocument();
-    expect(screen.queryByText('cambiá el precio')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
     fireEvent.change(screen.getByLabelText('precio'), { target: { value: '18000' } });
     expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.getByText('cambiá el precio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver precio sugerido' })).toBeInTheDocument();
   });
 
   it('accepting sets the price and shows a confirmation with the previous price, no new suggestion', () => {
@@ -224,8 +230,7 @@ describe('SenaPreviewServicio — price suggestion', () => {
     expect(screen.getByLabelText('precio')).toHaveValue('20000');
     expect(screen.getByText('Precio ajustado. Antes: $18.000')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.queryByText(/¿Querés que te lleguen/)).toBeNull();
-    expect(screen.queryByText('cambiá el precio')).toBeNull();
+    expect(screen.queryByText(/podés cobrar/)).toBeNull();
     expect(screen.getByText('$10.000')).toBeInTheDocument();
   });
 
