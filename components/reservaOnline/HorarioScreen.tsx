@@ -571,7 +571,10 @@ export function HorarioScreen({ slug, ir, ahora = Date.now }: { slug: string; ir
             }}
           >
             <p style={{ textAlign: 'center', fontSize: 13, color: colors.sub, margin: '0 0 8px' }}>
-              {t('horario.resumenLibres', { n: horas.length, desde: horas[0], hasta: horas[horas.length - 1] })}
+              {/* Con un solo horario un rango ("de 13:15 a 13:15") no dice nada: se nombra cual queda. */}
+              {horas.length === 1
+                ? t('horario.resumenUnHorario', { hora: horas[0] })
+                : t('horario.resumenLibres', { n: horas.length, desde: horas[0], hasta: horas[horas.length - 1] })}
             </p>
             {/* key: si cambia la lista (otro dia/profesional) la rueda se rearma en la hora elegida */}
             <DrumPicker
