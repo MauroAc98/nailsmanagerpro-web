@@ -97,7 +97,9 @@ describe('EntryScreen', () => {
   });
 
   // La duda de plata mas comun: cuanto es la seña. Antes recien aparecia en el paso 4.
-  it('el paso de la seña dice cuánto es: el monto si es fijo, el porcentaje si es por porcentaje', async () => {
+  // La seña por porcentaje incluye el costo del pago online: el cliente deja un poco más que el
+  // porcentaje. Para que las cuentas le cierren, nunca se le dice "del 30%".
+  it('el paso de la seña dice el monto si es fijo, y no menciona ningún porcentaje si es por porcentaje', async () => {
     const svc = prepararServicio();
     setServiceParaTests({
       ...svc,
@@ -109,7 +111,8 @@ describe('EntryScreen', () => {
       }),
     });
     renderWithProviders(<EntryScreen slug="demo" ir={() => {}} />);
-    expect(await screen.findByText('Pagá una seña del 30%')).toBeInTheDocument();
+    expect(await screen.findByText('Pagá una seña')).toBeInTheDocument();
+    expect(screen.queryByText(/30%/)).toBeNull();
   });
 
   it('sin el dato de la seña, el paso queda como antes ("Pagá una seña"), sin inventar un monto', async () => {

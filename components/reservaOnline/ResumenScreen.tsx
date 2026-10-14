@@ -10,7 +10,7 @@ import { formatearWhatsapp } from '@/lib/reservaOnline/formatoWhatsapp';
 import { rutaPaso, rutaReserva } from '@/lib/reservaOnline/rutas';
 import { ReservaOnlineError } from '@/lib/reservaOnline/service';
 import { duracionDeServicios, formatearDuracion } from '@/lib/reservaOnline/totales';
-import { formatMonto, formatPorcentaje } from '@/lib/money';
+import { formatMonto } from '@/lib/money';
 import { Spinner } from '@/components/Spinner';
 import { useReservaOnlineStore } from '@/store/useReservaOnlineStore';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
@@ -311,11 +311,6 @@ export function ResumenScreen({
           )}
           {calculandoMonto && <Spinner size={22} label={t('resumen.senaCalculando')} />}
         </div>
-        {terminos.senaTipo === 'porcentaje' && terminos.senaPorcentaje != null && (
-          <div style={{ fontSize: 13, fontWeight: 600, color: colors.strong, marginTop: 4 }}>
-            {t('resumen.senaPorcentaje', { porcentaje: formatPorcentaje(terminos.senaPorcentaje) })}
-          </div>
-        )}
         <div style={{ fontSize: 12.5, color: colors.sub, marginTop: 8, lineHeight: 1.5 }}>{t('resumen.senaDetalle')}</div>
       </Tarjeta>
 
