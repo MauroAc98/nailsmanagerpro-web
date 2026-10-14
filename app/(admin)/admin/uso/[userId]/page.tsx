@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -71,6 +72,7 @@ function Stat({ valor, label }: { valor: number; label: string }) {
 }
 
 export default function UsoDetalleNegocioPage() {
+  const rutaAdmin = useRutaAdmin();
   const params = useParams();
   const router = useRouter();
   const userId = Number(params.userId);
@@ -133,7 +135,7 @@ export default function UsoDetalleNegocioPage() {
       <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', paddingBottom: 32 }}>
         <div style={{ padding: '12px 20px 0' }}>
           <Link
-            href="/uso"
+            href={rutaAdmin('/uso')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 44, fontSize: 14, color: colors.subtext, textDecoration: 'none' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.subtext} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
@@ -211,7 +213,7 @@ export default function UsoDetalleNegocioPage() {
                         radius={[2, 2, 0, 0]}
                         minPointSize={2}
                         isAnimationActive="auto"
-                        onClick={(_: unknown, i: number) => router.push(`/uso/${userId}/dia?fecha=${data.dias[i].fecha}`)}
+                        onClick={(_: unknown, i: number) => router.push(rutaAdmin(`/uso/${userId}/dia?fecha=${data.dias[i].fecha}`))}
                       />
                     </BarChart>
                   </ResponsiveContainer>

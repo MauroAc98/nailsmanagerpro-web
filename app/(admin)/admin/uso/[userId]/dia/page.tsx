@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -22,6 +23,7 @@ function formatFechaLarga(iso: string): string {
 }
 
 export default function UsoDetalleNegocioPorDiaPage() {
+  const rutaAdmin = useRutaAdmin();
   const params = useParams();
   const userId = Number(params.userId);
   const searchParams = useSearchParams();
@@ -80,7 +82,7 @@ export default function UsoDetalleNegocioPorDiaPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', backgroundColor: colors.background }}>
       <div style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column' }}>
         <Link
-          href={`/uso/${userId}`}
+          href={rutaAdmin(`/uso/${userId}`)}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.subtext, textDecoration: 'none', marginBottom: 20 }}
         >
           <ArrowLeft size={16} />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRutaAdmin } from '@/hooks/useRutaAdmin';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
@@ -21,6 +22,7 @@ function extraerMensajeError(e: unknown, fallback: string): string {
 }
 
 export default function UsoPage() {
+  const rutaAdmin = useRutaAdmin();
   const [negocios, setNegocios] = useState<UsoNegocioResumen[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export default function UsoPage() {
       <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '12px 20px 0' }}>
           <Link
-            href="/"
+            href={rutaAdmin('/')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 44, fontSize: 14, color: colors.subtext, textDecoration: 'none' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.subtext} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
@@ -151,7 +153,7 @@ export default function UsoPage() {
                   return (
                     <Link
                       key={n.user_id}
-                      href={`/uso/${n.user_id}`}
+                      href={rutaAdmin(`/uso/${n.user_id}`)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 12, boxSizing: 'border-box',
                         padding: '14px 16px', borderRadius: 14, textDecoration: 'none',
