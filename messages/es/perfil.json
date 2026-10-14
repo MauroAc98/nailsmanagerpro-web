@@ -182,7 +182,7 @@
     "logoutConfirmButton": "Salir",
     "passwordUpdated": "Contraseña actualizada",
     "changesSaved": "Cambios guardados",
-    "senaSavedCommission": "Seña guardada. Mercado Pago descuenta una comisión de cada seña: en cada servicio te sugerimos un precio para recibirla completa.",
+    "senaSavedCommission": "Seña guardada. Mercado Pago se queda una parte de cada seña. Si querés, podés ajustar el precio de tus servicios para cubrirla.",
     "dataSaved": "Datos guardados",
     "passwordsDontMatch": "Las contraseñas no coinciden.",
     "percentInvalid": "Ingresá un porcentaje válido, entre 0 y 50.",

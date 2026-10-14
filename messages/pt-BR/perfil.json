@@ -182,7 +182,7 @@
     "logoutConfirmButton": "Sair",
     "passwordUpdated": "Senha atualizada",
     "changesSaved": "Alterações salvas",
-    "senaSavedCommission": "Sinal salvo. O Mercado Pago desconta uma comissão de cada sinal: em cada serviço sugerimos um preço para você recebê-lo por completo.",
+    "senaSavedCommission": "Sinal salvo. O Mercado Pago fica com uma parte de cada sinal. Se quiser, pode ajustar o preço dos seus serviços para cobri-la.",
     "dataSaved": "Dados salvos",
     "passwordsDontMatch": "As senhas não coincidem.",
     "percentInvalid": "Informe uma porcentagem válida, entre 0 e 50.",
