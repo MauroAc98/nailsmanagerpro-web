@@ -259,8 +259,9 @@
     "error_minima": "Você precisa manter pelo menos uma categoria."
   },
   "AvisoComisionSena": {
-    "body": "O Mercado Pago cobra uma comissão por cada sinal. Abra um serviço e toque em «Ver preço sugerido» para cobrar um preço que a cubra.",
-    "close": "Fechar aviso"
+    "body": "O Mercado Pago fica com uma parte de cada sinal. Se quiser, pode ajustar o preço dos seus serviços para cobri-la. É opcional.",
+    "seeFirst": "Ver quanto é em {nombre}",
+    "close": "Agora não"
   },
   "SenaPreviewServicio": {
     "sectionTitle": "Sinal da reserva online",

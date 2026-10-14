@@ -80,6 +80,12 @@ function ReorderableSection({
   );
 }
 
+// Primer servicio activo con precio: el aviso de la comisión lleva directo ahí.
+function primerServicioConPrecio(servicios: Servicio[]): { id: number; nombre: string } | null {
+  const s = servicios.find(x => x.activo && Number(x.precio) > 0);
+  return s ? { id: s.id, nombre: s.nombre } : null;
+}
+
 export default function ServiciosPage() {
   const t = useTranslations('configuracion.ServiciosPage');
   const router = useRouter();
@@ -315,7 +321,12 @@ export default function ServiciosPage() {
       </div>}
 
       {/* Aviso de la comisión de MP (solo con seña por porcentaje; se puede cerrar) */}
-      {servicios.length > 0 && <AvisoComisionSena />}
+      {servicios.length > 0 && (
+        <AvisoComisionSena
+          primero={primerServicioConPrecio(servicios)}
+          onVer={id => router.push(`/configuracion/servicios/${id}`)}
+        />
+      )}
 
       {/* Filtro por estado */}
       {servicios.length > 0 && (

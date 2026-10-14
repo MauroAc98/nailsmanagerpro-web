@@ -259,8 +259,9 @@
     "error_minima": "Tenés que dejar al menos una categoría."
   },
   "AvisoComisionSena": {
-    "body": "Mercado Pago cobra una comisión por cada seña. Abrí un servicio y tocá «Ver precio sugerido» para cobrar un precio que la cubra.",
-    "close": "Cerrar aviso"
+    "body": "Mercado Pago se queda una parte de cada seña. Si querés, podés ajustar el precio de tus servicios para cubrirla. Es opcional.",
+    "seeFirst": "Ver cuánto es en {nombre}",
+    "close": "Ahora no"
   },
   "SenaPreviewServicio": {
     "sectionTitle": "Seña de la reserva online",
