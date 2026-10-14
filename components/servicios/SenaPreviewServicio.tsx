@@ -6,7 +6,9 @@ import { agendaColors as colors, agendaShadows as shadows } from '@/theme/agenda
 import { useAuthStore } from '@/store/useAuthStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { formatMonto, formatMontoEntero } from '@/lib/money';
-import { calcularSenaPreview, PASO_SENA_PORCENTAJE, precioSugeridoSena, senaConfigurada } from '@/lib/senaPreview';
+import {
+  calcularSenaPreview, pasoSenaPorcentaje, precioSugeridoSena, senaConfigurada, senaPorcentajeExacta,
+} from '@/lib/senaPreview';
 import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
 
 interface Props {
@@ -147,7 +149,7 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   const hayRetencion = p.retencion > 0;
   // La seña por porcentaje sube al múltiplo de 500. Solo el detalle explica ese redondeo, y solo
   // si ocurrió: si ya era múltiplo, o si la seña es el precio entero, no hay nada que aclarar.
-  const senaExacta = Math.round(valor * (user.sena_porcentaje ?? 0)) / 100;
+  const senaExacta = senaPorcentajeExacta(valor, user.sena_porcentaje ?? 0);
   const redondeada = porcentaje && p.sena !== senaExacta && p.sena < valor;
   // Se ofrece cubrir la comisión solo si el precio se tocó en esta pantalla.
   const tocado = valor !== parsearMonto(precioInicial ?? '');
@@ -252,7 +254,7 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
                 <span style={montoStyle}>{monto(senaExacta)}</span>
               </div>
               <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
-                <span style={etiquetaStyle}>{t('detailRounding', { paso: monto(PASO_SENA_PORCENTAJE) })}</span>
+                <span style={etiquetaStyle}>{t('detailRounding', { paso: monto(pasoSenaPorcentaje(senaExacta)) })}</span>
                 <span style={montoStyle}>{`+ ${monto(p.sena - senaExacta)}`}</span>
               </div>
             </>

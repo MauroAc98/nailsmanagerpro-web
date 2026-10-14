@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcularSena, calcularSenaPreview, desgloseSena, precioSugeridoSena, senaFijaSugerida, type SenaPreviewConfig } from './senaPreview';
+import { calcularSena, calcularSenaPreview, desgloseSena, pasoSenaPorcentaje, precioSugeridoSena, senaFijaSugerida, type SenaPreviewConfig } from './senaPreview';
 
 const pct = (p: number, extra: Partial<SenaPreviewConfig> = {}): SenaPreviewConfig => ({
   sena_tipo: 'porcentaje', sena_porcentaje: p, sena_monto: null,
@@ -42,9 +42,27 @@ describe('calcularSena', () => {
     expect(calcularSena(25000, pct(30))).toBe(7500);
     expect(calcularSena(18000, pct(50))).toBe(9000);
   });
-  it('percentage: a tiny price pays the whole price, never more', () => {
-    expect(calcularSena(333, pct(50))).toBe(333);
+  it('percentage: a small deposit uses a smaller step (< 100 -> 10, < 500 -> 100, from 500 -> 500)', () => {
+    expect(calcularSena(100, pct(30))).toBe(30); // no salta a 100
+    expect(calcularSena(111, pct(30))).toBe(40); // 33,3
+    expect(calcularSena(1000, pct(30))).toBe(300);
+    expect(calcularSena(1500, pct(30))).toBe(500); // 450
+    expect(calcularSena(1666, pct(30))).toBe(500); // 499,8
+    expect(calcularSena(1700, pct(30))).toBe(1000); // 510 ya usa el paso de 500
+    expect(calcularSena(333, pct(50))).toBe(200); // 166,5
+  });
+  it('percentage: a deposit never exceeds the price', () => {
+    expect(calcularSena(100, pct(100))).toBe(100);
     expect(calcularSena(1250, pct(100))).toBe(1250);
+    expect(calcularSena(600, pct(100))).toBe(600); // 600 -> 1000 por el paso, tope 600
+  });
+  it('pasoSenaPorcentaje mirrors the backend thresholds', () => {
+    expect(pasoSenaPorcentaje(9)).toBe(10);
+    expect(pasoSenaPorcentaje(99.99)).toBe(10);
+    expect(pasoSenaPorcentaje(100)).toBe(100);
+    expect(pasoSenaPorcentaje(499.99)).toBe(100);
+    expect(pasoSenaPorcentaje(500)).toBe(500);
+    expect(pasoSenaPorcentaje(14400)).toBe(500);
   });
   it('fixed: min(monto, price)', () => {
     expect(calcularSena(10000, fijo(5000))).toBe(5000);
