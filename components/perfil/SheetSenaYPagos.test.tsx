@@ -139,12 +139,19 @@ describe('SheetSenaYPagos — porcentaje', () => {
     expect(screen.getByText(dinero(3000))).toBeInTheDocument();
     expect(screen.getByText('Te llegan')).toBeInTheDocument();
     expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
-    expect(screen.queryByText('Del precio de cada servicio.')).toBeNull();
+    expect(screen.queryByText(/Del precio de cada servicio/)).toBeNull();
+  });
+
+  it('the example amount is rounded up to a multiple of 500 like the real deposit (33% of $10.000 -> $3.500)', () => {
+    setup({ ...pct, senaPorcentaje: '33', comisionVigente: 7.61 });
+    const d = desgloseSena(3500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
+    expect(screen.getByText(dinero(3500))).toBeInTheDocument();
+    expect(screen.getByText(dinero(d!.llega))).toBeInTheDocument();
   });
 
   it('with online booking tells where the price suggestion shows up', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(/Para que te lleguen completos los montos de la seña, editá el precio de un servicio/)).toBeInTheDocument();
+    expect(screen.getByText(/Para no perder plata por la comisión, editá el precio de un servicio/)).toBeInTheDocument();
   });
 
   it('without online booking there is no hint (no commission to cover)', () => {
@@ -160,7 +167,7 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   it('without online booking shows only a small line and no calculator', () => {
     setup({ ...pct, reservaOnlineActiva: false });
-    expect(screen.getByText('Del precio de cada servicio.')).toBeInTheDocument();
+    expect(screen.getByText('Del precio de cada servicio, redondeada hacia arriba a múltiplos de $500.')).toBeInTheDocument();
     expect(screen.queryByText('Te llegan')).toBeNull();
     expect(screen.queryByText(/Ejemplo con un servicio/)).toBeNull();
   });
