@@ -273,6 +273,7 @@
     "leaves": "Seus clientes deixam <b>{sena}</b> de sinal <m>({origen})</m>.",
     "originPercent": "{pct}% de {precio}",
     "originPercentRounded": "{pct}% de {precio}, arredondado para cima",
+    "originFullPrice": "o preço completo",
     "originFixed": "valor fixo",
     "receives": "Depois da comissão do Mercado Pago, você recebe <b>{llega}</b>.",
     "hint": "O Mercado Pago cobra uma comissão por cada pagamento online, então você recebe um pouco menos do que seus clientes deixam.",

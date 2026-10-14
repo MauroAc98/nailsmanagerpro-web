@@ -147,7 +147,10 @@ export default function SenaPreviewServicio({ precio, onUsarPrecio, onConfigurar
   const hayRetencion = p.retencion > 0;
   // La seña por porcentaje sube al múltiplo de 500: si no coincide con el % exacto, se aclara.
   const senaExacta = Math.round(valor * (user.sena_porcentaje ?? 0)) / 100;
-  const origenPorcentaje = p.sena === senaExacta ? 'originPercent' : 'originPercentRounded';
+  // Si llega al precio entero (precio chico o 100%), "el 30% de $30" sería falso.
+  const origenPorcentaje = p.sena >= valor
+    ? 'originFullPrice'
+    : p.sena === senaExacta ? 'originPercent' : 'originPercentRounded';
   // Se ofrece cubrir la comisión solo si el precio se tocó en esta pantalla.
   const tocado = valor !== parsearMonto(precioInicial ?? '');
   const sugerido = onUsarPrecio && (tocado || verSugerencia) ? precioSugeridoSena(valor, user) : null;

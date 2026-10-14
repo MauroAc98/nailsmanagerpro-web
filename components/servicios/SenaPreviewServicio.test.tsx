@@ -61,6 +61,19 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('(el 30% de $22.000, redondeada hacia arriba)')).toBeInTheDocument();
   });
 
+  it('when the rounded deposit reaches the whole price, the origin says "el precio completo"', () => {
+    setUser({ sena_porcentaje: 30 });
+    setup('30'); // 30% = 9 -> 500 -> capped at the price
+    expect(screen.getByText('(el precio completo)')).toBeInTheDocument();
+    expect(screen.queryByText(/el 30% de/)).toBeNull();
+  });
+
+  it('a 100% deposit also reads "el precio completo", not "el 100% de…"', () => {
+    setUser({ sena_porcentaje: 100 });
+    setup('18000');
+    expect(screen.getByText('(el precio completo)')).toBeInTheDocument();
+  });
+
   it('when the percentage already lands on a multiple of 500, the origin stays plain', () => {
     setUser({ sena_porcentaje: 30 });
     setup('25000'); // 30% = 7.500
