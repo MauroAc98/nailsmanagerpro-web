@@ -671,6 +671,16 @@ describe('HorarioScreen', () => {
         expect(useReservaOnlineStore.getState().profesionalId).toBe('any');
       });
 
+      it('con una promo de profesional fija NO ofrece "Ver con cualquier profesional" (no hay a quien cambiar), aunque haya quedado una elegida de antes', async () => {
+        conDias(['2026-09-22']);
+        const store = useReservaOnlineStore.getState();
+        store.setServicios([5]); // promo con profesionales fijas
+        store.setProfesional(1); // elegida antes de pasar a la promo: setServicios no la reinicia
+        renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
+        await screen.findByTestId('cercano-despues');
+        expect(screen.queryByRole('button', { name: 'Ver con cualquier profesional' })).toBeNull();
+      });
+
       it('si la lista viene vacia dice que no hay lugar en 30 dias, con la sugerencia, sin recorrer', async () => {
         const { consultadas } = conDias([]);
         renderWithProviders(<HorarioScreen slug="demo" ir={() => {}} ahora={reloj} />);
