@@ -12,7 +12,7 @@ const CLAVE_CERRADO = 'aviso_comision_sena_cerrado';
 
 function leerCerrado(): boolean {
   try {
-    return window.localStorage.getItem(CLAVE_CERRADO) === '1';
+    return window.sessionStorage.getItem(CLAVE_CERRADO) === '1';
   } catch {
     return false;
   }
@@ -20,7 +20,7 @@ function leerCerrado(): boolean {
 
 // Aviso de la lista de servicios: con seña por porcentaje, la comisión de Mercado
 // Pago sale de la seña y cada servicio puede mostrar un precio sugerido para
-// cubrirla. Se puede cerrar y no vuelve (se recuerda en este navegador).
+// cubrirla. Se puede cerrar y vuelve la próxima vez que se abre la app (se recuerda solo en la sesión).
 // Solo existe si hay algo que avisar: seña por porcentaje bien configurada,
 // comisión vigente mayor a 0 y reserva online activa.
 export default function AvisoComisionSena() {
@@ -36,9 +36,9 @@ export default function AvisoComisionSena() {
   const cerrar = () => {
     setCerrado(true);
     try {
-      window.localStorage.setItem(CLAVE_CERRADO, '1');
+      window.sessionStorage.setItem(CLAVE_CERRADO, '1');
     } catch {
-      // sin almacenamiento: el aviso se cierra solo por esta visita
+      // sin almacenamiento: el aviso se cierra solo hasta salir de la lista
     }
   };
 

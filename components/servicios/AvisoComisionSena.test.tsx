@@ -18,7 +18,7 @@ const TEXTO = /Mercado Pago cobra una comisión por cada seña/;
 
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
-  window.localStorage.clear();
+  window.sessionStorage.clear();
   setUser({});
 });
 
@@ -44,13 +44,19 @@ describe('AvisoComisionSena', () => {
     expect(screen.queryByText(TEXTO)).toBeNull();
   });
 
-  it('closing it hides it and it stays hidden next time', () => {
+  it('closing it hides it for the session and it comes back in a new one', () => {
     const { unmount } = renderWithProviders(<AvisoComisionSena />);
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar aviso' }));
     expect(screen.queryByText(TEXTO)).toBeNull();
+    // Mismo recorrido de la sesión (entrar a un servicio y volver): sigue cerrado.
     unmount();
-    renderWithProviders(<AvisoComisionSena />);
+    const { unmount: unmount2 } = renderWithProviders(<AvisoComisionSena />);
     expect(screen.queryByText(TEXTO)).toBeNull();
+    unmount2();
+    // Sesión nueva (se vuelve a abrir la app): vuelve a aparecer.
+    window.sessionStorage.clear();
+    renderWithProviders(<AvisoComisionSena />);
+    expect(screen.getByText(TEXTO)).toBeInTheDocument();
   });
 });
 
