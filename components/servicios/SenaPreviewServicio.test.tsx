@@ -68,7 +68,7 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000'); // seña 10.000, comisión 761, llegan 9.239: 239 más que el 50% ($9.000)
     expect(screen.getByText(
-      'Te llega el 50% del precio ($9.000) y $239 más porque la seña se redondea hacia arriba.',
+      'Te llega el 50% del precio ($9.000) y $239 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
     )).toBeInTheDocument();
   });
 
@@ -79,7 +79,7 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('$304')).toBeInTheDocument();
     expect(screen.getByText('$3.696')).toBeInTheDocument();
     expect(screen.getByText(
-      'Te llega el 30% del precio ($3.390) y $306 más porque la seña se redondea hacia arriba.',
+      'Te llega el 30% del precio ($3.390) y $306 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
     )).toBeInTheDocument();
   });
 
@@ -87,7 +87,7 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
     setup('10000'); // sin comisión y 50% de 10.000 = 5.000 es múltiplo de 500: no sobra nada
     expect(screen.getByText('Te llega el 50% del precio ($5.000).')).toBeInTheDocument();
-    expect(screen.queryByText(/más porque la seña se redondea/)).toBeNull();
+    expect(screen.queryByText(/redondeamos la seña hacia arriba/)).toBeNull();
   });
 
   it('does not claim that when the deposit is the whole price (nothing left to cover the cost with)', () => {
@@ -124,7 +124,7 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.getByText('− $571')).toBeInTheDocument();
     expect(screen.getAllByText('$6.929')).toHaveLength(2); // la frase de arriba y la última fila
-    expect(screen.getByText('La seña se redondea para que al cliente le resulte fácil completar el pago en el local.')).toBeInTheDocument();
+    expect(screen.getByText('Redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.')).toBeInTheDocument();
   });
 
   it('no rounding row when the cost already lands on a multiple of the step', () => {
@@ -133,7 +133,7 @@ describe('SenaPreviewServicio', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
     expect(screen.queryByText(/Redondeo a/)).toBeNull();
-    expect(screen.queryByText(/se redondea/)).toBeNull();
+    expect(screen.queryByText(/edondeamos la seña/)).toBeNull();
   });
 
   it('no percentage steps when the deposit is the whole price', () => {

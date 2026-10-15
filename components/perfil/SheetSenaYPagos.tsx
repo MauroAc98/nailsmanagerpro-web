@@ -398,15 +398,14 @@ export function SheetSenaYPagos({
               )}
               {desgloseEjemplo && (
                 <p style={{ ...avisoStyle, margin: 0 }}>
-                  {/* Si el redondeo deja de más, se dice cuánto y para qué, en el mismo párrafo: si no, "te llega
-                      el 30 %" y la cifra de arriba no cierran. El motivo es la misma frase que el detalle de la
-                      tarjeta del servicio. */}
+                  {/* Si el redondeo deja de más, se dice cuánto y para qué, en una sola oración: si no, "te llega
+                      el 30 %" y la cifra de arriba no cierran. */}
                   {desgloseEjemplo.llega > exactoEjemplo
-                    ? `${t('exampleCoversExtra', {
+                    ? t('exampleCoversExtra', {
                         pct: porcentajeElegido,
                         monto: montoCorto(exactoEjemplo),
                         extra: montoCorto(desgloseEjemplo.llega - exactoEjemplo),
-                      })} ${t('roundingReason')}`
+                      })
                     : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
                 </p>
               )}
@@ -479,12 +478,11 @@ export function SheetSenaYPagos({
               {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
               {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
                 <p style={{ ...avisoStyle, margin: 0 }}>
-                  {/* Cuánto llega de más y para qué se redondea, en el mismo párrafo (misma frase que en porcentaje). */}
+                  {/* Cuánto llega de más y para qué se redondea, en una sola oración (misma redacción que en porcentaje). */}
                   {t('fixedRoundedNote', {
                     querido: montoCorto(parsearMonto(aplicado.anterior) ?? 0),
                     extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
-                  })}{' '}
-                  {t('roundingReason')}
+                  })}
                 </p>
               )}
             </>
