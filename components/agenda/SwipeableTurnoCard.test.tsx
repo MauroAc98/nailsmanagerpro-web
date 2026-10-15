@@ -253,3 +253,40 @@ describe('SwipeableTurnoCard — idea del cliente (notas)', () => {
     expect(screen.getByLabelText('Tiene una idea del cliente')).toBeInTheDocument();
   });
 });
+
+describe('SwipeableTurnoCard — estado del último WhatsApp automático', () => {
+  const conTelefono = (over: Partial<Turno> = {}) =>
+    buildTurno({ cliente: { nombre: 'Ana', apellido: 'Gómez', telefono: '3764000000' }, ...over });
+
+  it('muestra la insignia junto al icono de WhatsApp cuando el mensaje fue leído', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={conTelefono({ whatsapp_ultimo_status: 'read' })} />);
+
+    expect(screen.getByRole('img', { name: 'Leído' })).toBeInTheDocument();
+  });
+
+  it('no muestra insignia si todavía no se mandó ningún mensaje', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={conTelefono({ whatsapp_ultimo_status: null })} />);
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('no muestra insignia si el backend no manda el campo', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={conTelefono()} />);
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('no muestra insignia si la tarjeta no tiene icono de WhatsApp (cliente sin teléfono)', () => {
+    renderWithProviders(<SwipeableTurnoCard turno={buildTurno({ whatsapp_ultimo_status: 'failed' })} />);
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('no cambia el tamaño del enlace de WhatsApp', () => {
+    const { container } = renderWithProviders(<SwipeableTurnoCard turno={conTelefono({ whatsapp_ultimo_status: 'delivered' })} />);
+    const enlace = container.querySelector('a[href*="wa.me"]') as HTMLElement;
+
+    expect(enlace.style.width).toBe('38px');
+    expect(enlace.style.height).toBe('38px');
+  });
+});

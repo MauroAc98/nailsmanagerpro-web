@@ -90,3 +90,44 @@ describe('NotificacionesBell — reservas online pagadas', () => {
     expect(reservaEl.compareDocumentPosition(msgEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
+
+describe('NotificacionesBell — estado de los mensajes', () => {
+  const msg = (over: Record<string, unknown>) => ({
+    id: 1, tipo: 'recordatorio', status: 'delivered', cliente_nombre: 'Ana', cliente_apellido: 'X',
+    created_at: new Date().toISOString(), mensaje: 'm', cliente_telefono: null, reenviable: false, ...over,
+  } as never);
+
+  it('muestra el motivo del fallo según el código de error', () => {
+    abrir({ ...base, mensajes: [msg({ status: 'failed', error_code: 131026, error_titulo: 'Message undeliverable' })] });
+
+    expect(screen.getByText(es.common.MotivoFalloWhatsapp.noPuedeRecibir)).toBeTruthy();
+  });
+
+  it('un código desconocido cae al motivo genérico', () => {
+    abrir({ ...base, mensajes: [msg({ status: 'failed', error_code: 999999 })] });
+
+    expect(screen.getByText(es.common.MotivoFalloWhatsapp.generico)).toBeTruthy();
+  });
+
+  it('un fallo de un backend viejo (sin código) no inventa un motivo', () => {
+    abrir({ ...base, mensajes: [msg({ status: 'failed' })] });
+
+    expect(screen.queryByText(es.common.MotivoFalloWhatsapp.generico)).toBeNull();
+  });
+
+  it('un mensaje que no falló no muestra motivo', () => {
+    abrir({ ...base, mensajes: [msg({ status: 'delivered', error_code: 131026 })] });
+
+    expect(screen.queryByText(es.common.MotivoFalloWhatsapp.noPuedeRecibir)).toBeNull();
+  });
+
+  it.each([
+    ['pending', 'Enviado'],
+    ['delivered', 'Entregado'],
+    ['read', 'Leído'],
+  ])('%s se distingue con su propio estado (%s)', (status, etiqueta) => {
+    abrir({ ...base, mensajes: [msg({ status })] });
+
+    expect(screen.getByRole('img', { name: etiqueta })).toBeTruthy();
+  });
+});

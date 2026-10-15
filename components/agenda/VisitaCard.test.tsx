@@ -154,3 +154,31 @@ describe('VisitaCard · WhatsApp', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
+
+describe('VisitaCard · estado del WhatsApp', () => {
+  const href = 'https://wa.me/543764000000';
+
+  it('muestra el estado del primer turno que tiene uno', () => {
+    const visita = armar({ over: { 1: { whatsapp_ultimo_status: null }, 2: { whatsapp_ultimo_status: 'delivered' } } });
+    renderWithProviders(<VisitaCard visita={visita} whatsappHref={href} {...props()} />);
+
+    expect(screen.getByRole('img', { name: 'Entregado' })).toBeInTheDocument();
+  });
+
+  it('prefiere un fallo si algún turno falló', () => {
+    const visita = armar({ over: { 1: { whatsapp_ultimo_status: 'read' }, 2: { whatsapp_ultimo_status: 'failed' } } });
+    renderWithProviders(<VisitaCard visita={visita} whatsappHref={href} {...props()} />);
+
+    expect(screen.getByRole('img', { name: 'No se pudo enviar' })).toBeInTheDocument();
+  });
+
+  it('no muestra nada si ningún turno tiene estado, ni si no hay icono de WhatsApp', () => {
+    const { unmount } = renderWithProviders(<VisitaCard visita={armar()} whatsappHref={href} {...props()} />);
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    unmount();
+
+    const conEstado = armar({ over: { 1: { whatsapp_ultimo_status: 'read' } } });
+    renderWithProviders(<VisitaCard visita={conEstado} {...props()} />);
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+});

@@ -3,13 +3,16 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2, XCircle, Send } from 'lucide-react';
+import { XCircle, Send } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { agendaColors as colors, agendaFontSerif } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import { WhatsappGlyph } from '@/components/icons/WhatsappGlyph';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { quitarAvisoUnidireccional } from '@/lib/whatsappHelper';
+import { estadoWhatsapp } from '@/lib/estadoWhatsapp';
+import { motivoFallo } from '@/lib/motivoFalloWhatsapp';
+import { GlifoEstadoWhatsapp } from '@/components/agenda/BadgeEstadoWhatsapp';
 import { Spinner } from '@/components/Spinner';
 
 // Renderiza *texto* en negrita, igual que WhatsApp interpreta los
@@ -26,6 +29,8 @@ function renderConNegritas(texto: string) {
 
 export default function DetalleNotificacionPage() {
   const t = useTranslations('agenda.DetalleNotificacionPage');
+  const tEstado = useTranslations('common.EstadoWhatsapp');
+  const tMotivo = useTranslations('common.MotivoFalloWhatsapp');
   const router = useRouter();
   const params = useParams();
   const id = Number(Array.isArray(params?.id) ? params.id[0] : params?.id ?? '0');
@@ -46,13 +51,20 @@ export default function DetalleNotificacionPage() {
     : '';
 
   const esFallido = mensaje?.status === 'failed';
-  const Icono = esFallido ? XCircle : mensaje?.status === 'manual' ? Send : CheckCircle2;
+  const esManual = mensaje?.status === 'manual';
+  // Enviado / entregado / leído (no aplica a fallidos ni a los marcados a mano).
+  const estado = esFallido || esManual ? null : estadoWhatsapp(mensaje?.status);
   const colorEstado = esFallido ? colors.danger : colors.success;
   const textoEstado = esFallido
     ? t('estadoFallido')
-    : mensaje?.status === 'manual'
+    : esManual
       ? t('estadoManual')
-      : t('estadoEnviado');
+      : estado
+        ? tEstado(estado)
+        : t('estadoEnviado');
+  // Motivo del fallo según el código de Meta. Sin código (backend viejo) quedan
+  // los textos genéricos de siempre.
+  const motivo = esFallido && mensaje?.error_code != null ? tMotivo(motivoFallo(mensaje.error_code)) : null;
 
   // Reenvío desde el WhatsApp propio de la dueña: solo para fallos que Meta
   // aceptó y no pudo entregar (ver WhatsappMensaje::esReenviableManual).
@@ -99,7 +111,11 @@ export default function DetalleNotificacionPage() {
                 width: 36, height: 36, borderRadius: 18,
                 backgroundColor: esFallido ? colors.dangerBg : colors.successBg,
               }}>
-                <Icono size={18} color={colorEstado} strokeWidth={2} />
+                {estado
+                  ? <GlifoEstadoWhatsapp estado={estado} size={18} />
+                  : esFallido
+                    ? <XCircle size={18} color={colorEstado} strokeWidth={2} />
+                    : <Send size={18} color={colorEstado} strokeWidth={2} />}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: colors.text }}>
@@ -131,7 +147,7 @@ export default function DetalleNotificacionPage() {
             {hrefReenvio && (
               <div style={{ marginTop: 16 }}>
                 <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5, color: colors.subtext }}>
-                  {t('ayudaReenvio')}
+                  {motivo ?? t('ayudaReenvio')}
                 </p>
                 <a
                   href={hrefReenvio}
@@ -152,7 +168,7 @@ export default function DetalleNotificacionPage() {
 
             {esFallido && !mensaje.reenviable && (
               <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.5, color: colors.subtext }}>
-                {t('ayudaErrorNuestro')}
+                {motivo ?? t('ayudaErrorNuestro')}
               </p>
             )}
           </>
