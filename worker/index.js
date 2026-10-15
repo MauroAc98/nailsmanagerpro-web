@@ -4,10 +4,11 @@
 import { opcionesNotificacion, parsearPayloadPush, urlMismoOrigen } from './pushHelpers';
 
 const ICONO = '/icon-192.png';
+const BADGE = '/badge-96.png';
 
 self.addEventListener('push', (event) => {
   const p = parsearPayloadPush(event.data);
-  const opciones = opcionesNotificacion(p, ICONO);
+  const opciones = opcionesNotificacion(p, ICONO, BADGE);
   // Siempre se muestra algo: iOS revoca la suscripción si un push no muestra notificación.
   event.waitUntil(self.registration.showNotification(p.title, opciones));
 });

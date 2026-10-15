@@ -64,6 +64,10 @@ describe('opcionesNotificacion', () => {
     expect(o).not.toHaveProperty('silent');
     expect(o).toMatchObject({ body: 'B', icon: '/i.png', badge: '/i.png', data: { url: '/agenda' }, timestamp: 9 });
   });
+  it('usa el badge indicado (silueta) y cae al ícono si no se indica', () => {
+    expect(opcionesNotificacion({ ...base, silencioso: false }, '/i.png', '/b.png')).toMatchObject({ icon: '/i.png', badge: '/b.png' });
+    expect(opcionesNotificacion({ ...base, silencioso: false }, '/i.png')).toMatchObject({ icon: '/i.png', badge: '/i.png' });
+  });
 });
 
 describe('urlMismoOrigen', () => {
