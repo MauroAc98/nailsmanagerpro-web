@@ -460,13 +460,21 @@ export function SheetSenaYPagos({
         </div>
       )}
       {senaTipo === 'fijo' && confirmado && aplicado && (
-        <p style={{ ...avisoStyle, margin: '0 0 12px' }}>
-          {t('fixedApplied', { monto: dinero(parsearMonto(aplicado.anterior) ?? 0) })}
-          {' · '}
-          <button type="button" onClick={deshacer} style={{ ...enlaceStyle, fontSize: 12.5 }}>
-            {t('fixedUndo')}
-          </button>
-        </p>
+        <>
+          <p style={{ ...avisoStyle, margin: '0 0 12px' }}>
+            {t('fixedApplied', { monto: dinero(parsearMonto(aplicado.anterior) ?? 0) })}
+            {' · '}
+            <button type="button" onClick={deshacer} style={{ ...enlaceStyle, fontSize: 12.5 }}>
+              {t('fixedUndo')}
+            </button>
+          </p>
+          {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
+          {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
+            <p style={{ ...avisoStyle, margin: '-4px 0 16px' }}>
+              {t('fixedRoundedNote', { querido: dinero(parsearMonto(aplicado.anterior) ?? 0), llega: dinero(desglose.llega) })}
+            </p>
+          )}
+        </>
       )}
 
       {senaTipo !== 'ninguna' && (

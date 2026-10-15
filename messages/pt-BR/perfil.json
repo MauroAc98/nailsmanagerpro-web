@@ -81,6 +81,7 @@
     "tipUse": "Pedir {sena}",
     "fixedApplied": "Pronto. Antes: {monto}",
     "fixedUndo": "Desfazer",
+    "fixedRoundedNote": "Aumentamos e arredondamos o sinal para você receber pelo menos {querido}: com ele você recebe {llega}.",
     "moreTitle": "Mais opções",
     "moreSubMp": "Impostos e transferência por WhatsApp",
     "moreSubTransfer": "Transferência por WhatsApp",

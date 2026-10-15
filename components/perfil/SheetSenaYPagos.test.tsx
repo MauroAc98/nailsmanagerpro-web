@@ -313,6 +313,22 @@ describe('SheetSenaYPagos — monto fijo', () => {
     expect(screen.queryByText(/Listo\./)).toBeNull();
   });
 
+  it('after applying it says that it rounded up, so more than the wanted amount arrives', () => {
+    function Harness() {
+      const [monto, setMonto] = useState('5000');
+      return <SheetSenaYPagos {...baseProps({ senaMonto: monto, setSenaMonto: setMonto })} />;
+    }
+    renderWithProviders(<Harness />);
+    const d = desgloseSena(5500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
+    expect(screen.queryByText(/Subimos y redondeamos/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
+    expect(screen.getByText(
+      `Subimos y redondeamos la seña para que te lleguen al menos $5.000,00: con ella te llegan ${dinero(d!.llega)}.`,
+    )).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
+    expect(screen.queryByText(/Subimos y redondeamos/)).toBeNull();
+  });
+
   it('shows nothing of the calculator without online booking', () => {
     setup({ reservaOnlineActiva: false });
     expect(montoInput()).toBeInTheDocument();
