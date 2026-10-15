@@ -174,7 +174,12 @@ export default function SenaPreviewServicio({ precio, onConfigurar, activa }: Pr
         </p>
         {pasos && (
           <p style={notaStyle}>
-            {t('coveredNote', { pct: user.sena_porcentaje ?? 0, exacta: monto(pasos.exacta) })}
+            {/* Si el redondeo deja de más, se dice: si no, "te llega el 30 %" y la cifra de arriba no cierran. */}
+            {p.llega > pasos.exacta
+              ? t('coveredNoteExtra', {
+                  pct: user.sena_porcentaje ?? 0, exacta: monto(pasos.exacta), extra: monto(p.llega - pasos.exacta),
+                })
+              : t('coveredNote', { pct: user.sena_porcentaje ?? 0, exacta: monto(pasos.exacta) })}
           </p>
         )}
       </div>

@@ -270,6 +270,7 @@
     "keeps": "Desse sinal, o Mercado Pago fica com <b>{costos}</b> e você recebe <b>{llega}</b>.",
     "keepsWithRetention": "Desse sinal, entre o Mercado Pago e a retenção de impostos ficam <b>{costos}</b> e você recebe <b>{llega}</b>.",
     "coveredNote": "Com isso você recebe os {pct}% do preço ({exacta}) por inteiro.",
+    "coveredNoteExtra": "Você recebe os {pct}% do preço ({exacta}) e um pouco mais ({extra}) porque o sinal é arredondado para cima.",
     "showDetail": "Ver detalhe",
     "hideDetail": "Ocultar detalhe",
     "detailPrice": "Preço do serviço",

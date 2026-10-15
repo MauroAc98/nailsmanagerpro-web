@@ -64,10 +64,30 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText(/la retención de impuestos se quedan/)).toBeInTheDocument();
   });
 
-  it('says the seña already gives her the whole percentage of the price', () => {
+  it('says the seña gives her the whole percentage of the price and the little extra that the rounding adds', () => {
     setUser({ sena_porcentaje: 50 });
-    setup('18000');
-    expect(screen.getByText('Con eso te llega completo el 50% del precio ($9.000).')).toBeInTheDocument();
+    setup('18000'); // seña 10.000, comisión 761, llegan 9.239: 239 más que el 50% ($9.000)
+    expect(screen.getByText(
+      'Te llega el 50% del precio ($9.000) y un poco más ($239) porque la seña se redondea hacia arriba.',
+    )).toBeInTheDocument();
+  });
+
+  it('explains every figure of a real case: $11.300 at 30% -> seña $4.000, she gets $3.696 = $3.390 + $306', () => {
+    setUser({ sena_porcentaje: 30 });
+    setup('11300');
+    expect(screen.getByText('$4.000')).toBeInTheDocument();
+    expect(screen.getByText('$304')).toBeInTheDocument();
+    expect(screen.getByText('$3.696')).toBeInTheDocument();
+    expect(screen.getByText(
+      'Te llega el 30% del precio ($3.390) y un poco más ($306) porque la seña se redondea hacia arriba.',
+    )).toBeInTheDocument();
+  });
+
+  it('when nothing arrives beyond the percentage it keeps the plain sentence (no "un poco más")', () => {
+    setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
+    setup('10000'); // sin comisión y 50% de 10.000 = 5.000 es múltiplo de 500: no sobra nada
+    expect(screen.getByText('Con eso te llega completo el 50% del precio ($5.000).')).toBeInTheDocument();
+    expect(screen.queryByText(/un poco más/)).toBeNull();
   });
 
   it('does not claim that when the deposit is the whole price (nothing left to cover the cost with)', () => {
