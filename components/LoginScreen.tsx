@@ -156,7 +156,7 @@ export function LoginScreen({ slug }: LoginScreenProps) {
               <label htmlFor="email" style={{ fontSize: 13, fontWeight: 600, color: agendaColors.strong }}>{t('emailLabel')}</label>
               <div style={fieldStyle('email')}>
                 <Mail size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-                <input
+                <input data-sin-borde
                   id="email"
                   type="email"
                   inputMode="email"
@@ -179,7 +179,7 @@ export function LoginScreen({ slug }: LoginScreenProps) {
               <label htmlFor="password" style={{ fontSize: 13, fontWeight: 600, color: agendaColors.strong }}>{t('passwordLabel')}</label>
               <div style={fieldStyle('password')}>
                 <Lock size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-                <input
+                <input data-sin-borde
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"

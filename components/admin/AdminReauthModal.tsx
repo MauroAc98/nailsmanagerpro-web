@@ -103,7 +103,7 @@ export function AdminReauthModal() {
           </label>
           <div style={{ display: 'flex', alignItems: 'center', height: 50, backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, paddingLeft: 14, paddingRight: 14, gap: 10 }}>
             <Lock size={17} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-            <input
+            <input data-sin-borde
               id="reauth-password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"

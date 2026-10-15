@@ -393,3 +393,23 @@ html[data-theme="dark"] body {
 [data-sin-trama] {
   background-image: none !important;
 }
+
+/* Foco visible en los campos de texto, en ambos temas. Muchos campos traen outline: none inline,
+   así que el aro necesita !important; sin él no hay forma de ver cuál campo está activo con un
+   teclado. Casillas y radios quedan afuera: tienen su propio estilo.
+   Hay dos formas de campo: con borde propio (el aro va en el input) y sin borde, transparente
+   dentro de un contenedor con borde, icono o adorno (el aro va en ese contenedor). Esos campos llevan data-sin-borde. */
+input:where(:not([type='checkbox']):not([type='radio'])):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary-deep) !important;
+  outline-offset: 1px;
+}
+input[data-sin-borde]:focus-visible,
+textarea[data-sin-borde]:focus-visible {
+  outline: none !important;
+}
+:has(> [data-sin-borde]:focus-visible) {
+  outline: 2px solid var(--color-primary-deep);
+  outline-offset: 1px;
+}

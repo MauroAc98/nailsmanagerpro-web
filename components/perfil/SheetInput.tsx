@@ -29,7 +29,7 @@ export function SheetInput({ label, icon, value, onChange, placeholder, type = '
         padding: '12px 14px', position: 'relative',
       }}>
         {icon}
-        <input
+        <input data-sin-borde
           aria-label={label}
           value={value}
           onChange={e => onChange(e.target.value)}

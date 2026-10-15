@@ -112,7 +112,7 @@ export default function ConfiguracionPage() {
                   paddingRight: 16,
                 }}
               >
-                <input
+                <input data-sin-borde
                   id="dias-prueba-default"
                   type="number"
                   inputMode="numeric"
@@ -148,7 +148,7 @@ export default function ConfiguracionPage() {
                   paddingRight: 16,
                 }}
               >
-                <input
+                <input data-sin-borde
                   id="comision-mp"
                   type="text"
                   inputMode="decimal"

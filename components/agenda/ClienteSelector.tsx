@@ -153,7 +153,7 @@ export function ClienteSelector({ value, onChange, labels, onNuevo, allowClear =
           border: `1px solid ${colors.border}`, borderTop: 'none',
           borderRadius: '0 0 12px 12px', backgroundColor: colors.surface,
         }}>
-          <input
+          <input data-sin-borde
             autoFocus
             placeholder={labels.searchByName}
             value={busqueda}
