@@ -115,7 +115,7 @@ export function ClienteSelector({ value, onChange, labels, onNuevo, allowClear =
       <div
         onClick={alternar}
         style={{
-          backgroundColor: colors.surfaceSubtle, border: `1px solid ${abierto ? colors.primaryDeep : colors.border}`,
+          backgroundColor: colors.surfaceSubtle, border: `1px solid ${abierto ? colors.primaryDeep : colors.fieldBorder}`,
           padding: '14px 16px', fontSize: 15, color: colors.text,
           display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
           borderRadius: abierto ? '12px 12px 0 0' : 12,

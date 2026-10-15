@@ -29,7 +29,7 @@ interface Props {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   boxShadow: shadows.card, borderRadius: 12,
   padding: '14px 16px', fontSize: 15, color: colors.text, outline: 'none',
 };
@@ -128,7 +128,7 @@ export default function CategoriaMovimientoForm({ tipo, nombreOriginal }: Props)
             disabled={saving}
             onChange={e => { setNombre(e.target.value); setError(null); }}
             onKeyDown={e => { if (e.key === 'Enter') handleGuardar(); }}
-            style={{ ...inputStyle, borderColor: error ? colors.dangerBorder : colors.border }}
+            style={{ ...inputStyle, borderColor: error ? colors.dangerBorder : colors.fieldBorder }}
           />
           {error && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{error}</p>}
         </div>

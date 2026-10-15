@@ -369,7 +369,7 @@ export default function HistoriaPreciosPage() {
                   placeholder={t('notaAdicionalPlaceholder')}
                   style={{
                     width: '100%', resize: 'none', boxSizing: 'border-box',
-                    padding: '10px 12px', borderRadius: 12, border: `1px solid ${colors.border}`,
+                    padding: '10px 12px', borderRadius: 12, border: `1px solid ${colors.fieldBorder}`,
                     background: colors.surfaceSubtle, color: colors.textStrong,
                     fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none',
                   }}

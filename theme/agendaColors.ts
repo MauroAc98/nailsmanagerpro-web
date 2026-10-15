@@ -13,6 +13,7 @@ export const agendaColors = {
   sub: 'var(--ag-sub)',
   muted: 'var(--ag-muted)',
   border: 'var(--ag-border)',
+  fieldBorder: 'var(--ag-field-border)',
   hairline: 'var(--ag-hairline)',
   primary: 'var(--ag-primary)',
   primaryDeep: 'var(--ag-primary-deep)',

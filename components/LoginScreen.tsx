@@ -89,7 +89,7 @@ export function LoginScreen({ slug }: LoginScreenProps) {
     alignItems: 'center',
     height: 54,
     backgroundColor: agendaColors.surface,
-    border: `1px solid ${focusedField === field ? colors.primaryDeep : agendaColors.border}`,
+    border: `1px solid ${focusedField === field ? colors.primaryDeep : agendaColors.fieldBorder}`,
     boxShadow: focusedField === field ? `0 0 0 3px ${withAlpha(colors.primary, '33')}` : agendaShadows.card,
     borderRadius: 16,
     paddingLeft: 16,

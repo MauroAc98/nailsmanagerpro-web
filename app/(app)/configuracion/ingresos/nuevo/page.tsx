@@ -18,7 +18,7 @@ import { fechaDeHoy } from '@/lib/dateFormat';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   boxShadow: shadows.card, borderRadius: 12,
   padding: '14px 16px', fontSize: 15, color: colors.text, outline: 'none',
 };
@@ -146,7 +146,7 @@ export default function NuevoIngresoPage() {
             placeholder={t('amountPlaceholder')}
             value={monto}
             onChange={e => { setMonto(e.target.value); setErrorMonto(''); }}
-            style={{ ...inputStyle, borderColor: errorMonto ? colors.dangerBorder : colors.border }}
+            style={{ ...inputStyle, borderColor: errorMonto ? colors.dangerBorder : colors.fieldBorder }}
             inputMode="decimal"
           />
           {errorMonto && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorMonto}</p>}
