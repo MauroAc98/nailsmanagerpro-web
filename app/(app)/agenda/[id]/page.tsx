@@ -58,7 +58,7 @@ function formatHora12(hora24: string): string {
 // Style constants
 // ─────────────────────────────────────────────
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.subtext, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 

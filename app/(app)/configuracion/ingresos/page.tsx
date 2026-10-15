@@ -50,7 +50,7 @@ function chipStyle(selected: boolean, color: string): React.CSSProperties {
 }
 
 const filtroLabelStyle: React.CSSProperties = {
-  fontSize: 12, fontWeight: 700, color: colors.muted, letterSpacing: 0.5,
+  fontSize: 12, fontWeight: 700, color: colors.subtext, letterSpacing: 0.5,
   textTransform: 'uppercase', marginBottom: 8, display: 'block',
 };
 

@@ -5,7 +5,7 @@ import { Calendar, ChevronRight, X } from 'lucide-react';
 import { agendaColors as colors, agendaShadows as shadows, agendaFontSerif } from '@/theme/agendaColors';
 
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: colors.muted, letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.subtext, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 
