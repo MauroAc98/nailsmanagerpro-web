@@ -406,25 +406,22 @@ describe('ResumenScreen', () => {
       ventanaPagoMinutos: 15, anticipacionMinutos: 120, ventanaCancelacionHoras: 24,
     });
 
-    it('muestra "N% del valor de referencia de tus servicios" y no inventa un monto ($null, NaN, $0,00)', async () => {
+    // La seña incluye el costo del pago online: el cliente deja un poco mas que el porcentaje. Para que
+    // las cuentas le cierren, nunca se le muestra un porcentaje: solo el monto y que es parte del valor final.
+    it('no muestra ningun porcentaje y no inventa un monto ($null, NaN, $0,00)', async () => {
       setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30) } as MockReservaOnlineService);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
       await screen.findByText('Seña para reservar');
-      expect(screen.getByText('30% del valor de referencia de tus servicios')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/%|valor de referencia de tus servicios/);
+      expect(screen.getByText(/Es parte del valor final/)).toBeInTheDocument();
       expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
-    });
-
-    it('formatea el porcentaje sin ceros finales ni decimales de mas', async () => {
-      setServiceParaTests({ ...svc, getTerms: async () => terminosPct(12.5) } as MockReservaOnlineService);
-      renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-      expect(await screen.findByText('12,5% del valor de referencia de tus servicios')).toBeInTheDocument();
     });
 
     it('si ademas hay monto conocido, lo muestra en pesos', async () => {
       setServiceParaTests({ ...svc, getTerms: async () => terminosPct(30, 4500) } as MockReservaOnlineService);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-      await screen.findByText('30% del valor de referencia de tus servicios');
-      expect(screen.getByText('$4.500,00')).toBeInTheDocument();
+      expect(await screen.findByText('$4.500,00')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/%/);
     });
 
     // Sin monto en los terminos, el exacto sale de la reserva retenida (lo que cobra MP).
@@ -440,11 +437,11 @@ describe('ResumenScreen', () => {
       return getReservationStatus;
     };
 
-    it('con la reserva retenida muestra el monto exacto y el porcentaje como texto secundario', async () => {
+    it('con la reserva retenida muestra el monto exacto, sin porcentaje', async () => {
       const getReservationStatus = conResumen(4200);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
       expect(await screen.findByText('$4.200,00')).toBeInTheDocument();
-      expect(screen.getByText('30% del valor de referencia de tus servicios')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/%/);
       expect(getReservationStatus).toHaveBeenCalledWith('demo', useReservaOnlineStore.getState().hold?.reservaId);
       expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeEnabled();
       expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
@@ -453,8 +450,7 @@ describe('ResumenScreen', () => {
     it('mientras busca el monto muestra un loader y el boton de pagar queda deshabilitado', async () => {
       conResumen(4200, { getReservationStatus: () => new Promise(() => {}) } as never);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
-      await screen.findByText('30% del valor de referencia de tus servicios');
-      expect(screen.getByRole('status', { name: 'Calculando tu seña' })).toBeInTheDocument();
+      expect(await screen.findByRole('status', { name: 'Calculando tu seña' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
       expect(document.body.textContent).not.toMatch(/Cargando|null|NaN/);
     });
@@ -467,7 +463,6 @@ describe('ResumenScreen', () => {
       } as never);
       renderWithProviders(<ResumenScreen slug="demo" ir={() => {}} ahora={() => AHORA} />);
       expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos calcular la seña de esta reserva.');
-      expect(screen.getByText('30% del valor de referencia de tus servicios')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Pagar seña con/ })).toBeDisabled();
       expect(document.body.textContent).not.toMatch(/null|NaN|\$\s*0(?!\d)/);
     });

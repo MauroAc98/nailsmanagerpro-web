@@ -70,10 +70,6 @@ export default function EditarServicioPage() {
   const [nombre,   setNombre]   = useState('');
   const [duracion, setDuracion] = useState(30);
   const [precio,   setPrecio]   = useState('');
-  // Precio (o total de la promo) con el que se abrió: mientras no cambie, la
-  // tarjeta de seña no ofrece cubrir la comisión (evita sugerir de nuevo cada vez).
-  const [precioCargado, setPrecioCargado] = useState('');
-  const [totalPromoCargado, setTotalPromoCargado] = useState('');
   const [esPromo,  setEsPromo]  = useState(false);
   const [eraPromo, setEraPromo] = useState(false);
   const [categoriaId, setCategoriaId] = useState<number | null>(null);
@@ -110,7 +106,6 @@ export default function EditarServicioPage() {
         setNombre(s.nombre);
         setDuracion(s.duracion_minutos);
         setPrecio(s.precio ?? '');
-        setPrecioCargado(s.precio ?? '');
         setEsPromo(s.es_promo);
         setEraPromo(s.es_promo);
         setCategoriaId(s.categoria_id);
@@ -127,7 +122,6 @@ export default function EditarServicioPage() {
           const precioInicial = precioInicialComponentes(detalle);
           setPrecioComponentes(precioInicial);
           setPrecioComponentesInicial(precioInicial);
-          setTotalPromoCargado(String(Math.round(precioTotalPromo(precioInicial, sumaComponentes(drafts, servicios)) * 100) / 100));
         }
         // Lo escrito antes de salir (Horarios o Seña y pagos) gana sobre lo
         // cargado del backend.
@@ -199,7 +193,7 @@ export default function EditarServicioPage() {
   // Atajo a Perfil > Seña y pagos: se guarda lo cargado para recuperarlo al volver.
   const irAConfigurarSena = () => {
     guardarBorradorActual();
-    router.push('/perfil?sheet=senaYPagos');
+    router.push('/perfil?sheet=senaYPagos&volver=1');
   };
 
   const handleGuardar = async () => {
@@ -385,8 +379,6 @@ export default function EditarServicioPage() {
         {mostrarComponentes && tieneComponentes && (
           <SenaPreviewServicio
             precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)}
-            precioInicial={totalPromoCargado}
-            onUsarPrecio={setPrecioComponentes}
             onConfigurar={irAConfigurarSena}
           />
         )}
@@ -415,7 +407,7 @@ export default function EditarServicioPage() {
               />
             </div>
           </FormSeccion>
-          <SenaPreviewServicio precio={precio} precioInicial={precioCargado} onUsarPrecio={setPrecio} onConfigurar={irAConfigurarSena} />
+          <SenaPreviewServicio precio={precio} onConfigurar={irAConfigurarSena} />
           </>
         )}
 

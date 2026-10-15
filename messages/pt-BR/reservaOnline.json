@@ -3,7 +3,6 @@
     "cta": "Reservar horário",
     "como1": "Escolha serviços e horário",
     "como2": "Pague um sinal",
-    "como2Porcentaje": "Pague um sinal de {pct}%",
     "como2Fija": "Pague um sinal de {monto}",
     "sinCuenta": "Você não precisa criar uma conta",
     "como3": "Horário confirmado",
@@ -110,7 +109,6 @@
   "resumen": {
     "title": "Revise e confirme",
     "senaTitulo": "Sinal para reservar",
-    "senaPorcentaje": "{porcentaje}% do valor de referência dos seus serviços",
     "senaCalculando": "Calculando seu sinal",
     "senaDetalle": "Faz parte do valor final. O restante é definido no negócio conforme o seu design e pago lá.",
     "pagar": "Pagar sinal com",
@@ -186,7 +184,7 @@
   "settings": {
     "title": "Reservas online",
     "subtitle": "Seus clientes reservam por conta própria e pagam o sinal",
-    "senaActualPorcentaje": "Sinal atual: {pct}% do preço",
+    "senaActualPorcentaje": "Sinal atual: {pct}% do preço, mais a comissão do Mercado Pago",
     "senaActualFijo": "Sinal atual: {monto}",
     "senaSinConfigurar": "Você ainda não configurou o sinal das suas reservas.",
     "cambiarSena": "Alterar",

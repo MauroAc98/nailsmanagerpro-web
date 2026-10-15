@@ -126,7 +126,7 @@ function NuevoServicioContent() {
   // Atajo a Perfil > Seña y pagos: se guarda lo cargado para recuperarlo al volver.
   const irAConfigurarSena = () => {
     guardarBorradorActual();
-    router.push('/perfil?sheet=senaYPagos');
+    router.push('/perfil?sheet=senaYPagos&volver=1');
   };
 
   const handleGuardar = async () => {
@@ -263,7 +263,6 @@ function NuevoServicioContent() {
         {mostrarComponentes && tieneComponentes && (
           <SenaPreviewServicio
             precio={String(Math.round(precioTotalPromo(precioComponentes, sumaActual) * 100) / 100)}
-            onUsarPrecio={setPrecioComponentes}
             onConfigurar={irAConfigurarSena}
           />
         )}
@@ -291,7 +290,7 @@ function NuevoServicioContent() {
               />
             </div>
           </FormSeccion>
-          <SenaPreviewServicio precio={precio} onUsarPrecio={setPrecio} onConfigurar={irAConfigurarSena} />
+          <SenaPreviewServicio precio={precio} onConfigurar={irAConfigurarSena} />
         </>)}
 
         {/* categoriasLoading también deshabilita: fetchCategorias() (disparado

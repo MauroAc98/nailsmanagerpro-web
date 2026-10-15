@@ -48,7 +48,7 @@ export function ReservasOnlineSettings({ slug }: { slug: string }) {
         <div style={{ fontSize: 14, color: colors.strong, lineHeight: 1.4, minWidth: 0 }}>{resumen}</div>
         <button
           type="button"
-          onClick={() => router.push('/perfil?sheet=senaYPagos')}
+          onClick={() => router.push('/perfil?sheet=senaYPagos&volver=1')}
           style={{
             flexShrink: 0, minHeight: 44, padding: '0 14px', borderRadius: 10, border: `1px solid ${colors.border}`,
             background: 'transparent', fontSize: 13, fontWeight: 600, color: colors.primaryDeep, cursor: 'pointer',

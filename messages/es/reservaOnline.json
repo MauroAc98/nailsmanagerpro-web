@@ -3,7 +3,6 @@
     "cta": "Reservar turno",
     "como1": "Elegí servicios y horario",
     "como2": "Pagá una seña",
-    "como2Porcentaje": "Pagá una seña del {pct}%",
     "como2Fija": "Pagá una seña de {monto}",
     "sinCuenta": "No necesitás crear una cuenta",
     "como3": "Turno confirmado",
@@ -110,7 +109,6 @@
   "resumen": {
     "title": "Revisá y confirmá",
     "senaTitulo": "Seña para reservar",
-    "senaPorcentaje": "{porcentaje}% del valor de referencia de tus servicios",
     "senaCalculando": "Calculando tu seña",
     "senaDetalle": "Es parte del valor final. El resto se define en el negocio según tu diseño y se abona ahí.",
     "pagar": "Pagar seña con",
@@ -186,7 +184,7 @@
   "settings": {
     "title": "Reservas online",
     "subtitle": "Tus clientes reservan por su cuenta y pagan la seña",
-    "senaActualPorcentaje": "Seña actual: {pct}% del precio",
+    "senaActualPorcentaje": "Seña actual: {pct}% del precio, más la comisión de Mercado Pago",
     "senaActualFijo": "Seña actual: {monto}",
     "senaSinConfigurar": "Todavía no configuraste la seña de tus reservas.",
     "cambiarSena": "Cambiar",

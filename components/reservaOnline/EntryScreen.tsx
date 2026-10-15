@@ -63,14 +63,13 @@ export function EntryScreen({ slug, ir }: { slug: string; ir: Ir }) {
   const nombres = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
     salon.profesionales.map((p) => primerNombre(p.nombre)),
   );
-  // La duda de plata mas comun es cuanto es la sena: se dice aca, no recien en el paso 4.
-  // Sin el dato (porcentaje sin valor, monto 0) queda el texto de siempre: no se inventa un numero.
+  // La duda de plata mas comun es cuanto es la sena: con monto fijo se dice aca, no recien en el paso 4.
+  // Con porcentaje NO se dice ningun numero: la sena incluye el costo del pago online, asi que dejaria un
+  // poco mas que ese porcentaje y las cuentas del cliente no cerrarian. El monto exacto se ve al reservar.
   const textoSena =
-    terminos.senaTipo === 'porcentaje' && terminos.senaPorcentaje
-      ? t('entry.como2Porcentaje', { pct: terminos.senaPorcentaje })
-      : terminos.senaTipo === 'fijo' && terminos.deposito
-        ? t('entry.como2Fija', { monto: `$${formatMonto(terminos.deposito)}` })
-        : t('entry.como2');
+    terminos.senaTipo === 'fijo' && terminos.deposito
+      ? t('entry.como2Fija', { monto: `$${formatMonto(terminos.deposito)}` })
+      : t('entry.como2');
   const pasos = [
     { icono: <IcoBrillo color={colors.primaryDeep} />, texto: t('entry.como1') },
     { icono: <IcoEscudo color={colors.primaryDeep} />, texto: textoSena },

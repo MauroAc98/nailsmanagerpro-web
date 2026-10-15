@@ -7,7 +7,8 @@ import type { User } from '@/services/authService';
 import SenaPreviewServicio from './SenaPreviewServicio';
 
 // Tarjeta "Seña de la reserva online" del formulario de servicio: explica lo que
-// paga el cliente, la comisión de Mercado Pago y lo que le llega al salón. Los
+// deja el cliente, lo que se queda Mercado Pago y lo que le llega al salón. La seña ya cubre la
+// comisión (backend: senaParaPrecio), así que no hay nada que ajustar en el precio. Los
 // números salen de lib/senaPreview.
 
 function setUser(parcial: Partial<User> | null) {
@@ -19,111 +20,137 @@ function setUser(parcial: Partial<User> | null) {
   });
 }
 
-// Harness con el campo de precio real: permite probar "Usar", "Deshacer" y
-// la edición manual del precio.
-function Harness({ inicial, activa = true, onConfigurar, precioInicial }: {
-  inicial: string; activa?: boolean; onConfigurar?: () => void; precioInicial?: string;
-}) {
+// Harness con el campo de precio real: permite probar que la tarjeta sigue al precio.
+function Harness({ inicial, activa = true, onConfigurar }: { inicial: string; activa?: boolean; onConfigurar?: () => void }) {
   const [precio, setPrecio] = useState(inicial);
   return (
     <>
       <input aria-label="precio" value={precio} onChange={e => setPrecio(e.target.value)} />
-      <SenaPreviewServicio
-        precio={precio} onUsarPrecio={setPrecio} activa={activa} onConfigurar={onConfigurar}
-        precioInicial={precioInicial}
-      />
+      <SenaPreviewServicio precio={precio} activa={activa} onConfigurar={onConfigurar} />
     </>
   );
 }
 
-// `precioInicial`: el precio con el que se abrió el formulario (servicio ya
-// guardado). Sin él, cualquier precio cargado cuenta como "tocado".
-function setup(precio: string, opts: { activa?: boolean; onConfigurar?: () => void; precioInicial?: string } = {}) {
+function setup(precio: string, opts: { activa?: boolean; onConfigurar?: () => void } = {}) {
   renderWithProviders(<Harness inicial={precio} {...opts} />);
 }
 
 beforeEach(() => setUser({}));
 
 describe('SenaPreviewServicio', () => {
-  it('two plain sentences: what the client leaves and what Mercado Pago keeps', () => {
+  it('two plain sentences: what the client leaves, what Mercado Pago keeps and what arrives', () => {
+    setUser({ sena_porcentaje: 50 });
+    setup('18000'); // 9.000 / 0,9239 = 9.742 -> 10.000; comisión 761; llegan 9.239
+    expect(screen.getByText('Seña de la reserva online')).toBeInTheDocument();
+    expect(screen.getByText('$10.000')).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect(screen.getByText('$761')).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect(screen.getByText('$9.239')).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect(screen.getByText(/Mercado Pago se queda/)).toBeInTheDocument();
+  });
+
+  it('there is nothing to adjust: no price suggestion, offer or button anywhere', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000');
-    expect(screen.getByText('Seña de la reserva online')).toBeInTheDocument();
-    expect(screen.getByText('$9.000')).toHaveStyle({ whiteSpace: 'nowrap' });
-    expect(screen.getByText('$685')).toHaveStyle({ whiteSpace: 'nowrap' }); // round(9000 * 7.61 / 100)
-    expect(screen.getByText(/Mercado Pago se queda/)).toBeInTheDocument();
-    // La cuenta (cuánto llega, de dónde sale la seña) vive en "Ver detalle".
-    expect(screen.queryByText(/te llegan/)).toBeNull();
-    expect(screen.queryByText(/el 50%/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Usar|sugerido/ })).toBeNull();
+    expect(screen.queryByText(/subir el precio|precio sugerido|Es opcional/i)).toBeNull();
   });
 
   it('with a tax retention, the second sentence adds it to what is kept', () => {
     setUser({ sena_porcentaje: 50, retencion_iibb_porcentaje: 4 });
-    setup('18000'); // 685 + 360
-    expect(screen.getByText('$1.045')).toBeInTheDocument();
+    setup('18000'); // seña 10.500: comisión 799 + retención 420 = 1.219; llegan 9.281
+    expect(screen.getByText('$10.500')).toBeInTheDocument();
+    expect(screen.getByText('$1.219')).toBeInTheDocument();
+    expect(screen.getByText('$9.281')).toBeInTheDocument();
     expect(screen.getByText(/la retención de impuestos se quedan/)).toBeInTheDocument();
+  });
+
+  it('says the seña gives her the whole percentage of the price and the little extra that the rounding adds', () => {
+    setUser({ sena_porcentaje: 50 });
+    setup('18000'); // seña 10.000, comisión 761, llegan 9.239: 239 más que el 50% ($9.000)
+    expect(screen.getByText(
+      'Te llega el 50% del precio ($9.000) y un poco más ($239) porque la seña se redondea hacia arriba.',
+    )).toBeInTheDocument();
+  });
+
+  it('explains every figure of a real case: $11.300 at 30% -> seña $4.000, she gets $3.696 = $3.390 + $306', () => {
+    setUser({ sena_porcentaje: 30 });
+    setup('11300');
+    expect(screen.getByText('$4.000')).toBeInTheDocument();
+    expect(screen.getByText('$304')).toBeInTheDocument();
+    expect(screen.getByText('$3.696')).toBeInTheDocument();
+    expect(screen.getByText(
+      'Te llega el 30% del precio ($3.390) y un poco más ($306) porque la seña se redondea hacia arriba.',
+    )).toBeInTheDocument();
+  });
+
+  it('when nothing arrives beyond the percentage it keeps the plain sentence (no "un poco más")', () => {
+    setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
+    setup('10000'); // sin comisión y 50% de 10.000 = 5.000 es múltiplo de 500: no sobra nada
+    expect(screen.getByText('Con eso te llega completo el 50% del precio ($5.000).')).toBeInTheDocument();
+    expect(screen.queryByText(/un poco más/)).toBeNull();
+  });
+
+  it('does not claim that when the deposit is the whole price (nothing left to cover the cost with)', () => {
+    setUser({ sena_porcentaje: 100 });
+    setup('600');
+    expect(screen.queryByText(/te llega completo/)).toBeNull();
   });
 
   it('the commission, percentages and the cost note are hidden until "Ver detalle"', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000');
     expect(screen.queryByText(/Mercado Pago \(/)).toBeNull();
-    expect(screen.queryByText(/del precio\./)).toBeNull();
     expect(screen.queryByText('Precio del servicio')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.getByText('Precio del servicio')).toBeInTheDocument();
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.getByText('Comisión de Mercado Pago (7,6%)')).toBeInTheDocument();
-    expect(screen.getByText('− $685')).toBeInTheDocument();
+    expect(screen.getByText('− $761')).toBeInTheDocument();
     expect(screen.getByText('De la seña te llegan')).toBeInTheDocument();
-    expect(screen.getByText('$8.315')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar detalle' }));
     expect(screen.queryByText('El cliente paga')).toBeNull();
   });
 
-  it('the rounding is explained once, in the detail, only when it happened (22.000 at 30% -> 7.000)', () => {
+  it('the detail shows every step from the percentage to what the client pays (22.000 at 30%)', () => {
     setUser({ sena_porcentaje: 30 });
-    setup('22000'); // 30% = 6.600 -> 7.000
-    expect(screen.queryByText(/redond/i)).toBeNull();
+    setup('22000'); // 6.600 -> cubre 7.144 (+544) -> redondeo a 500 -> 7.500 (+356); comisión 571; llegan 6.929
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.getByText('Seña del 30%')).toBeInTheDocument();
     expect(screen.getByText('$6.600')).toBeInTheDocument();
+    expect(screen.getByText('Para cubrir la comisión')).toBeInTheDocument();
+    expect(screen.getByText('+ $544')).toBeInTheDocument();
     expect(screen.getByText('Redondeo a $500')).toBeInTheDocument();
-    expect(screen.getByText('+ $400')).toBeInTheDocument();
+    expect(screen.getByText('+ $356')).toBeInTheDocument();
+    expect(screen.getByText('El cliente paga')).toBeInTheDocument();
+    expect(screen.getByText('− $571')).toBeInTheDocument();
+    expect(screen.getAllByText('$6.929')).toHaveLength(2); // la frase de arriba y la última fila
     expect(screen.getByText('La seña se redondea para que al cliente le resulte fácil completar el pago en el local.')).toBeInTheDocument();
   });
 
-  it('no rounding rows or note when the percentage already lands on a multiple of 500', () => {
-    setUser({ sena_porcentaje: 30 });
-    setup('25000'); // 30% = 7.500
+  it('no rounding row when the cost already lands on a multiple of the step', () => {
+    setUser({ sena_porcentaje: 30, comision_mp_vigente: 0 });
+    setup('25000'); // sin costo que cubrir: 7.500 exactos
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.queryByText('Redondeo a $500')).toBeNull();
+    expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
+    expect(screen.queryByText(/Redondeo a/)).toBeNull();
     expect(screen.queryByText(/se redondea/)).toBeNull();
   });
 
-  it('no rounding rows when the deposit is the whole price', () => {
+  it('no percentage steps when the deposit is the whole price', () => {
     setUser({ sena_porcentaje: 100 });
-    setup('600'); // 100% = 600 -> paso 500 -> 1000 -> tope en el precio
+    setup('600');
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
     expect(screen.queryByText(/Redondeo a/)).toBeNull();
-    expect(screen.queryByText(/se redondea/)).toBeNull();
+    expect(screen.queryByText(/Seña del/)).toBeNull();
   });
 
-  it('a tiny price keeps a tiny deposit: 100 at 30% is 30, not the whole price', () => {
+  it('a tiny price keeps a tiny deposit with a small step: 100 at 30% is 40, not the whole price', () => {
     setUser({ sena_porcentaje: 30 });
-    setup('100', { precioInicial: '100' });
-    expect(screen.getByText('$30')).toBeInTheDocument(); // seña exacta, paso 10
-    expect(screen.getByText('$2')).toBeInTheDocument(); // round(30 * 7.61 / 100)
+    setup('100'); // 30 -> cubre 33 -> paso 10 -> 40; comisión 3; llegan 37
+    expect(screen.getByText('$40')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.queryByText(/Redondeo a/)).toBeNull();
-  });
-
-  it('the rounding row names the step that was actually used (1111 at 30% -> 400, step 100)', () => {
-    setUser({ sena_porcentaje: 30 });
-    setup('1111'); // 333,3 -> paso 100 -> 400
-    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.getByText('Redondeo a $100')).toBeInTheDocument();
-    expect(screen.queryByText('Redondeo a $500')).toBeNull();
+    expect(screen.getByText('Redondeo a $10')).toBeInTheDocument();
   });
 
   it('follows a different commission instead of a hardcoded 7,6', () => {
@@ -145,30 +172,42 @@ describe('SenaPreviewServicio', () => {
     setup('18000');
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.getByText('Retención de impuestos')).toBeInTheDocument();
-    expect(screen.getByText('− $360')).toBeInTheDocument(); // round(9000 * 4 / 100)
+    expect(screen.getByText('− $420')).toBeInTheDocument(); // round(10500 * 4 / 100)
   });
 
-  it('fixed mode: no price in the detail and NO price suggestion or button', () => {
+  it('fixed mode: the fixed amount, no percentage steps and no price in the detail', () => {
     setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
-    setup('20000', { precioInicial: '20000' });
+    setup('20000');
     expect(screen.getByText('$5.000')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
+    expect(screen.queryByText(/te llega completo/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.queryByText('Precio del servicio')).toBeNull();
+    expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
   });
 
   it('understands es-AR thousands separators in the price field', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18.000');
-    expect(screen.getByText('$9.000')).toBeInTheDocument();
+    expect(screen.getByText('$10.000')).toBeInTheDocument();
   });
 
-  it('keeps money on one line (nowrap) so amounts are never cut with an ellipsis', () => {
-    setUser({ sena_porcentaje: 50 });
-    setup('18000');
-    for (const t of ['$9.000', '$685']) expect(screen.getByText(t)).toHaveStyle({ whiteSpace: 'nowrap' });
+  it('the card follows the price field, including the open detail', () => {
+    setup('22000');
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    expect(screen.getByText('$22.000')).toBeInTheDocument();
+    expect(screen.getAllByText('$7.500')).toHaveLength(2); // la frase de arriba y la fila del detalle
+    fireEvent.change(screen.getByLabelText('precio'), { target: { value: '48000' } });
+    expect(screen.getByText('$48.000')).toBeInTheDocument();
+    expect(screen.queryByText('$22.000')).toBeNull();
+    expect(screen.getAllByText('$16.000').length).toBeGreaterThan(0); // 14.400 -> 15.587 -> 16.000
+  });
+
+  it('no "total price" figure anywhere: catalog prices are "desde", the final one depends on the design', () => {
+    setup('11300');
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    expect(screen.queryByText(/precio total/i)).toBeNull();
+    expect(screen.queryByText(/del servicio completo/i)).toBeNull();
   });
 });
 
@@ -218,7 +257,7 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
   it('shows which seña is configured with a "Cambiar" shortcut (percentage)', () => {
     const onConfigurar = vi.fn();
     setup('18000', { onConfigurar });
-    expect(screen.getByText('Seña de 30% del precio, redondeada hacia arriba')).toBeInTheDocument();
+    expect(screen.getByText('Seña de 30% del precio, más la comisión de Mercado Pago')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar' }));
     expect(onConfigurar).toHaveBeenCalledTimes(1);
   });
@@ -227,120 +266,6 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
     setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
     setup('18000', { onConfigurar: vi.fn() });
     expect(screen.getByText('Seña fija de $5.000')).toBeInTheDocument();
-  });
-});
-
-// El detalle sigue al precio: aunque la seña redondeada sea la misma, el precio del servicio cambia.
-describe('SenaPreviewServicio — the detail follows the price', () => {
-  beforeEach(() => setUser({ sena_porcentaje: 30 }));
-
-  it('after "Usar" the open detail shows the new price even when the deposit amounts are identical', () => {
-    setup('11300'); // 30% = 3.390 -> 3.500, comisión 266
-    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.getByText('$11.300')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $11.600' }));
-    expect(screen.getByLabelText('precio')).toHaveValue('11600');
-    expect(screen.getByText('$11.600')).toBeInTheDocument(); // 30% = 3.480 -> 3.500: misma seña
-    expect(screen.queryByText('$11.300')).toBeNull();
-    expect(screen.getByText('− $266')).toBeInTheDocument();
-  });
-
-  it('no "total price" figure anywhere: catalog prices are "desde", the final one depends on the design', () => {
-    setup('11300');
-    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.queryByText(/precio total/i)).toBeNull();
-    expect(screen.queryByText(/del servicio completo/i)).toBeNull();
-  });
-});
-
-describe('SenaPreviewServicio — price suggestion', () => {
-  beforeEach(() => setUser({ sena_porcentaje: 50 }));
-
-  it('percentage mode, price edited: one question and one button with the amount that gets applied', () => {
-    setup('18000');
-    // 50% de 18.800 = 9.400 -> 9.500: la seña cambia, así que la oferta lo dice.
-    expect(screen.getByText(
-      'Si querés cubrir esa comisión, podés subir el precio a $18.800 (hoy $18.000); la seña pasa a $9.500. Es opcional.',
-    )).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Usar $18.800' })).toBeInTheDocument();
-  });
-
-  it('when the deposit stays the same with the new price, the offer does not mention it', () => {
-    setUser({ sena_porcentaje: 30 });
-    setup('11300'); // 3.390 -> 3.500 y 3.480 -> 3.500
-    expect(screen.getByText(
-      'Si querés cubrir esa comisión, podés subir el precio a $11.600 (hoy $11.300). Es opcional.',
-    )).toBeInTheDocument();
-    expect(screen.queryByText(/la seña pasa/)).toBeNull();
-  });
-
-  it('a service just opened (price untouched) shows NO offer but a button to see the suggestion', () => {
-    setup('18000', { precioInicial: '18000' });
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.getByText(/Podés ajustar el precio para cubrir esa comisión/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ver precio sugerido' })).toBeInTheDocument();
-  });
-
-  it('tapping "Ver precio sugerido" reveals the offer without touching the price', () => {
-    setup('18000', { precioInicial: '18000' });
-    fireEvent.click(screen.getByRole('button', { name: 'Ver precio sugerido' }));
-    expect(screen.getByRole('button', { name: 'Usar $18.800' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
-  });
-
-  it('the button does not show when the price was touched (the offer takes over)', () => {
-    setup('18000');
-    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
-  });
-
-  it('compares the opening price as a number (a saved "18000.00" equals "18000")', () => {
-    setup('18000', { precioInicial: '18000.00' });
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Ver precio sugerido' })).toBeInTheDocument();
-  });
-
-  it('no commission to cover (0%): no offer and no button', () => {
-    setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
-    setup('18000', { precioInicial: '18000' });
-    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-  });
-
-  it('editing the price after opening swaps the button for the offer, and going back brings the button back', () => {
-    setup('18000', { precioInicial: '18000' });
-    fireEvent.change(screen.getByLabelText('precio'), { target: { value: '20000' } });
-    expect(screen.getByRole('button', { name: 'Usar $21.000' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ver precio sugerido' })).toBeNull();
-    fireEvent.change(screen.getByLabelText('precio'), { target: { value: '18000' } });
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Ver precio sugerido' })).toBeInTheDocument();
-  });
-
-  it('accepting sets the price and shows a confirmation with the previous price, no new suggestion', () => {
-    setup('18000');
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $18.800' }));
-    expect(screen.getByLabelText('precio')).toHaveValue('18800');
-    expect(screen.getByText('Listo: con $18.800 esa comisión queda cubierta. Antes: $18.000.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-    expect(screen.queryByText(/podés cobrar/)).toBeNull();
-    expect(screen.getByText('$9.500')).toBeInTheDocument();
-  });
-
-  it('"Deshacer" restores the previous price and offers the suggestion again', () => {
-    setup('18000');
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $18.800' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
-    expect(screen.getByLabelText('precio')).toHaveValue('18000');
-    expect(screen.queryByText(/Listo: con/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Usar $18.800' })).toBeInTheDocument();
-  });
-
-  it('editing the price by hand leaves the confirmation and suggests again', () => {
-    setup('18000');
-    fireEvent.click(screen.getByRole('button', { name: 'Usar $18.800' }));
-    fireEvent.change(screen.getByLabelText('precio'), { target: { value: '25000' } });
-    expect(screen.queryByText(/Listo: con/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Usar $26.000' })).toBeInTheDocument();
   });
 
   it('shows no suggestion for an invalid price', () => {

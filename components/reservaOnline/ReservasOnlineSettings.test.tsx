@@ -62,7 +62,7 @@ describe('ReservasOnlineSettings', () => {
   it('muestra la seña actual en porcentaje', () => {
     setUser({ sena_tipo: 'porcentaje', sena_porcentaje: 30, sena_monto: null });
     montar();
-    expect(screen.getByText('Seña actual: 30% del precio')).toBeInTheDocument();
+    expect(screen.getByText('Seña actual: 30% del precio, más la comisión de Mercado Pago')).toBeInTheDocument();
   });
 
   it('con la seña sin configurar lo dice y ofrece configurarla', async () => {
@@ -70,7 +70,7 @@ describe('ReservasOnlineSettings', () => {
     montar();
     expect(screen.getByText('Todavía no configuraste la seña de tus reservas.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Configurar' }));
-    expect(push).toHaveBeenCalledWith('/perfil?sheet=senaYPagos');
+    expect(push).toHaveBeenCalledWith('/perfil?sheet=senaYPagos&volver=1');
   });
 
   it('incluye los avisos de reservas online (viven acá, junto al link y la seña, no sueltos en Perfil)', () => {
@@ -81,7 +81,7 @@ describe('ReservasOnlineSettings', () => {
   it('"Cambiar" abre Seña y pagos directo', async () => {
     montar();
     await userEvent.click(screen.getByRole('button', { name: 'Cambiar' }));
-    expect(push).toHaveBeenCalledWith('/perfil?sheet=senaYPagos');
+    expect(push).toHaveBeenCalledWith('/perfil?sheet=senaYPagos&volver=1');
   });
 
   it('con NEXT_PUBLIC_RESERVA_BASE_URL el link es <base>/<slug> (ej. reservar.turnetto.com/natalia)', async () => {

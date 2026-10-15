@@ -47,17 +47,20 @@ function configValida(c: SenaPreviewConfig): boolean {
   return m !== null && m > 0;
 }
 
-// La seña por porcentaje se redondea hacia arriba para que el cliente pueda completar la
-// diferencia en el local con billetes redondos. El paso depende del monto exacto de la seña
-// (< 100 -> 10, < 500 -> 100, desde 500 -> 500): así una seña chica no salta a otra enorme
-// (un precio de 100 al 30% da 30, no 100). Espeja MercadoPagoService::pasoSenaPorcentaje.
+// La seña por porcentaje cubre la comisión de Mercado Pago (y la retención de impuestos): a la
+// profesional le llega, como mínimo, el porcentaje del precio final del turno; el cliente deja un
+// poco más. Se redondea hacia arriba para que el cliente complete la diferencia en el local con
+// billetes redondos. El paso depende del monto que cubre la comisión (< 100 -> 10, < 500 -> 100,
+// desde 500 -> 500): así una seña chica no salta a otra enorme. Tope: el precio.
+// Espeja MercadoPagoService::senaParaPrecio del backend.
 const PASO_SENA_GRANDE = 500;
 const PASO_SENA_MEDIANO = 100;
 const PASO_SENA_CHICO = 10;
+const MAX_REINTENTOS_SENA = 200;
 
-export function pasoSenaPorcentaje(senaExacta: number): number {
-  if (senaExacta >= PASO_SENA_GRANDE) return PASO_SENA_GRANDE;
-  return senaExacta >= PASO_SENA_MEDIANO ? PASO_SENA_MEDIANO : PASO_SENA_CHICO;
+export function pasoSenaPorcentaje(monto: number): number {
+  if (monto >= PASO_SENA_GRANDE) return PASO_SENA_GRANDE;
+  return monto >= PASO_SENA_MEDIANO ? PASO_SENA_MEDIANO : PASO_SENA_CHICO;
 }
 
 function techoAMultiplo(valor: number, paso: number): number {
@@ -69,65 +72,36 @@ export function senaPorcentajeExacta(precio: number, porcentaje: number): number
   return Math.round(precio * porcentaje) / 100;
 }
 
+function tasaCosto(c: SenaPreviewConfig): number {
+  return Math.min((c.comision_mp_vigente ?? 0) + (c.retencion_iibb_porcentaje ?? 0), 95);
+}
+
+// Menor seña entera que, descontado el costo (MP + retención), deja `exacta`: exacta / (1 - t).
+export function senaMinimaQueCubre(exacta: number, c: SenaPreviewConfig): number {
+  return Math.ceil(exacta / (1 - tasaCosto(c) / 100) - 1e-9);
+}
+
+// Lo que llega de una seña: menos la comisión y la retención, cada una a pesos enteros.
+function netoDeSena(sena: number, c: SenaPreviewConfig): number {
+  const cargo = Math.round((sena * (c.comision_mp_vigente ?? 0)) / 100);
+  const retencion = Math.round((sena * (c.retencion_iibb_porcentaje ?? 0)) / 100);
+  return sena - cargo - retencion;
+}
+
 export function calcularSena(precio: number, c: SenaPreviewConfig): number {
   if (!(precio > 0) || !configValida(c)) return 0;
   let bruta: number;
   if (c.sena_tipo === 'porcentaje') {
     const exacta = senaPorcentajeExacta(precio, c.sena_porcentaje as number);
-    bruta = techoAMultiplo(exacta, pasoSenaPorcentaje(exacta));
+    const minimo = senaMinimaQueCubre(exacta, c);
+    const paso = pasoSenaPorcentaje(minimo);
+    bruta = techoAMultiplo(minimo, paso);
+    // El cargo y la retención se redondean por separado: se verifica y, si no alcanza, se sube un paso.
+    for (let i = 0; i < MAX_REINTENTOS_SENA && netoDeSena(bruta, c) < exacta; i++) bruta += paso;
   } else {
     bruta = comoNumero(c.sena_monto) as number;
   }
   return Math.min(bruta, precio);
-}
-
-function tasaCosto(c: SenaPreviewConfig): number {
-  return Math.min((c.comision_mp_vigente ?? 0) + (c.retencion_iibb_porcentaje ?? 0), 95);
-}
-
-// Precio sugerido (modo porcentaje): que la profesional NO PIERDA plata por la comisión.
-// Con el precio nuevo, lo que cobra (precio menos el costo de MP sobre la seña ya redondeada)
-// alcanza al precio de hoy. El precio sugerido es un número prolijo: se usa el paso más grande
-// de la lista cuyo techo no pase del 1,5% del precio sobre el mínimo analítico
-// P_min = ceil(p / (1 - pct × t)). El paso más fino depende del precio (10 / 100 / 1000) para
-// no sugerir $5.150 ni $46.500. Si ningún paso entra en la tolerancia, se usa el más fino.
-// Sin costo que cubrir (t = 0) el precio queda como está.
-const PASOS_PRECIO = [1000, 500, 100, 50, 10, 1];
-const TOPE_SUBA_PRECIO = 0.015;
-const MAX_REINTENTOS_PRECIO = 200;
-
-function pasoMinimoPrecio(precio: number): number {
-  if (precio < 1000) return 10;
-  return precio < 40000 ? 100 : 1000;
-}
-
-export function precioSugeridoSena(precio: number, c: SenaPreviewConfig): number | null {
-  if (c.sena_tipo !== 'porcentaje' || !configValida(c)) return null;
-  if (!(precio > 0) || !Number.isFinite(precio)) return null;
-  if (typeof c.comision_mp_vigente !== 'number' || !Number.isFinite(c.comision_mp_vigente)) return null;
-  if (tasaCosto(c) === 0) return precio;
-
-  const fraccion = ((c.sena_porcentaje as number) / 100) * (tasaCosto(c) / 100);
-  const minimo = Math.ceil(precio / (1 - fraccion) - 1e-9);
-  const pasos = PASOS_PRECIO.filter(p => p >= pasoMinimoPrecio(precio));
-  const llegaCon = (candidato: number) => {
-    const p = calcularSenaPreview(candidato, c);
-    return p ? candidato - p.cargo - p.retencion : -Infinity;
-  };
-  // El redondeo de la seña hace que el neto no sea monótono: se verifica el candidato y,
-  // si no cubre, se sube de a un paso.
-  const techoQueCubre = (paso: number): number | null => {
-    let candidato = techoAMultiplo(minimo, paso);
-    for (let i = 0; i < MAX_REINTENTOS_PRECIO && llegaCon(candidato) < precio; i++) candidato += paso;
-    return llegaCon(candidato) >= precio ? candidato : null;
-  };
-
-  for (const paso of pasos) {
-    const candidato = techoQueCubre(paso);
-    if (candidato !== null && candidato - minimo <= precio * TOPE_SUBA_PRECIO + 1e-9) return candidato;
-  }
-  const masFino = pasos[pasos.length - 1];
-  return techoQueCubre(masFino) ?? techoAMultiplo(minimo, masFino);
 }
 
 export interface DesgloseSena {
@@ -151,17 +125,21 @@ export function desgloseSena(sena: number, c: SenaPreviewConfig): DesgloseSena |
 // Seña fija más alta que, descontados comisión de MP (con IVA) y retención, deja al
 // menos `monto` neto. Siempre redondea HACIA ARRIBA a un múltiplo de 500 (billetes
 // redondos para completar en el local); si eso suma más de un 10% sobre el mínimo
-// (montos chicos: 1000 -> 1500) usa un paso de 100. Sin costo que cubrir (t = 0) queda como está.
+// (montos chicos: 1000 -> 1500) prueba un paso de 100 y, si tampoco entra, uno de 10 (100 -> 110,
+// no 200). Sin costo que cubrir (t = 0) queda como está.
 const TOPE_SUBA_SENA_FIJA = 0.1;
-const PASO_SENA_FIJA = 500;
+const PASOS_SENA_FIJA = [500, 100, 10];
 
 export function senaFijaSugerida(monto: number, c: SenaPreviewConfig): number | null {
   const comision = c.comision_mp_vigente;
   if (!(monto > 0) || typeof comision !== 'number' || !Number.isFinite(comision)) return null;
   if (tasaCosto(c) === 0) return monto;
   const minimo = Math.ceil(monto / (1 - tasaCosto(c) / 100) - 1e-9);
-  const redonda = techoAMultiplo(minimo, PASO_SENA_FIJA);
-  return redonda - minimo <= minimo * TOPE_SUBA_SENA_FIJA + 1e-9 ? redonda : techoAMultiplo(minimo, 100);
+  for (const paso of PASOS_SENA_FIJA) {
+    const redonda = techoAMultiplo(minimo, paso);
+    if (redonda - minimo <= minimo * TOPE_SUBA_SENA_FIJA + 1e-9) return redonda;
+  }
+  return techoAMultiplo(minimo, PASOS_SENA_FIJA[PASOS_SENA_FIJA.length - 1]);
 }
 
 export function calcularSenaPreview(precio: number, c: SenaPreviewConfig): SenaPreview | null {

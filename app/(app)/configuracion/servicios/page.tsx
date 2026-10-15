@@ -24,7 +24,6 @@ import CategoriaHeader from '@/components/configuracion/CategoriaHeader';
 import { contarPorEstado, filtrarPorEstado, type FiltroEstado } from '@/lib/serviciosPorEstado';
 import { FiltroPills } from '@/components/FiltroPills';
 import { Spinner } from '@/components/Spinner';
-import AvisoComisionSena from '@/components/servicios/AvisoComisionSena';
 
 // ReorderableSection — un grupo (una categoría, o "Sin categoría") con su
 // propio DndContext/SortableContext, así arrastrar nunca mezcla ids entre
@@ -78,12 +77,6 @@ function ReorderableSection({
       </SortableContext>
     </DndContext>
   );
-}
-
-// Primer servicio activo con precio: el aviso de la comisión lleva directo ahí.
-function primerServicioConPrecio(servicios: Servicio[]): { id: number; nombre: string } | null {
-  const s = servicios.find(x => x.activo && Number(x.precio) > 0);
-  return s ? { id: s.id, nombre: s.nombre } : null;
 }
 
 export default function ServiciosPage() {
@@ -319,14 +312,6 @@ export default function ServiciosPage() {
           </button>
         </div>
       </div>}
-
-      {/* Aviso de la comisión de MP (solo con seña por porcentaje; se puede cerrar) */}
-      {servicios.length > 0 && (
-        <AvisoComisionSena
-          primero={primerServicioConPrecio(servicios)}
-          onVer={id => router.push(`/configuracion/servicios/${id}`)}
-        />
-      )}
 
       {/* Filtro por estado */}
       {servicios.length > 0 && (
