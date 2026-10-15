@@ -347,8 +347,13 @@ describe('SheetSenaYPagos — monto fijo', () => {
     expect(screen.getByText(
       `Te llega lo que querías ($5.000) y $${d!.llega - 5000} más porque la seña se redondea hacia arriba.`,
     )).toBeInTheDocument();
+    // Y para qué se redondea: la misma frase que en porcentaje y que en el detalle de la tarjeta del servicio.
+    expect(screen.getByText(
+      'La seña se redondea para que al cliente le resulte fácil completar el pago en el local.',
+    )).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
     expect(screen.queryByText(/lo que querías/)).toBeNull();
+    expect(screen.queryByText(/le resulte fácil completar el pago/)).toBeNull();
   });
 
   it('shows nothing of the calculator without online booking', () => {
@@ -407,6 +412,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     const tarjeta = within(tarjetaDe('Un monto fijo'));
     expect(tarjeta.getByText(/Listo\. Antes: \$5\.000,00/)).toBeInTheDocument();
     expect(tarjeta.getByText(/lo que querías/)).toBeInTheDocument();
+    expect(tarjeta.getByText(/le resulte fácil completar el pago/)).toBeInTheDocument();
   });
 });
 

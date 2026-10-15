@@ -482,12 +482,16 @@ export function SheetSenaYPagos({
               </p>
               {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
               {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
-                <p style={{ ...avisoStyle, margin: 0 }}>
-                  {t('fixedRoundedNote', {
-                    querido: montoCorto(parsearMonto(aplicado.anterior) ?? 0),
-                    extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
-                  })}
-                </p>
+                <>
+                  <p style={{ ...avisoStyle, margin: 0 }}>
+                    {t('fixedRoundedNote', {
+                      querido: montoCorto(parsearMonto(aplicado.anterior) ?? 0),
+                      extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
+                    })}
+                  </p>
+                  {/* Para qué se redondea: la misma frase que en porcentaje y en la tarjeta del servicio. */}
+                  <p style={{ ...avisoStyle, margin: 0 }}>{t('roundingReason')}</p>
+                </>
               )}
             </>
           )}
