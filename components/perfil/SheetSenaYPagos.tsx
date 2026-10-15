@@ -129,8 +129,8 @@ function OpcionSena({ nombre, descripcion, activa, onElegir, children }: {
   return (
     <div
       style={{
-        border: `1px solid ${activa ? colors.primarySolid : colors.border}`,
-        backgroundColor: activa ? colors.primarySoft : 'transparent',
+        border: `1px solid ${activa ? colors.primarySolid : colors.fieldBorder}`,
+        backgroundColor: activa ? colors.primarySoft : colors.surface,
         borderRadius: 14, overflow: 'hidden',
       }}
     >
@@ -150,7 +150,7 @@ function OpcionSena({ nombre, descripcion, activa, onElegir, children }: {
           aria-hidden="true"
           style={{
             width: 18, height: 18, borderRadius: '50%', marginTop: 1, boxSizing: 'border-box',
-            border: `2px solid ${activa ? colors.primarySolid : colors.border}`,
+            border: `2px solid ${activa ? colors.primarySolid : colors.fieldBorder}`,
             background: activa ? `radial-gradient(circle, ${colors.primarySolid} 45%, transparent 50%)` : 'transparent',
           }}
         />
@@ -515,7 +515,7 @@ export function SheetSenaYPagos({
               <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: colors.text }}>{t('moreTitle')}</span>
               <span style={{ display: 'block', ...avisoStyle }}>{conCalculo ? t('moreSubMp') : t('moreSubTransfer')}</span>
             </span>
-            <span aria-hidden="true" style={{ color: colors.muted, fontSize: 18 }}>›</span>
+            <span aria-hidden="true" style={{ color: colors.subtext, fontSize: 18 }}>›</span>
           </button>
           {errorRetencionMostrado && <p style={{ ...errorStyle, marginTop: 8, marginBottom: 0 }}>{errorRetencionMostrado}</p>}
         </div>
