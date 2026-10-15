@@ -139,7 +139,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
     return { ...BASE_USER, sena_monto: 5000, reserva_online_activa: true, ...extra };
   };
-  const abrirMp = () => fireEvent.click(screen.getByRole('button', { name: 'Editar ›' }));
+  const abrirMp = () => fireEvent.click(screen.getByRole('button', { name: /^Más opciones/ }));
 
   it('no muestra el aviso de reservas online suelto: vive dentro de Reservas online', () => {
     mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: false } });
@@ -152,8 +152,8 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    expect(screen.getByRole('button', { name: 'Monto fijo' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('textbox', { name: 'El cliente paga' })).toHaveValue('5000');
+    expect(screen.getByRole('radio', { name: 'Un monto fijo' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('textbox', { name: 'Monto de la seña' })).toHaveValue('5000');
   });
 
   describe('sugerencia de seña (monto fijo) con la reserva web activa', () => {
@@ -166,7 +166,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       mockUseAuth({ user: { ...fijoComoLlegaDeLaApi, reserva_online_activa: true } });
       renderWithProviders(<PerfilPage />);
       abrirSena();
-      expect(screen.getByText('Te llegan')).toBeInTheDocument();
+      expect(screen.getByText('A vos te llegan')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /^Pedir \$5\.500,00/ })).toBeInTheDocument();
     });
 
@@ -175,7 +175,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       mockUseAuth({ user: { ...fijoComoLlegaDeLaApi, reserva_online_activa: false } });
       renderWithProviders(<PerfilPage />);
       abrirSena();
-      expect(screen.queryByText('Te llegan')).toBeNull();
+      expect(screen.queryByText('A vos te llegan')).toBeNull();
       expect(screen.queryByRole('button', { name: /^Pedir/ })).toBeNull();
     });
   });
@@ -184,7 +184,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_tipo: 'porcentaje', sena_porcentaje: 30 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    expect(screen.getByRole('button', { name: '% del precio' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: 'Un porcentaje del precio' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('button', { name: '30%' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -197,8 +197,8 @@ describe('PerfilPage — hub "Mi negocio"', () => {
       mockUseAuth({ user });
       const { unmount } = renderWithProviders(<PerfilPage />);
       abrirSena();
-      expect(screen.getByRole('button', { name: 'Sin seña' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByText('Los turnos se confirman sin pedir seña.')).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Sin seña' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByText('Los turnos se confirman sin pedir nada.')).toBeInTheDocument();
       unmount();
     }
   });
@@ -207,7 +207,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: 'Sin seña' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Sin seña' }));
     guardar();
     await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
       sena_tipo: 'fijo', sena_monto: null, retencion_iibb_porcentaje: 0,
@@ -223,7 +223,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: 'Sin seña' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Sin seña' }));
     guardar();
     expect(await screen.findByText('No podés vaciar la seña: tenés Mercado Pago conectado.')).toBeInTheDocument();
   });
@@ -253,7 +253,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: '% del precio' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Un porcentaje del precio' }));
     fireEvent.click(screen.getByRole('button', { name: '20%' }));
     guardar();
     await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
@@ -265,7 +265,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.click(screen.getByRole('button', { name: '% del precio' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Un porcentaje del precio' }));
     guardar();
     expect(await screen.findByText('Elegí un porcentaje entre 1 y 100.')).toBeInTheDocument();
     expect(useAuth().updatePerfil).not.toHaveBeenCalled();
@@ -275,7 +275,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
     renderWithProviders(<PerfilPage />);
     abrirSena();
-    fireEvent.change(screen.getByRole('textbox', { name: 'El cliente paga' }), { target: { value: '0' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Monto de la seña' }), { target: { value: '0' } });
     guardar();
     expect(await screen.findByText('Ingresá un monto mayor a 0.')).toBeInTheDocument();
     expect(useAuth().updatePerfil).not.toHaveBeenCalled();
