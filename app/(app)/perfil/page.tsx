@@ -19,6 +19,7 @@ import { NAV_CLEARANCE } from '@/constants/layout';
 import { phoneUtils } from '@/lib/phoneUtils';
 import { modoSenaGuardado, sanitizarLineaSimple, type SenaCampo, type SenaModo } from '@/lib/senaConfig';
 import type { User } from '@/services/authService';
+import { FilaAvisosReservas } from '@/components/perfil/FilaAvisosReservas';
 
 // Acepta coma decimal (convención es-AR/pt-BR, ej. "150,50") además de
 // punto. Antes `parseFloat(senaMonto) || undefined` convertía cualquier
@@ -668,6 +669,12 @@ export default function PerfilPage() {
 
         <Grupo titulo={t('groupMensajes')}>
           <FilaNav icon={<IconChatBubble />} label={t('rowMensajes')} onClick={() => abrirSheet('negocio')} ultima />
+        </Grupo>
+
+        {/* Avisos push de este celular: sirven para reservas online y para mensajes de WhatsApp que no llegan,
+            así que no dependen de que la reserva online esté activa. */}
+        <Grupo titulo={t('groupAvisos')}>
+          <FilaAvisosReservas />
         </Grupo>
 
         <Grupo titulo={t('groupFinanzas')}>

@@ -73,9 +73,9 @@ describe('ReservasOnlineSettings', () => {
     expect(push).toHaveBeenCalledWith('/perfil?sheet=senaYPagos&volver=1');
   });
 
-  it('incluye los avisos de reservas online (viven acá, junto al link y la seña, no sueltos en Perfil)', () => {
+  it('ya no incluye los avisos del celular: viven en Mi negocio, sin depender de la reserva online', () => {
     montar();
-    expect(screen.getByText('Avisos de reservas online')).toBeInTheDocument();
+    expect(screen.queryByText('Avisos en este celular')).toBeNull();
   });
 
   it('"Cambiar" abre Seña y pagos directo', async () => {

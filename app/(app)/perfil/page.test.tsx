@@ -4,11 +4,20 @@ import { renderWithProviders } from '@/test/render';
 import { useAuth } from '@/hooks/useAuth';
 import { routerMock } from '@/test/mocks/nextNavigation';
 import { useToastStore } from '@/store/useToastStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { User } from '@/services/authService';
 import PerfilPage from './page';
 
+afterEach(() => { avisos.estado = 'unsupported'; });
+
 vi.mock('next/navigation', async () => (await import('@/test/mocks/nextNavigation')).nextNavigationMock);
 vi.mock('@/hooks/useAuth');
+// jsdom no tiene service worker ni push: el hook real diría 'unsupported' (sin interruptor). Los tests del
+// subtítulo fijan 'off' y el resto queda como 'unsupported', para no sumar un switch a los de retención.
+const avisos = vi.hoisted(() => ({ estado: 'unsupported' as string }));
+vi.mock('@/hooks/useAvisosReservas', () => ({
+  useAvisosReservas: () => ({ estado: avisos.estado, trabajando: false, error: null, activar: vi.fn(), desactivar: vi.fn() }),
+}));
 
 // Slice A: `updatePerfil` must carry `latitud`/`longitud` on the personal
 // sheet's save branch, and a 422 keyed on `latitud` (design: all coordinate
@@ -142,11 +151,22 @@ describe('PerfilPage — hub "Mi negocio"', () => {
   };
   const abrirMp = () => fireEvent.click(screen.getByRole('button', { name: /^Más opciones/ }));
 
-  it('no muestra el aviso de reservas online suelto: vive dentro de Reservas online', () => {
+  it('muestra los avisos del celular aunque la reserva online esté apagada, sin nombrar las reservas', async () => {
+    avisos.estado = 'off';
     mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: false } });
     renderWithProviders(<PerfilPage />);
-    expect(screen.queryByText('Avisos de reservas online')).toBeNull();
-    expect(screen.queryByRole('switch', { name: 'Avisos de reservas online' })).toBeNull();
+    expect(screen.getByText('Avisos en este celular')).toBeInTheDocument();
+    expect(await screen.findByText(/estado del envío de tus mensajes automáticos/)).toBeInTheDocument();
+    expect(screen.queryByText(/cuando entra una reserva online/)).toBeNull();
+  });
+
+  it('nombra las reservas online en los avisos solo si el negocio las tiene', async () => {
+    avisos.estado = 'off';
+    vi.stubEnv('NEXT_PUBLIC_RESERVA_ONLINE', 'true');
+    mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: true } });
+    useAuthStore.setState({ user: { ...BASE_USER, reserva_online_activa: true } });
+    renderWithProviders(<PerfilPage />);
+    expect(await screen.findByText(/cuando entra una reserva online o cuando cambia el estado del envío/)).toBeInTheDocument();
   });
 
   it('abre Seña y pagos con el monto guardado (modo fijo)', () => {

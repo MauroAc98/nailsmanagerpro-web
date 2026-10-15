@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { linkReserva } from '@/lib/reservaOnline/linkPublico';
 import { senaConfigurada } from '@/lib/senaPreview';
 import { formatMonto } from '@/lib/money';
-import { FilaAvisosReservas } from '@/components/perfil/FilaAvisosReservas';
 import { useAuthStore } from '@/store/useAuthStore';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { LinkCompartir } from './LinkCompartir';
@@ -56,12 +55,6 @@ export function ReservasOnlineSettings({ slug }: { slug: string }) {
         >
           {configurada ? t('cambiarSena') : t('configurarSena')}
         </button>
-      </Tarjeta>
-
-      {/* Avisos al celular de cada reserva nueva: solo tienen sentido con la
-          reserva online activa, por eso viven acá y no sueltos en Perfil. */}
-      <Tarjeta estilo={{ padding: 0 }}>
-        <FilaAvisosReservas />
       </Tarjeta>
     </div>
   );
