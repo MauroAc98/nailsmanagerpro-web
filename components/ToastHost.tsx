@@ -41,7 +41,8 @@ export function ToastHost() {
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          // El mensaje puede ocupar varias líneas: el ícono queda arriba, a la altura de la primera.
+          alignItems: 'flex-start',
           gap: 8,
           backgroundColor: colors.surface,
           border: `1px solid ${colors.border}`,
@@ -54,10 +55,11 @@ export function ToastHost() {
           transition: 'opacity 0.22s ease, transform 0.22s ease',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="2.5" style={{ flexShrink: 0 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="2.5" style={{ flexShrink: 0, marginTop: 1 }}>
           <path d="M20 6L9 17l-5-5" />
         </svg>
-        <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {/* Nunca se corta con "…": un aviso largo baja de renglón (minWidth 0 deja que el texto ceda en el flex). */}
+        <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, lineHeight: 1.4, minWidth: 0, overflowWrap: 'anywhere' }}>
           {lastMessage}
         </span>
       </div>
