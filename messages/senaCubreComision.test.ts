@@ -28,6 +28,27 @@ describe('textos de la seña', () => {
     expect(conSugerencia).toEqual([]);
   });
 
+  // Lo que llega de más por el redondeo se explica SIEMPRE con la misma frase, en el panel (porcentaje y
+  // monto fijo) y en la tarjeta del servicio: una sola versión, no una por pantalla.
+  it('el extra del redondeo se explica con una sola frase en las tres pantallas (es y pt-BR)', async () => {
+    const pt = await loadMessages('pt-BR');
+    type Claves = { perfil: { SheetSenaYPagos: Record<string, string> }; configuracion: { SenaPreviewServicio: Record<string, string> } };
+    const grupos: [string, Claves, string][] = [
+      ['es', es as unknown as Claves, 'más porque la seña se redondea hacia arriba.'],
+      ['pt-BR', pt as unknown as Claves, 'a mais porque o sinal é arredondado para cima.'],
+    ];
+    for (const [idioma, m, frase] of grupos) {
+      const textosExtra = [
+        m.perfil.SheetSenaYPagos.exampleCoversExtra,
+        m.perfil.SheetSenaYPagos.fixedRoundedNote,
+        m.configuracion.SenaPreviewServicio.coveredNoteExtra,
+      ];
+      for (const t of textosExtra) expect(t, idioma).toMatch(/\{extra\} /);
+      for (const t of textosExtra) expect(t, idioma).toContain(frase);
+    }
+    expect(JSON.stringify(es)).not.toMatch(/Subimos y redondeamos|un poco más \(|te llega completo/i);
+  });
+
   // El panel ya explica que la comisión está incluida: al guardar alcanza con el aviso corto de siempre.
   it('no hay un aviso largo especial al guardar la seña (ni en español ni en portugués)', async () => {
     const pt = await loadMessages('pt-BR');

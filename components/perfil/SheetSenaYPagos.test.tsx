@@ -182,13 +182,13 @@ describe('SheetSenaYPagos — porcentaje', () => {
     setup({ ...pct, comisionVigente: 7.61 });
     // seña 3.500, comisión 266, llegan 3.234: 234 más que el 30% exacto ($3.000)
     expect(screen.getByText(
-      'Te llega el 30% del servicio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
+      'Te llega el 30% del precio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
     )).toBeInTheDocument();
   });
 
   it('when nothing arrives beyond the percentage it keeps the plain sentence', () => {
     setup({ ...pct, senaPorcentaje: '50', comisionVigente: 0 }); // sin comisión: 5.000 de 10.000, sin sobrante
-    expect(screen.getByText('Así te llega completo el 50% del servicio ($5.000).')).toBeInTheDocument();
+    expect(screen.getByText('Te llega el 50% del precio ($5.000).')).toBeInTheDocument();
     expect(screen.queryByText(/más porque la seña se redondea/)).toBeNull();
   });
 
@@ -329,13 +329,13 @@ describe('SheetSenaYPagos — monto fijo', () => {
     }
     renderWithProviders(<Harness />);
     const d = desgloseSena(5500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
-    expect(screen.queryByText(/Subimos y redondeamos/)).toBeNull();
+    expect(screen.queryByText(/lo que querías/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
     expect(screen.getByText(
-      `Subimos y redondeamos la seña para que te lleguen al menos $5.000,00: con ella te llegan ${dinero(d!.llega)}.`,
+      `Te llega lo que querías ($5.000) y $${d!.llega - 5000} más porque la seña se redondea hacia arriba.`,
     )).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
-    expect(screen.queryByText(/Subimos y redondeamos/)).toBeNull();
+    expect(screen.queryByText(/lo que querías/)).toBeNull();
   });
 
   it('shows nothing of the calculator without online booking', () => {
@@ -363,7 +363,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     expect(tarjeta.getByText('Tus clientes dejan')).toBeInTheDocument();
     expect(tarjeta.getByText('A vos te llegan')).toBeInTheDocument();
     expect(tarjeta.getByText(
-      'Te llega el 30% del servicio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
+      'Te llega el 30% del precio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
     )).toBeInTheDocument();
     expect(tarjeta.getByText(/La seña se redondea hacia arriba/)).toBeInTheDocument();
     expect(within(tarjetaDe('Un monto fijo')).queryByText('Tus clientes dejan')).toBeNull();
@@ -393,7 +393,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
     const tarjeta = within(tarjetaDe('Un monto fijo'));
     expect(tarjeta.getByText(/Listo\. Antes: \$5\.000,00/)).toBeInTheDocument();
-    expect(tarjeta.getByText(/Subimos y redondeamos/)).toBeInTheDocument();
+    expect(tarjeta.getByText(/lo que querías/)).toBeInTheDocument();
   });
 });
 
