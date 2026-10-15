@@ -87,9 +87,10 @@ const enlaceStyle = {
   background: 'none', border: 'none', padding: 0, cursor: 'pointer', whiteSpace: 'nowrap',
   fontSize: 13, fontWeight: 600, color: colors.primaryDeep,
 } as const;
-const calculadoraStyle = {
-  backgroundColor: colors.surfaceSubtle, borderRadius: 16, padding: 16, marginBottom: 16,
-  display: 'flex', flexDirection: 'column', gap: 10,
+// El resultado dentro de la opción elegida: tarjeta blanca sobre el fondo suave de la opción.
+const calculadoraEnOpcionStyle = {
+  backgroundColor: colors.surface, borderRadius: 14, padding: 12,
+  display: 'flex', flexDirection: 'column', gap: 8,
 } as const;
 const dejanStyle = { ...montoStyle, fontSize: 20, fontWeight: 700, color: colors.text, fontVariantNumeric: 'tabular-nums' } as const;
 const llegaStyle = { ...montoStyle, fontSize: 20, fontWeight: 700, color: colors.success, fontVariantNumeric: 'tabular-nums' } as const;
@@ -154,7 +155,9 @@ function OpcionSena({ nombre, descripcion, activa, onElegir, children }: {
         <span id={`${id}-nombre`} style={{ fontSize: 15, fontWeight: 700, color: colors.text }}>{nombre}</span>
         <span id={`${id}-desc`} style={{ gridColumn: 2, ...avisoStyle }}>{descripcion}</span>
       </button>
-      {activa && children ? <div style={{ padding: '0 14px 14px' }}>{children}</div> : null}
+      {activa && children ? (
+        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
+      ) : null}
     </div>
   );
 }
@@ -357,7 +360,47 @@ export function SheetSenaYPagos({
             })}
           </div>
           {errorPorcentajeMostrado && (
-            <p style={{ ...errorStyle, marginTop: 8, marginBottom: 0 }}>{errorPorcentajeMostrado}</p>
+            <p style={{ ...errorStyle, margin: 0 }}>{errorPorcentajeMostrado}</p>
+          )}
+          {conCalculo ? (
+            <>
+              {desgloseEjemplo && (
+                <div style={calculadoraEnOpcionStyle}>
+                  <span style={avisoStyle}>{t('exampleLabel')}</span>
+                  <div style={{ ...filaStyle, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleClientLeaves')}</span>
+                    <span style={dejanStyle}>{dinero(montoEjemplo)}</span>
+                  </div>
+                  <div style={{ ...filaStyle, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleNet')}</span>
+                    <span style={llegaStyle}>{dinero(desgloseEjemplo.llega)}</span>
+                  </div>
+                  {botonDetalle}
+                  {verDetalle && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+                      <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                        <span style={{ minWidth: 0 }}>{t('exampleMpKeeps')}</span>
+                        <span style={montoStyle}>{dinero(desgloseEjemplo.cargo)}</span>
+                      </div>
+                      {desgloseEjemplo.retencion > 0 && (
+                        <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                          <span style={{ minWidth: 0 }}>{t('fixedRetention')}</span>
+                          <span style={montoStyle}>{dinero(desgloseEjemplo.retencion)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              {desgloseEjemplo && (
+                <p style={{ ...avisoStyle, margin: 0 }}>
+                  {t('exampleCovers', { pct: porcentajeElegido, monto: `$${formatMontoEntero((PRECIO_EJEMPLO * porcentajeElegido) / 100)}` })}
+                </p>
+              )}
+              <p style={{ ...avisoStyle, margin: 0 }}>{t('percentRounding')}</p>
+            </>
+          ) : (
+            <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>
           )}
         </OpcionSena>
         <OpcionSena
@@ -375,106 +418,64 @@ export function SheetSenaYPagos({
             type="text"
             inputMode="decimal"
           />
-        </OpcionSena>
-      </div>
-      {errorMonto && senaTipo !== 'porcentaje' && (
-        <p style={{ ...errorStyle, marginTop: -4 }}>{errorMonto}</p>
-      )}
-
-      {senaTipo === 'porcentaje' && (
-        conCalculo ? (
-          <>
-            {desgloseEjemplo && (
-              <div style={{ ...calculadoraStyle, marginBottom: 8 }}>
-                <span style={avisoStyle}>{t('exampleLabel')}</span>
-                <div style={{ ...filaStyle, alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleClientLeaves')}</span>
-                  <span style={dejanStyle}>{dinero(montoEjemplo)}</span>
-                </div>
-                <div style={{ ...filaStyle, alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleNet')}</span>
-                  <span style={llegaStyle}>{dinero(desgloseEjemplo.llega)}</span>
-                </div>
-                {botonDetalle}
-                {verDetalle && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
-                    <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
-                      <span style={{ minWidth: 0 }}>{t('exampleMpKeeps')}</span>
-                      <span style={montoStyle}>{dinero(desgloseEjemplo.cargo)}</span>
-                    </div>
-                    {desgloseEjemplo.retencion > 0 && (
-                      <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
-                        <span style={{ minWidth: 0 }}>{t('fixedRetention')}</span>
-                        <span style={montoStyle}>{dinero(desgloseEjemplo.retencion)}</span>
-                      </div>
-                    )}
+          {errorMonto && <p style={{ ...errorStyle, margin: 0 }}>{errorMonto}</p>}
+          {desglose && (
+            <div style={calculadoraEnOpcionStyle}>
+              <div style={{ ...filaStyle, alignItems: 'baseline' }}>
+                <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleClientLeaves')}</span>
+                <span style={dejanStyle}>{dinero(desglose.sena)}</span>
+              </div>
+              <div style={{ ...filaStyle, alignItems: 'baseline' }}>
+                <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleNet')}</span>
+                <span style={llegaStyle}>{dinero(desglose.llega)}</span>
+              </div>
+              {botonDetalle}
+              {verDetalle && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+                  <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                    <span style={{ minWidth: 0 }}>{t('fixedMpFee', { rate: formatearTasa(comisionVigente!) })}</span>
+                    <span style={montoStyle}>{`−${dinero(desglose.cargo)}`}</span>
                   </div>
-                )}
-                <span style={avisoStyle}>
-                  {t('exampleCovers', { pct: porcentajeElegido, monto: `$${formatMontoEntero((PRECIO_EJEMPLO * porcentajeElegido) / 100)}` })}
-                </span>
-              </div>
-            )}
-            <p style={{ ...avisoStyle, margin: '0 0 16px' }}>{t('percentRounding')}</p>
-          </>
-        ) : (
-          <p style={{ ...avisoStyle, margin: '0 0 16px' }}>{t('percentOfPrice')}</p>
-        )
-      )}
-
-      {senaTipo === 'fijo' && desglose && (
-        <div style={calculadoraStyle}>
-          <div style={{ ...filaStyle, alignItems: 'baseline' }}>
-            <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleClientLeaves')}</span>
-            <span style={dejanStyle}>{dinero(desglose.sena)}</span>
-          </div>
-          <div style={{ ...filaStyle, alignItems: 'baseline' }}>
-            <span style={{ fontSize: 14, color: colors.subtext }}>{t('exampleNet')}</span>
-            <span style={llegaStyle}>{dinero(desglose.llega)}</span>
-          </div>
-          {botonDetalle}
-          {verDetalle && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
-              <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
-                <span style={{ minWidth: 0 }}>{t('fixedMpFee', { rate: formatearTasa(comisionVigente!) })}</span>
-                <span style={montoStyle}>{`−${dinero(desglose.cargo)}`}</span>
-              </div>
-              {desglose.retencion > 0 && (
-                <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
-                  <span style={{ minWidth: 0 }}>{t('fixedRetention')}</span>
-                  <span style={montoStyle}>{`−${dinero(desglose.retencion)}`}</span>
+                  {desglose.retencion > 0 && (
+                    <div style={{ ...filaStyle, fontSize: 14, color: colors.subtext }}>
+                      <span style={{ minWidth: 0 }}>{t('fixedRetention')}</span>
+                      <span style={montoStyle}>{`−${dinero(desglose.retencion)}`}</span>
+                    </div>
+                  )}
+                  <span style={avisoStyle}>{t('fixedCostNote')}</span>
                 </div>
               )}
-              <span style={avisoStyle}>{t('fixedCostNote')}</span>
             </div>
           )}
-        </div>
-      )}
-
-      {senaTipo === 'fijo' && sugerida !== null && (
-        <div style={consejoStyle}>
-          <span>{t('tipFixed', { monto: dinero(montoFijo!), sena: dinero(sugerida) })}</span>
-          <button type="button" onClick={usarSugerida} style={consejoBotonStyle}>
-            {t('tipUse', { sena: dinero(sugerida) })}
-          </button>
-        </div>
-      )}
-      {senaTipo === 'fijo' && confirmado && aplicado && (
-        <>
-          <p style={{ ...avisoStyle, margin: '0 0 12px' }}>
-            {t('fixedApplied', { monto: dinero(parsearMonto(aplicado.anterior) ?? 0) })}
-            {' · '}
-            <button type="button" onClick={deshacer} style={{ ...enlaceStyle, fontSize: 12.5 }}>
-              {t('fixedUndo')}
-            </button>
-          </p>
-          {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
-          {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
-            <p style={{ ...avisoStyle, margin: '-4px 0 16px' }}>
-              {t('fixedRoundedNote', { querido: dinero(parsearMonto(aplicado.anterior) ?? 0), llega: dinero(desglose.llega) })}
-            </p>
+          {sugerida !== null && (
+            <div style={consejoStyle}>
+              <span>{t('tipFixed', { monto: dinero(montoFijo!), sena: dinero(sugerida) })}</span>
+              <button type="button" onClick={usarSugerida} style={consejoBotonStyle}>
+                {t('tipUse', { sena: dinero(sugerida) })}
+              </button>
+            </div>
           )}
-        </>
+          {confirmado && aplicado && (
+            <>
+              <p style={{ ...avisoStyle, margin: 0 }}>
+                {t('fixedApplied', { monto: dinero(parsearMonto(aplicado.anterior) ?? 0) })}
+                {' · '}
+                <button type="button" onClick={deshacer} style={{ ...enlaceStyle, fontSize: 12.5 }}>
+                  {t('fixedUndo')}
+                </button>
+              </p>
+              {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
+              {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
+                <p style={{ ...avisoStyle, margin: 0 }}>
+                  {t('fixedRoundedNote', { querido: dinero(parsearMonto(aplicado.anterior) ?? 0), llega: dinero(desglose.llega) })}
+                </p>
+              )}
+            </>
+          )}
+        </OpcionSena>
+      </div>
+      {errorMonto && senaTipo === 'ninguna' && (
+        <p style={{ ...errorStyle, marginTop: -4 }}>{errorMonto}</p>
       )}
 
       {senaTipo !== 'ninguna' && (

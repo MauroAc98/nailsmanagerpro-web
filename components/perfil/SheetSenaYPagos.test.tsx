@@ -343,6 +343,49 @@ describe('SheetSenaYPagos — monto fijo', () => {
   });
 });
 
+// Cada cifra va dentro de la opción que la genera: nunca debajo de otra opción.
+const tarjetaDe = (nombre: string) => opcion(nombre).parentElement as HTMLElement;
+
+describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
+  it('con porcentaje, el ejemplo y sus notas viven dentro de la opción de porcentaje', () => {
+    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', senaMonto: '' });
+    const tarjeta = within(tarjetaDe('Un porcentaje del precio'));
+    expect(tarjeta.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
+    expect(tarjeta.getByText('Tus clientes dejan')).toBeInTheDocument();
+    expect(tarjeta.getByText('A vos te llegan')).toBeInTheDocument();
+    expect(tarjeta.getByText('Así te llega completo el 30% del servicio ($3.000).')).toBeInTheDocument();
+    expect(tarjeta.getByText(/La seña se redondea hacia arriba/)).toBeInTheDocument();
+    expect(within(tarjetaDe('Un monto fijo')).queryByText('Tus clientes dejan')).toBeNull();
+  });
+
+  it('con porcentaje sin cálculo, la línea corta también vive dentro de la opción', () => {
+    setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', senaMonto: '', reservaOnlineActiva: false });
+    expect(within(tarjetaDe('Un porcentaje del precio')).getByText('Del precio de cada servicio, redondeada hacia arriba.')).toBeInTheDocument();
+  });
+
+  it('con monto fijo, el desglose y el consejo viven dentro de la opción de monto fijo', () => {
+    setup({ senaMonto: '5000' });
+    const tarjeta = within(tarjetaDe('Un monto fijo'));
+    expect(tarjeta.getByText('Tus clientes dejan')).toBeInTheDocument();
+    expect(tarjeta.getByText('A vos te llegan')).toBeInTheDocument();
+    expect(tarjeta.getByRole('button', { name: 'Ver detalle ▾' })).toBeInTheDocument();
+    expect(tarjeta.getByRole('button', { name: 'Pedir $5.500,00' })).toBeInTheDocument();
+    expect(within(tarjetaDe('Un porcentaje del precio')).queryByText('A vos te llegan')).toBeNull();
+  });
+
+  it('con monto fijo, el "Listo. Antes" y el aviso de redondeo también viven dentro de la opción', () => {
+    function Harness() {
+      const [monto, setMonto] = useState('5000');
+      return <SheetSenaYPagos {...baseProps({ senaMonto: monto, setSenaMonto: setMonto })} />;
+    }
+    renderWithProviders(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
+    const tarjeta = within(tarjetaDe('Un monto fijo'));
+    expect(tarjeta.getByText(/Listo\. Antes: \$5\.000,00/)).toBeInTheDocument();
+    expect(tarjeta.getByText(/Subimos y redondeamos/)).toBeInTheDocument();
+  });
+});
+
 describe('SheetSenaYPagos — fila "Más opciones"', () => {
   it('shows it with a deposit, naming taxes and the WhatsApp transfer', () => {
     setup();
