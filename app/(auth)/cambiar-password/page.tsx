@@ -100,7 +100,7 @@ export default function CambiarPasswordPage() {
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <input
+            <input data-sin-borde
               type={showActual ? 'text' : 'password'}
               placeholder={t('currentPasswordPlaceholder')}
               value={passwordActual}
@@ -146,7 +146,7 @@ export default function CambiarPasswordPage() {
               <rect x="3" y="11" width="18" height="11" rx="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <input
+            <input data-sin-borde
               type={showNueva ? 'text' : 'password'}
               placeholder={t('newPasswordPlaceholder')}
               value={password}

@@ -176,7 +176,7 @@ export function SheetDatosPersonales({
             padding: '12px 14px', boxSizing: 'border-box',
           }}>
             <IconPhone />
-            <input
+            <input data-sin-borde
               value={telefono}
               // onChangeTelefono corre en cada tecla, no solo al pegar —
               // antes tipear "376 424-0951" a mano guardaba el espacio y el
@@ -202,7 +202,7 @@ export function SheetDatosPersonales({
           padding: '12px 14px',
         }}>
           <div style={{ marginTop: 2 }}><IconMapPin /></div>
-          <textarea
+          <textarea data-sin-borde
             value={direccion}
             onChange={e => setDireccion(e.target.value)}
             placeholder={t('address')}

@@ -370,7 +370,7 @@ export default function SuscripcionesPage() {
             }}
           >
             <Search size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-            <input
+            <input data-sin-borde
               type="text"
               placeholder="Filtrar por nombre, email o slug"
               value={filtro}

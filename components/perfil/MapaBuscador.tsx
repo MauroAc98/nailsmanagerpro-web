@@ -41,7 +41,7 @@ export function MapaBuscador({ onBuscar }: Props) {
         display: 'flex', gap: 8, backgroundColor: colors.surface,
         borderRadius: 14, boxShadow: shadows.card, padding: 6,
       }}>
-        <input
+        <input data-sin-borde
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

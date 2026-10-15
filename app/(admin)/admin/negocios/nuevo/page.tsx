@@ -245,7 +245,7 @@ export default function NuevoNegocioPage() {
             <label htmlFor="negocio-name" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>{ETIQUETAS.name}</label>
             <div style={fieldStyle('name')}>
               <Building2 size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-              <input
+              <input data-sin-borde
                 id="negocio-name"
                 type="text"
                 placeholder="Nombre del salón"
@@ -263,7 +263,7 @@ export default function NuevoNegocioPage() {
             <label htmlFor="negocio-email" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>{ETIQUETAS.email}</label>
             <div style={fieldStyle('email')}>
               <Mail size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-              <input
+              <input data-sin-borde
                 id="negocio-email"
                 type="email"
                 inputMode="email"
@@ -284,7 +284,7 @@ export default function NuevoNegocioPage() {
             <label htmlFor="negocio-profesional-nombre" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>{ETIQUETAS.profesional_nombre}</label>
             <div style={fieldStyle('profesional_nombre')}>
               <User size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-              <input
+              <input data-sin-borde
                 id="negocio-profesional-nombre"
                 type="text"
                 placeholder="Nombre"
@@ -302,7 +302,7 @@ export default function NuevoNegocioPage() {
             <label htmlFor="negocio-profesional-apellido" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>{ETIQUETAS.profesional_apellido}</label>
             <div style={fieldStyle('profesional_apellido')}>
               <User size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-              <input
+              <input data-sin-borde
                 id="negocio-profesional-apellido"
                 type="text"
                 placeholder="Apellido"

@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
             <label htmlFor="admin-email" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>Email</label>
             <div style={fieldStyle('email')}>
               <Mail size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-              <input
+              <input data-sin-borde
                 id="admin-email"
                 type="email"
                 inputMode="email"
@@ -95,7 +95,7 @@ export default function AdminLoginPage() {
             <label htmlFor="admin-password" style={{ fontSize: 13, fontWeight: 600, color: colors.textStrong }}>Contraseña</label>
             <div style={fieldStyle('password')}>
               <Lock size={18} color={withAlpha(colors.primary, 'aa')} style={{ flexShrink: 0 }} />
-              <input
+              <input data-sin-borde
                 id="admin-password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"

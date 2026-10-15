@@ -348,7 +348,7 @@ export function ServiciosScreen({ slug, ir }: { slug: string; ir: Ir }) {
               <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             {/* type="text" + role="searchbox": el campo type="search" trae su propia X nativa y duplicaria la nuestra. */}
-            <input
+            <input data-sin-borde
               type="text"
               role="searchbox"
               inputMode="search"
