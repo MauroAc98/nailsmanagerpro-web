@@ -87,7 +87,7 @@ const accionUbicacionStyle: React.CSSProperties = {
 };
 
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.subtext, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 

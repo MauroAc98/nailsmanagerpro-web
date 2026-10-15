@@ -4,7 +4,7 @@ import React from 'react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: colors.placeholder, letterSpacing: 1,
+  fontSize: 11, fontWeight: 700, color: colors.subtext, letterSpacing: 1,
   textTransform: 'uppercase', marginBottom: 8,
 };
 
