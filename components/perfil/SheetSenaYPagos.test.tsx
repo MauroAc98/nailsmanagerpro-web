@@ -178,9 +178,18 @@ describe('SheetSenaYPagos — porcentaje', () => {
     expect(screen.queryByText('Mercado Pago se queda')).toBeNull();
   });
 
-  it('the example says that what arrives covers the whole percentage', () => {
+  it('the example says that what arrives covers the whole percentage and the extra that the rounding adds', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText('Así te llega completo el 30% del servicio ($3.000).')).toBeInTheDocument();
+    // seña 3.500, comisión 266, llegan 3.234: 234 más que el 30% exacto ($3.000)
+    expect(screen.getByText(
+      'Te llega el 30% del servicio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
+    )).toBeInTheDocument();
+  });
+
+  it('when nothing arrives beyond the percentage it keeps the plain sentence', () => {
+    setup({ ...pct, senaPorcentaje: '50', comisionVigente: 0 }); // sin comisión: 5.000 de 10.000, sin sobrante
+    expect(screen.getByText('Así te llega completo el 50% del servicio ($5.000).')).toBeInTheDocument();
+    expect(screen.queryByText(/más porque la seña se redondea/)).toBeNull();
   });
 
   it('lists the tax retention in the detail only when there is one', () => {
@@ -353,7 +362,9 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     expect(tarjeta.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
     expect(tarjeta.getByText('Tus clientes dejan')).toBeInTheDocument();
     expect(tarjeta.getByText('A vos te llegan')).toBeInTheDocument();
-    expect(tarjeta.getByText('Así te llega completo el 30% del servicio ($3.000).')).toBeInTheDocument();
+    expect(tarjeta.getByText(
+      'Te llega el 30% del servicio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
+    )).toBeInTheDocument();
     expect(tarjeta.getByText(/La seña se redondea hacia arriba/)).toBeInTheDocument();
     expect(within(tarjetaDe('Un monto fijo')).queryByText('Tus clientes dejan')).toBeNull();
   });

@@ -71,6 +71,7 @@
     "exampleMpKeeps": "O Mercado Pago fica com",
     "exampleNet": "Você recebe",
     "exampleCovers": "Assim você recebe por inteiro os {pct}% do serviço ({monto}).",
+    "exampleCoversExtra": "Você recebe os {pct}% do serviço ({monto}) e {extra} a mais porque o sinal é arredondado para cima.",
     "fixedAmountLabel": "Valor do sinal",
     "fixedMpFee": "Mercado Pago ({rate}%)",
     "fixedRetention": "Retenção de impostos",

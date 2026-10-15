@@ -71,6 +71,7 @@
     "exampleMpKeeps": "Mercado Pago se queda",
     "exampleNet": "A vos te llegan",
     "exampleCovers": "Así te llega completo el {pct}% del servicio ({monto}).",
+    "exampleCoversExtra": "Te llega el {pct}% del servicio ({monto}) y {extra} más porque la seña se redondea hacia arriba.",
     "fixedAmountLabel": "Monto de la seña",
     "fixedMpFee": "Mercado Pago ({rate}%)",
     "fixedRetention": "Retención de impuestos",

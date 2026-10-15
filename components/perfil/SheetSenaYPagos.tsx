@@ -206,6 +206,8 @@ export function SheetSenaYPagos({
   const desgloseEjemplo = conCalculo && senaTipo === 'porcentaje' && porcentajeValido
     ? desgloseSena(montoEjemplo, configCalculo)
     : null;
+  // Lo que le correspondería a la profesional del precio de ejemplo, sin comisión ni redondeo.
+  const exactoEjemplo = (PRECIO_EJEMPLO * porcentajeElegido) / 100;
   const confirmado = aplicado !== null && senaMonto === aplicado.nuevo;
   const sugerida = reservaOnlineActiva && montoFijo !== null && !confirmado ? senaFijaSugerida(montoFijo, configCalculo) : null;
   const usarSugerida = () => {
@@ -394,7 +396,14 @@ export function SheetSenaYPagos({
               )}
               {desgloseEjemplo && (
                 <p style={{ ...avisoStyle, margin: 0 }}>
-                  {t('exampleCovers', { pct: porcentajeElegido, monto: `$${formatMontoEntero((PRECIO_EJEMPLO * porcentajeElegido) / 100)}` })}
+                  {/* Si el redondeo deja de más, se dice: si no, "te llega el 30 %" y la cifra de arriba no cierran. */}
+                  {desgloseEjemplo.llega > exactoEjemplo
+                    ? t('exampleCoversExtra', {
+                        pct: porcentajeElegido,
+                        monto: `$${formatMontoEntero(exactoEjemplo)}`,
+                        extra: `$${formatMontoEntero(desgloseEjemplo.llega - exactoEjemplo)}`,
+                      })
+                    : t('exampleCovers', { pct: porcentajeElegido, monto: `$${formatMontoEntero(exactoEjemplo)}` })}
                 </p>
               )}
               <p style={{ ...avisoStyle, margin: 0 }}>{t('percentRounding')}</p>
