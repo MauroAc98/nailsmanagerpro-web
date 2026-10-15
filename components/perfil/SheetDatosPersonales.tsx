@@ -159,7 +159,7 @@ export function SheetDatosPersonales({
             value={codigoPais}
             onChange={e => setCodigoPais(e.target.value)}
             style={{
-              backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
+              backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.fieldBorder}`,
               boxShadow: shadows.card, borderRadius: 12,
               padding: '12px 8px', fontSize: 14, color: colors.text,
               outline: 'none', cursor: 'pointer', flexShrink: 0,
@@ -172,7 +172,7 @@ export function SheetDatosPersonales({
           </select>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0,
-            backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
+            backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.fieldBorder}`, borderRadius: 12,
             padding: '12px 14px', boxSizing: 'border-box',
           }}>
             <IconPhone />
@@ -198,7 +198,7 @@ export function SheetDatosPersonales({
         <p style={sectionLabelStyle}>{t('address')}</p>
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
-          backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
+          backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.fieldBorder}`, borderRadius: 12,
           padding: '12px 14px',
         }}>
           <div style={{ marginTop: 2 }}><IconMapPin /></div>

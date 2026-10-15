@@ -29,7 +29,7 @@ interface Props {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   boxShadow: shadows.card, borderRadius: 12,
   padding: '14px 16px', fontSize: 15, color: colors.text,
   outline: 'none',
@@ -126,7 +126,7 @@ export const AltaClienteRapidaSheet = forwardRef<AltaClienteRapidaHandle, Props>
               placeholder={t('namePlaceholder')}
               value={nombre}
               onChange={e => { setNombre(e.target.value); setErrors(prev => ({ ...prev, nombre: undefined })); }}
-              style={{ ...inputStyle, borderColor: errors.nombre ? colors.danger : colors.border }}
+              style={{ ...inputStyle, borderColor: errors.nombre ? colors.danger : colors.fieldBorder }}
             />
             {errors.nombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.danger }}>{errors.nombre}</p>}
           </div>
@@ -138,7 +138,7 @@ export const AltaClienteRapidaSheet = forwardRef<AltaClienteRapidaHandle, Props>
               placeholder={t('lastNamePlaceholder')}
               value={apellido}
               onChange={e => { setApellido(e.target.value); setErrors(prev => ({ ...prev, apellido: undefined })); }}
-              style={{ ...inputStyle, borderColor: errors.apellido ? colors.danger : colors.border }}
+              style={{ ...inputStyle, borderColor: errors.apellido ? colors.danger : colors.fieldBorder }}
             />
             {errors.apellido && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.danger }}>{errors.apellido}</p>}
           </div>
@@ -172,7 +172,7 @@ export const AltaClienteRapidaSheet = forwardRef<AltaClienteRapidaHandle, Props>
                 // lado en vez de separarse como sí pasaba al pegar.
                 onChange={e => { aplicarTelefonoIngresado(e.target.value); setErrors(prev => ({ ...prev, telefono: undefined })); }}
                 onPaste={handlePasteTelefono}
-                style={{ ...inputStyle, flex: 1, borderColor: errors.telefono ? colors.danger : colors.border }}
+                style={{ ...inputStyle, flex: 1, borderColor: errors.telefono ? colors.danger : colors.fieldBorder }}
               />
             </div>
             {errors.telefono && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.danger }}>{errors.telefono}</p>}

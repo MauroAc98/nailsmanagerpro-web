@@ -32,8 +32,9 @@ export default function PillToggle({ value, onChange, stopPropagation = false, d
         backgroundColor: value ? withAlpha(colors.primary, '66') : colors.surfaceSubtle,
         // El track apagado usa el mismo color que el fondo de las filas que
         // lo contienen (colors.surfaceSubtle) — sin este borde queda
-        // invisible en modo claro, solo se ve el puntito flotando.
-        border: `1px solid ${value ? withAlpha(colors.primary, '99') : colors.border}`,
+        // invisible en modo claro, solo se ve el puntito flotando. Borde y perilla
+        // apagados son más fuertes que un campo deshabilitado: apagado no es inactivo.
+        border: `1px solid ${value ? withAlpha(colors.primary, '99') : colors.muted}`,
         position: 'relative', cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
@@ -43,7 +44,7 @@ export default function PillToggle({ value, onChange, stopPropagation = false, d
         position: 'absolute', top: 3,
         left: value ? 21 : 3,
         width: 20, height: 20, borderRadius: 10,
-        backgroundColor: value ? colors.primary : colors.placeholder,
+        backgroundColor: value ? colors.primary : colors.subtext,
         transition: 'left 0.2s',
       }} />
     </div>

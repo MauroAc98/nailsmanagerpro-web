@@ -63,7 +63,7 @@ const sectionLabelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.fieldBorder}`,
   borderRadius: 12, padding: '14px 16px', fontSize: 15, color: colors.text,
 };
 

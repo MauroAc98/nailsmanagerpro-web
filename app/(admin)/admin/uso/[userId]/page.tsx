@@ -59,7 +59,7 @@ const card: React.CSSProperties = {
 
 const inputFecha: React.CSSProperties = {
   flex: 1, minWidth: 0, height: 40, boxSizing: 'border-box', padding: '0 10px', borderRadius: 10, fontSize: 14,
-  border: `1px solid ${colors.border}`, backgroundColor: colors.surface, color: colors.text,
+  border: `1px solid ${colors.fieldBorder}`, backgroundColor: colors.surface, color: colors.text,
 };
 
 function Stat({ valor, label }: { valor: number; label: string }) {

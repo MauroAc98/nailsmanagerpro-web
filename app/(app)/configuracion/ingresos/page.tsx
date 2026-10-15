@@ -56,7 +56,7 @@ const filtroLabelStyle: React.CSSProperties = {
 
 const dateInputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   borderRadius: 10, padding: '10px 12px', fontSize: 14, color: colors.text, outline: 'none',
 };
 

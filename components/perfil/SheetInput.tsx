@@ -25,7 +25,7 @@ export function SheetInput({ label, icon, value, onChange, placeholder, type = '
       <p style={sectionLabelStyle}>{label}</p>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.border}`, borderRadius: 12,
+        backgroundColor: colors.surfaceSubtle, border: `1px solid ${colors.fieldBorder}`, borderRadius: 12,
         padding: '12px 14px', position: 'relative',
       }}>
         {icon}

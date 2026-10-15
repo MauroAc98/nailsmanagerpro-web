@@ -34,7 +34,7 @@ function chipStyle(selected: boolean, dashed = false): React.CSSProperties {
 
 const inputStyle: React.CSSProperties = {
   flex: 1, minWidth: 0, boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   borderRadius: 12, padding: '10px 14px', fontSize: 14, color: colors.text, outline: 'none',
 };
 
@@ -179,7 +179,7 @@ export function SelectorCategoriaServicio({ value, onChange, disabled }: Props) 
               onChange={e => setModo({ ...modo, nombre: e.target.value, error: '' })}
               onKeyDown={handleKeyDown}
               disabled={modo.saving || disabled}
-              style={{ ...inputStyle, borderColor: modo.error ? colors.dangerBorder : colors.border }}
+              style={{ ...inputStyle, borderColor: modo.error ? colors.dangerBorder : colors.fieldBorder }}
             />
             <button
               type="button"

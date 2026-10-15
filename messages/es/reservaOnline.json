@@ -184,7 +184,7 @@
   "settings": {
     "title": "Reservas online",
     "subtitle": "Tus clientes reservan por su cuenta y pagan la seña",
-    "senaActualPorcentaje": "Seña actual: {pct}% del precio, más la comisión de Mercado Pago",
+    "senaActualPorcentaje": "Seña actual: {pct}% del precio. Incluye la comisión de Mercado Pago.",
     "senaActualFijo": "Seña actual: {monto}",
     "senaSinConfigurar": "Todavía no configuraste la seña de tus reservas.",
     "cambiarSena": "Cambiar",

@@ -27,7 +27,7 @@ function formatFechaCorta(fecha: string): string {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   boxShadow: shadows.card, borderRadius: 12,
   padding: '14px 16px', fontSize: 15, color: colors.text, outline: 'none',
 };

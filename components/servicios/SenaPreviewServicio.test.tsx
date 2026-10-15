@@ -68,7 +68,7 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000'); // seña 10.000, comisión 761, llegan 9.239: 239 más que el 50% ($9.000)
     expect(screen.getByText(
-      'Te llega el 50% del precio ($9.000) y $239 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
+      'Te llega el 50% ($9.000) y $239 más por el redondeo.',
     )).toBeInTheDocument();
   });
 
@@ -79,7 +79,7 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('$304')).toBeInTheDocument();
     expect(screen.getByText('$3.696')).toBeInTheDocument();
     expect(screen.getByText(
-      'Te llega el 30% del precio ($3.390) y $306 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
+      'Te llega el 30% ($3.390) y $306 más por el redondeo.',
     )).toBeInTheDocument();
   });
 
@@ -87,7 +87,21 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
     setup('10000'); // sin comisión y 50% de 10.000 = 5.000 es múltiplo de 500: no sobra nada
     expect(screen.getByText('Te llega el 50% del precio ($5.000).')).toBeInTheDocument();
-    expect(screen.queryByText(/redondeamos la seña hacia arriba/)).toBeNull();
+    expect(screen.queryByText(/por el redondeo/)).toBeNull();
+  });
+
+  it('explains why the seña is rounded behind "¿Por qué se redondea?", only when the rounding adds something', () => {
+    setUser({ sena_porcentaje: 30 });
+    setup('11300');
+    expect(screen.queryByText(/Redondeamos la seña hacia arriba/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '¿Por qué se redondea?' }));
+    expect(screen.getByText(/Redondeamos la seña hacia arriba para que sea un monto fácil de pagar/)).toBeInTheDocument();
+  });
+
+  it('has no "¿Por qué se redondea?" when nothing arrives beyond the percentage', () => {
+    setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
+    setup('10000');
+    expect(screen.queryByRole('button', { name: '¿Por qué se redondea?' })).toBeNull();
   });
 
   it('does not claim that when the deposit is the whole price (nothing left to cover the cost with)', () => {
@@ -100,9 +114,9 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000');
     expect(screen.queryByText(/Mercado Pago \(/)).toBeNull();
-    expect(screen.queryByText('Precio del servicio')).toBeNull();
+    expect(screen.queryByText('Total del turno')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.getByText('Precio del servicio')).toBeInTheDocument();
+    expect(screen.getByText('Total del turno')).toBeInTheDocument();
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.getByText('Comisión de Mercado Pago (7,6%)')).toBeInTheDocument();
     expect(screen.getByText('− $761')).toBeInTheDocument();
@@ -119,14 +133,13 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('$6.600')).toBeInTheDocument();
     expect(screen.getByText('Para cubrir la comisión')).toBeInTheDocument();
     expect(screen.getByText('+ $544')).toBeInTheDocument();
-    expect(screen.getByText('Redondeo a $500')).toBeInTheDocument();
+    expect(screen.getByText('Redondeo de la seña')).toBeInTheDocument();
     expect(screen.getByText('+ $356')).toBeInTheDocument();
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.getByText('− $571')).toBeInTheDocument();
     expect(screen.getAllByText('$6.929')).toHaveLength(2); // la frase de arriba y la última fila
-    // El motivo del redondeo se dice una sola vez (en la frase de arriba), no otra vez al pie del detalle.
-    expect(screen.queryByText('Redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.')).toBeNull();
-    expect(screen.getAllByText(/le resulte fácil pagar el resto al terminar el servicio/)).toHaveLength(1);
+    // El extra del redondeo se dice una sola vez (en la frase de arriba), no otra vez al pie del detalle.
+    expect(screen.getAllByText(/por el redondeo/)).toHaveLength(1);
   });
 
   it('no rounding row when the cost already lands on a multiple of the step', () => {
@@ -134,8 +147,8 @@ describe('SenaPreviewServicio', () => {
     setup('25000'); // sin costo que cubrir: 7.500 exactos
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
-    expect(screen.queryByText(/Redondeo a/)).toBeNull();
-    expect(screen.queryByText(/edondeamos la seña/)).toBeNull();
+    expect(screen.queryByText(/Redondeo de la seña/)).toBeNull();
+    expect(screen.queryByText(/por el redondeo/)).toBeNull();
   });
 
   it('no percentage steps when the deposit is the whole price', () => {
@@ -143,7 +156,7 @@ describe('SenaPreviewServicio', () => {
     setup('600');
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
-    expect(screen.queryByText(/Redondeo a/)).toBeNull();
+    expect(screen.queryByText(/Redondeo de la seña/)).toBeNull();
     expect(screen.queryByText(/Seña del/)).toBeNull();
   });
 
@@ -152,7 +165,7 @@ describe('SenaPreviewServicio', () => {
     setup('100'); // 30 -> cubre 33 -> paso 10 -> 40; comisión 3; llegan 37
     expect(screen.getByText('$40')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
-    expect(screen.getByText('Redondeo a $10')).toBeInTheDocument();
+    expect(screen.getByText('Redondeo de la seña')).toBeInTheDocument();
   });
 
   it('follows a different commission instead of a hardcoded 7,6', () => {
@@ -184,7 +197,7 @@ describe('SenaPreviewServicio', () => {
     expect(screen.queryByText(/Te llega el d+% del precio/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
-    expect(screen.queryByText('Precio del servicio')).toBeNull();
+    expect(screen.queryByText('Total del turno')).toBeNull();
     expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
   });
 
@@ -259,7 +272,7 @@ describe('SenaPreviewServicio — missing configuration or price', () => {
   it('shows which seña is configured with a "Cambiar" shortcut (percentage)', () => {
     const onConfigurar = vi.fn();
     setup('18000', { onConfigurar });
-    expect(screen.getByText('Seña de 30% del precio, más la comisión de Mercado Pago')).toBeInTheDocument();
+    expect(screen.getByText('Seña del 30% del precio. Incluye la comisión de Mercado Pago.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar' }));
     expect(onConfigurar).toHaveBeenCalledTimes(1);
   });

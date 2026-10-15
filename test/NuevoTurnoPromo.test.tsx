@@ -62,7 +62,7 @@ function montar(det: Servicio = detalle()) {
   useServiciosStore.setState({ servicios: [manicura, softgel, semis, combo], fetchServicios: vi.fn() });
   useProfesionalStore.setState({ profesionales: [ana, laura], fetchProfesionales: vi.fn() });
   useClientesStore.setState({ clientes: [marta], clientesPagina: [marta], fetchClientes: vi.fn(), cargarPrimeraPagina: vi.fn(), cargarSiguientePagina: vi.fn() });
-  useSlotsStore.setState({ slots: [{ id: 1, hora: '09:00', activo: true }, { id: 2, hora: '18:00', activo: true }] as never, fetchSlots: vi.fn(), loading: false, ultimoProfesionalIdSolicitado: 1 });
+  useSlotsStore.setState({ slots: [{ id: 1, hora: '10:00', activo: true }, { id: 2, hora: '18:00', activo: true }] as never, fetchSlots: vi.fn(), loading: false, ultimoProfesionalIdSolicitado: 1 });
   useBloqueosAgendaStore.setState({ bloqueos: [], fetchBloqueos: vi.fn() });
   useTurnoStore.setState({ turnos: [], fetchTurnos: vi.fn(), crearTurno });
   return renderWithProviders(<NuevoTurnoPage />);
@@ -90,10 +90,9 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('NuevoTurnoPage — turno comun (Rule L)', () => {
-  it('con dos profesionales sigue pidiendo elegir una, no consulta la promo y manda el payload de siempre', async () => {
+  it('con dos profesionales viene la dueña elegida, no consulta la promo y manda el payload de siempre', async () => {
     montar();
-    expect(await screen.findByRole('button', { name: 'Profesional: Elegí una profesional' })).toBeInTheDocument();
-    elegirProfesional('Ana');
+    expect(await screen.findByRole('button', { name: 'Profesional: Ana' })).toBeInTheDocument();
     await elegirClienteYServicio(/^Manicura/);
     confirmar();
 
@@ -106,9 +105,9 @@ describe('NuevoTurnoPage — turno comun (Rule L)', () => {
 });
 
 describe('NuevoTurnoPage — fila de profesional', () => {
-  it('arranca sin elegir, y al elegir en la hoja muestra el nombre y ofrece sus servicios', async () => {
+  it('arranca con la dueña elegida, y al cambiar en la hoja muestra el nombre y ofrece sus servicios', async () => {
     montar();
-    expect(await screen.findByRole('button', { name: 'Profesional: Elegí una profesional' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Profesional: Ana' })).toBeInTheDocument();
     elegirProfesional('Laura');
     expect(filaProfesional('Laura')).toBeInTheDocument();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();

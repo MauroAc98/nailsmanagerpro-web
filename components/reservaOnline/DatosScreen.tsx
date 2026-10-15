@@ -21,7 +21,7 @@ const cajaCampo = {
   minHeight: 52,
   borderRadius: 14,
   background: colors.surface,
-  border: `1px solid ${colors.border}`,
+  border: `1px solid ${colors.fieldBorder}`,
   padding: '0 14px',
   fontSize: 16,
   color: colors.strong,

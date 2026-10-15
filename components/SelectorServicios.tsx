@@ -246,7 +246,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
         onChange={e => setFiltro(e.target.value)}
         placeholder={t('filterPlaceholder')}
         style={{
-          width: '100%', height: 40, borderRadius: 10, border: `1px solid ${colors.border}`,
+          width: '100%', height: 40, borderRadius: 10, border: `1px solid ${colors.fieldBorder}`,
           backgroundColor: colors.surfaceSubtle, color: colors.text,
           padding: '0 12px 0 34px', fontSize: 14, outline: 'none', boxSizing: 'border-box',
         }}

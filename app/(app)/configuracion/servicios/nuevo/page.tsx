@@ -28,7 +28,7 @@ import {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  backgroundColor: colors.surface, border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface, border: `1px solid ${colors.fieldBorder}`,
   boxShadow: shadows.card, borderRadius: 12,
   padding: '14px 16px', fontSize: 15, color: colors.text, outline: 'none',
 };
@@ -227,7 +227,7 @@ function NuevoServicioContent() {
               placeholder={t('namePlaceholder')}
               value={nombre}
               onChange={e => { setNombre(e.target.value); setErrorNombre(''); }}
-              style={{ ...campoStyle, borderColor: errorNombre ? colors.dangerBorder : colors.border }}
+              style={{ ...campoStyle, borderColor: errorNombre ? colors.dangerBorder : colors.fieldBorder }}
             />
             {errorNombre && <p style={{ margin: '4px 0 0 2px', fontSize: 12, color: colors.dangerBorder }}>{errorNombre}</p>}
           </div>

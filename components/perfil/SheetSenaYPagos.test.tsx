@@ -46,7 +46,7 @@ function setup(overrides: Partial<Props> = {}) {
 
 const dinero = (n: number) => `$${formatMonto(n)}`;
 // Cuánto llega de más y para qué se redondea: UNA sola oración, la misma redacción en las tres pantallas.
-const EXTRA_30 = 'Te llega el 30% del precio ($3.000) y $234 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.';
+const EXTRA_30 = 'Te llega el 30% del turno ($3.000) y $234 más por el redondeo de la seña.';
 const montoInput = () => screen.getByRole('textbox', { name: 'Monto de la seña' });
 const opcion = (nombre: string) => screen.getByRole('radio', { name: nombre });
 const abrirMasOpciones = () => fireEvent.click(screen.getByRole('button', { name: /^Más opciones/ }));
@@ -82,7 +82,7 @@ describe('SheetSenaYPagos — vista principal', () => {
   it('each option says in one line what it means, including who pays the commission', () => {
     setup();
     expect(screen.getByText('Los turnos se confirman sin pedir nada.')).toBeInTheDocument();
-    expect(screen.getByText('Se calcula según cada servicio. La comisión de Mercado Pago ya está incluida.')).toBeInTheDocument();
+    expect(screen.getByText('Se calcula sobre el total del turno. La seña incluye lo que cobra Mercado Pago, así que te llega al menos ese porcentaje.')).toBeInTheDocument();
     expect(screen.getByText('El mismo monto en todos los turnos. La comisión sale de ese monto.')).toBeInTheDocument();
   });
 
@@ -161,7 +161,7 @@ describe('SheetSenaYPagos — porcentaje', () => {
     setup({ ...pct, comisionVigente: 7.61 });
     // 30% de $10.000 = $3.000; la seña que cubre la comisión es $3.500 (3.000 / 0,9239 = 3.247 -> 3.500)
     const d = desgloseSena(3500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
-    expect(screen.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
+    expect(screen.getByText('Ejemplo con un turno de $10.000')).toBeInTheDocument();
     expect(screen.getByText('Tus clientes dejan')).toBeInTheDocument();
     expect(screen.getByText(dinero(3500))).toBeInTheDocument();
     expect(screen.getByText('A vos te llegan')).toBeInTheDocument();
@@ -188,8 +188,8 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   it('when nothing arrives beyond the percentage it keeps the plain sentence', () => {
     setup({ ...pct, senaPorcentaje: '50', comisionVigente: 0 }); // sin comisión: 5.000 de 10.000, sin sobrante
-    expect(screen.getByText('Te llega el 50% del precio ($5.000).')).toBeInTheDocument();
-    expect(screen.queryByText(/redondeamos la seña hacia arriba/)).toBeNull();
+    expect(screen.getByText('Te llega el 50% del turno ($5.000).')).toBeInTheDocument();
+    expect(screen.queryByText(/por el redondeo de la seña/)).toBeNull();
   });
 
   it('lists the tax retention in the detail only when there is one', () => {
@@ -200,20 +200,13 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   it('says that the deposit is rounded up only once, not in a second paragraph that repeats it', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getAllByText(/redondeamos la seña hacia arriba/)).toHaveLength(1);
+    expect(screen.getAllByText(/por el redondeo de la seña/)).toHaveLength(1);
     expect(screen.queryByText(/normalmente a múltiplos de \$500/)).toBeNull();
-  });
-
-  // Además de decir cuánto llega de más, dice PARA QUÉ se redondea, en la misma oración (no en otro párrafo).
-  it('gives the reason for the rounding in the same sentence that says how much extra arrives', () => {
-    setup({ ...pct, comisionVigente: 7.61 });
-    const frase = screen.getByText(/le resulte fácil pagar el resto al terminar el servicio/);
-    expect(frase).toHaveTextContent(/y \$234 más, porque redondeamos la seña hacia arriba/);
   });
 
   it('does not explain the rounding when nothing was added by it', () => {
     setup({ ...pct, senaPorcentaje: '50', comisionVigente: 0 });
-    expect(screen.queryByText(/fácil pagar el resto/)).toBeNull();
+    expect(screen.queryByText(/por el redondeo de la seña/)).toBeNull();
   });
 
   it('the example amount covers the cost and is rounded up like the real deposit (33% of $10.000 -> $4.000)', () => {
@@ -241,7 +234,7 @@ describe('SheetSenaYPagos — porcentaje', () => {
     setup({ ...pct, reservaOnlineActiva: false });
     expect(screen.getByText('Del precio de cada servicio, redondeada hacia arriba.')).toBeInTheDocument();
     expect(screen.queryByText('A vos te llegan')).toBeNull();
-    expect(screen.queryByText(/Ejemplo con un servicio/)).toBeNull();
+    expect(screen.queryByText(/Ejemplo con un turno/)).toBeNull();
   });
 
   it('shows the server percentage error', () => {
@@ -344,7 +337,7 @@ describe('SheetSenaYPagos — monto fijo', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
     // Cuánto llega de más y para qué se redondea: una sola oración, igual que en porcentaje y en la tarjeta del servicio.
     expect(screen.getByText(
-      `Te llegan los $5.000 completos y $${d!.llega - 5000} más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.`,
+      `Te llegan los $5.000 completos y $${d!.llega - 5000} más por el redondeo de la seña.`,
     )).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
     expect(screen.queryByText(/completos y \$/)).toBeNull();
@@ -372,7 +365,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
   it('con porcentaje, el ejemplo y sus notas viven dentro de la opción de porcentaje', () => {
     setup({ senaTipo: 'porcentaje', senaPorcentaje: '30', senaMonto: '' });
     const tarjeta = within(tarjetaDe('Un porcentaje del precio'));
-    expect(tarjeta.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
+    expect(tarjeta.getByText('Ejemplo con un turno de $10.000')).toBeInTheDocument();
     expect(tarjeta.getByText('Tus clientes dejan')).toBeInTheDocument();
     expect(tarjeta.getByText('A vos te llegan')).toBeInTheDocument();
     expect(tarjeta.getByText(EXTRA_30)).toBeInTheDocument();
@@ -404,7 +397,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     const tarjeta = within(tarjetaDe('Un monto fijo'));
     expect(tarjeta.getByText(/Listo\. Antes: \$5\.000,00/)).toBeInTheDocument();
     expect(tarjeta.getByText(/Te llegan los \$5\.000 completos y/)).toBeInTheDocument();
-    expect(tarjeta.getByText(/fácil pagar el resto al terminar el servicio/)).toBeInTheDocument();
+    expect(tarjeta.getByText(/por el redondeo de la seña/)).toBeInTheDocument();
   });
 });
 

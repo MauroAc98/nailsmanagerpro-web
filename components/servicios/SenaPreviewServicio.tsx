@@ -7,8 +7,9 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { parsearMonto } from '@/lib/parsearMonto';
 import { formatMonto, formatMontoEntero } from '@/lib/money';
 import {
-  calcularSenaPreview, pasoSenaPorcentaje, senaConfigurada, senaMinimaQueCubre, senaPorcentajeExacta,
+  calcularSenaPreview, senaConfigurada, senaMinimaQueCubre, senaPorcentajeExacta,
 } from '@/lib/senaPreview';
+import PorQueSeRedondea from './PorQueSeRedondea';
 import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
 
 interface Props {
@@ -142,7 +143,7 @@ export default function SenaPreviewServicio({ precio, onConfigurar, activa }: Pr
     ? (() => {
         const exacta = senaPorcentajeExacta(valor, user.sena_porcentaje ?? 0);
         const minimo = senaMinimaQueCubre(exacta, user);
-        return { exacta, cubrir: minimo - exacta, redondeo: p.sena - minimo, paso: pasoSenaPorcentaje(minimo) };
+        return { exacta, cubrir: minimo - exacta, redondeo: p.sena - minimo };
       })()
     : null;
 
@@ -184,16 +185,20 @@ export default function SenaPreviewServicio({ precio, onConfigurar, activa }: Pr
         )}
       </div>
 
-      <button type="button" aria-expanded={verDetalle} onClick={() => setVerDetalle(v => !v)} style={enlaceStyle}>
-        {verDetalle ? t('hideDetail') : t('showDetail')}
-      </button>
+      {/* 'Por qué se redondea' y 'Ver detalle' en la misma fila: dos botones de 44px apilados quedaban muy separados. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 20 }}>
+        {pasos && p.llega > pasos.exacta && <PorQueSeRedondea titulo={t('whyRoundingTitle')} texto={t('whyRoundingBody')} />}
+        <button type="button" aria-expanded={verDetalle} onClick={() => setVerDetalle(v => !v)} style={enlaceStyle}>
+          {verDetalle ? t('hideDetail') : t('showDetail')}
+        </button>
+      </div>
       {verDetalle && (
         <div style={{ backgroundColor: colors.surfaceSubtle, borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {porcentaje && filaDetalle(t('detailPrice'), monto(valor))}
           {pasos && filaDetalle(t('detailPercent', { pct: user.sena_porcentaje ?? 0 }), monto(pasos.exacta))}
           {pasos && pasos.cubrir > 0 && filaDetalle(t('detailCover'), `+ ${monto(pasos.cubrir)}`, { tenue: true })}
           {pasos && pasos.redondeo > 0 &&
-            filaDetalle(t('detailRounding', { paso: monto(pasos.paso) }), `+ ${monto(pasos.redondeo)}`, { tenue: true })}
+            filaDetalle(t('detailRounding'), `+ ${monto(pasos.redondeo)}`, { tenue: true })}
           {filaDetalle(t('detailPays'), monto(p.sena), { fuerte: porcentaje })}
           {filaDetalle(t('mpFee', { rate: decimal(user.comision_mp_vigente ?? 0) }), `− ${monto(p.cargo)}`, { tenue: true })}
           {hayRetencion && filaDetalle(t('taxRetention'), `− ${monto(p.retencion)}`, { tenue: true })}

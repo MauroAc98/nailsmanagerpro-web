@@ -278,6 +278,8 @@ body {
   /* e7dcde→c9b2b6: 1.15:1→1.96:1 sobre --ag-surface, igualando el ~2:1 que
      ya usa --color-border del tema base (mismo motivo que --ag-sub arriba). */
   --ag-border: #c9b2b6;
+  /* Editable controls only: stronger than --ag-border so inputs do not read as static cards. */
+  --ag-field-border: #a8959a;
   --ag-hairline: #efe6e7;
   /* Sombras de la escala Agenda (agendaShadows). Dos capas, tinte cálido: antes
      eran 0 2px 6px al 10%. Ajustar la profundidad del modo claro se hace acá. */
@@ -318,6 +320,7 @@ body {
   --ag-sub: #a99ba0;
   --ag-muted: #776b70;
   --ag-border: #352d38;
+  --ag-field-border: #352d38;
   --ag-hairline: #2a232e;
   /* Igual que antes del cambio de sombras del modo claro: en oscuro la separación
      ya la da el color de fondo/superficie. */
