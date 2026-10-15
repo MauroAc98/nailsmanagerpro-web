@@ -81,6 +81,7 @@
     "tipUse": "Pedir {sena}",
     "fixedApplied": "Pronto. Antes: {monto}",
     "fixedUndo": "Desfazer",
+    "roundingReason": "O sinal é arredondado para que seja fácil para o cliente completar o pagamento no local.",
     "fixedRoundedNote": "Você recebe o que queria ({querido}) e {extra} a mais porque o sinal é arredondado para cima.",
     "moreTitle": "Mais opções",
     "moreSubMp": "Impostos e transferência por WhatsApp",

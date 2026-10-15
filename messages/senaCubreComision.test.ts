@@ -49,6 +49,17 @@ describe('textos de la seña', () => {
     expect(JSON.stringify(es)).not.toMatch(/Subimos y redondeamos|un poco más \(|te llega completo/i);
   });
 
+  // El motivo del redondeo ("para que al cliente le resulte fácil completar el pago") es UNA sola frase, la
+  // misma en el panel de Seña y pagos y en el detalle de la tarjeta del servicio.
+  it('el motivo del redondeo es la misma frase en el panel y en la tarjeta del servicio (es y pt-BR)', async () => {
+    const pt = await loadMessages('pt-BR');
+    type Claves = { perfil: { SheetSenaYPagos: Record<string, string> }; configuracion: { SenaPreviewServicio: Record<string, string> } };
+    for (const m of [es as unknown as Claves, pt as unknown as Claves]) {
+      expect(m.perfil.SheetSenaYPagos.roundingReason).toBeTruthy();
+      expect(m.perfil.SheetSenaYPagos.roundingReason).toBe(m.configuracion.SenaPreviewServicio.detailRoundingNote);
+    }
+  });
+
   // El panel ya explica que la comisión está incluida: al guardar alcanza con el aviso corto de siempre.
   it('no hay un aviso largo especial al guardar la seña (ni en español ni en portugués)', async () => {
     const pt = await loadMessages('pt-BR');

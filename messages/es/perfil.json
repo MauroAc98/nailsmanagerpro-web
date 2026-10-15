@@ -81,6 +81,7 @@
     "tipUse": "Pedir {sena}",
     "fixedApplied": "Listo. Antes: {monto}",
     "fixedUndo": "Deshacer",
+    "roundingReason": "La seña se redondea para que al cliente le resulte fácil completar el pago en el local.",
     "fixedRoundedNote": "Te llega lo que querías ({querido}) y {extra} más porque la seña se redondea hacia arriba.",
     "moreTitle": "Más opciones",
     "moreSubMp": "Impuestos y transferencia por WhatsApp",

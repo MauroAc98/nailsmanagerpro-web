@@ -397,16 +397,22 @@ export function SheetSenaYPagos({
                 </div>
               )}
               {desgloseEjemplo && (
-                <p style={{ ...avisoStyle, margin: 0 }}>
-                  {/* Si el redondeo deja de más, se dice: si no, "te llega el 30 %" y la cifra de arriba no cierran. */}
-                  {desgloseEjemplo.llega > exactoEjemplo
-                    ? t('exampleCoversExtra', {
-                        pct: porcentajeElegido,
-                        monto: montoCorto(exactoEjemplo),
-                        extra: montoCorto(desgloseEjemplo.llega - exactoEjemplo),
-                      })
-                    : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
-                </p>
+                <>
+                  <p style={{ ...avisoStyle, margin: 0 }}>
+                    {/* Si el redondeo deja de más, se dice: si no, "te llega el 30 %" y la cifra de arriba no cierran. */}
+                    {desgloseEjemplo.llega > exactoEjemplo
+                      ? t('exampleCoversExtra', {
+                          pct: porcentajeElegido,
+                          monto: montoCorto(exactoEjemplo),
+                          extra: montoCorto(desgloseEjemplo.llega - exactoEjemplo),
+                        })
+                      : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
+                  </p>
+                  {/* Para qué se redondea: la misma frase que el detalle de la tarjeta del servicio. */}
+                  {desgloseEjemplo.llega > exactoEjemplo && (
+                    <p style={{ ...avisoStyle, margin: 0 }}>{t('roundingReason')}</p>
+                  )}
+                </>
               )}
             </>
           ) : (

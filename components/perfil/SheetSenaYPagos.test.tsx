@@ -204,6 +204,20 @@ describe('SheetSenaYPagos — porcentaje', () => {
     expect(screen.queryByText(/normalmente a múltiplos de \$500/)).toBeNull();
   });
 
+  // Además de decir que llega de más por el redondeo, explica PARA QUÉ se redondea: es la misma frase
+  // que usa el detalle de la tarjeta del servicio (una sola explicación en las dos pantallas).
+  it('explains why it is rounded, with the same sentence as the service card detail', () => {
+    setup({ ...pct, comisionVigente: 7.61 });
+    expect(screen.getByText(
+      'La seña se redondea para que al cliente le resulte fácil completar el pago en el local.',
+    )).toBeInTheDocument();
+  });
+
+  it('does not explain the rounding when nothing was added by it', () => {
+    setup({ ...pct, senaPorcentaje: '50', comisionVigente: 0 });
+    expect(screen.queryByText(/le resulte fácil completar el pago/)).toBeNull();
+  });
+
   it('the example amount covers the cost and is rounded up like the real deposit (33% of $10.000 -> $4.000)', () => {
     setup({ ...pct, senaPorcentaje: '33', comisionVigente: 7.61 });
     const d = desgloseSena(4000, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 }); // 3.300 / 0,9239 = 3.572
