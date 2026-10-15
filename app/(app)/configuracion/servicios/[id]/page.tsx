@@ -193,7 +193,7 @@ export default function EditarServicioPage() {
   // Atajo a Perfil > Seña y pagos: se guarda lo cargado para recuperarlo al volver.
   const irAConfigurarSena = () => {
     guardarBorradorActual();
-    router.push('/perfil?sheet=senaYPagos');
+    router.push('/perfil?sheet=senaYPagos&volver=1');
   };
 
   const handleGuardar = async () => {

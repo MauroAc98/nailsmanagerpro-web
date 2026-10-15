@@ -343,11 +343,16 @@ export default function PerfilPage() {
   // servicio): abre la hoja de Seña y pagos una sola vez y limpia el param, así
   // un refresh no la reabre. Se lee de window.location (no useSearchParams) para
   // no exigir un Suspense en toda la pantalla.
+  // Con `volver=1` el atajo viene de otra pantalla (editar servicio, Reservas online):
+  // al cerrar el panel se vuelve a ella, en vez de dejar a la persona en Perfil.
   const abrioPorEnlace = useRef(false);
+  const volverAlCerrar = useRef(false);
   useEffect(() => {
     if (!user || abrioPorEnlace.current) return;
-    if (new URLSearchParams(window.location.search).get('sheet') !== 'senaYPagos') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('sheet') !== 'senaYPagos') return;
     abrioPorEnlace.current = true;
+    volverAlCerrar.current = params.get('volver') === '1';
     // Abre la hoja una sola vez al llegar por el enlace: sincroniza con la URL.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     abrirSheet('senaYPagos');
@@ -373,6 +378,10 @@ export default function PerfilPage() {
       setSheetActivo(null);
       setPassword('');
       setPasswordConfirmation('');
+      if (volverAlCerrar.current) {
+        volverAlCerrar.current = false;
+        router.back();
+      }
     }
   };
 

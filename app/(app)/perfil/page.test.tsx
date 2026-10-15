@@ -393,3 +393,51 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     expect(screen.getByText('Activa')).toBeInTheDocument();
   });
 });
+
+// Atajo "Cambiar" desde otra pantalla (editar/nuevo servicio, Reservas online): llega con
+// ?sheet=senaYPagos&volver=1 y, al cerrar el panel, devuelve a la pantalla de origen.
+describe('PerfilPage — atajo a Seña y pagos desde otra pantalla', () => {
+  afterEach(() => {
+    window.history.pushState({}, '', '/');
+    routerMock.back.mockClear();
+    routerMock.replace.mockClear();
+  });
+
+  const abrirPorEnlace = (search: string) => {
+    window.history.pushState({}, '', `/perfil${search}`);
+    mockUseAuth({ user: { ...BASE_USER, sena_monto: 5000 } });
+    renderWithProviders(<PerfilPage />);
+  };
+
+  it('con volver=1 abre el panel y, al cerrarlo, vuelve a la pantalla de origen', () => {
+    abrirPorEnlace('?sheet=senaYPagos&volver=1');
+    expect(screen.getByRole('radio', { name: 'Un monto fijo' })).toBeInTheDocument();
+    expect(routerMock.replace).toHaveBeenCalledWith('/perfil');
+    expect(routerMock.back).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(routerMock.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('vuelve una sola vez: reabrir el panel desde el menú y cerrarlo ya no navega', () => {
+    abrirPorEnlace('?sheet=senaYPagos&volver=1');
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(routerMock.back).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(routerMock.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin volver=1 el panel abre igual pero al cerrarlo se queda en Perfil', () => {
+    abrirPorEnlace('?sheet=senaYPagos');
+    expect(screen.getByRole('radio', { name: 'Un monto fijo' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(routerMock.back).not.toHaveBeenCalled();
+  });
+
+  it('abierto desde el menú de Perfil no navega al cerrarlo', () => {
+    abrirPorEnlace('');
+    fireEvent.click(screen.getByRole('button', { name: 'Seña y pagos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(routerMock.back).not.toHaveBeenCalled();
+  });
+});
