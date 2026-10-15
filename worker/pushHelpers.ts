@@ -12,6 +12,8 @@ export interface PayloadPush {
   url: string;
   tag?: string;
   timestamp?: number;
+  // Actualización silenciosa: reemplaza la notificación con el mismo tag sin volver a avisar.
+  silencioso: boolean;
 }
 
 const texto = (v: unknown): string | undefined =>
@@ -33,7 +35,25 @@ export function parsearPayloadPush(data: { json: () => unknown } | null | undefi
     url: texto(o.url) ?? URL_POR_DEFECTO,
     tag: texto(o.tag),
     timestamp: typeof o.timestamp === 'number' && Number.isFinite(o.timestamp) ? o.timestamp : undefined,
+    silencioso: o.silencioso === true,
   };
+}
+
+// Opciones de showNotification. Con tag + renotify:false, reemplazar una notificación
+// existente es silencioso; la primera (nada que reemplazar) sí avisa. Por eso NO se usa
+// `silent: true`, que mutearía también la primera.
+export function opcionesNotificacion(p: PayloadPush, icono: string) {
+  const opciones: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
+    body: p.body,
+    icon: icono,
+    // No hay ícono monocromo en public/: se reusa el de la app.
+    badge: icono,
+    data: { url: p.url },
+    renotify: Boolean(p.tag) && !p.silencioso,
+  };
+  if (p.tag) opciones.tag = p.tag;
+  if (p.timestamp) opciones.timestamp = p.timestamp;
+  return opciones;
 }
 
 // Resuelve `url` contra el origen del SW y solo deja pasar el mismo origen;
