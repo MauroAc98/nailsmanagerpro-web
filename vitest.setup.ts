@@ -24,6 +24,12 @@ if (typeof Element !== 'undefined') {
   };
 }
 
+// jsdom ships no `scrollIntoView`. Screens that scroll a block into view after a state change
+// (Nuevo turno) would throw an unhandled error in tests without this no-op.
+if (typeof Element !== 'undefined' && typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = () => undefined;
+}
+
 // jsdom ships no `matchMedia`. Several components (theme, responsive helpers)
 // read it at mount; without this polyfill they throw before any assertion.
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
