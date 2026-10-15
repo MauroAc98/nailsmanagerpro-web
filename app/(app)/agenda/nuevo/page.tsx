@@ -30,6 +30,7 @@ import { slotService, type Slot } from '@/services/slotService';
 import { ClienteSelector } from '@/components/agenda/ClienteSelector';
 import { ResumenTurnoPlegado } from '@/components/agenda/ResumenTurnoPlegado';
 import { BloqueTurnoAbierto } from '@/components/agenda/BloqueTurnoAbierto';
+import { opcionesHora, duracionLegible, aMinutos, deMinutos, type TramoOcupado } from '@/lib/sugerenciasHora';
 import { ElegirFechaBloqueSheet, type ElegirFechaBloqueHandle } from '@/components/agenda/ElegirFechaBloqueSheet';
 import { alertDialog, confirmDialog } from '@/store/useConfirmStore';
 import { showToast } from '@/store/useToastStore';
@@ -119,6 +120,15 @@ function NuevoTurnoContent() {
   const [horaSeleccionada, setHoraSeleccionada] = useState<Record<string, string>>({ hora: initialH, minuto: '00' });
   const [tempHora,         setTempHora]         = useState<Record<string, string>>({ hora: initialH, minuto: '00' });
 
+  // Los turnos del store son de un solo día: al cambiar el día de un turno del alta,
+  // se piden los de ese día (el del mount ya lo pide el efecto de abajo).
+  const ultimaFechaPedida = useRef(fecha);
+  useEffect(() => {
+    if (ultimaFechaPedida.current === fecha) return;
+    ultimaFechaPedida.current = fecha;
+    fetchTurnos(fecha);
+  }, [fecha]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (servicios.length === 0) fetchServicios();
     if (slots.length === 0) fetchSlots();
@@ -145,6 +155,17 @@ function NuevoTurnoContent() {
       fetchSlots(selectedProfesionalId);
     }
   }, [mostrarSelectorProfesional, selectedProfesionalId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // La dueña (jefa) viene preseleccionada; una sola vez, para no pisar una
+  // elección posterior ni volver a ponerla tras deseleccionar.
+  const jefaPreseleccionada = useRef(false);
+  useEffect(() => {
+    if (jefaPreseleccionada.current || !mostrarSelectorProfesional) return;
+    jefaPreseleccionada.current = true;
+    const jefa = profesionalJefa(activeProfesionales);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (jefa) setSelectedProfesionalId(prev => prev ?? jefa.id);
+  }, [mostrarSelectorProfesional]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSeleccionarProfesional = (id: number) => {
     setSelectedProfesionalId(prev => prev === id ? null : id);
@@ -249,10 +270,69 @@ function NuevoTurnoContent() {
   // Todos los bloques con el abierto al día.
   const bloquesAlDia = (): BloqueTurno[] => bloques.map((b, i) => (i === activo ? bloqueEnCurso() : b));
 
+  // Sugerencias de hora: inicios libres para la duración de lo elegido, según los slots
+  // cargados, los turnos del día (de la profesional elegida) y los otros turnos que se
+  // están agendando en este mismo alta. El selector de hora sigue siendo libre.
+  const duracionElegida = servicios
+    .filter(s => selectedServicioIds.includes(s.id))
+    .reduce((sum, s) => sum + s.duracion_minutos, 0);
+  const mismaProfesional = (id: number | null | undefined) =>
+    !mostrarSelectorProfesional || !selectedProfesionalId || id === selectedProfesionalId;
+  const ocupadosDelDia: TramoOcupado[] = [
+    ...turnos
+      .filter(tu => tu.estado === 'confirmado' && tu.fecha_hora.slice(0, 10) === fecha && mismaProfesional(tu.profesional_id))
+      .map(tu => {
+        const inicio = aMinutos(tu.fecha_hora.slice(11, 16));
+        return { inicio, fin: inicio + tu.duracion_total_minutos };
+      }),
+    ...bloques
+      .filter((b, i) => i !== activo && b.fecha === fecha && mismaProfesional(b.profesionalId))
+      .map(b => {
+        const inicio = aMinutos(b.hora);
+        const dur = servicios.filter(s => b.servicioIds.includes(s.id)).reduce((sum, s) => sum + s.duracion_minutos, 0);
+        return { inicio, fin: inicio + dur };
+      }),
+  ];
+  const ahora = new Date();
+  const opcionesDeHora = slotsDesactualizados ? [] : opcionesHora({
+    slots,
+    ocupados: ocupadosDelDia,
+    duracionMinutos: duracionElegida,
+    desdeMinutos: fecha === today ? ahora.getHours() * 60 + ahora.getMinutes() : 0,
+  });
+  const primeraLibre = opcionesDeHora.find(o => o.libre)?.hora ?? null;
+  const horaActual = `${horaSeleccionada.hora}:${horaSeleccionada.minuto}`;
+
+  // Arranca con el primer horario libre elegido, mientras no haya elegido a mano: al
+  // cambiar servicios, día o profesional se re-calcula; tocar la grilla o la rueda lo fija.
+  const horaElegidaAMano = useRef(false);
+  useEffect(() => {
+    if (horaElegidaAMano.current || !primeraLibre || primeraLibre === horaActual) return;
+    const [hora, minuto] = primeraLibre.split(':');
+    setHoraSeleccionada({ hora, minuto });
+  }, [primeraLibre, horaActual]);
+  const elegirHora = (hora: string) => {
+    horaElegidaAMano.current = true;
+    const [h, m] = hora.split(':');
+    setHoraSeleccionada({ hora: h, minuto: m });
+  };
+
+  // Al empezar o reabrir un turno del alta, el foco sube al inicio de ese turno
+  // (el botón "Agregar otro turno" queda abajo y el nuevo arranca arriba).
+  const bloqueAbiertoRef = useRef<HTMLDivElement>(null);
+  const activoAnterior = useRef(activo);
+  useEffect(() => {
+    if (activoAnterior.current === activo) return;
+    activoAnterior.current = activo;
+    bloqueAbiertoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [activo]);
+
   const cargarBloque = (b: BloqueTurno) => {
     const [hora, minuto] = b.hora.split(':');
     setFecha(b.fecha);
     setHoraSeleccionada({ hora, minuto });
+    // Un turno ya cargado conserva su hora; uno nuevo arranca en el primer horario libre.
+    horaElegidaAMano.current = b.servicioIds.length > 0;
     setSelectedServicioIds(b.servicioIds);
     setSelectedProfesionalId(b.profesionalId);
     setComboDetalle(null);
@@ -561,6 +641,7 @@ function NuevoTurnoContent() {
           />
         ))}
 
+        <div ref={bloqueAbiertoRef} style={{ scrollMarginTop: 12 }}>
         <BloqueTurnoAbierto
           lote={enLote}
           numero={activo + 1}
@@ -663,13 +744,69 @@ function NuevoTurnoContent() {
 
         {/* ─── HORA DEL TURNO ─── */}
         <p style={sectionLabelStyle}>{t('appointmentTime')}</p>
-        <div
-          onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
-          style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer', marginBottom: enLote ? 0 : mostrarAgregar ? 14 : 32 }}
-        >
-          {formatHora12(`${horaSeleccionada.hora}:${horaSeleccionada.minuto}`)}
+        <div style={{ marginBottom: enLote ? 0 : 4 }}>
+          {opcionesDeHora.length === 0 && (
+            <div
+              onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
+              style={{ ...inputStyle, fontFamily: agendaFontSerif, fontSize: 18, cursor: 'pointer' }}
+            >
+              {formatHora12(horaActual)}
+            </div>
+          )}
+          {opcionesDeHora.length > 0 && (
+            <>
+              <p style={{ fontSize: 12.5, color: colors.subtext, margin: '0 2px 8px' }}>{t('suggestedTimes')}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                {opcionesDeHora.map(o => {
+                  const activa = o.hora === horaActual;
+                  const [numero, ...sufijo] = horaCorta12(o.hora).split(' ');
+                  return (
+                    <button
+                      key={o.hora}
+                      type="button"
+                      disabled={!o.libre}
+                      aria-pressed={activa}
+                      onClick={() => elegirHora(o.hora)}
+                      style={{
+                        height: 44, borderRadius: 11, fontFamily: 'inherit', lineHeight: 1.1,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        cursor: o.libre ? 'pointer' : 'default',
+                        border: `1px ${o.libre ? 'solid' : 'dashed'} ${activa ? colors.primarySolid : colors.border}`,
+                        backgroundColor: activa ? colors.primarySolid : o.libre ? colors.surfaceSubtle : 'transparent',
+                        color: activa ? colors.primaryFg : o.libre ? colors.text : colors.muted,
+                        opacity: o.libre ? 1 : 0.7,
+                        textDecoration: o.libre ? 'none' : 'line-through',
+                      }}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{numero}</span>
+                      <span style={{ fontSize: 9.5, fontWeight: 600 }}>{sufijo.join(' ')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: 12.5, color: colors.subtext, textAlign: 'center', margin: '10px 0 0' }}>
+                {t('durationRange', {
+                  duracion: duracionLegible(duracionElegida),
+                  desde: horaCorta12(horaActual),
+                  hasta: horaCorta12(deMinutos(aMinutos(horaActual) + duracionElegida)),
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={() => { setTempHora(horaSeleccionada); setShowHoraPicker(true); }}
+                style={{
+                  display: 'block', margin: '8px auto 0', background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.primaryDeep,
+                  textDecoration: 'underline', padding: '6px 10px',
+                }}
+              >
+                {t('otherTime')}
+              </button>
+            </>
+          )}
         </div>
         </BloqueTurnoAbierto>
+        </div>
 
         {/* ─── Turnos ya cargados (plegados), después del abierto ─── */}
         {bloques.slice(activo + 1).map((b, k) => {
@@ -685,6 +822,9 @@ function NuevoTurnoContent() {
             />
           );
         })}
+
+        {/* ─── Acciones: separadas del cuerpo del formulario ─── */}
+        <div style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${colors.border}` }}>
 
         {/* ─── Agregar otro turno (misma persona). Sin combos: el backend los rechaza en lote. ─── */}
         {mostrarAgregar && (
@@ -718,6 +858,7 @@ function NuevoTurnoContent() {
         >
           {slotsDesactualizados ? <Spinner size={18} variante="sobreOscuro" label={t('loadingSchedule')} /> : saving ? t('saving') : enLote ? t('confirmMany', { count: bloques.length }) : t('confirmAppointment')}
         </button>
+        </div>
       </div>
       )}
 
@@ -747,7 +888,7 @@ function NuevoTurnoContent() {
               onChange={setTempHora}
             />
             <button
-              onClick={() => { setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
+              onClick={() => { horaElegidaAMano.current = true; setHoraSeleccionada(tempHora); setShowHoraPicker(false); }}
               style={{
                 marginTop: 24, width: '100%', height: 52, borderRadius: 14,
                 backgroundColor: colors.primarySolid, color: colors.primaryFg,
