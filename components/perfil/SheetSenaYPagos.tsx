@@ -397,22 +397,18 @@ export function SheetSenaYPagos({
                 </div>
               )}
               {desgloseEjemplo && (
-                <>
-                  <p style={{ ...avisoStyle, margin: 0 }}>
-                    {/* Si el redondeo deja de más, se dice: si no, "te llega el 30 %" y la cifra de arriba no cierran. */}
-                    {desgloseEjemplo.llega > exactoEjemplo
-                      ? t('exampleCoversExtra', {
-                          pct: porcentajeElegido,
-                          monto: montoCorto(exactoEjemplo),
-                          extra: montoCorto(desgloseEjemplo.llega - exactoEjemplo),
-                        })
-                      : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
-                  </p>
-                  {/* Para qué se redondea: la misma frase que el detalle de la tarjeta del servicio. */}
-                  {desgloseEjemplo.llega > exactoEjemplo && (
-                    <p style={{ ...avisoStyle, margin: 0 }}>{t('roundingReason')}</p>
-                  )}
-                </>
+                <p style={{ ...avisoStyle, margin: 0 }}>
+                  {/* Si el redondeo deja de más, se dice cuánto y para qué, en el mismo párrafo: si no, "te llega
+                      el 30 %" y la cifra de arriba no cierran. El motivo es la misma frase que el detalle de la
+                      tarjeta del servicio. */}
+                  {desgloseEjemplo.llega > exactoEjemplo
+                    ? `${t('exampleCoversExtra', {
+                        pct: porcentajeElegido,
+                        monto: montoCorto(exactoEjemplo),
+                        extra: montoCorto(desgloseEjemplo.llega - exactoEjemplo),
+                      })} ${t('roundingReason')}`
+                    : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
+                </p>
               )}
             </>
           ) : (
@@ -482,16 +478,14 @@ export function SheetSenaYPagos({
               </p>
               {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
               {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
-                <>
-                  <p style={{ ...avisoStyle, margin: 0 }}>
-                    {t('fixedRoundedNote', {
-                      querido: montoCorto(parsearMonto(aplicado.anterior) ?? 0),
-                      extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
-                    })}
-                  </p>
-                  {/* Para qué se redondea: la misma frase que en porcentaje y en la tarjeta del servicio. */}
-                  <p style={{ ...avisoStyle, margin: 0 }}>{t('roundingReason')}</p>
-                </>
+                <p style={{ ...avisoStyle, margin: 0 }}>
+                  {/* Cuánto llega de más y para qué se redondea, en el mismo párrafo (misma frase que en porcentaje). */}
+                  {t('fixedRoundedNote', {
+                    querido: montoCorto(parsearMonto(aplicado.anterior) ?? 0),
+                    extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
+                  })}{' '}
+                  {t('roundingReason')}
+                </p>
               )}
             </>
           )}

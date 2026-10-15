@@ -45,6 +45,9 @@ function setup(overrides: Partial<Props> = {}) {
 }
 
 const dinero = (n: number) => `$${formatMonto(n)}`;
+// El motivo del redondeo continúa el mismo párrafo que dice cuánto llega de más (no es otro párrafo).
+const MOTIVO = 'La seña se redondea para que al cliente le resulte fácil completar el pago en el local.';
+const EXTRA_30 = 'Te llega el 30% del precio ($3.000) y $234 más porque la seña se redondea hacia arriba.';
 const montoInput = () => screen.getByRole('textbox', { name: 'Monto de la seña' });
 const opcion = (nombre: string) => screen.getByRole('radio', { name: nombre });
 const abrirMasOpciones = () => fireEvent.click(screen.getByRole('button', { name: /^Más opciones/ }));
@@ -181,9 +184,7 @@ describe('SheetSenaYPagos — porcentaje', () => {
   it('the example says that what arrives covers the whole percentage and the extra that the rounding adds', () => {
     setup({ ...pct, comisionVigente: 7.61 });
     // seña 3.500, comisión 266, llegan 3.234: 234 más que el 30% exacto ($3.000)
-    expect(screen.getByText(
-      'Te llega el 30% del precio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
-    )).toBeInTheDocument();
+    expect(screen.getByText(`${EXTRA_30} ${MOTIVO}`)).toBeInTheDocument();
   });
 
   it('when nothing arrives beyond the percentage it keeps the plain sentence', () => {
@@ -206,11 +207,12 @@ describe('SheetSenaYPagos — porcentaje', () => {
 
   // Además de decir que llega de más por el redondeo, explica PARA QUÉ se redondea: es la misma frase
   // que usa el detalle de la tarjeta del servicio (una sola explicación en las dos pantallas).
-  it('explains why it is rounded, with the same sentence as the service card detail', () => {
+  it('explains why it is rounded, with the same sentence as the service card detail, in the same paragraph', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(
-      'La seña se redondea para que al cliente le resulte fácil completar el pago en el local.',
-    )).toBeInTheDocument();
+    const motivo = screen.getByText(/le resulte fácil completar el pago/);
+    expect(motivo).toHaveTextContent(MOTIVO);
+    // No es otro párrafo: continúa el que dice cuánto llega de más.
+    expect(motivo).toBe(screen.getByText(/porque la seña se redondea hacia arriba/));
   });
 
   it('does not explain the rounding when nothing was added by it', () => {
@@ -344,12 +346,10 @@ describe('SheetSenaYPagos — monto fijo', () => {
     const d = desgloseSena(5500, { comision_mp_vigente: 7.61, retencion_iibb_porcentaje: 0 });
     expect(screen.queryByText(/lo que querías/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Pedir/ }));
+    // Y para qué se redondea: la misma frase que en porcentaje y que en el detalle de la tarjeta del servicio,
+    // continuando el mismo párrafo.
     expect(screen.getByText(
-      `Te llega lo que querías ($5.000) y $${d!.llega - 5000} más porque la seña se redondea hacia arriba.`,
-    )).toBeInTheDocument();
-    // Y para qué se redondea: la misma frase que en porcentaje y que en el detalle de la tarjeta del servicio.
-    expect(screen.getByText(
-      'La seña se redondea para que al cliente le resulte fácil completar el pago en el local.',
+      `Te llega lo que querías ($5.000) y $${d!.llega - 5000} más porque la seña se redondea hacia arriba. ${MOTIVO}`,
     )).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Deshacer' }));
     expect(screen.queryByText(/lo que querías/)).toBeNull();
@@ -380,10 +380,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     expect(tarjeta.getByText('Ejemplo con un servicio de $10.000')).toBeInTheDocument();
     expect(tarjeta.getByText('Tus clientes dejan')).toBeInTheDocument();
     expect(tarjeta.getByText('A vos te llegan')).toBeInTheDocument();
-    expect(tarjeta.getByText(
-      'Te llega el 30% del precio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
-    )).toBeInTheDocument();
-    expect(tarjeta.getByText(/porque la seña se redondea hacia arriba/)).toBeInTheDocument();
+    expect(tarjeta.getByText(`${EXTRA_30} ${MOTIVO}`)).toBeInTheDocument();
     expect(within(tarjetaDe('Un monto fijo')).queryByText('Tus clientes dejan')).toBeNull();
   });
 
