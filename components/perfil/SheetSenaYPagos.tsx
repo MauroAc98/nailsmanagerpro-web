@@ -408,7 +408,6 @@ export function SheetSenaYPagos({
                     : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
                 </p>
               )}
-              <p style={{ ...avisoStyle, margin: 0 }}>{t('percentRounding')}</p>
             </>
           ) : (
             <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>

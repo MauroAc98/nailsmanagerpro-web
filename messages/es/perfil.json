@@ -65,7 +65,6 @@
     "modeFixedDesc": "El mismo monto en todos los turnos.",
     "modeFixedDescMp": "El mismo monto en todos los turnos. La comisión sale de ese monto.",
     "percentOfPrice": "Del precio de cada servicio, redondeada hacia arriba.",
-    "percentRounding": "La seña se redondea hacia arriba, normalmente a múltiplos de $500: así al cliente le resulta fácil completar el pago en el local.",
     "exampleLabel": "Ejemplo con un servicio de $10.000",
     "exampleClientLeaves": "Tus clientes dejan",
     "exampleMpKeeps": "Mercado Pago se queda",

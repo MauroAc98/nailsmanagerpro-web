@@ -198,11 +198,10 @@ describe('SheetSenaYPagos — porcentaje', () => {
     expect(screen.queryByText('Retención de impuestos')).toBeNull();
   });
 
-  it('explains why the percentage is rounded, once and apart from any price suggestion', () => {
+  it('says that the deposit is rounded up only once, not in a second paragraph that repeats it', () => {
     setup({ ...pct, comisionVigente: 7.61 });
-    expect(screen.getByText(
-      'La seña se redondea hacia arriba, normalmente a múltiplos de $500: así al cliente le resulta fácil completar el pago en el local.',
-    )).toBeInTheDocument();
+    expect(screen.getAllByText(/se redondea hacia arriba/)).toHaveLength(1);
+    expect(screen.queryByText(/normalmente a múltiplos de \$500/)).toBeNull();
   });
 
   it('the example amount covers the cost and is rounded up like the real deposit (33% of $10.000 -> $4.000)', () => {
@@ -365,7 +364,7 @@ describe('SheetSenaYPagos — dónde se muestra el resultado', () => {
     expect(tarjeta.getByText(
       'Te llega el 30% del precio ($3.000) y $234 más porque la seña se redondea hacia arriba.',
     )).toBeInTheDocument();
-    expect(tarjeta.getByText(/La seña se redondea hacia arriba/)).toBeInTheDocument();
+    expect(tarjeta.getByText(/porque la seña se redondea hacia arriba/)).toBeInTheDocument();
     expect(within(tarjetaDe('Un monto fijo')).queryByText('Tus clientes dejan')).toBeNull();
   });
 
