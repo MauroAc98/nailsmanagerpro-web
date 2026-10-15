@@ -9,6 +9,7 @@ import { parsearMonto } from '@/lib/parsearMonto';
 import { formatMonto, formatMontoEntero } from '@/lib/money';
 import { calcularSena, desgloseSena, senaFijaSugerida } from '@/lib/senaPreview';
 import { SheetInput } from './SheetInput';
+import PorQueSeRedondea from '@/components/servicios/PorQueSeRedondea';
 import type { SenaCampo, SenaModo } from '@/lib/senaConfig';
 
 const PORCENTAJES_PREDEFINIDOS = [20, 30, 50, 100];
@@ -95,12 +96,13 @@ const calculadoraEnOpcionStyle = {
 const dejanStyle = { ...montoStyle, fontSize: 20, fontWeight: 700, color: colors.text, fontVariantNumeric: 'tabular-nums' } as const;
 const llegaStyle = { ...montoStyle, fontSize: 20, fontWeight: 700, color: colors.success, fontVariantNumeric: 'tabular-nums' } as const;
 const consejoStyle = {
-  backgroundColor: colors.amberBg, color: colors.amberFg, borderRadius: 14, padding: 14, marginBottom: 16,
-  display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13.5, lineHeight: 1.4,
+  backgroundColor: colors.surface, color: colors.text, borderRadius: 14, padding: 14, marginBottom: 16,
+  border: `1px solid ${colors.primarySolid}`, fontWeight: 600,
+  display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14, lineHeight: 1.4,
 } as const;
 const consejoBotonStyle = {
   width: '100%', minHeight: 44, borderRadius: 12, cursor: 'pointer', padding: '8px 16px',
-  backgroundColor: 'transparent', border: `1px solid ${colors.amberFg}`, color: colors.amberFg,
+  backgroundColor: colors.primarySolid, border: 'none', color: '#fff',
   fontSize: 14, fontWeight: 700,
 } as const;
 const filaDivisoriaStyle = {
@@ -409,6 +411,9 @@ export function SheetSenaYPagos({
                     : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
                 </p>
               )}
+              {desgloseEjemplo && desgloseEjemplo.llega > exactoEjemplo && (
+                <PorQueSeRedondea titulo={t('whyRoundingTitle')} texto={t('whyRoundingBody')} />
+              )}
             </>
           ) : (
             <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>
@@ -484,6 +489,9 @@ export function SheetSenaYPagos({
                     extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
                   })}
                 </p>
+              )}
+              {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
+                <PorQueSeRedondea titulo={t('whyRoundingTitle')} texto={t('whyRoundingBodyFixed')} />
               )}
             </>
           )}

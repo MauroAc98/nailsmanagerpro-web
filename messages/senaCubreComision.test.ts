@@ -28,15 +28,12 @@ describe('textos de la seña', () => {
     expect(conSugerencia).toEqual([]);
   });
 
-  // Lo que llega de más por el redondeo, y para qué se redondea, es UNA sola oración: la misma en el panel (porcentaje
-  // y monto fijo) y en la tarjeta del servicio. El detalle de la tarjeta no la repite con otra nota.
-  it('el extra del redondeo y su motivo se dicen con una sola frase en las tres pantallas (es y pt-BR)', async () => {
+  // Lo que llega de más por el redondeo se dice con una frase corta, la misma en el panel (porcentaje y monto fijo) y en la
+  // tarjeta del servicio: sin explicar la regla interna del redondeo. El detalle de la tarjeta no la repite con otra nota.
+  it('el extra del redondeo se dice con una frase corta y sin la regla interna en las tres pantallas (es y pt-BR)', async () => {
     const pt = await loadMessages('pt-BR');
     type Claves = { perfil: { SheetSenaYPagos: Record<string, string> }; configuracion: { SenaPreviewServicio: Record<string, string> } };
-    const motivos = {
-      es: 'porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
-      'pt-BR': 'porque arredondamos o sinal para cima para que seja fácil para o cliente pagar o restante ao terminar o serviço.',
-    };
+    const marcas = { es: 'por el redondeo', 'pt-BR': 'pelo arredondamento' };
     for (const [idioma, m] of [['es', es as unknown as Claves], ['pt-BR', pt as unknown as Claves]] as const) {
       const textosExtra = [
         m.perfil.SheetSenaYPagos.exampleCoversExtra,
@@ -44,8 +41,8 @@ describe('textos de la seña', () => {
         m.configuracion.SenaPreviewServicio.coveredNoteExtra,
       ];
       for (const t of textosExtra) {
-        expect(t, idioma).toMatch(/\{extra\} [^,]+, /);
-        expect(t, idioma).toContain(motivos[idioma]);
+        expect(t, idioma).toContain(marcas[idioma]);
+        expect(t, idioma).not.toMatch(/hacia arriba|para cima|fácil/);
       }
       expect(m.perfil.SheetSenaYPagos, idioma).not.toHaveProperty('roundingReason');
       expect(m.configuracion.SenaPreviewServicio, idioma).not.toHaveProperty('detailRoundingNote');

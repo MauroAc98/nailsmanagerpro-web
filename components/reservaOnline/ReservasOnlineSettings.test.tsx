@@ -62,7 +62,7 @@ describe('ReservasOnlineSettings', () => {
   it('muestra la seña actual en porcentaje', () => {
     setUser({ sena_tipo: 'porcentaje', sena_porcentaje: 30, sena_monto: null });
     montar();
-    expect(screen.getByText('Seña actual: 30% del precio, más la comisión de Mercado Pago')).toBeInTheDocument();
+    expect(screen.getByText('Seña actual: 30% del precio. Incluye la comisión de Mercado Pago.')).toBeInTheDocument();
   });
 
   it('con la seña sin configurar lo dice y ofrece configurarla', async () => {
