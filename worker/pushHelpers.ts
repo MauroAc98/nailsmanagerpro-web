@@ -42,12 +42,13 @@ export function parsearPayloadPush(data: { json: () => unknown } | null | undefi
 // Opciones de showNotification. Con tag + renotify:false, reemplazar una notificación
 // existente es silencioso; la primera (nada que reemplazar) sí avisa. Por eso NO se usa
 // `silent: true`, que mutearía también la primera.
-export function opcionesNotificacion(p: PayloadPush, icono: string) {
+export function opcionesNotificacion(p: PayloadPush, icono: string, badge: string = icono) {
   const opciones: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
     body: p.body,
     icon: icono,
-    // No hay ícono monocromo en public/: se reusa el de la app.
-    badge: icono,
+    // Android dibuja el badge solo con el canal alfa: con el logo de fondo blanco se ve un cuadrado liso.
+    // Se pasa una silueta blanca sobre fondo transparente (public/badge-96.png); sin ella cae al ícono.
+    badge,
     data: { url: p.url },
     renotify: Boolean(p.tag) && !p.silencioso,
   };
