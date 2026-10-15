@@ -167,8 +167,15 @@ describe('senaFijaSugerida', () => {
   it('un monto chico no salta a otro enorme (1000 -> 1100, no 1500)', () => {
     expect(senaFijaSugerida(1000, { comision_mp_vigente: 7.61 })).toBe(1100);
   });
+  it('un monto muy chico baja a un paso de 10 en vez de duplicarse (100 -> 110, no 200)', () => {
+    // 100 / (1 - 0.0761) = 108,2 -> 109: con paso 500 daría 500 y con paso 100 daría 200.
+    expect(senaFijaSugerida(100, { comision_mp_vigente: 7.61 })).toBe(110);
+    expect(senaFijaSugerida(200, { comision_mp_vigente: 7.61 })).toBe(220);
+    expect(senaFijaSugerida(300, { comision_mp_vigente: 7.61 })).toBe(330);
+    expect(senaFijaSugerida(500, { comision_mp_vigente: 7.61 })).toBe(550);
+  });
   it('SIEMPRE cubre y nunca suma más de 10% sobre el mínimo', () => {
-    for (const monto of [1000, 1500, 2000, 3000, 4500, 5000, 7500, 10000, 15000, 25000, 40000]) {
+    for (const monto of [100, 200, 300, 500, 1000, 1500, 2000, 3000, 4500, 5000, 7500, 10000, 15000, 25000, 40000]) {
       const sug = senaFijaSugerida(monto, { comision_mp_vigente: 7.61 })!;
       const minimo = Math.ceil(monto / (1 - 0.0761) - 1e-9);
       expect(sug * (1 - 0.0761), String(monto)).toBeGreaterThanOrEqual(monto - 1e-6);

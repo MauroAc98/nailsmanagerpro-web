@@ -125,17 +125,21 @@ export function desgloseSena(sena: number, c: SenaPreviewConfig): DesgloseSena |
 // Seña fija más alta que, descontados comisión de MP (con IVA) y retención, deja al
 // menos `monto` neto. Siempre redondea HACIA ARRIBA a un múltiplo de 500 (billetes
 // redondos para completar en el local); si eso suma más de un 10% sobre el mínimo
-// (montos chicos: 1000 -> 1500) usa un paso de 100. Sin costo que cubrir (t = 0) queda como está.
+// (montos chicos: 1000 -> 1500) prueba un paso de 100 y, si tampoco entra, uno de 10 (100 -> 110,
+// no 200). Sin costo que cubrir (t = 0) queda como está.
 const TOPE_SUBA_SENA_FIJA = 0.1;
-const PASO_SENA_FIJA = 500;
+const PASOS_SENA_FIJA = [500, 100, 10];
 
 export function senaFijaSugerida(monto: number, c: SenaPreviewConfig): number | null {
   const comision = c.comision_mp_vigente;
   if (!(monto > 0) || typeof comision !== 'number' || !Number.isFinite(comision)) return null;
   if (tasaCosto(c) === 0) return monto;
   const minimo = Math.ceil(monto / (1 - tasaCosto(c) / 100) - 1e-9);
-  const redonda = techoAMultiplo(minimo, PASO_SENA_FIJA);
-  return redonda - minimo <= minimo * TOPE_SUBA_SENA_FIJA + 1e-9 ? redonda : techoAMultiplo(minimo, 100);
+  for (const paso of PASOS_SENA_FIJA) {
+    const redonda = techoAMultiplo(minimo, paso);
+    if (redonda - minimo <= minimo * TOPE_SUBA_SENA_FIJA + 1e-9) return redonda;
+  }
+  return techoAMultiplo(minimo, PASOS_SENA_FIJA[PASOS_SENA_FIJA.length - 1]);
 }
 
 export function calcularSenaPreview(precio: number, c: SenaPreviewConfig): SenaPreview | null {
