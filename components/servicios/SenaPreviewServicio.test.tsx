@@ -68,7 +68,7 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_porcentaje: 50 });
     setup('18000'); // seña 10.000, comisión 761, llegan 9.239: 239 más que el 50% ($9.000)
     expect(screen.getByText(
-      'Te llega el 50% del precio ($9.000) y un poco más ($239) porque la seña se redondea hacia arriba.',
+      'Te llega el 50% del precio ($9.000) y $239 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
     )).toBeInTheDocument();
   });
 
@@ -79,21 +79,21 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('$304')).toBeInTheDocument();
     expect(screen.getByText('$3.696')).toBeInTheDocument();
     expect(screen.getByText(
-      'Te llega el 30% del precio ($3.390) y un poco más ($306) porque la seña se redondea hacia arriba.',
+      'Te llega el 30% del precio ($3.390) y $306 más, porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
     )).toBeInTheDocument();
   });
 
-  it('when nothing arrives beyond the percentage it keeps the plain sentence (no "un poco más")', () => {
+  it('when nothing arrives beyond the percentage it keeps the plain sentence, without the extra', () => {
     setUser({ sena_porcentaje: 50, comision_mp_vigente: 0 });
     setup('10000'); // sin comisión y 50% de 10.000 = 5.000 es múltiplo de 500: no sobra nada
-    expect(screen.getByText('Con eso te llega completo el 50% del precio ($5.000).')).toBeInTheDocument();
-    expect(screen.queryByText(/un poco más/)).toBeNull();
+    expect(screen.getByText('Te llega el 50% del precio ($5.000).')).toBeInTheDocument();
+    expect(screen.queryByText(/redondeamos la seña hacia arriba/)).toBeNull();
   });
 
   it('does not claim that when the deposit is the whole price (nothing left to cover the cost with)', () => {
     setUser({ sena_porcentaje: 100 });
     setup('600');
-    expect(screen.queryByText(/te llega completo/)).toBeNull();
+    expect(screen.queryByText(/Te llega el d+% del precio/)).toBeNull();
   });
 
   it('the commission, percentages and the cost note are hidden until "Ver detalle"', () => {
@@ -124,7 +124,9 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.getByText('− $571')).toBeInTheDocument();
     expect(screen.getAllByText('$6.929')).toHaveLength(2); // la frase de arriba y la última fila
-    expect(screen.getByText('La seña se redondea para que al cliente le resulte fácil completar el pago en el local.')).toBeInTheDocument();
+    // El motivo del redondeo se dice una sola vez (en la frase de arriba), no otra vez al pie del detalle.
+    expect(screen.queryByText('Redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.')).toBeNull();
+    expect(screen.getAllByText(/le resulte fácil pagar el resto al terminar el servicio/)).toHaveLength(1);
   });
 
   it('no rounding row when the cost already lands on a multiple of the step', () => {
@@ -133,7 +135,7 @@ describe('SenaPreviewServicio', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.queryByText('Para cubrir la comisión')).toBeNull();
     expect(screen.queryByText(/Redondeo a/)).toBeNull();
-    expect(screen.queryByText(/se redondea/)).toBeNull();
+    expect(screen.queryByText(/edondeamos la seña/)).toBeNull();
   });
 
   it('no percentage steps when the deposit is the whole price', () => {
@@ -179,7 +181,7 @@ describe('SenaPreviewServicio', () => {
     setUser({ sena_tipo: 'fijo', sena_porcentaje: null, sena_monto: 5000 });
     setup('20000');
     expect(screen.getByText('$5.000')).toBeInTheDocument();
-    expect(screen.queryByText(/te llega completo/)).toBeNull();
+    expect(screen.queryByText(/Te llega el d+% del precio/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.queryByText('Precio del servicio')).toBeNull();

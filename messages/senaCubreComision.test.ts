@@ -28,6 +28,31 @@ describe('textos de la seña', () => {
     expect(conSugerencia).toEqual([]);
   });
 
+  // Lo que llega de más por el redondeo, y para qué se redondea, es UNA sola oración: la misma en el panel (porcentaje
+  // y monto fijo) y en la tarjeta del servicio. El detalle de la tarjeta no la repite con otra nota.
+  it('el extra del redondeo y su motivo se dicen con una sola frase en las tres pantallas (es y pt-BR)', async () => {
+    const pt = await loadMessages('pt-BR');
+    type Claves = { perfil: { SheetSenaYPagos: Record<string, string> }; configuracion: { SenaPreviewServicio: Record<string, string> } };
+    const motivos = {
+      es: 'porque redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.',
+      'pt-BR': 'porque arredondamos o sinal para cima para que seja fácil para o cliente pagar o restante ao terminar o serviço.',
+    };
+    for (const [idioma, m] of [['es', es as unknown as Claves], ['pt-BR', pt as unknown as Claves]] as const) {
+      const textosExtra = [
+        m.perfil.SheetSenaYPagos.exampleCoversExtra,
+        m.perfil.SheetSenaYPagos.fixedRoundedNote,
+        m.configuracion.SenaPreviewServicio.coveredNoteExtra,
+      ];
+      for (const t of textosExtra) {
+        expect(t, idioma).toMatch(/\{extra\} [^,]+, /);
+        expect(t, idioma).toContain(motivos[idioma]);
+      }
+      expect(m.perfil.SheetSenaYPagos, idioma).not.toHaveProperty('roundingReason');
+      expect(m.configuracion.SenaPreviewServicio, idioma).not.toHaveProperty('detailRoundingNote');
+    }
+    expect(JSON.stringify(es)).not.toMatch(/Subimos y redondeamos|un poco más \(|te llega completo|lo que querías|pago en el local/i);
+  });
+
   // El panel ya explica que la comisión está incluida: al guardar alcanza con el aviso corto de siempre.
   it('no hay un aviso largo especial al guardar la seña (ni en español ni en portugués)', async () => {
     const pt = await loadMessages('pt-BR');

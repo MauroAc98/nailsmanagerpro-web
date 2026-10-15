@@ -190,6 +190,8 @@ export function SheetSenaYPagos({
   // Cálculo de la seña: lo que dejan los clientes, lo que cobra MP y lo que llega,
   // más una seña sugerida que cubre el costo (redondeada hacia arriba a múltiplos de 500 o 1000).
   const dinero = (n: number) => `$${formatMonto(n)}`;
+  // Sin centavos cuando el monto es redondo ("$3.000"): lo usan las frases que explican el extra del redondeo.
+  const montoCorto = (n: number) => `$${Number.isInteger(n) ? formatMontoEntero(n) : formatMonto(n)}`;
   const montoFijo = senaTipo === 'fijo' ? parsearMonto(senaMonto) : null;
   const retencionPct = retiene ? (parsearMonto(retencion) ?? 0) : 0;
   const configCalculo = { comision_mp_vigente: comisionVigente, retencion_iibb_porcentaje: retencionPct };
@@ -396,17 +398,17 @@ export function SheetSenaYPagos({
               )}
               {desgloseEjemplo && (
                 <p style={{ ...avisoStyle, margin: 0 }}>
-                  {/* Si el redondeo deja de más, se dice: si no, "te llega el 30 %" y la cifra de arriba no cierran. */}
+                  {/* Si el redondeo deja de más, se dice cuánto y para qué, en una sola oración: si no, "te llega
+                      el 30 %" y la cifra de arriba no cierran. */}
                   {desgloseEjemplo.llega > exactoEjemplo
                     ? t('exampleCoversExtra', {
                         pct: porcentajeElegido,
-                        monto: `$${formatMontoEntero(exactoEjemplo)}`,
-                        extra: `$${formatMontoEntero(desgloseEjemplo.llega - exactoEjemplo)}`,
+                        monto: montoCorto(exactoEjemplo),
+                        extra: montoCorto(desgloseEjemplo.llega - exactoEjemplo),
                       })
-                    : t('exampleCovers', { pct: porcentajeElegido, monto: `$${formatMontoEntero(exactoEjemplo)}` })}
+                    : t('exampleCovers', { pct: porcentajeElegido, monto: montoCorto(exactoEjemplo) })}
                 </p>
               )}
-              <p style={{ ...avisoStyle, margin: 0 }}>{t('percentRounding')}</p>
             </>
           ) : (
             <p style={{ ...avisoStyle, margin: 0 }}>{t('percentOfPrice')}</p>
@@ -476,7 +478,11 @@ export function SheetSenaYPagos({
               {/* El redondeo hace que llegue más de lo pedido: se dice, para que las cifras no parezcan un error. */}
               {desglose && desglose.llega > (parsearMonto(aplicado.anterior) ?? 0) && (
                 <p style={{ ...avisoStyle, margin: 0 }}>
-                  {t('fixedRoundedNote', { querido: dinero(parsearMonto(aplicado.anterior) ?? 0), llega: dinero(desglose.llega) })}
+                  {/* Cuánto llega de más y para qué se redondea, en una sola oración (misma redacción que en porcentaje). */}
+                  {t('fixedRoundedNote', {
+                    querido: montoCorto(parsearMonto(aplicado.anterior) ?? 0),
+                    extra: montoCorto(desglose.llega - (parsearMonto(aplicado.anterior) ?? 0)),
+                  })}
                 </p>
               )}
             </>
