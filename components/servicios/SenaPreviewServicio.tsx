@@ -202,7 +202,6 @@ export default function SenaPreviewServicio({ precio, onConfigurar, activa }: Pr
             <span style={etiquetaStyle}>{t('netReceived')}</span>
             <span style={{ ...montoStyle, fontSize: 17 }}>{monto(p.llega)}</span>
           </div>
-          {pasos && pasos.redondeo > 0 && <p style={notaStyle}>{t('detailRoundingNote')}</p>}
         </div>
       )}
 

@@ -277,7 +277,6 @@
     "detailPercent": "Sinal de {pct}%",
     "detailCover": "Para cobrir a comissão",
     "detailRounding": "Arredondamento para {paso}",
-    "detailRoundingNote": "Arredondamos o sinal para cima para que seja fácil para o cliente pagar o restante ao terminar o serviço.",
     "detailPays": "O cliente paga",
     "mpFee": "Comissão do Mercado Pago ({rate}%)",
     "taxRetention": "Retenção de impostos",

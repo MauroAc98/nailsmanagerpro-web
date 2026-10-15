@@ -124,7 +124,9 @@ describe('SenaPreviewServicio', () => {
     expect(screen.getByText('El cliente paga')).toBeInTheDocument();
     expect(screen.getByText('− $571')).toBeInTheDocument();
     expect(screen.getAllByText('$6.929')).toHaveLength(2); // la frase de arriba y la última fila
-    expect(screen.getByText('Redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.')).toBeInTheDocument();
+    // El motivo del redondeo se dice una sola vez (en la frase de arriba), no otra vez al pie del detalle.
+    expect(screen.queryByText('Redondeamos la seña hacia arriba para que al cliente le resulte fácil pagar el resto al terminar el servicio.')).toBeNull();
+    expect(screen.getAllByText(/le resulte fácil pagar el resto al terminar el servicio/)).toHaveLength(1);
   });
 
   it('no rounding row when the cost already lands on a multiple of the step', () => {
