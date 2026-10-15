@@ -100,3 +100,33 @@ describe('DetalleNotificacionPage — reenvío manual', () => {
     expect(screen.queryByText(/problema nuestro/)).not.toBeInTheDocument();
   });
 });
+
+describe('DetalleNotificacionPage — estado y motivo del fallo', () => {
+  it('un fallo con código explica el motivo en lugar del texto genérico', () => {
+    seed(mensaje({ error_code: 131026 }));
+    renderWithProviders(<DetalleNotificacionPage />);
+
+    expect(screen.getByText(/no tiene WhatsApp o no puede recibir mensajes/)).toBeInTheDocument();
+    expect(screen.queryByText(/Puede que el número no tenga WhatsApp/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Enviar desde mi WhatsApp' })).toBeInTheDocument();
+  });
+
+  it('un fallo de nuestro lado con código muestra el motivo en lugar del texto genérico', () => {
+    seed(mensaje({ reenviable: false, error_code: 131031 }));
+    renderWithProviders(<DetalleNotificacionPage />);
+
+    expect(screen.getByText(/problema con la cuenta de WhatsApp del negocio/)).toBeInTheDocument();
+    expect(screen.queryByText(/problema nuestro/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['pending', 'Enviado'],
+    ['delivered', 'Entregado'],
+    ['read', 'Leído'],
+  ])('un mensaje %s se lee como "%s"', (status, texto) => {
+    seed(mensaje({ status: status as NotificacionMensaje['status'], reenviable: false }));
+    renderWithProviders(<DetalleNotificacionPage />);
+
+    expect(screen.getByText(texto)).toBeInTheDocument();
+  });
+});

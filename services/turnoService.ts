@@ -32,6 +32,9 @@ export interface Turno {
   // no es de un grupo); `grupo` solo viene en los agrupados e incluye todos los
   // tramos, cancelados con su estado. `modo` es interno, nunca se muestra.
   grupo_id?: number | null;
+  // Estado del ultimo WhatsApp automatico del turno (de cualquier tipo). null =
+  // todavia no se mando ninguno. Opcional: backends viejos no lo mandan.
+  whatsapp_ultimo_status?: 'pending' | 'delivered' | 'read' | 'failed' | 'manual' | null;
   // Seña online de la reserva (aditivo; ausente en backends viejos). `monto`
   // es lo que se le COBRÓ al cliente (incluye comisión/retención de Mercado
   // Pago), `estado` viene crudo y solo 'aprobado' cuenta como pagada. Es de la
@@ -76,6 +79,12 @@ export interface NotificacionMensaje {
   // 'failed' que Meta aceptó y no pudo entregar (problema del destinatario):
   // se puede reenviar a mano por wa.me. Un 'failed' de nuestro lado no.
   reenviable: boolean;
+  // Solo en 'failed': codigo y titulo del error que informo Meta, y cuando
+  // llego el ultimo cambio de estado (epoch en segundos). Opcionales: backends
+  // viejos no los mandan.
+  error_code?: number | null;
+  error_titulo?: string | null;
+  status_event_at?: number | null;
 }
 
 export interface Notificaciones {

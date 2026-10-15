@@ -11,7 +11,9 @@ import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnlin
 import { NombreExpandible } from '@/components/ui/NombreExpandible';
 import type { Turno } from '@/services/turnoService';
 import type { PasoVisita, VisitaAgenda } from '@/lib/visitasAgenda';
+import { statusWhatsappDeVisita } from '@/lib/estadoWhatsapp';
 import { IconoNotaTurno, tieneNotaTurno } from './IconoNotaTurno';
+import { BadgeEstadoWhatsapp } from './BadgeEstadoWhatsapp';
 import { formatFechaMini, horaDeHora, type ProfesionalLabel } from './agendaDateHelpers';
 import { SWIPE_PEEK, SWIPE_REVEAL, useSwipeCancelar } from './useSwipeCancelar';
 
@@ -71,16 +73,19 @@ export function VisitaCard({
           </div>
         </div>
         {whatsappHref && (
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t('whatsapp')}
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: 38, height: 38, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={colors.whatsapp} aria-hidden="true"><path d={WHATSAPP_PATH} /></svg>
-          </a>
+          <span style={{ position: 'relative', display: 'flex', flexShrink: 0 }}>
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t('whatsapp')}
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: 38, height: 38, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill={colors.whatsapp} aria-hidden="true"><path d={WHATSAPP_PATH} /></svg>
+            </a>
+            <BadgeEstadoWhatsapp status={statusWhatsappDeVisita(visita.turnos.map((x) => x.whatsapp_ultimo_status))} desfase={2} />
+          </span>
         )}
       </div>
 

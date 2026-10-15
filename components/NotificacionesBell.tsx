@@ -3,11 +3,14 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Bell, CalendarDays, ChevronRight, CheckCircle2, XCircle, Clock, Send, Globe } from 'lucide-react';
+import { Bell, CalendarDays, ChevronRight, XCircle, Clock, Send, Globe } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 import { useNotificacionesStore } from '@/store/useNotificacionesStore';
 import type { NotificacionMensaje, NotificacionReservaPagada } from '@/services/turnoService';
 import { claveTextoNotificacion } from '@/lib/notificacionTexto';
+import { estadoWhatsapp } from '@/lib/estadoWhatsapp';
+import { motivoFallo } from '@/lib/motivoFalloWhatsapp';
+import { GlifoEstadoWhatsapp } from '@/components/agenda/BadgeEstadoWhatsapp';
 import { diaLargoCorto } from '@/lib/reservaOnline/formatoFecha';
 import { Spinner } from '@/components/Spinner';
 
@@ -211,11 +214,16 @@ function ReservaPagadaRow({ reserva, onClick }: { reserva: NotificacionReservaPa
 
 function NotificacionRow({ mensaje, onClick }: { mensaje: NotificacionMensaje; onClick: () => void }) {
   const t = useTranslations('common.NotificacionesBell');
+  const tEstado = useTranslations('common.EstadoWhatsapp');
+  const tMotivo = useTranslations('common.MotivoFalloWhatsapp');
   const cliente = [mensaje.cliente_nombre, mensaje.cliente_apellido].filter(Boolean).join(' ') || t('clienteDesconocido');
 
   const esFallido = mensaje.status === 'failed';
-  const Icono = esFallido ? XCircle : mensaje.status === 'manual' ? Send : CheckCircle2;
-  const colorIcono = esFallido ? colors.danger : colors.success;
+  const esManual = mensaje.status === 'manual';
+  // Enviado / entregado / leído se distinguen por la forma de la tilde y el color.
+  const estado = esFallido || esManual ? null : estadoWhatsapp(mensaje.status);
+  // Sin código (backend viejo) no se inventa un motivo: queda solo el texto de siempre.
+  const motivo = esFallido && mensaje.error_code != null ? tMotivo(motivoFallo(mensaje.error_code)) : null;
 
   const textoKey = claveTextoNotificacion(mensaje.tipo, mensaje.status);
 
@@ -235,11 +243,24 @@ function NotificacionRow({ mensaje, onClick }: { mensaje: NotificacionMensaje; o
         backgroundColor: 'transparent', cursor: 'pointer', textAlign: 'left',
       }}
     >
-      <Icono size={16} color={colorIcono} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+      {estado ? (
+        <span role="img" aria-label={tEstado(estado)} style={{ flexShrink: 0, marginTop: 1, display: 'flex' }}>
+          <GlifoEstadoWhatsapp estado={estado} size={16} />
+        </span>
+      ) : esFallido ? (
+        <XCircle size={16} color={colors.danger} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+      ) : (
+        <Send size={16} color={colors.success} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13, color: colors.text, lineHeight: 1.4 }}>
           {t(textoKey, { cliente })}
         </p>
+        {motivo && (
+          <p style={{ margin: '2px 0 0', fontSize: 11, lineHeight: 1.4, color: colors.subtext }}>
+            {motivo}
+          </p>
+        )}
         <p style={{ margin: '2px 0 0', fontSize: 11, color: colors.subtext, display: 'flex', alignItems: 'center', gap: 4 }}>
           <Clock size={11} strokeWidth={2} />
           {tiempo}

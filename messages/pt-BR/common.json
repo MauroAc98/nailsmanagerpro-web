@@ -77,6 +77,23 @@
     "haceMinutos": "{count, plural, one {há # minuto} other {há # minutos}}",
     "haceHoras": "{count, plural, one {há # hora} other {há # horas}}"
   },
+  "EstadoWhatsapp": {
+    "enviado": "Enviado",
+    "entregado": "Entregue",
+    "leido": "Lido",
+    "fallo": "Não foi possível enviar"
+  },
+  "MotivoFalloWhatsapp": {
+    "noPuedeRecibir": "O número não tem WhatsApp ou não pode receber mensagens. Confira o telefone do cliente.",
+    "limiteDeWhatsapp": "O WhatsApp não entregou a mensagem. Tente reenviar manualmente.",
+    "noQuiereMensajes": "Este cliente decidiu não receber esse tipo de mensagem.",
+    "demasiadosMensajes": "Foram enviadas mensagens demais em pouco tempo. Tente de novo daqui a pouco.",
+    "envioRestringido": "O WhatsApp restringiu o envio a partir do seu número por um tempo.",
+    "problemaCuenta": "Há um problema com a conta de WhatsApp do negócio. Fale com a gente para resolver.",
+    "mensajeNoDisponible": "Esta mensagem automática não está disponível por enquanto. Fale com a gente para resolver.",
+    "errorTemporal": "O WhatsApp teve um erro. Tente reenviar manualmente.",
+    "generico": "Não foi possível entregar a mensagem. Tente reenviar manualmente."
+  },
   "WelcomeScreen": {
     "greetingMorning": "Bom dia",
     "greetingAfternoon": "Boa tarde",
