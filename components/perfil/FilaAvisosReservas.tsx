@@ -5,6 +5,8 @@ import { agendaColors as colors } from '@/theme/agendaColors';
 import PillToggle from '@/components/PillToggle';
 import { useAvisosReservas } from '@/hooks/useAvisosReservas';
 import { Spinner } from '@/components/Spinner';
+import { useAuthStore } from '@/store/useAuthStore';
+import { reservaOnlineActivaParaNegocio } from '@/lib/reservaOnline/activa';
 
 const ERRORES = {
   unavailable: 'errorUnavailable',
@@ -26,14 +28,16 @@ function IconCampana() {
 export function FilaAvisosReservas() {
   const t = useTranslations('perfil.AvisosReservas');
   const { estado, trabajando, error, activar, desactivar } = useAvisosReservas();
+  // Solo se nombran las reservas online si el negocio las tiene: si no, el texto confunde.
+  const conReservas = reservaOnlineActivaParaNegocio(useAuthStore(s => s.user));
 
   const puedeCambiar = estado === 'off' || estado === 'on';
   const explicacion =
     estado === 'ios-needs-install' ? t('iosNeedsInstall')
     : estado === 'unsupported' ? t('unsupported')
     : estado === 'denied' ? t('denied')
-    : estado === 'on' ? t('subtitleOn')
-    : t('subtitleOff');
+    : estado === 'on' ? t(conReservas ? 'subtitleOnConReservas' : 'subtitleOn')
+    : t(conReservas ? 'subtitleOffConReservas' : 'subtitleOff');
 
   return (
     <div style={{ padding: '13px 14px' }}>
