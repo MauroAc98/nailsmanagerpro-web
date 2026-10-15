@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { useAuth } from '@/hooks/useAuth';
 import { routerMock } from '@/test/mocks/nextNavigation';
+import { useToastStore } from '@/store/useToastStore';
 import type { User } from '@/services/authService';
 import PerfilPage from './page';
 
@@ -247,6 +248,15 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalledWith({
       sena_tipo: 'porcentaje', sena_porcentaje: 50, retencion_iibb_porcentaje: 0,
     }));
+  });
+
+  it('guardar la seña por porcentaje con la reserva online activa muestra el aviso corto de siempre', async () => {
+    mockUseAuth({ user: conReservaOnline({ sena_tipo: 'porcentaje', sena_porcentaje: 30, sena_monto: null }) });
+    renderWithProviders(<PerfilPage />);
+    abrirSena();
+    guardar();
+    await waitFor(() => expect(useAuth().updatePerfil).toHaveBeenCalled());
+    await waitFor(() => expect(useToastStore.getState().message).toBe('Cambios guardados'));
   });
 
   it('cambiar de fijo a porcentaje y elegir un chip guarda el porcentaje', async () => {

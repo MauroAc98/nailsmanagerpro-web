@@ -186,7 +186,6 @@
     "logoutConfirmButton": "Salir",
     "passwordUpdated": "Contraseña actualizada",
     "changesSaved": "Cambios guardados",
-    "senaSavedCommission": "Seña guardada. Lo que paga el cliente ya incluye lo que cobra Mercado Pago, así que a vos te llega completo el porcentaje.",
     "dataSaved": "Datos guardados",
     "passwordsDontMatch": "Las contraseñas no coinciden.",
     "percentInvalid": "Ingresá un porcentaje válido, entre 0 y 50.",

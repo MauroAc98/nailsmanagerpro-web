@@ -28,12 +28,13 @@ describe('textos de la seña', () => {
     expect(conSugerencia).toEqual([]);
   });
 
-  it('el aviso al guardar la seña dice que ya incluye lo que cobra Mercado Pago', () => {
-    const aviso = (es as unknown as { perfil: { PerfilPage: { senaSavedCommission: string } } })
-      .perfil.PerfilPage.senaSavedCommission;
+  // El panel ya explica que la comisión está incluida: al guardar alcanza con el aviso corto de siempre.
+  it('no hay un aviso largo especial al guardar la seña (ni en español ni en portugués)', async () => {
+    const pt = await loadMessages('pt-BR');
+    const paginaEs = (es as unknown as { perfil: { PerfilPage: Record<string, string> } }).perfil.PerfilPage;
+    const paginaPt = (pt as unknown as { perfil: { PerfilPage: Record<string, string> } }).perfil.PerfilPage;
 
-    expect(aviso).toBe(
-      'Seña guardada. Lo que paga el cliente ya incluye lo que cobra Mercado Pago, así que a vos te llega completo el porcentaje.',
-    );
+    expect(paginaEs).not.toHaveProperty('senaSavedCommission');
+    expect(paginaPt).not.toHaveProperty('senaSavedCommission');
   });
 });

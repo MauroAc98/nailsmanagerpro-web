@@ -186,7 +186,6 @@
     "logoutConfirmButton": "Sair",
     "passwordUpdated": "Senha atualizada",
     "changesSaved": "Alterações salvas",
-    "senaSavedCommission": "Sinal salvo. O que o cliente paga já inclui o que o Mercado Pago cobra, então você recebe a porcentagem por inteiro.",
     "dataSaved": "Dados salvos",
     "passwordsDontMatch": "As senhas não coincidem.",
     "percentInvalid": "Informe uma porcentagem válida, entre 0 e 50.",
