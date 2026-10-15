@@ -156,8 +156,8 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: false } });
     renderWithProviders(<PerfilPage />);
     expect(screen.getByText('Avisos en este celular')).toBeInTheDocument();
-    expect(await screen.findByText(/estado del envío de tus mensajes automáticos/)).toBeInTheDocument();
-    expect(screen.queryByText(/cuando entra una reserva online/)).toBeNull();
+    expect(await screen.findByText(/saber si tus mensajes automáticos llegaron a tus clientes/)).toBeInTheDocument();
+    expect(screen.queryByText(/reservas online/)).toBeNull();
   });
 
   it('nombra las reservas online en los avisos solo si el negocio las tiene', async () => {
@@ -166,7 +166,7 @@ describe('PerfilPage — hub "Mi negocio"', () => {
     mockUseAuth({ user: { ...BASE_USER, reserva_online_activa: true } });
     useAuthStore.setState({ user: { ...BASE_USER, reserva_online_activa: true } });
     renderWithProviders(<PerfilPage />);
-    expect(await screen.findByText(/cuando entra una reserva online o cuando cambia el estado del envío/)).toBeInTheDocument();
+    expect(await screen.findByText(/enterarte de las reservas online y de si tus mensajes llegaron/)).toBeInTheDocument();
   });
 
   it('abre Seña y pagos con el monto guardado (modo fijo)', () => {
