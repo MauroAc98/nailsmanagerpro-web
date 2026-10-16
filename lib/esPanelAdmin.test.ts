@@ -31,3 +31,24 @@ describe('esPanelAdmin', () => {
     expect(esPanelAdmin('app.turnetto.com', '/login')).toBe(false);
   });
 });
+
+// Matriz de variantes de host (el hostname viene de window.location, pero la
+// comparación se normaliza igual que en el middleware).
+describe('esPanelAdmin — variantes de host', () => {
+  it.each([
+    ['ADMIN.TURNETTO.COM', '/', true],
+    ['admin.turnetto.com:443', '/login', true],
+    ['Admin.Turnetto.com', '/suscripciones', true],
+    ['turnetto.com', '/', false],
+    ['www.turnetto.com', '/login', false],
+    ['203.0.113.7', '/agenda', false],
+    ['app.turnetto.com', '/', false],
+    ['reservar.turnetto.com', '/natalia', false],
+    ['localhost:3000', '/admin/login', true],
+    ['localhost:3000', '/login', false],
+    ['www.turnetto.com', '/admin', true],
+    ['', '/', false],
+  ])('host %j + %s -> %s', (host, ruta, esperado) => {
+    expect(esPanelAdmin(host, ruta)).toBe(esperado);
+  });
+});

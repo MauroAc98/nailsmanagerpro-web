@@ -1,28 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  ADMIN_HOST,
+  ADMIN_PAGES,
+  APP_HOST,
+  RESERVAR_HOST,
+  esHostInterno,
+  esRutaUso,
+  normalizarHost,
+} from './lib/hosts';
 
 // admin.turnetto.com es el mismo build que app.turnetto.com (mismo proceso
 // PM2, mismo puerto en nginx — ver nginx sites-available/admin-turnetto),
-// separado solo por Host. Acá se resuelven tres cosas:
+// separado solo por Host. Los hosts y la lista de páginas del panel viven en
+// lib/hosts.ts (única fuente de verdad). Acá se resuelven estas cosas:
 // 1. Las páginas del panel (rutas limpias, sin /admin) se reescriben a su
 //    archivo real bajo app/(admin)/admin/* — necesario para no chocar con
 //    el /login del tenant en app.turnetto.com, mismo código fuente.
 // 2. manifest/ícono se reescriben a los archivos propios de admin.
-// 3. Todo lo demás (assets estáticos de public/: splash/*, *.svg, etc.)
-//    pasa SIN TOCAR. Bug real que costó ratos de debugging esta noche:
-//    hasta esta versión, un catch-all reescribía CUALQUIER pathname no
-//    reconocido con el prefijo /admin — incluidos archivos estáticos como
-//    /splash/apple-splash-*.png o /admin-icon-192.png (pedido por su
-//    nombre real, no vía ADMIN_ASSET_MAP). Eso los rompía con 404. El
-//    service worker precachea TODOS los assets de public/ al instalar —
-//    33 de 146 URLs 404eaban, y workbox aborta el install completo si
-//    una sola falla, así que el service worker nunca terminaba de
-//    instalar en admin.turnetto.com (quedaba en estado "redundant" en
-//    silencio) aunque el registro en sí resolviera bien. Por eso ahora
-//    el rewrite de páginas usa una lista explícita en vez de un
-//    catch-all: solo las 5 páginas reales del panel se reescriben,
-//    cualquier otra cosa (activo estático o no) se sirve tal cual.
-const ADMIN_HOST = 'admin.turnetto.com';
-const APP_HOST = 'app.turnetto.com';
+// 3. Los assets estáticos de public/ (splash/*, sw.js, *.svg, etc.) pasan
+//    SIN TOCAR. Bug real que costó ratos de debugging: un catch-all
+//    reescribía CUALQUIER pathname no reconocido con el prefijo /admin —
+//    incluidos archivos estáticos como /splash/apple-splash-*.png o
+//    /admin-icon-192.png (pedido por su nombre real, no vía
+//    ADMIN_ASSET_MAP). Eso los rompía con 404. El service worker precachea
+//    TODOS los assets de public/ al instalar — 33 de 146 URLs 404eaban, y
+//    workbox aborta el install completo si una sola falla, así que el
+//    service worker nunca terminaba de instalar en admin.turnetto.com
+//    (quedaba en estado "redundant" en silencio). Por eso el rewrite de
+//    páginas usa una lista explícita en vez de un catch-all, y los
+//    estáticos se detectan aparte (esArchivoEstatico).
+// 4. Todo lo demás en el host admin responde 404: ese origen guarda el token
+//    del panel en localStorage y NO debe servir también las pantallas del
+//    tenant (/clientes, /login/{slug}, /reservar/*) — allowlist cerrada.
 
 // reservar.turnetto.com — mismo proceso/build que app.turnetto.com (ver
 // nginx sites-available/reservar-turnetto), separado solo por Host. A
@@ -33,8 +42,6 @@ const APP_HOST = 'app.turnetto.com';
 // favicon) NUNCA deben llevar ese prefijo — mismo bug que el de admin
 // (comentario grande arriba): se detectan por tener un '.' en el último
 // segmento del path, igual que cualquier archivo real de public/.
-const RESERVAR_HOST = 'reservar.turnetto.com';
-
 function esArchivoEstatico(pathname: string): boolean {
   const ultimoSegmento = pathname.slice(pathname.lastIndexOf('/') + 1);
   return ultimoSegmento.includes('.');
@@ -46,19 +53,6 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
   '/icon-512.png': '/admin-icon-512.png',
 };
 
-// Único lugar que define qué URLs limpias existen en el panel — si se
-// agrega una página nueva bajo app/(admin)/admin/, sumarla acá también.
-// Excepción: /uso y sus sub-rutas con id de negocio, que no son páginas
-// literales — ver esRutaUso más abajo.
-const ADMIN_PAGES = new Set([
-  '/',
-  '/login',
-  '/negocios/nuevo',
-  '/suscripciones',
-  '/configuracion',
-  '/mercadopago',
-]);
-
 // pathname === '/admin' o pathname empieza con '/admin/' — NO
 // pathname.startsWith('/admin') a secas, que matchea por texto y agarra
 // también /admin-manifest.json, /admin-icon-192.png, etc. (que no son
@@ -67,17 +61,14 @@ function esRutaAdminVieja(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 
-// Único rincón de ADMIN_PAGES que necesita un segmento dinámico (el id del
-// negocio) — un Set de strings literales no puede listarlo. Regex acotada a
-// las 3 formas reales (/uso, /uso/:id, /uso/:id/dia) en vez de un prefijo
-// `startsWith('/uso')` a secas, mismo criterio que esRutaAdminVieja: no
-// matchear de más.
-function esRutaUso(pathname: string): boolean {
-  return /^\/uso(\/\d+(\/dia)?)?$/.test(pathname);
+function noEncontrado(): NextResponse {
+  return new NextResponse(null, { status: 404 });
 }
 
 export function middleware(request: NextRequest) {
-  const host = request.headers.get('host') ?? '';
+  // Se normaliza (minúsculas, sin puerto): `ADMIN.TURNETTO.COM` o
+  // `admin.turnetto.com:443` son el mismo host que `admin.turnetto.com`.
+  const host = normalizarHost(request.headers.get('host'));
   const { pathname } = request.nextUrl;
 
   // El panel admin vive SOLO en admin.turnetto.com — en app.turnetto.com
@@ -90,7 +81,7 @@ export function middleware(request: NextRequest) {
   // turnetto.com/login daba 404 hasta ese fix).
   if (host === APP_HOST) {
     if (esRutaAdminVieja(pathname)) {
-      return new NextResponse(null, { status: 404 });
+      return noEncontrado();
     }
     return NextResponse.next();
   }
@@ -117,9 +108,18 @@ export function middleware(request: NextRequest) {
   }
 
   if (host !== ADMIN_HOST) {
-    // Ni admin.turnetto.com, app.turnetto.com ni reservar.turnetto.com —
-    // incluye el fetch interno de Next resolviendo su propio rewrite (Host:
-    // localhost:3000). Dejar pasar sin tocar.
+    // Host interno/dev (localhost, 127.0.0.1, cualquier puerto): incluye el
+    // fetch interno de Next resolviendo su propio rewrite (Host:
+    // localhost:3000) y `npm run dev`. Dejar pasar sin tocar — también
+    // /admin/*, que es justo lo que ese fetch interno pide.
+    if (esHostInterno(host)) {
+      return NextResponse.next();
+    }
+    // Host externo desconocido (apex, www, IP pelada, otro dominio): el
+    // panel admin no debe ser alcanzable ahí. El resto pasa como siempre.
+    if (esRutaAdminVieja(pathname)) {
+      return noEncontrado();
+    }
     return NextResponse.next();
   }
 
@@ -144,15 +144,22 @@ export function middleware(request: NextRequest) {
   }
 
   // Ruta vieja con el prefijo directo (admin.turnetto.com/admin,
-  // /admin/login) — no debe responder, solo existe la versión limpia.
+  // /admin/login) — no debe responder, solo existe la versión limpia. Va
+  // ANTES del chequeo de estáticos: /admin/x.png no es un archivo de public/.
   if (esRutaAdminVieja(pathname)) {
-    return new NextResponse(null, { status: 404 });
+    return noEncontrado();
   }
 
-  // Cualquier otra cosa — assets de public/ (splash/*, sw.js, workbox-*,
-  // *.svg, etc.), rutas de Next que no son del panel, lo que sea — se
-  // sirve tal cual, sin prefijo. Ver comentario largo arriba del porqué.
-  return NextResponse.next();
+  // Archivos reales de public/ (splash/*, sw.js, workbox-*, favicon.ico,
+  // *.svg, /admin-manifest.json por su nombre real...) — se sirven tal cual,
+  // sin prefijo. Ver comentario largo arriba del porqué.
+  if (esArchivoEstatico(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Allowlist cerrada: cualquier otra cosa (pantallas del tenant, /reservar,
+  // slugs, ids de /uso mal formados) no existe en el host admin.
+  return noEncontrado();
 }
 
 export const config = {

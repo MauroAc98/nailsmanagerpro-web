@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from './middleware';
+import { config, middleware } from './middleware';
 
 function requestA(url: string, host: string): NextRequest {
   return new NextRequest(new URL(url, `http://${host}`), {
@@ -73,5 +73,168 @@ describe('middleware — admin.turnetto.com /uso (segmento dinámico)', () => {
       const res = middleware(requestA(path, 'admin.turnetto.com'));
       expect(res.headers.get('x-middleware-rewrite')).toBeNull();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Matriz de hosts (hardening del panel admin). Mismo proceso Next para
+// admin/app/reservar: el host decide qué se sirve. Ver comentarios largos en
+// middleware.ts — acá se fija el contrato.
+// ---------------------------------------------------------------------------
+type Esperado =
+  | { tipo: 'rewrite'; destino: string }
+  | { tipo: 'pasa' }
+  | { tipo: '404' };
+
+function clasificar(path: string, host: string): Esperado['tipo'] | { rewrite: string } {
+  const res = middleware(requestA(path, host));
+  const rewrite = res.headers.get('x-middleware-rewrite');
+  if (rewrite) return { rewrite };
+  if (res.status === 404) return '404';
+  return 'pasa';
+}
+
+function verificar(path: string, host: string, esperado: Esperado) {
+  const real = clasificar(path, host);
+  if (esperado.tipo === 'rewrite') expect(real).toEqual({ rewrite: esperado.destino });
+  else expect(real).toBe(esperado.tipo);
+}
+
+describe('middleware — admin.turnetto.com, allowlist cerrada', () => {
+  const H = 'admin.turnetto.com';
+  const casos: Array<[string, string, Esperado]> = [
+    // páginas del panel (URLs limpias)
+    ['página raíz', '/', { tipo: 'rewrite', destino: `http://${H}/admin` }],
+    ['login', '/login', { tipo: 'rewrite', destino: `http://${H}/admin/login` }],
+    ['negocios/nuevo', '/negocios/nuevo', { tipo: 'rewrite', destino: `http://${H}/admin/negocios/nuevo` }],
+    ['suscripciones', '/suscripciones', { tipo: 'rewrite', destino: `http://${H}/admin/suscripciones` }],
+    ['configuracion', '/configuracion', { tipo: 'rewrite', destino: `http://${H}/admin/configuracion` }],
+    ['mercadopago', '/mercadopago', { tipo: 'rewrite', destino: `http://${H}/admin/mercadopago` }],
+    // assets propios de admin
+    ['manifest', '/manifest.json', { tipo: 'rewrite', destino: `http://${H}/admin-manifest.json` }],
+    ['icon-192', '/icon-192.png', { tipo: 'rewrite', destino: `http://${H}/admin-icon-192.png` }],
+    ['icon-512', '/icon-512.png', { tipo: 'rewrite', destino: `http://${H}/admin-icon-512.png` }],
+    // estáticos reales de public/: pasan sin tocar
+    ['sw.js', '/sw.js', { tipo: 'pasa' }],
+    ['workbox', '/workbox-965a1397.js', { tipo: 'pasa' }],
+    ['splash', '/splash/apple-splash-1170-2532.png', { tipo: 'pasa' }],
+    ['favicon', '/favicon.ico', { tipo: 'pasa' }],
+    ['admin-manifest por su nombre real', '/admin-manifest.json', { tipo: 'pasa' }],
+    ['admin-icon por su nombre real', '/admin-icon-192.png', { tipo: 'pasa' }],
+    // prefijo viejo /admin*: 404 (incluso con punto)
+    ['/admin', '/admin', { tipo: '404' }],
+    ['/admin/', '/admin/', { tipo: '404' }],
+    ['/admin/login', '/admin/login', { tipo: '404' }],
+    ['/admin/uso/1', '/admin/uso/1', { tipo: '404' }],
+    ['/admin/x.png', '/admin/x.png', { tipo: '404' }],
+    // páginas del tenant: 404 (mismo origen que guarda el token del admin)
+    ['tenant /clientes', '/clientes', { tipo: '404' }],
+    ['tenant /agenda', '/agenda', { tipo: '404' }],
+    ['tenant /login/foo', '/login/foo', { tipo: '404' }],
+    ['reserva /reservar/foo', '/reservar/foo', { tipo: '404' }],
+    ['reserva /reservar', '/reservar', { tipo: '404' }],
+    ['cualquier slug', '/natalia-acosta', { tipo: '404' }],
+    // /uso con regex acotada: lo que no matchea ahora es 404, no pass
+    ['/uso/abc', '/uso/abc', { tipo: '404' }],
+    ['/uso/42/otracosa', '/uso/42/otracosa', { tipo: '404' }],
+    ['/usoalgo', '/usoalgo', { tipo: '404' }],
+  ];
+
+  it.each(casos)('%s (%s)', (_nombre, path, esperado) => {
+    verificar(path, H, esperado);
+  });
+
+  it('una página del tenant en el host admin responde status 404', () => {
+    expect(middleware(requestA('/clientes', H)).status).toBe(404);
+  });
+});
+
+describe('middleware — normalización del host', () => {
+  const variantes = ['ADMIN.TURNETTO.COM', 'admin.turnetto.com:443', 'Admin.Turnetto.com:3000', 'admin.turnetto.com.'];
+
+  it.each(variantes)('admin con host %s se comporta como admin', (host) => {
+    const res = middleware(requestA('/login', host));
+    expect(res.headers.get('x-middleware-rewrite')).toMatch(/\/admin\/login$/);
+    verificar('/clientes', host, { tipo: '404' });
+    verificar('/admin/login', host, { tipo: '404' });
+    verificar('/sw.js', host, { tipo: 'pasa' });
+  });
+
+  it.each(['APP.TURNETTO.COM', 'app.turnetto.com:443'])('app con host %s 404ea /admin', (host) => {
+    verificar('/admin', host, { tipo: '404' });
+    verificar('/admin/login', host, { tipo: '404' });
+    verificar('/clientes', host, { tipo: 'pasa' });
+  });
+
+  it.each(['RESERVAR.TURNETTO.COM', 'reservar.turnetto.com:443'])('reservar con host %s reescribe', (host) => {
+    const res = middleware(requestA('/natalia-acosta', host));
+    expect(res.headers.get('x-middleware-rewrite')).toMatch(/\/reservar\/natalia-acosta$/);
+  });
+});
+
+describe('middleware — app.turnetto.com', () => {
+  it.each(['/admin', '/admin/', '/admin/login', '/admin/negocios/nuevo'])('%s -> 404', (path) => {
+    verificar(path, 'app.turnetto.com', { tipo: '404' });
+  });
+
+  it.each(['/clientes', '/login', '/administracion', '/admin-manifest.json'])('%s pasa', (path) => {
+    verificar(path, 'app.turnetto.com', { tipo: 'pasa' });
+  });
+});
+
+describe('middleware — host desconocido (apex, www, IP pelada, otro dominio)', () => {
+  const hosts = ['turnetto.com', 'www.turnetto.com', 'WWW.Turnetto.com:443', '203.0.113.7', '203.0.113.7:443', 'otro.example.org'];
+
+  describe.each(hosts)('host %j', (host) => {
+    it.each(['/admin', '/admin/', '/admin/login', '/admin/uso/1/dia'])('%s -> 404', (path) => {
+      verificar(path, host, { tipo: '404' });
+    });
+
+    it.each(['/', '/clientes', '/login/foo', '/administracion', '/admin-manifest.json', '/sw.js'])(
+      '%s sigue pasando como hoy',
+      (path) => {
+        verificar(path, host, { tipo: 'pasa' });
+      },
+    );
+  });
+
+  it('sin header Host: /admin* 404, el resto pasa', () => {
+    const sinHost = (path: string) => middleware(new NextRequest(new URL(path, 'http://x')));
+    expect(sinHost('/admin/login').status).toBe(404);
+    expect(sinHost('/clientes').headers.get('x-middleware-rewrite')).toBeNull();
+    expect(sinHost('/clientes').status).toBe(200);
+  });
+});
+
+// El fetch interno de Next que resuelve un rewrite llega con Host:
+// localhost:3000 (bug real en prod: bloquearlo tumbó admin.turnetto.com/login)
+// y `npm run dev` también usa localhost. Ese host NO se toca.
+describe('middleware — host interno/dev (localhost, 127.0.0.1, cualquier puerto)', () => {
+  const hosts = ['localhost:3000', 'localhost', 'LOCALHOST:3000', '127.0.0.1:3000', '127.0.0.1', 'localhost:4000'];
+
+  describe.each(hosts)('host %j', (host) => {
+    it.each(['/admin', '/admin/login', '/admin/uso/1', '/admin-icon-192.png'])('%s pasa sin bloquear ni reescribir', (path) => {
+      verificar(path, host, { tipo: 'pasa' });
+    });
+
+    it.each(['/clientes', '/login', '/reservar/foo', '/sw.js', '/manifest.json'])('%s pasa sin reescribir', (path) => {
+      verificar(path, host, { tipo: 'pasa' });
+    });
+  });
+});
+
+describe('middleware — matcher', () => {
+  const [patron] = config.matcher;
+  const re = new RegExp(`^${patron}$`);
+
+  it.each(['/api', '/api/clientes', '/_next/static/chunks/x.js', '/_next/image', '/_next'])(
+    '%s queda fuera del middleware',
+    (path) => {
+      expect(re.test(path)).toBe(false);
+    },
+  );
+
+  it.each(['/', '/login', '/admin/login', '/sw.js', '/splash/a.png', '/clientes'])('%s entra al middleware', (path) => {
+    expect(re.test(path)).toBe(true);
   });
 });

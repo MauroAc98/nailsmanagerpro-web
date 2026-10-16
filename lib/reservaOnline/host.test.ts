@@ -12,3 +12,10 @@ describe('esHostReservaPublica', () => {
     expect(esHostReservaPublica('localhost')).toBe(false);
   });
 });
+
+describe('esHostReservaPublica — normalización', () => {
+  it('ignora mayúsculas y puerto', () => {
+    expect(esHostReservaPublica('RESERVAR.TURNETTO.COM')).toBe(true);
+    expect(esHostReservaPublica('reservar.turnetto.com:443')).toBe(true);
+  });
+});
