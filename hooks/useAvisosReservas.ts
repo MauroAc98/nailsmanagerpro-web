@@ -10,6 +10,7 @@ import {
   type ErrorAvisos,
   type EstadoAvisos,
 } from '@/lib/avisosPush';
+import { payloadDeSuscripcion } from '@/lib/suscripcionPush';
 
 // null mientras se lee el entorno (en el server no hay navigator).
 async function leerEstado(): Promise<EstadoAvisos> {
@@ -77,14 +78,8 @@ export function useAvisosReservas() {
           applicationServerKey: urlBase64ToUint8Array(clave),
         });
       }
-      const json = sub.toJSON();
       try {
-        await pushService.guardarSuscripcion({
-          endpoint: sub.endpoint,
-          keys: { p256dh: json.keys?.p256dh ?? '', auth: json.keys?.auth ?? '' },
-          content_encoding: PushManager.supportedContentEncodings?.includes('aes128gcm') ? 'aes128gcm' : undefined,
-          user_agent: navigator.userAgent.slice(0, 255),
-        });
+        await pushService.guardarSuscripcion(payloadDeSuscripcion(sub));
       } catch (e) {
         // Sin registro en el servidor la suscripción local no sirve: se
         // deshace para no quedar "activo" sin que lleguen avisos.

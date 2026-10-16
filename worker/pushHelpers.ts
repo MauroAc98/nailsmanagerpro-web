@@ -69,3 +69,62 @@ export function urlMismoOrigen(url: string | undefined | null, origen: string): 
     return porDefecto;
   }
 }
+
+// ─── pushsubscriptionchange ─────────────────────────────────────────────
+// El navegador puede rotar la suscripción (vence, o la renueva el servicio de
+// push). El SW NO puede avisarle al servidor: la API exige el token de sesión,
+// que vive en localStorage (inaccesible desde el worker) y no se copia a ningún
+// lado. Por eso solo (1) re-suscribe con la misma clave del servidor y (2) avisa
+// a las ventanas abiertas; el re-enlace con el servidor lo hace la app
+// (hooks/useReenlazarPush) cuando está abierta o en su próximo arranque.
+
+export const MENSAJE_SUSCRIPCION_CAMBIO = { type: 'push-subscription-changed' } as const;
+
+export type ResultadoCambioSuscripcion = 'resuscripto' | 'sin-clave' | 'error';
+
+interface SuscripcionAnterior {
+  options?: { applicationServerKey?: ArrayBuffer | null } | null;
+}
+
+interface RegistroPush {
+  pushManager: {
+    subscribe: (o: { userVisibleOnly: boolean; applicationServerKey: ArrayBuffer }) => Promise<unknown>;
+  };
+}
+
+interface ClientesVentana {
+  matchAll: (o: { type: 'window'; includeUncontrolled: boolean }) => Promise<{ postMessage: (m: unknown) => void }[]>;
+}
+
+// Nunca lanza. Sin la clave anterior no se puede re-suscribir (no hay forma de
+// conocer la del servidor sin la API autenticada): no se hace nada destructivo
+// y solo se avisa a la app.
+export async function manejarCambioDeSuscripcion(
+  anterior: SuscripcionAnterior | null | undefined,
+  registro: RegistroPush,
+  clientes: ClientesVentana,
+): Promise<ResultadoCambioSuscripcion> {
+  const clave = anterior?.options?.applicationServerKey ?? null;
+  let resultado: ResultadoCambioSuscripcion = 'sin-clave';
+  if (clave) {
+    try {
+      await registro.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: clave });
+      resultado = 'resuscripto';
+    } catch {
+      resultado = 'error';
+    }
+  }
+  try {
+    const ventanas = await clientes.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const v of ventanas) {
+      try {
+        v.postMessage(MENSAJE_SUSCRIPCION_CAMBIO);
+      } catch {
+        // una ventana que falla no impide avisar a las demás
+      }
+    }
+  } catch {
+    // sin ventanas abiertas la app lo resuelve en su próximo arranque
+  }
+  return resultado;
+}

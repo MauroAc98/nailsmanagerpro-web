@@ -11,6 +11,7 @@ import { esPanelAdmin } from '@/lib/esPanelAdmin';
 import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRefrescoEstadoNegocio } from '@/hooks/useRefrescoEstadoNegocio';
+import { useReenlazarPush } from '@/hooks/useReenlazarPush';
 import { useLoadingStore } from '@/store/useLoadingStore';
 import { initTheme, useThemeStore } from '@/store/useThemeStore';
 import { initConexion } from '@/store/useConexionStore';
@@ -104,6 +105,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // window read — stays outside the pure resolver. Se calcula acá arriba (y no
   // junto al guard) porque el arranque del salón de abajo depende de él.
   const isAdmin = esRutaAdmin(pathname);
+  const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario de esRutaReservaPublica
 
   useEffect(() => {
     initTheme();
@@ -135,6 +137,12 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // Datos del negocio que cambian desde afuera (ej. el admin activa o desactiva
   // la reserva online): se refrescan al volver a la app y cada minuto.
   useRefrescoEstadoNegocio(!isAdmin);
+
+  // Avisos push: al iniciar sesión (o abrir la app con sesión) se re-enlaza en
+  // silencio la suscripción que el navegador ya tiene — el logout solo borra el
+  // vínculo en el servidor, no el permiso ni la suscripción. Nunca pide permiso.
+  // Ni el panel de admin ni la reserva pública son el salón: ahí no corre.
+  useReenlazarPush(!isAdmin && !isReservaPublica);
 
   // Un confirm/alert (ConfirmSheetHost) vive en este layout raíz, no en la
   // pantalla que lo abrió — nunca se desmonta con la navegación. Sin este
@@ -256,7 +264,6 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // `puedeMostrarContenido` if/else that had to be kept byte-for-byte in sync)
   // is gone. `resolveAuthRoute` decides allow/redirect/blank once; the effect
   // only navigates, the render only gates. They can never disagree.
-  const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario arriba
   const qs = searchParams.toString();
   const snapshot: AuthRouteSnapshot = {
     status: authStatus,

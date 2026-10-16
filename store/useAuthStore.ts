@@ -9,6 +9,8 @@ import { logAuthEvent } from '@/lib/logAuthEvent';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { limpiarCachesDeSesion } from '@/lib/limpiarCachesSw';
 import { esErrorDeRed } from '@/services/clienteService';
+import { pushService } from '@/services/pushService';
+import { leerSuscripcionExistente } from '@/lib/suscripcionPush';
 
 // Sin red un login/perfil fallido no debe leerse como "credenciales
 // incorrectas" ni como un error genérico: se avisa del problema de conexión.
@@ -31,6 +33,34 @@ const BOOT_CHECK_TIMEOUT_MS = 8000;
 // is abandoned and logged, never blocking navigation. 3s — a logout POST that
 // slow is already a lost cause and the axios 15s default is far too long here.
 const LOGOUT_SERVER_TIMEOUT_MS = 3000;
+
+// Parte de esa cota que puede gastar el desenlace del push (leer la suscripción
+// del navegador + DELETE al servidor). Lo que se cuelgue se abandona a los 1.5s
+// y queda la otra mitad para que POST /auth/logout revoque el token igual.
+const LOGOUT_PUSH_UNLINK_TIMEOUT_MS = 1500;
+
+// Cierra sesión en el push SIN dar de baja la suscripción del navegador ni el
+// permiso: solo se borra el vínculo en el servidor, para que dejen de llegar
+// avisos de esta cuenta a este dispositivo. Al volver a entrar, useReenlazarPush
+// re-enlaza la suscripción existente sin pedir nada. Corre antes del logout del
+// servidor porque necesita el token todavía vigente. Nunca lanza.
+async function desenlazarPush(token: string): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const desenlace = (async () => {
+      const sub = await leerSuscripcionExistente();
+      if (sub) await pushService.borrarSuscripcion(sub.endpoint, token);
+    })();
+    const limite = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('push-unlink-timeout')), LOGOUT_PUSH_UNLINK_TIMEOUT_MS);
+    });
+    await Promise.race([desenlace, limite]);
+  } catch (err) {
+    logAuthEvent('logout.push-unlink-failed', { err });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // Module-scoped single-flight latch for `recheckSubscription` (design D3): N
 // parallel 403-driven recheck intents collapse into ONE `/auth/subscription-status`
@@ -528,8 +558,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     //    are already logged out locally, so the caller does NOT await this and
     //    it stays OUT of `withGlobalLoader`. A hung or failed request is just
     //    logged — never resurfaced to the user.
+    //    Antes del logout del servidor se desenlaza el push (necesita el token
+    //    aún vigente); sin service worker no hay nada que desenlazar y el POST
+    //    sale en el mismo tick, como siempre.
+    const cierreEnServidor = async () => {
+      if (tokenParaRevocar && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        await desenlazarPush(tokenParaRevocar);
+      }
+      await authService.logout(tokenParaRevocar);
+    };
     void Promise.race([
-      authService.logout(tokenParaRevocar),
+      cierreEnServidor(),
       new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('logout-timeout')), LOGOUT_SERVER_TIMEOUT_MS);
       }),

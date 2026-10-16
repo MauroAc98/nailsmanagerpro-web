@@ -570,3 +570,96 @@ describe('Providers — arranque del salón fuera del panel de admin', () => {
     await waitFor(() => expect(mockedGet).toHaveBeenCalledWith('/auth/subscription-status'));
   });
 });
+
+// El logout borra solo el vínculo push en el servidor (permiso y suscripción del
+// navegador quedan): al volver a entrar se re-enlaza sola, pero únicamente en el
+// salón — nunca en el panel de admin ni en la reserva pública.
+describe('Providers — re-enlace silencioso de avisos push', () => {
+  const suscripcion = {
+    endpoint: 'https://push.example/abc',
+    toJSON: () => ({ keys: { p256dh: 'P', auth: 'A' } }),
+  };
+  const registro = {
+    update: vi.fn(),
+    unregister: vi.fn().mockResolvedValue(true),
+    pushManager: { getSubscription: vi.fn() },
+  };
+  const sw = {
+    register: vi.fn(),
+    getRegistration: vi.fn(),
+    getRegistrations: vi.fn(),
+    controller: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  };
+  const mockedPost = vi.mocked(api.post);
+
+  beforeEach(() => {
+    registro.pushManager.getSubscription.mockReset().mockResolvedValue(suscripcion);
+    sw.getRegistration.mockReset().mockResolvedValue(registro);
+    sw.getRegistrations.mockReset().mockResolvedValue([registro]);
+    sw.register.mockReset().mockResolvedValue(registro);
+    mockedPost.mockReset().mockResolvedValue({ data: {} });
+    Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+    vi.stubGlobal('Notification', { permission: 'granted' });
+    (window as unknown as Record<string, unknown>).Notification = { permission: 'granted' };
+    (window as unknown as Record<string, unknown>).PushManager = function PushManager() {};
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+  });
+
+  afterEach(() => {
+    cleanup(); // desmonta antes de quitar serviceWorker: el cleanup del efecto lo usa
+    vi.unstubAllGlobals();
+    delete (window as unknown as Record<string, unknown>).Notification;
+    delete (window as unknown as Record<string, unknown>).PushManager;
+    // @ts-expect-error jsdom no trae serviceWorker: lo quitamos para no afectar otros tests
+    delete navigator.serviceWorker;
+  });
+
+  const esperarUnTick = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+  const llamadasPush = () => mockedPost.mock.calls.filter(([url]) => url === '/push/subscriptions');
+
+  it('en el salón, con sesión iniciada, re-enlaza la suscripción existente', async () => {
+    setMockLocation('/agenda');
+    render(<Providers><div>SALON</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(llamadasPush()).toHaveLength(1));
+    expect(llamadasPush()[0][1]).toMatchObject({ endpoint: 'https://push.example/abc' });
+  });
+
+  it('en admin.turnetto.com no corre, aunque haya una sesión del salón abierta', async () => {
+    setHostname('admin.turnetto.com');
+    useAuthStore.setState({ authStatus: 'authenticated', user: { id: 1 } as never });
+    setMockLocation('/');
+    render(<Providers><div>PANEL</div></Providers>);
+    markI18nReady();
+
+    await screen.findByText('PANEL');
+    await esperarUnTick();
+    expect(registro.pushManager.getSubscription).not.toHaveBeenCalled();
+    expect(llamadasPush()).toHaveLength(0);
+  });
+
+  it('en reservar.turnetto.com no corre, aunque haya una sesión del salón abierta', async () => {
+    setHostname('reservar.turnetto.com');
+    useAuthStore.setState({ authStatus: 'authenticated', user: { id: 1 } as never });
+    setMockLocation('/natalia-acosta');
+    render(<Providers><div>RESERVA</div></Providers>);
+    markI18nReady();
+
+    await screen.findByText('RESERVA');
+    await esperarUnTick();
+    expect(registro.pushManager.getSubscription).not.toHaveBeenCalled();
+    expect(llamadasPush()).toHaveLength(0);
+  });
+});

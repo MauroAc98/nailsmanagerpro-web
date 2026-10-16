@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { parsearPayloadPush, urlMismoOrigen, opcionesNotificacion, TITULO_POR_DEFECTO } from './pushHelpers';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  parsearPayloadPush,
+  urlMismoOrigen,
+  opcionesNotificacion,
+  manejarCambioDeSuscripcion,
+  MENSAJE_SUSCRIPCION_CAMBIO,
+  TITULO_POR_DEFECTO,
+} from './pushHelpers';
 
 describe('parsearPayloadPush', () => {
   it('lee un payload completo', () => {
@@ -85,5 +92,63 @@ describe('urlMismoOrigen', () => {
   });
   it('cae en /agenda si no hay url', () => {
     expect(urlMismoOrigen(undefined, origen)).toBe('https://app.turnetto.com/agenda');
+  });
+});
+
+describe('manejarCambioDeSuscripcion', () => {
+  const clave = new Uint8Array([1, 2, 3]).buffer;
+  const ventana = () => ({ postMessage: vi.fn() });
+
+  function entorno(opts: { subscribe?: () => Promise<unknown>; ventanas?: { postMessage: () => void }[]; matchAllFalla?: boolean }) {
+    const subscribe = vi.fn(opts.subscribe ?? (() => Promise.resolve({ endpoint: 'https://push.example/nuevo' })));
+    const ventanas = opts.ventanas ?? [ventana()];
+    const matchAll = vi.fn(() => (opts.matchAllFalla ? Promise.reject(new Error('x')) : Promise.resolve(ventanas)));
+    return { subscribe, ventanas, matchAll, registro: { pushManager: { subscribe } }, clientes: { matchAll } };
+  }
+
+  it('re-suscribe con la misma applicationServerKey y avisa a las ventanas abiertas', async () => {
+    const e = entorno({});
+    const r = await manejarCambioDeSuscripcion({ options: { applicationServerKey: clave } }, e.registro, e.clientes);
+    expect(e.subscribe).toHaveBeenCalledWith({ userVisibleOnly: true, applicationServerKey: clave });
+    expect(e.matchAll).toHaveBeenCalledWith({ type: 'window', includeUncontrolled: true });
+    expect(e.ventanas[0].postMessage).toHaveBeenCalledWith(MENSAJE_SUSCRIPCION_CAMBIO);
+    expect(r).toBe('resuscripto');
+  });
+
+  it('el mensaje es { type: "push-subscription-changed" } y no lleva datos de sesión', () => {
+    expect(MENSAJE_SUSCRIPCION_CAMBIO).toEqual({ type: 'push-subscription-changed' });
+  });
+
+  it.each([undefined, null, {}, { options: {} }, { options: { applicationServerKey: null } }])(
+    'sin clave (%j) no suscribe nada, pero igual avisa a las ventanas',
+    async (anterior) => {
+      const e = entorno({});
+      const r = await manejarCambioDeSuscripcion(anterior as never, e.registro, e.clientes);
+      expect(e.subscribe).not.toHaveBeenCalled();
+      expect(e.ventanas[0].postMessage).toHaveBeenCalledWith(MENSAJE_SUSCRIPCION_CAMBIO);
+      expect(r).toBe('sin-clave');
+    },
+  );
+
+  it('si subscribe falla no lanza y igual avisa a las ventanas', async () => {
+    const e = entorno({ subscribe: () => Promise.reject(new Error('denied')) });
+    const r = await manejarCambioDeSuscripcion({ options: { applicationServerKey: clave } }, e.registro, e.clientes);
+    expect(e.ventanas[0].postMessage).toHaveBeenCalledWith(MENSAJE_SUSCRIPCION_CAMBIO);
+    expect(r).toBe('error');
+  });
+
+  it('si no se pueden listar las ventanas no lanza', async () => {
+    const e = entorno({ matchAllFalla: true });
+    await expect(
+      manejarCambioDeSuscripcion({ options: { applicationServerKey: clave } }, e.registro, e.clientes),
+    ).resolves.toBe('resuscripto');
+  });
+
+  it('avisa a todas las ventanas aunque una falle', async () => {
+    const mala = { postMessage: vi.fn(() => { throw new Error('x'); }) };
+    const buena = ventana();
+    const e = entorno({ ventanas: [mala, buena] });
+    await manejarCambioDeSuscripcion(undefined, e.registro, e.clientes);
+    expect(buena.postMessage).toHaveBeenCalledWith(MENSAJE_SUSCRIPCION_CAMBIO);
   });
 });
