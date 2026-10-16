@@ -15,7 +15,12 @@ export const pushService = {
   guardarSuscripcion: async (s: SuscripcionPush): Promise<void> => {
     await api.post('/push/subscriptions', s);
   },
-  borrarSuscripcion: async (endpoint: string): Promise<void> => {
-    await api.delete('/push/subscriptions', { data: { endpoint } });
+  // `token` explícito: el logout limpia localStorage antes de llamar, y el
+  // interceptor lee el token de ahí; sin esto el DELETE saldría sin sesión.
+  borrarSuscripcion: async (endpoint: string, token?: string | null): Promise<void> => {
+    await api.delete('/push/subscriptions', {
+      data: { endpoint },
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    });
   },
 };

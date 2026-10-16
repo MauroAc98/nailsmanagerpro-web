@@ -18,7 +18,17 @@ vi.mock('@/store/useLocaleStore', () => ({
   tStatic: (key: string) => key,
 }));
 
+vi.mock('@/services/pushService', () => ({
+  pushService: { borrarSuscripcion: vi.fn() },
+}));
+
+vi.mock('@/lib/suscripcionPush', () => ({
+  leerSuscripcionExistente: vi.fn(),
+}));
+
 import api from '@/lib/api';
+import { pushService } from '@/services/pushService';
+import { leerSuscripcionExistente } from '@/lib/suscripcionPush';
 import { logAuthEvent } from '@/lib/logAuthEvent';
 import { setLocale } from '@/store/useLocaleStore';
 import { useAuthStore } from './useAuthStore';
@@ -28,6 +38,8 @@ const mockedGet = vi.mocked(api.get);
 const mockedPost = vi.mocked(api.post);
 const mockedLog = vi.mocked(logAuthEvent);
 const mockedSetLocale = vi.mocked(setLocale);
+const mockedBorrar = vi.mocked(pushService.borrarSuscripcion);
+const mockedLeerSub = vi.mocked(leerSuscripcionExistente);
 
 const INITIAL = useAuthStore.getState();
 
@@ -69,6 +81,8 @@ beforeEach(() => {
   mockedPost.mockReset();
   mockedLog.mockReset();
   mockedSetLocale.mockReset();
+  mockedBorrar.mockReset();
+  mockedLeerSub.mockReset();
   localStorage.clear();
   sessionStorage.clear();
 });
@@ -202,6 +216,84 @@ describe('logout', () => {
 
     await expect(useAuthStore.getState().logout()).resolves.toBeUndefined();
     expect(useLoadingStore.getState().isLoading).toBe(false);
+  });
+
+  // Las notificaciones push dejan de llegar a este dispositivo al cerrar sesión
+  // (se borra el vínculo en el servidor), pero la suscripción del navegador y el
+  // permiso se CONSERVAN: al volver a entrar se re-enlaza sola (useReenlazarPush).
+  describe('desenlazar push', () => {
+    const SUB = { endpoint: 'https://push.example/a', unsubscribe: vi.fn() };
+
+    beforeEach(() => {
+      Object.defineProperty(navigator, 'serviceWorker', { value: {}, configurable: true });
+      SUB.unsubscribe.mockReset();
+      mockedLeerSub.mockResolvedValue(SUB as unknown as PushSubscription);
+      mockedBorrar.mockResolvedValue();
+      mockedPost.mockResolvedValue({ data: {} });
+      useAuthStore.setState({ authStatus: 'authenticated', token: 'tok-abc' });
+      localStorage.setItem('auth_token', 'tok-abc');
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      Reflect.deleteProperty(navigator, 'serviceWorker');
+    });
+
+    it('borra el vínculo con el token capturado ANTES del logout del servidor', async () => {
+      await useAuthStore.getState().logout();
+      await vi.waitFor(() => expect(mockedPost).toHaveBeenCalled());
+
+      expect(mockedBorrar).toHaveBeenCalledWith('https://push.example/a', 'tok-abc');
+      expect(mockedBorrar.mock.invocationCallOrder[0]).toBeLessThan(mockedPost.mock.invocationCallOrder[0]);
+      expect(mockedPost).toHaveBeenCalledWith('/auth/logout', undefined, {
+        headers: { Authorization: 'Bearer tok-abc' },
+      });
+    });
+
+    it('nunca da de baja la suscripción del navegador (se conserva para el próximo login)', async () => {
+      await useAuthStore.getState().logout();
+      await vi.waitFor(() => expect(mockedPost).toHaveBeenCalled());
+      expect(SUB.unsubscribe).not.toHaveBeenCalled();
+    });
+
+    it('sin suscripción en el navegador no llama al servidor de push y igual cierra sesión', async () => {
+      mockedLeerSub.mockResolvedValue(null);
+      await useAuthStore.getState().logout();
+      await vi.waitFor(() => expect(mockedPost).toHaveBeenCalled());
+      expect(mockedBorrar).not.toHaveBeenCalled();
+    });
+
+    it('si borrar el vínculo falla, lo registra y el logout del servidor se hace igual', async () => {
+      mockedBorrar.mockRejectedValue(new Error('500'));
+      await useAuthStore.getState().logout();
+      await vi.waitFor(() => expect(mockedPost).toHaveBeenCalled());
+      expect(mockedLog).toHaveBeenCalledWith('logout.push-unlink-failed', expect.anything());
+    });
+
+    it('la UI no espera: el estado local ya está limpio aunque leer la suscripción se cuelgue', () => {
+      mockedLeerSub.mockReturnValue(new Promise(() => {}));
+      void useAuthStore.getState().logout();
+      expect(useAuthStore.getState().authStatus).toBe('unauthenticated');
+      expect(useAuthStore.getState().token).toBeNull();
+      expect(localStorage.getItem('auth_token')).toBeNull();
+    });
+
+    it('si el desenlace se cuelga, se abandona a los 1.5s y el logout del servidor igual corre dentro de los 3s', async () => {
+      vi.useFakeTimers();
+      mockedBorrar.mockReturnValue(new Promise(() => {}));
+      await useAuthStore.getState().logout();
+      await vi.advanceTimersByTimeAsync(1400);
+      expect(mockedPost).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(mockedPost).toHaveBeenCalledTimes(1);
+      expect(mockedLog).toHaveBeenCalledWith('logout.push-unlink-failed', expect.anything());
+    });
+
+    it('sin service worker no intenta desenlazar y el logout del servidor sale de inmediato', async () => {
+      Reflect.deleteProperty(navigator, 'serviceWorker');
+      await useAuthStore.getState().logout();
+      expect(mockedLeerSub).not.toHaveBeenCalled();
+      expect(mockedPost).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('with fake timers', () => {
