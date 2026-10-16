@@ -13,8 +13,11 @@ const INTERVALO_MS = 60_000;
 // negocio) desde otro navegador mientras esta app sigue abierta. Sin esto el
 // cambio solo se veía al cerrar sesión y volver a entrar. Refresca al volver a
 // la pestaña o recuperar el foco, y cada minuto mientras se la mira.
-export function useRefrescoEstadoNegocio(): void {
-  const activo = useAuthStore((s) => s.authStatus === 'authenticated' && !!s.user);
+//
+// `habilitado` en false (ej. en el panel de admin, que no es el salón) lo apaga
+// por completo aunque haya una sesión del salón abierta en el store.
+export function useRefrescoEstadoNegocio(habilitado = true): void {
+  const activo = useAuthStore((s) => habilitado && s.authStatus === 'authenticated' && !!s.user);
 
   useEffect(() => {
     if (!activo) return;

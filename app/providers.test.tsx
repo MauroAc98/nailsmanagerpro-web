@@ -454,3 +454,119 @@ describe('Providers — renderizado en servidor del panel de admin', () => {
     expect(html).not.toContain('PANEL');
   });
 });
+
+// Providers corre también en admin.turnetto.com y bajo /admin, pero el arranque
+// del salón (validar sesión y suscripción, polling de /auth/me, estado de
+// conexión) no tiene sentido ahí y generaba requests al API del salón.
+describe('Providers — arranque del salón fuera del panel de admin', () => {
+  const refrescar = vi.fn(() => Promise.resolve());
+
+  beforeEach(() => {
+    refrescar.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function sesionDelSalonAbierta() {
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+  }
+
+  it('en admin.turnetto.com no valida la sesión del salón ni llama al API del salón', async () => {
+    setHostname('admin.turnetto.com');
+    sesionDelSalonAbierta();
+    setMockLocation('/');
+
+    render(<Providers><div>PANEL</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('PANEL')).toBeInTheDocument();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(mockedGet).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().authStatus).toBe('booting');
+  });
+
+  it('bajo /admin (app.turnetto.com/admin, localhost) tampoco', async () => {
+    sesionDelSalonAbierta();
+    setMockLocation('/admin');
+
+    render(<Providers><div>PANEL</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('PANEL')).toBeInTheDocument();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(mockedGet).not.toHaveBeenCalled();
+  });
+
+  it('en admin.turnetto.com no hace el refresco periódico del estado del negocio, aunque haya sesión del salón', async () => {
+    setHostname('admin.turnetto.com');
+    useAuthStore.setState({
+      authStatus: 'authenticated',
+      user: { id: 1 } as never,
+      refrescarEstadoNegocio: refrescar,
+    });
+    setMockLocation('/');
+
+    render(<Providers><div>PANEL</div></Providers>);
+    markI18nReady();
+    await screen.findByText('PANEL');
+
+    const ahora = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(ahora + 20_000);
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    expect(refrescar).not.toHaveBeenCalled();
+  });
+
+  it('en app.turnetto.com todo sigue igual: valida la sesión y refresca el estado del negocio', async () => {
+    sesionDelSalonAbierta();
+    setMockLocation('/agenda');
+
+    render(<Providers><div>PROTECTED CONTENT</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('PROTECTED CONTENT')).toBeInTheDocument();
+    expect(mockedGet).toHaveBeenCalledWith('/auth/subscription-status');
+
+    useAuthStore.setState({ refrescarEstadoNegocio: refrescar });
+    const ahora = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(ahora + 20_000);
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    expect(refrescar).toHaveBeenCalledTimes(1);
+  });
+
+  it('al pasar de una pantalla del panel a una del salón (sin recargar), el arranque del salón corre entonces', async () => {
+    sesionDelSalonAbierta();
+    setMockLocation('/admin');
+
+    render(<Providers><div>CONTENIDO</div></Providers>);
+    markI18nReady();
+    await screen.findByText('CONTENIDO');
+    expect(mockedGet).not.toHaveBeenCalled();
+
+    act(() => {
+      setMockLocation('/agenda');
+    });
+
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledWith('/auth/subscription-status'));
+  });
+});
