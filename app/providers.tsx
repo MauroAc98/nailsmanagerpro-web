@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute';
@@ -101,14 +101,32 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   const isLoading = useLoadingStore(state => state.isLoading);
   const { locale, messages, mensajesListos } = useLocaleStore();
   const [mounted, setMounted] = useState(false);
+  // window read — stays outside the pure resolver. Se calcula acá arriba (y no
+  // junto al guard) porque el arranque del salón de abajo depende de él.
+  const isAdmin = esRutaAdmin(pathname);
 
   useEffect(() => {
-    useAuthStore.getState().inicializar();
     initTheme();
-    initConexion();
     initLocale();
     setMounted(true);
   }, []);
+
+  // Arranque del salón: validar la sesión/suscripción (useAuthStore.inicializar
+  // -> /auth/subscription-status, /support-info, /auth/me) y escuchar la
+  // conexión. En el panel de admin no tiene sentido y solo generaba requests al
+  // API del salón (con el token del salón si había una sesión abierta en el
+  // mismo navegador). Va en un efecto: en el servidor no corre, así que no
+  // cambia el primer render. Depende de isAdmin para que, si desde una pantalla
+  // del panel (sin recargar) se navega a una del salón, el arranque corra
+  // entonces. Corre una sola vez por montaje (ref): volver al panel y de nuevo
+  // al salón no debe re-arrancar una sesión ya validada.
+  const salonArrancado = useRef(false);
+  useEffect(() => {
+    if (isAdmin || salonArrancado.current) return;
+    salonArrancado.current = true;
+    useAuthStore.getState().inicializar();
+    initConexion();
+  }, [isAdmin]);
 
   // Al cambiar de cuenta (logout, sesión revocada, otro usuario) se vacían los
   // stores con datos del salón; si no, el siguiente salón vería datos ajenos.
@@ -116,7 +134,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
   // Datos del negocio que cambian desde afuera (ej. el admin activa o desactiva
   // la reserva online): se refrescan al volver a la app y cada minuto.
-  useRefrescoEstadoNegocio();
+  useRefrescoEstadoNegocio(!isAdmin);
 
   // Un confirm/alert (ConfirmSheetHost) vive en este layout raíz, no en la
   // pantalla que lo abrió — nunca se desmonta con la navegación. Sin este
@@ -238,7 +256,6 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // `puedeMostrarContenido` if/else that had to be kept byte-for-byte in sync)
   // is gone. `resolveAuthRoute` decides allow/redirect/blank once; the effect
   // only navigates, the render only gates. They can never disagree.
-  const isAdmin = esRutaAdmin(pathname); // window read — stays outside the pure fn
   const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario arriba
   const qs = searchParams.toString();
   const snapshot: AuthRouteSnapshot = {

@@ -40,10 +40,17 @@ adminApi.interceptors.request.use((config) => {
 // mientras se pide reautenticación; ver useAdminAuthStore.reautenticacionRequerida.
 // Un reingreso exitoso sobreescribe el token guardado; un logout explícito
 // (botón "Cerrar sesión" del modal) limpia localStorage por su cuenta.
+//
+// El 401 del propio login (password incorrecta) NO es una sesión vencida: no
+// hay sesión que reautenticar. Dispararlo mostraba el modal "Tu sesión
+// expiró" encima del formulario de login, con un botón que no hacía nada.
+const esRequestDeLogin = (url: string | undefined): boolean =>
+  /\/admin\/login\/?$/.test((url ?? '').split(/[?#]/)[0]);
+
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !esRequestDeLogin(error.config?.url)) {
       window.dispatchEvent(new CustomEvent('admin-session-expired'));
     }
     return Promise.reject(error);

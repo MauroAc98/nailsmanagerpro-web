@@ -1,3 +1,5 @@
+import { ADMIN_HOST, normalizarHost } from './hosts';
+
 // ¿Esta pantalla es del panel de administración?
 //
 // - admin.turnetto.com sirve el panel con URLs limpias (/, /login, ...); el
@@ -7,8 +9,6 @@
 //
 // Las dos guardas (la del salón y la del panel) usan esta misma pregunta: si
 // cada una la respondiera distinto, se empujarían entre sí en un bucle.
-const ADMIN_HOST = 'admin.turnetto.com';
-
 export function tienePrefijoAdmin(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
@@ -16,5 +16,5 @@ export function tienePrefijoAdmin(pathname: string): boolean {
 // `hostname` es null donde no hay window (renderizado en servidor): ahí solo
 // decide el prefijo de la ruta.
 export function esPanelAdmin(hostname: string | null, pathname: string): boolean {
-  return hostname === ADMIN_HOST || tienePrefijoAdmin(pathname);
+  return normalizarHost(hostname) === ADMIN_HOST || tienePrefijoAdmin(pathname);
 }

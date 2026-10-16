@@ -35,6 +35,73 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+describe('useAdminAuthStore — sincronizarDesdeStorage (otra pestaña)', () => {
+  const mockedGetToken = vi.mocked(adminService.getToken);
+  const mockedGetAdmin = vi.mocked(adminService.getAdminGuardado);
+
+  it('otra pestaña hizo logout (token borrado) -> esta pestaña suelta token/admin y el modal', () => {
+    useAdminAuthStore.setState({ admin: ADMIN, token: 'tok', reautenticacionRequerida: true });
+    mockedGetToken.mockReturnValue(null);
+
+    useAdminAuthStore.getState().sincronizarDesdeStorage();
+
+    const state = useAdminAuthStore.getState();
+    expect(state.token).toBeNull();
+    expect(state.admin).toBeNull();
+    expect(state.reautenticacionRequerida).toBe(false);
+  });
+
+  it('otra pestaña inició sesión (token nuevo, vigente) -> esta pestaña lo adopta', () => {
+    useAdminAuthStore.setState({ admin: null, token: null, inicializado: true });
+    mockedGetToken.mockReturnValue('tok-nuevo');
+    mockedGetAdmin.mockReturnValue(ADMIN);
+    mockedTokenExpirado.mockReturnValue(false);
+
+    useAdminAuthStore.getState().sincronizarDesdeStorage();
+
+    const state = useAdminAuthStore.getState();
+    expect(state.token).toBe('tok-nuevo');
+    expect(state.admin).toEqual(ADMIN);
+    expect(state.reautenticacionRequerida).toBe(false);
+  });
+
+  it('el token guardado ya está vencido -> no se adopta (queda sin sesión)', () => {
+    useAdminAuthStore.setState({ admin: ADMIN, token: 'tok' });
+    mockedGetToken.mockReturnValue('tok-viejo');
+    mockedTokenExpirado.mockReturnValue(true);
+
+    useAdminAuthStore.getState().sincronizarDesdeStorage();
+
+    const state = useAdminAuthStore.getState();
+    expect(state.token).toBeNull();
+    expect(state.admin).toBeNull();
+  });
+
+  it('si el admin guardado es ilegible, no tira: queda sin sesión', () => {
+    useAdminAuthStore.setState({ admin: null, token: null });
+    mockedGetToken.mockReturnValue('tok-nuevo');
+    mockedTokenExpirado.mockReturnValue(false);
+    mockedGetAdmin.mockImplementation(() => {
+      throw new SyntaxError('JSON inválido');
+    });
+
+    expect(() => useAdminAuthStore.getState().sincronizarDesdeStorage()).not.toThrow();
+
+    expect(useAdminAuthStore.getState().token).toBeNull();
+  });
+
+  it('mismo token y mismo admin -> no pisa el modal de reautenticación en curso', () => {
+    useAdminAuthStore.setState({ admin: ADMIN, token: 'tok', reautenticacionRequerida: true });
+    mockedGetToken.mockReturnValue('tok');
+    mockedGetAdmin.mockReturnValue({ ...ADMIN });
+    mockedTokenExpirado.mockReturnValue(false);
+
+    useAdminAuthStore.getState().sincronizarDesdeStorage();
+
+    expect(useAdminAuthStore.getState().reautenticacionRequerida).toBe(true);
+  });
+});
+
 describe('useAdminAuthStore — reautenticación sin perder pantalla', () => {
   it('requerirReautenticacion pone el flag sin tocar admin/token', () => {
     useAdminAuthStore.setState({ admin: ADMIN, token: 'tok-viejo' });
