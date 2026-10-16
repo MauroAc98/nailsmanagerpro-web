@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { resolveAuthRoute, type AuthStatus } from '@/lib/resolveAuthRoute';
 import { classifyAdmin } from '@/lib/authRouteClasses';
 import { tienePrefijoAdmin } from '@/lib/esPanelAdmin';
+import { esClaveAdmin } from '@/lib/adminStorageKeys';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { AdminReauthModal } from '@/components/admin/AdminReauthModal';
 import { colors } from '@/theme/colors';
@@ -44,6 +45,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const onAdminSessionExpired = () => useAdminAuthStore.getState().requerirReautenticacion();
     window.addEventListener('admin-session-expired', onAdminSessionExpired);
     return () => window.removeEventListener('admin-session-expired', onAdminSessionExpired);
+  }, []);
+
+  // Sincronización entre pestañas: `storage` solo se dispara en las OTRAS
+  // pestañas del mismo origen cuando cambia localStorage. Logout en una -> esta
+  // se queda sin sesión (y el guard de abajo la manda al login); login en otra
+  // -> adopta la sesión nueva. Solo mira las 3 claves admin (o null = clear());
+  // las del salón (auth_token/auth_user) no son asunto de este panel.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && !esClaveAdmin(e.key)) return;
+      useAdminAuthStore.getState().sincronizarDesdeStorage();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   // El token admin vence a horas fijas desde el login (12h, ver

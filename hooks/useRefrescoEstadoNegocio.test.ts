@@ -76,6 +76,13 @@ describe('useRefrescoEstadoNegocio', () => {
     expect(refrescar).not.toHaveBeenCalled();
   });
 
+  it('deshabilitado (panel de admin) no refresca aunque haya sesión del salón', () => {
+    renderHook(() => useRefrescoEstadoNegocio(false));
+    vi.advanceTimersByTime(120_000);
+    window.dispatchEvent(new Event('focus'));
+    expect(refrescar).not.toHaveBeenCalled();
+  });
+
   it('al desmontarse deja de escuchar y de refrescar', () => {
     const { unmount } = renderHook(() => useRefrescoEstadoNegocio());
     unmount();

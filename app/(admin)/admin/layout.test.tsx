@@ -131,6 +131,98 @@ describe('AdminLayout — shared resolver', () => {
     expect(screen.queryByText('ADMIN CONTENT')).toBeNull();
   });
 
+  describe('sincronización entre pestañas (evento storage)', () => {
+    const mockedGetAdmin = vi.mocked(adminService.getAdminGuardado);
+    const ADMIN = { id: 1, name: 'Superadmin', email: 'admin@turnetto.app' };
+
+    const storageEvent = (key: string | null) =>
+      act(() => {
+        window.dispatchEvent(new StorageEvent('storage', { key }));
+      });
+
+    it('otra pestaña borra admin_token (logout) -> esta pestaña queda sin sesión y va al login', async () => {
+      mockedGetToken.mockReturnValue('admin-tok');
+      setMockLocation('/');
+      render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+      await screen.findByText('ADMIN CONTENT');
+
+      mockedGetToken.mockReturnValue(null);
+      storageEvent('admin_token');
+
+      await waitFor(() => expect(useAdminAuthStore.getState().token).toBeNull());
+      await waitFor(() =>
+        expect(routerMock.push).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent('/')}`),
+      );
+      expect(screen.queryByText('ADMIN CONTENT')).toBeNull();
+    });
+
+    it('otra pestaña inicia sesión -> esta pestaña adopta el token nuevo', async () => {
+      mockedGetToken.mockReturnValue(null);
+      setMockLocation('/login');
+      render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+      await screen.findByText('ADMIN CONTENT');
+
+      mockedGetToken.mockReturnValue('tok-de-otra-pestana');
+      mockedGetAdmin.mockReturnValue(ADMIN);
+      storageEvent('admin_token_expires_at');
+
+      await waitFor(() => expect(useAdminAuthStore.getState().token).toBe('tok-de-otra-pestana'));
+      expect(useAdminAuthStore.getState().admin).toEqual(ADMIN);
+    });
+
+    it('cambia admin_user -> sincroniza', async () => {
+      mockedGetToken.mockReturnValue('admin-tok');
+      setMockLocation('/');
+      render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+      await screen.findByText('ADMIN CONTENT');
+
+      mockedGetAdmin.mockReturnValue(ADMIN);
+      storageEvent('admin_user');
+
+      await waitFor(() => expect(useAdminAuthStore.getState().admin).toEqual(ADMIN));
+    });
+
+    it('storage.clear() en otra pestaña (key null) -> sincroniza', async () => {
+      mockedGetToken.mockReturnValue('admin-tok');
+      setMockLocation('/');
+      render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+      await screen.findByText('ADMIN CONTENT');
+
+      mockedGetToken.mockReturnValue(null);
+      storageEvent(null);
+
+      await waitFor(() => expect(useAdminAuthStore.getState().token).toBeNull());
+    });
+
+    it('claves del salón (auth_token/auth_user) o ajenas se ignoran', async () => {
+      mockedGetToken.mockReturnValue('admin-tok');
+      setMockLocation('/');
+      render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+      await screen.findByText('ADMIN CONTENT');
+
+      mockedGetToken.mockReturnValue(null); // si sincronizara, perdería la sesión
+      storageEvent('auth_token');
+      storageEvent('auth_user');
+      storageEvent('otra_cosa');
+
+      expect(useAdminAuthStore.getState().token).toBe('admin-tok');
+      expect(screen.getByText('ADMIN CONTENT')).toBeInTheDocument();
+    });
+
+    it('al desmontar quita el listener', async () => {
+      mockedGetToken.mockReturnValue('admin-tok');
+      setMockLocation('/');
+      const { unmount } = render(<AdminLayout><div>ADMIN CONTENT</div></AdminLayout>);
+      await screen.findByText('ADMIN CONTENT');
+      unmount();
+
+      mockedGetToken.mockReturnValue(null);
+      storageEvent('admin_token');
+
+      expect(useAdminAuthStore.getState().token).toBe('admin-tok');
+    });
+  });
+
   it('token vence mientras la pestaña está en background -> al volver a visible, pide reautenticación sin esperar un request ni perder la pantalla', async () => {
     mockedGetToken.mockReturnValue('admin-tok');
     mockedTokenExpirado.mockReturnValue(false);

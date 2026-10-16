@@ -7,6 +7,7 @@ import { isAxiosError } from 'axios';
 import { ArrowLeft, Building2, Mail, User, KeyRound, Copy, Check, CircleCheck } from 'lucide-react';
 import { adminService, CrearNegocioPayload, CrearNegocioResponse } from '@/services/adminService';
 import { colors, shadows, withAlpha } from '@/theme/colors';
+import { AvisoEnvioEmail } from './AvisoEnvioEmail';
 
 // Excluye is_exempt: no es un campo de texto con label/validación como los
 // demás, se maneja aparte via el checkbox y el estado esExento.
@@ -158,7 +159,7 @@ export default function NuevoNegocioPage() {
             </div>
             <h1 style={{ fontSize: 20, fontWeight: 700, color: colors.textStrong, margin: 0 }}>Negocio creado</h1>
             <p style={{ fontSize: 14, color: colors.subtext, margin: 0 }}>
-              Compartí estas credenciales con la dueña del negocio para su primer ingreso.
+              Compartí estas credenciales con la persona titular del negocio para su primer ingreso.
             </p>
           </div>
 
@@ -194,9 +195,7 @@ export default function NuevoNegocioPage() {
             </div>
           </div>
 
-          <p style={{ fontSize: 12, color: colors.subtext, margin: 0, textAlign: 'center' }}>
-            También se envió esta contraseña por email a {resultado.user.email} — esta pantalla queda como respaldo si el correo no llega.
-          </p>
+          <AvisoEnvioEmail email={resultado.user.email} enviado={resultado.email_enviado} />
 
           <div style={{ display: 'flex', gap: 12 }}>
             <button

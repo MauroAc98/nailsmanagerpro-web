@@ -24,6 +24,7 @@ interface AdminAuthState {
   clearError: () => void;
   revisarExpiracion: () => void;
   requerirReautenticacion: () => void;
+  sincronizarDesdeStorage: () => void;
 }
 
 export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
@@ -55,6 +56,39 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     } catch {
       set({ inicializado: true });
     }
+  },
+
+  // Otra pestaña cambió la sesión admin en localStorage (evento `storage`,
+  // ver app/(admin)/admin/layout.tsx): logout allá -> esta pestaña también
+  // queda sin sesión (el guard del layout la manda al login); login allá ->
+  // se adopta la sesión nueva. Relee SIEMPRE el storage en vez de confiar en
+  // event.newValue: el login escribe token, admin y expires_at por separado
+  // y llegan como tres eventos, pero al procesar el primero ya están los tres.
+  // Un token vencido o un admin ilegible se tratan como "sin sesión", igual
+  // que inicializar(). Si no cambió nada, no toca el estado (no pisa un modal
+  // de reautenticación en curso).
+  sincronizarDesdeStorage: () => {
+    let token: string | null = null;
+    let admin: AdminUser | null = null;
+    try {
+      token = adminService.getToken();
+      if (token && adminService.tokenExpirado()) {
+        token = null;
+      } else if (token) {
+        admin = adminService.getAdminGuardado();
+      }
+    } catch {
+      token = null;
+      admin = null;
+    }
+
+    const actual = get();
+    if (!token) {
+      set({ token: null, admin: null, reautenticacionRequerida: false });
+      return;
+    }
+    if (actual.token === token && JSON.stringify(actual.admin) === JSON.stringify(admin)) return;
+    set({ token, admin, reautenticacionRequerida: false });
   },
 
   // Chequeo client-side del expires_at guardado — no espera a que un

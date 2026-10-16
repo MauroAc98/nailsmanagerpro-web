@@ -1,4 +1,5 @@
 import adminApi from '@/lib/adminApi';
+import { ADMIN_STORAGE_KEYS } from '@/lib/adminStorageKeys';
 
 // ─────────────────────────────────────────────
 // Tipos
@@ -56,6 +57,9 @@ export interface CrearNegocioResponse {
   message: string;
   user: { id: number; name: string; slug: string; email: string };
   password_provisoria: string;
+  // false = el negocio se creó pero el mail con la contraseña falló (201 igual).
+  // Ausente en respuestas de un backend anterior: se trata como enviado.
+  email_enviado?: boolean;
 }
 
 export interface RenewSubscriptionResponse {
@@ -200,11 +204,7 @@ export interface UsoDetalleNegocioPorDiaResponse {
 // services/authService.ts (auth_token/auth_user), ver design admin-panel
 // decisión #7.
 // ─────────────────────────────────────────────
-const KEYS = {
-  token: 'admin_token',
-  admin: 'admin_user',
-  expiresAt: 'admin_token_expires_at',
-};
+const KEYS = ADMIN_STORAGE_KEYS;
 
 // Mismos wrappers seguros que authService.ts — ver ese archivo para el
 // porqué (localStorage puede tirar en modo privado de iOS Safari).
@@ -388,12 +388,15 @@ export const adminService = {
   // como la sesión del negocio). Permite detectar un token vencido sin
   // esperar a que un request falle con 401 — ver useAdminAuthStore
   // .revisarExpiracion, usado al montar y al volver a la pestaña (feedback
-  // 2026-10-02). Sin expiresAt guardado (sesión vieja, de antes de este
-  // campo) nunca cuenta como vencido — fail-open, el 401 real sigue siendo
-  // la red de seguridad.
+  // 2026-10-02). Falla cerrado: sin expiresAt guardado (sesión vieja, de antes
+  // de este campo), vacío o ilegible cuenta como vencido — la sesión no se
+  // puede probar vigente, así que se pide ingresar de nuevo en vez de dejar
+  // pasar un token con vencimiento desconocido.
   tokenExpirado: (): boolean => {
     const expiresAt = safeGetItem(KEYS.expiresAt);
-    if (!expiresAt) return false;
-    return new Date(expiresAt).getTime() <= Date.now();
+    if (!expiresAt) return true;
+    const vence = new Date(expiresAt).getTime();
+    if (Number.isNaN(vence)) return true;
+    return vence <= Date.now();
   },
 };
