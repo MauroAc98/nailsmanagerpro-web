@@ -83,6 +83,7 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^theme\/agendaColors$/, // constantes de paleta (variables CSS)
   /^components\/filtros\/AvatarProfesional$/, // presentacional (foto o iniciales); solo importa theme/* y lib/inicialesProfesional
   /^components\/BottomSheet$/, // sheet de arrastre; solo importa react y theme/colors, sin sesión ni datos
+  /^lib\/cacheLru$/, // LRU genérico con vigencia; sin imports ni estado global (cada instancia es propia)
 ];
 
 const PAQUETES_PERMITIDOS = new Set([
@@ -404,6 +405,8 @@ describe('aislamiento del portal — el escáner', () => {
       ['AvatarProfesional con sufijo (otro módulo)', "import x from '@/components/filtros/AvatarProfesionalExtra';"],
       ['AvatarProfesional de otra carpeta (reserva online)', "import x from '@/components/reservaOnline/AvatarProfesional';"],
       ['otro componente de filtros', "import x from '@/components/filtros/FiltroProfesional';"],
+      ['cacheLru con sufijo (otro módulo)', "import x from '@/lib/cacheLruExtra';"],
+      ['cacheLru en otra carpeta', "import x from '@/lib/otra/cacheLru';"],
     ])('%s', (_nombre, fuente) => {
       expect(infracciones(fuente).length).toBeGreaterThan(0);
     });
@@ -428,6 +431,7 @@ describe('aislamiento del portal — el escáner', () => {
       ['paleta de la agenda (compartido revisado)', "import { agendaColors } from '@/theme/agendaColors';"],
       ['BottomSheet (compartido revisado)', "import { BottomSheet } from '@/components/BottomSheet';"],
       ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
+      ['cacheLru (compartido revisado)', "import { crearCacheLru } from '@/lib/cacheLru';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],
       ['react', "import { useState } from 'react';"],
