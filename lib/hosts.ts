@@ -8,6 +8,15 @@
 export const ADMIN_HOST = 'admin.turnetto.com';
 export const APP_HOST = 'app.turnetto.com';
 export const RESERVAR_HOST = 'reservar.turnetto.com';
+// Portal de profesionales (login solo lectura). Mismo build/proceso: todo su
+// subárbol vive bajo el prefijo /pro (app/(profesionales)/pro).
+export const PRO_HOST = 'profesionales.turnetto.com';
+
+// pathname === '/pro' o empieza con '/pro/' — NO startsWith('/pro') a secas,
+// que agarraría /prox, /professionals y /pro-manifest.json (archivo hermano).
+export function tienePrefijoPro(pathname: string): boolean {
+  return pathname === '/pro' || pathname.startsWith('/pro/');
+}
 
 // Host tal como llega en el header: minúsculas, sin espacios, sin puerto y
 // sin el punto final de un FQDN ("admin.turnetto.com." también es válido).
