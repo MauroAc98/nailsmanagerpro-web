@@ -22,6 +22,20 @@
     "cambiarNegocio": "Cambiar de negocio. Ahora: {negocio}",
     "cuenta": "Mi cuenta"
   },
+  "Agenda": {
+    "titulo": "Agenda",
+    "vacio": "No hay turnos para este día.",
+    "reintentar": "Reintentar",
+    "cargando": "Cargando turnos",
+    "vista": "Vista de la agenda",
+    "dia": "Día",
+    "mes": "Mes"
+  },
+  "Nav": {
+    "etiqueta": "Navegación principal",
+    "agenda": "Agenda",
+    "cuenta": "Cuenta"
+  },
   "PortalNoDisponible": {
     "titulo": "El portal no está disponible",
     "descripcion": "No pudimos conectar con el portal de profesionales. Probá de nuevo en unos minutos.",

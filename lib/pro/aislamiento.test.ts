@@ -84,6 +84,13 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/filtros\/AvatarProfesional$/, // presentacional (foto o iniciales); solo importa theme/* y lib/inicialesProfesional
   /^components\/BottomSheet$/, // sheet de arrastre; solo importa react y theme/colors, sin sesión ni datos
   /^lib\/cacheLru$/, // LRU genérico con vigencia; sin imports ni estado global (cada instancia es propia)
+  // WeekStrip es presentacional (todo entra por props). Sus imports transitivos se
+  // revisaron: lib/dateFormat (solo useLocaleStore), agendaDateHelpers, theme/*,
+  // lucide-react y un TIPO de services/turnoService; sin stores de sesión, token,
+  // teléfono ni precio.
+  /^components\/agenda\/WeekStrip$/,
+  /^components\/SegmentedControl$/, // presentacional; solo importa theme/agendaColors
+  /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
 ];
 
 const PAQUETES_PERMITIDOS = new Set([
@@ -385,7 +392,6 @@ describe('aislamiento del portal — el escáner', () => {
     it.each([
       ['módulo del proyecto desconocido', "import { f } from '@/lib/dateFormat';"],
       ['componente compartido sin revisar', "import { BootSplash } from '@/components/BootSplash';"],
-      ['componente compartido sin revisar (WeekStrip)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
       ['store del tenant con nombre parecido a useLocaleStore', "import { x } from '@/store/useLocaleStoreExtra';"],
       ['Spinner con sufijo (otro módulo)', "import x from '@/components/SpinnerExtra';"],
       ['theme/colors no está habilitado directo', "import { colors } from '@/theme/colors';"],
@@ -407,6 +413,13 @@ describe('aislamiento del portal — el escáner', () => {
       ['otro componente de filtros', "import x from '@/components/filtros/FiltroProfesional';"],
       ['cacheLru con sufijo (otro módulo)', "import x from '@/lib/cacheLruExtra';"],
       ['cacheLru en otra carpeta', "import x from '@/lib/otra/cacheLru';"],
+      ['WeekStrip con sufijo (otro módulo)', "import x from '@/components/agenda/WeekStripExtra';"],
+      ['WeekStrip de otra carpeta', "import x from '@/components/reservaOnline/WeekStrip';"],
+      ['otro componente de agenda (tarjeta del tenant)', "import x from '@/components/agenda/TurnoCard';"],
+      ['SegmentedControl con sufijo (otro módulo)', "import x from '@/components/SegmentedControlExtra';"],
+      ['SegmentedControl de otra carpeta', "import x from '@/components/agenda/SegmentedControl';"],
+      ['constants/layout con sufijo (otro módulo)', "import x from '@/constants/layoutExtra';"],
+      ['otro módulo de constants', "import x from '@/constants/precios';"],
     ])('%s', (_nombre, fuente) => {
       expect(infracciones(fuente).length).toBeGreaterThan(0);
     });
@@ -432,6 +445,9 @@ describe('aislamiento del portal — el escáner', () => {
       ['BottomSheet (compartido revisado)', "import { BottomSheet } from '@/components/BottomSheet';"],
       ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
       ['cacheLru (compartido revisado)', "import { crearCacheLru } from '@/lib/cacheLru';"],
+      ['WeekStrip (compartido revisado)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
+      ['SegmentedControl (compartido revisado)', "import { SegmentedControl } from '@/components/SegmentedControl';"],
+      ['constants/layout (compartido revisado)', "import { NAV_CLEARANCE } from '@/constants/layout';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],
       ['react', "import { useState } from 'react';"],
