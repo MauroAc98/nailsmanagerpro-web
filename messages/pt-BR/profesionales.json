@@ -213,7 +213,7 @@
   "Estado": {
     "confirmado": "Confirmado",
     "en_curso": "Em andamento",
-    "completado": "Concluído",
+    "completado": "Finalizado",
     "desconocido": "Sem status"
   }
 }

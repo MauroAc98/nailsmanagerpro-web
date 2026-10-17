@@ -163,11 +163,11 @@ describe('ProTurnoCard — estado y apertura', () => {
       ['confirmado', null],
       ['cancelado', null],
       ['en_curso', 'En curso'],
-      ['completado', 'Completado'],
+      ['completado', 'Finalizado'],
     ];
     for (const [estado, rotulo] of casos) {
       const r = renderWithProviders(<ProTurnoCard turno={turno({ estado_visual: estado as ProTurno['estado_visual'] })} />);
-      for (const otro of ['En curso', 'Completado', 'Confirmado', 'Sin estado']) {
+      for (const otro of ['En curso', 'Finalizado', 'Confirmado', 'Sin estado']) {
         if (otro === rotulo) expect(screen.getByText(otro)).toBeInTheDocument();
         else expect(screen.queryByText(otro)).toBeNull();
       }
