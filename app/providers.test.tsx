@@ -571,6 +571,303 @@ describe('Providers — arranque del salón fuera del panel de admin', () => {
   });
 });
 
+// Portal de profesionales (profesionales.turnetto.com, o /pro en localhost):
+// otra superficie con su propia sesión (P3+). Este guard del salón no puede
+// validar la sesión del salón, re-enlazar push, pintar la bienvenida ni empujar
+// a /login: sería expulsar a la profesional de su propio portal. Cada sitio
+// donde hoy se exime al panel de admin se prueba con admin y con el portal.
+describe.each([
+  ['admin.turnetto.com', '/', 'panel de admin'],
+  ['profesionales.turnetto.com', '/agenda', 'portal en profesionales.turnetto.com'],
+  ['localhost', '/pro/agenda', 'portal bajo /pro en localhost'],
+])('Providers — superficie ajena al salón: %s%s (%s)', (host, ruta) => {
+  const refrescar = vi.fn(() => Promise.resolve());
+
+  beforeEach(() => {
+    refrescar.mockClear();
+    setHostname(host);
+    setMockLocation(ruta);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function sesionDelSalonAbierta() {
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+  }
+
+  const esperarUnTick = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+
+  it('renderiza el contenido y no el BootSplash del salón, aunque authStatus siga booting', async () => {
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('SUPERFICIE')).toBeInTheDocument();
+    expect(screen.queryByTestId('boot-splash')).toBeNull();
+  });
+
+  it('no valida la sesión del salón ni llama al API del salón, aunque haya una abierta', async () => {
+    sesionDelSalonAbierta();
+
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+
+    await screen.findByText('SUPERFICIE');
+    await esperarUnTick();
+    expect(mockedGet).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().authStatus).toBe('booting');
+  });
+
+  it('no hace el refresco periódico del estado del negocio', async () => {
+    useAuthStore.setState({
+      authStatus: 'authenticated',
+      user: { id: 1 } as never,
+      refrescarEstadoNegocio: refrescar,
+    });
+
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+    await screen.findByText('SUPERFICIE');
+
+    const ahora = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(ahora + 20_000);
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    expect(refrescar).not.toHaveBeenCalled();
+  });
+
+  // `unauthenticated` (no `booting`): con booting el resolver devuelve blank y el
+  // efecto de redirección ni se evalúa. Sin la exención, este estado empuja a
+  // /login (ver el control en app.turnetto.com más abajo).
+  it('sin sesión del salón (unauthenticated) nunca redirige a /login del salón', async () => {
+    useAuthStore.setState({ authStatus: 'unauthenticated' });
+
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('SUPERFICIE')).toBeInTheDocument();
+    await esperarUnTick();
+    expect(routerMock.push).not.toHaveBeenCalled();
+    expect(routerMock.replace).not.toHaveBeenCalled();
+  });
+
+  it('nunca pinta el WelcomeScreen del salón, aunque haya una sesión autenticada con la bienvenida pendiente', async () => {
+    useAuthStore.setState({
+      authStatus: 'authenticated',
+      user: { id: 1, name: 'Estudio Ana' } as never,
+      mostrarBienvenida: true,
+    });
+
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('SUPERFICIE')).toBeInTheDocument();
+    expect(useAuthStore.getState().mostrarBienvenida).toBe(true);
+    expect(screen.queryByTestId('welcome-screen')).toBeNull();
+  });
+
+  it('con la suscripción del salón vencida no la manda a /subscription-expired ni guarda el origen', async () => {
+    useAuthStore.setState({ authStatus: 'subscription-blocked' });
+
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('SUPERFICIE')).toBeInTheDocument();
+    await esperarUnTick();
+    expect(routerMock.push).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('');
+  });
+
+  it('no limpia el origen de suscripción bloqueada del salón (ese estado no es de esta superficie)', async () => {
+    useAuthStore.setState({
+      authStatus: 'authenticated',
+      subscriptionBlockedOrigin: '/clientes/5',
+    });
+
+    render(<Providers><div>SUPERFICIE</div></Providers>);
+    markI18nReady();
+
+    await screen.findByText('SUPERFICIE');
+    await esperarUnTick();
+    expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe('/clientes/5');
+  });
+
+});
+
+describe('Providers — control: la misma pantalla en el salón sí redirige', () => {
+  it('app.turnetto.com/agenda unauthenticated empuja a /login con el origen (hace no vacío el test de arriba)', async () => {
+    setHostname('app.turnetto.com');
+    setMockLocation('/agenda');
+    useAuthStore.setState({ authStatus: 'unauthenticated' });
+
+    render(<Providers><div>SALON</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent('/agenda')}`),
+    );
+  });
+});
+
+describe('Providers — el prefijo /pro solo exime en hosts internos o sin host', () => {
+  it('en app.turnetto.com, /pro/x NO se exime: el guard del salón manda a /login (defensa en profundidad, S6)', async () => {
+    setHostname('app.turnetto.com');
+    setMockLocation('/pro/x');
+
+    render(<Providers><div>CONTENIDO</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent('/pro/x')}`),
+    );
+    expect(screen.queryByText('CONTENIDO')).toBeNull();
+  });
+
+  it('en cualquier otro host externo, /pro/x tampoco se exime', async () => {
+    setHostname('otro.example.com');
+    setMockLocation('/pro/x');
+
+    render(<Providers><div>CONTENIDO</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() =>
+      expect(routerMock.push).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent('/pro/x')}`),
+    );
+    expect(screen.queryByText('CONTENIDO')).toBeNull();
+  });
+
+  it('en localhost, /pro/x SÍ se exime: renderiza y no redirige', async () => {
+    setHostname('localhost');
+    setMockLocation('/pro/x');
+
+    render(<Providers><div>CONTENIDO</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('CONTENIDO')).toBeInTheDocument();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+});
+
+describe('Providers — reservar.turnetto.com no cambia al sumar el portal (regresión)', () => {
+  // reservar NO es "ajena al salón" para el arranque: sigue validando la sesión
+  // del salón y refrescando el estado del negocio (solo se exime donde hoy ya
+  // se eximía: redirect, contenido, bienvenida y push). Estos tests fijan eso.
+  const refrescar = vi.fn(() => Promise.resolve());
+
+  beforeEach(() => {
+    refrescar.mockClear();
+    setHostname('reservar.turnetto.com');
+    setMockLocation('/natalia-acosta');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sigue arrancando la sesión del salón (valida la suscripción) si hay una abierta', async () => {
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+
+    render(<Providers><div>RESERVA</div></Providers>);
+    markI18nReady();
+
+    expect(await screen.findByText('RESERVA')).toBeInTheDocument();
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledWith('/auth/subscription-status'));
+  });
+
+  it('sigue refrescando el estado del negocio al volver a la app', async () => {
+    // El arranque del salón corre acá (es justo lo que se fija), así que la
+    // sesión tiene que ser real: un authStatus puesto a mano lo pisaría.
+    localStorage.setItem('auth_token', 'tok');
+    localStorage.setItem('auth_user', JSON.stringify({ name: 'Estudio Ana', slug: 'ana' }));
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/auth/subscription-status') {
+        return Promise.resolve({ data: { status: 'ACTIVO', days_left: 30, ends_at: null, is_exempt: false } });
+      }
+      if (url === '/support-info') return Promise.resolve({ data: { whatsapp: '', email: '', subscription_warning_days: 7 } });
+      if (url === '/auth/me') return Promise.resolve({ data: { locale: 'es', whatsapp_requiere_envio_manual: false } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+
+    render(<Providers><div>RESERVA</div></Providers>);
+    markI18nReady();
+    await screen.findByText('RESERVA');
+    await waitFor(() => expect(useAuthStore.getState().authStatus).toBe('authenticated'));
+
+    useAuthStore.setState({ refrescarEstadoNegocio: refrescar });
+    const ahora = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(ahora + 20_000);
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    expect(refrescar).toHaveBeenCalledTimes(1);
+  });
+
+  it('sigue limpiando el origen de suscripción bloqueada una vez autenticado', async () => {
+    useAuthStore.setState({
+      authStatus: 'authenticated',
+      subscriptionBlockedOrigin: '/clientes/5',
+    });
+
+    render(<Providers><div>RESERVA</div></Providers>);
+    markI18nReady();
+
+    await screen.findByText('RESERVA');
+    await waitFor(() => expect(useAuthStore.getState().subscriptionBlockedOrigin).toBe(''));
+  });
+});
+
+describe('Providers — renderizado en servidor del portal de profesionales', () => {
+  // Igual que con el panel de admin: en el servidor no hay window, así que bajo
+  // /pro decide el prefijo. En profesionales.turnetto.com (URL limpia, solo
+  // reconocible por host) el servidor sigue dibujando el BootSplash del salón y
+  // el cliente se recupera regenerando el árbol: discrepancia conocida y aceptada.
+  const enServidor = (ruta: string) => {
+    setMockLocation(ruta);
+    vi.stubGlobal('window', undefined);
+    try {
+      return renderToString(<Providers><div>PORTAL</div></Providers>);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  };
+
+  it('bajo /pro el servidor renderiza el contenido, no el BootSplash', () => {
+    const html = enServidor('/pro/login');
+
+    expect(html).toContain('PORTAL');
+    expect(html).not.toContain('boot-splash');
+  });
+
+  it('una pantalla del salón con nombre parecido sigue mostrando el BootSplash', () => {
+    const html = enServidor('/professionals');
+
+    expect(html).toContain('boot-splash');
+    expect(html).not.toContain('PORTAL');
+  });
+});
+
 // El logout borra solo el vínculo push en el servidor (permiso y suscripción del
 // navegador quedan): al volver a entrar se re-enlaza sola, pero únicamente en el
 // salón — nunca en el panel de admin ni en la reserva pública.
@@ -658,6 +955,22 @@ describe('Providers — re-enlace silencioso de avisos push', () => {
     markI18nReady();
 
     await screen.findByText('RESERVA');
+    await esperarUnTick();
+    expect(registro.pushManager.getSubscription).not.toHaveBeenCalled();
+    expect(llamadasPush()).toHaveLength(0);
+  });
+
+  it.each([
+    ['profesionales.turnetto.com', '/agenda'],
+    ['localhost', '/pro/agenda'],
+  ])('en el portal de profesionales (%s%s) no corre, aunque haya una sesión del salón abierta', async (host, ruta) => {
+    setHostname(host);
+    useAuthStore.setState({ authStatus: 'authenticated', user: { id: 1 } as never });
+    setMockLocation(ruta);
+    render(<Providers><div>PORTAL</div></Providers>);
+    markI18nReady();
+
+    await screen.findByText('PORTAL');
     await esperarUnTick();
     expect(registro.pushManager.getSubscription).not.toHaveBeenCalled();
     expect(llamadasPush()).toHaveLength(0);
