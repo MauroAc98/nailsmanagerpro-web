@@ -33,6 +33,7 @@ function turno(id: number, fecha_hora: string): ProTurno {
     cliente: { nombre: `Cliente${id}`, apellido: null },
     servicios: [{ id: 1, nombre: 'Esmaltado' }],
     promo: null,
+    origen: null,
   };
 }
 

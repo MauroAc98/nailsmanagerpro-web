@@ -125,6 +125,27 @@ describe('DetalleTurnoPro', () => {
     expect(screen.queryByText('En curso')).toBeNull();
   });
 
+  it('un turno de la reserva online muestra el badge con texto; sin origen web no se dibuja', async () => {
+    const pedir = vi.spyOn(proService, 'turno').mockResolvedValue(turno({ origen: 'web' }));
+    const { unmount } = renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('Reserva online')).toBeInTheDocument();
+    // Con texto visible: no es la variante compacta (solo ícono con rol img).
+    expect(screen.queryByRole('img', { name: 'Reserva online' })).toBeNull();
+    unmount();
+    vaciarCachesPro();
+    pedir.mockResolvedValue(turno({ origen: null }));
+    renderWithProviders(<DetalleTurnoPro />);
+    await screen.findByText('Lucía Gómez');
+    expect(screen.queryByText('Reserva online')).toBeNull();
+  });
+
+  it('el badge de reserva online convive con la píldora "En curso"', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno({ origen: 'web', estado_visual: 'en_curso' }));
+    renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('En curso')).toBeInTheDocument();
+    expect(screen.getByText('Reserva online')).toBeInTheDocument();
+  });
+
   it('una nota larga se recorta con "Ver todo" y se expande y contrae', async () => {
     vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: 'x'.repeat(200) }));
     renderWithProviders(<DetalleTurnoPro />);

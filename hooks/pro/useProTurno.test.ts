@@ -22,6 +22,7 @@ const turno = (id: number, notas: string | null = null): ProTurno => ({
   cliente: { nombre: 'Lu', apellido: null },
   servicios: [],
   promo: null,
+  origen: null,
 });
 
 beforeEach(() => {

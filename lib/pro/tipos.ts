@@ -40,6 +40,9 @@ export interface ProTurno {
   cliente: { nombre: string | null; apellido: string | null };
   servicios: ProServicioTurno[];
   promo: { nombre: string } | null;
+  // Único origen que el portal distingue: la reserva online. Cualquier otro valor
+  // (o un backend sin el campo) llega como null.
+  origen: 'web' | null;
 }
 
 export interface ProListaTurnos {

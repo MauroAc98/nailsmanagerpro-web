@@ -42,6 +42,7 @@ const TURNO_API = {
   cliente: { nombre: 'Ana', apellido: 'Pérez' },
   servicios: [{ id: 7, nombre: 'Gel' }],
   promo: null,
+  origen: null,
 };
 
 let sesionExpirada: ReturnType<typeof vi.fn>;

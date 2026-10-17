@@ -109,6 +109,8 @@ export function parseProTurno(raw: unknown): ProTurno | null {
     // Dentro de un turno, servicios ausente o no-lista es simplemente "sin servicios".
     servicios: listaDe(raw.servicios, parseServicioTurno)?.items ?? [],
     promo: promo === null ? null : { nombre: promo },
+    // Lista blanca de valores: solo 'web' pasa; ausente o cualquier otro es null.
+    origen: raw.origen === 'web' ? 'web' : null,
   };
 }
 

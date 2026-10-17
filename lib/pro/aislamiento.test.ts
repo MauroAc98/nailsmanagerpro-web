@@ -101,6 +101,10 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
   /^components\/filtros\/FilaQueMostrar$/, // fila presentacional (todo por props); solo importa react, lucide-react (ChevronRight) y theme/agendaColors
   /^components\/filtros\/TarjetaQueMostrar$/, // tarjeta presentacional que separa filas; solo importa react y theme/agendaColors
+  // BadgeReservaOnline es presentacional (solo prop `compacto`). Imports transitivos
+  // revisados: next-intl (texto) y theme/agendaColors; no llama a reservaOnlineHabilitada
+  // ni lee stores o servicios del negocio. El portal lo muestra solo si origen === 'web'.
+  /^components\/reservaOnline\/BadgeReservaOnline$/,
   /^components\/Skeleton$/, // barra gris presentacional (props de tamaño); solo importa react (tipos) y theme/agendaColors
 ];
 
@@ -427,7 +431,8 @@ describe('aislamiento del portal — el escáner', () => {
       ['WeekStrip con sufijo (otro módulo)', "import x from '@/components/agenda/WeekStripExtra';"],
       ['WeekStrip de otra carpeta', "import x from '@/components/reservaOnline/WeekStrip';"],
       ['FilaQueMostrar con sufijo (otro módulo)', "import x from '@/components/filtros/FilaQueMostrarExtra';"],
-      ['TarjetaQueMostrar de otra carpeta', "import x from '@/components/agenda/TarjetaQueMostrar';"],
+      ['BadgeReservaOnline con sufijo (otro módulo)', "import x from '@/components/reservaOnline/BadgeReservaOnlineExtra';"],
+      ['TarjetaQueMostrar de otra carpeta',"import x from '@/components/agenda/TarjetaQueMostrar';"],
       ['CalendarioMensual con sufijo (otro módulo)', "import x from '@/components/agenda/CalendarioMensualExtra';"],
       ['CalendarioMensual de otra carpeta', "import x from '@/components/reservaOnline/CalendarioMensual';"],
       ['helpers de fecha de agenda sin revisar como import directo', "import { formatCellDate } from '@/components/agenda/agendaDateHelpers';"],
@@ -463,7 +468,8 @@ describe('aislamiento del portal — el escáner', () => {
       ['WeekStrip (compartido revisado)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
       ['CalendarioMensual (compartido revisado)', "import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';"],
       ['FilaQueMostrar (compartido revisado)', "import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';"],
-      ['TarjetaQueMostrar (compartido revisado)', "import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';"],
+      ['BadgeReservaOnline (compartido revisado)', "import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';"],
+      ['TarjetaQueMostrar (compartido revisado)',"import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';"],
       ['constants/layout (compartido revisado)', "import { NAV_CLEARANCE } from '@/constants/layout';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],

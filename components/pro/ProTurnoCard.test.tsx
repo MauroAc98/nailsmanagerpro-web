@@ -15,6 +15,7 @@ function turno(extra: Partial<ProTurno> = {}): ProTurno {
     cliente: { nombre: 'Lucía', apellido: 'Gómez' },
     servicios: [{ id: 1, nombre: 'Esmaltado semipermanente' }],
     promo: null,
+    origen: null,
     ...extra,
   };
 }
@@ -211,6 +212,31 @@ describe('ProTurnoCard — profesional', () => {
   it('sin el dato no se dibuja la línea', () => {
     renderWithProviders(<ProTurnoCard turno={turno()} />);
     expect(screen.queryByText(/^con /)).toBeNull();
+  });
+});
+
+describe('ProTurnoCard — origen reserva online', () => {
+  it('turno suelto web: badge compacto (solo ícono, con nombre accesible) junto al nombre', () => {
+    renderWithProviders(<ProTurnoCard turno={turno({ origen: 'web' })} onAbrir={() => {}} />);
+    const badge = screen.getByRole('img', { name: 'Reserva online' });
+    expect(badge).toBeInTheDocument();
+    // Compacto: el texto no se dibuja, solo el ícono.
+    expect(screen.queryByText('Reserva online')).toBeNull();
+    expect(badge.parentElement).toBe(screen.getByText('Lucía Gómez').parentElement);
+  });
+
+  it('variante promo web: el badge compacto también va junto al nombre del cliente', () => {
+    renderWithProviders(<ProTurnoCard turno={turno({ origen: 'web', promo: { nombre: 'Pack manos y pies' } })} onAbrir={() => {}} />);
+    const badge = screen.getByRole('img', { name: 'Reserva online' });
+    expect(badge.parentElement).toBe(screen.getByText('Lucía Gómez').parentElement);
+  });
+
+  it('sin origen web no se dibuja, ni suelto ni con promo', () => {
+    const { unmount } = renderWithProviders(<ProTurnoCard turno={turno({ origen: null })} onAbrir={() => {}} />);
+    expect(screen.queryByRole('img', { name: 'Reserva online' })).toBeNull();
+    unmount();
+    renderWithProviders(<ProTurnoCard turno={turno({ origen: null, promo: { nombre: 'Pack' } })} onAbrir={() => {}} />);
+    expect(screen.queryByRole('img', { name: 'Reserva online' })).toBeNull();
   });
 });
 

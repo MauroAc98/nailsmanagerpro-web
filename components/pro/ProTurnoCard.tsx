@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { formatearDuracion } from '@/lib/duracion';
 import { infoEstado } from '@/lib/pro/estado';
 import { horaDe, partirFechaHora } from '@/lib/pro/fechaHora';
@@ -54,11 +55,22 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
   const conPromo = turno.promo !== null;
   const atenuado: CSSProperties = completado ? { opacity: 0.55 } : {};
 
-  const nombreCliente = (
+  const textoNombre = (
     <span dir="auto" style={{ ...truncar, display: 'block', fontSize: 15.5, fontWeight: 600, color: colors.textStrong, unicodeBidi: 'isolate' }}>
       {nombre === '' ? t('Card.sinNombre') : nombre}
     </span>
   );
+
+  // Reserva online: solo el ícono junto al nombre, que cede ancho (truncar) antes que el badge.
+  const nombreCliente =
+    turno.origen === 'web' ? (
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        {textoNombre}
+        <BadgeReservaOnline compacto />
+      </span>
+    ) : (
+      textoNombre
+    );
 
   const lineaServicios = servicios !== '' && (
     <span dir="auto" style={{ ...truncar, display: 'block', fontFamily: agendaFontSerif, fontStyle: 'italic', fontSize: 13, color: colors.subtext, unicodeBidi: 'isolate' }}>

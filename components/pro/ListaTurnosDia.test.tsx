@@ -16,6 +16,7 @@ function turno(id: number, fecha_hora: string, extra: Partial<ProTurno> = {}): P
     cliente: { nombre: `Cliente${id}`, apellido: null },
     servicios: [{ id: 1, nombre: 'Esmaltado' }],
     promo: null,
+    origen: null,
     ...extra,
   };
 }

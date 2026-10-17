@@ -17,6 +17,7 @@ const TURNO_API = {
     { id: 9, nombre: 'Diseño' },
   ],
   promo: { nombre: 'Promo primavera' },
+  origen: 'web',
 };
 
 describe('parseProTurno — lista blanca (AG-1 S1)', () => {
@@ -46,6 +47,7 @@ describe('parseProTurno — lista blanca (AG-1 S1)', () => {
       'fecha_hora',
       'id',
       'notas',
+      'origen',
       'promo',
       'servicios',
     ]);
@@ -156,6 +158,15 @@ describe('parseProTurno — filas inválidas y valores raros', () => {
       { id: 3, nombre: 'Spa' },
     ]);
     expect(parseProTurno({ ...TURNO_API, servicios: 'nope' })!.servicios).toEqual([]);
+  });
+
+  it('origen: solo "web" pasa; ausente (backend viejo) o cualquier otro valor es null', () => {
+    expect(parseProTurno({ ...TURNO_API, origen: 'web' })!.origen).toBe('web');
+    const sinOrigen = Object.fromEntries(Object.entries(TURNO_API).filter(([clave]) => clave !== 'origen'));
+    expect(parseProTurno(sinOrigen)!.origen).toBeNull();
+    for (const valor of [null, 'app', 'WEB', '', 'importado', 1, true, {}, ['web']]) {
+      expect(parseProTurno({ ...TURNO_API, origen: valor })!.origen).toBeNull();
+    }
   });
 
   it('promo solo si trae nombre de texto', () => {

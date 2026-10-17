@@ -43,6 +43,7 @@ describe('caches del portal', () => {
       cliente: { nombre: null, apellido: null },
       servicios: [],
       promo: null,
+      origen: null,
     });
     vaciarCachesPro();
     expect(cacheTurnosDia.size()).toBe(0);

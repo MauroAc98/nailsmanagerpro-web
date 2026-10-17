@@ -43,7 +43,10 @@ describe('ProTurno — lista blanca a nivel de tipos', () => {
       | 'cliente'
       | 'servicios'
       | 'promo'
+      | 'origen'
     >();
+    // Del origen solo se distingue la reserva online: ningún otro valor interno.
+    expectTypeOf<ProTurno['origen']>().toEqualTypeOf<'web' | null>();
     expectTypeOf<keyof ProTurno['cliente']>().toEqualTypeOf<'nombre' | 'apellido'>();
     expectTypeOf<keyof ProTurno['servicios'][number]>().toEqualTypeOf<'id' | 'nombre'>();
     expectTypeOf<keyof NonNullable<ProTurno['promo']>>().toEqualTypeOf<'nombre'>();
@@ -59,6 +62,7 @@ describe('ProTurno — lista blanca a nivel de tipos', () => {
       cliente: { nombre: 'Ana', apellido: null },
       servicios: [{ id: 2, nombre: 'Gel' }],
       promo: { nombre: 'Promo' },
+      origen: 'web',
     });
     const claves: ClavesDeTurno[] = [
       'id',
@@ -69,6 +73,7 @@ describe('ProTurno — lista blanca a nivel de tipos', () => {
       'cliente',
       'servicios',
       'promo',
+      'origen',
     ];
     expect(turno).not.toBeNull();
     expect(Object.keys(turno as ProTurno).sort()).toEqual([...claves].sort());

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { Spinner } from '@/components/Spinner';
 import { useProTurno } from '@/hooks/pro/useProTurno';
 import { useRutaPro } from '@/hooks/useRutaPro';
@@ -111,6 +112,8 @@ export function DetalleTurnoPro() {
           .filter((p) => p !== '')
           .join(' ');
   const enCurso = turno !== null && infoEstado(turno.estado_visual).clave === 'en_curso';
+  // Sin consultar flags del negocio: el portal muestra el origen siempre que el backend lo informa.
+  const esWeb = turno !== null && turno.origen === 'web';
 
   let cuerpo: ReactNode;
   if (cambioNegocio) {
@@ -248,17 +251,20 @@ export function DetalleTurnoPro() {
             >
               {turno === null ? t('Detalle.titulo') : nombre === '' ? t('Card.sinNombre') : nombre}
             </h1>
-            {enCurso && (
+            {(enCurso || esWeb) && (
               <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-                <span
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 700, color: agendaColors.amberFg,
-                    textTransform: 'uppercase', letterSpacing: 0.3, backgroundColor: agendaColors.amberBg, borderRadius: 8, padding: '2px 7px',
-                  }}
-                >
-                  <span style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: agendaColors.amber }} />
-                  {t('Estado.en_curso')}
-                </span>
+                {enCurso && (
+                  <span
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 700, color: agendaColors.amberFg,
+                      textTransform: 'uppercase', letterSpacing: 0.3, backgroundColor: agendaColors.amberBg, borderRadius: 8, padding: '2px 7px',
+                    }}
+                  >
+                    <span style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: agendaColors.amber }} />
+                    {t('Estado.en_curso')}
+                  </span>
+                )}
+                {esWeb && <BadgeReservaOnline />}
               </div>
             )}
           </div>
