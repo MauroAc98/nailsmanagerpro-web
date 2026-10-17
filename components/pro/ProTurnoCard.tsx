@@ -77,7 +77,7 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
 
   // Columna de la hora: serif, y debajo la mini fecha (suelto) o solo la duración (paso de promo).
   const columnaHora = (ancho: number, tamano: number, conFecha: boolean): ReactNode => (
-    <span style={{ width: ancho, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, ...atenuado }}>
+    <span style={{ width: ancho, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, ...atenuado }}>
       <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: tamano, lineHeight: 1, color: colors.textStrong }}>
         {inicio ?? t('Card.sinHora')}
       </span>
