@@ -29,7 +29,10 @@
     "cargando": "Cargando turnos",
     "vista": "Vista de la agenda",
     "dia": "Día",
-    "mes": "Mes"
+    "mes": "Mes",
+    "turnosHoy": "Turnos de hoy",
+    "turnosDe": "Turnos del {fecha}",
+    "resultados": "Resultados"
   },
   "Detalle": {
     "titulo": "Detalle del turno",
@@ -45,6 +48,7 @@
   },
   "Filtros": {
     "boton": "Filtros",
+    "filtrar": "Filtrar",
     "botonActivos": "Filtros: {cantidad, plural, one {# activo} other {# activos}}",
     "titulo": "Filtrar turnos",
     "cerrar": "Cerrar",

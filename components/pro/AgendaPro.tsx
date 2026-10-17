@@ -12,14 +12,15 @@ import { aDateLocal, diasDeSemana, sumarDias } from '@/lib/pro/semana';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { FiltrosSheet } from './FiltrosSheet';
+import { HojaTurnosPro } from './HojaTurnosPro';
 import { ListaTurnosDia } from './ListaTurnosDia';
 import { ProHeader } from './ProHeader';
 import { PRO_NAV_ALTURA_AGENDA, ProNav } from './ProNav';
 import { ResultadosFiltros } from './ResultadosFiltros';
 import { VistaMes } from './VistaMes';
 
-// Agenda del portal: vista de día (encabezado, tira semanal y lista de turnos) o
-// vista mensual (VistaMes), según el store. Los negocios bloqueados no se muestran acá: el guard redirige.
+// Agenda del portal: vista de día (encabezado, tira semanal y lista de turnos en
+// una hoja) o vista mensual (VistaMes), según el store. Los negocios bloqueados no se muestran acá: el guard redirige.
 export function AgendaPro() {
   const t = useTranslations('profesionales.Agenda');
   const ruta = useRutaPro();
@@ -87,32 +88,41 @@ export function AgendaPro() {
         >
           {t('titulo')}
         </h1>
-        <div style={{ padding: '0 16px 8px' }}>
-          <button
-            ref={botonFiltros}
-            type="button"
-            aria-haspopup="dialog"
-            onClick={() => setFiltrosAbiertos(true)}
-            style={{
-              minHeight: 44,
-              padding: '0 16px',
-              border: `1px solid ${filtrando ? agendaColors.primarySolid : agendaColors.fieldBorder}`,
-              borderRadius: 12,
-              fontSize: 15,
-              fontWeight: filtrando ? 700 : 600,
-              cursor: 'pointer',
-              backgroundColor: agendaColors.surface,
-              color: agendaColors.strong,
-            }}
-          >
-            {filtrando ? tFiltros('botonActivos', { cantidad: cantidadActivos }) : tFiltros('boton')}
-          </button>
-        </div>
+        {/* En el mes (hasta que tenga su propio rediseño) el botón sigue acá; en el resto vive en la hoja. */}
+        {!filtrando && vista === 'mes' && (
+          <div style={{ padding: '0 16px 8px' }}>
+            <button
+              ref={botonFiltros}
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setFiltrosAbiertos(true)}
+              style={{
+                minHeight: 44,
+                padding: '0 16px',
+                border: `1px solid ${agendaColors.fieldBorder}`,
+                borderRadius: 12,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                backgroundColor: agendaColors.surface,
+                color: agendaColors.strong,
+              }}
+            >
+              {tFiltros('boton')}
+            </button>
+          </div>
+        )}
         <FiltrosSheet abierto={filtrosAbiertos} onCerrar={cerrarFiltros} />
         {filtrando && (
-          <div style={{ padding: '0 16px' }}>
+          <HojaTurnosPro
+            fecha={fecha}
+            filtrando
+            cantidadActivos={cantidadActivos}
+            botonFiltros={botonFiltros}
+            onFiltrar={() => setFiltrosAbiertos(true)}
+          >
             <ResultadosFiltros onAbrir={abrirTurno} />
-          </div>
+          </HojaTurnosPro>
         )}
         {!filtrando && vista === 'dia' && (
           <>
@@ -125,7 +135,13 @@ export function AgendaPro() {
               onSemanaAnterior={() => setAncla(sumarDias(ancla, -7))}
               onSemanaSiguiente={() => setAncla(sumarDias(ancla, 7))}
             />
-            <div style={{ padding: '0 16px' }}>
+            <HojaTurnosPro
+              fecha={fecha}
+              filtrando={false}
+              cantidadActivos={0}
+              botonFiltros={botonFiltros}
+              onFiltrar={() => setFiltrosAbiertos(true)}
+            >
               <ListaTurnosDia
                 data={turnos.data}
                 cargando={turnos.cargando}
@@ -133,7 +149,7 @@ export function AgendaPro() {
                 onReintentar={turnos.reintentar}
                 onAbrir={abrirTurno}
               />
-            </div>
+            </HojaTurnosPro>
           </>
         )}
         {!filtrando && vista === 'mes' && <VistaMes />}

@@ -29,7 +29,10 @@
     "cargando": "Carregando atendimentos",
     "vista": "Visualização da agenda",
     "dia": "Dia",
-    "mes": "Mês"
+    "mes": "Mês",
+    "turnosHoy": "Atendimentos de hoje",
+    "turnosDe": "Atendimentos de {fecha}",
+    "resultados": "Resultados"
   },
   "Detalle": {
     "titulo": "Detalhe do atendimento",
@@ -45,6 +48,7 @@
   },
   "Filtros": {
     "boton": "Filtros",
+    "filtrar": "Filtrar",
     "botonActivos": "Filtros: {cantidad, plural, one {# ativo} other {# ativos}}",
     "titulo": "Filtrar atendimentos",
     "cerrar": "Fechar",

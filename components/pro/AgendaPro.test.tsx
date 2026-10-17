@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, renderWithProviders, screen, waitFor, within } from '@/test/render';
 import { proService } from '@/services/proService';
 import { vaciarCachesPro } from '@/lib/pro/caches';
+import { hoyDelDispositivo } from '@/lib/pro/hoy';
 import type { ProListaTurnos, ProTurno, ProVinculo } from '@/lib/pro/tipos';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { useProAuthStore } from '@/store/useProAuthStore';
@@ -167,6 +168,48 @@ describe('AgendaPro', () => {
     expect(nav.push).not.toHaveBeenCalled();
   });
 
+  it('la lista vive en una hoja con título serif y botón Filtrar a su derecha', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    renderWithProviders(<AgendaPro />);
+    const titulo = screen.getByText(/^Turnos (de hoy|del )/);
+    expect(titulo.style.fontSize).toBe('19px');
+    expect(titulo.style.fontFamily).not.toBe('');
+    const boton = screen.getByRole('button', { name: 'Filtrar' });
+    expect(titulo.parentElement).toBe(boton.parentElement);
+    expect(boton.querySelector('svg')).not.toBeNull();
+    // La tira queda arriba y la lista dentro de la hoja.
+    expect(screen.getByTestId('week-day-2026-10-17')).toBeInTheDocument();
+    expect((await screen.findByText('Cliente1')).closest('[data-testid="hoja-turnos"]')).not.toBeNull();
+  });
+
+  it('el título dice "de hoy" solo si la fecha elegida es hoy', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const hoy = hoyDelDispositivo();
+    useProAgendaStore.getState().setFecha(hoy);
+    const { unmount } = renderWithProviders(<AgendaPro />);
+    expect(screen.getByText('Turnos de hoy')).toBeInTheDocument();
+    unmount();
+    useProAgendaStore.getState().setFecha('2000-10-14');
+    renderWithProviders(<AgendaPro />);
+    expect(screen.getByText(/^Turnos del .*14/)).toBeInTheDocument();
+  });
+
+  it('con filtros activos el título de la hoja es Resultados', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    useProAgendaStore.getState().setFiltros({ buscar: 'Ana', servicioId: null, desde: null, hasta: null });
+    renderWithProviders(<AgendaPro />);
+    expect(screen.getByText('Resultados')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filtros: 1 activo' })).toBeInTheDocument();
+  });
+
+  it('en la vista mensual no hay hoja pero el botón de filtros sigue disponible', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    useProAgendaStore.getState().setVista('mes');
+    renderWithProviders(<AgendaPro />);
+    expect(screen.queryByTestId('hoja-turnos')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument();
+  });
+
   it('el calendario de la tira lleva a la vista mensual', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
@@ -186,7 +229,7 @@ describe('AgendaPro con filtros', () => {
   const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado' }], descartados: 0 };
 
   async function aplicar(cambios: (dialogo: HTMLElement) => void) {
-    fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Filtr/ }));
     const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
     cambios(dialogo);
     fireEvent.click(within(dialogo).getByRole('button', { name: 'Aplicar' }));
@@ -201,7 +244,7 @@ describe('AgendaPro con filtros', () => {
   it('el botón Filtros abre la hoja y al cerrarla el foco vuelve al botón', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
-    const boton = screen.getByRole('button', { name: 'Filtros' });
+    const boton = screen.getByRole('button', { name: 'Filtrar' });
     fireEvent.click(boton);
     fireEvent.click(await screen.findByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -262,7 +305,7 @@ describe('AgendaPro con filtros', () => {
     const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
     await screen.findByText('No hay turnos para este día.');
-    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
     const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
     fireEvent.change(await within(dialogo).findByLabelText('Servicio'), { target: { value: '3' } });
     fireEvent.click(within(dialogo).getByRole('button', { name: 'Aplicar' }));
@@ -297,7 +340,7 @@ describe('AgendaPro con filtros', () => {
     expect(s.filtros).toEqual({ buscar: '', servicioId: null, desde: null, hasta: null });
     expect(s.vista).toBe('dia');
     await waitFor(() => expect(turnos).toHaveBeenCalledWith(1, { fecha: s.fecha }, expect.any(AbortSignal)));
-    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filtrar' })).toBeInTheDocument();
   });
 
   it('un error del pedido filtrado usa el copy del tipo y permite reintentar', async () => {
@@ -323,7 +366,7 @@ describe('AgendaPro con filtros', () => {
     act(() => useProAuthStore.getState().elegirVinculo(2));
 
     expect(useProAgendaStore.getState().filtros.buscar).toBe('');
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Filtrar' })).toBeInTheDocument());
     expect(screen.queryByRole('list', { name: 'Filtros activos' })).toBeNull();
   });
 });
