@@ -28,6 +28,25 @@
     "reintentar": "Reintentar",
     "cerrarSesion": "Cerrar sesión"
   },
+  "EstadoVinculo": {
+    "deshabilitado": {
+      "titulo": "Tu acceso está deshabilitado",
+      "descripcion": "Contactá a la persona titular del negocio para que vuelva a habilitarte."
+    },
+    "sinServicio": {
+      "titulo": "Tu negocio no tiene servicio"
+    },
+    "cambiarNegocio": "Cambiar de negocio",
+    "cerrarSesion": "Cerrar sesión"
+  },
+  "Cuenta": {
+    "titulo": "Mi cuenta",
+    "correo": "Correo electrónico",
+    "negocio": "Negocio",
+    "profesional": "Profesional",
+    "cambiarNegocio": "Cambiar de negocio",
+    "cerrarSesion": "Cerrar sesión"
+  },
   "CampoPassword": {
     "mostrar": "Mostrar contraseña",
     "ocultar": "Ocultar contraseña"

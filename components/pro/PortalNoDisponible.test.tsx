@@ -52,6 +52,27 @@ describe('PortalNoDisponible', () => {
   });
 });
 
+describe('PortalNoDisponible — reintento no cierra sesión', () => {
+  it('reintentar llama a inicializar y nunca a logout', async () => {
+    useProAuthStore.setState({ token: 'tok' });
+    const logout = vi.spyOn(proService, 'logout');
+    const inicializar = vi.spyOn(useProAuthStore.getState(), 'inicializar').mockResolvedValue(undefined as never);
+    renderWithProviders(<PortalNoDisponible />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(inicializar).toHaveBeenCalledTimes(1);
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it('el contenido va en un <main> con título y no muestra datos del negocio', () => {
+    useProAuthStore.setState({ token: 'tok', vinculos: [{ id: 1, negocioNombre: 'Secreto', profesional: { nombre: 'A', apellido: 'B', avatar_url: null }, disponible: true, motivo: null }] });
+    renderWithProviders(<PortalNoDisponible />);
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.queryByText('Secreto')).toBeNull();
+  });
+});
+
 describe('PortalNoDisponible — salida con sesión guardada', () => {
   it('sin sesión no ofrece cerrar sesión', () => {
     renderWithProviders(<PortalNoDisponible />);

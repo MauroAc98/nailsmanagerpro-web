@@ -28,6 +28,25 @@
     "reintentar": "Tentar novamente",
     "cerrarSesion": "Sair da conta"
   },
+  "EstadoVinculo": {
+    "deshabilitado": {
+      "titulo": "Seu acesso está desativado",
+      "descripcion": "Fale com a pessoa titular do negócio para que ela reative o seu acesso."
+    },
+    "sinServicio": {
+      "titulo": "Seu negócio está sem serviço"
+    },
+    "cambiarNegocio": "Trocar de negócio",
+    "cerrarSesion": "Sair da conta"
+  },
+  "Cuenta": {
+    "titulo": "Minha conta",
+    "correo": "E-mail",
+    "negocio": "Negócio",
+    "profesional": "Profissional",
+    "cambiarNegocio": "Trocar de negócio",
+    "cerrarSesion": "Sair da conta"
+  },
   "CampoPassword": {
     "mostrar": "Mostrar senha",
     "ocultar": "Ocultar senha"
