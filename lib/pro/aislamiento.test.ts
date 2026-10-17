@@ -90,6 +90,7 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   // lucide-react y un TIPO de services/turnoService; sin stores de sesión, token,
   // teléfono ni precio.
   /^components\/agenda\/WeekStrip$/,
+  /^components\/filtros\/ServiciosSheetBase$/, // hoja y lista de servicios presentacionales (todo por props); solo importan react, BottomSheet y theme/agendaColors
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
 ];
 
