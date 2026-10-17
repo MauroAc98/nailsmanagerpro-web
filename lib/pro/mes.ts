@@ -1,6 +1,7 @@
-// Aritmética de meses "YYYY-MM" de la vista mensual. Todo es texto: nunca se
-// parsea un turno con Date. Date.UTC aparece UNA vez, con partes numéricas, solo
-// para saber qué día de la semana cae el 1 (no depende de la zona horaria).
+// Aritmética de meses "YYYY-MM" del calendario. Todo es texto: nunca se parsea
+// un turno con Date. Date.UTC se usa solo con partes numéricas, para saber qué
+// día de la semana cae el 1 y para formatear nombres (no depende de la zona
+// horaria del dispositivo).
 import { esFechaValida, FECHA_MINIMA } from '@/lib/pro/fechaHora';
 
 const MES = /^(\d{4})-(0[1-9]|1[0-2])$/;
@@ -68,4 +69,34 @@ export function desfaseLunes(mes: string): number | null {
   const p = partes(mes);
   if (p === null) return null;
   return (new Date(Date.UTC(p[0], p[1] - 1, 1)).getUTCDay() + 6) % 7;
+}
+
+// Grilla de 6 semanas (42 celdas) con la semana empezando el lunes. Las celdas
+// que caen en los meses vecinos vienen con delMes en false.
+export function celdasDeMes(mes: string): { fecha: string; delMes: boolean }[] | null {
+  const p = partes(mes);
+  const desfase = desfaseLunes(mes);
+  if (p === null || desfase === null) return null;
+  return Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(Date.UTC(p[0], p[1] - 1, 1 - desfase + i));
+    const anio = String(d.getUTCFullYear()).padStart(4, '0');
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dia = String(d.getUTCDate()).padStart(2, '0');
+    return { fecha: `${anio}-${m}-${dia}`, delMes: `${anio}-${m}` === mes };
+  });
+}
+
+// "14 de octubre": se formatea en UTC con partes numéricas, la zona del
+// dispositivo no puede correr el día. Fecha inválida = texto vacío.
+export function etiquetaDeDia(fecha: string, locale: string): string {
+  if (!esFechaValida(fecha)) return '';
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)) - 1, Number(fecha.slice(8, 10)))),
+  );
+}
+
+// Lunes a domingo, en una inicial: 2024-01-01 fue lunes.
+export function inicialesDeSemana(locale: string): string[] {
+  const f = new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' });
+  return Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2024, 0, 1 + i))));
 }

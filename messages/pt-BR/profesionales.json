@@ -27,9 +27,6 @@
     "vacio": "Não há atendimentos neste dia.",
     "reintentar": "Tentar novamente",
     "cargando": "Carregando atendimentos",
-    "vista": "Visualização da agenda",
-    "dia": "Dia",
-    "mes": "Mês",
     "turnosHoy": "Atendimentos de hoje",
     "turnosDe": "Atendimentos de {fecha}",
     "resultados": "Resultados"
@@ -83,7 +80,10 @@
     "agenda": "Agenda",
     "cuenta": "Conta"
   },
-  "Mes": {
+  "Calendario": {
+    "titulo": "Escolher data",
+    "hoy": "Hoje",
+    "cerrar": "Fechar",
     "anterior": "Mês anterior",
     "siguiente": "Próximo mês",
     "errorMarcas": "Não foi possível carregar os atendimentos do mês. Você ainda pode escolher um dia.",

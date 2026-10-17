@@ -147,9 +147,8 @@ describe('FiltrosSheet', () => {
     onCerrar.mockClear();
   });
 
-  it('con filtros activos el formulario arranca con sus valores y limpiar reinicia hoy y vista de día', () => {
+  it('con filtros activos el formulario arranca con sus valores y limpiar reinicia hoy', () => {
     useProAgendaStore.getState().setFecha('2026-09-01');
-    useProAgendaStore.getState().setVista('mes');
     useProAgendaStore.getState().setFiltros({ buscar: 'Ana', desde: '2026-10-01', hasta: '2026-10-05' });
     const onCerrar = abrir();
 
@@ -161,7 +160,6 @@ describe('FiltrosSheet', () => {
 
     const s = useProAgendaStore.getState();
     expect(s.filtros).toEqual({ buscar: '', servicioId: null, desde: null, hasta: null });
-    expect(s.vista).toBe('dia');
     expect(s.fecha).not.toBe('2026-09-01');
     expect(onCerrar).toHaveBeenCalledTimes(1);
   });

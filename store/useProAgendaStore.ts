@@ -7,8 +7,6 @@ import { hoyDelDispositivo } from '@/lib/pro/hoy';
 // Estado de navegación de la agenda del portal (no son datos del negocio: esos
 // viven en las cachés). Se reinicia al cambiar de negocio, de cuenta y al cerrar
 // sesión, junto con las cachés.
-export type VistaAgenda = 'dia' | 'mes';
-
 export interface FiltrosAgenda {
   buscar: string;
   servicioId: number | null;
@@ -19,11 +17,9 @@ export interface FiltrosAgenda {
 
 interface ProAgendaState {
   fecha: string; // "YYYY-MM-DD"
-  vista: VistaAgenda;
   mesVisto: string; // "YYYY-MM"
   filtros: FiltrosAgenda;
   setFecha: (fecha: string) => void;
-  setVista: (vista: VistaAgenda) => void;
   setMesVisto: (mes: string) => void;
   setFiltros: (cambios: Partial<FiltrosAgenda>) => void;
   limpiarFiltros: () => void;
@@ -36,7 +32,7 @@ const filtrosVacios = (): FiltrosAgenda => ({ buscar: '', servicioId: null, desd
 
 const estadoInicial = () => {
   const hoy = hoyDelDispositivo();
-  return { fecha: hoy, vista: 'dia' as VistaAgenda, mesVisto: hoy.slice(0, 7), filtros: filtrosVacios() };
+  return { fecha: hoy, mesVisto: hoy.slice(0, 7), filtros: filtrosVacios() };
 };
 
 export const useProAgendaStore = create<ProAgendaState>((set) => ({
@@ -46,7 +42,6 @@ export const useProAgendaStore = create<ProAgendaState>((set) => ({
     if (!esFechaValida(fecha)) return;
     set({ fecha, mesVisto: fecha.slice(0, 7) });
   },
-  setVista: (vista) => set({ vista }),
   setMesVisto: (mes) => {
     if (MES.test(mes)) set({ mesVisto: mes });
   },

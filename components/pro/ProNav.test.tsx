@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, renderWithProviders, screen, within } from '@/test/render';
-import { useProAgendaStore } from '@/store/useProAgendaStore';
+import { renderWithProviders, screen, within } from '@/test/render';
 
 const nav = vi.hoisted(() => ({ pathname: '/agenda' }));
 vi.mock('next/navigation', () => ({
@@ -12,7 +11,6 @@ import { ProNav } from './ProNav';
 
 beforeEach(() => {
   nav.pathname = '/agenda';
-  useProAgendaStore.getState().reset();
 });
 
 describe('ProNav', () => {
@@ -32,12 +30,11 @@ describe('ProNav', () => {
     expect(screen.getByRole('link', { name: 'Cuenta' })).not.toHaveAttribute('aria-current');
   });
 
-  it('en la cuenta marca Cuenta como actual y no muestra el selector día/mes', () => {
+  it('en la cuenta marca Cuenta como actual', () => {
     nav.pathname = '/cuenta';
     renderWithProviders(<ProNav />);
     expect(screen.getByRole('link', { name: 'Cuenta' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Agenda' })).not.toHaveAttribute('aria-current');
-    expect(screen.queryByRole('group')).toBeNull();
   });
 
   it('con prefijo /pro (localhost) arma los enlaces y detecta la ruta activa', () => {
@@ -48,17 +45,10 @@ describe('ProNav', () => {
     expect(screen.getByRole('link', { name: 'Cuenta' })).toHaveAttribute('href', '/pro/cuenta');
   });
 
-  it('el selector día/mes cambia la vista del store', () => {
+  it('ya no tiene selector día/mes: la agenda elige fecha desde el calendario', () => {
     renderWithProviders(<ProNav />);
-    const grupo = screen.getByRole('group', { name: 'Vista de la agenda' });
-    expect(within(grupo).getByRole('button', { name: 'Día' })).toHaveAttribute('aria-pressed', 'true');
-
-    fireEvent.click(within(grupo).getByRole('button', { name: 'Mes' }));
-    expect(useProAgendaStore.getState().vista).toBe('mes');
-    expect(within(grupo).getByRole('button', { name: 'Mes' })).toHaveAttribute('aria-pressed', 'true');
-
-    fireEvent.click(within(grupo).getByRole('button', { name: 'Día' }));
-    expect(useProAgendaStore.getState().vista).toBe('dia');
+    expect(screen.queryByRole('group')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('no tiene entradas del tenant (clientes, servicios, finanzas, perfil)', () => {

@@ -17,7 +17,7 @@ import { agendaColors, agendaFontSerif, agendaShadows } from '@/theme/agendaColo
 import { MensajeErrorPro } from './MensajeErrorPro';
 import { NotasDelTurnoPro } from './NotasDelTurnoPro';
 import { ProHeader } from './ProHeader';
-import { PRO_NAV_ALTURA_AGENDA, ProNav } from './ProNav';
+import { PRO_NAV_ALTURA, ProNav } from './ProNav';
 
 // Solo enteros positivos escritos en decimal simple: "1e1", "0x5" o "5/../me"
 // no son un id. Cualquier otra cosa se trata como turno inexistente, sin pedir nada.
@@ -225,7 +225,7 @@ export function DetalleTurnoPro() {
           boxSizing: 'border-box',
           minHeight: '100dvh',
           backgroundColor: agendaColors.bg,
-          paddingBottom: `calc(${PRO_NAV_ALTURA_AGENDA}px + env(safe-area-inset-bottom))`,
+          paddingBottom: `calc(${PRO_NAV_ALTURA}px + env(safe-area-inset-bottom))`,
         }}
       >
         <ProHeader />

@@ -90,7 +90,6 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   // lucide-react y un TIPO de services/turnoService; sin stores de sesión, token,
   // teléfono ni precio.
   /^components\/agenda\/WeekStrip$/,
-  /^components\/SegmentedControl$/, // presentacional; solo importa theme/agendaColors
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
 ];
 
@@ -417,8 +416,6 @@ describe('aislamiento del portal — el escáner', () => {
       ['WeekStrip con sufijo (otro módulo)', "import x from '@/components/agenda/WeekStripExtra';"],
       ['WeekStrip de otra carpeta', "import x from '@/components/reservaOnline/WeekStrip';"],
       ['otro componente de agenda (tarjeta del tenant)', "import x from '@/components/agenda/TurnoCard';"],
-      ['SegmentedControl con sufijo (otro módulo)', "import x from '@/components/SegmentedControlExtra';"],
-      ['SegmentedControl de otra carpeta', "import x from '@/components/agenda/SegmentedControl';"],
       ['constants/layout con sufijo (otro módulo)', "import x from '@/constants/layoutExtra';"],
       ['otro módulo de constants', "import x from '@/constants/precios';"],
     ])('%s', (_nombre, fuente) => {
@@ -447,7 +444,6 @@ describe('aislamiento del portal — el escáner', () => {
       ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
       ['cacheLru (compartido revisado)', "import { crearCacheLru } from '@/lib/cacheLru';"],
       ['WeekStrip (compartido revisado)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
-      ['SegmentedControl (compartido revisado)', "import { SegmentedControl } from '@/components/SegmentedControl';"],
       ['constants/layout (compartido revisado)', "import { NAV_CLEARANCE } from '@/constants/layout';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],

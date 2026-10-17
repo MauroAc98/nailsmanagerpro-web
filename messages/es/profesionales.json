@@ -27,9 +27,6 @@
     "vacio": "No hay turnos para este día.",
     "reintentar": "Reintentar",
     "cargando": "Cargando turnos",
-    "vista": "Vista de la agenda",
-    "dia": "Día",
-    "mes": "Mes",
     "turnosHoy": "Turnos de hoy",
     "turnosDe": "Turnos del {fecha}",
     "resultados": "Resultados"
@@ -83,7 +80,10 @@
     "agenda": "Agenda",
     "cuenta": "Cuenta"
   },
-  "Mes": {
+  "Calendario": {
+    "titulo": "Elegir fecha",
+    "hoy": "Hoy",
+    "cerrar": "Cerrar",
     "anterior": "Mes anterior",
     "siguiente": "Mes siguiente",
     "errorMarcas": "No pudimos cargar los turnos del mes. Igual puedes elegir un día.",

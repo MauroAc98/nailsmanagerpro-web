@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { desfaseLunes, etiquetaDeMes, mesAnterior, mesDe, mesSiguiente, mesValido, primerDia, ultimoDia } from './mes';
+import { celdasDeMes, desfaseLunes, etiquetaDeDia, etiquetaDeMes, inicialesDeSemana, mesAnterior, mesDe, mesSiguiente, mesValido, primerDia, ultimoDia } from './mes';
 
 describe('mesValido', () => {
   it.each([
@@ -86,5 +86,46 @@ describe('desfaseLunes', () => {
   });
   it('entrada inválida -> null', () => {
     expect(desfaseLunes('x')).toBeNull();
+  });
+});
+
+describe('celdasDeMes', () => {
+  it('arma 42 celdas desde el lunes, con los días de los meses vecinos marcados como ajenos', () => {
+    const celdas = celdasDeMes('2026-10') ?? [];
+    expect(celdas).toHaveLength(42);
+    expect(celdas[0]).toEqual({ fecha: '2026-09-28', delMes: false });
+    expect(celdas[3]).toEqual({ fecha: '2026-10-01', delMes: true });
+    expect(celdas[33]).toEqual({ fecha: '2026-10-31', delMes: true });
+    expect(celdas[41]).toEqual({ fecha: '2026-11-08', delMes: false });
+    expect(celdas.filter((c) => c.delMes)).toHaveLength(31);
+  });
+  it('un mes que arranca en lunes no lleva días ajenos al principio', () => {
+    expect((celdasDeMes('2026-06') ?? [])[0]).toEqual({ fecha: '2026-06-01', delMes: true });
+  });
+  it('cruza el año hacia atrás y hacia adelante', () => {
+    expect((celdasDeMes('2027-01') ?? [])[0].fecha).toBe('2026-12-28');
+    expect((celdasDeMes('2026-12') ?? [])[41].fecha).toBe('2027-01-10');
+  });
+  it('en el primer mes válido los días previos existen igual', () => {
+    expect((celdasDeMes('2000-01') ?? [])[0]).toEqual({ fecha: '1999-12-27', delMes: false });
+  });
+  it('entrada inválida -> null', () => {
+    expect(celdasDeMes('x')).toBeNull();
+  });
+});
+
+describe('etiquetaDeDia', () => {
+  it('día y mes en el idioma pedido', () => {
+    expect(etiquetaDeDia('2026-10-14', 'es')).toBe('14 de octubre');
+    expect(etiquetaDeDia('2026-10-14', 'pt-BR')).toBe('14 de outubro');
+  });
+});
+
+describe('inicialesDeSemana', () => {
+  it('siete iniciales, de lunes a domingo', () => {
+    const letras = inicialesDeSemana('es');
+    expect(letras).toHaveLength(7);
+    expect(letras[0].toUpperCase()).toBe('L');
+    expect(letras[6].toUpperCase()).toBe('D');
   });
 });
