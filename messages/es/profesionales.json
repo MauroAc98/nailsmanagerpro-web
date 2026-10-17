@@ -8,6 +8,33 @@
     "reintentar": "Reintentar",
     "cerrarSesion": "Cerrar sesión"
   },
+  "CampoPassword": {
+    "mostrar": "Mostrar contraseña",
+    "ocultar": "Ocultar contraseña"
+  },
+  "LoginPage": {
+    "titulo": "Ingresá a tu cuenta",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "entrar": "Ingresar",
+    "entrando": "Ingresando",
+    "olvide": "Olvidé mi contraseña",
+    "avisoExpired": "Tu sesión venció. Ingresá de nuevo para continuar.",
+    "avisoRevoked": "Tu sesión se cerró. Ingresá de nuevo para continuar.",
+    "camposRequeridos": "Completá el correo y la contraseña."
+  },
+  "CambiarPassword": {
+    "titulo": "Elegí una contraseña nueva",
+    "explicacion": "Por seguridad, tenés que cambiar la contraseña antes de seguir. Usá al menos 10 caracteres.",
+    "nueva": "Contraseña nueva",
+    "confirmar": "Repetí la contraseña nueva",
+    "guardar": "Guardar contraseña",
+    "guardando": "Guardando",
+    "cerrarSesion": "Cerrar sesión",
+    "corta": "La contraseña tiene que tener al menos 10 caracteres.",
+    "noCoincide": "Las contraseñas no coinciden.",
+    "igual": "Elegí una contraseña distinta de la provisoria."
+  },
   "Errores": {
     "invalidCredentials": "El correo o la contraseña no son correctos.",
     "sessionRevoked": "Tu sesión terminó. Ingresá de nuevo.",
@@ -22,6 +49,10 @@
     "rateLimitedSegundos": "Hubo demasiados intentos. Probá de nuevo en {segundos} segundos.",
     "validation": "Revisá los datos ingresados.",
     "network": "No pudimos conectarnos. Revisá tu conexión y probá de nuevo.",
-    "server": "Algo salió mal de nuestro lado. Probá de nuevo en un rato."
+    "server": "Algo salió mal de nuestro lado. Probá de nuevo en un rato.",
+    "esperaSegundos": "Podés reintentar en {segundos} segundos."
+  },
+  "LogoPortal": {
+    "alt": "Turnetto, portal de profesionales"
   }
 }
