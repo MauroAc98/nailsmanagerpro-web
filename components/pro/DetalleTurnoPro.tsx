@@ -4,14 +4,16 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { Spinner } from '@/components/Spinner';
 import { useProTurno } from '@/hooks/pro/useProTurno';
 import { useRutaPro } from '@/hooks/useRutaPro';
+import { formatearDuracion } from '@/lib/duracion';
 import { infoEstado } from '@/lib/pro/estado';
-import { diaDe, hora12, horaDe, horaFin } from '@/lib/pro/fechaHora';
+import { diaDe, horaDe, horaFin } from '@/lib/pro/fechaHora';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { useProAuthStore } from '@/store/useProAuthStore';
-import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors, agendaFontSerif, agendaShadows } from '@/theme/agendaColors';
 import { MensajeErrorPro } from './MensajeErrorPro';
 import { NotasDelTurnoPro } from './NotasDelTurnoPro';
 import { ProHeader } from './ProHeader';
@@ -52,28 +54,6 @@ const boton = {
 
 const textoLargo = { minWidth: 0, overflowWrap: 'anywhere', unicodeBidi: 'isolate' } as const;
 
-// Caja de solo lectura con el aspecto de los campos de la pantalla de editar turno.
-const caja = {
-  boxSizing: 'border-box',
-  background: agendaColors.surfaceSubtle,
-  border: `1px solid ${agendaColors.fieldBorder}`,
-  borderRadius: 12,
-  padding: '14px 16px',
-  fontSize: 15,
-  color: agendaColors.text,
-} as const;
-
-function Campo({ etiqueta, children, ancho }: { etiqueta: string; children: ReactNode; ancho?: boolean }) {
-  return (
-    <div style={{ marginBottom: ancho === true ? 0 : 20, flex: ancho === true ? 1 : undefined, minWidth: 0 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: agendaColors.sub, letterSpacing: 1, textTransform: 'uppercase' }}>
-        {etiqueta}
-      </p>
-      {children}
-    </div>
-  );
-}
-
 // Detalle de solo lectura de un turno (/turnos/[id]). El id llega por la URL y se
 // valida antes de cualquier pedido. Muestra solo los campos de ProTurno; las
 // notas van completas, como texto plano. La fecha elegida en la agenda vive en
@@ -87,6 +67,7 @@ export function DetalleTurnoPro() {
   const id = idDeParam(params?.id);
   const fecha = useProAgendaStore((s) => s.fecha);
   const vinculoId = useProAuthStore((s) => s.vinculoActivoId);
+  const profesional = useProAuthStore((s) => s.vinculos.find((v) => v.id === s.vinculoActivoId)?.profesional);
   const [vinculoInicial] = useState(vinculoId);
   const titulo = useRef<HTMLHeadingElement>(null);
   const { data, error, reintentar } = useProTurno(id, fecha);
@@ -155,8 +136,10 @@ export function DetalleTurnoPro() {
     const inicio = horaDe(data.fecha_hora);
     const fin = inicio === null ? null : horaFin(inicio, data.duracion_total_minutos);
     const notas = typeof data.notas === 'string' && data.notas.trim() !== '' ? data.notas : null;
-    const servicios = data.servicios.map((s) => s.nombre).join(' + ');
+    const duracion =
+      Number.isInteger(data.duracion_total_minutos) && data.duracion_total_minutos > 0 ? formatearDuracion(data.duracion_total_minutos) : null;
     const sinHora = t('Card.sinHora');
+    const fila = { borderTop: `1px solid ${agendaColors.divider}` } as const;
 
     cuerpo = (
       <>
@@ -165,45 +148,71 @@ export function DetalleTurnoPro() {
             {t('Detalle.errorRefresco')}
           </p>
         )}
-        {notas !== null && <NotasDelTurnoPro notas={notas} />}
-        {data.promo !== null && (
-          <Campo etiqueta={t('Detalle.promo')}>
-            <div style={{ ...caja, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span
-                style={{
-                  flexShrink: 0, fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase',
-                  color: agendaColors.success, backgroundColor: agendaColors.successBg, borderRadius: 8, padding: '2px 6px',
-                }}
-              >
-                {t('Detalle.promo')}
-              </span>
-              <span dir="auto" style={{ ...textoLargo, fontStyle: 'italic' }}>
-                {data.promo.nombre}
-              </span>
-            </div>
-          </Campo>
-        )}
-        {servicios !== '' && (
-          <Campo etiqueta={t('Detalle.servicios')}>
-            <div dir="auto" style={{ ...caja, ...textoLargo }}>
-              {servicios}
-            </div>
-          </Campo>
-        )}
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Campo etiqueta={t('Detalle.hora')} ancho>
-            <div style={{ ...caja, fontFamily: agendaFontSerif, fontSize: 18, whiteSpace: 'nowrap' }}>
-              {inicio === null ? sinHora : (hora12(inicio) ?? sinHora)}
-            </div>
-          </Campo>
-          <Campo etiqueta={t('Detalle.hasta')} ancho>
-            <div style={{ ...caja, fontFamily: agendaFontSerif, fontSize: 18, whiteSpace: 'nowrap' }}>
-              {fin === null ? sinHora : (hora12(fin.hora) ?? sinHora)}
-            </div>
-            {fin?.diaSiguiente === true && (
-              <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: agendaColors.sub }}>{t('Card.diaSiguiente')}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div
+            style={{
+              borderRadius: 18, border: `1px solid ${agendaColors.border}`, backgroundColor: agendaColors.surface,
+              boxShadow: agendaShadows.card, overflow: 'hidden',
+            }}
+          >
+            {data.promo !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', backgroundColor: agendaColors.successBg }}>
+                <span
+                  style={{
+                    flexShrink: 0, fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase',
+                    color: agendaColors.success, backgroundColor: agendaColors.surface, borderRadius: 8, padding: '2px 6px',
+                  }}
+                >
+                  {t('Card.promo')}
+                </span>
+                <span dir="auto" style={{ ...textoLargo, fontSize: 14, fontStyle: 'italic', color: agendaColors.text }}>
+                  {data.promo.nombre}
+                </span>
+              </div>
             )}
-          </Campo>
+            <div style={{ ...(data.promo !== null ? fila : {}), display: 'flex', alignItems: 'center', gap: 16, padding: '16px 16px 14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontFamily: agendaFontSerif, fontSize: 34, lineHeight: 1, color: agendaColors.strong }}>{inicio ?? sinHora}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: agendaColors.subtext }}>
+                  {t('Detalle.hastaLas', { hora: fin === null ? sinHora : fin.hora })}
+                </span>
+                {fin?.diaSiguiente === true && <span style={{ fontSize: 12, color: agendaColors.sub }}>{t('Card.diaSiguiente')}</span>}
+              </div>
+              {duracion !== null && (
+                <>
+                  <span aria-hidden="true" style={{ width: 1, alignSelf: 'stretch', flexShrink: 0, backgroundColor: agendaColors.divider }} />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: agendaColors.subtext }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
+                    {duracion}
+                  </span>
+                </>
+              )}
+            </div>
+            {data.servicios.length > 0 && (
+              <div style={{ ...fila, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {data.servicios.map((s) => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 3, flexShrink: 0, backgroundColor: agendaColors.primary }} />
+                    <span dir="auto" style={{ ...textoLargo, fontFamily: agendaFontSerif, fontStyle: 'italic', fontSize: 16, color: agendaColors.strong }}>
+                      {s.nombre}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {profesional !== undefined && (
+              <div style={{ ...fila, backgroundColor: agendaColors.surfaceSubtle, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AvatarProfesional nombre={profesional.nombre} apellido={profesional.apellido} avatarUrl={profesional.avatar_url} size={20} fontSize={8} />
+                <span dir="auto" style={{ ...textoLargo, fontSize: 12, fontWeight: 700, color: agendaColors.subtext }}>
+                  {t('Card.conProfesional', { nombre: profesional.nombre })}
+                </span>
+              </div>
+            )}
+          </div>
+          {notas !== null && <NotasDelTurnoPro notas={notas} />}
         </div>
       </>
     );
@@ -233,7 +242,7 @@ export function DetalleTurnoPro() {
               tabIndex={-1}
               dir="auto"
               style={{
-                margin: 0, fontSize: 26, fontWeight: 400, lineHeight: 1.15, fontFamily: agendaFontSerif, color: agendaColors.strong,
+                margin: 0, fontSize: 28, fontWeight: 400, lineHeight: 1.15, fontFamily: agendaFontSerif, color: agendaColors.strong,
                 outline: 'none', overflowWrap: 'anywhere',
               }}
             >

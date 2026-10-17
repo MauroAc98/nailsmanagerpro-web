@@ -33,11 +33,8 @@
   },
   "Detalle": {
     "titulo": "Detalle del turno",
-    "etiqueta": "Turno · {fecha}",
-    "hora": "Hora",
-    "hasta": "Hasta",
-    "servicios": "Servicios",
-    "promo": "Promo",
+    "etiqueta": "{fecha}",
+    "hastaLas": "hasta las {hora}",
     "notasTitulo": "Idea para el turno",
     "verTodo": "Ver todo",
     "verMenos": "Ver menos",

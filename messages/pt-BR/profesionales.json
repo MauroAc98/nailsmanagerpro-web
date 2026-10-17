@@ -33,11 +33,8 @@
   },
   "Detalle": {
     "titulo": "Detalhe do atendimento",
-    "etiqueta": "Atendimento · {fecha}",
-    "hora": "Hora",
-    "hasta": "Até",
-    "servicios": "Serviços",
-    "promo": "Promo",
+    "etiqueta": "{fecha}",
+    "hastaLas": "até às {hora}",
     "notasTitulo": "Ideia para o agendamento",
     "verTodo": "Ver tudo",
     "verMenos": "Ver menos",

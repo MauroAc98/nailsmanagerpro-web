@@ -7,7 +7,6 @@ import {
   diaDe,
   esFechaValida,
   horaDe,
-  hora12,
   horaFin,
   partirFechaHora,
   rangoPermitido,
@@ -247,20 +246,5 @@ describe('ban estático de Date en la hora de pared', () => {
     const fuente = readFileSync(path.join(RAIZ, archivo), 'utf8');
     expect(fuente.length).toBeGreaterThan(500);
     expect(sinComentarios(fuente).match(USA_DATE)).toBeNull();
-  });
-});
-
-describe('hora12', () => {
-  it('formatea como la pantalla de editar turno', () => {
-    expect(hora12('00:05')).toBe('12:05 a. m. hs');
-    expect(hora12('09:30')).toBe('9:30 a. m. hs');
-    expect(hora12('12:00')).toBe('12:00 p. m. hs');
-    expect(hora12('23:59')).toBe('11:59 p. m. hs');
-  });
-
-  it('devuelve null ante una hora inválida', () => {
-    expect(hora12('24:00')).toBeNull();
-    expect(hora12('9:30')).toBeNull();
-    expect(hora12('')).toBeNull();
   });
 });
