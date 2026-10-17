@@ -64,28 +64,6 @@ export function etiquetaDeMes(mes: string, locale: string): string {
   );
 }
 
-// Huecos antes del día 1 con la semana empezando el lunes (0 = el 1 es lunes).
-export function desfaseLunes(mes: string): number | null {
-  const p = partes(mes);
-  if (p === null) return null;
-  return (new Date(Date.UTC(p[0], p[1] - 1, 1)).getUTCDay() + 6) % 7;
-}
-
-// Grilla de 6 semanas (42 celdas) con la semana empezando el lunes. Las celdas
-// que caen en los meses vecinos vienen con delMes en false.
-export function celdasDeMes(mes: string): { fecha: string; delMes: boolean }[] | null {
-  const p = partes(mes);
-  const desfase = desfaseLunes(mes);
-  if (p === null || desfase === null) return null;
-  return Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(Date.UTC(p[0], p[1] - 1, 1 - desfase + i));
-    const anio = String(d.getUTCFullYear()).padStart(4, '0');
-    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dia = String(d.getUTCDate()).padStart(2, '0');
-    return { fecha: `${anio}-${m}-${dia}`, delMes: `${anio}-${m}` === mes };
-  });
-}
-
 // "14 de octubre": se formatea en UTC con partes numéricas, la zona del
 // dispositivo no puede correr el día. Fecha inválida = texto vacío.
 export function etiquetaDeDia(fecha: string, locale: string): string {
@@ -102,10 +80,4 @@ export function etiquetaCortaDeDia(fecha: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
     new Date(Date.UTC(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)) - 1, Number(fecha.slice(8, 10)))),
   );
-}
-
-// Lunes a domingo, en una inicial: 2024-01-01 fue lunes.
-export function inicialesDeSemana(locale: string): string[] {
-  const f = new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' });
-  return Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2024, 0, 1 + i))));
 }

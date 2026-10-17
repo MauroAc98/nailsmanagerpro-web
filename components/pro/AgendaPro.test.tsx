@@ -216,8 +216,8 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
     renderWithProviders(<AgendaPro />);
     abrir();
     const dialogo = await screen.findByRole('dialog', { name: 'Elegir fecha' });
-    expect(within(dialogo).getByText('octubre 2026')).toBeInTheDocument();
-    expect(within(dialogo).getByTestId('cal-dia-2026-10-17')).toHaveAttribute('aria-pressed', 'true');
+    expect(within(dialogo).getByText('Octubre 2026')).toBeInTheDocument();
+    expect(within(dialogo).getByTestId('cal-day-2026-10-17')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('week-day-2026-10-17')).toBeInTheDocument();
     expect(await screen.findByText('Cliente1')).toBeInTheDocument();
   });
@@ -236,7 +236,7 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
     renderWithProviders(<AgendaPro />);
     await screen.findByText('No hay turnos para este día.');
     abrir();
-    fireEvent.click(await screen.findByTestId('cal-dia-2026-10-22'));
+    fireEvent.click(await screen.findByTestId('cal-day-2026-10-22'));
 
     expect(useProAgendaStore.getState().fecha).toBe('2026-10-22');
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -251,7 +251,7 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
     renderWithProviders(<AgendaPro />);
     abrir();
     fireEvent.click(await screen.findByRole('button', { name: 'Mes siguiente' }));
-    expect(screen.getByText('noviembre 2026')).toBeInTheDocument();
+    expect(screen.getByText('Noviembre 2026')).toBeInTheDocument();
     await waitFor(() => expect(marcas).toHaveBeenCalledWith(1, '2026-11', expect.any(AbortSignal)));
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
@@ -259,7 +259,7 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
     expect(useProAgendaStore.getState().fecha).toBe('2026-10-17');
 
     abrir();
-    expect(await screen.findByText('octubre 2026')).toBeInTheDocument();
+    expect(await screen.findByText('Octubre 2026')).toBeInTheDocument();
   });
 
   it('mientras cargan las marcas de un mes muestra el spinner sin tapar la grilla', async () => {
@@ -272,7 +272,7 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Mes siguiente' }));
     const dialogo = screen.getByRole('dialog', { name: 'Elegir fecha' });
     expect(within(dialogo).getByRole('status', { name: 'Cargando turnos' })).toBeInTheDocument();
-    expect(within(dialogo).getByTestId('cal-dia-2026-11-10')).toBeInTheDocument();
+    expect(within(dialogo).getByTestId('cal-day-2026-11-10')).toBeInTheDocument();
   });
 
   it('si fallan las marcas del mes muestra el error del tipo y permite reintentar', async () => {
@@ -358,7 +358,7 @@ describe('AgendaPro con filtros', () => {
   // La fecha se elige en el calendario, que es una hoja hermana de la de filtros.
   const elegirFecha = (d: HTMLElement, fecha: string) => {
     fireEvent.click(within(d).getByRole('button', { name: 'Elegir fecha' }));
-    fireEvent.click(screen.getByTestId(`cal-dia-${fecha}`));
+    fireEvent.click(screen.getByTestId(`cal-day-${fecha}`));
   };
   const escribir = (d: HTMLElement, texto: string) =>
     fireEvent.change(within(d).getByLabelText('Buscar por nombre...'), { target: { value: texto } });
@@ -544,7 +544,7 @@ describe('AgendaPro: hojas de fecha y servicio abiertas desde Filtros', () => {
   it('elegir en el calendario no toca la fecha de la tira ni los filtros guardados hasta Ver resultados', async () => {
     const filtros = await abrirFiltros();
     fireEvent.click(within(filtros).getByRole('button', { name: 'Elegir fecha' }));
-    fireEvent.click(await screen.findByTestId('cal-dia-2026-10-22'));
+    fireEvent.click(await screen.findByTestId('cal-day-2026-10-22'));
 
     expect(screen.queryByRole('dialog', { name: 'Elegir fecha' })).toBeNull();
     expect(within(filtros).getByRole('button', { name: /22/ })).toBeInTheDocument();
@@ -567,6 +567,6 @@ describe('AgendaPro: hojas de fecha y servicio abiertas desde Filtros', () => {
     const filtros = await abrirFiltros();
     fireEvent.click(within(filtros).getByRole('button', { name: 'Elegir fecha' }));
     await screen.findByRole('dialog', { name: 'Elegir fecha' });
-    expect(screen.getByTestId('cal-dia-2026-10-17')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('cal-day-2026-10-17')).toHaveAttribute('aria-pressed', 'false');
   });
 });

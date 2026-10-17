@@ -3,12 +3,13 @@
 import type { CSSProperties } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { BottomSheet } from '@/components/BottomSheet';
+import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';
 import { Spinner } from '@/components/Spinner';
 import type { ProError } from '@/lib/pro/errores';
-import { esFechaValida } from '@/lib/pro/fechaHora';
+import { esFechaValida, FECHA_MINIMA } from '@/lib/pro/fechaHora';
 import { hoyDelDispositivo } from '@/lib/pro/hoy';
-import { celdasDeMes, etiquetaDeDia, inicialesDeSemana, mesAnterior, mesSiguiente } from '@/lib/pro/mes';
-import { agendaColors, agendaFontSerif, agendaShadows } from '@/theme/agendaColors';
+import { etiquetaDeDia, mesAnterior, mesSiguiente, mesValido } from '@/lib/pro/mes';
+import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { MensajeErrorPro } from './MensajeErrorPro';
 
 interface Props {
@@ -40,15 +41,7 @@ const botonLlano: CSSProperties = {
   padding: 0,
 };
 
-const botonMes = (deshabilitado: boolean): CSSProperties => ({
-  ...botonLlano,
-  minWidth: TACTIL,
-  minHeight: TACTIL,
-  cursor: deshabilitado ? 'default' : 'pointer',
-  opacity: deshabilitado ? 0.35 : 1,
-});
-
-// Flecha y cruz como SVG propio: el portal no importa lucide-react.
+// Cruz de cerrar como SVG propio.
 function Icono({ trazo, tam, color }: { trazo: string; tam: number; color: string }) {
   return (
     <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -57,8 +50,8 @@ function Icono({ trazo, tam, color }: { trazo: string; tam: number; color: strin
   );
 }
 
-// Hoja "Elegir fecha" del portal: calendario mensual que elige UN día. Mismo
-// diseño que la hoja de la agenda de la titular, pero presentacional: la fecha,
+// Hoja "Elegir fecha" del portal: calendario mensual que elige UN día. Reutiliza
+// el CalendarioMensual de la agenda de la titular, pero es presentacional: la fecha,
 // el mes visto y las marcas entran por props y los cambios salen por callbacks,
 // así la usan tanto la tira semanal como la hoja de filtros.
 // Tocar un día ES la confirmación; "Hoy" solo lleva el calendario al mes actual.
@@ -79,14 +72,9 @@ export function CalendarioFechaSheet({
   const locale = useLocale();
   if (!abierto) return null;
 
-  const anterior = mesAnterior(mes);
-  const siguiente = mesSiguiente(mes);
   const hoy = hoyDelDispositivo();
-  const cuenta = new Map((marcas ?? []).map((m) => [m.fecha, m.cantidad]));
-  const celdas = celdasDeMes(mes) ?? [];
-  const etiquetaMes = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(
-    new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)) - 1, 1)),
-  );
+  // El calendario compartido trabaja con Date local; el mes del portal es "YYYY-MM".
+  const mesVisto = mesValido(mes) ? new Date(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)) - 1, 1) : null;
 
   return (
     <>
@@ -158,176 +146,57 @@ export function CalendarioFechaSheet({
             </div>
           </div>
 
-          <div style={{ padding: '0 20px 24px' }}>
-            <div
-              style={{
-                padding: 16,
-                borderRadius: 24,
-                border: `1px solid ${agendaColors.border}`,
-                backgroundColor: agendaColors.surface,
-                boxShadow: agendaShadows.card,
+          {mesVisto !== null && (
+            <CalendarioMensual
+              viewDate={mesVisto}
+              onMonthChange={(d) => {
+                // Misma regla que antes: nunca antes de 2000-01 ni más allá del rango válido.
+                const destino = d < mesVisto ? mesAnterior(mes) : mesSiguiente(mes);
+                if (destino !== null) onCambiarMes(destino);
               }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              fechaSeleccionada={fecha}
+              turnosMes={marcas ?? []}
+              onDayClick={onElegir}
+              diaDeshabilitado={(f) => !esFechaValida(f)}
+              mesMinimo={FECHA_MINIMA.slice(0, 7)}
+              etiquetas={{
+                anterior: t('anterior'),
+                siguiente: t('siguiente'),
+                dia: (f, cantidad) =>
+                  cantidad > 0 ? t('irAlDia', { dia: etiquetaDeDia(f, locale), cantidad }) : t('sinTurnos', { dia: etiquetaDeDia(f, locale) }),
+              }}
+            />
+          )}
+          <div style={{ padding: '0 20px 24px' }}>
+            {marcas === null && error === null && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 12 }}>
+                <Spinner label={tAgenda('cargando')} />
+              </div>
+            )}
+            {error !== null && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, paddingTop: 12 }}>
+                <p style={{ margin: 0, fontSize: 14, color: agendaColors.sub }}>{t('errorMarcas')}</p>
+                <MensajeErrorPro error={error} id="calendario-error" />
                 <button
                   type="button"
-                  aria-label={t('anterior')}
-                  disabled={anterior === null}
-                  onClick={() => anterior !== null && onCambiarMes(anterior)}
-                  style={botonMes(anterior === null)}
+                  onClick={onReintentar}
+                  aria-describedby="calendario-error"
+                  style={{
+                    minHeight: TACTIL,
+                    padding: '0 16px',
+                    border: `1px solid ${agendaColors.fieldBorder}`,
+                    borderRadius: 12,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    backgroundColor: agendaColors.surface,
+                    color: agendaColors.strong,
+                  }}
                 >
-                  <Icono trazo="m15 18-6-6 6-6" tam={18} color={agendaColors.sub} />
-                </button>
-                <span style={{ fontFamily: agendaFontSerif, fontWeight: 400, fontSize: 18, color: agendaColors.textStrong, textTransform: 'capitalize' }}>
-                  {etiquetaMes} {mes.slice(0, 4)}
-                </span>
-                <button
-                  type="button"
-                  aria-label={t('siguiente')}
-                  disabled={siguiente === null}
-                  onClick={() => siguiente !== null && onCambiarMes(siguiente)}
-                  style={botonMes(siguiente === null)}
-                >
-                  <Icono trazo="m9 18 6-6-6-6" tam={18} color={agendaColors.sub} />
+                  {t('reintentar')}
                 </button>
               </div>
-
-              <div aria-hidden style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
-                {inicialesDeSemana(locale).map((d, i) => (
-                  <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: agendaColors.muted, paddingBottom: 4 }}>
-                    {d}
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px 0' }}>
-                {celdas.map((celda) => {
-                  const f = celda.fecha;
-                  const elegido = f === fecha;
-                  const esHoy = f === hoy;
-                  const pasado = f < hoy;
-                  const cantidad = cuenta.get(f) ?? 0;
-                  const nombre = etiquetaDeDia(f, locale);
-                  return (
-                    <button
-                      key={f}
-                      type="button"
-                      data-testid={`cal-dia-${f}`}
-                      data-fuera-del-mes={celda.delMes ? undefined : 'true'}
-                      aria-label={cantidad > 0 ? t('irAlDia', { dia: nombre, cantidad }) : t('sinTurnos', { dia: nombre })}
-                      aria-pressed={elegido}
-                      aria-current={esHoy ? 'date' : undefined}
-                      disabled={!esFechaValida(f)}
-                      onClick={() => onElegir(f)}
-                      style={{
-                        ...botonLlano,
-                        minWidth: TACTIL,
-                        minHeight: TACTIL,
-                        width: '100%',
-                        cursor: 'pointer',
-                        opacity: celda.delMes ? 1 : 0.25,
-                      }}
-                    >
-                      <span
-                        style={{
-                          position: 'relative',
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontFamily: elegido || esHoy ? agendaFontSerif : undefined,
-                          fontSize: 15,
-                          fontWeight: elegido || esHoy ? 700 : 400,
-                          backgroundColor: elegido ? agendaColors.primarySolid : 'transparent',
-                          color: elegido
-                            ? agendaColors.primaryFg
-                            : pasado
-                              ? agendaColors.placeholder
-                              : esHoy
-                                ? agendaColors.primaryDeep
-                                : agendaColors.text,
-                        }}
-                      >
-                        {Number(f.slice(8, 10))}
-                        {cantidad > 0 && !pasado && !elegido && (
-                          <span
-                            aria-hidden
-                            style={{
-                              position: 'absolute',
-                              bottom: -2,
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              minWidth: 14,
-                              height: 14,
-                              padding: '0 3px',
-                              boxSizing: 'border-box',
-                              borderRadius: 7,
-                              fontFamily: 'inherit',
-                              fontSize: 8,
-                              fontWeight: 900,
-                              lineHeight: '14px',
-                              textAlign: 'center',
-                              backgroundColor: agendaColors.primarySoft,
-                              color: agendaColors.primaryDeep,
-                            }}
-                          >
-                            {cantidad}
-                          </span>
-                        )}
-                        {cantidad > 0 && pasado && !elegido && (
-                          <span
-                            aria-hidden
-                            data-punto=""
-                            style={{
-                              position: 'absolute',
-                              bottom: 6,
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: 4,
-                              height: 4,
-                              borderRadius: 2,
-                              backgroundColor: agendaColors.divider,
-                            }}
-                          />
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {marcas === null && error === null && (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 12 }}>
-                  <Spinner label={tAgenda('cargando')} />
-                </div>
-              )}
-              {error !== null && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, paddingTop: 12 }}>
-                  <p style={{ margin: 0, fontSize: 14, color: agendaColors.sub }}>{t('errorMarcas')}</p>
-                  <MensajeErrorPro error={error} id="calendario-error" />
-                  <button
-                    type="button"
-                    onClick={onReintentar}
-                    aria-describedby="calendario-error"
-                    style={{
-                      minHeight: TACTIL,
-                      padding: '0 16px',
-                      border: `1px solid ${agendaColors.fieldBorder}`,
-                      borderRadius: 12,
-                      fontSize: 15,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      backgroundColor: agendaColors.surface,
-                      color: agendaColors.strong,
-                    }}
-                  >
-                    {t('reintentar')}
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </BottomSheet>

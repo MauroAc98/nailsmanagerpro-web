@@ -21,6 +21,8 @@ export function CalendarioMensual({
   onDayClick,
   diaDeshabilitado,
   diasConPunto,
+  etiquetas,
+  mesMinimo,
 }: {
   viewDate:         Date;
   onMonthChange:    (d: Date) => void;
@@ -30,8 +32,21 @@ export function CalendarioMensual({
   // Opcionales (los usa la reserva online, la agenda propia no).
   diaDeshabilitado?: (fecha: string) => boolean;
   diasConPunto?:     string[];
+  // Opcional (lo usa el portal de profesionales): con etiquetas los días son
+  // botones con nombre accesible y las flechas llevan nombre y miden 44px.
+  // Sin ellas todo queda igual que antes.
+  etiquetas?: {
+    anterior:  string;
+    siguiente: string;
+    dia:       (fecha: string, cantidad: number) => string;
+  };
+  // Opcional: primer mes navegable ("YYYY-MM"). Antes de él la flecha anterior
+  // queda deshabilitada.
+  mesMinimo?: string;
 }) {
   const todayStr = fechaDeHoy();
+  // Con etiquetas cada día es un botón (teclado y lector de pantalla); sin ellas, la celda simple de siempre.
+  const Celda = etiquetas ? 'button' : 'div';
   const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
@@ -44,6 +59,13 @@ export function CalendarioMensual({
   // used uniformly for every cell including the selected one
   const countByDate = new Map(turnosMes.map(t => [t.fecha, t.cantidad]));
   const conPunto = new Set(diasConPunto ?? []);
+
+  const mesAnterior = new Date(year, month - 1, 1);
+  const anteriorBloqueado = mesMinimo !== undefined && formatCellDate(mesAnterior).slice(0, 7) < mesMinimo;
+  const navStyle = {
+    background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex',
+    ...(etiquetas && { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }),
+  } as const;
 
   // Build 42-cell grid (6 rows × 7 cols)
   const cells: { date: Date; isCurrentMonth: boolean }[] = [];
@@ -71,8 +93,10 @@ export function CalendarioMensual({
       {/* Month navigation */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <button
-          onClick={() => onMonthChange(new Date(year, month - 1, 1))}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
+          onClick={() => { if (!anteriorBloqueado) onMonthChange(mesAnterior); }}
+          disabled={anteriorBloqueado}
+          aria-label={etiquetas?.anterior}
+          style={anteriorBloqueado ? { ...navStyle, cursor: 'default', opacity: 0.35 } : navStyle}
         >
           <ChevronLeft size={18} color={colors.sub} strokeWidth={2} />
         </button>
@@ -81,14 +105,15 @@ export function CalendarioMensual({
         </span>
         <button
           onClick={() => onMonthChange(new Date(year, month + 1, 1))}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex' }}
+          aria-label={etiquetas?.siguiente}
+          style={navStyle}
         >
           <ChevronRight size={18} color={colors.sub} strokeWidth={2} />
         </button>
       </div>
 
       {/* Day headers — L M M J V S D, semana arranca en lunes como el rediseño */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', marginBottom: 4 }}>
         {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
           <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: colors.muted, paddingBottom: 4 }}>
             {d}
@@ -97,7 +122,7 @@ export function CalendarioMensual({
       </div>
 
       {/* Day cells */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '2px 0' }}>
         {cells.map((cell, idx) => {
           const cellStr    = formatCellDate(cell.date);
           const isSelected = cellStr === fechaSeleccionada;
@@ -107,15 +132,24 @@ export function CalendarioMensual({
           const deshabilitado = diaDeshabilitado?.(cellStr) ?? false;
 
           return (
-            <div
+            <Celda
               key={idx}
               data-testid={`cal-day-${cellStr}`}
+              data-fuera-del-mes={cell.isCurrentMonth ? undefined : 'true'}
               aria-disabled={deshabilitado || undefined}
               onClick={() => { if (!deshabilitado) onDayClick(cellStr); }}
+              {...(etiquetas && {
+                type: 'button' as const,
+                disabled: deshabilitado,
+                'aria-label': etiquetas.dia(cellStr, count),
+                'aria-pressed': isSelected,
+                'aria-current': isToday ? ('date' as const) : undefined,
+              })}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: '4px 0', cursor: deshabilitado ? 'default' : 'pointer',
                 opacity: cell.isCurrentMonth ? (deshabilitado ? 0.35 : 1) : 0.1,
+                ...(etiquetas && { width: '100%', border: 'none', background: 'none', font: 'inherit' }),
               }}
             >
               {/* Circle */}
@@ -165,13 +199,13 @@ export function CalendarioMensual({
 
                 {/* Past-day dot — plain, no count */}
                 {count > 0 && esPasado && !isSelected && (
-                  <div style={{
+                  <div data-punto-pasado="" style={{
                     position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
                     width: 4, height: 4, borderRadius: 2, backgroundColor: colors.divider,
                   }} />
                 )}
               </div>
-            </div>
+            </Celda>
           );
         })}
       </div>

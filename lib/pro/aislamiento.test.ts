@@ -91,6 +91,12 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   // lucide-react y un TIPO de services/turnoService; sin stores de sesión, token,
   // teléfono ni precio.
   /^components\/agenda\/WeekStrip$/,
+  // CalendarioMensual es presentacional (todo entra por props). Imports transitivos
+  // revisados: lib/dateFormat (solo useLocaleStore), agendaDateHelpers (solo
+  // lib/dateFormat), theme/colors (withAlpha, sin imports), theme/agendaColors,
+  // lucide-react (flechas) y un TIPO de services/turnoService (TurnoMes, se borra al
+  // compilar); sin sesión, token, teléfono ni precio.
+  /^components\/agenda\/CalendarioMensual$/,
   /^components\/filtros\/ServiciosSheetBase$/, // hoja y lista de servicios presentacionales (todo por props); solo importan react, BottomSheet y theme/agendaColors
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
   /^components\/filtros\/FilaQueMostrar$/, // fila presentacional (todo por props); solo importa react, lucide-react (ChevronRight) y theme/agendaColors
@@ -422,6 +428,9 @@ describe('aislamiento del portal — el escáner', () => {
       ['WeekStrip de otra carpeta', "import x from '@/components/reservaOnline/WeekStrip';"],
       ['FilaQueMostrar con sufijo (otro módulo)', "import x from '@/components/filtros/FilaQueMostrarExtra';"],
       ['TarjetaQueMostrar de otra carpeta', "import x from '@/components/agenda/TarjetaQueMostrar';"],
+      ['CalendarioMensual con sufijo (otro módulo)', "import x from '@/components/agenda/CalendarioMensualExtra';"],
+      ['CalendarioMensual de otra carpeta', "import x from '@/components/reservaOnline/CalendarioMensual';"],
+      ['helpers de fecha de agenda sin revisar como import directo', "import { formatCellDate } from '@/components/agenda/agendaDateHelpers';"],
       ['otro componente de agenda (tarjeta del tenant)', "import x from '@/components/agenda/TurnoCard';"],
       ['constants/layout con sufijo (otro módulo)', "import x from '@/constants/layoutExtra';"],
       ['otro módulo de constants', "import x from '@/constants/precios';"],
@@ -452,6 +461,7 @@ describe('aislamiento del portal — el escáner', () => {
       ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
       ['cacheLru (compartido revisado)', "import { crearCacheLru } from '@/lib/cacheLru';"],
       ['WeekStrip (compartido revisado)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
+      ['CalendarioMensual (compartido revisado)', "import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';"],
       ['FilaQueMostrar (compartido revisado)', "import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';"],
       ['TarjetaQueMostrar (compartido revisado)', "import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';"],
       ['constants/layout (compartido revisado)', "import { NAV_CLEARANCE } from '@/constants/layout';"],

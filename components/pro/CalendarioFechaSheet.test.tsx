@@ -43,34 +43,34 @@ describe('CalendarioFechaSheet', () => {
   it('abierta es un diálogo "Elegir fecha" con el mes y la grilla de 42 celdas', () => {
     montar();
     const dialogo = screen.getByRole('dialog', { name: 'Elegir fecha' });
-    expect(within(dialogo).getByText('octubre 2099')).toBeInTheDocument();
-    expect(dialogo.querySelectorAll('[data-testid^="cal-dia-"]')).toHaveLength(42);
-    expect(screen.getByTestId('cal-dia-2099-10-01')).toBeInTheDocument();
-    expect(screen.getByTestId('cal-dia-2099-10-31')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Octubre 2099')).toBeInTheDocument();
+    expect(dialogo.querySelectorAll('[data-testid^="cal-day-"]')).toHaveLength(42);
+    expect(screen.getByTestId('cal-day-2099-10-01')).toBeInTheDocument();
+    expect(screen.getByTestId('cal-day-2099-10-31')).toBeInTheDocument();
   });
 
   it('tocar un día lo elige; los días fuera del mes se ven atenuados pero también se pueden elegir', () => {
     const { onElegir } = montar();
-    fireEvent.click(screen.getByTestId('cal-dia-2099-10-20'));
+    fireEvent.click(screen.getByTestId('cal-day-2099-10-20'));
     expect(onElegir).toHaveBeenCalledWith('2099-10-20');
-    expect(screen.getByTestId('cal-dia-2099-09-30')).toHaveAttribute('data-fuera-del-mes', 'true');
+    expect(screen.getByTestId('cal-day-2099-09-30')).toHaveAttribute('data-fuera-del-mes', 'true');
   });
 
   it('el día elegido va resaltado y los días con turnos muestran su cantidad', () => {
     montar();
-    expect(screen.getByTestId('cal-dia-2099-10-17')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('cal-dia-2099-10-18')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('cal-day-2099-10-17')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('cal-day-2099-10-18')).toHaveAttribute('aria-pressed', 'false');
     const marcado = screen.getByRole('button', { name: /14 de octubre.*3 turnos/ });
     expect(marcado).toHaveTextContent('3');
-    expect(screen.getByTestId('cal-dia-2099-10-15')).toHaveTextContent(/^15$/);
+    expect(screen.getByTestId('cal-day-2099-10-15')).toHaveTextContent(/^15$/);
     expect(screen.getByRole('button', { name: /20 de octubre.*sin turnos/ })).toBeInTheDocument();
   });
 
   it('un día pasado con turnos lleva un punto en vez de la cantidad', () => {
     montar({ mes: '2000-10', fecha: '2000-10-17', marcas: [{ fecha: '2000-10-14', cantidad: 3 }] });
-    const dia = screen.getByTestId('cal-dia-2000-10-14');
+    const dia = screen.getByTestId('cal-day-2000-10-14');
     expect(dia).toHaveTextContent(/^14$/);
-    expect(dia.querySelector('[data-punto]')).not.toBeNull();
+    expect(dia.querySelector('[data-punto-pasado]')).not.toBeNull();
   });
 
   it('las flechas piden el mes anterior y el siguiente, cruzando el año', () => {
@@ -113,7 +113,7 @@ describe('CalendarioFechaSheet', () => {
   it('mientras no hay marcas muestra el spinner sin tapar la grilla', () => {
     montar({ marcas: null });
     expect(screen.getByRole('status', { name: 'Cargando turnos' })).toBeInTheDocument();
-    expect(screen.getByTestId('cal-dia-2099-10-10')).toBeInTheDocument();
+    expect(screen.getByTestId('cal-day-2099-10-10')).toBeInTheDocument();
   });
 
   it('si fallan las marcas muestra el error del tipo, la grilla sigue y se puede reintentar', () => {
@@ -123,19 +123,30 @@ describe('CalendarioFechaSheet', () => {
     expect(screen.getByText(/Igual puedes elegir un día/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(onReintentar).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByTestId('cal-dia-2099-10-10'));
+    fireEvent.click(screen.getByTestId('cal-day-2099-10-10'));
     expect(onElegir).toHaveBeenCalledWith('2099-10-10');
   });
 
-  it('los objetivos táctiles de las flechas y de los días miden al menos 44px', () => {
+  it('los objetivos táctiles de las flechas miden al menos 44px y los días no imponen ancho mínimo', () => {
     montar();
-    for (const boton of [
-      screen.getByRole('button', { name: 'Mes anterior' }),
-      screen.getByRole('button', { name: 'Mes siguiente' }),
-      screen.getByTestId('cal-dia-2099-10-14'),
-    ]) {
+    for (const boton of [screen.getByRole('button', { name: 'Mes anterior' }), screen.getByRole('button', { name: 'Mes siguiente' })]) {
       expect(parseInt(boton.style.minWidth, 10)).toBeGreaterThanOrEqual(44);
       expect(parseInt(boton.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
     }
+    // En jsdom no hay layout: se fijan los estilos que evitan el desborde en celulares angostos
+    // (columnas flexibles sin mínimo y ninguna celda con minWidth).
+    const dia = screen.getByTestId('cal-day-2099-10-14');
+    const grilla = dia.parentElement as HTMLElement;
+    expect(grilla.style.gridTemplateColumns).toBe('repeat(7, minmax(0, 1fr))');
+    for (const celda of Array.from(grilla.children) as HTMLElement[]) {
+      expect(celda.style.minWidth).toBe('');
+    }
+  });
+
+  it('las iniciales de la semana son L M M J V S D', () => {
+    montar();
+    const grilla = screen.getByTestId('cal-day-2099-10-14').parentElement as HTMLElement;
+    const encabezados = grilla.previousElementSibling as HTMLElement;
+    expect(Array.from(encabezados.children).map((c) => c.textContent)).toEqual(['L', 'M', 'M', 'J', 'V', 'S', 'D']);
   });
 });
