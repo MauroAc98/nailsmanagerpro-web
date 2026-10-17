@@ -422,14 +422,16 @@ describe('proService — la URL decide la clasificación del error', () => {
     expect(sesionExpirada).toHaveBeenCalledTimes(eventos);
   });
 
-  it.each(LLAMADAS.map(([nombre]) => nombre))('404 en %s es portalUnavailable y avisa al portal', async (nombre) => {
+  // El resumen del mes es un panel opcional: su 404 se clasifica igual, pero nunca
+  // marca al portal entero como caído (si el portal está apagado lo avisan las demás rutas).
+  it.each(LLAMADAS.map(([nombre]) => nombre))('404 en %s es portalUnavailable y avisa al portal salvo el panel opcional', async (nombre) => {
     responder({ message: 'Not Found' }, 404);
     const llamada = LLAMADAS.find(([n]) => n === nombre)![1];
 
     const error = await llamada().catch((e: unknown) => e);
 
     expect(proErrorDe(error).kind).toBe('portalUnavailable');
-    expect(portalNoDisponible).toHaveBeenCalledTimes(1);
+    expect(portalNoDisponible).toHaveBeenCalledTimes(nombre === 'resumen' ? 0 : 1);
   });
 
   it('404 TURNO_NO_ENCONTRADO en turno es notFound y no avisa que el portal cayó', async () => {
