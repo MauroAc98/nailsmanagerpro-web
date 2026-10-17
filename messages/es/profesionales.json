@@ -1,0 +1,27 @@
+{
+  "Guard": {
+    "esperando": "Un momento"
+  },
+  "PortalNoDisponible": {
+    "titulo": "El portal no está disponible",
+    "descripcion": "No pudimos conectar con el portal de profesionales. Probá de nuevo en unos minutos.",
+    "reintentar": "Reintentar",
+    "cerrarSesion": "Cerrar sesión"
+  },
+  "Errores": {
+    "invalidCredentials": "El correo o la contraseña no son correctos.",
+    "sessionRevoked": "Tu sesión terminó. Ingresá de nuevo.",
+    "mustChangePassword": "Tenés que cambiar la contraseña antes de seguir.",
+    "changeNotRequired": "Tu contraseña ya no necesita cambiarse.",
+    "vinculoRequired": "Elegí un negocio para continuar.",
+    "vinculoDisabled": "Ya no tenés acceso a este negocio. Consultá con la persona titular.",
+    "noService": "Este negocio no tiene el servicio activo por ahora.",
+    "notFound": "No encontramos lo que buscabas.",
+    "portalUnavailable": "El portal no está disponible por ahora. Probá de nuevo más tarde.",
+    "rateLimited": "Hubo demasiados intentos. Esperá un momento y probá de nuevo.",
+    "rateLimitedSegundos": "Hubo demasiados intentos. Probá de nuevo en {segundos} segundos.",
+    "validation": "Revisá los datos ingresados.",
+    "network": "No pudimos conectarnos. Revisá tu conexión y probá de nuevo.",
+    "server": "Algo salió mal de nuestro lado. Probá de nuevo en un rato."
+  }
+}

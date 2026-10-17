@@ -12,6 +12,7 @@ import esEstadisticas from './es/estadisticas.json';
 import esLegal from './es/legal.json';
 import esValidation from './es/validation.json';
 import esReservaOnline from './es/reservaOnline.json';
+import esProfesionales from './es/profesionales.json';
 
 // `es` se importa estático a propósito: además de ser el locale por
 // defecto (mayoría de los usuarios), es el fallback de cualquier key
@@ -29,6 +30,7 @@ export const es = {
   legal: esLegal,
   validation: esValidation,
   reservaOnline: esReservaOnline,
+  profesionales: esProfesionales,
 } as const;
 
 export type Namespace = keyof typeof es;
