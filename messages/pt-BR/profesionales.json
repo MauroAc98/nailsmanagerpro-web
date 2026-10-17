@@ -31,6 +31,34 @@
     "dia": "Dia",
     "mes": "Mês"
   },
+  "Filtros": {
+    "boton": "Filtros",
+    "botonActivos": "Filtros: {cantidad, plural, one {# ativo} other {# ativos}}",
+    "titulo": "Filtrar atendimentos",
+    "cerrar": "Fechar",
+    "buscar": "Buscar por nome...",
+    "buscarAyuda": "Busca pelo nome ou sobrenome da pessoa. Até 5 palavras.",
+    "servicio": "Serviço",
+    "todos": "Todos",
+    "cargandoServicios": "Carregando serviços",
+    "reintentarServicios": "Tentar novamente",
+    "desde": "De",
+    "hasta": "Até",
+    "aplicar": "Aplicar",
+    "limpiar": "Limpar filtros",
+    "errorRango": "Confira as datas: \"Até\" não pode ser anterior a \"De\", o intervalo vai até 366 dias e começa em 1/1/2000.",
+    "errorPalabras": "Escreva até 5 palavras.",
+    "errorLarga": "O texto pode ter até 60 caracteres.",
+    "sinResultados": "Não há atendimentos com estes filtros.",
+    "activos": "Filtros ativos",
+    "chipBuscar": "Nome: {texto}",
+    "chipServicio": "Serviço: {servicio}",
+    "chipRango": "{desde} a {hasta}"
+  },
+  "AvisoTruncado": {
+    "texto": "Mostrando os primeiros 500 atendimentos; pode haver mais.",
+    "sugerencia": "Reduza o intervalo de datas ou adicione um nome ou serviço para ver o restante."
+  },
   "Nav": {
     "etiqueta": "Navegação principal",
     "agenda": "Agenda",

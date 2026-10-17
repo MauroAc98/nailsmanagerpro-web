@@ -31,6 +31,34 @@
     "dia": "Día",
     "mes": "Mes"
   },
+  "Filtros": {
+    "boton": "Filtros",
+    "botonActivos": "Filtros: {cantidad, plural, one {# activo} other {# activos}}",
+    "titulo": "Filtrar turnos",
+    "cerrar": "Cerrar",
+    "buscar": "Buscar por nombre...",
+    "buscarAyuda": "Busca por nombre o apellido de la persona. Hasta 5 palabras.",
+    "servicio": "Servicio",
+    "todos": "Todos",
+    "cargandoServicios": "Cargando servicios",
+    "reintentarServicios": "Reintentar",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "aplicar": "Aplicar",
+    "limpiar": "Limpiar filtros",
+    "errorRango": "Revisa las fechas: \"Hasta\" no puede ser anterior a \"Desde\", el rango llega a 366 días y empieza desde el 1/1/2000.",
+    "errorPalabras": "Escribe hasta 5 palabras.",
+    "errorLarga": "El texto puede tener hasta 60 caracteres.",
+    "sinResultados": "No hay turnos con estos filtros.",
+    "activos": "Filtros activos",
+    "chipBuscar": "Nombre: {texto}",
+    "chipServicio": "Servicio: {servicio}",
+    "chipRango": "{desde} a {hasta}"
+  },
+  "AvisoTruncado": {
+    "texto": "Se muestran los primeros 500 turnos; puede haber más.",
+    "sugerencia": "Acota el rango de fechas o agrega un nombre o servicio para ver el resto."
+  },
   "Nav": {
     "etiqueta": "Navegación principal",
     "agenda": "Agenda",
