@@ -57,17 +57,20 @@ describe('ProTurnoCard — privacidad', () => {
 });
 
 describe('ProTurnoCard — horario', () => {
-  it('muestra el rango 09:30 a 11:00 con hora de pared', () => {
+  it('muestra la hora de inicio en serif 19, la duración y la mini fecha sin correr el día', () => {
     renderWithProviders(<ProTurnoCard turno={turno()} />);
-    expect(screen.getByText(/09:30/)).toHaveTextContent('09:30');
-    expect(screen.getByText(/11:00/)).toBeInTheDocument();
-    expect(screen.queryByText(/día siguiente/i)).toBeNull();
+    const hora = screen.getByText('09:30');
+    expect(hora.style.fontFamily).not.toBe('');
+    expect(hora.style.fontSize).toBe('19px');
+    expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
+    // La zona del dispositivo no puede correr el día: 17/10.
+    expect(screen.getByText(/17\/10/)).toBeInTheDocument();
   });
 
-  it('cruzando la medianoche marca el día siguiente', () => {
+  it('ya no muestra el rango de fin ni el aviso de día siguiente', () => {
     renderWithProviders(<ProTurnoCard turno={turno({ fecha_hora: '2026-10-17T23:30:00', duracion_total_minutos: 60 })} />);
-    expect(screen.getByText(/00:30/)).toBeInTheDocument();
-    expect(screen.getByText(/día siguiente/i)).toBeInTheDocument();
+    expect(screen.queryByText(/00:30/)).toBeNull();
+    expect(screen.queryByText(/día siguiente/i)).toBeNull();
   });
 
   it('una fecha_hora inválida no rompe y muestra el aviso de sin hora', () => {
@@ -76,9 +79,10 @@ describe('ProTurnoCard — horario', () => {
     expect(screen.getByText(/Lucía/)).toBeInTheDocument();
   });
 
-  it('una duración inválida muestra solo la hora de inicio', () => {
+  it('una duración inválida omite la duración y deja la hora', () => {
     renderWithProviders(<ProTurnoCard turno={turno({ duracion_total_minutos: -5 })} />);
     expect(screen.getByText('09:30')).toBeInTheDocument();
+    expect(screen.queryByText(/min/)).toBeNull();
   });
 });
 
@@ -153,18 +157,29 @@ describe('ProTurnoCard — notas', () => {
 });
 
 describe('ProTurnoCard — estado y apertura', () => {
-  it('cada estado tiene su rótulo visible y distinto; uno desconocido es neutro', () => {
-    const rotulos: Array<[string, string]> = [
-      ['confirmado', 'Confirmado'],
+  it('confirmado y desconocido no llevan píldora; en curso y completado sí', () => {
+    const casos: Array<[string, string | null]> = [
+      ['confirmado', null],
+      ['cancelado', null],
       ['en_curso', 'En curso'],
       ['completado', 'Completado'],
-      ['cancelado', 'Sin estado'],
     ];
-    for (const [estado, rotulo] of rotulos) {
+    for (const [estado, rotulo] of casos) {
       const r = renderWithProviders(<ProTurnoCard turno={turno({ estado_visual: estado as ProTurno['estado_visual'] })} />);
-      expect(screen.getByText(rotulo)).toBeInTheDocument();
+      for (const otro of ['En curso', 'Completado', 'Confirmado', 'Sin estado']) {
+        if (otro === rotulo) expect(screen.getByText(otro)).toBeInTheDocument();
+        else expect(screen.queryByText(otro)).toBeNull();
+      }
       r.unmount();
     }
+  });
+
+  it('completado va sobre el fondo sutil; en curso no', () => {
+    const c = renderWithProviders(<ProTurnoCard turno={turno({ estado_visual: 'completado' })} onAbrir={() => {}} />);
+    expect(screen.getByRole('button').style.backgroundColor).toContain('--ag-surface-2');
+    c.unmount();
+    renderWithProviders(<ProTurnoCard turno={turno({ estado_visual: 'en_curso' })} onAbrir={() => {}} />);
+    expect(screen.getByRole('button').style.backgroundColor).not.toContain('--ag-surface-2');
   });
 
   it('onAbrir recibe el id al tocar, y el control mide al menos 44px', () => {
@@ -175,5 +190,51 @@ describe('ProTurnoCard — estado y apertura', () => {
     expect(boton).toHaveAccessibleName(/Lucía Gómez/);
     fireEvent.click(boton);
     expect(onAbrir).toHaveBeenCalledWith(41);
+  });
+});
+
+describe('ProTurnoCard — profesional', () => {
+  it('muestra "con {nombre}" con iniciales si no hay foto', () => {
+    renderWithProviders(<ProTurnoCard turno={turno()} profesional={{ nombre: 'Ana', apellido: 'Pérez', avatar_url: null }} />);
+    expect(screen.getByText('con Ana')).toBeInTheDocument();
+    expect(screen.getByText('AP')).toBeInTheDocument();
+  });
+
+  it('con foto usa la imagen decorativa', () => {
+    const { container } = renderWithProviders(
+      <ProTurnoCard turno={turno()} profesional={{ nombre: 'Ana', apellido: null, avatar_url: 'https://cdn.test/a.jpg' }} />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('https://cdn.test/a.jpg');
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
+  });
+
+  it('sin el dato no se dibuja la línea', () => {
+    renderWithProviders(<ProTurnoCard turno={turno()} />);
+    expect(screen.queryByText(/^con /)).toBeNull();
+  });
+});
+
+describe('ProTurnoCard — promo', () => {
+  const promo = turno({ promo: { nombre: 'Pack manos y pies' }, servicios: [{ id: 1, nombre: 'Manos' }, { id: 2, nombre: 'Pies' }] });
+
+  it('cabecera con cliente, píldora y promo en cursiva, y un solo paso', () => {
+    renderWithProviders(<ProTurnoCard turno={promo} profesional={{ nombre: 'Ana', apellido: null, avatar_url: null }} onAbrir={() => {}} />);
+    expect(screen.getByText('Lucía Gómez')).toBeInTheDocument();
+    expect(screen.getByText('Promo')).toBeInTheDocument();
+    expect(screen.getByText('Pack manos y pies').style.fontStyle).toBe('italic');
+    expect(screen.getByText('09:30').style.fontSize).toBe('17px');
+    expect(screen.getByText('Manos + Pies')).toBeInTheDocument();
+    expect(screen.getByText('con Ana')).toBeInTheDocument();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('abre el turno y mantiene el nombre accesible', () => {
+    const onAbrir = vi.fn();
+    renderWithProviders(<ProTurnoCard turno={{ ...promo, id: 9 }} onAbrir={onAbrir} />);
+    const boton = screen.getByRole('button');
+    expect(boton.style.minHeight).toBe('44px');
+    expect(boton).toHaveAccessibleName(/Lucía Gómez/);
+    fireEvent.click(boton);
+    expect(onAbrir).toHaveBeenCalledWith(9);
   });
 });

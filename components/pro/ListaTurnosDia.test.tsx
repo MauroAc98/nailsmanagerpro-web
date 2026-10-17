@@ -3,6 +3,7 @@ import { fireEvent, renderWithProviders, screen, within } from '@/test/render';
 import { es } from '@/messages';
 import type { ProError } from '@/lib/pro/errores';
 import type { ProListaTurnos, ProTurno } from '@/lib/pro/tipos';
+import { useProAuthStore } from '@/store/useProAuthStore';
 import { ListaTurnosDia } from './ListaTurnosDia';
 
 function turno(id: number, fecha_hora: string, extra: Partial<ProTurno> = {}): ProTurno {
@@ -161,5 +162,21 @@ describe('ListaTurnosDia', () => {
   it('la hora no se corre con la zona horaria del dispositivo', () => {
     renderWithProviders(<ListaTurnosDia {...base} data={lista([turno(1, '2026-10-17T23:30:00')])} />);
     expect(screen.getByRole('listitem')).toHaveTextContent('23:30');
+  });
+
+  it('pasa la profesional del negocio activo a la tarjeta; sin negocio activo no hay línea', () => {
+    useProAuthStore.setState({
+      status: 'full',
+      vinculos: [{ id: 5, negocioNombre: 'Negocio', profesional: { nombre: 'Ana', apellido: null, avatar_url: null }, disponible: true, motivo: null }],
+      vinculoActivoId: 5,
+      bloqueos: {},
+    });
+    const { unmount } = renderWithProviders(<ListaTurnosDia {...base} data={lista([turno(1, '2026-10-17T09:00:00')])} />);
+    expect(screen.getByText('con Ana')).toBeInTheDocument();
+    unmount();
+
+    useProAuthStore.setState(useProAuthStore.getInitialState(), true);
+    renderWithProviders(<ListaTurnosDia {...base} data={lista([turno(1, '2026-10-17T09:00:00')])} />);
+    expect(screen.queryByText(/^con /)).toBeNull();
   });
 });

@@ -193,6 +193,7 @@
     "sinHora": "Sem horário",
     "diaSiguiente": "dia seguinte",
     "promo": "Promo",
+    "conProfesional": "com {nombre}",
     "nota": "Tem uma observação"
   },
   "Estado": {

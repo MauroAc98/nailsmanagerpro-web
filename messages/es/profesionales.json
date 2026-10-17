@@ -193,6 +193,7 @@
     "sinHora": "Sin hora",
     "diaSiguiente": "día siguiente",
     "promo": "Promo",
+    "conProfesional": "con {nombre}",
     "nota": "Tiene una nota"
   },
   "Estado": {
