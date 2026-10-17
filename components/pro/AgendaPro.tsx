@@ -10,7 +10,7 @@ import { useRutaPro } from '@/hooks/useRutaPro';
 import { hayFiltrosActivos, normalizarBuscar } from '@/lib/pro/filtros';
 import { aDateLocal, diasDeSemana, sumarDias } from '@/lib/pro/semana';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
-import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors } from '@/theme/agendaColors';
 import { FiltrosSheet } from './FiltrosSheet';
 import { HojaTurnosPro } from './HojaTurnosPro';
 import { CalendarioFechaSheet } from './CalendarioFechaSheet';
@@ -24,6 +24,21 @@ import { ServicioFiltroSheet } from './ServicioFiltroSheet';
 // Las hojas de fecha y de servicio que se abren desde Filtros van por encima de ella
 // (hoja 60, fondo 59): son hermanas suyas, no hijas.
 const CAPA_HOJA_DE_FILTROS = 62;
+
+// La agenda de la titular no muestra un título de texto (va el logo): el h1 queda
+// solo para lectores de pantalla y para recibir el foco al entrar.
+const SOLO_LECTORES = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  margin: -1,
+  padding: 0,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+  outline: 'none',
+} as const;
 
 // Agenda del portal: encabezado, resumen del mes, tira semanal y lista de turnos en una hoja. El
 // calendario mensual vive en la hoja "Elegir fecha", que abre la tira o la hoja de
@@ -122,7 +137,7 @@ export function AgendaPro() {
         <h1
           ref={titulo}
           tabIndex={-1}
-          style={{ margin: 0, padding: '0 20px 8px', fontSize: 22, fontFamily: agendaFontSerif, color: agendaColors.strong, outline: 'none' }}
+          style={SOLO_LECTORES}
         >
           {t('titulo')}
         </h1>

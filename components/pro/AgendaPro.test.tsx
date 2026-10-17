@@ -67,6 +67,13 @@ describe('AgendaPro', () => {
     expect(await screen.findByText('Cliente1')).toBeInTheDocument();
   });
 
+  it('el título "Agenda" no se ve (como en la agenda de la titular) pero sigue para lectores de pantalla', () => {
+    renderWithProviders(<AgendaPro />);
+
+    const titulo = screen.getByRole('heading', { level: 1, name: 'Agenda' });
+    expect(titulo).toHaveStyle({ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden' });
+  });
+
   it('mientras carga muestra el spinner y al llegar vacío muestra el estado vacío', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
