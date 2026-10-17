@@ -136,7 +136,9 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
     </span>
   ) : null;
 
-  const chevron = (
+  // Finalizado: solo la píldora a la derecha, como FinalizadoCard de la agenda de la titular
+  // (el chevron le quitaba ancho al nombre y lo cortaba con "…").
+  const chevron = completado ? null : (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
       <path d="m9 18 6-6-6-6" />
     </svg>
@@ -217,7 +219,7 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
         </span>
         {bloqueNotas && <span style={{ display: 'flex', paddingTop: 4 }}>{bloqueNotas}</span>}
       </span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '0 14px 0 10px' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '0 16px 0 10px' }}>
         {pildora}
         {chevron}
       </span>

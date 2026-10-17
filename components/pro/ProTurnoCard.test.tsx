@@ -183,6 +183,17 @@ describe('ProTurnoCard — estado y apertura', () => {
     expect(screen.getByRole('button').style.backgroundColor).not.toContain('--ag-surface-2');
   });
 
+  // Como FinalizadoCard de la agenda de la titular: a la derecha solo la píldora, sin chevron,
+  // para dejarle el ancho al nombre (el chevron le quitaba ~26 px y lo cortaba con "…").
+  it('completado lleva solo la píldora a la derecha; el resto de los estados mantiene el chevron', () => {
+    const chevron = 'path[d="m9 18 6-6-6-6"]';
+    for (const [estado, conChevron] of [['completado', false], ['en_curso', true], ['confirmado', true]] as const) {
+      const r = renderWithProviders(<ProTurnoCard turno={turno({ estado_visual: estado })} onAbrir={() => {}} />);
+      expect(screen.getByRole('button').querySelector(chevron) !== null).toBe(conChevron);
+      r.unmount();
+    }
+  });
+
   it('onAbrir recibe el id al tocar, y el control mide al menos 44px', () => {
     const onAbrir = vi.fn();
     renderWithProviders(<ProTurnoCard turno={turno({ id: 41 })} onAbrir={onAbrir} />);
