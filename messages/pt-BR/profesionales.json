@@ -57,6 +57,7 @@
     "explicacion": "Informe seu e-mail e enviaremos um código de 6 dígitos para você escolher uma nova senha.",
     "email": "E-mail",
     "emailRequerido": "Informe seu e-mail.",
+    "emailInvalido": "Confira o e-mail: parece que não está completo.",
     "enviar": "Enviar código",
     "enviando": "Enviando",
     "confirmacionGenerica": "Se o e-mail corresponder a uma conta, enviamos um código de 6 dígitos. Confira sua caixa de entrada.",

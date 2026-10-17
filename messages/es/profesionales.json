@@ -57,6 +57,7 @@
     "explicacion": "Ingresá tu correo y te enviamos un código de 6 dígitos para elegir una contraseña nueva.",
     "email": "Correo electrónico",
     "emailRequerido": "Ingresá tu correo.",
+    "emailInvalido": "Revisá el correo: parece que no está completo.",
     "enviar": "Enviar código",
     "enviando": "Enviando",
     "confirmacionGenerica": "Si el correo corresponde a una cuenta, te enviamos un código de 6 dígitos. Revisá tu bandeja de entrada.",

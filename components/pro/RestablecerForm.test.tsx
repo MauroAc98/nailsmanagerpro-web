@@ -14,6 +14,8 @@ vi.mock('@/services/proService', () => ({ proService: svc }));
 vi.mock('@/lib/proApi', () => ({ proErrorDe: (e: { pro: ProError }) => e.pro }));
 
 import { RestablecerForm } from './RestablecerForm';
+import { guardarCorreoPendiente, limpiarCorreoPendiente } from './correoPendiente';
+import userEvent from '@testing-library/user-event';
 
 const CLAVE = 'una-clave-larga-1';
 
@@ -25,6 +27,7 @@ beforeEach(() => {
   svc.resetPassword.mockResolvedValue(undefined);
   window.history.replaceState(null, '', '/restablecer-password');
   window.localStorage.clear();
+  limpiarCorreoPendiente();
 });
 
 afterEach(() => {
@@ -52,7 +55,8 @@ describe('RestablecerForm', () => {
       const codigo = screen.getByLabelText('Código de 6 dígitos');
       expect(codigo).toHaveAttribute('inputmode', 'numeric');
       expect(codigo).toHaveAttribute('autocomplete', 'one-time-code');
-      expect(codigo).toHaveAttribute('maxlength', '6');
+      // Sin maxlength: el navegador truncaría un código pegado con espacios antes de sanearlo.
+      expect(codigo).not.toHaveAttribute('maxlength');
       expect(codigo.style.minHeight).toBe('44px');
     });
 
@@ -61,6 +65,14 @@ describe('RestablecerForm', () => {
       const codigo = screen.getByLabelText('Código de 6 dígitos') as HTMLInputElement;
       fireEvent.change(codigo, { target: { value: '12a-34 56789' } });
       expect(codigo.value).toBe('123456');
+    });
+
+    it.each(['123 456', '123-456', ' 123456 '])('pegar "%s" deja los 6 dígitos', async (pegado) => {
+      renderWithProviders(<RestablecerForm />);
+      const codigo = screen.getByLabelText('Código de 6 dígitos');
+      await userEvent.click(codigo);
+      await userEvent.paste(pegado);
+      expect(codigo).toHaveValue('123456');
     });
 
     it('el botón queda deshabilitado hasta tener 6 dígitos', () => {
@@ -207,23 +219,23 @@ describe('RestablecerForm', () => {
   });
 
   describe('datos que vienen en la URL', () => {
-    it('precarga el correo y el código y limpia la URL (la ruta queda, la query no)', () => {
+    it('ignora un código (y un correo) en la URL y limpia la barra: la ruta queda, la query no', () => {
       nav.search = 'email=ana%40x.com&code=654321';
       window.history.replaceState(null, '', '/restablecer-password?email=ana%40x.com&code=654321');
       const reemplazo = vi.spyOn(window.history, 'replaceState');
       renderWithProviders(<RestablecerForm />);
 
-      expect(screen.getByLabelText('Correo electrónico')).toHaveValue('ana@x.com');
-      expect(screen.getByLabelText('Código de 6 dígitos')).toHaveValue('654321');
+      expect(screen.getByLabelText('Código de 6 dígitos')).toHaveValue('');
+      expect(screen.getByLabelText('Correo electrónico')).toHaveValue('');
       expect(reemplazo).toHaveBeenCalled();
       expect(window.location.search).toBe('');
       expect(window.location.pathname).toBe('/restablecer-password');
     });
 
-    it('un código con basura en la URL se sanea igual que si se tipeara', () => {
-      nav.search = 'code=12ab34cd5678';
+    it('precarga el correo que dejó el paso anterior en memoria', () => {
+      guardarCorreoPendiente('ana@x.com');
       renderWithProviders(<RestablecerForm />);
-      expect(screen.getByLabelText('Código de 6 dígitos')).toHaveValue('123456');
+      expect(screen.getByLabelText('Correo electrónico')).toHaveValue('ana@x.com');
     });
 
     it('si la URL no trae nada no toca el historial', () => {

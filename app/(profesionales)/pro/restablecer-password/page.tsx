@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { RestablecerForm } from '@/components/pro/RestablecerForm';
 
@@ -9,12 +8,7 @@ export const metadata: Metadata = {
   referrer: 'no-referrer',
 };
 
-// useSearchParams necesita Suspense en el render estático. ProGuard (en el
-// layout) deja pasar solo a quien no tiene sesión.
+// ProGuard (en el layout) deja pasar solo a quien no tiene sesión.
 export default function RestablecerPasswordPage() {
-  return (
-    <Suspense fallback={null}>
-      <RestablecerForm />
-    </Suspense>
-  );
+  return <RestablecerForm />;
 }

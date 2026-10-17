@@ -14,12 +14,14 @@ vi.mock('@/services/proService', () => ({ proService: svc }));
 vi.mock('@/lib/proApi', () => ({ proErrorDe: (e: { pro: ProError }) => e.pro }));
 
 import { OlvidePasswordForm } from './OlvidePasswordForm';
+import { leerCorreoPendiente, limpiarCorreoPendiente } from './correoPendiente';
 
 beforeEach(() => {
   nav.pathname = '/olvide-password';
   nav.push.mockClear();
   svc.forgotPassword.mockReset();
   svc.forgotPassword.mockResolvedValue(undefined);
+  limpiarCorreoPendiente();
 });
 
 afterEach(() => {
@@ -43,7 +45,8 @@ describe('OlvidePasswordForm', () => {
     expect(svc.forgotPassword).toHaveBeenCalledWith('ana@x.com');
     expect(screen.getByText(CONFIRMACION)).toBeInTheDocument();
     const link = screen.getByRole('link', { name: 'Ya tengo el código' });
-    expect(link.getAttribute('href')).toBe('/restablecer-password?email=ana%40x.com');
+    expect(link.getAttribute('href')).toBe('/restablecer-password');
+    expect(leerCorreoPendiente()).toBe('ana@x.com');
   });
 
   it('en localhost el link del código lleva el prefijo /pro', async () => {
@@ -51,13 +54,12 @@ describe('OlvidePasswordForm', () => {
     renderWithProviders(<OlvidePasswordForm />);
     await enviar();
     expect(screen.getByRole('link', { name: 'Ya tengo el código' }).getAttribute('href')).toBe(
-      '/pro/restablecer-password?email=ana%40x.com',
+      '/pro/restablecer-password',
     );
   });
 
   it.each<[string, ProError]>([
     ['validation', { kind: 'validation', fields: { email: ['no existe'] } }],
-    ['server (401 clasificado)', { kind: 'server' }],
     ['notFound', { kind: 'notFound' }],
     ['vinculoRequired', { kind: 'vinculoRequired' }],
   ])('%s: la misma confirmación genérica, sin revelar si la cuenta existe', async (_n, pro) => {
@@ -102,6 +104,24 @@ describe('OlvidePasswordForm', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('No pudimos conectarnos');
     expect(screen.queryByText(CONFIRMACION)).toBeNull();
+  });
+
+  it('500 / 401 clasificado como server: muestra el error de servidor, no la confirmación', async () => {
+    svc.forgotPassword.mockRejectedValue({ pro: { kind: 'server' } });
+    renderWithProviders(<OlvidePasswordForm />);
+    await enviar();
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Algo salió mal de nuestro lado');
+    expect(screen.queryByText(CONFIRMACION)).toBeNull();
+  });
+
+  it('un correo con forma inválida se rechaza en el cliente sin llamar al servicio', async () => {
+    renderWithProviders(<OlvidePasswordForm />);
+    await enviar('ana@');
+
+    expect(svc.forgotPassword).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Revisá el correo');
+    expect(screen.getByLabelText('Correo electrónico')).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('correo vacío: error en el campo y no llama al servicio', async () => {

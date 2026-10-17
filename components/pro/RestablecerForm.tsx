@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Spinner } from '@/components/Spinner';
 import { useRutaPro } from '@/hooks/useRutaPro';
@@ -11,6 +10,7 @@ import type { ProError } from '@/lib/pro/errores';
 import { proService } from '@/services/proService';
 import { agendaColors } from '@/theme/agendaColors';
 import { CampoPassword } from './CampoPassword';
+import { leerCorreoPendiente, limpiarCorreoPendiente } from './correoPendiente';
 import { MensajeErrorPro } from './MensajeErrorPro';
 import { ProPantallaAuth } from './ProPantallaAuth';
 import { useCuentaRegresiva } from './useCuentaRegresiva';
@@ -48,14 +48,13 @@ const estiloLink: CSSProperties = {
 };
 
 // Paso del código + contraseña nueva. NO inicia sesión: al terminar ofrece ir
-// al ingreso. El correo y el código pueden llegar en la URL; se leen una vez y
-// se sacan de la barra para que no queden en el historial ni viajen en el Referer.
+// al ingreso. El correo llega por un traspaso en memoria (no por la URL); si la
+// URL trae algo, se descarta y se limpia la barra.
 export function RestablecerForm() {
   const t = useTranslations('profesionales.Restablecer');
   const ruta = useRutaPro();
-  const params = useSearchParams();
-  const [email, setEmail] = useState(() => params.get('email') ?? '');
-  const [codigo, setCodigo] = useState(() => soloDigitos(params.get('code') ?? ''));
+  const [email, setEmail] = useState(leerCorreoPendiente);
+  const [codigo, setCodigo] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
   const [problema, setProblema] = useState<Problema | null>(null);
@@ -69,7 +68,9 @@ export function RestablecerForm() {
 
   useEffect(() => {
     montado.current = true;
-    // Quita query y hash (conserva la ruta) apenas se leyeron los datos.
+    limpiarCorreoPendiente();
+    // El código nunca viaja en la URL: si llega algo en la query o el hash se
+    // ignora y se saca de la barra (conserva la ruta).
     if (window.location.search !== '' || window.location.hash !== '') {
       window.history.replaceState(window.history.state, '', window.location.pathname);
     }
@@ -182,7 +183,8 @@ export function RestablecerForm() {
             inputMode="numeric"
             pattern="[0-9]*"
             autoComplete="one-time-code"
-            maxLength={LARGO_CODIGO}
+            // Sin maxLength: el navegador cortaría un código pegado con espacios
+            // ("123 456") antes de poder sanearlo.
             value={codigo}
             onChange={(ev) => setCodigo(soloDigitos(ev.target.value))}
             autoCapitalize="none"
