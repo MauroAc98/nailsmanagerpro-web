@@ -7,7 +7,7 @@ import { resolveAuthRoute, type AuthRouteSnapshot } from '@/lib/resolveAuthRoute
 import { classifyTenant } from '@/lib/authRouteClasses';
 import { esHostReservaPublica } from '@/lib/reservaOnline/host';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
-import { esPanelAdmin } from '@/lib/esPanelAdmin';
+import { esSuperficieAjenaAlSalon } from '@/lib/superficieAjenaAlSalon';
 import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRefrescoEstadoNegocio } from '@/hooks/useRefrescoEstadoNegocio';
@@ -58,9 +58,21 @@ import { colors } from '@/theme/colors';
 // admin: "Hydration failed". (En admin.turnetto.com, que solo se reconoce por
 // host, el servidor sigue sin saberlo: la discrepancia es previa y se recupera
 // regenerando el árbol en el cliente.)
-function esRutaAdmin(pathname: string): boolean {
+//
+// Portal de profesionales (profesionales.turnetto.com) — misma situación que el
+// panel: tiene su propia sesión, guard y store, y este guard no puede evaluar
+// ni redirigir nada ahí (la profesional no tiene sesión del salón). Se suma a
+// la misma pregunta en lib/superficieAjenaAlSalon ("¿esto es admin o el
+// portal?"): ahí manda el host; el prefijo /pro solo cuenta sin host o en un
+// host interno, nunca en app.turnetto.com. Mismo caveat de hidratación que
+// admin: en profesionales.turnetto.com el servidor no sabe el host, dibuja el
+// BootSplash y el cliente regenera el árbol (conocido y aceptado).
+//
+// La reserva pública NO entra en esta pregunta: sigue con su condición propia
+// (esRutaReservaPublica, más abajo) y su arranque de sesión no cambió.
+function esRutaAjenaAlSalon(pathname: string): boolean {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : null;
-  return esPanelAdmin(hostname, pathname);
+  return esSuperficieAjenaAlSalon(hostname, pathname);
 }
 
 // reservar.turnetto.com — bug real de prod (2026-09-19): ese host reescribe
@@ -104,7 +116,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   // window read — stays outside the pure resolver. Se calcula acá arriba (y no
   // junto al guard) porque el arranque del salón de abajo depende de él.
-  const isAdmin = esRutaAdmin(pathname);
+  const isAjenaAlSalon = esRutaAjenaAlSalon(pathname); // admin o portal de profesionales
   const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario de esRutaReservaPublica
 
   useEffect(() => {
@@ -115,20 +127,21 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
   // Arranque del salón: validar la sesión/suscripción (useAuthStore.inicializar
   // -> /auth/subscription-status, /support-info, /auth/me) y escuchar la
-  // conexión. En el panel de admin no tiene sentido y solo generaba requests al
-  // API del salón (con el token del salón si había una sesión abierta en el
-  // mismo navegador). Va en un efecto: en el servidor no corre, así que no
-  // cambia el primer render. Depende de isAdmin para que, si desde una pantalla
-  // del panel (sin recargar) se navega a una del salón, el arranque corra
-  // entonces. Corre una sola vez por montaje (ref): volver al panel y de nuevo
-  // al salón no debe re-arrancar una sesión ya validada.
+  // conexión. En el panel de admin y en el portal de profesionales no tiene
+  // sentido y solo generaba requests al API del salón (con el token del salón
+  // si había una sesión abierta en el mismo navegador). Va en un efecto: en el
+  // servidor no corre, así que no cambia el primer render. Depende de
+  // isAjenaAlSalon para que, si desde una pantalla del panel (sin recargar) se
+  // navega a una del salón, el arranque corra entonces. Corre una sola vez por
+  // montaje (ref): volver al panel y de nuevo al salón no debe re-arrancar una
+  // sesión ya validada.
   const salonArrancado = useRef(false);
   useEffect(() => {
-    if (isAdmin || salonArrancado.current) return;
+    if (isAjenaAlSalon || salonArrancado.current) return;
     salonArrancado.current = true;
     useAuthStore.getState().inicializar();
     initConexion();
-  }, [isAdmin]);
+  }, [isAjenaAlSalon]);
 
   // Al cambiar de cuenta (logout, sesión revocada, otro usuario) se vacían los
   // stores con datos del salón; si no, el siguiente salón vería datos ajenos.
@@ -136,13 +149,14 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
 
   // Datos del negocio que cambian desde afuera (ej. el admin activa o desactiva
   // la reserva online): se refrescan al volver a la app y cada minuto.
-  useRefrescoEstadoNegocio(!isAdmin);
+  useRefrescoEstadoNegocio(!isAjenaAlSalon);
 
   // Avisos push: al iniciar sesión (o abrir la app con sesión) se re-enlaza en
   // silencio la suscripción que el navegador ya tiene — el logout solo borra el
   // vínculo en el servidor, no el permiso ni la suscripción. Nunca pide permiso.
-  // Ni el panel de admin ni la reserva pública son el salón: ahí no corre.
-  useReenlazarPush(!isAdmin && !isReservaPublica);
+  // Ni el panel de admin, ni el portal de profesionales, ni la reserva pública
+  // son el salón: ahí no corre.
+  useReenlazarPush(!isAjenaAlSalon && !isReservaPublica);
 
   // Un confirm/alert (ConfirmSheetHost) vive en este layout raíz, no en la
   // pantalla que lo abrió — nunca se desmonta con la navegación. Sin este
@@ -287,11 +301,12 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   const redirectTo = route.type === 'redirect' ? route.to : null;
 
   // The admin panel guards itself (app/(admin)/admin/layout.tsx) — this tenant
-  // guard never redirects there and never blanks its children. Same for
+  // guard never redirects there and never blanks its children. Same for the
+  // professionals portal (its own guard) and for
   // reservar.turnetto.com: app/reservar/[slug]/layout.tsx already gates on
   // the feature flag server-side: this guard never redirects or blanks there.
   useEffect(() => {
-    if (isAdmin || isReservaPublica) return;
+    if (isAjenaAlSalon || isReservaPublica) return;
     if (!redirectTo) return;
 
     // Rider #14: before bouncing a subscription-blocked user to
@@ -311,7 +326,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
     }
 
     router.push(redirectTo);
-  }, [isAdmin, isReservaPublica, redirectTo, router, pathname, search]);
+  }, [isAjenaAlSalon, isReservaPublica, redirectTo, router, pathname, search]);
 
   // Verify CRITICAL-2: clear the captured origin only once the post-renew
   // navigation has actually COMMITTED (pathname left `/subscription-expired`
@@ -324,14 +339,14 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // resolver on `redirect(<deep route>)` until the navigation lands.
   useEffect(() => {
     if (
-      !isAdmin &&
+      !isAjenaAlSalon &&
       authStatus === 'authenticated' &&
       pathname !== '/subscription-expired' &&
       subscriptionBlockedOrigin
     ) {
       useAuthStore.setState({ subscriptionBlockedOrigin: '' });
     }
-  }, [isAdmin, authStatus, pathname, subscriptionBlockedOrigin]);
+  }, [isAjenaAlSalon, authStatus, pathname, subscriptionBlockedOrigin]);
 
   // Recién logueado (`authenticated`) y todavía parado en /login (o en
   // /cambiar-password): el resolver pide redirect a home, pero hasta que el
@@ -343,7 +358,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // stores ya vaciados.
   const redirigiendoYaAutenticado = route.type === 'redirect' && authStatus === 'authenticated';
   const puedeMostrarContenido =
-    isAdmin || isReservaPublica || route.type === 'allow' || redirigiendoYaAutenticado;
+    isAjenaAlSalon || isReservaPublica || route.type === 'allow' || redirigiendoYaAutenticado;
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages ?? undefined} timeZone="America/Argentina/Buenos_Aires">
@@ -364,8 +379,9 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
           cuenta en el MISMO navegador mientras prueba reservar.turnetto.com
           (u observa admin.turnetto.com), este componente vive fuera de
           `puedeMostrarContenido` y no heredaba su exclusion de host — el
-          splash le tapaba el flujo publico/admin solo, sin tocar nada. */}
-      {mostrarBienvenida && authStatus === 'authenticated' && !isAdmin && !isReservaPublica && <WelcomeScreen />}
+          splash le tapaba el flujo publico/admin solo, sin tocar nada. Lo mismo
+          vale para el portal de profesionales. */}
+      {mostrarBienvenida && authStatus === 'authenticated' && !isAjenaAlSalon && !isReservaPublica && <WelcomeScreen />}
       <ConfirmSheetHost />
       <SessionEndedModal />
       <MotivoCancelacionSheetHost />
