@@ -8,6 +8,7 @@ import { classifyTenant } from '@/lib/authRouteClasses';
 import { esHostReservaPublica } from '@/lib/reservaOnline/host';
 import { esRedirectSeguro } from '@/lib/esRedirectSeguro';
 import { esSuperficieAjenaAlSalon } from '@/lib/superficieAjenaAlSalon';
+import { esPortalProfesionales } from '@/lib/pro/host';
 import { iniciarResetDeStoresPorCambioDeCuenta } from '@/lib/resetearStoresDeDatos';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRefrescoEstadoNegocio } from '@/hooks/useRefrescoEstadoNegocio';
@@ -118,6 +119,11 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   // junto al guard) porque el arranque del salón de abajo depende de él.
   const isAjenaAlSalon = esRutaAjenaAlSalon(pathname); // admin o portal de profesionales
   const isReservaPublica = esRutaReservaPublica(); // idem — ver comentario de esRutaReservaPublica
+  // Solo el portal (no admin): decide si se registra el service worker del salón.
+  const esPortal = esPortalProfesionales(
+    typeof window !== 'undefined' ? window.location.hostname : null,
+    pathname,
+  );
 
   useEffect(() => {
     initTheme();
@@ -199,6 +205,19 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+    // Portal de profesionales: NO usa el service worker del salón (decisión
+    // P13). Ese SW trae los handlers de push del salón y el precache/caché de
+    // las pantallas del tenant; en un origen que guarda datos de otro negocio
+    // no corresponde. El portal es online-only. Si el origen ya tuviera uno
+    // registrado, se da de baja. Admin y reserva pública no cambian.
+    if (esPortal) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then(registros => registros.forEach(registro => registro.unregister()))
+        .catch(() => {});
+      return;
+    }
+
     // Fuera de producción next-pwa está apagado (next.config.ts: disable en
     // development), así que no hay service worker propio. Pero public/sw.js
     // queda de los builds de producción: registrarlo en localhost ataba el
@@ -271,7 +290,7 @@ function ProvidersInner({ children }: { children: React.ReactNode }) {
       window.removeEventListener('pageshow', onPageShow);
       clearInterval(intervalo);
     };
-  }, []);
+  }, [esPortal]);
 
   // ── Route decision: the single pure resolver (design D2) ──────────────
   // The old dual logic (a redirect `useEffect` chain + a parallel
