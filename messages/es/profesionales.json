@@ -52,6 +52,35 @@
     "server": "Algo salió mal de nuestro lado. Probá de nuevo en un rato.",
     "esperaSegundos": "Podés reintentar en {segundos} segundos."
   },
+  "OlvidePassword": {
+    "titulo": "Recuperá tu contraseña",
+    "explicacion": "Ingresá tu correo y te enviamos un código de 6 dígitos para elegir una contraseña nueva.",
+    "email": "Correo electrónico",
+    "emailRequerido": "Ingresá tu correo.",
+    "emailInvalido": "Revisá el correo: parece que no está completo.",
+    "enviar": "Enviar código",
+    "enviando": "Enviando",
+    "confirmacionGenerica": "Si el correo corresponde a una cuenta, te enviamos un código de 6 dígitos. Revisá tu bandeja de entrada.",
+    "irACodigo": "Ya tengo el código",
+    "volver": "Volver a ingresar"
+  },
+  "Restablecer": {
+    "titulo": "Elegí una contraseña nueva",
+    "email": "Correo electrónico",
+    "codigo": "Código de 6 dígitos",
+    "ayudaCodigo": "Es el código que te enviamos por correo.",
+    "nueva": "Contraseña nueva",
+    "confirmar": "Repetí la contraseña nueva",
+    "guardar": "Guardar contraseña",
+    "guardando": "Guardando",
+    "codigoInvalido": "El código no es válido o venció. Pedí uno nuevo.",
+    "reenviar": "Pedir un código nuevo",
+    "exito": "Listo, cambiaste tu contraseña. Ingresá con la nueva.",
+    "irAIngresar": "Ir a ingresar",
+    "noCoincide": "Las contraseñas no coinciden.",
+    "corta": "La contraseña tiene que tener al menos 10 caracteres.",
+    "emailRequerido": "Ingresá tu correo."
+  },
   "LogoPortal": {
     "alt": "Turnetto, portal de profesionales"
   }
