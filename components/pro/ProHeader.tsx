@@ -1,13 +1,12 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { useProAuthStore } from '@/store/useProAuthStore';
 import { setTheme, useThemeStore } from '@/store/useThemeStore';
 import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { NegocioSwitcherSheet } from './NegocioSwitcherSheet';
+import { VisualProfesional } from './VisualProfesional';
 
 const TAMANO_VISUAL = 40;
 
@@ -87,19 +86,7 @@ export function ProHeader() {
     <>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '20px 20px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          {profesional?.avatar_url ? (
-            <AvatarProfesional nombre={profesional.nombre} avatarUrl={profesional.avatar_url} size={TAMANO_VISUAL} />
-          ) : (
-            // Decorativo: al lado hay un texto (saludo o marca) que ya nombra.
-            <Image
-              src="/pro-logo.png"
-              alt=""
-              width={TAMANO_VISUAL}
-              height={TAMANO_VISUAL}
-              priority
-              style={{ borderRadius: 10, flexShrink: 0 }}
-            />
-          )}
+          <VisualProfesional profesional={profesional} size={TAMANO_VISUAL} radioLogo={10} prioridad />
           <span style={saludoStyle}>{profesional ? t('saludo', { nombre: profesional.nombre }) : t('marca')}</span>
         </div>
         <BotonTema />

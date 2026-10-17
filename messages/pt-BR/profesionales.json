@@ -115,9 +115,7 @@
   },
   "Cuenta": {
     "titulo": "Minha conta",
-    "correo": "E-mail",
     "negocio": "Negócio",
-    "profesional": "Profissional",
     "cambiarNegocio": "Trocar de negócio",
     "cerrarSesion": "Sair da conta"
   },
