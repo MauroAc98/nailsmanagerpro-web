@@ -24,6 +24,8 @@ interface Props {
   onElegir: (fecha: string) => void;
   onCerrar: () => void;
   onCambiarMes: (mes: string) => void;
+  // Capa de la hoja (su fondo va una por debajo). Sube cuando se abre desde otra hoja.
+  zIndex?: number;
 }
 
 const SNAP_POINTS = [0.8];
@@ -58,7 +60,7 @@ function Icono({ trazo, tam, color }: { trazo: string; tam: number; color: strin
 // Hoja "Elegir fecha" del portal: calendario mensual que elige UN día. Mismo
 // diseño que la hoja de la agenda de la titular, pero presentacional: la fecha,
 // el mes visto y las marcas entran por props y los cambios salen por callbacks,
-// así la usan tanto la tira semanal como (más adelante) la hoja de filtros.
+// así la usan tanto la tira semanal como la hoja de filtros.
 // Tocar un día ES la confirmación; "Hoy" solo lleva el calendario al mes actual.
 export function CalendarioFechaSheet({
   abierto,
@@ -70,6 +72,7 @@ export function CalendarioFechaSheet({
   onElegir,
   onCerrar,
   onCambiarMes,
+  zIndex = 60,
 }: Props) {
   const t = useTranslations('profesionales.Calendario');
   const tAgenda = useTranslations('profesionales.Agenda');
@@ -91,7 +94,7 @@ export function CalendarioFechaSheet({
         data-testid="fondo-calendario"
         aria-hidden="true"
         onClick={onCerrar}
-        style={{ position: 'fixed', inset: 0, zIndex: 59, backgroundColor: 'rgba(0, 0, 0, 0.35)' }}
+        style={{ position: 'fixed', inset: 0, zIndex: zIndex - 1, backgroundColor: 'rgba(0, 0, 0, 0.35)' }}
       />
       <BottomSheet
         snapPoints={SNAP_POINTS}
@@ -102,7 +105,7 @@ export function CalendarioFechaSheet({
         }}
         handleColor={agendaColors.border}
         backgroundColor={agendaColors.surface}
-        zIndex={60}
+        zIndex={zIndex}
       >
         <div
           role="dialog"

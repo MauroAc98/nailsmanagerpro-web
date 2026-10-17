@@ -58,18 +58,18 @@
     "todos": "Todos",
     "cargandoServicios": "Cargando servicios",
     "reintentarServicios": "Reintentar",
-    "desde": "Desde",
-    "hasta": "Hasta",
-    "aplicar": "Aplicar",
+    "fechaPlaceholder": "Elegir fecha",
+    "borrarFecha": "Quitar fecha",
+    "verResultados": "Ver resultados",
     "limpiar": "Limpiar filtros",
-    "errorRango": "Revisa las fechas: \"Hasta\" no puede ser anterior a \"Desde\", el rango llega a 366 días y empieza desde el 1/1/2000.",
+    "limpiarTodo": "Limpiar todo",
     "errorPalabras": "Escribe hasta 5 palabras.",
     "errorLarga": "El texto puede tener hasta 60 caracteres.",
     "sinResultados": "No hay turnos con estos filtros.",
     "activos": "Filtros activos",
     "chipBuscar": "Nombre: {texto}",
     "chipServicio": "Servicio: {servicio}",
-    "chipRango": "{desde} a {hasta}"
+    "chipFecha": "Fecha: {fecha}"
   },
   "AvisoTruncado": {
     "texto": "Se muestran los primeros 500 turnos; puede haber más.",

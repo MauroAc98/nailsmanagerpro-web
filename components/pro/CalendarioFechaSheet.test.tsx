@@ -31,6 +31,15 @@ describe('CalendarioFechaSheet', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('el zIndex recibido sube la hoja y su fondo (por defecto 60 y 59)', () => {
+    const { unmount } = montar();
+    expect(screen.getByTestId('fondo-calendario').style.zIndex).toBe('59');
+    unmount();
+    montar({ zIndex: 70 });
+    expect(screen.getByTestId('fondo-calendario').style.zIndex).toBe('69');
+    expect(screen.getByRole('dialog').closest('[style*="z-index: 70"]')).not.toBeNull();
+  });
+
   it('abierta es un diálogo "Elegir fecha" con el mes y la grilla de 42 celdas', () => {
     montar();
     const dialogo = screen.getByRole('dialog', { name: 'Elegir fecha' });

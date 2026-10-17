@@ -58,18 +58,18 @@
     "todos": "Todos",
     "cargandoServicios": "Carregando serviços",
     "reintentarServicios": "Tentar novamente",
-    "desde": "De",
-    "hasta": "Até",
-    "aplicar": "Aplicar",
+    "fechaPlaceholder": "Escolher data",
+    "borrarFecha": "Remover data",
+    "verResultados": "Ver resultados",
     "limpiar": "Limpar filtros",
-    "errorRango": "Confira as datas: \"Até\" não pode ser anterior a \"De\", o intervalo vai até 366 dias e começa em 1/1/2000.",
+    "limpiarTodo": "Limpar tudo",
     "errorPalabras": "Escreva até 5 palavras.",
     "errorLarga": "O texto pode ter até 60 caracteres.",
     "sinResultados": "Não há atendimentos com estes filtros.",
     "activos": "Filtros ativos",
     "chipBuscar": "Nome: {texto}",
     "chipServicio": "Serviço: {servicio}",
-    "chipRango": "{desde} a {hasta}"
+    "chipFecha": "Data: {fecha}"
   },
   "AvisoTruncado": {
     "texto": "Mostrando os primeiros 500 atendimentos; pode haver mais.",

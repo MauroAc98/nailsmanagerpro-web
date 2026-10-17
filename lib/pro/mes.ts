@@ -95,6 +95,15 @@ export function etiquetaDeDia(fecha: string, locale: string): string {
   );
 }
 
+// "mié, 14 oct": día de la semana y mes abreviados, también en UTC. Fecha inválida
+// = texto vacío.
+export function etiquetaCortaDeDia(fecha: string, locale: string): string {
+  if (!esFechaValida(fecha)) return '';
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)) - 1, Number(fecha.slice(8, 10)))),
+  );
+}
+
 // Lunes a domingo, en una inicial: 2024-01-01 fue lunes.
 export function inicialesDeSemana(locale: string): string[] {
   const f = new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' });

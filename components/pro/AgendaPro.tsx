@@ -18,10 +18,18 @@ import { ListaTurnosDia } from './ListaTurnosDia';
 import { ProHeader } from './ProHeader';
 import { PRO_NAV_ALTURA, ProNav } from './ProNav';
 import { ResultadosFiltros } from './ResultadosFiltros';
+import { ServicioFiltroSheet } from './ServicioFiltroSheet';
+
+// Las hojas de fecha y de servicio que se abren desde Filtros van por encima de ella
+// (hoja 60, fondo 59): son hermanas suyas, no hijas.
+const CAPA_HOJA_DE_FILTROS = 62;
 
 // Agenda del portal: encabezado, tira semanal y lista de turnos en una hoja. El
-// calendario mensual vive en la hoja "Elegir fecha", que abre la tira. Los negocios
-// bloqueados no se muestran acá: el guard redirige.
+// calendario mensual vive en la hoja "Elegir fecha", que abre la tira o la hoja de
+// filtros (la misma hoja, con otro destino para la fecha). Las hojas de fecha y de
+// servicio de los filtros viven acá, no dentro de FiltrosSheet: el BottomSheet usa
+// transform y atraparía su position: fixed. Los negocios bloqueados no se muestran
+// acá: el guard redirige.
 export function AgendaPro() {
   const t = useTranslations('profesionales.Agenda');
   const ruta = useRutaPro();
@@ -32,17 +40,28 @@ export function AgendaPro() {
   const titulo = useRef<HTMLHeadingElement>(null);
   const botonFiltros = useRef<HTMLButtonElement>(null);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
-  const [calendarioAbierto, setCalendarioAbierto] = useState(false);
-  // Al abrir, el calendario arranca en el mes de la fecha elegida (puede haber
+  // Quién abrió el calendario: la tira (elige el día que se ve) o los filtros (elige
+  // la fecha del borrador).
+  const [calendario, setCalendario] = useState<'tira' | 'filtros' | null>(null);
+  const [servicioAbierto, setServicioAbierto] = useState(false);
+  // Fecha y servicio del borrador de la hoja de filtros: parten de lo guardado cada
+  // vez que se abre y solo se guardan con "Ver resultados".
+  const [borrador, setBorrador] = useState({ fecha: filtros.desde, servicioId: filtros.servicioId });
+  const abrirFiltros = () => {
+    setBorrador({ fecha: filtros.desde, servicioId: filtros.servicioId });
+    setFiltrosAbiertos(true);
+  };
+  // Al abrir, el calendario arranca en el mes de la fecha que muestra (puede haber
   // quedado en otro por una visita anterior que se cerró sin elegir).
-  const abrirCalendario = () => {
+  const abrirCalendario = (quien: 'tira' | 'filtros') => {
     const store = useProAgendaStore.getState();
-    store.setMesVisto(store.fecha.slice(0, 7));
-    setCalendarioAbierto(true);
+    store.setMesVisto((quien === 'filtros' ? (borrador.fecha ?? store.fecha) : store.fecha).slice(0, 7));
+    setCalendario(quien);
   };
   const elegirFecha = (f: string) => {
-    useProAgendaStore.getState().setFecha(f);
-    setCalendarioAbierto(false);
+    if (calendario === 'filtros') setBorrador((b) => ({ ...b, fecha: f }));
+    else useProAgendaStore.getState().setFecha(f);
+    setCalendario(null);
   };
   const abrirTurno = (id: number) => router.push(ruta(`/turnos/${id}`));
   // Quien abrió la hoja recupera el foco al cerrarla.
@@ -79,8 +98,10 @@ export function AgendaPro() {
   );
 
   // Las marcas del calendario se piden solo con la hoja abierta (la caché sirve
-  // las del mes de la tira, que suele ser el mismo).
-  const marcasCalendario = useProMarcasMes(calendarioAbierto && !filtrando ? mesVisto : '');
+  // las del mes de la tira, que suele ser el mismo). Con filtros activos la tira no
+  // está: el calendario solo se abre desde la hoja de filtros.
+  const calendarioVisible = calendario === 'filtros' || (calendario === 'tira' && !filtrando);
+  const marcasCalendario = useProMarcasMes(calendarioVisible ? mesVisto : '');
 
   useEffect(() => {
     titulo.current?.focus();
@@ -104,17 +125,36 @@ export function AgendaPro() {
         >
           {t('titulo')}
         </h1>
-        <FiltrosSheet abierto={filtrosAbiertos} onCerrar={cerrarFiltros} />
+        <FiltrosSheet
+          abierto={filtrosAbiertos}
+          onCerrar={cerrarFiltros}
+          fecha={borrador.fecha}
+          servicioId={borrador.servicioId}
+          onBorrarFecha={() => setBorrador((b) => ({ ...b, fecha: null }))}
+          onAbrirCalendario={() => abrirCalendario('filtros')}
+          onAbrirServicios={() => setServicioAbierto(true)}
+        />
         <CalendarioFechaSheet
-          abierto={calendarioAbierto && !filtrando}
+          abierto={calendarioVisible}
           mes={mesVisto}
-          fecha={fecha}
+          fecha={calendario === 'filtros' ? (borrador.fecha ?? '') : fecha}
+          zIndex={calendario === 'filtros' ? CAPA_HOJA_DE_FILTROS : undefined}
           marcas={marcasCalendario.data?.dias ?? null}
           error={marcasCalendario.error}
           onReintentar={marcasCalendario.reintentar}
           onElegir={elegirFecha}
-          onCerrar={() => setCalendarioAbierto(false)}
+          onCerrar={() => setCalendario(null)}
           onCambiarMes={(m) => useProAgendaStore.getState().setMesVisto(m)}
+        />
+        <ServicioFiltroSheet
+          abierto={servicioAbierto}
+          seleccionado={borrador.servicioId}
+          onElegir={(servicioId) => {
+            setBorrador((b) => ({ ...b, servicioId }));
+            setServicioAbierto(false);
+          }}
+          onCerrar={() => setServicioAbierto(false)}
+          zIndex={CAPA_HOJA_DE_FILTROS}
         />
         {filtrando && (
           <HojaTurnosPro
@@ -122,7 +162,7 @@ export function AgendaPro() {
             filtrando
             cantidadActivos={cantidadActivos}
             botonFiltros={botonFiltros}
-            onFiltrar={() => setFiltrosAbiertos(true)}
+            onFiltrar={abrirFiltros}
           >
             <ResultadosFiltros onAbrir={abrirTurno} />
           </HojaTurnosPro>
@@ -134,7 +174,7 @@ export function AgendaPro() {
               fechaSeleccionada={fecha}
               turnosMes={turnosMes}
               onDayClick={(f) => useProAgendaStore.getState().setFecha(f)}
-              onAbrirCalendario={abrirCalendario}
+              onAbrirCalendario={() => abrirCalendario('tira')}
               onSemanaAnterior={() => setAncla(sumarDias(ancla, -7))}
               onSemanaSiguiente={() => setAncla(sumarDias(ancla, 7))}
             />
@@ -143,7 +183,7 @@ export function AgendaPro() {
               filtrando={false}
               cantidadActivos={0}
               botonFiltros={botonFiltros}
-              onFiltrar={() => setFiltrosAbiertos(true)}
+              onFiltrar={abrirFiltros}
             >
               <ListaTurnosDia
                 data={turnos.data}

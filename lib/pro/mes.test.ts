@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { celdasDeMes, desfaseLunes, etiquetaDeDia, etiquetaDeMes, inicialesDeSemana, mesAnterior, mesDe, mesSiguiente, mesValido, primerDia, ultimoDia } from './mes';
+import { celdasDeMes, desfaseLunes, etiquetaCortaDeDia, etiquetaDeDia, etiquetaDeMes, inicialesDeSemana, mesAnterior, mesDe, mesSiguiente, mesValido, primerDia, ultimoDia } from './mes';
 
 describe('mesValido', () => {
   it.each([
@@ -118,6 +118,16 @@ describe('etiquetaDeDia', () => {
   it('día y mes en el idioma pedido', () => {
     expect(etiquetaDeDia('2026-10-14', 'es')).toBe('14 de octubre');
     expect(etiquetaDeDia('2026-10-14', 'pt-BR')).toBe('14 de outubro');
+  });
+});
+
+describe('etiquetaCortaDeDia', () => {
+  it('día de la semana, día y mes abreviados en el idioma pedido', () => {
+    expect(etiquetaCortaDeDia('2026-10-14', 'es')).toMatch(/^mié.*14.*oct/i);
+    expect(etiquetaCortaDeDia('2026-10-14', 'pt-BR')).toMatch(/^qua.*14.*out/i);
+  });
+  it('fecha inválida = texto vacío', () => {
+    expect(etiquetaCortaDeDia('2026-02-30', 'es')).toBe('');
   });
 });
 

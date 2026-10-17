@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Spinner } from '@/components/Spinner';
 import { useProServicios } from '@/hooks/pro/useProServicios';
-import { FECHA_MINIMA } from '@/lib/pro/fechaHora';
-import { hayFiltrosActivos, normalizarBuscar, validarBuscar, validarRango } from '@/lib/pro/filtros';
+import { hayFiltrosActivos, normalizarBuscar, validarBuscar } from '@/lib/pro/filtros';
+import { etiquetaCortaDeDia } from '@/lib/pro/mes';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { agendaColors } from '@/theme/agendaColors';
 import { MensajeErrorPro } from './MensajeErrorPro';
@@ -14,22 +14,16 @@ import { MensajeErrorPro } from './MensajeErrorPro';
 interface Props {
   abierto: boolean;
   onCerrar: () => void;
+  // Fecha y servicio del borrador: los eligen las hojas de calendario y de servicio,
+  // que son hermanas de esta (ver FiltrosSheet), así que los maneja quien las monta.
+  fecha: string | null;
+  servicioId: number | null;
+  onBorrarFecha: () => void;
+  onAbrirCalendario: () => void;
+  onAbrirServicios: () => void;
 }
 
 const SNAP_POINTS = [0.85];
-
-const campoStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  width: '100%',
-  minWidth: 0,
-  minHeight: 44,
-  padding: '0 14px',
-  border: '1px solid transparent',
-  borderRadius: 12,
-  fontSize: 14,
-  backgroundColor: agendaColors.surfaceSubtle,
-  color: agendaColors.text,
-};
 
 // Título de sección en mayúsculas, igual que la hoja de filtros de la agenda.
 const seccionStyle: CSSProperties = {
@@ -41,8 +35,6 @@ const seccionStyle: CSSProperties = {
   letterSpacing: 0.5,
 };
 
-const etiquetaStyle: CSSProperties = { fontSize: 13, fontWeight: 600, color: agendaColors.sub };
-
 const botonStyle = (primario: boolean, deshabilitado = false): CSSProperties => ({
   minHeight: 44,
   padding: '14px',
@@ -51,12 +43,11 @@ const botonStyle = (primario: boolean, deshabilitado = false): CSSProperties => 
   fontSize: 15,
   fontWeight: 600,
   cursor: deshabilitado ? 'default' : 'pointer',
-  opacity: deshabilitado ? 0.5 : 1,
-  backgroundColor: primario ? agendaColors.primarySolid : agendaColors.surface,
+  backgroundColor: deshabilitado ? agendaColors.divider : primario ? agendaColors.primarySolid : agendaColors.surface,
   color: primario ? agendaColors.primaryFg : agendaColors.strong,
 });
 
-const accionTextoStyle = (deshabilitado: boolean): CSSProperties => ({
+const accionTextoStyle: CSSProperties = {
   minHeight: 44,
   padding: '0 8px',
   border: 'none',
@@ -64,9 +55,13 @@ const accionTextoStyle = (deshabilitado: boolean): CSSProperties => ({
   fontSize: 13,
   fontWeight: 600,
   color: agendaColors.primaryDeep,
-  opacity: deshabilitado ? 0.5 : 1,
-  cursor: deshabilitado ? 'default' : 'pointer',
-});
+  cursor: 'pointer',
+};
+
+// Botón de fecha: con una fecha elegida el borde y el fondo pasan al color primario
+// translúcido (color-mix, como el withAlpha de la agenda: el portal no importa theme/colors).
+const fechaBordeActivo = `color-mix(in srgb, ${agendaColors.primary} 27%, transparent)`;
+const fechaFondoActivo = `color-mix(in srgb, ${agendaColors.primary} 7%, transparent)`;
 
 // Íconos en línea (el portal no usa lucide-react).
 const trazo = { fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
@@ -84,6 +79,32 @@ function IconoCerrar({ tam }: { tam: number }) {
   return (
     <svg width={tam} height={tam} viewBox="0 0 24 24" strokeWidth="2" {...trazo} aria-hidden="true" style={{ flexShrink: 0 }}>
       <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function IconoCalendario({ activo }: { activo: boolean }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      {...trazo}
+      aria-hidden="true"
+      style={{ marginRight: 8, flexShrink: 0, color: activo ? agendaColors.primaryDeep : agendaColors.muted }}
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function IconoBorrarFecha() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" strokeWidth="2" {...trazo} aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <path d="m15 9-6 6M9 9l6 6" />
     </svg>
   );
 }
@@ -107,17 +128,14 @@ function IconoDerecha() {
   );
 }
 
-function Contenido({ onCerrar }: { onCerrar: () => void }) {
+function Contenido({ onCerrar, fecha, servicioId, onBorrarFecha, onAbrirCalendario, onAbrirServicios }: Omit<Props, 'abierto'>) {
   const t = useTranslations('profesionales.Filtros');
+  const locale = useLocale();
   const guardados = useProAgendaStore((s) => s.filtros);
   const servicios = useProServicios();
   const titulo = useRef<HTMLHeadingElement>(null);
   const [buscar, setBuscar] = useState(guardados.buscar);
-  const [servicioId, setServicioId] = useState<number | null>(guardados.servicioId);
-  const [desde, setDesde] = useState(guardados.desde ?? '');
-  const [hasta, setHasta] = useState(guardados.hasta ?? '');
   const [errorBuscar, setErrorBuscar] = useState<'demasiadasPalabras' | 'larga' | null>(null);
-  const [errorRango, setErrorRango] = useState(false);
 
   // El foco entra al diálogo apenas se monta; quien lo abrió lo recupera al cerrar.
   useEffect(() => {
@@ -130,19 +148,10 @@ function Contenido({ onCerrar }: { onCerrar: () => void }) {
 
   function aplicar() {
     const resultadoBuscar = validarBuscar(buscar);
-    // Con un solo extremo, el otro toma la misma fecha (rango de un día).
-    const d = desde || hasta;
-    const h = hasta || desde;
-    const rangoInvalido = d !== '' && validarRango(d, h) !== 'ok';
     setErrorBuscar(resultadoBuscar === 'ok' ? null : resultadoBuscar);
-    setErrorRango(rangoInvalido);
-    if (resultadoBuscar !== 'ok' || rangoInvalido) return;
-    useProAgendaStore.getState().setFiltros({
-      buscar: normalizarBuscar(buscar),
-      servicioId,
-      desde: d || null,
-      hasta: h || null,
-    });
+    if (resultadoBuscar !== 'ok') return;
+    // La fecha es una sola: el pedido es un rango de ese día (desde = hasta).
+    useProAgendaStore.getState().setFiltros({ buscar: normalizarBuscar(buscar), servicioId, desde: fecha, hasta: fecha });
     onCerrar();
   }
 
@@ -151,8 +160,9 @@ function Contenido({ onCerrar }: { onCerrar: () => void }) {
     onCerrar();
   }
 
-  const hayActivos = hayFiltrosActivos(guardados);
-  const opciones = servicios.data?.servicios ?? [];
+  // Con filtros ya guardados, aplicar un borrador vacío es la forma de quitarlos.
+  const hayActivos = normalizarBuscar(buscar) !== '' || servicioId !== null || fecha !== null || hayFiltrosActivos(guardados);
+  const servicio = servicios.data?.servicios.find((s) => s.id === servicioId)?.nombre;
   const ayudaBuscar = errorBuscar !== null ? 'filtros-buscar-error' : 'filtros-buscar-ayuda';
 
   return (
@@ -173,14 +183,16 @@ function Contenido({ onCerrar }: { onCerrar: () => void }) {
           {t('titulo')}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button type="button" onClick={limpiar} disabled={!hayActivos} style={accionTextoStyle(!hayActivos)}>
-            {t('limpiar')}
-          </button>
+          {hayActivos && (
+            <button type="button" onClick={limpiar} style={accionTextoStyle}>
+              {t('limpiarTodo')}
+            </button>
+          )}
           <button
             type="button"
             onClick={onCerrar}
             aria-label={t('cerrar')}
-            style={{ ...accionTextoStyle(false), color: agendaColors.muted, display: 'flex', alignItems: 'center' }}
+            style={{ ...accionTextoStyle, color: agendaColors.muted, display: 'flex', alignItems: 'center' }}
           >
             <IconoCerrar tam={18} />
           </button>
@@ -249,42 +261,62 @@ function Contenido({ onCerrar }: { onCerrar: () => void }) {
 
       <div>
         <p style={seccionStyle}>{t('seccionFecha')}</p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {(
-            [
-              ['filtros-desde', 'desde', desde, setDesde],
-              ['filtros-hasta', 'hasta', hasta, setHasta],
-            ] as const
-          ).map(([id, clave, valor, set]) => (
-            <div key={id} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label htmlFor={id} style={etiquetaStyle}>
-                {t(clave)}
-              </label>
-              <input
-                id={id}
-                type="date"
-                min={FECHA_MINIMA}
-                value={valor}
-                aria-invalid={errorRango}
-                aria-describedby={errorRango ? 'filtros-rango-error' : undefined}
-                onChange={(e) => set(e.target.value)}
-                style={{
-                  ...campoStyle,
-                  ...(errorRango
-                    ? { borderColor: agendaColors.danger }
-                    : valor !== ''
-                      ? { borderColor: agendaColors.primary }
-                      : null),
-                }}
-              />
-            </div>
-          ))}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            height: 45,
+            padding: '0 14px',
+            borderRadius: 12,
+            boxSizing: 'border-box',
+            border: `1px solid ${fecha !== null ? fechaBordeActivo : 'transparent'}`,
+            backgroundColor: fecha !== null ? fechaFondoActivo : agendaColors.surfaceSubtle,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onAbrirCalendario}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flex: 1,
+              minWidth: 0,
+              height: '100%',
+              padding: 0,
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <IconoCalendario activo={fecha !== null} />
+            <span style={{ flex: 1, fontSize: 14, color: fecha !== null ? agendaColors.text : agendaColors.muted }}>
+              {fecha !== null ? etiquetaCortaDeDia(fecha, locale) : t('fechaPlaceholder')}
+            </span>
+          </button>
+          {fecha !== null && (
+            <button
+              type="button"
+              onClick={onBorrarFecha}
+              aria-label={t('borrarFecha')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 44,
+                minHeight: 44,
+                marginRight: -12,
+                padding: 0,
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                color: agendaColors.primaryDeep,
+              }}
+            >
+              <IconoBorrarFecha />
+            </button>
+          )}
         </div>
-        {errorRango && (
-          <p id="filtros-rango-error" role="alert" style={{ margin: '6px 0 0', fontSize: 14, color: agendaColors.danger }}>
-            {t('errorRango')}
-          </p>
-        )}
       </div>
 
       {servicios.data === null && servicios.error === null && <Spinner label={t('cargandoServicios')} />}
@@ -302,92 +334,93 @@ function Contenido({ onCerrar }: { onCerrar: () => void }) {
         </div>
       )}
       {servicios.data !== null && (
-        // Tarjeta "Qué mostrar": ícono, etiqueta, valor y chevron. El valor es un
-        // <select> nativo que ocupa la fila: se conserva el teclado y el lector.
+        // Tarjeta "Qué mostrar": ícono, etiqueta, valor y chevron. Toda la fila es un
+        // botón que abre la hoja de selección de servicio.
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            minHeight: 56,
-            padding: '0 14px',
             borderRadius: 14,
             overflow: 'hidden',
             backgroundColor: agendaColors.surface,
             border: `1px solid ${agendaColors.divider}`,
           }}
         >
-          <span
-            aria-hidden="true"
+          <button
+            type="button"
+            onClick={onAbrirServicios}
+            aria-label={`${t('servicio')}: ${servicio ?? t('todos')}`}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 9,
-              flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: agendaColors.primarySoft,
-              color: agendaColors.primaryDeep,
-            }}
-          >
-            <IconoServicio />
-          </span>
-          <label htmlFor="filtros-servicio" style={{ flexShrink: 0, fontSize: 15, color: agendaColors.textStrong }}>
-            {t('servicio')}
-          </label>
-          <select
-            id="filtros-servicio"
-            value={servicioId === null ? '' : String(servicioId)}
-            onChange={(e) => setServicioId(e.target.value === '' ? null : Number(e.target.value))}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              minHeight: 44,
+              gap: 12,
+              width: '100%',
+              minHeight: 56,
+              padding: '0 14px',
               border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              appearance: 'none',
-              textAlign: 'right',
-              textAlignLast: 'right',
-              fontSize: 14,
-              fontWeight: 600,
-              textOverflow: 'ellipsis',
-              color: servicioId === null ? agendaColors.muted : agendaColors.primary,
+              background: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
             }}
           >
-            <option value="">{t('todos')}</option>
-            {opciones.map((s) => (
-              <option key={s.id} value={String(s.id)}>
-                {s.nombre}
-              </option>
-            ))}
-          </select>
-          <span aria-hidden="true" style={{ display: 'flex', color: agendaColors.muted }}>
-            <IconoDerecha />
-          </span>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 9,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: agendaColors.primarySoft,
+                color: agendaColors.primaryDeep,
+              }}
+            >
+              <IconoServicio />
+            </span>
+            <span style={{ flexShrink: 0, fontSize: 15, color: agendaColors.textStrong }}>{t('servicio')}</span>
+            <span
+              style={{
+                flex: 1,
+                minWidth: 0,
+                textAlign: 'right',
+                fontSize: 14,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: servicio === undefined ? agendaColors.muted : agendaColors.primary,
+              }}
+            >
+              {servicio ?? t('todos')}
+            </span>
+            <span aria-hidden="true" style={{ display: 'flex', color: agendaColors.muted }}>
+              <IconoDerecha />
+            </span>
+          </button>
         </div>
       )}
 
-      <button type="button" onClick={aplicar} style={botonStyle(true)}>
-        {t('aplicar')}
+      <button type="button" onClick={aplicar} disabled={!hayActivos} style={botonStyle(true, !hayActivos)}>
+        {t('verResultados')}
       </button>
     </div>
   );
 }
 
-// Filtros de la agenda del portal (AG-4): texto, rango de fechas y servicio, con
-// el diseño de la hoja de filtros de la agenda de la titular (sin profesional).
+// Filtros de la agenda del portal (AG-4): texto, fecha única y servicio, con el
+// diseño de la hoja de filtros de la agenda de la titular (sin profesional).
 // Valida antes de guardar: un valor inválido se informa en línea y no llega al
-// store, así que no se pide nada. El estado se edita en borrador hasta "Aplicar".
-export function FiltrosSheet({ abierto, onCerrar }: Props) {
+// store, así que no se pide nada. El estado se edita en borrador hasta "Ver
+// resultados". La fecha y el servicio se eligen en hojas hermanas (el BottomSheet
+// usa transform y atraparía un position: fixed), por eso entran por props.
+export function FiltrosSheet({ abierto, ...contenido }: Props) {
   if (!abierto) return null;
   return (
     <>
       <div
         data-testid="fondo-filtros"
         aria-hidden="true"
-        onClick={onCerrar}
+        onClick={contenido.onCerrar}
         style={{ position: 'fixed', inset: 0, zIndex: 59, backgroundColor: 'rgba(0, 0, 0, 0.35)' }}
       />
       <BottomSheet
@@ -395,12 +428,12 @@ export function FiltrosSheet({ abierto, onCerrar }: Props) {
         initialIndex={0}
         enablePanDownToClose
         onChange={(indice) => {
-          if (indice < 0) onCerrar();
+          if (indice < 0) contenido.onCerrar();
         }}
         backgroundColor={agendaColors.bg}
         zIndex={60}
       >
-        <Contenido onCerrar={onCerrar} />
+        <Contenido {...contenido} />
       </BottomSheet>
     </>
   );
