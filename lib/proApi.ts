@@ -3,9 +3,11 @@ import { clasificarErrorPro, type ErrorCrudo, type ProError } from '@/lib/pro/er
 import { PRO_STORAGE_KEYS } from '@/lib/pro/storageKeys';
 
 // Instancia de Axios completamente separada de lib/api.ts (la del tenant) y de
-// lib/adminApi.ts. El portal de profesionales comparte origen con otras
-// superficies: un interceptor compartido haría que un 401 del portal abriera
-// el modal de sesión terminada del salón (o al revés). Esta instancia solo lee
+// lib/adminApi.ts. El portal vive en su propio origen
+// (profesionales.turnetto.com), así que sus keys de storage no pueden chocar
+// con las del salón; lo que se aísla acá son los interceptores, los eventos y
+// el estado: un interceptor compartido haría que un 401 del portal abriera el
+// modal de sesión terminada del salón (o al revés). Esta instancia solo lee
 // `pro_token` y solo emite eventos propios; nunca importa lib/api.ts ni toca
 // stores o eventos del tenant.
 //
@@ -14,6 +16,9 @@ import { PRO_STORAGE_KEYS } from '@/lib/pro/storageKeys';
 const proApi = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   timeout: 15000,
+  // El Bearer nunca debe salir hacia otro origen: sin esto una URL absoluta o
+  // '//host' ignoraría baseURL y el interceptor le adjuntaría el token.
+  allowAbsoluteUrls: false,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -43,13 +48,32 @@ function rutaSinQuery(url: string | undefined): string {
 // Mismo criterio que lib/api.ts: localStorage puede tirar (modo privado de iOS
 // Safari, storage deshabilitado) — sin el try/catch, esa excepción rompe la
 // request entera y un fallo de storage se confunde con un login inválido.
-proApi.interceptors.request.use((config) => {
-  let token: string | null = null;
+function leerToken(): string | null {
   try {
-    token = localStorage.getItem(PRO_STORAGE_KEYS.token);
+    return localStorage.getItem(PRO_STORAGE_KEYS.token);
   } catch {
     // sin acceso a localStorage — seguimos sin el header de auth en vez de romper la request
+    return null;
   }
+}
+
+// URL absoluta ('https://x', 'HTTP://x') o relativa al protocolo ('//x').
+const URL_ABSOLUTA = /^([a-z][a-z\d+.-]*:)?\/\//i;
+
+proApi.interceptors.request.use((config) => {
+  // Defensa en profundidad además de allowAbsoluteUrls: se corta ANTES de
+  // adjuntar el token. Error de programación, no sale a la red.
+  if (URL_ABSOLUTA.test(config.url ?? '')) {
+    throw new AxiosError('URL absoluta no permitida', AxiosError.ERR_BAD_REQUEST, config, null, {
+      status: 400,
+      statusText: '',
+      data: { code: 'URL_NO_PERMITIDA' },
+      headers: {},
+      config,
+    });
+  }
+
+  const token = leerToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -105,11 +129,20 @@ proApi.interceptors.response.use(
 
     if (typeof window !== 'undefined') {
       if (proError.kind === 'sessionRevoked') {
-        window.dispatchEvent(new CustomEvent(EVENTO_SESION_EXPIRADA));
+        // Un 401 tardío de una sesión vieja (logout + login mientras el request
+        // viajaba) no debe cerrar la nueva: solo cuenta si el token con el que
+        // salió es el que sigue guardado.
+        const enviado = error.config?.headers?.get('Authorization');
+        const guardado = leerToken();
+        const esDeLaSesionActual = (typeof enviado === 'string' ? enviado : null) === (guardado ? `Bearer ${guardado}` : null);
+        if (esDeLaSesionActual) window.dispatchEvent(new CustomEvent(EVENTO_SESION_EXPIRADA));
       } else if (proError.kind === 'portalUnavailable') {
         window.dispatchEvent(new CustomEvent(EVENTO_PORTAL_NO_DISPONIBLE));
       }
     }
+
+    // El error rechazado viaja a console.error / telemetría: no debe llevar el token.
+    error.config?.headers?.delete('Authorization');
     return Promise.reject(error);
   },
 );

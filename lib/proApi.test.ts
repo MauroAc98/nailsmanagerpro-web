@@ -29,7 +29,27 @@ function sinRespuesta() {
   };
 }
 
-const EVENTOS_AJENOS = ['session-expired', 'admin-session-expired', 'auth:session-revoked', 'auth:subscription-suspect'];
+// El adapter queda esperando hasta que el test llama a `liberar()`: permite
+// simular un request en vuelo mientras la sesión cambia.
+function responderDiferido(status: number, data: unknown = {}) {
+  let alLlegar!: () => void;
+  const llego = new Promise<void>((resolver) => {
+    alLlegar = resolver;
+  });
+  let liberar!: () => void;
+  const espera = new Promise<void>((resolver) => {
+    liberar = resolver;
+  });
+  proApi.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+    configsEnviadas.push(config);
+    alLlegar();
+    await espera;
+    throw new AxiosError('fallo', 'ERR_BAD_REQUEST', config, null, { status, statusText: '', data, headers: {}, config });
+  };
+  return { llego, liberar };
+}
+
+const EVENTOS_AJENOS =['session-expired', 'admin-session-expired', 'auth:session-revoked', 'auth:subscription-suspect'];
 
 let sesionExpirada: ReturnType<typeof vi.fn>;
 let portalNoDisponible: ReturnType<typeof vi.fn>;
@@ -262,6 +282,162 @@ describe('proApi — err.proError', () => {
     expect(axios.isCancel(error)).toBe(true);
     expect((error as { proError?: unknown }).proError).toBeUndefined();
   });
+});
+
+describe('proApi — el token nunca sale hacia otro origen', () => {
+  it('no permite URLs absolutas por configuración', () => {
+    expect(proApi.defaults.allowAbsoluteUrls).toBe(false);
+  });
+
+  it.each([
+    '//evil.com/pro/turnos',
+    '//evil.com/x',
+    'https://evil.example/pro/me',
+    'HTTP://x',
+    'ftp://evil.example/pro/me',
+  ])('%s se rechaza antes de la red, sin Authorization', async (url) => {
+    localStorage.setItem('pro_token', 'tok-pro');
+    responderOk();
+
+    const error = await proApi.get(url, { headers: { 'X-Vinculo-Id': '3' } }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(AxiosError);
+    expect(configsEnviadas).toHaveLength(0);
+    expect(proErrorDe(error)).toEqual({ kind: 'server' });
+    expect(sesionExpirada).not.toHaveBeenCalled();
+  });
+
+  it.each(['/pro/me', 'pro/me', '/pro/turnos?next=https://x.com'])('%s (relativa) sigue funcionando', async (url) => {
+    localStorage.setItem('pro_token', 'tok-pro');
+    responderOk();
+
+    await proApi.get(url, { headers: { 'X-Vinculo-Id': '3' } });
+
+    expect(configsEnviadas).toHaveLength(1);
+  });
+});
+
+describe('proApi — un 401 tardío de una sesión vieja no mata la nueva', () => {
+  it('con el mismo token que sigue guardado, el 401 dispara el evento una vez', async () => {
+    localStorage.setItem('pro_token', 'viejo');
+    const { llego, liberar } = responderDiferido(401, { message: 'Unauthenticated.' });
+
+    const pedido = proApi.get('/pro/me').catch((e: unknown) => e);
+    await llego;
+    liberar();
+    await pedido;
+
+    expect(sesionExpirada).toHaveBeenCalledTimes(1);
+  });
+
+  it('logout + login mientras el request viaja: el 401 del token viejo no dispara el evento', async () => {
+    localStorage.setItem('pro_token', 'viejo');
+    const { llego, liberar } = responderDiferido(401, { message: 'Unauthenticated.' });
+
+    const pedido = proApi.get('/pro/me').catch((e: unknown) => e);
+    await llego;
+    localStorage.setItem('pro_token', 'nuevo');
+    liberar();
+    const error = await pedido;
+
+    expect(sesionExpirada).not.toHaveBeenCalled();
+    // Igual se clasifica y se rechaza: solo se omite el evento.
+    expect(proErrorDe(error)).toEqual({ kind: 'sessionRevoked' });
+  });
+
+  it('si la sesión ya se cerró (sin token guardado), el 401 viejo tampoco dispara el evento', async () => {
+    localStorage.setItem('pro_token', 'viejo');
+    const { llego, liberar } = responderDiferido(401, { message: 'Unauthenticated.' });
+
+    const pedido = proApi.get('/pro/me').catch((e: unknown) => e);
+    await llego;
+    localStorage.removeItem('pro_token');
+    liberar();
+    await pedido;
+
+    expect(sesionExpirada).not.toHaveBeenCalled();
+  });
+});
+
+describe('proApi — el rechazo no filtra el token', () => {
+  it('error.config.headers ya no lleva Authorization (console.error / telemetría)', async () => {
+    localStorage.setItem('pro_token', 'tok-secreto');
+    responderCon(500, { message: 'x' });
+
+    const error = (await proApi.get('/pro/me').catch((e: unknown) => e)) as AxiosError;
+
+    expect(error.config?.headers.get('Authorization')).toBeFalsy();
+    expect(JSON.stringify(error.config?.headers)).not.toContain('tok-secreto');
+    expect(proErrorDe(error)).toEqual({ kind: 'server' });
+  });
+
+  it('tampoco en un 401 que dispara el evento', async () => {
+    localStorage.setItem('pro_token', 'tok-secreto');
+    responderCon(401, { message: 'Unauthenticated.' });
+
+    const error = (await proApi.get('/pro/me').catch((e: unknown) => e)) as AxiosError;
+
+    expect(sesionExpirada).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(error.config?.headers)).not.toContain('tok-secreto');
+  });
+});
+
+describe('proApi — compuerta del id de vínculo (fail-closed)', () => {
+  it.each(['1e3', '0x10', '3.5', '+3', '３', '3\r\nX-Evil: 1'])('el id %j se rechaza sin salir a la red', async (valor) => {
+    responderOk();
+
+    const error = await proApi.get('/pro/turnos', { headers: { 'X-Vinculo-Id': valor } }).catch((e: unknown) => e);
+
+    expect(configsEnviadas).toHaveLength(0);
+    expect(proErrorDe(error)).toEqual({ kind: 'vinculoRequired' });
+  });
+
+  // axios recorta espacios y saltos de línea al setear el header: lo que se
+  // valida es lo que realmente viaja, ya normalizado.
+  it.each([' 3', '3 ', '3\n', '\n3'])('el id %j viaja ya normalizado como "3"', async (valor) => {
+    responderOk();
+
+    await proApi.get('/pro/turnos', { headers: { 'X-Vinculo-Id': valor } });
+
+    expect(configsEnviadas[0].headers.get('X-Vinculo-Id')).toBe('3');
+  });
+
+  it('un id numérico (no string) válido se acepta y viaja como "3"', async () => {
+    responderOk();
+
+    await proApi.get('/pro/turnos', { headers: { 'X-Vinculo-Id': 3 } });
+
+    expect(String(configsEnviadas[0].headers.get('X-Vinculo-Id'))).toBe('3');
+  });
+
+  it('el nombre del header no distingue mayúsculas: en minúscula también se valida y se conserva', async () => {
+    responderOk();
+    await proApi.get('/pro/turnos', { headers: { 'x-vinculo-id': '3' } });
+    expect(configsEnviadas[0].headers.get('X-Vinculo-Id')).toBe('3');
+
+    const error = await proApi.get('/pro/turnos', { headers: { 'x-vinculo-id': 'mal' } }).catch((e: unknown) => e);
+    expect(proErrorDe(error)).toEqual({ kind: 'vinculoRequired' });
+    expect(configsEnviadas).toHaveLength(1);
+  });
+
+  it('el nombre en minúscula también se elimina fuera de las rutas de datos', async () => {
+    responderOk();
+
+    await proApi.post('/pro/login', {}, { headers: { 'x-vinculo-id': '3' } });
+
+    expect(configsEnviadas[0].headers.get('X-Vinculo-Id')).toBeFalsy();
+  });
+
+  it.each(['/pro/serviciosX', '/pro/turnos-x', '/pro/turnosX/1', '/prox/turnos', '/x/pro/turnos', '/pro'])(
+    '%s no es una ruta con vínculo: el header se elimina',
+    async (url) => {
+      responderOk();
+
+      await proApi.get(url, { headers: { 'X-Vinculo-Id': '3' } });
+
+      expect(configsEnviadas[0].headers.get('X-Vinculo-Id')).toBeFalsy();
+    },
+  );
 });
 
 describe('proErrorDe', () => {
