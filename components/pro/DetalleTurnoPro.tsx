@@ -8,11 +8,12 @@ import { Spinner } from '@/components/Spinner';
 import { useProTurno } from '@/hooks/pro/useProTurno';
 import { useRutaPro } from '@/hooks/useRutaPro';
 import { infoEstado } from '@/lib/pro/estado';
-import { diaDe, horaDe, horaFin } from '@/lib/pro/fechaHora';
+import { diaDe, hora12, horaDe, horaFin } from '@/lib/pro/fechaHora';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { useProAuthStore } from '@/store/useProAuthStore';
 import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { MensajeErrorPro } from './MensajeErrorPro';
+import { NotasDelTurnoPro } from './NotasDelTurnoPro';
 import { ProHeader } from './ProHeader';
 import { PRO_NAV_ALTURA_AGENDA, ProNav } from './ProNav';
 
@@ -51,11 +52,24 @@ const boton = {
 
 const textoLargo = { minWidth: 0, overflowWrap: 'anywhere', unicodeBidi: 'isolate' } as const;
 
-function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
+// Caja de solo lectura con el aspecto de los campos de la pantalla de editar turno.
+const caja = {
+  boxSizing: 'border-box',
+  background: agendaColors.surfaceSubtle,
+  border: `1px solid ${agendaColors.fieldBorder}`,
+  borderRadius: 12,
+  padding: '14px 16px',
+  fontSize: 15,
+  color: agendaColors.text,
+} as const;
+
+function Campo({ etiqueta, children, ancho }: { etiqueta: string; children: ReactNode; ancho?: boolean }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-      <dt style={{ fontSize: 13, fontWeight: 600, color: agendaColors.sub }}>{etiqueta}</dt>
-      <dd style={{ margin: 0, fontSize: 16, color: agendaColors.strong, ...textoLargo }}>{children}</dd>
+    <div style={{ marginBottom: ancho === true ? 0 : 20, flex: ancho === true ? 1 : undefined, minWidth: 0 }}>
+      <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: agendaColors.sub, letterSpacing: 1, textTransform: 'uppercase' }}>
+        {etiqueta}
+      </p>
+      {children}
     </div>
   );
 }
@@ -91,11 +105,31 @@ export function DetalleTurnoPro() {
   const volver = (
     <Link
       href={ruta('/agenda')}
-      style={{ ...boton, display: 'inline-flex', alignItems: 'center', textDecoration: 'none', alignSelf: 'flex-start' }}
+      aria-label={t('Detalle.volver')}
+      style={{
+        width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', flexShrink: 0, alignSelf: 'flex-start',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+        border: `1px solid ${agendaColors.border}`, backgroundColor: agendaColors.surface, color: agendaColors.strong,
+      }}
     >
-      {t('Detalle.volver')}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
     </Link>
   );
+
+  // Lo que se ve arriba (etiqueta con la fecha, nombre y píldora) solo existe con
+  // un turno a la vista; sin él, el título es el genérico del detalle.
+  const turno = cambioNegocio || id === 0 || error?.kind === 'notFound' ? null : data;
+  const dia = turno === null ? null : diaDe(turno.fecha_hora);
+  const nombre =
+    turno === null
+      ? ''
+      : [turno.cliente.nombre, turno.cliente.apellido]
+          .map((p) => (typeof p === 'string' ? p.trim() : ''))
+          .filter((p) => p !== '')
+          .join(' ');
+  const enCurso = turno !== null && infoEstado(turno.estado_visual).clave === 'en_curso';
 
   let cuerpo: ReactNode;
   if (cambioNegocio) {
@@ -118,65 +152,59 @@ export function DetalleTurnoPro() {
       </div>
     );
   } else {
-    const dia = diaDe(data.fecha_hora);
     const inicio = horaDe(data.fecha_hora);
     const fin = inicio === null ? null : horaFin(inicio, data.duracion_total_minutos);
-    const estado = infoEstado(data.estado_visual);
-    const nombre = [data.cliente.nombre, data.cliente.apellido]
-      .map((p) => (typeof p === 'string' ? p.trim() : ''))
-      .filter((p) => p !== '')
-      .join(' ');
     const notas = typeof data.notas === 'string' && data.notas.trim() !== '' ? data.notas : null;
+    const servicios = data.servicios.map((s) => s.nombre).join(' + ');
+    const sinHora = t('Card.sinHora');
 
     cuerpo = (
       <>
         {error !== null && (
-          <p role="status" style={{ margin: 0, fontSize: 14, color: agendaColors.sub }}>
+          <p role="status" style={{ margin: '0 0 16px', fontSize: 14, color: agendaColors.sub }}>
             {t('Detalle.errorRefresco')}
           </p>
         )}
-        <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Dato etiqueta={t('Detalle.fecha')}>{dia === null ? t('Card.sinHora') : etiquetaDeFecha(dia, locale)}</Dato>
-          <Dato etiqueta={t('Detalle.hora')}>
-            {inicio === null ? t('Card.sinHora') : fin === null ? inicio : `${inicio} – ${fin.hora}`}
-            {fin?.diaSiguiente === true && (
-              <span style={{ marginLeft: 6, fontSize: 12, color: agendaColors.sub }}>{t('Card.diaSiguiente')}</span>
-            )}
-          </Dato>
-          <Dato etiqueta={t('Detalle.estado')}>
-            <span style={{ fontSize: 13, fontWeight: 600, padding: '2px 8px', borderRadius: 999, color: estado.fg, background: estado.bg }}>
-              {t(`Estado.${estado.clave}`)}
-            </span>
-          </Dato>
-          <Dato etiqueta={t('Detalle.cliente')}>
-            <span dir="auto">{nombre === '' ? t('Card.sinNombre') : nombre}</span>
-          </Dato>
-          {data.servicios.length > 0 && (
-            <Dato etiqueta={t('Detalle.servicios')}>
-              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {data.servicios.map((s) => (
-                  <li key={s.id} dir="auto" style={textoLargo}>
-                    {s.nombre}
-                  </li>
-                ))}
-              </ul>
-            </Dato>
-          )}
-          {data.promo !== null && (
-            <Dato etiqueta={t('Detalle.promo')}>
-              <span dir="auto">{data.promo.nombre}</span>
-            </Dato>
-          )}
-          <Dato etiqueta={t('Detalle.notas')}>
-            {notas === null ? (
-              <span style={{ color: agendaColors.sub }}>{t('Detalle.sinNotas')}</span>
-            ) : (
-              <span data-testid="detalle-notas" dir="auto" style={{ display: 'block', whiteSpace: 'pre-wrap', ...textoLargo }}>
-                {notas}
+        {notas !== null && <NotasDelTurnoPro notas={notas} />}
+        {data.promo !== null && (
+          <Campo etiqueta={t('Detalle.promo')}>
+            <div style={{ ...caja, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  flexShrink: 0, fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase',
+                  color: agendaColors.success, backgroundColor: agendaColors.successBg, borderRadius: 8, padding: '2px 6px',
+                }}
+              >
+                {t('Detalle.promo')}
               </span>
+              <span dir="auto" style={{ ...textoLargo, fontStyle: 'italic' }}>
+                {data.promo.nombre}
+              </span>
+            </div>
+          </Campo>
+        )}
+        {servicios !== '' && (
+          <Campo etiqueta={t('Detalle.servicios')}>
+            <div dir="auto" style={{ ...caja, ...textoLargo }}>
+              {servicios}
+            </div>
+          </Campo>
+        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Campo etiqueta={t('Detalle.hora')} ancho>
+            <div style={{ ...caja, fontFamily: agendaFontSerif, fontSize: 18, whiteSpace: 'nowrap' }}>
+              {inicio === null ? sinHora : (hora12(inicio) ?? sinHora)}
+            </div>
+          </Campo>
+          <Campo etiqueta={t('Detalle.hasta')} ancho>
+            <div style={{ ...caja, fontFamily: agendaFontSerif, fontSize: 18, whiteSpace: 'nowrap' }}>
+              {fin === null ? sinHora : (hora12(fin.hora) ?? sinHora)}
+            </div>
+            {fin?.diaSiguiente === true && (
+              <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: agendaColors.sub }}>{t('Card.diaSiguiente')}</span>
             )}
-          </Dato>
-        </dl>
+          </Campo>
+        </div>
       </>
     );
   }
@@ -192,15 +220,39 @@ export function DetalleTurnoPro() {
         }}
       >
         <ProHeader />
-        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '4px 20px 0', display: 'flex', flexDirection: 'column' }}>
           {volver}
-          <h1
-            ref={titulo}
-            tabIndex={-1}
-            style={{ margin: 0, fontSize: 22, fontFamily: agendaFontSerif, color: agendaColors.strong, outline: 'none' }}
-          >
-            {t('Detalle.titulo')}
-          </h1>
+          <div style={{ padding: '12px 0 18px' }}>
+            {turno !== null && (
+              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: agendaColors.primaryDeep, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                {t('Detalle.etiqueta', { fecha: dia === null ? t('Card.sinHora') : etiquetaDeFecha(dia, locale) })}
+              </p>
+            )}
+            <h1
+              ref={titulo}
+              tabIndex={-1}
+              dir="auto"
+              style={{
+                margin: 0, fontSize: 26, fontWeight: 400, lineHeight: 1.15, fontFamily: agendaFontSerif, color: agendaColors.strong,
+                outline: 'none', overflowWrap: 'anywhere',
+              }}
+            >
+              {turno === null ? t('Detalle.titulo') : nombre === '' ? t('Card.sinNombre') : nombre}
+            </h1>
+            {enCurso && (
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 700, color: agendaColors.amberFg,
+                    textTransform: 'uppercase', letterSpacing: 0.3, backgroundColor: agendaColors.amberBg, borderRadius: 8, padding: '2px 7px',
+                  }}
+                >
+                  <span style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: agendaColors.amber }} />
+                  {t('Estado.en_curso')}
+                </span>
+              </div>
+            )}
+          </div>
           {cuerpo}
         </div>
       </main>

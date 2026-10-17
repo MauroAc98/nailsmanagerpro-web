@@ -123,3 +123,12 @@ export function rangoPermitido(desde: string, hasta: string): boolean {
   if (dias === null) return false;
   return desde >= FECHA_MINIMA && dias >= 0 && dias <= MAX_DIAS_RANGO - 1;
 }
+
+// "09:30" -> "9:30 a. m. hs", el mismo formato de hora que la pantalla de editar
+// turno de la titular. Devuelve null si la hora no es válida.
+export function hora12(hora: string): string | null {
+  const m = typeof hora === 'string' ? HORA.exec(hora) : null;
+  if (m === null || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  const h = Number(m[1]);
+  return `${h % 12 || 12}:${m[2]} ${h >= 12 ? 'p. m.' : 'a. m.'} hs`;
+}
