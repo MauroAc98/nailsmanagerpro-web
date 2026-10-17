@@ -8,6 +8,32 @@
     "reintentar": "Tentar novamente",
     "cerrarSesion": "Sair da conta"
   },
+  "CampoPassword": {
+    "mostrar": "Mostrar senha",
+    "ocultar": "Ocultar senha"
+  },
+  "LoginPage": {
+    "titulo": "Entre na sua conta",
+    "email": "E-mail",
+    "password": "Senha",
+    "entrar": "Entrar",
+    "entrando": "Entrando",
+    "olvide": "Esqueci minha senha",
+    "avisoExpired": "Sua sessão expirou. Entre novamente para continuar.",
+    "avisoRevoked": "Sua sessão foi encerrada. Entre novamente para continuar.",
+    "camposRequeridos": "Preencha o e-mail e a senha."
+  },
+  "CambiarPassword": {
+    "titulo": "Escolha uma nova senha",
+    "explicacion": "Por segurança, você precisa trocar a senha antes de continuar. Use pelo menos 10 caracteres.",
+    "nueva": "Nova senha",
+    "confirmar": "Repita a nova senha",
+    "guardar": "Salvar senha",
+    "guardando": "Salvando",
+    "cerrarSesion": "Sair da conta",
+    "corta": "A senha precisa ter pelo menos 10 caracteres.",
+    "noCoincide": "As senhas não coincidem."
+  },
   "Errores": {
     "invalidCredentials": "O e-mail ou a senha não estão corretos.",
     "sessionRevoked": "Sua sessão terminou. Entre novamente.",
