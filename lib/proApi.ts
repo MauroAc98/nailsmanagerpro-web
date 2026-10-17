@@ -36,6 +36,9 @@ export const HEADER_VINCULO = 'X-Vinculo-Id';
 // que leer): así un response tardío de un negocio anterior se puede descartar.
 const RUTA_CON_VINCULO = /^\/?pro\/(turnos|servicios)(\/|$)/;
 
+// Rutas cuyo cuerpo lleva contraseñas o el código de recuperación.
+const RUTA_CON_CREDENCIALES = /^\/?pro\/(login|cambiar-password|forgot-password|reset-password)$/;
+
 // Mismo formato que valida el backend; todo lo demás es un error de programación.
 const VINCULO_VALIDO = /^[1-9]\d{0,17}$/;
 
@@ -141,8 +144,12 @@ proApi.interceptors.response.use(
       }
     }
 
-    // El error rechazado viaja a console.error / telemetría: no debe llevar el token.
+    // El error rechazado viaja a console.error / telemetría: no debe llevar el token...
     error.config?.headers?.delete('Authorization');
+    // ...ni la contraseña (o el código de recuperación) que iba en el cuerpo.
+    if (error.config && RUTA_CON_CREDENCIALES.test(rutaSinQuery(error.config.url))) {
+      error.config.data = undefined;
+    }
     return Promise.reject(error);
   },
 );

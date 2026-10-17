@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type AxiosPromise, type InternalAxiosRequestConfig } from 'axios';
 import proApi, { proErrorDe } from './proApi';
 
 const adapterOriginal = proApi.defaults.adapter;
@@ -379,6 +379,55 @@ describe('proApi — el rechazo no filtra el token', () => {
 
     expect(sesionExpirada).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(error.config?.headers)).not.toContain('tok-secreto');
+  });
+});
+
+describe('proApi — el rechazo no deja contraseñas en el error', () => {
+  const CUERPOS: [string, object][] = [
+    ['/pro/login', { email: 'a@b.c', password: 'clave-secreta-1' }],
+    ['/pro/cambiar-password', { password: 'clave-secreta-1', password_confirmation: 'clave-secreta-1' }],
+    ['/pro/reset-password', { email: 'a@b.c', code: '123456', password: 'clave-secreta-1', password_confirmation: 'clave-secreta-1' }],
+    ['/pro/forgot-password', { email: 'a@b.c' }],
+  ];
+
+  it.each(CUERPOS)('%s: error.config.data se borra tras un rechazo del servidor', async (url, cuerpo) => {
+    responderCon(422, { errors: { password: ['x'] } });
+    const adapterConRespuesta = proApi.defaults.adapter as (c: InternalAxiosRequestConfig) => AxiosPromise;
+    let viajo: unknown;
+    proApi.defaults.adapter = (config: InternalAxiosRequestConfig) => {
+      viajo = config.data; // el cuerpo sí sale hacia el servidor
+      return adapterConRespuesta(config);
+    };
+
+    const error = (await proApi.post(url, cuerpo).catch((e: unknown) => e)) as AxiosError;
+
+    expect(JSON.parse(viajo as string)).toEqual(cuerpo);
+    expect(error.config?.data).toBeUndefined();
+    expect(error.response?.config.data).toBeUndefined();
+    expect(JSON.stringify(error.config)).not.toContain('clave-secreta-1');
+    expect(proErrorDe(error).kind).toBe('validation');
+  });
+
+  it.each(CUERPOS)('%s: también tras un error de red (sin respuesta)', async (url, cuerpo) => {
+    sinRespuesta();
+
+    const error = (await proApi.post(url, cuerpo).catch((e: unknown) => e)) as AxiosError;
+
+    expect(error.config?.data).toBeUndefined();
+    expect(proErrorDe(error)).toEqual({ kind: 'network' });
+  });
+
+  it('con query string en la URL sigue limpiando el cuerpo', async () => {
+    responderCon(401, { message: 'Las credenciales son incorrectas.' });
+    const error = (await proApi.post('/pro/login?x=1', { password: 'clave-secreta-1' }).catch((e: unknown) => e)) as AxiosError;
+    expect(error.config?.data).toBeUndefined();
+  });
+
+  it('una ruta sin credenciales conserva su cuerpo (la limpieza es selectiva)', async () => {
+    responderCon(500, { message: 'x' });
+    const error = (await proApi.post('/pro/logout', { motivo: 'prueba' }).catch((e: unknown) => e)) as AxiosError;
+    expect(error.config?.data).toBeDefined();
+    expect(String(error.config?.data)).toContain('prueba');
   });
 });
 
