@@ -5,17 +5,37 @@ import {
   ADMIN_HOST,
   ADMIN_PAGES,
   APP_HOST,
+  PRO_HOST,
   RESERVAR_HOST,
   esHostInterno,
   esRutaUso,
   normalizarHost,
+  tienePrefijoPro,
 } from './hosts';
 
 describe('hosts — constantes', () => {
-  it('son los tres dominios de producción', () => {
+  it('son los cuatro dominios de producción', () => {
     expect(ADMIN_HOST).toBe('admin.turnetto.com');
     expect(APP_HOST).toBe('app.turnetto.com');
     expect(RESERVAR_HOST).toBe('reservar.turnetto.com');
+    expect(PRO_HOST).toBe('profesionales.turnetto.com');
+  });
+});
+
+describe('tienePrefijoPro', () => {
+  it.each([
+    ['/pro', true],
+    ['/pro/', true],
+    ['/pro/login', true],
+    ['/pro/agenda/123', true],
+    ['/prox', false],
+    ['/professionals', false],
+    ['/pro-manifest.json', false],
+    ['/', false],
+    ['/agenda/pro', false],
+    ['', false],
+  ])('%j -> %s', (pathname, esperado) => {
+    expect(tienePrefijoPro(pathname)).toBe(esperado);
   });
 });
 

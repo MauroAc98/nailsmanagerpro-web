@@ -223,6 +223,147 @@ describe('middleware — host interno/dev (localhost, 127.0.0.1, cualquier puert
   });
 });
 
+// ---------------------------------------------------------------------------
+// profesionales.turnetto.com — portal de profesionales. Mismo proceso/build que
+// los demás; TODO el portal vive bajo el prefijo /pro (app/(profesionales)/pro),
+// así que el rewrite es "agregar /pro adelante" (estilo reservar). /pro* no
+// existe en ningún otro host externo.
+// ---------------------------------------------------------------------------
+describe('middleware — profesionales.turnetto.com, rewrite al prefijo /pro', () => {
+  const H = 'profesionales.turnetto.com';
+
+  it.each([
+    ['raíz', '/', `http://${H}/pro`],
+    ['login', '/login', `http://${H}/pro/login`],
+    ['agenda con id', '/agenda/123', `http://${H}/pro/agenda/123`],
+    ['turno', '/turnos/12', `http://${H}/pro/turnos/12`],
+    ['conserva la query', '/agenda/123?x=1', `http://${H}/pro/agenda/123?x=1`],
+    ['una ruta del tenant nunca se sirve tal cual', '/configuracion', `http://${H}/pro/configuracion`],
+  ])('%s (%s)', (_nombre, path, destino) => {
+    verificar(path, H, { tipo: 'rewrite', destino });
+  });
+
+  it('es idempotente: una ruta que ya trae /pro no se duplica', () => {
+    verificar('/pro/login', H, { tipo: 'pasa' });
+    verificar('/pro', H, { tipo: 'pasa' });
+  });
+
+  it('fuerza http: aunque el request llegue por https', () => {
+    const req = new NextRequest(new URL('https://profesionales.turnetto.com/login'), { headers: { host: H } });
+    expect(middleware(req).headers.get('x-middleware-rewrite')).toBe(`http://${H}/pro/login`);
+  });
+
+  it.each(['PROFESIONALES.TURNETTO.COM', 'profesionales.turnetto.com:443', 'Profesionales.Turnetto.com:3000', 'profesionales.turnetto.com.'])(
+    'el host %s se normaliza y es el portal',
+    (host) => {
+      const res = middleware(requestA('/login', host));
+      expect(res.headers.get('x-middleware-rewrite')).toMatch(/\/pro\/login$/);
+    },
+  );
+
+  it('un host que solo empieza igual NO es el portal (no matchea por prefijo de texto)', () => {
+    const evil = 'profesionales.turnetto.com.evil.com';
+    verificar('/login', evil, { tipo: 'pasa' });
+    verificar('/pro/x', evil, { tipo: '404' });
+  });
+});
+
+describe('middleware — profesionales.turnetto.com, estáticos y mapa de assets', () => {
+  const H = 'profesionales.turnetto.com';
+
+  it.each([
+    ['manifest', '/manifest.json', `http://${H}/pro-manifest.json`],
+    ['icon-192', '/icon-192.png', `http://${H}/pro-icon-192.png`],
+    ['icon-512', '/icon-512.png', `http://${H}/pro-icon-512.png`],
+  ])('%s se mapea al asset propio del portal', (_nombre, path, destino) => {
+    verificar(path, H, { tipo: 'rewrite', destino });
+  });
+
+  it.each(['/sw.js', '/_next/static/x.js', '/splash/a.png', '/pro-icon-192.png', '/pro-manifest.json', '/workbox-965a1397.js', '/favicon.ico'])(
+    '%s pasa sin tocar',
+    (path) => {
+      verificar(path, H, { tipo: 'pasa' });
+    },
+  );
+
+  // Un punto en el último segmento NO alcanza para ser "estático" en este host:
+  // /agenda/1.x pasaba sin prefijo y Next resolvía la página dinámica del
+  // TENANT (/agenda/[id]) en el origen que guarda el token del portal.
+  it.each([
+    '/agenda/1.x',
+    '/agenda/1.json',
+    '/clientes/a.b',
+    '/login/slug.x',
+    '/configuracion/servicios/x.y',
+    '/admin/uso/1.x',
+    '/splash.x/a.png',
+    '/splashy/a.png',
+    '/splash/sub/a.png',
+    '/_nextx/a.js',
+  ])('%s con punto en el último segmento igual se reescribe a /pro (nunca pasa)', (path) => {
+    verificar(path, H, { tipo: 'rewrite', destino: `http://${H}/pro${path}` });
+  });
+
+  it('conserva la query al reescribir un path con punto', () => {
+    verificar('/agenda/1.x?a=b', H, { tipo: 'rewrite', destino: `http://${H}/pro/agenda/1.x?a=b` });
+  });
+
+  it.each(['/logo-turnetto.png', '/default_bg.jpg', '/favicon.ico', '/badge-96.png', '/splash/apple-splash-1170-2532.png', '/_next/static/chunks/a.b.js'])(
+    'el archivo real de public/ %s pasa sin tocar',
+    (path) => {
+      verificar(path, H, { tipo: 'pasa' });
+    },
+  );
+
+  it('el manifest de app.turnetto.com no cambia', () => {
+    verificar('/manifest.json', 'app.turnetto.com', { tipo: 'pasa' });
+  });
+});
+
+describe('middleware — /pro* no existe fuera del host del portal', () => {
+  it.each(['/pro', '/pro/', '/pro/login', '/pro/agenda/1'])('app.turnetto.com %s -> 404', (path) => {
+    verificar(path, 'app.turnetto.com', { tipo: '404' });
+  });
+
+  // Incluye segmentos con punto: el bypass de estáticos de admin los dejaba
+  // pasar hasta la página dinámica del portal.
+  it.each(['/pro', '/pro/', '/pro/login', '/pro/turnos/1.x', '/pro/x.y', '/pro/agenda/1.json'])('admin.turnetto.com %s -> 404', (path) => {
+    verificar(path, 'admin.turnetto.com', { tipo: '404' });
+  });
+
+  it('reservar.turnetto.com /pro/login NO es el portal: sigue siendo el slug "pro" de reservar', () => {
+    verificar('/pro/login', 'reservar.turnetto.com', {
+      tipo: 'rewrite',
+      destino: 'http://reservar.turnetto.com/reservar/pro/login',
+    });
+  });
+
+  it.each(['otro.example.org', 'turnetto.com', 'www.turnetto.com', '203.0.113.7'])('host externo desconocido %s: /pro/x -> 404', (host) => {
+    verificar('/pro/x', host, { tipo: '404' });
+    verificar('/pro', host, { tipo: '404' });
+  });
+
+  it.each(['localhost:3000', 'localhost', '127.0.0.1:3000'])('host interno %s: /pro/login pasa sin 404 ni rewrite', (host) => {
+    verificar('/pro/login', host, { tipo: 'pasa' });
+    verificar('/pro', host, { tipo: 'pasa' });
+  });
+
+  describe.each(['app.turnetto.com', 'otro.example.org', 'localhost:3000'])('host %s', (host) => {
+    it.each(['/professionals', '/prox', '/pro-manifest.json'])('%s no se confunde con /pro* (pasa)', (path) => {
+      verificar(path, host, { tipo: 'pasa' });
+    });
+  });
+
+  it('reservar.turnetto.com: /pro-manifest.json es un estático y pasa; /prox es un slug', () => {
+    verificar('/pro-manifest.json', 'reservar.turnetto.com', { tipo: 'pasa' });
+    verificar('/prox', 'reservar.turnetto.com', { tipo: 'rewrite', destino: 'http://reservar.turnetto.com/reservar/prox' });
+  });
+
+  it('admin.turnetto.com: /pro-manifest.json es un estático y pasa (no es /pro*)', () => {
+    verificar('/pro-manifest.json', 'admin.turnetto.com', { tipo: 'pasa' });
+  });
+});
+
 describe('middleware — matcher', () => {
   const [patron] = config.matcher;
   const re = new RegExp(`^${patron}$`);
