@@ -46,9 +46,10 @@ describe('CampoPassword', () => {
     expect(input).toHaveAttribute('aria-describedby', 'err');
   });
 
-  it('deshabilitado bloquea el campo', () => {
-    const { input } = montar({ disabled: true });
-    expect(input).toBeDisabled();
+  it('soloLectura bloquea la edición sin sacarle el foco al campo', () => {
+    const { input } = montar({ soloLectura: true });
+    expect(input).toHaveAttribute('readonly');
+    expect(input).not.toBeDisabled();
   });
 
   it('no escribe el valor en ningún atributo ni en el texto', () => {

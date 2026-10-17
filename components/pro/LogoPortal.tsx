@@ -1,14 +1,12 @@
-import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
+'use client';
 
-// Marca del portal: texto simple provisorio. El logo definitivo se incorpora
-// más adelante (P13) sin cambiar quién lo usa.
+import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+
+// Marca del portal (public/pro-logo.png, 256 px). Tamaño fijo en width/height:
+// reserva el espacio y no hay salto de layout al cargar. `priority` porque es
+// lo primero que se ve en las pantallas de ingreso.
 export function LogoPortal() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{ fontFamily: agendaFontSerif, fontSize: 28, fontWeight: 600, color: agendaColors.primaryDeep }}
-    >
-      Turnetto
-    </div>
-  );
+  const t = useTranslations('profesionales.LogoPortal');
+  return <Image src="/pro-logo.png" alt={t('alt')} width={96} height={96} priority style={{ borderRadius: 20 }} />;
 }

@@ -56,7 +56,11 @@ export function LoginProForm() {
     setEnviando(true);
     try {
       const resultado = await useProAuthStore.getState().login(correo, password);
-      if (montado.current) setError(resultado);
+      if (montado.current) {
+        setError(resultado);
+        // Solo la contraseña: el correo se conserva para reintentar.
+        if (resultado?.kind === 'invalidCredentials') setPassword('');
+      }
     } finally {
       enCurso.current = false;
       if (montado.current) setEnviando(false);
@@ -73,7 +77,7 @@ export function LoginProForm() {
           {aviso === 'expired' ? t('avisoExpired') : t('avisoRevoked')}
         </p>
       )}
-      <form onSubmit={enviar} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <form onSubmit={enviar} noValidate aria-busy={enviando} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
           <label htmlFor="pro-login-email" style={{ fontSize: 14, fontWeight: 600, color: agendaColors.strong }}>
             {t('email')}
@@ -87,7 +91,7 @@ export function LoginProForm() {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            disabled={enviando}
+            readOnly={enviando}
             aria-invalid={hayError ? true : undefined}
             aria-describedby={hayError ? ID_ERROR : undefined}
             style={{
@@ -111,7 +115,7 @@ export function LoginProForm() {
           autoComplete="current-password"
           error={hayError}
           describedBy={hayError ? ID_ERROR : undefined}
-          disabled={enviando}
+          soloLectura={enviando}
         />
         {faltanCampos && (
           <p id={ID_ERROR} role="alert" style={{ margin: 0, fontSize: 14, color: agendaColors.danger }}>

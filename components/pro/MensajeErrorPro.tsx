@@ -9,21 +9,17 @@ interface Props {
   error: ProError;
   id: string;
   // Cuenta ya calculada por quien también la usa (p. ej. para deshabilitar el
-  // envío). Sin ella el componente lleva su propia cuenta.
+  // envío). Si llega, este componente NO arranca su propio temporizador.
   restantes?: number | null;
 }
 
 // Muestra cualquier ProError con el copy de Errores.<kind>. Nunca el `message`
-// del backend. El 429 con espera conocida cuenta hacia atrás.
+// del backend. El texto del alert es estático; la cuenta regresiva del 429 va
+// en un span aria-live="off" para que el lector de pantalla no la lea cada segundo.
 export function MensajeErrorPro({ error, id, restantes }: Props) {
   const t = useTranslations('profesionales.Errores');
-  const propia = useCuentaRegresiva(error);
+  const propia = useCuentaRegresiva(restantes === undefined ? error : null);
   const segundos = restantes === undefined ? propia : restantes;
-
-  const texto =
-    error.kind === 'rateLimited' && segundos !== null && segundos > 0
-      ? t('rateLimitedSegundos', { segundos })
-      : t(error.kind === 'rateLimited' ? 'rateLimited' : error.kind);
 
   return (
     <p
@@ -31,7 +27,13 @@ export function MensajeErrorPro({ error, id, restantes }: Props) {
       role="alert"
       style={{ margin: 0, fontSize: 14, lineHeight: 1.4, color: agendaColors.danger, overflowWrap: 'anywhere' }}
     >
-      {texto}
+      {t(error.kind)}
+      {error.kind === 'rateLimited' && segundos !== null && segundos > 0 && (
+        <>
+          {' '}
+          <span aria-live="off">{t('esperaSegundos', { segundos })}</span>
+        </>
+      )}
     </p>
   );
 }

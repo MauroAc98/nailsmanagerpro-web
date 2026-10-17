@@ -65,17 +65,63 @@ describe('CambiarPasswordProForm', () => {
     expect(screen.getByLabelText('Repetí la contraseña nueva')).toHaveAttribute('aria-describedby', screen.getByRole('alert').id);
   });
 
-  it('validación del servidor: se muestra junto al campo con el copy propio, no el texto del backend', async () => {
-    const error: ProError = { kind: 'validation', fields: { password: ['The password is too common SECRETO'] } };
+  it('validación del servidor sobre la contraseña (igual a la provisoria): copy propio, sin eco del backend', async () => {
+    const error: ProError = { kind: 'validation', fields: { password: ['La nueva contraseña SECRETO'] } };
     cambiarPassword.mockResolvedValue(error);
+    renderWithProviders(<CambiarPasswordProForm />);
+    escribir();
+    await enviar();
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Elegí una contraseña distinta de la provisoria.');
+    expect(screen.queryByText(/SECRETO/)).toBeNull();
+    expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-describedby', screen.getByRole('alert').id);
+    expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('validación del servidor en otro campo: copy genérico atado a la confirmación', async () => {
+    cambiarPassword.mockResolvedValue({ kind: 'validation', fields: { password_confirmation: ['SECRETO'] } });
     renderWithProviders(<CambiarPasswordProForm />);
     escribir();
     await enviar();
 
     expect(screen.getByRole('alert')).toHaveTextContent('Revisá los datos ingresados.');
     expect(screen.queryByText(/SECRETO/)).toBeNull();
-    expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-describedby', screen.getByRole('alert').id);
-    expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Repetí la contraseña nueva')).toHaveAttribute('aria-describedby', screen.getByRole('alert').id);
+  });
+
+  it('429 con espera: deshabilita el envío hasta cumplirse; con 0 segundos queda habilitado', async () => {
+    vi.useFakeTimers();
+    cambiarPassword.mockResolvedValue({ kind: 'rateLimited', retryAfterSec: 30, lockout: false });
+    renderWithProviders(<CambiarPasswordProForm />);
+    escribir();
+    await enviar();
+
+    expect(screen.getByRole('button', { name: 'Guardar contraseña' })).toBeDisabled();
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(screen.getByRole('button', { name: 'Guardar contraseña' })).toBeEnabled();
+    vi.useRealTimers();
+  });
+
+  it('429 con retryAfterSec=0 deja el botón habilitado', async () => {
+    cambiarPassword.mockResolvedValue({ kind: 'rateLimited', retryAfterSec: 0, lockout: false });
+    renderWithProviders(<CambiarPasswordProForm />);
+    escribir();
+    await enviar();
+    expect(screen.getByRole('button', { name: 'Guardar contraseña' })).toBeEnabled();
+  });
+
+  it('mientras guarda los campos quedan de solo lectura y el form figura ocupado', async () => {
+    cambiarPassword.mockImplementation(() => new Promise(() => {}));
+    renderWithProviders(<CambiarPasswordProForm />);
+    escribir();
+    await enviar();
+
+    const campo = screen.getByLabelText('Contraseña nueva');
+    expect(campo).toHaveAttribute('readonly');
+    expect(campo).not.toBeDisabled();
+    expect(campo.closest('form')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('otros errores (red) se muestran con su copy y conservan lo escrito', async () => {

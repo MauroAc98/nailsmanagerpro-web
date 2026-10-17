@@ -12,12 +12,14 @@ interface Props {
   autoComplete: 'current-password' | 'new-password';
   error?: boolean;
   describedBy?: string;
-  disabled?: boolean;
+  // Solo lectura (no disabled): mientras se envía el campo no se edita pero
+  // conserva el foco.
+  soloLectura?: boolean;
 }
 
 // Campo de contraseña con ojo para verla. El valor vive solo en el estado de
 // quien lo usa: no se guarda, no se registra y no se pinta como texto.
-export function CampoPassword({ id, label, value, onChange, autoComplete, error, describedBy, disabled }: Props) {
+export function CampoPassword({ id, label, value, onChange, autoComplete, error, describedBy, soloLectura }: Props) {
   const t = useTranslations('profesionales.CampoPassword');
   const [visible, setVisible] = useState(false);
 
@@ -36,7 +38,7 @@ export function CampoPassword({ id, label, value, onChange, autoComplete, error,
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          disabled={disabled}
+          readOnly={soloLectura}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           style={{
@@ -55,7 +57,6 @@ export function CampoPassword({ id, label, value, onChange, autoComplete, error,
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          disabled={disabled}
           aria-pressed={visible}
           style={{
             position: 'absolute',

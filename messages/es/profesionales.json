@@ -32,7 +32,8 @@
     "guardando": "Guardando",
     "cerrarSesion": "Cerrar sesión",
     "corta": "La contraseña tiene que tener al menos 10 caracteres.",
-    "noCoincide": "Las contraseñas no coinciden."
+    "noCoincide": "Las contraseñas no coinciden.",
+    "igual": "Elegí una contraseña distinta de la provisoria."
   },
   "Errores": {
     "invalidCredentials": "El correo o la contraseña no son correctos.",
@@ -48,6 +49,10 @@
     "rateLimitedSegundos": "Hubo demasiados intentos. Probá de nuevo en {segundos} segundos.",
     "validation": "Revisá los datos ingresados.",
     "network": "No pudimos conectarnos. Revisá tu conexión y probá de nuevo.",
-    "server": "Algo salió mal de nuestro lado. Probá de nuevo en un rato."
+    "server": "Algo salió mal de nuestro lado. Probá de nuevo en un rato.",
+    "esperaSegundos": "Podés reintentar en {segundos} segundos."
+  },
+  "LogoPortal": {
+    "alt": "Turnetto, portal de profesionales"
   }
 }

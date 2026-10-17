@@ -44,6 +44,30 @@ describe('MensajeErrorPro', () => {
     expect(screen.queryByText(/SQLSTATE/)).toBeNull();
   });
 
+  it('el texto del alert es estático: los segundos van en un span aria-live="off"', () => {
+    renderWithProviders(<MensajeErrorPro error={{ kind: 'rateLimited', retryAfterSec: 90, lockout: true }} id="e" />);
+    const alerta = screen.getByRole('alert');
+    const segundos = alerta.querySelector('[aria-live="off"]') as HTMLElement;
+    expect(segundos).not.toBeNull();
+    expect(segundos).toHaveTextContent('90');
+    const estatico = (alerta.textContent ?? '').replace(segundos.textContent ?? '', '');
+    expect(estatico).toContain(ERRORES.rateLimited);
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(segundos).toHaveTextContent('87');
+    expect((alerta.textContent ?? '').replace(segundos.textContent ?? '', '')).toBe(estatico);
+  });
+
+  it('con `restantes` recibido no arranca su propio temporizador', () => {
+    renderWithProviders(
+      <MensajeErrorPro error={{ kind: 'rateLimited', retryAfterSec: 90, lockout: true }} id="e" restantes={42} />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('42');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('rateLimited con segundos cuenta hacia atrás cada segundo', () => {
     renderWithProviders(<MensajeErrorPro error={{ kind: 'rateLimited', retryAfterSec: 90, lockout: true }} id="e" />);
     expect(screen.getByRole('alert')).toHaveTextContent('en 90 segundos');

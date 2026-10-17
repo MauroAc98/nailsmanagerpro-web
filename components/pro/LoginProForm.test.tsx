@@ -82,6 +82,35 @@ describe('LoginProForm', () => {
     expect(alertas[0]).toHaveTextContent('El correo o la contraseña no son correctos.');
   });
 
+  it('credenciales inválidas: vacía solo la contraseña y conserva el correo', async () => {
+    respuesta({ kind: 'invalidCredentials' });
+    renderWithProviders(<LoginProForm />);
+    escribir();
+    await enviar();
+
+    expect(screen.getByLabelText('Contraseña')).toHaveValue('');
+    expect(screen.getByLabelText('Correo electrónico')).toHaveValue('ana@x.com');
+  });
+
+  it('mientras envía los campos quedan de solo lectura (no deshabilitados) y el form figura ocupado', async () => {
+    let resolver: (v: ProError | null) => void = () => {};
+    login.mockImplementation(() => new Promise((r) => { resolver = r; }));
+    renderWithProviders(<LoginProForm />);
+    escribir();
+    const email = screen.getByLabelText('Correo electrónico');
+    email.focus();
+    await enviar();
+
+    expect(email).toHaveAttribute('readonly');
+    expect(email).not.toBeDisabled();
+    expect(screen.getByLabelText('Contraseña')).toHaveAttribute('readonly');
+    expect(email.closest('form')).toHaveAttribute('aria-busy', 'true');
+
+    await act(async () => {
+      resolver(null);
+    });
+  });
+
   it('429 con espera: cuenta regresiva, envío deshabilitado y se rehabilita al cumplirse', async () => {
     vi.useFakeTimers();
     respuesta({ kind: 'rateLimited', retryAfterSec: 90, lockout: true });
