@@ -36,6 +36,14 @@
     "agenda": "Agenda",
     "cuenta": "Cuenta"
   },
+  "Mes": {
+    "anterior": "Mes anterior",
+    "siguiente": "Mes siguiente",
+    "errorMarcas": "No pudimos cargar los turnos del mes. Igual puedes elegir un día.",
+    "reintentar": "Reintentar",
+    "irAlDia": "Ir al {dia}: {cantidad, plural, one {# turno} other {# turnos}}",
+    "sinTurnos": "Ir al {dia}: sin turnos"
+  },
   "PortalNoDisponible": {
     "titulo": "El portal no está disponible",
     "descripcion": "No pudimos conectar con el portal de profesionales. Probá de nuevo en unos minutos.",

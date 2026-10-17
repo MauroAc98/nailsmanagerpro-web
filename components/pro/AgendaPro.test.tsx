@@ -150,6 +150,21 @@ describe('AgendaPro', () => {
     renderWithProviders(<AgendaPro />);
     expect(screen.queryByTestId('week-day-2026-10-17')).toBeNull();
     expect(screen.queryByRole('list')).toBeNull();
+    expect(screen.getByRole('group', { name: 'octubre de 2026' })).toBeInTheDocument();
+  });
+
+  it('tocar un día del mes vuelve a la vista de día con esa fecha, sin navegar', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [{ fecha: '2026-10-14', cantidad: 2 }], descartados: 0 });
+    useProAgendaStore.getState().setVista('mes');
+    renderWithProviders(<AgendaPro />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /14 de octubre.*2 turnos/ }));
+
+    expect(screen.getByTestId('week-day-2026-10-14')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'octubre de 2026' })).toBeNull();
+    expect(useProAgendaStore.getState().fecha).toBe('2026-10-14');
+    expect(nav.push).not.toHaveBeenCalled();
   });
 
   it('el calendario de la tira lleva a la vista mensual', async () => {

@@ -13,10 +13,10 @@ import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { ListaTurnosDia } from './ListaTurnosDia';
 import { ProHeader } from './ProHeader';
 import { PRO_NAV_ALTURA_AGENDA, ProNav } from './ProNav';
+import { VistaMes } from './VistaMes';
 
-// Agenda del portal: vista de día (encabezado, tira semanal y lista de turnos).
-// La vista mensual la aporta otra rebanada; mientras tanto, con vista 'mes' no se
-// dibuja el día. Los negocios bloqueados no se muestran acá: el guard redirige.
+// Agenda del portal: vista de día (encabezado, tira semanal y lista de turnos) o
+// vista mensual (VistaMes), según el store. Los negocios bloqueados no se muestran acá: el guard redirige.
 export function AgendaPro() {
   const t = useTranslations('profesionales.Agenda');
   const ruta = useRutaPro();
@@ -91,6 +91,7 @@ export function AgendaPro() {
             </div>
           </>
         )}
+        {vista === 'mes' && <VistaMes />}
       </main>
       <ProNav />
     </>
