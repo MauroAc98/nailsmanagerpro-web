@@ -81,6 +81,7 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/AgendaThemeScope$/, // aplica la clase de tema; solo importa store/useThemeStore (preferencia de tema)
   /^store\/useLocaleStore$/, // el portal solo lee `mensajesListos`; no importa nada de sesión ni de datos del salón
   /^theme\/agendaColors$/, // constantes de paleta (variables CSS)
+  /^components\/filtros\/AvatarProfesional$/, // presentacional (foto o iniciales); solo importa theme/* y lib/inicialesProfesional
 ];
 
 const PAQUETES_PERMITIDOS = new Set([
@@ -397,6 +398,9 @@ describe('aislamiento del portal — el escáner', () => {
       ['lib/proveedor (parece pro pero no lo es)', "import x from '@/lib/proveedor';"],
       ['lib/promoEstadoOnline', "import x from '@/lib/promoEstadoOnline';"],
       ['useProfesionalStore por prefijo usePro', "import x from '@/store/useProfesionalStore';"],
+      ['AvatarProfesional con sufijo (otro módulo)', "import x from '@/components/filtros/AvatarProfesionalExtra';"],
+      ['AvatarProfesional de otra carpeta (reserva online)', "import x from '@/components/reservaOnline/AvatarProfesional';"],
+      ['otro componente de filtros', "import x from '@/components/filtros/FiltroProfesional';"],
     ])('%s', (_nombre, fuente) => {
       expect(infracciones(fuente).length).toBeGreaterThan(0);
     });
@@ -419,6 +423,7 @@ describe('aislamiento del portal — el escáner', () => {
       ['AgendaThemeScope (compartido revisado)', "import { AgendaThemeScope } from '@/components/AgendaThemeScope';"],
       ['useLocaleStore (compartido revisado)', "import { useLocaleStore } from '@/store/useLocaleStore';"],
       ['paleta de la agenda (compartido revisado)', "import { agendaColors } from '@/theme/agendaColors';"],
+      ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],
       ['react', "import { useState } from 'react';"],
