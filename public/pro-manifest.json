@@ -1,0 +1,24 @@
+{
+  "name": "Turnetto Profesionales",
+  "short_name": "T. Pro",
+  "description": "Consultá tu agenda de turnos en cada negocio donde trabajás",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5f8a65",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/pro-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pro-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
