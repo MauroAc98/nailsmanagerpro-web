@@ -61,7 +61,7 @@ describe('ServiciosHojaBase', () => {
   const montar = (props: Partial<React.ComponentProps<typeof ServiciosHojaBase>> = {}) => {
     const onClose = vi.fn();
     const vista = renderWithProviders(
-      <ServiciosHojaBase title="Servicio" closeLabel="Cerrar" onClose={onClose} backdropTestId="fondo" {...props}>
+      <ServiciosHojaBase title="Servicio" closeLabel="Cerrar" onClose={onClose} backdropTestId="fondo" accesible {...props}>
         <p>contenido</p>
       </ServiciosHojaBase>,
     );
@@ -76,6 +76,15 @@ describe('ServiciosHojaBase', () => {
     fireEvent.keyDown(dialogo, { key: 'Escape' });
     fireEvent.click(screen.getByTestId('fondo'));
     expect(onClose).toHaveBeenCalledTimes(3);
+  });
+
+  it('sin accesible no hay aria-modal, Escape no cierra y el fondo no se oculta', () => {
+    const { onClose } = montar({ accesible: false });
+    const dialogo = screen.getByRole('dialog', { name: 'Servicio' });
+    expect(dialogo).not.toHaveAttribute('aria-modal');
+    fireEvent.keyDown(dialogo, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId('fondo')).not.toHaveAttribute('aria-hidden');
   });
 
   it('el fondo usa backdropZIndex y la hoja el zIndex recibido', () => {

@@ -47,19 +47,22 @@ interface HojaProps {
   zIndex?: number;
   bottomOffset?: number;
   backdropTestId?: string;
+  // Opt-in del portal (apagado por defecto: la app queda como siempre): diálogo
+  // modal, Escape que cierra y fondo oculto para los lectores de pantalla.
+  accesible?: boolean;
 }
 
 // El BottomSheet usa transform: quien necesite una hoja encima de otra debe
 // montarla como hermana, no dentro (atraparía un position: fixed).
 export function ServiciosHojaBase({
   title, onClose, closeLabel, leading, trailing, centrarTitulo = false, footer, children,
-  backdropZIndex = 39, zIndex, bottomOffset, backdropTestId,
+  backdropZIndex = 39, zIndex, bottomOffset, backdropTestId, accesible = false,
 }: HojaProps) {
   return (
     <>
       <div
         data-testid={backdropTestId}
-        aria-hidden="true"
+        aria-hidden={accesible ? 'true' : undefined}
         onClick={onClose}
         style={{ position: 'fixed', inset: 0, zIndex: backdropZIndex, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
       />
@@ -73,9 +76,9 @@ export function ServiciosHojaBase({
       >
         <div
           role="dialog"
-          aria-modal="true"
+          aria-modal={accesible ? 'true' : undefined}
           aria-label={title}
-          onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
+          onKeyDown={accesible ? (e => { if (e.key === 'Escape') onClose(); }) : undefined}
           style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}
         >
           <div style={{

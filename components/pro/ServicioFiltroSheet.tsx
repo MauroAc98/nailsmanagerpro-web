@@ -99,6 +99,7 @@ export function ServicioFiltroSheet({ abierto, seleccionado, onElegir, onCerrar,
       backdropZIndex={zIndex - 1}
       zIndex={zIndex}
       backdropTestId="fondo-servicio"
+      accesible
     >
       <Contenido seleccionado={seleccionado} onElegir={onElegir} />
     </ServiciosHojaBase>

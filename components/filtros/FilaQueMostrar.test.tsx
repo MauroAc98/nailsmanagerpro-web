@@ -53,3 +53,13 @@ describe('FilaQueMostrar', () => {
     expect(ref.current).toBe(screen.getByRole('button'));
   });
 });
+
+describe('FilaQueMostrar (identidad con main)', () => {
+  it('sin props opcionales renderiza igual que en main', () => {
+    setup();
+    const boton = screen.getByRole('button', { name: 'Profesional: Caro' });
+    expect(boton).toHaveAttribute('type', 'button');
+    expect(boton).not.toHaveAttribute('aria-haspopup');
+    expect(boton.getAttributeNames().sort()).toEqual(['aria-label', 'style', 'type']);
+  });
+});

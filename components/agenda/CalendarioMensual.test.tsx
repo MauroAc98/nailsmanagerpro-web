@@ -51,8 +51,8 @@ describe('CalendarioMensual', () => {
     expect(onMonthChange).toHaveBeenNthCalledWith(2, new Date(2026, 9, 1));
   });
 
-  it('las 7 columnas son flexibles sin ancho mínimo, así la grilla entra en celulares angostos', () => {
-    setup();
+  it('las 7 columnas son flexibles sin ancho mínimo, así la grilla entra en celulares angostos (portal)', () => {
+    setup({ etiquetas: { anterior: 'Mes anterior', siguiente: 'Mes siguiente', dia: (fecha: string) => fecha } });
     const grilla = screen.getByTestId('cal-day-2026-09-23').parentElement as HTMLElement;
     const encabezados = grilla.previousElementSibling as HTMLElement;
     expect(grilla.style.gridTemplateColumns).toBe('repeat(7, minmax(0, 1fr))');
@@ -71,14 +71,14 @@ describe('CalendarioMensual', () => {
   });
 
   it('un día pasado con turnos lleva un punto en vez de la cantidad', () => {
-    setup({ viewDate: new Date(2000, 9, 1), fechaSeleccionada: '2000-10-17', turnosMes: [{ fecha: '2000-10-14', cantidad: 3 }] });
+    setup({ viewDate: new Date(2000, 9, 1), fechaSeleccionada: '2000-10-17', turnosMes: [{ fecha: '2000-10-14', cantidad: 3 }], etiquetas: { anterior: 'Mes anterior', siguiente: 'Mes siguiente', dia: (fecha: string) => fecha } });
     const dia = screen.getByTestId('cal-day-2000-10-14');
     expect(dia).toHaveTextContent(/^14$/);
     expect(dia.querySelector('[data-punto-pasado]')).not.toBeNull();
   });
 
   it('un día de otro mes se marca con data-fuera-del-mes', () => {
-    setup();
+    setup({ etiquetas: { anterior: 'Mes anterior', siguiente: 'Mes siguiente', dia: (fecha: string) => fecha } });
     expect(screen.getByTestId('cal-day-2026-08-31')).toHaveAttribute('data-fuera-del-mes', 'true');
     expect(screen.getByTestId('cal-day-2026-09-01')).not.toHaveAttribute('data-fuera-del-mes');
   });
@@ -150,5 +150,52 @@ describe('CalendarioMensual', () => {
       setup({ viewDate: new Date(1990, 0, 1) });
       expect(screen.getAllByRole('button')[0]).toBeEnabled();
     });
+  });
+});
+
+describe('CalendarioMensual sin props del portal (identidad con main)', () => {
+  it('las grillas usan repeat(7, 1fr) y las celdas no llevan atributos nuevos', () => {
+    const { container } = renderWithProviders(
+      <CalendarioMensual
+        viewDate={new Date(2026, 8, 1)}
+        onMonthChange={vi.fn()}
+        fechaSeleccionada="2026-09-21"
+        turnosMes={[{ fecha: '2026-09-02', cantidad: 2 }]}
+        onDayClick={vi.fn()}
+      />,
+    );
+    const html = container.innerHTML;
+    expect(html).toContain('repeat(7, 1fr)');
+    expect(html).not.toContain('minmax');
+    expect(html).not.toContain('data-fuera-del-mes');
+    expect(html).not.toContain('data-punto-pasado');
+    const celda = screen.getByTestId('cal-day-2026-09-23');
+    expect(celda.tagName).toBe('DIV');
+    expect(celda).not.toHaveAttribute('type');
+    expect(celda).not.toHaveAttribute('aria-label');
+    expect(celda).not.toHaveAttribute('aria-pressed');
+    const [anterior, siguiente] = screen.getAllByRole('button');
+    for (const flecha of [anterior, siguiente]) {
+      expect(flecha).not.toHaveAttribute('aria-label');
+      expect(flecha).not.toHaveAttribute('disabled');
+      expect(flecha.style.minWidth).toBe('');
+      expect(flecha.style.minHeight).toBe('');
+    }
+  });
+
+  it('con etiquetas (portal) las grillas usan minmax(0, 1fr) y marcan fuera del mes', () => {
+    const { container } = renderWithProviders(
+      <CalendarioMensual
+        viewDate={new Date(2026, 8, 1)}
+        onMonthChange={vi.fn()}
+        fechaSeleccionada="2026-09-21"
+        turnosMes={[{ fecha: '2026-09-02', cantidad: 2 }]}
+        onDayClick={vi.fn()}
+        etiquetas={{ anterior: 'Mes anterior', siguiente: 'Mes siguiente', dia: (f) => f }}
+      />,
+    );
+    expect(container.innerHTML).toContain('minmax(0, 1fr)');
+    expect(container.querySelector('[data-fuera-del-mes]')).not.toBeNull();
+    expect(container.querySelector('[data-punto-pasado]')).not.toBeNull();
   });
 });

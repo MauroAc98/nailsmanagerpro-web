@@ -47,6 +47,8 @@ export function CalendarioMensual({
   const todayStr = fechaDeHoy();
   // Con etiquetas cada día es un botón (teclado y lector de pantalla); sin ellas, la celda simple de siempre.
   const Celda = etiquetas ? 'button' : 'div';
+  // minmax(0, 1fr) evita el desborde en celulares angostos del portal; sin etiquetas queda la grilla de siempre.
+  const columnas = etiquetas ? 'repeat(7, minmax(0, 1fr))' : 'repeat(7, 1fr)';
   const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
@@ -113,7 +115,7 @@ export function CalendarioMensual({
       </div>
 
       {/* Day headers — L M M J V S D, semana arranca en lunes como el rediseño */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: columnas, marginBottom: 4 }}>
         {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
           <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: colors.muted, paddingBottom: 4 }}>
             {d}
@@ -122,7 +124,7 @@ export function CalendarioMensual({
       </div>
 
       {/* Day cells */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '2px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: columnas, gap: '2px 0' }}>
         {cells.map((cell, idx) => {
           const cellStr    = formatCellDate(cell.date);
           const isSelected = cellStr === fechaSeleccionada;
@@ -135,7 +137,7 @@ export function CalendarioMensual({
             <Celda
               key={idx}
               data-testid={`cal-day-${cellStr}`}
-              data-fuera-del-mes={cell.isCurrentMonth ? undefined : 'true'}
+              data-fuera-del-mes={etiquetas && !cell.isCurrentMonth ? 'true' : undefined}
               aria-disabled={deshabilitado || undefined}
               onClick={() => { if (!deshabilitado) onDayClick(cellStr); }}
               {...(etiquetas && {
@@ -199,7 +201,7 @@ export function CalendarioMensual({
 
                 {/* Past-day dot — plain, no count */}
                 {count > 0 && esPasado && !isSelected && (
-                  <div data-punto-pasado="" style={{
+                  <div {...(etiquetas && { 'data-punto-pasado': '' })} style={{
                     position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
                     width: 4, height: 4, borderRadius: 2, backgroundColor: colors.divider,
                   }} />

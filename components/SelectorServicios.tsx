@@ -9,7 +9,6 @@ import { useCategoriasServicioStore } from '@/store/useCategoriaServicioStore';
 import { agruparServiciosPorCategoria } from '@/lib/agruparServiciosPorCategoria';
 import { deriveEstadoCategoria, type EstadoCategoria } from '@/lib/deriveEstadoCategoria';
 import { formatearDuracion } from '@/lib/duracion';
-import { ListaServiciosBase } from '@/components/filtros/ServiciosSheetBase';
 
 // Picker de servicios compartido — reemplaza tres implementaciones que
 // habían divergido de forma independiente: `configuracion/SelectorServiciosPorCategoria`
@@ -68,6 +67,24 @@ function ServicioCheckbox({ checked }: { checked: boolean }) {
   );
 }
 
+// Indicador radio-style de `mode: 'single'` — deliberadamente distinto del
+// checkbox de `mode: 'multi'` (spec del mockup: un usuario debe poder
+// distinguir "elegí uno" de "elegí varios" de un vistazo).
+function RadioIndicator({ selected }: { selected: boolean }) {
+  return (
+    <span style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      width: 20, height: 20, borderRadius: 10,
+      border: `2px solid ${selected ? colors.primarySolid : colors.divider}`,
+      backgroundColor: colors.surface,
+    }}>
+      {selected && (
+        <span style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primarySolid }} />
+      )}
+    </span>
+  );
+}
+
 export function SelectorServicios({ servicios, mode, selectedIds, onChange, hideAll, todosLabel, fotoCategoria, detalle }: Props) {
   const t = useTranslations('common.SelectorServicios');
 
@@ -99,11 +116,17 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
 
   // Buscador solo en `mode: 'multi'` (mockup no lo incluyó en single — la
   // pantalla que usa single ya tiene su propia búsqueda por otros campos).
-  const filtroNormalizado = filtro.trim().toLowerCase();
+  const filtroNormalizado = mode === 'multi' ? filtro.trim().toLowerCase() : '';
   const coincide = (s: Servicio) => s.nombre.toLowerCase().includes(filtroNormalizado);
   const claveGrupo = (id: number | null) => (id === null ? 'sin-categoria' : String(id));
 
   const handleSelectServicio = (id: number) => {
+    if (mode === 'single') {
+      // Radio semantics: tocar el ya seleccionado lo limpia; tocar otro
+      // reemplaza cualquier selección previa.
+      onChange(selectedIds.includes(id) ? [] : [id]);
+      return;
+    }
     onChange(selectedIds.includes(id) ? selectedIds.filter(i => i !== id) : [...selectedIds, id]);
   };
 
@@ -143,30 +166,6 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
     );
   }
 
-  // Selección única (hoja de filtros): la lista es la pieza compartida con el
-  // portal de profesionales; acá solo se le inyecta lo que sale del store.
-  if (mode === 'single') {
-    return (
-      <ListaServiciosBase
-        servicios={serviciosActivos}
-        grupos={hayServicioCategorizado ? grupos : null}
-        seleccionadoId={selectedIds[0] ?? null}
-        // Radio semantics: tocar el ya seleccionado lo limpia; tocar otro
-        // reemplaza cualquier selección previa; "Todos" (null) limpia.
-        onElegir={id => onChange(id === null || selectedIds.includes(id) ? [] : [id])}
-        hideTodos={hideAll}
-        todosLabel={t('filterAll')}
-        sinCategoriaLabel={t('sinCategoria')}
-        expandLabel={t('expandCategory')}
-        collapseLabel={t('collapseCategory')}
-        fotoCategoria={fotoCategoria}
-        detalle={detalle ?? (s => (
-          <span style={{ fontSize: 12, color: colors.subtext, flexShrink: 0 }}>{formatearDuracion(s.duracion_minutos)}</span>
-        ))}
-      />
-    );
-  }
-
   const serviciosSeleccionados = serviciosActivos.filter(s => selectedIds.includes(s.id));
 
   const renderFila = (s: Servicio) => (
@@ -179,7 +178,9 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
         background: 'none', border: 'none',
       }}
     >
-      <ServicioCheckbox checked={selectedIds.includes(s.id)} />
+      {mode === 'multi'
+        ? <ServicioCheckbox checked={selectedIds.includes(s.id)} />
+        : <RadioIndicator selected={selectedIds.includes(s.id)} />}
       <span style={{
         flex: 1, minWidth: 0, fontSize: 14, color: colors.text,
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -190,7 +191,27 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
     </button>
   );
 
-  const filaTodosMulti = todosLabel && (
+  // Fila "Todos" — solo en `mode: 'single'`, siempre primera, limpia la
+  // selección (mirror del patrón `filterAll` ya usado en GastosPage /
+  // IngresosPage / HistorialClienteSheetHost para "ningún filtro
+  // aplicado", con concordancia de género para "servicios").
+  const filaTodos = mode === 'single' && !hideAll && (
+    <button
+      onClick={() => onChange([])}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+        padding: '10px 8px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+        background: 'none', border: 'none',
+      }}
+    >
+      <RadioIndicator selected={selectedIds.length === 0} />
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: colors.text }}>
+        {t('filterAll')}
+      </span>
+    </button>
+  );
+
+  const filaTodosMulti = mode === 'multi' && todosLabel && (
     <button
       onClick={() => onChange([])}
       style={{
@@ -206,7 +227,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
     </button>
   );
 
-  const pillSeleccionados = serviciosSeleccionados.length > 0 && (
+  const pillSeleccionados =mode === 'multi' && serviciosSeleccionados.length > 0 && (
     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
       <span style={{
         borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700,
@@ -217,7 +238,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
     </div>
   );
 
-  const buscador = (
+  const buscador = mode === 'multi' && (
     <div style={{ padding: 10, borderBottom: `1px solid ${colors.hairline}`, position: 'relative' }}>
       <Search size={16} strokeWidth={2} color={colors.muted} style={{ position: 'absolute', left: 22, top: '50%', transform: 'translateY(-50%)' }} />
       <input
@@ -233,7 +254,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
     </div>
   );
 
-  const chipsSeleccionados = serviciosSeleccionados.length > 0 && (
+  const chipsSeleccionados = mode === 'multi' && serviciosSeleccionados.length > 0 && (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 10, borderBottom: `1px solid ${colors.hairline}` }}>
       {serviciosSeleccionados.map(s => (
         <button
@@ -268,6 +289,7 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
           {chipsSeleccionados}
           <div style={{ padding: '4px 8px 8px' }}>
             {filaTodosMulti}
+            {filaTodos}
             {visibles.length === 0 ? (
               <p style={{ padding: 20, textAlign: 'center', fontSize: 13, color: colors.subtext, margin: 0 }}>
                 {t('noResults')}
@@ -299,6 +321,11 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
       }}>
         {buscador}
         {chipsSeleccionados}
+        {mode === 'single' && (
+          <div style={{ padding: '4px 8px 0' }}>
+            {filaTodos}
+          </div>
+        )}
         {filaTodosMulti && (
           <div style={{ padding: '4px 8px 0' }}>
             {filaTodosMulti}
@@ -317,13 +344,13 @@ export function SelectorServicios({ servicios, mode, selectedIds, onChange, hide
           // "Sin categoría" (id null) nunca tiene checkbox de grupo; en
           // `mode: 'single'` ninguna categoría lo tiene (no hay bulk-toggle
           // en selección única).
-          const estado = grupo.id !== null
+          const estado = (mode === 'multi' && grupo.id !== null)
             ? deriveEstadoCategoria(activosIds, selectedIds)
             : null;
           const nombre = grupo.id === null ? t('sinCategoria') : grupo.nombre;
 
           return (
-            <div key={clave} style={{ borderTop: index > 0 ? `1px solid ${colors.hairline}` : 'none' }}>
+            <div key={clave} style={{ borderTop: index > 0 || mode === 'single' ? `1px solid ${colors.hairline}` : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px' }}>
                 {estado !== null && (
                   <button
