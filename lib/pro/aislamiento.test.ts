@@ -75,7 +75,12 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/pro(\/.+)?$/,
   /^app\/\(profesionales\)(\/.+)?$/,
   // Módulos compartidos revisados: se agregan ACÁ, uno por uno, junto con el
-  // slice que los necesita (Spinner, WeekStrip, BottomSheet...).
+  // slice que los necesita (WeekStrip, BottomSheet...). Cada uno se revisó para
+  // confirmar que no arrastra token, eventos ni datos del salón:
+  /^components\/Spinner$/, // presentacional; solo importa theme/agendaColors y theme/colors
+  /^components\/AgendaThemeScope$/, // aplica la clase de tema; solo importa store/useThemeStore (preferencia de tema)
+  /^store\/useLocaleStore$/, // el portal solo lee `mensajesListos`; no importa nada de sesión ni de datos del salón
+  /^theme\/agendaColors$/, // constantes de paleta (variables CSS)
 ];
 
 const PAQUETES_PERMITIDOS = new Set([
@@ -235,6 +240,14 @@ describe('aislamiento del portal — escaneo de módulos reales', () => {
         'lib/pro/fechaHora.ts',
         'services/proService.ts',
         'hooks/useRutaPro.ts',
+        'lib/pro/acceso.ts',
+        'lib/pro/resolveProRoute.ts',
+        'store/useProAuthStore.ts',
+        'components/pro/ProGuard.tsx',
+        'components/pro/PortalNoDisponible.tsx',
+        'app/(profesionales)/pro/layout.tsx',
+        'app/(profesionales)/pro/page.tsx',
+        'app/(profesionales)/pro/no-disponible/page.tsx',
       ]),
     );
     expect(modulos.some((m) => ES_TEST.test(m))).toBe(false);
@@ -368,7 +381,13 @@ describe('aislamiento del portal — el escáner', () => {
   describe('lista permitida: todo lo que no está enumerado falla', () => {
     it.each([
       ['módulo del proyecto desconocido', "import { f } from '@/lib/dateFormat';"],
-      ['componente compartido sin revisar', "import Spinner from '@/components/Spinner';"],
+      ['componente compartido sin revisar', "import { BootSplash } from '@/components/BootSplash';"],
+      ['componente compartido sin revisar (WeekStrip)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
+      ['store del tenant con nombre parecido a useLocaleStore', "import { x } from '@/store/useLocaleStoreExtra';"],
+      ['Spinner con sufijo (otro módulo)', "import x from '@/components/SpinnerExtra';"],
+      ['theme/colors no está habilitado directo', "import { colors } from '@/theme/colors';"],
+      ['useThemeStore no está habilitado directo (solo vía AgendaThemeScope)', "import { useThemeStore } from '@/store/useThemeStore';"],
+      ['store de sesión del tenant', "import { useAuthStore } from '@/store/useAuthStore';"],
       ['store del tenant', "import { useProfesionalStore } from '@/store/useProfesionalStore';"],
       ['hook del tenant', "import { x } from '@/hooks/useMarcasMesProfesional';"],
       ['paquete no enumerado', "import _ from 'lodash';"],
@@ -396,6 +415,11 @@ describe('aislamiento del portal — el escáner', () => {
       ['hooks/pro', "import { x } from '@/hooks/pro/useProRecurso';"],
       ['componentes del portal', "import { x } from '@/components/pro/ProGuard';"],
       ['páginas del portal', "import { x } from '@/app/(profesionales)/pro/algo';"],
+      ['Spinner (compartido revisado)', "import { Spinner } from '@/components/Spinner';"],
+      ['AgendaThemeScope (compartido revisado)', "import { AgendaThemeScope } from '@/components/AgendaThemeScope';"],
+      ['useLocaleStore (compartido revisado)', "import { useLocaleStore } from '@/store/useLocaleStore';"],
+      ['paleta de la agenda (compartido revisado)', "import { agendaColors } from '@/theme/agendaColors';"],
+      ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],
       ['react', "import { useState } from 'react';"],
       ['react-dom', "import { createPortal } from 'react-dom';"],
