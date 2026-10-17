@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clasificarErrorPro, parseRetryAfter, type ErrorCrudo } from './errores';
 
 function crudo(parcial: Partial<ErrorCrudo>): ErrorCrudo {
@@ -89,6 +89,93 @@ describe('clasificarErrorPro — 429', () => {
   it('sin cuerpo ni header: segundos null', () => {
     const r = clasificarErrorPro(crudo({ status: 429, data: undefined }));
     expect(r).toEqual({ kind: 'rateLimited', retryAfterSec: null, lockout: false });
+  });
+});
+
+describe('clasificarErrorPro — robustez', () => {
+  it('una clave __proto__ en errors no corrompe el objeto de campos', () => {
+    const data = JSON.parse('{"errors":{"__proto__":["x"],"password":["corto"]}}');
+
+    const r = clasificarErrorPro(crudo({ status: 422, data }));
+
+    if (r.kind !== 'validation') throw new Error('se esperaba validation');
+    expect(Array.isArray(Object.getPrototypeOf(r.fields))).toBe(false);
+    expect(Object.getPrototypeOf(r.fields)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(r.fields, '__proto__')).toBe(true);
+    expect(r.fields.password).toEqual(['corto']);
+  });
+
+  it('no depende de Object.hasOwn (iOS Safari viejo)', () => {
+    const espia = vi.spyOn(Object, 'hasOwn').mockImplementation(() => {
+      throw new TypeError('Object.hasOwn no existe');
+    });
+    try {
+      expect(clasificarErrorPro(crudo({ status: 403, data: { code: 'VINCULO_NO_DISPONIBLE' } }))).toEqual({ kind: 'vinculoDisabled' });
+      expect(clasificarErrorPro(crudo({ status: 403, data: { code: 'constructor' } }))).toEqual({ kind: 'server' });
+    } finally {
+      espia.mockRestore();
+    }
+  });
+});
+
+describe('clasificarErrorPro — 429 por la ruta real de parseRetryAfter', () => {
+  const ahora = Date.parse('2026-10-17T12:00:00Z');
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(ahora);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('header con fecha HTTP: segundos hasta esa fecha, sin lockout', () => {
+    const r = clasificarErrorPro(crudo({ status: 429, data: '', retryAfterHeader: 'Sat, 17 Oct 2026 12:02:00 GMT' }));
+    expect(r).toEqual({ kind: 'rateLimited', retryAfterSec: 120, lockout: false });
+  });
+
+  it('header basura -> null', () => {
+    const r = clasificarErrorPro(crudo({ status: 429, data: '', retryAfterHeader: 'foo 5' }));
+    expect(r).toEqual({ kind: 'rateLimited', retryAfterSec: null, lockout: false });
+  });
+
+  it('header con dígitos gigantes se recorta a 24 h', () => {
+    const r = clasificarErrorPro(crudo({ status: 429, data: '', retryAfterHeader: '1' + '0'.repeat(20) }));
+    expect(r).toEqual({ kind: 'rateLimited', retryAfterSec: 86400, lockout: false });
+  });
+
+  it('retry_after 1.5 en el cuerpo no es válido: cae al header y no marca lockout', () => {
+    const r = clasificarErrorPro(crudo({ status: 429, data: { retry_after: 1.5 }, retryAfterHeader: '30' }));
+    expect(r).toEqual({ kind: 'rateLimited', retryAfterSec: 30, lockout: false });
+  });
+
+  it('retry_after enorme en el cuerpo se recorta a 24 h y mantiene lockout', () => {
+    const r = clasificarErrorPro(crudo({ status: 429, data: { retry_after: 999999 } }));
+    expect(r).toEqual({ kind: 'rateLimited', retryAfterSec: 86400, lockout: true });
+  });
+});
+
+describe('parseRetryAfter — acotado', () => {
+  const ahora = Date.parse('2026-10-17T12:00:00Z');
+
+  it.each([
+    ['-5', null],
+    ['foo 5', null],
+    ['5 segundos', null],
+    ['1.5', null],
+    ['+5', null],
+    ['2026-10-17T12:01:00Z', null],
+    ['Sat 17 Oct 2026 12:01:00', null],
+  ])('el header %j se descarta (null, no 0)', (header, esperado) => {
+    expect(parseRetryAfter(undefined, header, ahora)).toBe(esperado);
+  });
+
+  it('tope de 24 h en delta, fecha HTTP y cuerpo', () => {
+    expect(parseRetryAfter(undefined, '86400', ahora)).toBe(86400);
+    expect(parseRetryAfter(undefined, '86401', ahora)).toBe(86400);
+    expect(parseRetryAfter(undefined, '9'.repeat(30), ahora)).toBe(86400);
+    expect(parseRetryAfter(undefined, 'Wed, 17 Oct 2035 12:00:00 GMT', ahora)).toBe(86400);
+    expect(parseRetryAfter({ retry_after: 10 ** 9 }, null, ahora)).toBe(86400);
   });
 });
 

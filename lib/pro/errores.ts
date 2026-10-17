@@ -61,36 +61,46 @@ const ERRORES_403: Readonly<Record<string, ProError>> = {
 
 const SERVER: ProError = { kind: 'server' };
 
+// Object.fromEntries define las claves como propias: un `__proto__` del
+// backend (o de un cuerpo manipulado) queda como dato y no cambia el prototipo.
 function camposDeValidacion(data: unknown): Record<string, string[]> {
-  const fields: Record<string, string[]> = {};
-  if (!esObjeto(data) || !esObjeto(data.errors)) return fields;
-  for (const [campo, valor] of Object.entries(data.errors)) {
-    if (!Array.isArray(valor)) continue;
+  if (!esObjeto(data) || !esObjeto(data.errors)) return {};
+  const entradas = Object.entries(data.errors).flatMap(([campo, valor]): [string, string[]][] => {
+    if (!Array.isArray(valor)) return [];
     const mensajes = valor.filter((m): m is string => typeof m === 'string');
-    if (mensajes.length > 0) fields[campo] = mensajes;
-  }
-  return fields;
+    return mensajes.length > 0 ? [[campo, mensajes]] : [];
+  });
+  return Object.fromEntries(entradas);
 }
+
+// Tope de espera que se le puede imponer a la persona: un Retry-After absurdo
+// (o hostil) no debe dejar el botón bloqueado por días.
+const MAX_RETRY_AFTER_SEC = 86400;
+
+// Fecha HTTP en formato IMF-fixdate (RFC 7231), p. ej. "Sat, 17 Oct 2026 12:01:30 GMT".
+// Se valida la forma ANTES de Date.parse, que es demasiado permisivo
+// ("foo 5" o "-5" no deben terminar como 0 segundos).
+const FECHA_HTTP = /^[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} GMT$/;
 
 function retryAfterDelCuerpo(body: unknown): number | null {
   if (!esObjeto(body)) return null;
   const crudo = body.retry_after;
   const n = typeof crudo === 'string' && /^\d+$/.test(crudo.trim()) ? Number(crudo) : crudo;
-  return typeof n === 'number' && Number.isInteger(n) && n >= 0 ? n : null;
+  return typeof n === 'number' && Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_RETRY_AFTER_SEC) : null;
 }
 
 function retryAfterDelHeader(header: string | null, ahoraMs: number): number | null {
   const valor = header?.trim() ?? '';
-  if (valor === '') return null;
-  if (/^\d+$/.test(valor)) return Number(valor);
+  if (/^\d+$/.test(valor)) return Math.min(Number(valor), MAX_RETRY_AFTER_SEC);
+  if (!FECHA_HTTP.test(valor)) return null;
   const fecha = Date.parse(valor);
   if (Number.isNaN(fecha)) return null;
-  return Math.max(0, Math.ceil((fecha - ahoraMs) / 1000));
+  return Math.min(Math.max(0, Math.ceil((fecha - ahoraMs) / 1000)), MAX_RETRY_AFTER_SEC);
 }
 
 // Segundos a esperar tras un 429: primero el cuerpo (`retry_after` del
 // lockout del login), después el header `Retry-After` (delta-segundos o fecha
-// HTTP, recortado a >= 0), si no null (copy sin segundos).
+// HTTP, recortado a [0, 24 h]), si no null (copy sin segundos).
 export function parseRetryAfter(body: unknown, header: string | null, ahoraMs: number = Date.now()): number | null {
   return retryAfterDelCuerpo(body) ?? retryAfterDelHeader(header, ahoraMs);
 }
@@ -106,20 +116,21 @@ export function clasificarErrorPro(e: ErrorCrudo): ProError {
       // Un 401 de forgot/reset no es una sesión vencida (no hay sesión).
       return esUrlSinSesion(e.url) ? SERVER : { kind: 'sessionRevoked' };
     case 403:
-      return (code !== null && Object.hasOwn(ERRORES_403, code) ? ERRORES_403[code] : null) ?? SERVER;
+      // hasOwnProperty.call y no Object.hasOwn: iOS Safari viejo no lo tiene y
+      // lanzaría dentro del interceptor.
+      return (code !== null && Object.prototype.hasOwnProperty.call(ERRORES_403, code) ? ERRORES_403[code] : null) ?? SERVER;
     case 404:
       return code === 'TURNO_NO_ENCONTRADO' ? { kind: 'notFound' } : { kind: 'portalUnavailable' };
     case 422:
       if (code === 'VINCULO_REQUERIDO' || code === 'VINCULO_FALTANTE') return { kind: 'vinculoRequired' };
       return { kind: 'validation', fields: camposDeValidacion(data) };
-    case 429: {
-      const delCuerpo = retryAfterDelCuerpo(data);
+    case 429:
       return {
         kind: 'rateLimited',
-        retryAfterSec: delCuerpo ?? retryAfterDelHeader(e.retryAfterHeader, Date.now()),
-        lockout: delCuerpo !== null,
+        retryAfterSec: parseRetryAfter(data, e.retryAfterHeader),
+        // Solo el lockout del login trae retry_after en el cuerpo.
+        lockout: retryAfterDelCuerpo(data) !== null,
       };
-    }
     default:
       return SERVER;
   }
