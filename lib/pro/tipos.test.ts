@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { parseProTurno } from './parsers';
-import type { ProTurno } from './tipos';
+import { parseProTurno, parseResumen } from './parsers';
+import type { ProResumen, ProTurno } from './tipos';
 
 // Barrera de privacidad a nivel de tipos (AG-1 S2): si alguien agrega a
 // ProTurno una clave que no está en la lista blanca (teléfono, precio, seña,
@@ -72,5 +72,19 @@ describe('ProTurno — lista blanca a nivel de tipos', () => {
     ];
     expect(turno).not.toBeNull();
     expect(Object.keys(turno as ProTurno).sort()).toEqual([...claves].sort());
+  });
+});
+
+// Mismo cerco para el resumen del mes: solo conteos y el nombre del servicio más
+// pedido. Dinero, clientes y teléfonos no entran ni por tipo.
+describe('ProResumen — lista blanca a nivel de tipos', () => {
+  it('tiene exactamente las claves de la lista blanca y ninguna prohibida', () => {
+    expectTypeOf<keyof ProResumen>().toEqualTypeOf<'atendidos' | 'por_venir' | 'cancelados' | 'mas_pedido'>();
+    expectTypeOf<Extract<keyof ProResumen, `${string}${PalabraProhibida}${string}`>>().toEqualTypeOf<never>();
+  });
+
+  it('el parser produce exactamente esas claves en runtime', () => {
+    const resumen = parseResumen({ mes: '2026-10', atendidos: 1, por_venir: 2, cancelados: 3, mas_pedido: { nombre: 'Gel' }, precio: 10 });
+    expect(Object.keys(resumen as ProResumen).sort()).toEqual(['atendidos', 'cancelados', 'mas_pedido', 'por_venir']);
   });
 });

@@ -3,6 +3,7 @@ import {
   CACHE_MAX_ENTRADAS,
   CACHE_VIGENCIA_MS,
   cacheMarcas,
+  cacheResumen,
   cacheServicios,
   cacheTurno,
   cacheTurnosDia,
@@ -32,6 +33,7 @@ describe('caches del portal', () => {
     cacheTurnosRango.set('1:rango', lista);
     cacheMarcas.set('1:2026-10', { dias: [], descartados: 0 });
     cacheServicios.set('1', { servicios: [], descartados: 0 });
+    cacheResumen.set('1:resumen:2026-10', { atendidos: 0, por_venir: 0, cancelados: 0, mas_pedido: null });
     cacheTurno.set('1:turno:5', {
       id: 5,
       fecha_hora: '2026-10-17T09:30:00',
@@ -47,6 +49,7 @@ describe('caches del portal', () => {
     expect(cacheTurnosRango.size()).toBe(0);
     expect(cacheMarcas.size()).toBe(0);
     expect(cacheServicios.size()).toBe(0);
+    expect(cacheResumen.size()).toBe(0);
     expect(cacheTurno.size()).toBe(0);
   });
 

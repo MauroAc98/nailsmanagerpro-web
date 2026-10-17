@@ -33,6 +33,13 @@
     "turnosDe": "Turnos del {fecha}",
     "resultados": "Resultados"
   },
+  "Resumen": {
+    "titulo": "Resumen de {mes}",
+    "atendidos": "{count, plural, one {turno atendido} other {turnos atendidos}}",
+    "porVenir": "por venir",
+    "cancelados": "{count, plural, one {cancelado} other {cancelados}}",
+    "masPedido": "Más pedido:"
+  },
   "Detalle": {
     "titulo": "Detalle del turno",
     "etiqueta": "{fecha}",

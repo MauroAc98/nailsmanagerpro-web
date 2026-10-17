@@ -65,6 +65,15 @@ export interface ProMarcas {
   descartados: number;
 }
 
+// Resumen del mes de SU agenda: solo conteos y el nombre del servicio más
+// pedido. Lista blanca: sin dinero, clientes ni datos de otras profesionales.
+export interface ProResumen {
+  atendidos: number;
+  por_venir: number;
+  cancelados: number;
+  mas_pedido: string | null;
+}
+
 export interface ProServicios {
   servicios: ProServicio[];
   descartados: number;

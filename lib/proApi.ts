@@ -31,10 +31,10 @@ export const EVENTO_PORTAL_NO_DISPONIBLE = 'pro-portal-unavailable';
 export const HEADER_VINCULO = 'X-Vinculo-Id';
 
 // Rutas que el backend scopea por vínculo (middleware RequiereProfesionalVigente):
-// turnos (incluye marcas y detalle) y servicios. Se evalúa sobre la ruta sin
-// query. Cada llamada pasa el id EXPLÍCITO (no hay un "vínculo activo" global
+// turnos (incluye marcas y detalle), servicios y resumen del mes. Se evalúa
+// sobre la ruta sin query. Cada llamada pasa el id EXPLÍCITO (no hay un "vínculo activo" global
 // que leer): así un response tardío de un negocio anterior se puede descartar.
-const RUTA_CON_VINCULO = /^\/?pro\/(turnos|servicios)(\/|$)/;
+const RUTA_CON_VINCULO = /^\/?pro\/(turnos|servicios|resumen)(\/|$)/;
 
 // Rutas cuyo cuerpo lleva contraseñas o el código de recuperación.
 const RUTA_CON_CREDENCIALES = /^\/?pro\/(login|cambiar-password|forgot-password|reset-password)$/;

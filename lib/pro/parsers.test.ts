@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { parseListaTurnos, parseMarcas, parseProMe, parseProTurno, parseServicios } from './parsers';
+import { parseListaTurnos, parseMarcas, parseProMe, parseProTurno, parseResumen, parseServicios } from './parsers';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -463,5 +463,61 @@ describe('parseServicios (lista plana)', () => {
     ['HTML', '<html></html>'],
   ])('lo que no es una lista (%s) es null', (_nombre, cuerpo) => {
     expect(parseServicios(cuerpo)).toBeNull();
+  });
+});
+
+describe('parseResumen', () => {
+  it('devuelve los tres conteos y el nombre del más pedido, sin claves ajenas', () => {
+    expect(
+      parseResumen({
+        mes: '2026-10',
+        atendidos: 24,
+        por_venir: 9,
+        cancelados: 2,
+        mas_pedido: { nombre: 'Soft gel', precio: 5000, id: 3 },
+        ganancias: 100,
+        cliente: 'x',
+      }),
+    ).toEqual({ atendidos: 24, por_venir: 9, cancelados: 2, mas_pedido: 'Soft gel' });
+  });
+
+  it('un mes sin turnos (ceros y mas_pedido null) es éxito', () => {
+    expect(parseResumen({ mes: '2026-10', atendidos: 0, por_venir: 0, cancelados: 0, mas_pedido: null })).toEqual({
+      atendidos: 0,
+      por_venir: 0,
+      cancelados: 0,
+      mas_pedido: null,
+    });
+  });
+
+  it('un conteo inválido (negativo, decimal, texto, ausente) vale 0 sin tirar los demás', () => {
+    expect(parseResumen({ atendidos: -1, por_venir: 1.5, cancelados: '3', mas_pedido: null })).toEqual({
+      atendidos: 0,
+      por_venir: 0,
+      cancelados: 0,
+      mas_pedido: null,
+    });
+    expect(parseResumen({ atendidos: 4, mas_pedido: null })).toEqual({ atendidos: 4, por_venir: 0, cancelados: 0, mas_pedido: null });
+  });
+
+  it.each([
+    ['sin nombre', { mas_pedido: {} }],
+    ['nombre vacío', { mas_pedido: { nombre: '   ' } }],
+    ['nombre que no es texto', { mas_pedido: { nombre: 7 } }],
+    ['más pedido que es texto suelto', { mas_pedido: 'Gel' }],
+    ['más pedido que es lista', { mas_pedido: [{ nombre: 'Gel' }] }],
+  ])('un más pedido inválido (%s) es null', (_nombre, extra) => {
+    expect(parseResumen({ atendidos: 1, por_venir: 0, cancelados: 0, ...extra })?.mas_pedido).toBeNull();
+  });
+
+  it.each([
+    ['null', null],
+    ['lista', []],
+    ['texto', 'x'],
+    ['HTML', '<html></html>'],
+    ['cuerpo de error', { message: 'Server Error' }],
+    ['objeto vacío', {}],
+  ])('un cuerpo con forma inválida (%s) es null', (_nombre, cuerpo) => {
+    expect(parseResumen(cuerpo)).toBeNull();
   });
 });

@@ -12,6 +12,7 @@ import {
   type ProMarcaDia,
   type ProMarcas,
   type ProMe,
+  type ProResumen,
   type ProCategoriaServicio,
   type ProServicio,
   type ProServicios,
@@ -163,6 +164,27 @@ function parseMarca(raw: unknown): ProMarcaDia | null {
 export function parseMarcas(raw: unknown): ProMarcas | null {
   const lista = listaDe(esObjeto(raw) ? raw.dias : null, parseMarca);
   return lista === null ? null : { dias: lista.items, descartados: lista.descartados };
+}
+
+// Conteo del resumen: entero >= 0; cualquier otra cosa vale 0.
+function conteoONulo(valor: unknown): number {
+  return typeof valor === 'number' && Number.isSafeInteger(valor) && valor >= 0 ? valor : 0;
+}
+
+// null si el cuerpo no es un objeto con al menos un conteo con forma de conteo
+// (un cuerpo de error o HTML no es un mes sin turnos). El nombre del más pedido
+// inválido o ausente es null. Se copian solo las claves de la lista blanca.
+export function parseResumen(raw: unknown): ProResumen | null {
+  if (!esObjeto(raw)) return null;
+  const claves = [raw.atendidos, raw.por_venir, raw.cancelados];
+  if (!claves.some((valor) => typeof valor === 'number')) return null;
+  const masPedido = esObjeto(raw.mas_pedido) ? textoONull(raw.mas_pedido.nombre) : null;
+  return {
+    atendidos: conteoONulo(raw.atendidos),
+    por_venir: conteoONulo(raw.por_venir),
+    cancelados: conteoONulo(raw.cancelados),
+    mas_pedido: masPedido,
+  };
 }
 
 // El backend devuelve la lista plana (sin envoltorio `data`); null si no lo es.

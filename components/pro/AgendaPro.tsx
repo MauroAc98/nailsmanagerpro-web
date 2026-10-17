@@ -18,13 +18,14 @@ import { ListaTurnosDia } from './ListaTurnosDia';
 import { ProHeader } from './ProHeader';
 import { PRO_NAV_ALTURA, ProNav } from './ProNav';
 import { ResultadosFiltros } from './ResultadosFiltros';
+import { ResumenMesPro } from './ResumenMesPro';
 import { ServicioFiltroSheet } from './ServicioFiltroSheet';
 
 // Las hojas de fecha y de servicio que se abren desde Filtros van por encima de ella
 // (hoja 60, fondo 59): son hermanas suyas, no hijas.
 const CAPA_HOJA_DE_FILTROS = 62;
 
-// Agenda del portal: encabezado, tira semanal y lista de turnos en una hoja. El
+// Agenda del portal: encabezado, resumen del mes, tira semanal y lista de turnos en una hoja. El
 // calendario mensual vive en la hoja "Elegir fecha", que abre la tira o la hoja de
 // filtros (la misma hoja, con otro destino para la fecha). Las hojas de fecha y de
 // servicio de los filtros viven acá, no dentro de FiltrosSheet: el BottomSheet usa
@@ -169,6 +170,7 @@ export function AgendaPro() {
         )}
         {!filtrando && (
           <>
+            <ResumenMesPro mes={fecha.slice(0, 7)} />
             <WeekStrip
               dates={fechas}
               fechaSeleccionada={fecha}

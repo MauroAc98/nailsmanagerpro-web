@@ -3,7 +3,7 @@ import { act, fireEvent, renderWithProviders, screen, waitFor, within } from '@/
 import { proService } from '@/services/proService';
 import { vaciarCachesPro } from '@/lib/pro/caches';
 import { hoyDelDispositivo } from '@/lib/pro/hoy';
-import type { ProListaTurnos, ProTurno, ProVinculo } from '@/lib/pro/tipos';
+import type { ProListaTurnos, ProResumen, ProTurno, ProVinculo } from '@/lib/pro/tipos';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { useProAuthStore } from '@/store/useProAuthStore';
 
@@ -38,6 +38,8 @@ function turno(id: number, fecha_hora: string): ProTurno {
 
 const lista = (turnos: ProTurno[]): ProListaTurnos => ({ turnos, truncated: false, descartados: 0 });
 
+const RESUMEN: ProResumen = { atendidos: 24, por_venir: 9, cancelados: 2, mas_pedido: 'Soft gel' };
+
 beforeEach(() => {
   nav.pathname = '/agenda';
   nav.push.mockReset();
@@ -46,6 +48,7 @@ beforeEach(() => {
   useProAgendaStore.getState().reset();
   useProAgendaStore.getState().setFecha('2026-10-17');
   vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [], descartados: 0 });
+  vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -285,6 +288,54 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
     expect(await within(dialogo).findByRole('button', { name: /5 de noviembre.*2 turnos/ })).toBeInTheDocument();
     expect(within(dialogo).queryByRole('alert')).toBeNull();
     expect(marcas).toHaveBeenCalledWith(1, '2026-11', expect.any(AbortSignal));
+  });
+});
+
+describe('AgendaPro — resumen del mes', () => {
+  it('muestra el resumen del mes de la fecha elegida entre el encabezado y la tira semanal', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const resumen = vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
+    renderWithProviders(<AgendaPro />);
+
+    const titulo = await screen.findByText('Resumen de octubre');
+    expect(resumen).toHaveBeenCalledWith(1, '2026-10', expect.any(AbortSignal));
+    const tira = screen.getByTestId('week-day-2026-10-12');
+    expect(titulo.compareDocumentPosition(tira) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const encabezado = screen.getByText('Hola, Ana');
+    expect(encabezado.compareDocumentPosition(titulo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('cambiar la fecha a otro mes pide el resumen de ese mes', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const resumen = vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('Resumen de octubre');
+
+    act(() => useProAgendaStore.getState().setFecha('2026-11-02'));
+
+    expect(await screen.findByText('Resumen de noviembre')).toBeInTheDocument();
+    expect(resumen).toHaveBeenLastCalledWith(1, '2026-11', expect.any(AbortSignal));
+  });
+
+  it('si el resumen falla la agenda sigue funcionando', async () => {
+    vi.spyOn(proService, 'resumen').mockRejectedValue(new Error('boom'));
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    renderWithProviders(<AgendaPro />);
+
+    expect(await screen.findByText('Cliente1')).toBeInTheDocument();
+    expect(screen.queryByText(/Resumen de/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('con filtros activos no se muestra ni se pide', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const resumen = vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
+    useProAgendaStore.getState().setFiltros({ buscar: 'ana' });
+    renderWithProviders(<AgendaPro />);
+
+    await screen.findByText('Resultados');
+    expect(screen.queryByText(/Resumen de/)).toBeNull();
+    expect(resumen).not.toHaveBeenCalled();
   });
 });
 

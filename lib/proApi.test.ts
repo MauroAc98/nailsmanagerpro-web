@@ -186,6 +186,8 @@ describe('proApi — X-Vinculo-Id (SE-2)', () => {
     '/pro/turnos/12',
     '/pro/servicios',
     '/pro/servicios?x=1',
+    '/pro/resumen',
+    '/pro/resumen?mes=2026-10',
   ])('se conserva en %s', async (url) => {
     responderOk();
 

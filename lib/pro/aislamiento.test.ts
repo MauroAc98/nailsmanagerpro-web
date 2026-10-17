@@ -93,6 +93,7 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/agenda\/WeekStrip$/,
   /^components\/filtros\/ServiciosSheetBase$/, // hoja y lista de servicios presentacionales (todo por props); solo importan react, BottomSheet y theme/agendaColors
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
+  /^components\/Skeleton$/, // barra gris presentacional (props de tamaño); solo importa react (tipos) y theme/agendaColors
 ];
 
 const PAQUETES_PERMITIDOS = new Set([
