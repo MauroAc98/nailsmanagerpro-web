@@ -36,6 +36,14 @@
     "agenda": "Agenda",
     "cuenta": "Conta"
   },
+  "Mes": {
+    "anterior": "Mês anterior",
+    "siguiente": "Próximo mês",
+    "errorMarcas": "Não foi possível carregar os atendimentos do mês. Você ainda pode escolher um dia.",
+    "reintentar": "Tentar novamente",
+    "irAlDia": "Ir para {dia}: {cantidad, plural, one {# atendimento} other {# atendimentos}}",
+    "sinTurnos": "Ir para {dia}: sem atendimentos"
+  },
   "PortalNoDisponible": {
     "titulo": "O portal não está disponível",
     "descripcion": "Não conseguimos conectar com o portal de profissionais. Tente novamente em alguns minutos.",
