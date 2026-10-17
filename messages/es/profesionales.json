@@ -2,6 +2,26 @@
   "Guard": {
     "esperando": "Un momento"
   },
+  "ListaNegocios": {
+    "titulo": "Elegí un negocio",
+    "subtitulo": "Tenés acceso a más de un negocio. Elegí con cuál querés trabajar ahora.",
+    "disponible": "Disponible"
+  },
+  "Motivo": {
+    "NO_SUBSCRIPTION": "Este negocio todavía no tiene el servicio activo.",
+    "SUBSCRIPTION_SUSPENDED": "El servicio de este negocio está suspendido.",
+    "SUBSCRIPTION_EXPIRED": "El servicio de este negocio venció.",
+    "generico": "Este negocio no está disponible por ahora."
+  },
+  "NegocioSwitcher": {
+    "titulo": "Cambiar de negocio",
+    "cerrar": "Cerrar",
+    "actual": "Actual"
+  },
+  "ProHeader": {
+    "cambiarNegocio": "Cambiar de negocio. Ahora: {negocio}",
+    "cuenta": "Mi cuenta"
+  },
   "PortalNoDisponible": {
     "titulo": "El portal no está disponible",
     "descripcion": "No pudimos conectar con el portal de profesionales. Probá de nuevo en unos minutos.",
