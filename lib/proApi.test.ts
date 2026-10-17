@@ -165,6 +165,25 @@ describe('proApi — eventos (SE-1 S3)', () => {
     expect(portalNoDisponible).not.toHaveBeenCalled();
   });
 
+  it('un 404 del resumen del mes (panel opcional) no tira el portal', async () => {
+    responderCon(404, { message: 'Not Found' });
+
+    await expect(
+      proApi.get('/pro/resumen', { params: { mes: '2026-10' }, headers: { 'X-Vinculo-Id': '3' } }),
+    ).rejects.toBeInstanceOf(AxiosError);
+
+    expect(portalNoDisponible).not.toHaveBeenCalled();
+    expect(sesionExpirada).not.toHaveBeenCalled();
+  });
+
+  it('un 404 de los turnos sigue marcando el portal como no disponible', async () => {
+    responderCon(404, { message: 'Not Found' });
+
+    await expect(proApi.get('/pro/turnos', { headers: { 'X-Vinculo-Id': '3' } })).rejects.toBeInstanceOf(AxiosError);
+
+    expect(portalNoDisponible).toHaveBeenCalledTimes(1);
+  });
+
   it.each([500, 429, 422, 403])('un %i no dispara ningún evento', async (status) => {
     responderCon(status, { message: 'x' });
 

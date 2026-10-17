@@ -36,6 +36,11 @@ export const HEADER_VINCULO = 'X-Vinculo-Id';
 // que leer): así un response tardío de un negocio anterior se puede descartar.
 const RUTA_CON_VINCULO = /^\/?pro\/(turnos|servicios|resumen)(\/|$)/;
 
+// Rutas de paneles opcionales: si fallan con un 404 (p. ej. el backend todavía no
+// las publicó) la pantalla sigue sin ellas. Un 404 acá nunca marca al portal entero
+// como no disponible; si el portal está apagado lo detectan las demás rutas.
+const RUTA_OPCIONAL = /^\/?pro\/resumen(\/|$)/;
+
 // Rutas cuyo cuerpo lleva contraseñas o el código de recuperación.
 const RUTA_CON_CREDENCIALES = /^\/?pro\/(login|cambiar-password|forgot-password|reset-password)$/;
 
@@ -139,7 +144,7 @@ proApi.interceptors.response.use(
         const guardado = leerToken();
         const esDeLaSesionActual = (typeof enviado === 'string' ? enviado : null) === (guardado ? `Bearer ${guardado}` : null);
         if (esDeLaSesionActual) window.dispatchEvent(new CustomEvent(EVENTO_SESION_EXPIRADA));
-      } else if (proError.kind === 'portalUnavailable') {
+      } else if (proError.kind === 'portalUnavailable' && !RUTA_OPCIONAL.test(rutaSinQuery(error.config?.url))) {
         window.dispatchEvent(new CustomEvent(EVENTO_PORTAL_NO_DISPONIBLE));
       }
     }
