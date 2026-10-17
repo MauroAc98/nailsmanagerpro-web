@@ -22,7 +22,13 @@ const vinculo: ProVinculo = {
   motivo: null,
 };
 
-const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado' }, { id: 4, nombre: 'Pedicura' }], descartados: 0 };
+const servicios = {
+  servicios: [
+    { id: 3, nombre: 'Esmaltado', duracion_minutos: null, categoria: null },
+    { id: 4, nombre: 'Pedicura', duracion_minutos: null, categoria: null },
+  ],
+  descartados: 0,
+};
 
 type Props = React.ComponentProps<typeof FiltrosSheet>;
 

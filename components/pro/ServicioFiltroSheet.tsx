@@ -1,9 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ListaServiciosBase, ServiciosHojaBase } from '@/components/filtros/ServiciosSheetBase';
 import { Spinner } from '@/components/Spinner';
 import { useProServicios } from '@/hooks/pro/useProServicios';
+import { formatearDuracion } from '@/lib/duracion';
+import { agruparServicios } from '@/lib/pro/agruparServicios';
 import { agendaColors } from '@/theme/agendaColors';
 import { MensajeErrorPro } from './MensajeErrorPro';
 
@@ -20,6 +23,10 @@ interface Props {
 function Contenido({ seleccionado, onElegir }: Pick<Props, 'seleccionado' | 'onElegir'>) {
   const t = useTranslations('profesionales.Filtros');
   const servicios = useProServicios();
+  const lista = servicios.data?.servicios;
+  // null (ninguna categoría en la respuesta) = lista plana, como antes de que el
+  // backend mandara categorías.
+  const grupos = useMemo(() => (lista ? agruparServicios(lista) : null), [lista]);
 
   if (servicios.data === null && servicios.error === null) return <Spinner label={t('cargandoServicios')} />;
 
@@ -54,22 +61,31 @@ function Contenido({ seleccionado, onElegir }: Pick<Props, 'seleccionado' | 'onE
   return (
     <ListaServiciosBase
       servicios={servicios.data.servicios}
-      grupos={null}
+      grupos={grupos}
       seleccionadoId={seleccionado}
       onElegir={onElegir}
       todosLabel={t('todos')}
-      sinCategoriaLabel=""
-      expandLabel=""
-      collapseLabel=""
+      sinCategoriaLabel={t('sinCategoria')}
+      expandLabel={t('expandirCategoria')}
+      collapseLabel={t('colapsarCategoria')}
       ariaLabel={t('servicio')}
+      detalle={(s) =>
+        s.duracion_minutos === null ? null : (
+          <span style={{ fontSize: 12, color: agendaColors.subtext, flexShrink: 0 }}>
+            {formatearDuracion(s.duracion_minutos)}
+          </span>
+        )
+      }
     />
   );
 }
 
 // Hoja de selección de servicio del portal: la misma pieza visual que usa la app
-// (`ServiciosHojaBase` + `ListaServiciosBase`, con "Todos" arriba y un servicio por
-// fila). Acá solo queda lo propio del portal: de dónde salen los servicios (caché de
-// `useProServicios`, que solo trae {id, nombre}, sin categorías) y el spinner/reintento.
+// (`ServiciosHojaBase` + `ListaServiciosBase`, con "Todos" arriba, categorías como
+// encabezados y la duración a la derecha). Acá solo queda lo propio del portal: de
+// dónde salen los servicios (caché de `useProServicios`: id, nombre, duración y
+// categoría, sin precio) y el spinner/reintento. Sin categorías en la respuesta, la
+// lista sale plana.
 // Selección única: quien la usa decide qué hacer al elegir (la hoja de filtros la
 // cierra). Se monta como hermana de la hoja de filtros, no dentro de ella.
 export function ServicioFiltroSheet({ abierto, seleccionado, onElegir, onCerrar, zIndex = 60 }: Props) {

@@ -395,24 +395,59 @@ describe('parseMarcas', () => {
 });
 
 describe('parseServicios (lista plana)', () => {
-  it('devuelve id y nombre, sin precio ni duración', () => {
+  it('conserva id, nombre, duración y categoría, y descarta precio y otras claves', () => {
     expect(
       parseServicios([
-        { id: 1, nombre: 'Gel', precio: 100, duracion_minutos: 60 },
-        { id: 2, nombre: 'Spa' },
+        {
+          id: 1,
+          nombre: 'Gel',
+          precio: 100,
+          comision: 10,
+          duracion_minutos: 60,
+          categoria: { id: 5, nombre: 'Manos', fondo_historia_url: 'x', user_id: 9 },
+        },
+        { id: 2, nombre: 'Spa', duracion_minutos: 30, categoria: null },
       ]),
     ).toEqual({
       servicios: [
-        { id: 1, nombre: 'Gel' },
-        { id: 2, nombre: 'Spa' },
+        { id: 1, nombre: 'Gel', duracion_minutos: 60, categoria: { id: 5, nombre: 'Manos' } },
+        { id: 2, nombre: 'Spa', duracion_minutos: 30, categoria: null },
       ],
       descartados: 0,
     });
   });
 
+  it('tolera una respuesta vieja sin duración ni categoría: lista plana con null', () => {
+    expect(parseServicios([{ id: 1, nombre: 'Gel' }])).toEqual({
+      servicios: [{ id: 1, nombre: 'Gel', duracion_minutos: null, categoria: null }],
+      descartados: 0,
+    });
+  });
+
+  it.each([
+    ['duración cero', { duracion_minutos: 0 }],
+    ['duración negativa', { duracion_minutos: -5 }],
+    ['duración decimal', { duracion_minutos: 1.5 }],
+    ['duración texto', { duracion_minutos: '60' }],
+  ])('una duración inválida (%s) queda en null', (_nombre, extra) => {
+    expect(parseServicios([{ id: 1, nombre: 'Gel', ...extra }])?.servicios[0].duracion_minutos).toBeNull();
+  });
+
+  it.each([
+    ['sin nombre', { id: 5 }],
+    ['id inválido', { id: 0, nombre: 'Manos' }],
+    ['nombre vacío', { id: 5, nombre: ' ' }],
+    ['un texto', 'Manos'],
+    ['una lista', [5, 'Manos']],
+  ])('una categoría malformada (%s) queda en null sin descartar el servicio', (_nombre, categoria) => {
+    expect(parseServicios([{ id: 1, nombre: 'Gel', categoria }])?.servicios).toEqual([
+      { id: 1, nombre: 'Gel', duracion_minutos: null, categoria: null },
+    ]);
+  });
+
   it('descarta elementos malformados y los cuenta', () => {
     expect(parseServicios([{ id: 1, nombre: 'Gel' }, { id: 0, nombre: 'Cero' }, { id: 2 }, null, { id: 3, nombre: '' }])).toEqual({
-      servicios: [{ id: 1, nombre: 'Gel' }],
+      servicios: [{ id: 1, nombre: 'Gel', duracion_minutos: null, categoria: null }],
       descartados: 4,
     });
   });

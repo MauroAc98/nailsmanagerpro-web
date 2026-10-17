@@ -10,7 +10,21 @@ import type { MotivoVinculo } from '@/lib/pro/errores';
 export const ESTADOS_VISUALES = ['confirmado', 'en_curso', 'completado'] as const;
 export type EstadoVisual = (typeof ESTADOS_VISUALES)[number];
 
-export interface ProServicio {
+// Servicio tal como aparece dentro de un turno: solo id y nombre.
+export interface ProServicioTurno {
+  id: number;
+  nombre: string;
+}
+
+// Servicio de la lista del filtro (GET /api/pro/servicios). Duración y categoría
+// (plana, del mismo negocio) son lo único que se suma al nombre; null cuando un
+// backend viejo no las manda. Sin precio, comisión ni seña.
+export interface ProServicio extends ProServicioTurno {
+  duracion_minutos: number | null;
+  categoria: ProCategoriaServicio | null;
+}
+
+export interface ProCategoriaServicio {
   id: number;
   nombre: string;
 }
@@ -24,7 +38,7 @@ export interface ProTurno {
   estado_visual: EstadoVisual;
   notas: string | null;
   cliente: { nombre: string | null; apellido: string | null };
-  servicios: ProServicio[];
+  servicios: ProServicioTurno[];
   promo: { nombre: string } | null;
 }
 

@@ -22,11 +22,11 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('useProServicios', () => {
   it('pide los servicios del negocio activo y conserva descartados', async () => {
-    const servicios = vi.spyOn(proService, 'servicios').mockResolvedValue({ servicios: [{ id: 3, nombre: 'Uñas' }], descartados: 2 });
+    const servicios = vi.spyOn(proService, 'servicios').mockResolvedValue({ servicios: [{ id: 3, nombre: 'Uñas', duracion_minutos: null, categoria: null }], descartados: 2 });
     const { result } = renderHook(() => useProServicios());
     await waitFor(() => expect(result.current.cargando).toBe(false));
     expect(servicios).toHaveBeenCalledWith(1, expect.any(AbortSignal));
-    expect(result.current.data).toEqual({ servicios: [{ id: 3, nombre: 'Uñas' }], descartados: 2 });
+    expect(result.current.data).toEqual({ servicios: [{ id: 3, nombre: 'Uñas', duracion_minutos: null, categoria: null }], descartados: 2 });
     expect(cacheServicios.get('1:servicios')).toBeDefined();
   });
 

@@ -289,7 +289,7 @@ describe('AgendaPro: calendario "Elegir fecha"', () => {
 });
 
 describe('AgendaPro con filtros', () => {
-  const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado' }], descartados: 0 };
+  const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado', duracion_minutos: null, categoria: null }], descartados: 0 };
 
   async function aplicar(cambios: (dialogo: HTMLElement) => void) {
     fireEvent.click(screen.getByRole('button', { name: /^Filtr/ }));
@@ -459,7 +459,7 @@ describe('AgendaPro: hojas de fecha y servicio abiertas desde Filtros', () => {
 
   async function abrirFiltros() {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
-    vi.spyOn(proService, 'servicios').mockResolvedValue({ servicios: [{ id: 3, nombre: 'Esmaltado' }], descartados: 0 });
+    vi.spyOn(proService, 'servicios').mockResolvedValue({ servicios: [{ id: 3, nombre: 'Esmaltado', duracion_minutos: null, categoria: null }], descartados: 0 });
     renderWithProviders(<AgendaPro />);
     fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
     return screen.findByRole('dialog', { name: 'Filtrar turnos' });

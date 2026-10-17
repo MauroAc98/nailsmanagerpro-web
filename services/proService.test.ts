@@ -519,8 +519,11 @@ describe('proService — datos parseados con lista blanca', () => {
       descartados: 0,
     });
 
-    responder([{ id: 7, nombre: 'Gel', precio: 100 }]);
-    await expect(proService.servicios(12)).resolves.toEqual({ servicios: [{ id: 7, nombre: 'Gel' }], descartados: 0 });
+    responder([{ id: 7, nombre: 'Gel', precio: 100, duracion_minutos: 45, categoria: { id: 2, nombre: 'Manos', user_id: 1 } }]);
+    await expect(proService.servicios(12)).resolves.toEqual({
+      servicios: [{ id: 7, nombre: 'Gel', duracion_minutos: 45, categoria: { id: 2, nombre: 'Manos' } }],
+      descartados: 0,
+    });
   });
 });
 

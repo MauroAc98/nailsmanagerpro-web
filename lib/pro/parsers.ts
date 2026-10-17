@@ -12,8 +12,10 @@ import {
   type ProMarcaDia,
   type ProMarcas,
   type ProMe,
+  type ProCategoriaServicio,
   type ProServicio,
   type ProServicios,
+  type ProServicioTurno,
   type ProTurno,
   type ProVinculo,
 } from '@/lib/pro/tipos';
@@ -47,10 +49,31 @@ function estadoVisualDe(valor: unknown): EstadoVisual {
   return ESTADOS_VISUALES.find((estado) => estado === valor) ?? 'confirmado';
 }
 
-function parseServicio(raw: unknown): ProServicio | null {
+function parseServicioTurno(raw: unknown): ProServicioTurno | null {
   if (!esObjeto(raw) || !esIdValido(raw.id)) return null;
   const nombre = textoONull(raw.nombre);
   return nombre === null ? null : { id: raw.id, nombre };
+}
+
+// Categoría ausente, malformada o de otra forma (backend viejo o cambiado): null,
+// sin descartar el servicio. Solo se copian id y nombre.
+function parseCategoria(raw: unknown): ProCategoriaServicio | null {
+  if (!esObjeto(raw) || !esIdValido(raw.id)) return null;
+  const nombre = textoONull(raw.nombre);
+  return nombre === null ? null : { id: raw.id, nombre };
+}
+
+// Servicio de la lista del filtro. Un backend sin duración ni categoría da null en
+// ambas y el portal sigue mostrando la lista plana de siempre.
+function parseServicio(raw: unknown): ProServicio | null {
+  const base = parseServicioTurno(raw);
+  if (base === null || !esObjeto(raw)) return null;
+  const duracion = raw.duracion_minutos;
+  return {
+    ...base,
+    duracion_minutos: typeof duracion === 'number' && Number.isInteger(duracion) && duracion > 0 ? duracion : null,
+    categoria: parseCategoria(raw.categoria),
+  };
 }
 
 // Parsea cada elemento de una lista y cuenta los que no pasaron. Si `raw` NO es
@@ -83,7 +106,7 @@ export function parseProTurno(raw: unknown): ProTurno | null {
     notas: textoONull(raw.notas),
     cliente: { nombre: textoONull(cliente.nombre), apellido: textoONull(cliente.apellido) },
     // Dentro de un turno, servicios ausente o no-lista es simplemente "sin servicios".
-    servicios: listaDe(raw.servicios, parseServicio)?.items ?? [],
+    servicios: listaDe(raw.servicios, parseServicioTurno)?.items ?? [],
     promo: promo === null ? null : { nombre: promo },
   };
 }
