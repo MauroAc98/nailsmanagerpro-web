@@ -33,6 +33,7 @@ const NAMESPACES = [
   "legal",
   "validation",
   "reservaOnline",
+  "profesionales",
 ];
 
 const BASE_LOCALE = "es";
