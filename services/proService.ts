@@ -191,6 +191,17 @@ function guardarSesion(sesion: ProSesion): boolean {
 // backend sigue siendo la autoridad: un token vencido recibe 401 y proApi
 // emite pro-session-expired.
 function leerSesion(ahoraMs: number = Date.now()): LecturaSesion {
+  const lectura = peekSesion(ahoraMs);
+  if (lectura.estado !== 'vigente') borrarSesion();
+  return lectura;
+}
+
+// La misma lectura pero de SOLO LECTURA: no borra nada. Es la que usa la
+// sincronización entre pestañas: guardarSesion de otra pestaña escribe token,
+// tipo y vencimiento de a uno (y cada setItem dispara un evento `storage`), así
+// que un estado a medias es normal y borrarlo destruiría la sesión nueva. Solo
+// el arranque (leerSesion) limpia datos corruptos o vencidos.
+function peekSesion(ahoraMs: number = Date.now()): LecturaSesion {
   const token = leerClave(PRO_STORAGE_KEYS.token);
   const tipo = leerClave(PRO_STORAGE_KEYS.tipo);
   const crudoExpira = leerClave(PRO_STORAGE_KEYS.expiresAt);
@@ -198,14 +209,8 @@ function leerSesion(ahoraMs: number = Date.now()): LecturaSesion {
   const expiresAt = crudoExpira !== null && /^\d+$/.test(crudoExpira) ? Number(crudoExpira) : Number.NaN;
   const tipoValido = tipo === 'full' || tipo === 'restricted';
 
-  if (!token || !tipoValido || !Number.isSafeInteger(expiresAt)) {
-    borrarSesion();
-    return { estado: 'ninguna' };
-  }
-  if (expiresAt <= ahoraMs) {
-    borrarSesion();
-    return { estado: 'expirada' };
-  }
+  if (!token || !tipoValido || !Number.isSafeInteger(expiresAt)) return { estado: 'ninguna' };
+  if (expiresAt <= ahoraMs) return { estado: 'expirada' };
   return { estado: 'vigente', sesion: { token, tipo, expiresAt } };
 }
 
@@ -294,5 +299,6 @@ export const proService = {
   // ── Sesión guardada ──────────────────────────────────────────────────────
   guardarSesion,
   leerSesion,
+  peekSesion,
   borrarSesion,
 };
