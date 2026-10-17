@@ -2,14 +2,12 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Check, ChevronRight, Clock } from 'lucide-react';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { formatearDuracion } from '@/lib/duracion';
-import { inicialesProfesional } from '@/lib/inicialesProfesional';
 import { infoEstado } from '@/lib/pro/estado';
 import { horaDe, partirFechaHora } from '@/lib/pro/fechaHora';
 import type { ProTurno, ProVinculo } from '@/lib/pro/tipos';
 import { agendaColors as colors, agendaFontSerif, agendaShadows as shadows } from '@/theme/agendaColors';
-import { withAlpha } from '@/theme/colors';
 
 interface Props {
   turno: ProTurno;
@@ -70,19 +68,7 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
 
   const lineaProfesional = profesional !== undefined && (
     <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-      <span
-        style={{
-          width: 16, height: 16, borderRadius: 8, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 7, fontWeight: 800, backgroundColor: withAlpha(colors.primary, '26'), color: colors.primary,
-        }}
-      >
-        {profesional.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profesional.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          inicialesProfesional(profesional.nombre, profesional.apellido)
-        )}
-      </span>
+      <AvatarProfesional nombre={profesional.nombre} apellido={profesional.apellido} avatarUrl={profesional.avatar_url} size={16} fontSize={7} />
       <span dir="auto" style={{ ...truncar, fontSize: 11.5, fontWeight: 700, color: colors.subtext, unicodeBidi: 'isolate' }}>
         {t('Card.conProfesional', { nombre: profesional.nombre })}
       </span>
@@ -102,7 +88,10 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
       )}
       {duracion !== null && (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 600, color: colors.subtext, whiteSpace: 'nowrap', lineHeight: 1 }}>
-          <Clock size={10} strokeWidth={2.2} aria-hidden="true" style={{ flexShrink: 0 }} />
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
           {duracion}
         </span>
       )}
@@ -128,12 +117,18 @@ export function ProTurnoCard({ turno, profesional, onAbrir }: Props) {
         letterSpacing: 0.6, textTransform: 'uppercase', backgroundColor: colors.primarySoft, borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
       }}
     >
-      <Check size={9} color={colors.primaryDeep} strokeWidth={3.5} aria-hidden="true" />
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={colors.primaryDeep} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
       {t('Estado.completado')}
     </span>
   ) : null;
 
-  const chevron = <ChevronRight size={20} color={colors.muted} strokeWidth={2} aria-hidden="true" style={{ flexShrink: 0 }} />;
+  const chevron = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
 
   const bloqueNotas = notas !== null && (
     <span style={{ display: 'flex', alignItems: 'flex-start', gap: 6, minWidth: 0 }}>

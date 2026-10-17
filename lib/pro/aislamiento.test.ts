@@ -83,6 +83,7 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^theme\/agendaColors$/, // constantes de paleta (variables CSS)
   /^components\/filtros\/AvatarProfesional$/, // presentacional (foto o iniciales); solo importa theme/* y lib/inicialesProfesional
   /^components\/BottomSheet$/, // sheet de arrastre; solo importa react y theme/colors, sin sesión ni datos
+  /^lib\/duracion$/, // formato de minutos a "1 h 30"; función pura, sin imports
   /^lib\/cacheLru$/, // LRU genérico con vigencia; sin imports ni estado global (cada instancia es propia)
   // WeekStrip es presentacional (todo entra por props). Sus imports transitivos se
   // revisaron: lib/dateFormat (solo useLocaleStore), agendaDateHelpers, theme/*,
