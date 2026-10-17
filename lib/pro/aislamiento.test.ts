@@ -80,6 +80,7 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/Spinner$/, // presentacional; solo importa theme/agendaColors y theme/colors
   /^components\/AgendaThemeScope$/, // aplica la clase de tema; solo importa store/useThemeStore (preferencia de tema)
   /^store\/useLocaleStore$/, // el portal solo lee `mensajesListos`; no importa nada de sesión ni de datos del salón
+  /^store\/useThemeStore$/, // preferencia de tema claro/oscuro (setTheme y resolvedTheme); sin sesión ni datos del negocio
   /^theme\/agendaColors$/, // constantes de paleta (variables CSS)
   /^components\/filtros\/AvatarProfesional$/, // presentacional (foto o iniciales); solo importa theme/* y lib/inicialesProfesional
   /^components\/BottomSheet$/, // sheet de arrastre; solo importa react y theme/colors, sin sesión ni datos
@@ -396,7 +397,7 @@ describe('aislamiento del portal — el escáner', () => {
       ['store del tenant con nombre parecido a useLocaleStore', "import { x } from '@/store/useLocaleStoreExtra';"],
       ['Spinner con sufijo (otro módulo)', "import x from '@/components/SpinnerExtra';"],
       ['theme/colors no está habilitado directo', "import { colors } from '@/theme/colors';"],
-      ['useThemeStore no está habilitado directo (solo vía AgendaThemeScope)', "import { useThemeStore } from '@/store/useThemeStore';"],
+      ['useThemeStore con sufijo (otro módulo)', "import { x } from '@/store/useThemeStoreExtra';"],
       ['store de sesión del tenant', "import { useAuthStore } from '@/store/useAuthStore';"],
       ['store del tenant', "import { useProfesionalStore } from '@/store/useProfesionalStore';"],
       ['hook del tenant', "import { x } from '@/hooks/useMarcasMesProfesional';"],
@@ -439,6 +440,7 @@ describe('aislamiento del portal — el escáner', () => {
       ['páginas del portal', "import { x } from '@/app/(profesionales)/pro/algo';"],
       ['Spinner (compartido revisado)', "import { Spinner } from '@/components/Spinner';"],
       ['AgendaThemeScope (compartido revisado)', "import { AgendaThemeScope } from '@/components/AgendaThemeScope';"],
+      ['useThemeStore (compartido revisado)', "import { setTheme, useThemeStore } from '@/store/useThemeStore';"],
       ['useLocaleStore (compartido revisado)', "import { useLocaleStore } from '@/store/useLocaleStore';"],
       ['paleta de la agenda (compartido revisado)', "import { agendaColors } from '@/theme/agendaColors';"],
       ['BottomSheet (compartido revisado)', "import { BottomSheet } from '@/components/BottomSheet';"],

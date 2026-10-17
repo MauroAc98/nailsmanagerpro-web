@@ -20,7 +20,9 @@
   },
   "ProHeader": {
     "cambiarNegocio": "Cambiar de negocio. Ahora: {negocio}",
-    "cuenta": "Mi cuenta"
+    "negocio": "Negocio",
+    "saludo": "Hola, {nombre}",
+    "marca": "Turnetto"
   },
   "Agenda": {
     "titulo": "Agenda",

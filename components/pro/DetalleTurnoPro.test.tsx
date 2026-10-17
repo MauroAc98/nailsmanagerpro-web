@@ -69,7 +69,7 @@ describe('DetalleTurnoPro', () => {
     expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Idea para el turno' })).toBeInTheDocument();
     expect(screen.getByTestId('detalle-notas')).toHaveTextContent('Llega tarde Traer diseño');
-    for (const etiqueta of ['Negocio', 'Servicios', 'Hora', 'Hasta']) expect(screen.queryByText(etiqueta)).toBeNull();
+    for (const etiqueta of ['Servicios', 'Hora', 'Hasta']) expect(screen.queryByText(etiqueta)).toBeNull();
   });
 
   it('muestra un servicio por línea, sin unirlos con " + "', async () => {
@@ -146,13 +146,13 @@ describe('DetalleTurnoPro', () => {
   it('las notas son texto: pre-wrap, sin HTML ni enlaces', async () => {
     const hostil = '<img src=x onerror=alert(1)>\nhttps://ejemplo.com <script>x()</script>';
     vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: hostil }));
-    const { container } = renderWithProviders(<DetalleTurnoPro />);
+    renderWithProviders(<DetalleTurnoPro />);
 
     const nota = await screen.findByTestId('detalle-notas');
     expect(nota.textContent).toBe(hostil);
     expect(nota.style.whiteSpace).toBe('pre-wrap');
     expect(nota).toHaveAttribute('dir', 'auto');
-    expect(container.querySelector('img, script, a[href^="http"]')).toBeNull();
+    expect(nota.querySelector('img, script, a[href^="http"]')).toBeNull();
     const fuente = readFileSync(join(__dirname, 'DetalleTurnoPro.tsx'), 'utf8');
     expect(fuente).not.toMatch(/dangerouslySetInnerHTML/);
   });

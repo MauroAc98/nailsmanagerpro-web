@@ -1,93 +1,163 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { useRutaPro } from '@/hooks/useRutaPro';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
 import { useProAuthStore } from '@/store/useProAuthStore';
+import { setTheme, useThemeStore } from '@/store/useThemeStore';
 import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { NegocioSwitcherSheet } from './NegocioSwitcherSheet';
 
-const nombreStyle = {
+const TAMANO_VISUAL = 40;
+
+const saludoStyle = {
   minWidth: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  fontSize: 18,
+  fontSize: 22,
+  fontStyle: 'italic',
+  lineHeight: 1.1,
   fontFamily: agendaFontSerif,
-  color: agendaColors.strong,
+  color: agendaColors.primaryDeep,
 } as const;
 
-// Encabezado de las pantallas con negocio activo: nombre del negocio (tocable
-// solo si la persona tiene más de uno) y acceso a la cuenta.
+const trazo = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+
+// Alterna claro/oscuro sobre el tema ya aplicado, igual que el atajo de la agenda.
+function BotonTema() {
+  const t = useTranslations('common.ThemeToggle');
+  const aOscuro = useThemeStore((s) => s.resolvedTheme) === 'light';
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(aOscuro ? 'dark' : 'light')}
+      aria-label={t(aOscuro ? 'toDark' : 'toLight')}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        width: 40,
+        height: 40,
+        padding: 0,
+        borderRadius: 20,
+        cursor: 'pointer',
+        border: `1px solid ${agendaColors.border}`,
+        backgroundColor: agendaColors.surface,
+        color: agendaColors.text,
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>
+        {aOscuro ? (
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        ) : (
+          <>
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+          </>
+        )}
+      </svg>
+    </button>
+  );
+}
+
+// Encabezado de las pantallas con negocio activo: foto (o logo) y saludo a la
+// izquierda, tema a la derecha, y debajo la fila "Negocio" solo si la persona
+// tiene más de uno. La cuenta se alcanza desde la navegación inferior.
 export function ProHeader() {
   const t = useTranslations('profesionales.ProHeader');
-  const ruta = useRutaPro();
   const vinculos = useProAuthStore((s) => s.vinculos);
   const activoId = useProAuthStore((s) => s.vinculoActivoId);
   const [abierto, setAbierto] = useState(false);
-  const boton = useRef<HTMLButtonElement>(null);
+  const fila = useRef<HTMLButtonElement>(null);
 
-  const nombre = vinculos.find((v) => v.id === activoId)?.negocioNombre ?? null;
-  const puedeCambiar = nombre !== null && vinculos.length > 1;
+  const activo = vinculos.find((v) => v.id === activoId) ?? null;
+  const puedeCambiar = activo !== null && vinculos.length > 1;
+  const profesional = activo?.profesional ?? null;
 
   function cerrar() {
     setAbierto(false);
-    boton.current?.focus();
+    fila.current?.focus();
   }
 
   return (
-    <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 16px' }}>
-      {nombre === null ? (
-        <span style={{ flex: 1 }} />
-      ) : puedeCambiar ? (
-        <button
-          ref={boton}
-          type="button"
-          aria-haspopup="dialog"
-          aria-label={t('cambiarNegocio', { negocio: nombre })}
-          onClick={() => setAbierto(true)}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            minHeight: 44,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            border: 'none',
-            padding: 0,
-            textAlign: 'left',
-            cursor: 'pointer',
-            backgroundColor: 'transparent',
-          }}
-        >
-          <span style={nombreStyle}>{nombre}</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-            <path d="M4 6l4 4 4-4" stroke={agendaColors.strong} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      ) : (
-        <span style={{ ...nombreStyle, flex: 1 }}>{nombre}</span>
+    <>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '20px 20px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {profesional?.avatar_url ? (
+            <AvatarProfesional nombre={profesional.nombre} avatarUrl={profesional.avatar_url} size={TAMANO_VISUAL} />
+          ) : (
+            // Decorativo: al lado hay un texto (saludo o marca) que ya nombra.
+            <Image
+              src="/pro-logo.png"
+              alt=""
+              width={TAMANO_VISUAL}
+              height={TAMANO_VISUAL}
+              priority
+              style={{ borderRadius: 10, flexShrink: 0 }}
+            />
+          )}
+          <span style={saludoStyle}>{profesional ? t('saludo', { nombre: profesional.nombre }) : t('marca')}</span>
+        </div>
+        <BotonTema />
+      </header>
+      {puedeCambiar && (
+        <div style={{ padding: '0 20px 12px' }}>
+          <div style={{ borderRadius: 14, border: `1px solid ${agendaColors.divider}`, backgroundColor: agendaColors.surface, overflow: 'hidden' }}>
+            <button
+              ref={fila}
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={t('cambiarNegocio', { negocio: activo.negocioNombre })}
+              onClick={() => setAbierto(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                width: '100%',
+                height: 56,
+                padding: '0 14px',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+              }}
+            >
+              <span style={{ width: 32, height: 32, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: agendaColors.sub }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>
+                  <path d="m2 7 1.5-4h17L22 7" />
+                  <path d="M4 21V10M20 21V10" />
+                  <path d="M2 7a3.3 3.3 0 0 0 6.7 0 3.3 3.3 0 0 0 6.6 0A3.3 3.3 0 0 0 22 7" />
+                  <path d="M3 21h18" />
+                </svg>
+              </span>
+              <span style={{ flexShrink: 0, fontSize: 15, color: agendaColors.textStrong }}>{t('negocio')}</span>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  textAlign: 'right',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: agendaColors.primary,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {activo.negocioNombre}
+              </span>
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, color: agendaColors.muted }} {...trazo}>
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+        </div>
       )}
-      <Link
-        href={ruta('/cuenta')}
-        aria-label={t('cuenta')}
-        style={{
-          flexShrink: 0,
-          minWidth: 44,
-          minHeight: 44,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: agendaColors.strong,
-        }}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
-          <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </Link>
       {puedeCambiar && <NegocioSwitcherSheet abierto={abierto} onCerrar={cerrar} />}
-    </header>
+    </>
   );
 }

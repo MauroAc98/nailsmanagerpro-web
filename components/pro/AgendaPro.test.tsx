@@ -56,8 +56,8 @@ describe('AgendaPro', () => {
 
     const titulo = screen.getByRole('heading', { level: 1, name: 'Agenda' });
     expect(titulo).toHaveFocus();
-    expect(screen.getByText('Negocio 1')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Mi cuenta' })).toBeInTheDocument();
+    expect(screen.getByText('Hola, Ana')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cambiar a modo oscuro' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeInTheDocument();
     expect(screen.getByTestId('week-day-2026-10-12')).toBeInTheDocument();
     expect(screen.getByTestId('week-day-2026-10-18')).toBeInTheDocument();
