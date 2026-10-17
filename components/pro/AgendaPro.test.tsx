@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, renderWithProviders, screen, waitFor } from '@/test/render';
+import { act, fireEvent, renderWithProviders, screen, waitFor, within } from '@/test/render';
 import { proService } from '@/services/proService';
 import { vaciarCachesPro } from '@/lib/pro/caches';
 import type { ProListaTurnos, ProTurno, ProVinculo } from '@/lib/pro/tipos';
@@ -179,5 +179,151 @@ describe('AgendaPro', () => {
     renderWithProviders(<AgendaPro />);
     useProAgendaStore.getState().setFecha('2026-11-04');
     await waitFor(() => expect(screen.getByTestId('week-day-2026-11-04')).toBeInTheDocument());
+  });
+});
+
+describe('AgendaPro con filtros', () => {
+  const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado' }], descartados: 0 };
+
+  async function aplicar(cambios: (dialogo: HTMLElement) => void) {
+    fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
+    cambios(dialogo);
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Aplicar' }));
+  }
+  const escribir = (d: HTMLElement, texto: string) =>
+    fireEvent.change(within(d).getByLabelText('Buscar por nombre...'), { target: { value: texto } });
+
+  beforeEach(() => {
+    vi.spyOn(proService, 'servicios').mockResolvedValue(servicios);
+  });
+
+  it('el botón Filtros abre la hoja y al cerrarla el foco vuelve al botón', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    const boton = screen.getByRole('button', { name: 'Filtros' });
+    fireEvent.click(boton);
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(boton).toHaveFocus();
+  });
+
+  it('escribir en la hoja no pide nada; aplicar pide el rango de un día con el texto', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('Cliente1');
+    turnos.mockClear();
+
+    await aplicar((d) => {
+      escribir(d, ' Ana ');
+      expect(turnos).not.toHaveBeenCalled();
+    });
+
+    await waitFor(() => expect(turnos).toHaveBeenCalledTimes(1));
+    expect(turnos).toHaveBeenCalledWith(1, { desde: '2026-10-17', hasta: '2026-10-17', buscar: 'Ana' }, expect.any(AbortSignal));
+    expect(screen.queryByTestId('week-day-2026-10-17')).toBeNull();
+  });
+
+  it('indica los filtros activos con texto y no solo con color', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    renderWithProviders(<AgendaPro />);
+    await aplicar((d) => {
+      escribir(d, 'Ana');
+      fireEvent.change(within(d).getByLabelText('Desde'), { target: { value: '2026-10-01' } });
+      fireEvent.change(within(d).getByLabelText('Hasta'), { target: { value: '2026-10-05' } });
+    });
+
+    expect(await screen.findByRole('button', { name: 'Filtros: 2 activos' })).toBeInTheDocument();
+    const activos = screen.getByRole('list', { name: 'Filtros activos' });
+    expect(activos).toHaveTextContent('Nombre: Ana');
+    expect(activos).toHaveTextContent('2026-10-01 a 2026-10-05');
+  });
+
+  it('agrupa por fecha los resultados del rango y envía desde/hasta sin fecha', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('No hay turnos para este día.');
+    turnos.mockResolvedValue(lista([turno(2, '2026-10-02T10:00:00'), turno(1, '2026-10-01T09:00:00')]));
+
+    await aplicar((d) => {
+      fireEvent.change(within(d).getByLabelText('Desde'), { target: { value: '2026-10-01' } });
+      fireEvent.change(within(d).getByLabelText('Hasta'), { target: { value: '2026-10-05' } });
+    });
+
+    await screen.findByText('Cliente2');
+    expect(turnos).toHaveBeenLastCalledWith(1, { desde: '2026-10-01', hasta: '2026-10-05' }, expect.any(AbortSignal));
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      expect.stringMatching(/1 de octubre/),
+      expect.stringMatching(/2 de octubre/),
+    ]);
+  });
+
+  it('elegir un servicio envía servicio_id y lo nombra en los filtros activos', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('No hay turnos para este día.');
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
+    fireEvent.change(await within(dialogo).findByLabelText('Servicio'), { target: { value: '3' } });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Aplicar' }));
+
+    await waitFor(() =>
+      expect(turnos).toHaveBeenLastCalledWith(1, { desde: '2026-10-17', hasta: '2026-10-17', servicio_id: 3 }, expect.any(AbortSignal)),
+    );
+    expect(await screen.findByRole('list', { name: 'Filtros activos' })).toHaveTextContent('Servicio: Esmaltado');
+  });
+
+  it('muestra el aviso cuando la respuesta viene truncada', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('No hay turnos para este día.');
+    turnos.mockResolvedValue({ turnos: [turno(1, '2026-10-17T09:00:00')], truncated: true, descartados: 0 });
+    await aplicar((d) => escribir(d, 'Ana'));
+    expect(await screen.findByText(/primeros 500 turnos/)).toBeInTheDocument();
+    expect(screen.getByText(/Acota el rango/)).toBeInTheDocument();
+  });
+
+  it('sin resultados: texto propio y limpiar vuelve a hoy, vista de día y pide el día', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('No hay turnos para este día.');
+    await aplicar((d) => escribir(d, 'Zoe'));
+
+    expect(await screen.findByText('No hay turnos con estos filtros.')).toBeInTheDocument();
+    turnos.mockClear();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Limpiar filtros' })[0]);
+
+    const s = useProAgendaStore.getState();
+    expect(s.filtros).toEqual({ buscar: '', servicioId: null, desde: null, hasta: null });
+    expect(s.vista).toBe('dia');
+    await waitFor(() => expect(turnos).toHaveBeenCalledWith(1, { fecha: s.fecha }, expect.any(AbortSignal)));
+    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument();
+  });
+
+  it('un error del pedido filtrado usa el copy del tipo y permite reintentar', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('No hay turnos para este día.');
+    turnos.mockRejectedValueOnce(new Error('boom')).mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    await aplicar((d) => escribir(d, 'Ana'));
+
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).not.toHaveTextContent('boom');
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Cliente1')).toBeInTheDocument();
+  });
+
+  it('cambiar de negocio borra los filtros y vuelve a la vista normal', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    useProAuthStore.setState({ vinculos: [vinculo, { ...vinculo, id: 2, negocioNombre: 'Negocio 2' }] });
+    renderWithProviders(<AgendaPro />);
+    await aplicar((d) => escribir(d, 'Ana'));
+    await screen.findByRole('list', { name: 'Filtros activos' });
+
+    act(() => useProAuthStore.getState().elegirVinculo(2));
+
+    expect(useProAgendaStore.getState().filtros.buscar).toBe('');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument());
+    expect(screen.queryByRole('list', { name: 'Filtros activos' })).toBeNull();
   });
 });

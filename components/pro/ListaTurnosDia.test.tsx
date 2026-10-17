@@ -25,6 +25,54 @@ function lista(turnos: ProTurno[], extra: Partial<ProListaTurnos> = {}): ProList
 
 const base = { data: null, cargando: false, error: null, onReintentar: () => {}, onAbrir: () => {} };
 
+describe('ListaTurnosDia con rango (agrupar)', () => {
+  it('agrupa por fecha, con un encabezado por día y las horas en orden', () => {
+    const data = lista([
+      turno(3, '2026-10-18T08:00:00'),
+      turno(2, '2026-10-17T15:00:00'),
+      turno(1, '2026-10-17T09:00:00'),
+    ]);
+    renderWithProviders(<ListaTurnosDia {...base} data={data} agrupar />);
+
+    const encabezados = screen.getAllByRole('heading', { level: 3 });
+    expect(encabezados.map((h) => h.textContent)).toEqual([
+      expect.stringMatching(/17 de octubre/),
+      expect.stringMatching(/18 de octubre/),
+    ]);
+    const grupos = screen.getAllByRole('list');
+    expect(grupos).toHaveLength(2);
+    const primero = within(grupos[0]).getAllByRole('listitem').map((li) => li.textContent);
+    expect(primero[0]).toContain('Cliente1');
+    expect(primero[1]).toContain('Cliente2');
+    expect(within(grupos[1]).getByText(/Cliente3/)).toBeInTheDocument();
+  });
+
+  it('truncated true muestra el aviso; false no; 500 turnos con false no', () => {
+    const { unmount } = renderWithProviders(
+      <ListaTurnosDia {...base} data={lista([turno(1, '2026-10-17T09:00:00')], { truncated: true })} agrupar />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('primeros 500 turnos');
+    unmount();
+
+    const quinientos = Array.from({ length: 500 }, (_, i) => turno(i + 1, '2026-10-17T09:00:00'));
+    renderWithProviders(<ListaTurnosDia {...base} data={lista(quinientos)} agrupar />);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('el aviso también aparece en la lista de un día', () => {
+    renderWithProviders(
+      <ListaTurnosDia {...base} data={lista([turno(1, '2026-10-17T09:00:00')], { truncated: true })} />,
+    );
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('sin resultados muestra el vacío recibido por prop', () => {
+    renderWithProviders(<ListaTurnosDia {...base} data={lista([])} agrupar vacio={<p>Sin resultados propios</p>} />);
+    expect(screen.getByText('Sin resultados propios')).toBeInTheDocument();
+    expect(screen.queryByText('No hay turnos para este día.')).toBeNull();
+  });
+});
+
 describe('ListaTurnosDia', () => {
   it('ordena los turnos de menor a mayor hora y respeta el orden de los empates', () => {
     const data = lista([
