@@ -122,5 +122,18 @@
   },
   "LogoPortal": {
     "alt": "Turnetto, portal de profesionales"
+  },
+  "Card": {
+    "sinNombre": "Sin nombre",
+    "sinHora": "Sin hora",
+    "diaSiguiente": "día siguiente",
+    "promo": "Promo",
+    "nota": "Tiene una nota"
+  },
+  "Estado": {
+    "confirmado": "Confirmado",
+    "en_curso": "En curso",
+    "completado": "Completado",
+    "desconocido": "Sin estado"
   }
 }
