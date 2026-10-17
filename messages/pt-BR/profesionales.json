@@ -31,6 +31,21 @@
     "dia": "Dia",
     "mes": "Mês"
   },
+  "Detalle": {
+    "titulo": "Detalhe do atendimento",
+    "fecha": "Data",
+    "hora": "Horário",
+    "estado": "Situação",
+    "cliente": "Cliente",
+    "servicios": "Serviços",
+    "promo": "Promo",
+    "notas": "Observações",
+    "sinNotas": "Sem observações.",
+    "noEncontrado": "Não encontramos este atendimento. Talvez ele não exista mais.",
+    "volver": "Voltar para a agenda",
+    "errorRefresco": "Não conseguimos atualizar o atendimento. Mostramos a última informação salva.",
+    "cargando": "Carregando atendimento"
+  },
   "Filtros": {
     "boton": "Filtros",
     "botonActivos": "Filtros: {cantidad, plural, one {# ativo} other {# ativos}}",
