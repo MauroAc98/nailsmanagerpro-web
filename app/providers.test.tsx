@@ -411,6 +411,43 @@ describe('Providers — service worker', () => {
     expect(rechazosSinCapturar).toEqual([]);
   });
 
+  // Decisión P13: el SW del salón (push, caché del tenant) NO corre en el
+  // portal de profesionales. Admin y la reserva pública no cambian.
+  it('en profesionales.turnetto.com no registra el service worker del salón y da de baja uno heredado', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    setHostname('profesionales.turnetto.com');
+    setMockLocation('/login');
+    render(<Providers><div>PORTAL</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(registro.unregister).toHaveBeenCalled());
+    await esperarUnTick();
+    expect(sw.register).not.toHaveBeenCalled();
+    expect(registro.update).not.toHaveBeenCalled();
+    expect(sw.addEventListener).not.toHaveBeenCalled();
+  });
+
+  it('en localhost bajo /pro tampoco registra el service worker del salón', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    setMockLocation('/pro/login');
+    render(<Providers><div>PORTAL</div></Providers>);
+    markI18nReady();
+
+    await esperarUnTick();
+    expect(sw.register).not.toHaveBeenCalled();
+  });
+
+  it.each(['admin.turnetto.com', 'reservar.turnetto.com'])('en %s sigue registrando /sw.js', async (host) => {
+    vi.stubEnv('NODE_ENV', 'production');
+    registro.update.mockResolvedValue(undefined);
+    setHostname(host);
+    setMockLocation('/');
+    render(<Providers><div>X</div></Providers>);
+    markI18nReady();
+
+    await waitFor(() => expect(sw.register).toHaveBeenCalledWith('/sw.js'));
+  });
+
   it('fuera de producción no registra el service worker y da de baja el que quedó de un build anterior', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     render(<Providers><div>X</div></Providers>);
