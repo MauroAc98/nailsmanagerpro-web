@@ -65,6 +65,21 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
 //
 // manifest/íconos se mapean a los archivos propios del portal (igual que
 // admin); el resto de los estáticos de public/ pasan sin tocar.
+//
+// OJO: acá NO sirve esArchivoEstatico (un '.' en el último segmento). En este
+// host un path como /agenda/1.x o /login/slug.x pasaría sin prefijo y Next
+// resolvería la página dinámica del TENANT en el origen que guarda el token
+// del portal. Solo pasan los archivos reales de public/: los de la raíz (un
+// único segmento con '.') y los de splash/ (imágenes de arranque de iOS que
+// linkea el layout raíz). Todo lo demás —con punto o sin él— se reescribe a /pro.
+function esArchivoPublico(pathname: string): boolean {
+  return (
+    /^\/[^/]+\.[^/]+$/.test(pathname) ||
+    /^\/splash\/[^/]+\.[^/]+$/.test(pathname) ||
+    pathname.startsWith('/_next/')
+  );
+}
+
 const PRO_ASSET_MAP: Record<string, string> = {
   '/manifest.json': '/pro-manifest.json',
   '/icon-192.png': '/pro-icon-192.png',
@@ -143,7 +158,7 @@ export function middleware(request: NextRequest) {
     if (assetPro) {
       return reescribir(request, assetPro);
     }
-    if (esArchivoEstatico(pathname)) {
+    if (esArchivoPublico(pathname)) {
       return NextResponse.next();
     }
     // Idempotente: una ruta que YA trae /pro (link viejo, bookmark, service
@@ -195,7 +210,9 @@ export function middleware(request: NextRequest) {
   // Ruta vieja con el prefijo directo (admin.turnetto.com/admin,
   // /admin/login) — no debe responder, solo existe la versión limpia. Va
   // ANTES del chequeo de estáticos: /admin/x.png no es un archivo de public/.
-  if (esRutaAdminVieja(pathname)) {
+  // Lo mismo vale para /pro*: /pro/turnos/1.x no es un archivo y, si pasara el
+  // bypass de estáticos, llegaría a la página dinámica del portal.
+  if (esRutaAdminVieja(pathname) || tienePrefijoPro(pathname)) {
     return noEncontrado();
   }
 
