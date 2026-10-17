@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { BottomSheet } from '@/components/BottomSheet';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
 import { Spinner } from '@/components/Spinner';
 import { useProServicios } from '@/hooks/pro/useProServicios';
 import { hayFiltrosActivos, normalizarBuscar, validarBuscar } from '@/lib/pro/filtros';
@@ -63,7 +65,7 @@ const accionTextoStyle: CSSProperties = {
 const fechaBordeActivo = `color-mix(in srgb, ${agendaColors.primary} 27%, transparent)`;
 const fechaFondoActivo = `color-mix(in srgb, ${agendaColors.primary} 7%, transparent)`;
 
-// Íconos en línea (el portal no usa lucide-react).
+// Íconos en línea propios del portal.
 const trazo = { fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
 function IconoBuscar() {
@@ -116,14 +118,6 @@ function IconoServicio() {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="14" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function IconoDerecha() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" {...trazo} aria-hidden="true" style={{ flexShrink: 0 }}>
-      <path d="m9 18 6-6-6-6" />
     </svg>
   );
 }
@@ -334,70 +328,31 @@ function Contenido({ onCerrar, fecha, servicioId, onBorrarFecha, onAbrirCalendar
         </div>
       )}
       {servicios.data !== null && (
-        // Tarjeta "Qué mostrar": ícono, etiqueta, valor y chevron. Toda la fila es un
-        // botón que abre la hoja de selección de servicio.
-        <div
-          style={{
-            borderRadius: 14,
-            overflow: 'hidden',
-            backgroundColor: agendaColors.surface,
-            border: `1px solid ${agendaColors.divider}`,
-          }}
-        >
-          <button
-            type="button"
+        <TarjetaQueMostrar>
+          <FilaQueMostrar
+            leading={
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 9,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: agendaColors.primarySoft,
+                  color: agendaColors.primaryDeep,
+                }}
+              >
+                <IconoServicio />
+              </span>
+            }
+            titulo={t('servicio')}
+            valor={servicio ?? t('todos')}
+            activo={servicio !== undefined}
             onClick={onAbrirServicios}
-            aria-label={`${t('servicio')}: ${servicio ?? t('todos')}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              width: '100%',
-              minHeight: 56,
-              padding: '0 14px',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 9,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: agendaColors.primarySoft,
-                color: agendaColors.primaryDeep,
-              }}
-            >
-              <IconoServicio />
-            </span>
-            <span style={{ flexShrink: 0, fontSize: 15, color: agendaColors.textStrong }}>{t('servicio')}</span>
-            <span
-              style={{
-                flex: 1,
-                minWidth: 0,
-                textAlign: 'right',
-                fontSize: 14,
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                color: servicio === undefined ? agendaColors.muted : agendaColors.primary,
-              }}
-            >
-              {servicio ?? t('todos')}
-            </span>
-            <span aria-hidden="true" style={{ display: 'flex', color: agendaColors.muted }}>
-              <IconoDerecha />
-            </span>
-          </button>
-        </div>
+          />
+        </TarjetaQueMostrar>
       )}
 
       <button type="button" onClick={aplicar} disabled={!hayActivos} style={botonStyle(true, !hayActivos)}>

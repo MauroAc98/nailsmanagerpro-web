@@ -103,7 +103,7 @@ describe('FiltrosSheet', () => {
   it('la fila de servicio muestra "Todos" o el servicio elegido y abre la hoja de selección', async () => {
     const { onAbrirServicios } = abrir({ servicioId: 4 });
     const fila = await screen.findByRole('button', { name: 'Servicio: Pedicura' });
-    expect(fila.style.minHeight).toBe('56px');
+    expect(fila.style.height).toBe('56px');
     fireEvent.click(fila);
     expect(onAbrirServicios).toHaveBeenCalledTimes(1);
   });

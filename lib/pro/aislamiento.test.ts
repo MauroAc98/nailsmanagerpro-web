@@ -93,6 +93,8 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/agenda\/WeekStrip$/,
   /^components\/filtros\/ServiciosSheetBase$/, // hoja y lista de servicios presentacionales (todo por props); solo importan react, BottomSheet y theme/agendaColors
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
+  /^components\/filtros\/FilaQueMostrar$/, // fila presentacional (todo por props); solo importa react, lucide-react (ChevronRight) y theme/agendaColors
+  /^components\/filtros\/TarjetaQueMostrar$/, // tarjeta presentacional que separa filas; solo importa react y theme/agendaColors
   /^components\/Skeleton$/, // barra gris presentacional (props de tamaño); solo importa react (tipos) y theme/agendaColors
 ];
 
@@ -418,6 +420,8 @@ describe('aislamiento del portal — el escáner', () => {
       ['cacheLru en otra carpeta', "import x from '@/lib/otra/cacheLru';"],
       ['WeekStrip con sufijo (otro módulo)', "import x from '@/components/agenda/WeekStripExtra';"],
       ['WeekStrip de otra carpeta', "import x from '@/components/reservaOnline/WeekStrip';"],
+      ['FilaQueMostrar con sufijo (otro módulo)', "import x from '@/components/filtros/FilaQueMostrarExtra';"],
+      ['TarjetaQueMostrar de otra carpeta', "import x from '@/components/agenda/TarjetaQueMostrar';"],
       ['otro componente de agenda (tarjeta del tenant)', "import x from '@/components/agenda/TurnoCard';"],
       ['constants/layout con sufijo (otro módulo)', "import x from '@/constants/layoutExtra';"],
       ['otro módulo de constants', "import x from '@/constants/precios';"],
@@ -448,6 +452,8 @@ describe('aislamiento del portal — el escáner', () => {
       ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
       ['cacheLru (compartido revisado)', "import { crearCacheLru } from '@/lib/cacheLru';"],
       ['WeekStrip (compartido revisado)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
+      ['FilaQueMostrar (compartido revisado)', "import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';"],
+      ['TarjetaQueMostrar (compartido revisado)', "import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';"],
       ['constants/layout (compartido revisado)', "import { NAV_CLEARANCE } from '@/constants/layout';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],

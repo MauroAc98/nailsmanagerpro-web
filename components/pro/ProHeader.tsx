@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';
+import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';
 import { useProAuthStore } from '@/store/useProAuthStore';
 import { setTheme, useThemeStore } from '@/store/useThemeStore';
 import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
@@ -93,55 +95,25 @@ export function ProHeader() {
       </header>
       {puedeCambiar && (
         <div style={{ padding: '0 20px 12px' }}>
-          <div style={{ borderRadius: 14, border: `1px solid ${agendaColors.divider}`, backgroundColor: agendaColors.surface, overflow: 'hidden' }}>
-            <button
+          <TarjetaQueMostrar>
+            <FilaQueMostrar
               ref={fila}
-              type="button"
-              aria-haspopup="dialog"
-              aria-label={t('cambiarNegocio', { negocio: activo.negocioNombre })}
-              onClick={() => setAbierto(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                width: '100%',
-                height: 56,
-                padding: '0 14px',
-                border: 'none',
-                textAlign: 'left',
-                cursor: 'pointer',
-                backgroundColor: 'transparent',
-              }}
-            >
-              <span style={{ width: 32, height: 32, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: agendaColors.sub }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>
+              abreDialogo
+              ariaLabel={t('cambiarNegocio', { negocio: activo.negocioNombre })}
+              leading={
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style={{ color: agendaColors.sub }} {...trazo}>
                   <path d="m2 7 1.5-4h17L22 7" />
                   <path d="M4 21V10M20 21V10" />
                   <path d="M2 7a3.3 3.3 0 0 0 6.7 0 3.3 3.3 0 0 0 6.6 0A3.3 3.3 0 0 0 22 7" />
                   <path d="M3 21h18" />
                 </svg>
-              </span>
-              <span style={{ flexShrink: 0, fontSize: 15, color: agendaColors.textStrong }}>{t('negocio')}</span>
-              <span
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  textAlign: 'right',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: agendaColors.primary,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {activo.negocioNombre}
-              </span>
-              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, color: agendaColors.muted }} {...trazo}>
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-            </button>
-          </div>
+              }
+              titulo={t('negocio')}
+              valor={activo.negocioNombre}
+              activo
+              onClick={() => setAbierto(true)}
+            />
+          </TarjetaQueMostrar>
         </div>
       )}
       {puedeCambiar && <NegocioSwitcherSheet abierto={abierto} onCerrar={cerrar} />}

@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { agendaColors as colors } from '@/theme/agendaColors';
@@ -34,5 +35,21 @@ describe('FilaQueMostrar', () => {
     const props = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Profesional: Caro' }));
     expect(props.onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('por defecto no anuncia un diálogo ni cambia el nombre accesible', () => {
+    setup();
+    expect(screen.getByRole('button', { name: 'Profesional: Caro' })).not.toHaveAttribute('aria-haspopup');
+  });
+
+  it('ariaLabel reemplaza el nombre accesible y abreDialogo anuncia el diálogo', () => {
+    setup({ ariaLabel: 'Cambiar de negocio. Ahora: Caro', abreDialogo: true });
+    expect(screen.getByRole('button', { name: 'Cambiar de negocio. Ahora: Caro' })).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+
+  it('el ref recibido apunta al botón (para devolverle el foco)', () => {
+    const ref = createRef<HTMLButtonElement>();
+    setup({ ref });
+    expect(ref.current).toBe(screen.getByRole('button'));
   });
 });
