@@ -175,6 +175,34 @@ describe('FiltrosSheet', () => {
     expect(filtros().buscar).toBe('');
   });
 
+  it('rediseño: secciones Cliente y Fecha, búsqueda con ícono y fila de servicio en tarjeta', async () => {
+    abrir();
+    const dialogo = screen.getByRole('dialog');
+    expect(within(dialogo).getByText('Cliente')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Fecha')).toBeInTheDocument();
+    expect(within(dialogo).getByPlaceholderText('Buscar por nombre...')).toBeInTheDocument();
+    const select = await within(dialogo).findByLabelText('Servicio');
+    expect(select.parentElement?.style.borderRadius).toBe('14px');
+    expect(within(dialogo).queryByText(/profesional/i)).toBeNull();
+  });
+
+  it('el botón de borrar vacía la búsqueda y solo aparece con texto', () => {
+    abrir();
+    expect(screen.queryByRole('button', { name: 'Borrar búsqueda' })).toBeNull();
+    const campo = screen.getByLabelText('Buscar por nombre...');
+    fireEvent.change(campo, { target: { value: 'Ana' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Borrar búsqueda' }));
+    expect(campo).toHaveValue('');
+    expect(screen.queryByRole('button', { name: 'Borrar búsqueda' })).toBeNull();
+  });
+
+  it('Limpiar filtros vive en el encabezado, antes de los campos', () => {
+    abrir();
+    const limpiar = screen.getByRole('button', { name: 'Limpiar filtros' });
+    const campo = screen.getByLabelText('Buscar por nombre...');
+    expect(limpiar.compareDocumentPosition(campo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('los botones y campos miden al menos 44px de alto', () => {
     abrir();
     for (const nombre of ['Aplicar', 'Limpiar filtros', 'Cerrar']) {
