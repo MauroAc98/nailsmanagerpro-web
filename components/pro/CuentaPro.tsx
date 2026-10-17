@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useProAuthStore } from '@/store/useProAuthStore';
 import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
 import { NegocioSwitcherSheet } from './NegocioSwitcherSheet';
+import { PRO_NAV_ALTURA, ProNav } from './ProNav';
 import { VisualProfesional } from './VisualProfesional';
 
 const truncar = { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
@@ -81,7 +82,7 @@ export function CuentaPro() {
             {t('titulo')}
           </h1>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0, padding: '10px 20px 16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0, padding: `10px 20px ${PRO_NAV_ALTURA + 24}px` }}>
           <div
             style={{
               display: 'flex',
@@ -172,6 +173,7 @@ export function CuentaPro() {
         </div>
       </div>
       {puedeCambiar && <NegocioSwitcherSheet abierto={abierto} onCerrar={cerrar} />}
+      <ProNav />
     </main>
   );
 }

@@ -81,6 +81,15 @@ describe('CuentaPro', () => {
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
   });
 
+  it('mantiene la navegación inferior con Cuenta como pestaña activa', () => {
+    cargar([vinculo(1)], 1);
+    renderWithProviders(<CuentaPro />);
+    const navegacion = screen.getByRole('navigation', { name: 'Navegación principal' });
+    expect(navegacion).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda');
+    expect(screen.getByRole('link', { name: 'Cuenta' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('cerrar sesión es un botón rojo suave', () => {
     cargar([vinculo(1)], 1);
     renderWithProviders(<CuentaPro />);
