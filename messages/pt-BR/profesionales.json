@@ -52,6 +52,34 @@
     "server": "Algo deu errado do nosso lado. Tente novamente em instantes.",
     "esperaSegundos": "Você pode tentar novamente em {segundos} segundos."
   },
+  "OlvidePassword": {
+    "titulo": "Recupere sua senha",
+    "explicacion": "Informe seu e-mail e enviaremos um código de 6 dígitos para você escolher uma nova senha.",
+    "email": "E-mail",
+    "emailRequerido": "Informe seu e-mail.",
+    "enviar": "Enviar código",
+    "enviando": "Enviando",
+    "confirmacionGenerica": "Se o e-mail corresponder a uma conta, enviamos um código de 6 dígitos. Confira sua caixa de entrada.",
+    "irACodigo": "Já tenho o código",
+    "volver": "Voltar para entrar"
+  },
+  "Restablecer": {
+    "titulo": "Escolha uma nova senha",
+    "email": "E-mail",
+    "codigo": "Código de 6 dígitos",
+    "ayudaCodigo": "É o código que enviamos por e-mail.",
+    "nueva": "Nova senha",
+    "confirmar": "Repita a nova senha",
+    "guardar": "Salvar senha",
+    "guardando": "Salvando",
+    "codigoInvalido": "O código não é válido ou expirou. Peça um novo.",
+    "reenviar": "Pedir um novo código",
+    "exito": "Pronto, você trocou sua senha. Entre com a nova.",
+    "irAIngresar": "Ir para entrar",
+    "noCoincide": "As senhas não coincidem.",
+    "corta": "A senha precisa ter pelo menos 10 caracteres.",
+    "emailRequerido": "Informe seu e-mail."
+  },
   "LogoPortal": {
     "alt": "Turnetto, portal de profissionais"
   }
