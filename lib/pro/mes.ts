@@ -1,6 +1,7 @@
-// Aritmética de meses "YYYY-MM" de la vista mensual. Todo es texto: nunca se
-// parsea un turno con Date. Date.UTC aparece UNA vez, con partes numéricas, solo
-// para saber qué día de la semana cae el 1 (no depende de la zona horaria).
+// Aritmética de meses "YYYY-MM" del calendario. Todo es texto: nunca se parsea
+// un turno con Date. Date.UTC se usa solo con partes numéricas, para saber qué
+// día de la semana cae el 1 y para formatear nombres (no depende de la zona
+// horaria del dispositivo).
 import { esFechaValida, FECHA_MINIMA } from '@/lib/pro/fechaHora';
 
 const MES = /^(\d{4})-(0[1-9]|1[0-2])$/;
@@ -63,9 +64,20 @@ export function etiquetaDeMes(mes: string, locale: string): string {
   );
 }
 
-// Huecos antes del día 1 con la semana empezando el lunes (0 = el 1 es lunes).
-export function desfaseLunes(mes: string): number | null {
-  const p = partes(mes);
-  if (p === null) return null;
-  return (new Date(Date.UTC(p[0], p[1] - 1, 1)).getUTCDay() + 6) % 7;
+// "14 de octubre": se formatea en UTC con partes numéricas, la zona del
+// dispositivo no puede correr el día. Fecha inválida = texto vacío.
+export function etiquetaDeDia(fecha: string, locale: string): string {
+  if (!esFechaValida(fecha)) return '';
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)) - 1, Number(fecha.slice(8, 10)))),
+  );
+}
+
+// "mié, 14 oct": día de la semana y mes abreviados, también en UTC. Fecha inválida
+// = texto vacío.
+export function etiquetaCortaDeDia(fecha: string, locale: string): string {
+  if (!esFechaValida(fecha)) return '';
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)) - 1, Number(fecha.slice(8, 10)))),
+  );
 }

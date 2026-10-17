@@ -6,6 +6,7 @@ import { Spinner } from '@/components/Spinner';
 import type { ProError } from '@/lib/pro/errores';
 import { compararFechaHora, diaDe } from '@/lib/pro/fechaHora';
 import type { ProListaTurnos, ProTurno } from '@/lib/pro/tipos';
+import { useProAuthStore } from '@/store/useProAuthStore';
 import { agendaColors } from '@/theme/agendaColors';
 import { AvisoTruncado } from './AvisoTruncado';
 import { MensajeErrorPro } from './MensajeErrorPro';
@@ -37,6 +38,8 @@ function etiquetaDeDia(dia: string, locale: string): string {
 export function ListaTurnosDia({ data, cargando, error, onReintentar, onAbrir, agrupar = false, vacio }: Props) {
   const t = useTranslations('profesionales.Agenda');
   const locale = useLocale();
+  // Quien atiende en el negocio activo: se muestra como "con {nombre}" en cada tarjeta.
+  const profesional = useProAuthStore((s) => s.vinculos.find((v) => v.id === s.vinculoActivoId)?.profesional);
   const ordenados = useMemo(
     () => (data === null ? [] : [...data.turnos].sort((a, b) => compararFechaHora(a.fecha_hora, b.fecha_hora))),
     [data],
@@ -92,7 +95,7 @@ export function ListaTurnosDia({ data, cargando, error, onReintentar, onAbrir, a
     >
       {turnos.map((turno) => (
         <li key={turno.id} style={{ minWidth: 0 }}>
-          <ProTurnoCard turno={turno} onAbrir={onAbrir} />
+          <ProTurnoCard turno={turno} profesional={profesional} onAbrir={onAbrir} />
         </li>
       ))}
     </ul>

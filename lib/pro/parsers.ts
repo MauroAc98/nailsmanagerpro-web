@@ -12,8 +12,11 @@ import {
   type ProMarcaDia,
   type ProMarcas,
   type ProMe,
+  type ProResumen,
+  type ProCategoriaServicio,
   type ProServicio,
   type ProServicios,
+  type ProServicioTurno,
   type ProTurno,
   type ProVinculo,
 } from '@/lib/pro/tipos';
@@ -47,10 +50,31 @@ function estadoVisualDe(valor: unknown): EstadoVisual {
   return ESTADOS_VISUALES.find((estado) => estado === valor) ?? 'confirmado';
 }
 
-function parseServicio(raw: unknown): ProServicio | null {
+function parseServicioTurno(raw: unknown): ProServicioTurno | null {
   if (!esObjeto(raw) || !esIdValido(raw.id)) return null;
   const nombre = textoONull(raw.nombre);
   return nombre === null ? null : { id: raw.id, nombre };
+}
+
+// Categoría ausente, malformada o de otra forma (backend viejo o cambiado): null,
+// sin descartar el servicio. Solo se copian id y nombre.
+function parseCategoria(raw: unknown): ProCategoriaServicio | null {
+  if (!esObjeto(raw) || !esIdValido(raw.id)) return null;
+  const nombre = textoONull(raw.nombre);
+  return nombre === null ? null : { id: raw.id, nombre };
+}
+
+// Servicio de la lista del filtro. Un backend sin duración ni categoría da null en
+// ambas y el portal sigue mostrando la lista plana de siempre.
+function parseServicio(raw: unknown): ProServicio | null {
+  const base = parseServicioTurno(raw);
+  if (base === null || !esObjeto(raw)) return null;
+  const duracion = raw.duracion_minutos;
+  return {
+    ...base,
+    duracion_minutos: typeof duracion === 'number' && Number.isInteger(duracion) && duracion > 0 ? duracion : null,
+    categoria: parseCategoria(raw.categoria),
+  };
 }
 
 // Parsea cada elemento de una lista y cuenta los que no pasaron. Si `raw` NO es
@@ -83,8 +107,10 @@ export function parseProTurno(raw: unknown): ProTurno | null {
     notas: textoONull(raw.notas),
     cliente: { nombre: textoONull(cliente.nombre), apellido: textoONull(cliente.apellido) },
     // Dentro de un turno, servicios ausente o no-lista es simplemente "sin servicios".
-    servicios: listaDe(raw.servicios, parseServicio)?.items ?? [],
+    servicios: listaDe(raw.servicios, parseServicioTurno)?.items ?? [],
     promo: promo === null ? null : { nombre: promo },
+    // Lista blanca de valores: solo 'web' pasa; ausente o cualquier otro es null.
+    origen: raw.origen === 'web' ? 'web' : null,
   };
 }
 
@@ -140,6 +166,27 @@ function parseMarca(raw: unknown): ProMarcaDia | null {
 export function parseMarcas(raw: unknown): ProMarcas | null {
   const lista = listaDe(esObjeto(raw) ? raw.dias : null, parseMarca);
   return lista === null ? null : { dias: lista.items, descartados: lista.descartados };
+}
+
+// Conteo del resumen: entero >= 0; cualquier otra cosa vale 0.
+function conteoONulo(valor: unknown): number {
+  return typeof valor === 'number' && Number.isSafeInteger(valor) && valor >= 0 ? valor : 0;
+}
+
+// null si el cuerpo no es un objeto con al menos un conteo con forma de conteo
+// (un cuerpo de error o HTML no es un mes sin turnos). El nombre del más pedido
+// inválido o ausente es null. Se copian solo las claves de la lista blanca.
+export function parseResumen(raw: unknown): ProResumen | null {
+  if (!esObjeto(raw)) return null;
+  const claves = [raw.atendidos, raw.por_venir, raw.cancelados];
+  if (!claves.some((valor) => typeof valor === 'number')) return null;
+  const masPedido = esObjeto(raw.mas_pedido) ? textoONull(raw.mas_pedido.nombre) : null;
+  return {
+    atendidos: conteoONulo(raw.atendidos),
+    por_venir: conteoONulo(raw.por_venir),
+    cancelados: conteoONulo(raw.cancelados),
+    mas_pedido: masPedido,
+  };
 }
 
 // El backend devuelve la lista plana (sin envoltorio `data`); null si no lo es.

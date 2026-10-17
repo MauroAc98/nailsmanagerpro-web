@@ -4,17 +4,21 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';
+import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';
 import { Spinner } from '@/components/Spinner';
 import { useProTurno } from '@/hooks/pro/useProTurno';
 import { useRutaPro } from '@/hooks/useRutaPro';
+import { formatearDuracion } from '@/lib/duracion';
 import { infoEstado } from '@/lib/pro/estado';
 import { diaDe, horaDe, horaFin } from '@/lib/pro/fechaHora';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { useProAuthStore } from '@/store/useProAuthStore';
-import { agendaColors, agendaFontSerif } from '@/theme/agendaColors';
+import { agendaColors, agendaFontSerif, agendaShadows } from '@/theme/agendaColors';
 import { MensajeErrorPro } from './MensajeErrorPro';
+import { NotasDelTurnoPro } from './NotasDelTurnoPro';
 import { ProHeader } from './ProHeader';
-import { PRO_NAV_ALTURA_AGENDA, ProNav } from './ProNav';
+import { PRO_NAV_ALTURA, ProNav } from './ProNav';
 
 // Solo enteros positivos escritos en decimal simple: "1e1", "0x5" o "5/../me"
 // no son un id. Cualquier otra cosa se trata como turno inexistente, sin pedir nada.
@@ -51,15 +55,6 @@ const boton = {
 
 const textoLargo = { minWidth: 0, overflowWrap: 'anywhere', unicodeBidi: 'isolate' } as const;
 
-function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-      <dt style={{ fontSize: 13, fontWeight: 600, color: agendaColors.sub }}>{etiqueta}</dt>
-      <dd style={{ margin: 0, fontSize: 16, color: agendaColors.strong, ...textoLargo }}>{children}</dd>
-    </div>
-  );
-}
-
 // Detalle de solo lectura de un turno (/turnos/[id]). El id llega por la URL y se
 // valida antes de cualquier pedido. Muestra solo los campos de ProTurno; las
 // notas van completas, como texto plano. La fecha elegida en la agenda vive en
@@ -73,6 +68,7 @@ export function DetalleTurnoPro() {
   const id = idDeParam(params?.id);
   const fecha = useProAgendaStore((s) => s.fecha);
   const vinculoId = useProAuthStore((s) => s.vinculoActivoId);
+  const profesional = useProAuthStore((s) => s.vinculos.find((v) => v.id === s.vinculoActivoId)?.profesional);
   const [vinculoInicial] = useState(vinculoId);
   const titulo = useRef<HTMLHeadingElement>(null);
   const { data, error, reintentar } = useProTurno(id, fecha);
@@ -91,11 +87,33 @@ export function DetalleTurnoPro() {
   const volver = (
     <Link
       href={ruta('/agenda')}
-      style={{ ...boton, display: 'inline-flex', alignItems: 'center', textDecoration: 'none', alignSelf: 'flex-start' }}
+      aria-label={t('Detalle.volver')}
+      style={{
+        width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', flexShrink: 0, alignSelf: 'flex-start',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+        border: `1px solid ${agendaColors.border}`, backgroundColor: agendaColors.surface, color: agendaColors.strong,
+      }}
     >
-      {t('Detalle.volver')}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
     </Link>
   );
+
+  // Lo que se ve arriba (etiqueta con la fecha, nombre y píldora) solo existe con
+  // un turno a la vista; sin él, el título es el genérico del detalle.
+  const turno = cambioNegocio || id === 0 || error?.kind === 'notFound' ? null : data;
+  const dia = turno === null ? null : diaDe(turno.fecha_hora);
+  const nombre =
+    turno === null
+      ? ''
+      : [turno.cliente.nombre, turno.cliente.apellido]
+          .map((p) => (typeof p === 'string' ? p.trim() : ''))
+          .filter((p) => p !== '')
+          .join(' ');
+  const enCurso = turno !== null && infoEstado(turno.estado_visual).clave === 'en_curso';
+  // Sin consultar flags del negocio: el portal muestra el origen siempre que el backend lo informa.
+  const esWeb = turno !== null && turno.origen === 'web';
 
   let cuerpo: ReactNode;
   if (cambioNegocio) {
@@ -118,65 +136,87 @@ export function DetalleTurnoPro() {
       </div>
     );
   } else {
-    const dia = diaDe(data.fecha_hora);
     const inicio = horaDe(data.fecha_hora);
     const fin = inicio === null ? null : horaFin(inicio, data.duracion_total_minutos);
-    const estado = infoEstado(data.estado_visual);
-    const nombre = [data.cliente.nombre, data.cliente.apellido]
-      .map((p) => (typeof p === 'string' ? p.trim() : ''))
-      .filter((p) => p !== '')
-      .join(' ');
     const notas = typeof data.notas === 'string' && data.notas.trim() !== '' ? data.notas : null;
+    const duracion =
+      Number.isInteger(data.duracion_total_minutos) && data.duracion_total_minutos > 0 ? formatearDuracion(data.duracion_total_minutos) : null;
+    const sinHora = t('Card.sinHora');
+    const fila = { borderTop: `1px solid ${agendaColors.divider}` } as const;
 
     cuerpo = (
       <>
         {error !== null && (
-          <p role="status" style={{ margin: 0, fontSize: 14, color: agendaColors.sub }}>
+          <p role="status" style={{ margin: '0 0 16px', fontSize: 14, color: agendaColors.sub }}>
             {t('Detalle.errorRefresco')}
           </p>
         )}
-        <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Dato etiqueta={t('Detalle.fecha')}>{dia === null ? t('Card.sinHora') : etiquetaDeFecha(dia, locale)}</Dato>
-          <Dato etiqueta={t('Detalle.hora')}>
-            {inicio === null ? t('Card.sinHora') : fin === null ? inicio : `${inicio} – ${fin.hora}`}
-            {fin?.diaSiguiente === true && (
-              <span style={{ marginLeft: 6, fontSize: 12, color: agendaColors.sub }}>{t('Card.diaSiguiente')}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div
+            style={{
+              borderRadius: 18, border: `1px solid ${agendaColors.border}`, backgroundColor: agendaColors.surface,
+              boxShadow: agendaShadows.card, overflow: 'hidden',
+            }}
+          >
+            {data.promo !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', backgroundColor: agendaColors.successBg }}>
+                <span
+                  style={{
+                    flexShrink: 0, fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase',
+                    color: agendaColors.success, backgroundColor: agendaColors.surface, borderRadius: 8, padding: '2px 6px',
+                  }}
+                >
+                  {t('Card.promo')}
+                </span>
+                <span dir="auto" style={{ ...textoLargo, fontSize: 14, fontStyle: 'italic', color: agendaColors.text }}>
+                  {data.promo.nombre}
+                </span>
+              </div>
             )}
-          </Dato>
-          <Dato etiqueta={t('Detalle.estado')}>
-            <span style={{ fontSize: 13, fontWeight: 600, padding: '2px 8px', borderRadius: 999, color: estado.fg, background: estado.bg }}>
-              {t(`Estado.${estado.clave}`)}
-            </span>
-          </Dato>
-          <Dato etiqueta={t('Detalle.cliente')}>
-            <span dir="auto">{nombre === '' ? t('Card.sinNombre') : nombre}</span>
-          </Dato>
-          {data.servicios.length > 0 && (
-            <Dato etiqueta={t('Detalle.servicios')}>
-              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ ...(data.promo !== null ? fila : {}), display: 'flex', alignItems: 'center', gap: 16, padding: '16px 16px 14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontFamily: agendaFontSerif, fontSize: 34, lineHeight: 1, color: agendaColors.strong }}>{inicio ?? sinHora}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: agendaColors.subtext }}>
+                  {t('Detalle.hastaLas', { hora: fin === null ? sinHora : fin.hora })}
+                </span>
+                {fin?.diaSiguiente === true && <span style={{ fontSize: 12, color: agendaColors.sub }}>{t('Card.diaSiguiente')}</span>}
+              </div>
+              {duracion !== null && (
+                <>
+                  <span aria-hidden="true" style={{ width: 1, alignSelf: 'stretch', flexShrink: 0, backgroundColor: agendaColors.divider }} />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: agendaColors.subtext }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
+                    {duracion}
+                  </span>
+                </>
+              )}
+            </div>
+            {data.servicios.length > 0 && (
+              <div style={{ ...fila, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {data.servicios.map((s) => (
-                  <li key={s.id} dir="auto" style={textoLargo}>
-                    {s.nombre}
-                  </li>
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 3, flexShrink: 0, backgroundColor: agendaColors.primary }} />
+                    <span dir="auto" style={{ ...textoLargo, fontFamily: agendaFontSerif, fontStyle: 'italic', fontSize: 16, color: agendaColors.strong }}>
+                      {s.nombre}
+                    </span>
+                  </div>
                 ))}
-              </ul>
-            </Dato>
-          )}
-          {data.promo !== null && (
-            <Dato etiqueta={t('Detalle.promo')}>
-              <span dir="auto">{data.promo.nombre}</span>
-            </Dato>
-          )}
-          <Dato etiqueta={t('Detalle.notas')}>
-            {notas === null ? (
-              <span style={{ color: agendaColors.sub }}>{t('Detalle.sinNotas')}</span>
-            ) : (
-              <span data-testid="detalle-notas" dir="auto" style={{ display: 'block', whiteSpace: 'pre-wrap', ...textoLargo }}>
-                {notas}
-              </span>
+              </div>
             )}
-          </Dato>
-        </dl>
+            {profesional !== undefined && (
+              <div style={{ ...fila, backgroundColor: agendaColors.surfaceSubtle, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AvatarProfesional nombre={profesional.nombre} apellido={profesional.apellido} avatarUrl={profesional.avatar_url} size={20} fontSize={8} />
+                <span dir="auto" style={{ ...textoLargo, fontSize: 12, fontWeight: 700, color: agendaColors.subtext }}>
+                  {t('Card.conProfesional', { nombre: profesional.nombre })}
+                </span>
+              </div>
+            )}
+          </div>
+          {notas !== null && <NotasDelTurnoPro notas={notas} />}
+        </div>
       </>
     );
   }
@@ -188,19 +228,46 @@ export function DetalleTurnoPro() {
           boxSizing: 'border-box',
           minHeight: '100dvh',
           backgroundColor: agendaColors.bg,
-          paddingBottom: `calc(${PRO_NAV_ALTURA_AGENDA}px + env(safe-area-inset-bottom))`,
+          paddingBottom: `calc(${PRO_NAV_ALTURA}px + env(safe-area-inset-bottom))`,
         }}
       >
         <ProHeader />
-        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '4px 20px 0', display: 'flex', flexDirection: 'column' }}>
           {volver}
-          <h1
-            ref={titulo}
-            tabIndex={-1}
-            style={{ margin: 0, fontSize: 22, fontFamily: agendaFontSerif, color: agendaColors.strong, outline: 'none' }}
-          >
-            {t('Detalle.titulo')}
-          </h1>
+          <div style={{ padding: '12px 0 18px' }}>
+            {turno !== null && (
+              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: agendaColors.primaryDeep, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                {t('Detalle.etiqueta', { fecha: dia === null ? t('Card.sinHora') : etiquetaDeFecha(dia, locale) })}
+              </p>
+            )}
+            <h1
+              ref={titulo}
+              tabIndex={-1}
+              dir="auto"
+              style={{
+                margin: 0, fontSize: 28, fontWeight: 400, lineHeight: 1.15, fontFamily: agendaFontSerif, color: agendaColors.strong,
+                outline: 'none', overflowWrap: 'anywhere',
+              }}
+            >
+              {turno === null ? t('Detalle.titulo') : nombre === '' ? t('Card.sinNombre') : nombre}
+            </h1>
+            {(enCurso || esWeb) && (
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                {enCurso && (
+                  <span
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 700, color: agendaColors.amberFg,
+                      textTransform: 'uppercase', letterSpacing: 0.3, backgroundColor: agendaColors.amberBg, borderRadius: 8, padding: '2px 7px',
+                    }}
+                  >
+                    <span style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: agendaColors.amber }} />
+                    {t('Estado.en_curso')}
+                  </span>
+                )}
+                {esWeb && <BadgeReservaOnline />}
+              </div>
+            )}
+          </div>
           {cuerpo}
         </div>
       </main>

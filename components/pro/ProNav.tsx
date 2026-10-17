@@ -3,45 +3,131 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { SegmentedControl } from '@/components/SegmentedControl';
-import { NAV_HEIGHT, NAV_Z_INDEX } from '@/constants/layout';
+import { NAV_BUBBLE_POKE, NAV_BUBBLE_SIZE, NAV_HEIGHT, NAV_Z_INDEX } from '@/constants/layout';
 import { useRutaPro } from '@/hooks/useRutaPro';
 import { rutaLimpiaPro } from '@/lib/pro/rutas';
-import { useProAgendaStore, type VistaAgenda } from '@/store/useProAgendaStore';
-import { agendaColors } from '@/theme/agendaColors';
+import { agendaColors, agendaShadows } from '@/theme/agendaColors';
 
-// Alto de la fila del selector día/mes (solo en la agenda) y del nav completo:
-// quien muestre contenido debajo del nav suma este espacio como padding inferior.
-const ALTO_SELECTOR = 64;
-export const PRO_NAV_ALTURA_AGENDA = NAV_HEIGHT + ALTO_SELECTOR;
+// Alto del nav: quien muestre contenido debajo suma este espacio como padding inferior.
+export const PRO_NAV_ALTURA = NAV_HEIGHT;
 
-// Navegación inferior del portal: solo Agenda y Cuenta (nada del negocio). En la
-// agenda suma el selector día/mes.
+const BURBUJA_INTERIOR = 48;
+
+// Primary al 55 % (como la app): el portal no importa theme/colors, así que la mezcla va directa.
+const FONDO_BURBUJA = `color-mix(in srgb, ${agendaColors.primary} 55%, transparent)`;
+
+// Mismos íconos que la navegación de la app (calendario y persona), en SVG
+// propio: el portal no importa lucide-react.
+function Icono({ tipo, activo }: { tipo: 'agenda' | 'cuenta'; activo: boolean }) {
+  const tamano = activo ? 24 : 22;
+  return (
+    <svg
+      width={tamano}
+      height={tamano}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={activo ? agendaColors.primaryDeep : agendaColors.muted}
+      strokeWidth={activo ? 2.4 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {tipo === 'agenda' ? (
+        <>
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21a8 8 0 0 1 16 0" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+interface PestanaProps {
+  href: string;
+  tipo: 'agenda' | 'cuenta';
+  etiqueta: string;
+  activa: boolean;
+}
+
+// La activa lleva la burbuja flotante (asoma por arriba de la barra); la
+// inactiva, solo el ícono. La etiqueta baja para dejarle lugar a la burbuja.
+function Pestana({ href, tipo, etiqueta, activa }: PestanaProps) {
+  return (
+    <Link
+      href={href}
+      aria-current={activa ? 'page' : undefined}
+      style={{
+        flex: 1,
+        height: NAV_HEIGHT,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        textDecoration: 'none',
+      }}
+    >
+      {activa ? (
+        <div
+          className="nav-bubble-enter"
+          style={{
+            position: 'absolute',
+            top: -NAV_BUBBLE_POKE,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: NAV_BUBBLE_SIZE,
+            height: NAV_BUBBLE_SIZE,
+            borderRadius: '50%',
+            backgroundColor: agendaColors.surface,
+            border: `1px solid ${agendaColors.border}`,
+            boxShadow: agendaShadows.card,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: BURBUJA_INTERIOR,
+              height: BURBUJA_INTERIOR,
+              borderRadius: '50%',
+              backgroundColor: FONDO_BURBUJA,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icono tipo={tipo} activo />
+          </div>
+        </div>
+      ) : (
+        <Icono tipo={tipo} activo={false} />
+      )}
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: activa ? 700 : 400,
+          color: activa ? agendaColors.primaryDeep : agendaColors.sub,
+          marginTop: activa ? NAV_BUBBLE_SIZE - 30 : 0,
+        }}
+      >
+        {etiqueta}
+      </span>
+    </Link>
+  );
+}
+
+// Navegación inferior del portal: solo Agenda y Cuenta (nada del negocio).
 export function ProNav() {
   const t = useTranslations('profesionales');
   const ruta = useRutaPro();
-  const pathname = usePathname();
-  const vista = useProAgendaStore((s) => s.vista);
-  const limpia = rutaLimpiaPro(pathname);
-  const enAgenda = limpia === '/agenda';
-  const enCuenta = limpia === '/cuenta';
-
-  const opciones: readonly { value: VistaAgenda; label: string }[] = [
-    { value: 'dia', label: t('Agenda.dia') },
-    { value: 'mes', label: t('Agenda.mes') },
-  ];
-
-  const enlace = (activo: boolean): React.CSSProperties => ({
-    flex: 1,
-    minHeight: 44,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 15,
-    fontWeight: activo ? 700 : 500,
-    textDecoration: 'none',
-    color: activo ? agendaColors.primaryDeep : agendaColors.sub,
-  });
+  const limpia = rutaLimpiaPro(usePathname());
 
   return (
     <nav
@@ -52,30 +138,18 @@ export function ProNav() {
         right: 0,
         bottom: 0,
         zIndex: NAV_Z_INDEX,
-        boxSizing: 'border-box',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        borderRadius: '20px 20px 0 0',
         backgroundColor: agendaColors.surface,
-        borderTop: `1px solid ${agendaColors.border}`,
+        boxShadow: agendaShadows.sheet,
+        display: 'flex',
+        alignItems: 'center',
+        // La burbuja de la pestaña activa se dibuja fuera de la barra.
+        overflow: 'visible',
       }}
     >
-      {enAgenda && (
-        <div style={{ padding: '8px 16px 0' }}>
-          <SegmentedControl
-            ariaLabel={t('Agenda.vista')}
-            options={opciones}
-            value={vista}
-            onChange={(v) => useProAgendaStore.getState().setVista(v)}
-          />
-        </div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', minHeight: NAV_HEIGHT - 20, padding: '0 16px' }}>
-        <Link href={ruta('/agenda')} aria-current={enAgenda ? 'page' : undefined} style={enlace(enAgenda)}>
-          {t('Nav.agenda')}
-        </Link>
-        <Link href={ruta('/cuenta')} aria-current={enCuenta ? 'page' : undefined} style={enlace(enCuenta)}>
-          {t('Nav.cuenta')}
-        </Link>
-      </div>
+      <Pestana href={ruta('/agenda')} tipo="agenda" etiqueta={t('Nav.agenda')} activa={limpia === '/agenda'} />
+      <Pestana href={ruta('/cuenta')} tipo="cuenta" etiqueta={t('Nav.cuenta')} activa={limpia === '/cuenta'} />
     </nav>
   );
 }

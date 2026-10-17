@@ -80,17 +80,32 @@ const PROYECTO_PERMITIDO: RegExp[] = [
   /^components\/Spinner$/, // presentacional; solo importa theme/agendaColors y theme/colors
   /^components\/AgendaThemeScope$/, // aplica la clase de tema; solo importa store/useThemeStore (preferencia de tema)
   /^store\/useLocaleStore$/, // el portal solo lee `mensajesListos`; no importa nada de sesión ni de datos del salón
+  /^store\/useThemeStore$/, // preferencia de tema claro/oscuro (setTheme y resolvedTheme); sin sesión ni datos del negocio
   /^theme\/agendaColors$/, // constantes de paleta (variables CSS)
   /^components\/filtros\/AvatarProfesional$/, // presentacional (foto o iniciales); solo importa theme/* y lib/inicialesProfesional
   /^components\/BottomSheet$/, // sheet de arrastre; solo importa react y theme/colors, sin sesión ni datos
+  /^lib\/duracion$/, // formato de minutos a "1 h 30"; función pura, sin imports
   /^lib\/cacheLru$/, // LRU genérico con vigencia; sin imports ni estado global (cada instancia es propia)
   // WeekStrip es presentacional (todo entra por props). Sus imports transitivos se
   // revisaron: lib/dateFormat (solo useLocaleStore), agendaDateHelpers, theme/*,
   // lucide-react y un TIPO de services/turnoService; sin stores de sesión, token,
   // teléfono ni precio.
   /^components\/agenda\/WeekStrip$/,
-  /^components\/SegmentedControl$/, // presentacional; solo importa theme/agendaColors
+  // CalendarioMensual es presentacional (todo entra por props). Imports transitivos
+  // revisados: lib/dateFormat (solo useLocaleStore), agendaDateHelpers (solo
+  // lib/dateFormat), theme/colors (withAlpha, sin imports), theme/agendaColors,
+  // lucide-react (flechas) y un TIPO de services/turnoService (TurnoMes, se borra al
+  // compilar); sin sesión, token, teléfono ni precio.
+  /^components\/agenda\/CalendarioMensual$/,
+  /^components\/filtros\/ServiciosSheetBase$/, // hoja y lista de servicios presentacionales (todo por props); solo importan react, BottomSheet y theme/agendaColors
   /^constants\/layout$/, // constantes numéricas del nav (NAV_CLEARANCE); sin imports
+  /^components\/filtros\/FilaQueMostrar$/, // fila presentacional (todo por props); solo importa react, lucide-react (ChevronRight) y theme/agendaColors
+  /^components\/filtros\/TarjetaQueMostrar$/, // tarjeta presentacional que separa filas; solo importa react y theme/agendaColors
+  // BadgeReservaOnline es presentacional (solo prop `compacto`). Imports transitivos
+  // revisados: next-intl (texto) y theme/agendaColors; no llama a reservaOnlineHabilitada
+  // ni lee stores o servicios del negocio. El portal lo muestra solo si origen === 'web'.
+  /^components\/reservaOnline\/BadgeReservaOnline$/,
+  /^components\/Skeleton$/, // barra gris presentacional (props de tamaño); solo importa react (tipos) y theme/agendaColors
 ];
 
 const PAQUETES_PERMITIDOS = new Set([
@@ -395,7 +410,7 @@ describe('aislamiento del portal — el escáner', () => {
       ['store del tenant con nombre parecido a useLocaleStore', "import { x } from '@/store/useLocaleStoreExtra';"],
       ['Spinner con sufijo (otro módulo)', "import x from '@/components/SpinnerExtra';"],
       ['theme/colors no está habilitado directo', "import { colors } from '@/theme/colors';"],
-      ['useThemeStore no está habilitado directo (solo vía AgendaThemeScope)', "import { useThemeStore } from '@/store/useThemeStore';"],
+      ['useThemeStore con sufijo (otro módulo)', "import { x } from '@/store/useThemeStoreExtra';"],
       ['store de sesión del tenant', "import { useAuthStore } from '@/store/useAuthStore';"],
       ['store del tenant', "import { useProfesionalStore } from '@/store/useProfesionalStore';"],
       ['hook del tenant', "import { x } from '@/hooks/useMarcasMesProfesional';"],
@@ -415,9 +430,13 @@ describe('aislamiento del portal — el escáner', () => {
       ['cacheLru en otra carpeta', "import x from '@/lib/otra/cacheLru';"],
       ['WeekStrip con sufijo (otro módulo)', "import x from '@/components/agenda/WeekStripExtra';"],
       ['WeekStrip de otra carpeta', "import x from '@/components/reservaOnline/WeekStrip';"],
+      ['FilaQueMostrar con sufijo (otro módulo)', "import x from '@/components/filtros/FilaQueMostrarExtra';"],
+      ['BadgeReservaOnline con sufijo (otro módulo)', "import x from '@/components/reservaOnline/BadgeReservaOnlineExtra';"],
+      ['TarjetaQueMostrar de otra carpeta',"import x from '@/components/agenda/TarjetaQueMostrar';"],
+      ['CalendarioMensual con sufijo (otro módulo)', "import x from '@/components/agenda/CalendarioMensualExtra';"],
+      ['CalendarioMensual de otra carpeta', "import x from '@/components/reservaOnline/CalendarioMensual';"],
+      ['helpers de fecha de agenda sin revisar como import directo', "import { formatCellDate } from '@/components/agenda/agendaDateHelpers';"],
       ['otro componente de agenda (tarjeta del tenant)', "import x from '@/components/agenda/TurnoCard';"],
-      ['SegmentedControl con sufijo (otro módulo)', "import x from '@/components/SegmentedControlExtra';"],
-      ['SegmentedControl de otra carpeta', "import x from '@/components/agenda/SegmentedControl';"],
       ['constants/layout con sufijo (otro módulo)', "import x from '@/constants/layoutExtra';"],
       ['otro módulo de constants', "import x from '@/constants/precios';"],
     ])('%s', (_nombre, fuente) => {
@@ -440,13 +459,17 @@ describe('aislamiento del portal — el escáner', () => {
       ['páginas del portal', "import { x } from '@/app/(profesionales)/pro/algo';"],
       ['Spinner (compartido revisado)', "import { Spinner } from '@/components/Spinner';"],
       ['AgendaThemeScope (compartido revisado)', "import { AgendaThemeScope } from '@/components/AgendaThemeScope';"],
+      ['useThemeStore (compartido revisado)', "import { setTheme, useThemeStore } from '@/store/useThemeStore';"],
       ['useLocaleStore (compartido revisado)', "import { useLocaleStore } from '@/store/useLocaleStore';"],
       ['paleta de la agenda (compartido revisado)', "import { agendaColors } from '@/theme/agendaColors';"],
       ['BottomSheet (compartido revisado)', "import { BottomSheet } from '@/components/BottomSheet';"],
       ['AvatarProfesional (compartido revisado)', "import { AvatarProfesional } from '@/components/filtros/AvatarProfesional';"],
       ['cacheLru (compartido revisado)', "import { crearCacheLru } from '@/lib/cacheLru';"],
       ['WeekStrip (compartido revisado)', "import { WeekStrip } from '@/components/agenda/WeekStrip';"],
-      ['SegmentedControl (compartido revisado)', "import { SegmentedControl } from '@/components/SegmentedControl';"],
+      ['CalendarioMensual (compartido revisado)', "import { CalendarioMensual } from '@/components/agenda/CalendarioMensual';"],
+      ['FilaQueMostrar (compartido revisado)', "import { FilaQueMostrar } from '@/components/filtros/FilaQueMostrar';"],
+      ['BadgeReservaOnline (compartido revisado)', "import { BadgeReservaOnline } from '@/components/reservaOnline/BadgeReservaOnline';"],
+      ['TarjetaQueMostrar (compartido revisado)',"import { TarjetaQueMostrar } from '@/components/filtros/TarjetaQueMostrar';"],
       ['constants/layout (compartido revisado)', "import { NAV_CLEARANCE } from '@/constants/layout';"],
       ['compartido revisado por ruta relativa', "import { Spinner } from '../../components/Spinner';"],
       ['next/navigation', "import { usePathname } from 'next/navigation';"],

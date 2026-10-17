@@ -123,3 +123,4 @@ export function rangoPermitido(desde: string, hasta: string): boolean {
   if (dias === null) return false;
   return desde >= FECHA_MINIMA && dias >= 0 && dias <= MAX_DIAS_RANGO - 1;
 }
+

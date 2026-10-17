@@ -8,6 +8,7 @@ vi.mock('@/services/categoriaServicioService', () => ({
 
 import type { Servicio } from '@/services/servicioService';
 import { SelectorServicios } from './SelectorServicios';
+import { categoriaServicioService } from '@/services/categoriaServicioService';
 
 const servicio = (id: number, nombre: string, duracion_minutos: number): Servicio =>
   ({ id, user_id: 1, nombre, duracion_minutos, precio: '5000', activo: true, es_promo: false, orden: id, categoria_id: null, created_at: '', updated_at: '' }) as Servicio;
@@ -115,5 +116,36 @@ describe('SelectorServicios — fotoCategoria', () => {
     const { container } = renderWithProviders(<SelectorServicios servicios={[servicio(1, 'Softgel', 90)]} mode="multi" selectedIds={[]} onChange={vi.fn()} />);
     await screen.findByText('Softgel');
     expect(container.querySelectorAll('img')).toHaveLength(0);
+  });
+});
+
+describe('SelectorServicios single (identidad con main)', () => {
+  const planos = [servicio(1, 'Softgel', 90), servicio(2, 'Esmaltado', 45)];
+
+  it('lista plana: filas como botones simples, sin roles de radio ni radiogroup', async () => {
+    renderWithProviders(<SelectorServicios servicios={planos} mode="single" selectedIds={[1]} onChange={vi.fn()} />);
+    await screen.findByText('Softgel');
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    const fila = screen.getByText('Softgel').closest('button') as HTMLButtonElement;
+    expect(fila).not.toHaveAttribute('role');
+    expect(fila).not.toHaveAttribute('aria-checked');
+    expect(fila).not.toHaveAttribute('type');
+    expect(fila.querySelector('[aria-hidden]')).toBeNull();
+    expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
+  });
+
+  it('con categorías: encabezados con íconos de lucide y sin radiogroup', async () => {
+    vi.mocked(categoriaServicioService.getAll).mockResolvedValueOnce([
+      { id: 5, user_id: 1, nombre: 'Manos', fondo_historia_url: null, created_at: '', updated_at: '' },
+    ]);
+    const conCategoria = [{ ...planos[0], categoria_id: 5 }, planos[1]];
+    const { container } = renderWithProviders(
+      <SelectorServicios servicios={conCategoria} mode="single" selectedIds={[]} onChange={vi.fn()} />,
+    );
+    await screen.findByText('Softgel');
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(container.querySelector('svg.lucide-chevron-up')).not.toBeNull();
   });
 });

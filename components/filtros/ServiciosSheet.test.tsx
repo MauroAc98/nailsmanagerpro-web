@@ -135,3 +135,22 @@ describe('ServiciosSheet mode="single"', () => {
     expect(props.onConfirm).not.toHaveBeenCalled();
   });
 });
+
+describe('ServiciosSheet (identidad con main)', () => {
+  it('sin props del portal: el diálogo no es modal, Escape no cierra y el fondo no se oculta', async () => {
+    const { props } = setup();
+    await screen.findByText('Esmaltado');
+    const dialogo = screen.getByRole('dialog', { name: 'Servicios' });
+    expect(dialogo).not.toHaveAttribute('aria-modal');
+    fireEvent.keyDown(dialogo, { key: 'Escape' });
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(document.body.querySelector('div[aria-hidden]')).toBeNull();
+  });
+
+  it('modo single sin props del portal: filas sin role radio', async () => {
+    setup({ mode: 'single', ctaLabel: undefined });
+    await screen.findByText('Esmaltado');
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+  });
+});

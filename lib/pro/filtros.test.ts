@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FiltrosAgenda } from '@/store/useProAgendaStore';
-import { filtrosAParams, hayFiltrosActivos, normalizarBuscar, validarBuscar, validarRango } from './filtros';
+import { filtrosAParams, hayFiltrosActivos, normalizarBuscar, validarBuscar } from './filtros';
 
 const vacios: FiltrosAgenda = { buscar: '', servicioId: null, desde: null, hasta: null };
 
@@ -28,27 +28,6 @@ describe('validarBuscar', () => {
   it('rechaza más de 60 caracteres (ya normalizado)', () => {
     expect(validarBuscar('x'.repeat(61))).toBe('larga');
     expect(validarBuscar(`  ${'x'.repeat(60)}  `)).toBe('ok');
-  });
-});
-
-describe('validarRango', () => {
-  it('los bordes: 366 días sí, 367 no', () => {
-    expect(validarRango('2026-01-01', '2026-12-31')).toBe('ok'); // 365 días
-    expect(validarRango('2024-01-01', '2024-12-31')).toBe('ok'); // 366 días, bisiesto
-    expect(validarRango('2024-01-01', '2025-01-01')).toBe('largo'); // 367 días
-  });
-  it('antes del 2000-01-01 no, el 2000-01-01 sí', () => {
-    expect(validarRango('1999-12-31', '2000-01-02')).toBe('antes2000');
-    expect(validarRango('2000-01-01', '2000-01-02')).toBe('ok');
-  });
-  it('desde posterior a hasta', () => {
-    expect(validarRango('2026-10-18', '2026-10-17')).toBe('orden');
-  });
-  it('mismo día es válido', () => {
-    expect(validarRango('2026-10-17', '2026-10-17')).toBe('ok');
-  });
-  it('fechas que no existen se rechazan', () => {
-    expect(validarRango('2026-02-30', '2026-03-01')).toBe('orden');
   });
 });
 
@@ -85,6 +64,8 @@ describe('filtrosAParams', () => {
     expect(filtrosAParams({ ...vacios, buscar: 'a b c d e f' }, '2026-10-17')).toBeNull();
     expect(filtrosAParams({ ...vacios, desde: '2026-10-05', hasta: '2026-10-01' }, '2026-10-17')).toBeNull();
     expect(filtrosAParams({ ...vacios, desde: '2026-10-05', hasta: null }, '2026-10-17')).toBeNull();
+    expect(filtrosAParams({ ...vacios, desde: '2024-01-01', hasta: '2025-01-01' }, '2026-10-17')).toBeNull(); // 367 días
+    expect(filtrosAParams({ ...vacios, desde: '1999-12-31', hasta: '2000-01-02' }, '2026-10-17')).toBeNull();
     expect(filtrosAParams({ ...vacios, servicioId: 0 }, '2026-10-17')).toBeNull();
   });
 });

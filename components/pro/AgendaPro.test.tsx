@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, renderWithProviders, screen, waitFor, within } from '@/test/render';
 import { proService } from '@/services/proService';
 import { vaciarCachesPro } from '@/lib/pro/caches';
-import type { ProListaTurnos, ProTurno, ProVinculo } from '@/lib/pro/tipos';
+import { hoyDelDispositivo } from '@/lib/pro/hoy';
+import type { ProListaTurnos, ProResumen, ProTurno, ProVinculo } from '@/lib/pro/tipos';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { useProAuthStore } from '@/store/useProAuthStore';
 
@@ -32,10 +33,13 @@ function turno(id: number, fecha_hora: string): ProTurno {
     cliente: { nombre: `Cliente${id}`, apellido: null },
     servicios: [{ id: 1, nombre: 'Esmaltado' }],
     promo: null,
+    origen: null,
   };
 }
 
 const lista = (turnos: ProTurno[]): ProListaTurnos => ({ turnos, truncated: false, descartados: 0 });
+
+const RESUMEN: ProResumen = { atendidos: 24, por_venir: 9, cancelados: 2, mas_pedido: 'Soft gel' };
 
 beforeEach(() => {
   nav.pathname = '/agenda';
@@ -45,6 +49,7 @@ beforeEach(() => {
   useProAgendaStore.getState().reset();
   useProAgendaStore.getState().setFecha('2026-10-17');
   vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [], descartados: 0 });
+  vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -55,12 +60,19 @@ describe('AgendaPro', () => {
 
     const titulo = screen.getByRole('heading', { level: 1, name: 'Agenda' });
     expect(titulo).toHaveFocus();
-    expect(screen.getByText('Negocio 1')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Mi cuenta' })).toBeInTheDocument();
+    expect(screen.getByText('Hola, Ana')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cambiar a modo oscuro' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeInTheDocument();
     expect(screen.getByTestId('week-day-2026-10-12')).toBeInTheDocument();
     expect(screen.getByTestId('week-day-2026-10-18')).toBeInTheDocument();
     expect(await screen.findByText('Cliente1')).toBeInTheDocument();
+  });
+
+  it('el título "Agenda" no se ve (como en la agenda de la titular) pero sigue para lectores de pantalla', () => {
+    renderWithProviders(<AgendaPro />);
+
+    const titulo = screen.getByRole('heading', { level: 1, name: 'Agenda' });
+    expect(titulo).toHaveStyle({ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden' });
   });
 
   it('mientras carga muestra el spinner y al llegar vacío muestra el estado vacío', async () => {
@@ -144,34 +156,49 @@ describe('AgendaPro', () => {
     expect(nav.push).toHaveBeenLastCalledWith('/pro/turnos/7');
   });
 
-  it('en la vista mensual no muestra la tira ni la lista del día', async () => {
+  it('la lista vive en una hoja con título serif y botón Filtrar a su derecha', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
-    useProAgendaStore.getState().setVista('mes');
     renderWithProviders(<AgendaPro />);
-    expect(screen.queryByTestId('week-day-2026-10-17')).toBeNull();
-    expect(screen.queryByRole('list')).toBeNull();
-    expect(screen.getByRole('group', { name: 'octubre de 2026' })).toBeInTheDocument();
+    const titulo = screen.getByText(/^Turnos (de hoy|del )/);
+    expect(titulo.style.fontSize).toBe('19px');
+    expect(titulo.style.fontFamily).not.toBe('');
+    const boton = screen.getByRole('button', { name: 'Filtrar' });
+    expect(titulo.parentElement).toBe(boton.parentElement);
+    expect(boton.querySelector('svg')).not.toBeNull();
+    // La tira queda arriba y la lista dentro de la hoja.
+    expect(screen.getByTestId('week-day-2026-10-17')).toBeInTheDocument();
+    expect((await screen.findByText('Cliente1')).closest('[data-testid="hoja-turnos"]')).not.toBeNull();
   });
 
-  it('tocar un día del mes vuelve a la vista de día con esa fecha, sin navegar', async () => {
+  it('el título dice "de hoy" solo si la fecha elegida es hoy', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
-    vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [{ fecha: '2026-10-14', cantidad: 2 }], descartados: 0 });
-    useProAgendaStore.getState().setVista('mes');
+    const hoy = hoyDelDispositivo();
+    useProAgendaStore.getState().setFecha(hoy);
+    const { unmount } = renderWithProviders(<AgendaPro />);
+    expect(screen.getByText('Turnos de hoy')).toBeInTheDocument();
+    unmount();
+    useProAgendaStore.getState().setFecha('2000-10-14');
     renderWithProviders(<AgendaPro />);
-
-    fireEvent.click(await screen.findByRole('button', { name: /14 de octubre.*2 turnos/ }));
-
-    expect(screen.getByTestId('week-day-2026-10-14')).toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: 'octubre de 2026' })).toBeNull();
-    expect(useProAgendaStore.getState().fecha).toBe('2026-10-14');
-    expect(nav.push).not.toHaveBeenCalled();
+    expect(screen.getByText(/^Turnos del .*14/)).toBeInTheDocument();
   });
 
-  it('el calendario de la tira lleva a la vista mensual', async () => {
+  it('con filtros activos el título de la hoja es Resultados', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    useProAgendaStore.getState().setFiltros({ buscar: 'Ana', servicioId: null, desde: null, hasta: null });
+    renderWithProviders(<AgendaPro />);
+    expect(screen.getByText('Resultados')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filtros: 1 activo' })).toBeInTheDocument();
+  });
+
+  it('ya no hay selector día/mes ni vista mensual propia', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
-    fireEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
-    expect(useProAgendaStore.getState().vista).toBe('mes');
+    expect(screen.queryByRole('group', { name: 'Vista de la agenda' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mes' })).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('[aria-pressed]')).toBeNull();
+    // El único botón de filtros vive en la hoja.
+    expect(screen.getAllByRole('button', { name: 'Filtrar' })).toHaveLength(1);
   });
 
   it('una fecha elegida fuera de la semana mostrada mueve la tira a esa semana', async () => {
@@ -182,15 +209,158 @@ describe('AgendaPro', () => {
   });
 });
 
+describe('AgendaPro: calendario "Elegir fecha"', () => {
+  const abrir = () => fireEvent.click(screen.getByRole('button', { name: 'Ver calendario completo' }));
+
+  it('"Ver calendario" abre la hoja con el mes de la fecha elegida y conserva la tira y la lista', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    renderWithProviders(<AgendaPro />);
+    abrir();
+    const dialogo = await screen.findByRole('dialog', { name: 'Elegir fecha' });
+    expect(within(dialogo).getByText('Octubre 2026')).toBeInTheDocument();
+    expect(within(dialogo).getByTestId('cal-day-2026-10-17')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('week-day-2026-10-17')).toBeInTheDocument();
+    expect(await screen.findByText('Cliente1')).toBeInTheDocument();
+  });
+
+  it('muestra las marcas del mes (solo cantidades) en la grilla', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [{ fecha: '2099-10-14', cantidad: 2 }], descartados: 0 });
+    useProAgendaStore.getState().setFecha('2099-10-01');
+    renderWithProviders(<AgendaPro />);
+    abrir();
+    expect(await screen.findByRole('button', { name: /14 de octubre.*2 turnos/ })).toHaveTextContent('2');
+  });
+
+  it('elegir un día fija la fecha, cierra la hoja y pide la lista de ese día', async () => {
+    const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('No hay turnos para este día.');
+    abrir();
+    fireEvent.click(await screen.findByTestId('cal-day-2026-10-22'));
+
+    expect(useProAgendaStore.getState().fecha).toBe('2026-10-22');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('week-day-2026-10-22')).toBeInTheDocument();
+    await waitFor(() => expect(turnos).toHaveBeenLastCalledWith(1, { fecha: '2026-10-22' }, expect.any(AbortSignal)));
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it('navegar de mes pide las marcas del mes nuevo; cerrar sin elegir deja la fecha y al reabrir vuelve a su mes', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const marcas = vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [], descartados: 0 });
+    renderWithProviders(<AgendaPro />);
+    abrir();
+    fireEvent.click(await screen.findByRole('button', { name: 'Mes siguiente' }));
+    expect(screen.getByText('Noviembre 2026')).toBeInTheDocument();
+    await waitFor(() => expect(marcas).toHaveBeenCalledWith(1, '2026-11', expect.any(AbortSignal)));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(useProAgendaStore.getState().fecha).toBe('2026-10-17');
+
+    abrir();
+    expect(await screen.findByText('Octubre 2026')).toBeInTheDocument();
+  });
+
+  it('mientras cargan las marcas de un mes muestra el spinner sin tapar la grilla', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    vi.spyOn(proService, 'marcas').mockImplementation((_id, mes) =>
+      mes === '2026-11' ? new Promise(() => {}) : Promise.resolve({ dias: [], descartados: 0 }),
+    );
+    renderWithProviders(<AgendaPro />);
+    abrir();
+    fireEvent.click(await screen.findByRole('button', { name: 'Mes siguiente' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Elegir fecha' });
+    expect(within(dialogo).getByRole('status', { name: 'Cargando turnos' })).toBeInTheDocument();
+    expect(within(dialogo).getByTestId('cal-day-2026-11-10')).toBeInTheDocument();
+  });
+
+  it('si fallan las marcas del mes muestra el error del tipo y permite reintentar', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    let fallo = true;
+    const marcas = vi.spyOn(proService, 'marcas').mockImplementation(async (_id, mes) => {
+      if (mes === '2026-11' && fallo) {
+        fallo = false;
+        throw new Error('boom');
+      }
+      return { dias: mes === '2026-11' ? [{ fecha: '2026-11-05', cantidad: 2 }] : [], descartados: 0 };
+    });
+    renderWithProviders(<AgendaPro />);
+    abrir();
+    fireEvent.click(await screen.findByRole('button', { name: 'Mes siguiente' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Elegir fecha' });
+    const alerta = await within(dialogo).findByRole('alert');
+    expect(alerta).not.toHaveTextContent('boom');
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Reintentar' }));
+    expect(await within(dialogo).findByRole('button', { name: /5 de noviembre.*2 turnos/ })).toBeInTheDocument();
+    expect(within(dialogo).queryByRole('alert')).toBeNull();
+    expect(marcas).toHaveBeenCalledWith(1, '2026-11', expect.any(AbortSignal));
+  });
+});
+
+describe('AgendaPro — resumen del mes', () => {
+  it('muestra el resumen del mes de la fecha elegida entre el encabezado y la tira semanal', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const resumen = vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
+    renderWithProviders(<AgendaPro />);
+
+    const titulo = await screen.findByText('Resumen de octubre');
+    expect(resumen).toHaveBeenCalledWith(1, '2026-10', expect.any(AbortSignal));
+    const tira = screen.getByTestId('week-day-2026-10-12');
+    expect(titulo.compareDocumentPosition(tira) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const encabezado = screen.getByText('Hola, Ana');
+    expect(encabezado.compareDocumentPosition(titulo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('cambiar la fecha a otro mes pide el resumen de ese mes', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const resumen = vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
+    renderWithProviders(<AgendaPro />);
+    await screen.findByText('Resumen de octubre');
+
+    act(() => useProAgendaStore.getState().setFecha('2026-11-02'));
+
+    expect(await screen.findByText('Resumen de noviembre')).toBeInTheDocument();
+    expect(resumen).toHaveBeenLastCalledWith(1, '2026-11', expect.any(AbortSignal));
+  });
+
+  it('si el resumen falla la agenda sigue funcionando', async () => {
+    vi.spyOn(proService, 'resumen').mockRejectedValue(new Error('boom'));
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([turno(1, '2026-10-17T09:00:00')]));
+    renderWithProviders(<AgendaPro />);
+
+    expect(await screen.findByText('Cliente1')).toBeInTheDocument();
+    expect(screen.queryByText(/Resumen de/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('con filtros activos no se muestra ni se pide', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    const resumen = vi.spyOn(proService, 'resumen').mockResolvedValue(RESUMEN);
+    useProAgendaStore.getState().setFiltros({ buscar: 'ana' });
+    renderWithProviders(<AgendaPro />);
+
+    await screen.findByText('Resultados');
+    expect(screen.queryByText(/Resumen de/)).toBeNull();
+    expect(resumen).not.toHaveBeenCalled();
+  });
+});
+
 describe('AgendaPro con filtros', () => {
-  const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado' }], descartados: 0 };
+  const servicios = { servicios: [{ id: 3, nombre: 'Esmaltado', duracion_minutos: null, categoria: null }], descartados: 0 };
 
   async function aplicar(cambios: (dialogo: HTMLElement) => void) {
-    fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Filtr/ }));
     const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
     cambios(dialogo);
-    fireEvent.click(within(dialogo).getByRole('button', { name: 'Aplicar' }));
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Ver resultados' }));
   }
+  // La fecha se elige en el calendario, que es una hoja hermana de la de filtros.
+  const elegirFecha = (d: HTMLElement, fecha: string) => {
+    fireEvent.click(within(d).getByRole('button', { name: 'Elegir fecha' }));
+    fireEvent.click(screen.getByTestId(`cal-day-${fecha}`));
+  };
   const escribir = (d: HTMLElement, texto: string) =>
     fireEvent.change(within(d).getByLabelText('Buscar por nombre...'), { target: { value: texto } });
 
@@ -201,7 +371,7 @@ describe('AgendaPro con filtros', () => {
   it('el botón Filtros abre la hoja y al cerrarla el foco vuelve al botón', async () => {
     vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
-    const boton = screen.getByRole('button', { name: 'Filtros' });
+    const boton = screen.getByRole('button', { name: 'Filtrar' });
     fireEvent.click(boton);
     fireEvent.click(await screen.findByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -229,48 +399,63 @@ describe('AgendaPro con filtros', () => {
     renderWithProviders(<AgendaPro />);
     await aplicar((d) => {
       escribir(d, 'Ana');
-      fireEvent.change(within(d).getByLabelText('Desde'), { target: { value: '2026-10-01' } });
-      fireEvent.change(within(d).getByLabelText('Hasta'), { target: { value: '2026-10-05' } });
+      elegirFecha(d, '2026-10-01');
     });
 
     expect(await screen.findByRole('button', { name: 'Filtros: 2 activos' })).toBeInTheDocument();
     const activos = screen.getByRole('list', { name: 'Filtros activos' });
     expect(activos).toHaveTextContent('Nombre: Ana');
-    expect(activos).toHaveTextContent('2026-10-01 a 2026-10-05');
+    expect(activos).toHaveTextContent(/Fecha: .*1.*oct/i);
   });
 
-  it('agrupa por fecha los resultados del rango y envía desde/hasta sin fecha', async () => {
+  it('con una fecha elegida envía desde = hasta = esa fecha y no pide el día de la tira', async () => {
     const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
     await screen.findByText('No hay turnos para este día.');
     turnos.mockResolvedValue(lista([turno(2, '2026-10-02T10:00:00'), turno(1, '2026-10-01T09:00:00')]));
 
     await aplicar((d) => {
-      fireEvent.change(within(d).getByLabelText('Desde'), { target: { value: '2026-10-01' } });
-      fireEvent.change(within(d).getByLabelText('Hasta'), { target: { value: '2026-10-05' } });
+      elegirFecha(d, '2026-10-01');
     });
 
     await screen.findByText('Cliente2');
-    expect(turnos).toHaveBeenLastCalledWith(1, { desde: '2026-10-01', hasta: '2026-10-05' }, expect.any(AbortSignal));
-    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      expect.stringMatching(/1 de octubre/),
-      expect.stringMatching(/2 de octubre/),
-    ]);
+    expect(turnos).toHaveBeenLastCalledWith(1, { desde: '2026-10-01', hasta: '2026-10-01' }, expect.any(AbortSignal));
+    expect(screen.queryByTestId('week-day-2026-10-17')).toBeNull();
   });
 
   it('elegir un servicio envía servicio_id y lo nombra en los filtros activos', async () => {
     const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
     await screen.findByText('No hay turnos para este día.');
-    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
     const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
-    fireEvent.change(await within(dialogo).findByLabelText('Servicio'), { target: { value: '3' } });
-    fireEvent.click(within(dialogo).getByRole('button', { name: 'Aplicar' }));
+    fireEvent.click(await within(dialogo).findByRole('button', { name: 'Servicio: Todos' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Esmaltado' }));
+    expect(screen.queryByRole('dialog', { name: 'Servicio' })).toBeNull();
+    expect(within(dialogo).getByRole('button', { name: 'Servicio: Esmaltado' })).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Ver resultados' }));
 
     await waitFor(() =>
       expect(turnos).toHaveBeenLastCalledWith(1, { desde: '2026-10-17', hasta: '2026-10-17', servicio_id: 3 }, expect.any(AbortSignal)),
     );
     expect(await screen.findByRole('list', { name: 'Filtros activos' })).toHaveTextContent('Servicio: Esmaltado');
+  });
+
+  it('el borrador de fecha y servicio parte de lo guardado cada vez que se abre la hoja', async () => {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    useProAgendaStore.getState().setFiltros({ servicioId: 3, desde: '2026-10-01', hasta: '2026-10-01' });
+    renderWithProviders(<AgendaPro />);
+    fireEvent.click(screen.getByRole('button', { name: /^Filtr/ }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
+    expect(await within(dialogo).findByRole('button', { name: 'Servicio: Esmaltado' })).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Quitar fecha' }));
+    expect(within(dialogo).getByRole('button', { name: 'Elegir fecha' })).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Cerrar' }));
+
+    fireEvent.click(screen.getByRole('button', { name: /^Filtr/ }));
+    const otra = await screen.findByRole('dialog', { name: 'Filtrar turnos' });
+    expect(within(otra).getByRole('button', { name: 'Quitar fecha' })).toBeInTheDocument();
+    expect(useProAgendaStore.getState().filtros.desde).toBe('2026-10-01');
   });
 
   it('muestra el aviso cuando la respuesta viene truncada', async () => {
@@ -283,7 +468,7 @@ describe('AgendaPro con filtros', () => {
     expect(screen.getByText(/Acota el rango/)).toBeInTheDocument();
   });
 
-  it('sin resultados: texto propio y limpiar vuelve a hoy, vista de día y pide el día', async () => {
+  it('sin resultados: texto propio y limpiar vuelve a hoy y pide el día', async () => {
     const turnos = vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
     renderWithProviders(<AgendaPro />);
     await screen.findByText('No hay turnos para este día.');
@@ -291,13 +476,12 @@ describe('AgendaPro con filtros', () => {
 
     expect(await screen.findByText('No hay turnos con estos filtros.')).toBeInTheDocument();
     turnos.mockClear();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Limpiar filtros' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
 
     const s = useProAgendaStore.getState();
     expect(s.filtros).toEqual({ buscar: '', servicioId: null, desde: null, hasta: null });
-    expect(s.vista).toBe('dia');
     await waitFor(() => expect(turnos).toHaveBeenCalledWith(1, { fecha: s.fecha }, expect.any(AbortSignal)));
-    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filtrar' })).toBeInTheDocument();
   });
 
   it('un error del pedido filtrado usa el copy del tipo y permite reintentar', async () => {
@@ -323,7 +507,67 @@ describe('AgendaPro con filtros', () => {
     act(() => useProAuthStore.getState().elegirVinculo(2));
 
     expect(useProAgendaStore.getState().filtros.buscar).toBe('');
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Filtrar' })).toBeInTheDocument());
     expect(screen.queryByRole('list', { name: 'Filtros activos' })).toBeNull();
+  });
+});
+
+describe('AgendaPro: hojas de fecha y servicio abiertas desde Filtros', () => {
+  // Capa de la hoja que contiene el elemento (la del BottomSheet).
+  const capaDe = (el: HTMLElement) => Number(el.closest<HTMLElement>('[style*="z-index"]')?.style.zIndex);
+
+  async function abrirFiltros() {
+    vi.spyOn(proService, 'turnos').mockResolvedValue(lista([]));
+    vi.spyOn(proService, 'servicios').mockResolvedValue({ servicios: [{ id: 3, nombre: 'Esmaltado', duracion_minutos: null, categoria: null }], descartados: 0 });
+    renderWithProviders(<AgendaPro />);
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }));
+    return screen.findByRole('dialog', { name: 'Filtrar turnos' });
+  }
+
+  it('el calendario queda por encima de la hoja de Filtros, con su fondo también', async () => {
+    const filtros = await abrirFiltros();
+    fireEvent.click(within(filtros).getByRole('button', { name: 'Elegir fecha' }));
+    const calendario = await screen.findByRole('dialog', { name: 'Elegir fecha' });
+
+    expect(capaDe(calendario)).toBeGreaterThan(capaDe(filtros));
+    expect(Number(screen.getByTestId('fondo-calendario').style.zIndex)).toBeGreaterThan(capaDe(filtros));
+  });
+
+  it('la hoja de servicio queda por encima de la hoja de Filtros, con su fondo también', async () => {
+    const filtros = await abrirFiltros();
+    fireEvent.click(await within(filtros).findByRole('button', { name: 'Servicio: Todos' }));
+    const servicio = await screen.findByRole('dialog', { name: 'Servicio' });
+
+    expect(capaDe(servicio)).toBeGreaterThan(capaDe(filtros));
+    expect(Number(screen.getByTestId('fondo-servicio').style.zIndex)).toBeGreaterThan(capaDe(filtros));
+  });
+
+  it('elegir en el calendario no toca la fecha de la tira ni los filtros guardados hasta Ver resultados', async () => {
+    const filtros = await abrirFiltros();
+    fireEvent.click(within(filtros).getByRole('button', { name: 'Elegir fecha' }));
+    fireEvent.click(await screen.findByTestId('cal-day-2026-10-22'));
+
+    expect(screen.queryByRole('dialog', { name: 'Elegir fecha' })).toBeNull();
+    expect(within(filtros).getByRole('button', { name: /22/ })).toBeInTheDocument();
+    expect(useProAgendaStore.getState().fecha).toBe('2026-10-17');
+    expect(useProAgendaStore.getState().filtros.desde).toBeNull();
+  });
+
+  it('las marcas del calendario se piden solo con el calendario abierto, del mes que se ve', async () => {
+    const marcas = vi.spyOn(proService, 'marcas').mockResolvedValue({ dias: [{ fecha: '2026-11-05', cantidad: 2 }], descartados: 0 });
+    const filtros = await abrirFiltros();
+    expect(marcas).not.toHaveBeenCalledWith(1, '2026-11', expect.any(AbortSignal));
+
+    fireEvent.click(within(filtros).getByRole('button', { name: 'Elegir fecha' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mes siguiente' }));
+    expect(await screen.findByRole('button', { name: /5 de noviembre.*2 turnos/ })).toBeInTheDocument();
+    expect(marcas).toHaveBeenCalledWith(1, '2026-11', expect.any(AbortSignal));
+  });
+
+  it('el calendario de Filtros resalta la fecha del borrador, no la de la tira', async () => {
+    const filtros = await abrirFiltros();
+    fireEvent.click(within(filtros).getByRole('button', { name: 'Elegir fecha' }));
+    await screen.findByRole('dialog', { name: 'Elegir fecha' });
+    expect(screen.getByTestId('cal-day-2026-10-17')).toHaveAttribute('aria-pressed', 'false');
   });
 });

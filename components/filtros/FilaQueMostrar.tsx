@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { agendaColors as colors } from '@/theme/agendaColors';
 
@@ -12,16 +12,25 @@ interface Props {
   // true = hay un filtro aplicado: el valor va en el color primario.
   activo: boolean;
   onClick: () => void;
+  // Opcionales (los usa el portal de profesionales; la agenda propia no).
+  // Nombre accesible propio, en lugar de "título: valor".
+  ariaLabel?: string;
+  // true = el botón abre un diálogo (aria-haspopup).
+  abreDialogo?: boolean;
+  // Para devolverle el foco al botón al cerrar el diálogo.
+  ref?: Ref<HTMLButtonElement>;
 }
 
 // Fila de la tarjeta "Qué mostrar": visual · título · valor · chevron. Toda la
 // fila es un botón (alto 56 >= 44px táctil).
-export function FilaQueMostrar({ leading, titulo, valor, activo, onClick }: Props) {
+export function FilaQueMostrar({ leading, titulo, valor, activo, onClick, ariaLabel, abreDialogo, ref }: Props) {
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onClick}
-      aria-label={`${titulo}: ${valor}`}
+      aria-haspopup={abreDialogo ? 'dialog' : undefined}
+      aria-label={ariaLabel ?? `${titulo}: ${valor}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 12, width: '100%', height: 56, padding: '0 14px',
         background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',

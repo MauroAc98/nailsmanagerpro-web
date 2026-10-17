@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { BottomSheet } from '@/components/BottomSheet';
+import { ServiciosHojaBase, botonCabeceraStyle } from './ServiciosSheetBase';
 import { SelectorServicios } from '@/components/SelectorServicios';
 import { AvisoAmbar } from './AvisoAmbar';
 import { NAV_CLEARANCE } from '@/constants/layout';
@@ -32,11 +32,6 @@ interface Props {
   // desde dentro de otra BottomSheet (z 40) para que el fondo quede encima.
   backdropZIndex?: number;
 }
-
-const headerButton = {
-  minHeight: 44, minWidth: 44, padding: '0 4px', background: 'none', border: 'none',
-  cursor: 'pointer', fontSize: 14, fontWeight: 600, color: colors.primaryDeep,
-} as const;
 
 // Bottom sheet with a draft copy of the selection: nothing is committed until
 // the CTA is tapped. The BottomSheet itself sits above the nav (bottomOffset =
@@ -71,87 +66,61 @@ function ServiciosSheetAbierta({
   };
 
   return (
-    <>
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: backdropZIndex, backgroundColor: 'rgba(43, 34, 38, 0.40)' }}
-      />
-      <BottomSheet
-        snapPoints={[0.85]}
-        initialIndex={0}
-        enablePanDownToClose
-        bottomOffset={NAV_CLEARANCE}
-        onChange={index => { if (index < 0) onClose(); }}
-      >
-        <div role="dialog" aria-label={title} style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-          <div style={{
-            position: 'sticky', top: 0, zIndex: 1, backgroundColor: colors.surface,
-            display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px',
-          }}>
-            {!single && (
-              <button type="button" onClick={onClose} style={{ ...headerButton, textAlign: 'left' }}>
-                {t('cancel')}
-              </button>
-            )}
-            <span style={{
-              flex: 1, minWidth: 0, textAlign: single ? 'left' : 'center', fontSize: 16, fontWeight: 700, color: colors.textStrong,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {title}
-            </span>
-            {single ? (
-              <button type="button" onClick={onClose} style={{ ...headerButton, textAlign: 'right' }}>
-                {t('close')}
-              </button>
-            ) : (
-              <button type="button" onClick={() => setDraft([])} style={{ ...headerButton, textAlign: 'right' }}>
-                {t('clear')}
-              </button>
-            )}
-          </div>
-
-          <div style={{ flex: 1, padding: '8px 16px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {mensaje && (
-              <AvisoAmbar>
-                {mensaje}
-              </AvisoAmbar>
-            )}
-            <SelectorServicios
-              mode={single ? 'single' : 'multi'}
-              servicios={servicios}
-              selectedIds={single ? selectedIds : draft}
-              onChange={single ? elegirUno : setDraft}
-              todosLabel={single ? undefined : todosLabel}
-              fotoCategoria={fotoCategoria}
-              detalle={detalle}
-            />
-          </div>
-
-          {!single && ctaLabel && (
-          <div style={{
-            position: 'sticky', bottom: 0, zIndex: 1, backgroundColor: colors.surface,
-            padding: '10px 16px 14px', borderTop: `1px solid ${colors.hairline}`,
-          }}>
-            <button
-              type="button"
-              onClick={confirmar}
-              disabled={bloqueado}
-              aria-disabled={bloqueado}
-              style={{
-                width: '100%', height: 50, borderRadius: 14, border: 'none',
-                fontSize: 15, fontWeight: 700,
-                cursor: bloqueado ? 'not-allowed' : 'pointer',
-                backgroundColor: bloqueado ? colors.divider : colors.primarySolid,
-                color: bloqueado ? colors.muted : colors.primaryFg,
-                opacity: bloqueado ? 0.7 : 1,
-              }}
-            >
-              {ctaLabel(draft.length)}
-            </button>
-          </div>
-          )}
+    <ServiciosHojaBase
+      title={title}
+      onClose={onClose}
+      closeLabel={t('close')}
+      backdropZIndex={backdropZIndex}
+      bottomOffset={NAV_CLEARANCE}
+      centrarTitulo={!single}
+      leading={!single && (
+        <button type="button" onClick={onClose} style={{ ...botonCabeceraStyle, textAlign: 'left' }}>
+          {t('cancel')}
+        </button>
+      )}
+      trailing={!single && (
+        <button type="button" onClick={() => setDraft([])} style={{ ...botonCabeceraStyle, textAlign: 'right' }}>
+          {t('clear')}
+        </button>
+      )}
+      footer={!single && ctaLabel && (
+        <div style={{
+          position: 'sticky', bottom: 0, zIndex: 1, backgroundColor: colors.surface,
+          padding: '10px 16px 14px', borderTop: `1px solid ${colors.hairline}`,
+        }}>
+          <button
+            type="button"
+            onClick={confirmar}
+            disabled={bloqueado}
+            aria-disabled={bloqueado}
+            style={{
+              width: '100%', height: 50, borderRadius: 14, border: 'none',
+              fontSize: 15, fontWeight: 700,
+              cursor: bloqueado ? 'not-allowed' : 'pointer',
+              backgroundColor: bloqueado ? colors.divider : colors.primarySolid,
+              color: bloqueado ? colors.muted : colors.primaryFg,
+              opacity: bloqueado ? 0.7 : 1,
+            }}
+          >
+            {ctaLabel(draft.length)}
+          </button>
         </div>
-      </BottomSheet>
-    </>
+      )}
+    >
+      {mensaje && (
+        <AvisoAmbar>
+          {mensaje}
+        </AvisoAmbar>
+      )}
+      <SelectorServicios
+        mode={single ? 'single' : 'multi'}
+        servicios={servicios}
+        selectedIds={single ? selectedIds : draft}
+        onChange={single ? elegirUno : setDraft}
+        todosLabel={single ? undefined : todosLabel}
+        fotoCategoria={fotoCategoria}
+        detalle={detalle}
+      />
+    </ServiciosHojaBase>
   );
 }

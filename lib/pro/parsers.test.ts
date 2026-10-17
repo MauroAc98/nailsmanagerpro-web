@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { parseListaTurnos, parseMarcas, parseProMe, parseProTurno, parseServicios } from './parsers';
+import { parseListaTurnos, parseMarcas, parseProMe, parseProTurno, parseResumen, parseServicios } from './parsers';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -17,6 +17,7 @@ const TURNO_API = {
     { id: 9, nombre: 'Diseño' },
   ],
   promo: { nombre: 'Promo primavera' },
+  origen: 'web',
 };
 
 describe('parseProTurno — lista blanca (AG-1 S1)', () => {
@@ -46,6 +47,7 @@ describe('parseProTurno — lista blanca (AG-1 S1)', () => {
       'fecha_hora',
       'id',
       'notas',
+      'origen',
       'promo',
       'servicios',
     ]);
@@ -156,6 +158,15 @@ describe('parseProTurno — filas inválidas y valores raros', () => {
       { id: 3, nombre: 'Spa' },
     ]);
     expect(parseProTurno({ ...TURNO_API, servicios: 'nope' })!.servicios).toEqual([]);
+  });
+
+  it('origen: solo "web" pasa; ausente (backend viejo) o cualquier otro valor es null', () => {
+    expect(parseProTurno({ ...TURNO_API, origen: 'web' })!.origen).toBe('web');
+    const sinOrigen = Object.fromEntries(Object.entries(TURNO_API).filter(([clave]) => clave !== 'origen'));
+    expect(parseProTurno(sinOrigen)!.origen).toBeNull();
+    for (const valor of [null, 'app', 'WEB', '', 'importado', 1, true, {}, ['web']]) {
+      expect(parseProTurno({ ...TURNO_API, origen: valor })!.origen).toBeNull();
+    }
   });
 
   it('promo solo si trae nombre de texto', () => {
@@ -395,24 +406,59 @@ describe('parseMarcas', () => {
 });
 
 describe('parseServicios (lista plana)', () => {
-  it('devuelve id y nombre, sin precio ni duración', () => {
+  it('conserva id, nombre, duración y categoría, y descarta precio y otras claves', () => {
     expect(
       parseServicios([
-        { id: 1, nombre: 'Gel', precio: 100, duracion_minutos: 60 },
-        { id: 2, nombre: 'Spa' },
+        {
+          id: 1,
+          nombre: 'Gel',
+          precio: 100,
+          comision: 10,
+          duracion_minutos: 60,
+          categoria: { id: 5, nombre: 'Manos', fondo_historia_url: 'x', user_id: 9 },
+        },
+        { id: 2, nombre: 'Spa', duracion_minutos: 30, categoria: null },
       ]),
     ).toEqual({
       servicios: [
-        { id: 1, nombre: 'Gel' },
-        { id: 2, nombre: 'Spa' },
+        { id: 1, nombre: 'Gel', duracion_minutos: 60, categoria: { id: 5, nombre: 'Manos' } },
+        { id: 2, nombre: 'Spa', duracion_minutos: 30, categoria: null },
       ],
       descartados: 0,
     });
   });
 
+  it('tolera una respuesta vieja sin duración ni categoría: lista plana con null', () => {
+    expect(parseServicios([{ id: 1, nombre: 'Gel' }])).toEqual({
+      servicios: [{ id: 1, nombre: 'Gel', duracion_minutos: null, categoria: null }],
+      descartados: 0,
+    });
+  });
+
+  it.each([
+    ['duración cero', { duracion_minutos: 0 }],
+    ['duración negativa', { duracion_minutos: -5 }],
+    ['duración decimal', { duracion_minutos: 1.5 }],
+    ['duración texto', { duracion_minutos: '60' }],
+  ])('una duración inválida (%s) queda en null', (_nombre, extra) => {
+    expect(parseServicios([{ id: 1, nombre: 'Gel', ...extra }])?.servicios[0].duracion_minutos).toBeNull();
+  });
+
+  it.each([
+    ['sin nombre', { id: 5 }],
+    ['id inválido', { id: 0, nombre: 'Manos' }],
+    ['nombre vacío', { id: 5, nombre: ' ' }],
+    ['un texto', 'Manos'],
+    ['una lista', [5, 'Manos']],
+  ])('una categoría malformada (%s) queda en null sin descartar el servicio', (_nombre, categoria) => {
+    expect(parseServicios([{ id: 1, nombre: 'Gel', categoria }])?.servicios).toEqual([
+      { id: 1, nombre: 'Gel', duracion_minutos: null, categoria: null },
+    ]);
+  });
+
   it('descarta elementos malformados y los cuenta', () => {
     expect(parseServicios([{ id: 1, nombre: 'Gel' }, { id: 0, nombre: 'Cero' }, { id: 2 }, null, { id: 3, nombre: '' }])).toEqual({
-      servicios: [{ id: 1, nombre: 'Gel' }],
+      servicios: [{ id: 1, nombre: 'Gel', duracion_minutos: null, categoria: null }],
       descartados: 4,
     });
   });
@@ -428,5 +474,61 @@ describe('parseServicios (lista plana)', () => {
     ['HTML', '<html></html>'],
   ])('lo que no es una lista (%s) es null', (_nombre, cuerpo) => {
     expect(parseServicios(cuerpo)).toBeNull();
+  });
+});
+
+describe('parseResumen', () => {
+  it('devuelve los tres conteos y el nombre del más pedido, sin claves ajenas', () => {
+    expect(
+      parseResumen({
+        mes: '2026-10',
+        atendidos: 24,
+        por_venir: 9,
+        cancelados: 2,
+        mas_pedido: { nombre: 'Soft gel', precio: 5000, id: 3 },
+        ganancias: 100,
+        cliente: 'x',
+      }),
+    ).toEqual({ atendidos: 24, por_venir: 9, cancelados: 2, mas_pedido: 'Soft gel' });
+  });
+
+  it('un mes sin turnos (ceros y mas_pedido null) es éxito', () => {
+    expect(parseResumen({ mes: '2026-10', atendidos: 0, por_venir: 0, cancelados: 0, mas_pedido: null })).toEqual({
+      atendidos: 0,
+      por_venir: 0,
+      cancelados: 0,
+      mas_pedido: null,
+    });
+  });
+
+  it('un conteo inválido (negativo, decimal, texto, ausente) vale 0 sin tirar los demás', () => {
+    expect(parseResumen({ atendidos: -1, por_venir: 1.5, cancelados: '3', mas_pedido: null })).toEqual({
+      atendidos: 0,
+      por_venir: 0,
+      cancelados: 0,
+      mas_pedido: null,
+    });
+    expect(parseResumen({ atendidos: 4, mas_pedido: null })).toEqual({ atendidos: 4, por_venir: 0, cancelados: 0, mas_pedido: null });
+  });
+
+  it.each([
+    ['sin nombre', { mas_pedido: {} }],
+    ['nombre vacío', { mas_pedido: { nombre: '   ' } }],
+    ['nombre que no es texto', { mas_pedido: { nombre: 7 } }],
+    ['más pedido que es texto suelto', { mas_pedido: 'Gel' }],
+    ['más pedido que es lista', { mas_pedido: [{ nombre: 'Gel' }] }],
+  ])('un más pedido inválido (%s) es null', (_nombre, extra) => {
+    expect(parseResumen({ atendidos: 1, por_venir: 0, cancelados: 0, ...extra })?.mas_pedido).toBeNull();
+  });
+
+  it.each([
+    ['null', null],
+    ['lista', []],
+    ['texto', 'x'],
+    ['HTML', '<html></html>'],
+    ['cuerpo de error', { message: 'Server Error' }],
+    ['objeto vacío', {}],
+  ])('un cuerpo con forma inválida (%s) es null', (_nombre, cuerpo) => {
+    expect(parseResumen(cuerpo)).toBeNull();
   });
 });

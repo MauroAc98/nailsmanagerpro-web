@@ -1,9 +1,10 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useProServicios } from '@/hooks/pro/useProServicios';
 import { useProTurnosRango } from '@/hooks/pro/useProTurnosRango';
 import { normalizarBuscar } from '@/lib/pro/filtros';
+import { etiquetaCortaDeDia } from '@/lib/pro/mes';
 import { useProAgendaStore } from '@/store/useProAgendaStore';
 import { agendaColors } from '@/theme/agendaColors';
 import { ListaTurnosDia } from './ListaTurnosDia';
@@ -36,10 +37,11 @@ const chipStyle = {
 
 // Resultados de los filtros: filtros activos nombrados (texto, no solo color),
 // la acción de limpiarlos y los turnos agrupados por fecha. Los valores ya vienen
-// validados del store; sin rango se consulta el día elegido. El debounce del
+// validados del store; sin fecha se consulta el día elegido. El debounce del
 // texto vive en el hook: acá no se repite.
 export function ResultadosFiltros({ onAbrir }: { onAbrir: (id: number) => void }) {
   const t = useTranslations('profesionales.Filtros');
+  const locale = useLocale();
   const fecha = useProAgendaStore((s) => s.fecha);
   const filtros = useProAgendaStore((s) => s.filtros);
   const servicios = useProServicios();
@@ -61,7 +63,7 @@ export function ResultadosFiltros({ onAbrir }: { onAbrir: (id: number) => void }
         >
           {texto !== '' && <li style={chipStyle}>{t('chipBuscar', { texto })}</li>}
           {filtros.servicioId !== null && servicio !== null && <li style={chipStyle}>{t('chipServicio', { servicio })}</li>}
-          {filtros.desde !== null && <li style={chipStyle}>{t('chipRango', { desde, hasta })}</li>}
+          {filtros.desde !== null && <li style={chipStyle}>{t('chipFecha', { fecha: etiquetaCortaDeDia(filtros.desde, locale) })}</li>}
         </ul>
         <button type="button" onClick={limpiar} style={{ ...botonLimpiar, flexShrink: 0 }}>
           {t('limpiar')}

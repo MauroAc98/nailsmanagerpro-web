@@ -20,27 +20,33 @@
   },
   "ProHeader": {
     "cambiarNegocio": "Cambiar de negocio. Ahora: {negocio}",
-    "cuenta": "Mi cuenta"
+    "negocio": "Negocio",
+    "saludo": "Hola, {nombre}",
+    "marca": "Turnetto"
   },
   "Agenda": {
     "titulo": "Agenda",
     "vacio": "No hay turnos para este día.",
     "reintentar": "Reintentar",
     "cargando": "Cargando turnos",
-    "vista": "Vista de la agenda",
-    "dia": "Día",
-    "mes": "Mes"
+    "turnosHoy": "Turnos de hoy",
+    "turnosDe": "Turnos del {fecha}",
+    "resultados": "Resultados"
+  },
+  "Resumen": {
+    "titulo": "Resumen de {mes}",
+    "atendidos": "{count, plural, one {turno atendido} other {turnos atendidos}}",
+    "porVenir": "por venir",
+    "cancelados": "{count, plural, one {cancelado} other {cancelados}}",
+    "masPedido": "Más pedido:"
   },
   "Detalle": {
     "titulo": "Detalle del turno",
-    "fecha": "Fecha",
-    "hora": "Horario",
-    "estado": "Estado",
-    "cliente": "Cliente",
-    "servicios": "Servicios",
-    "promo": "Promo",
-    "notas": "Notas",
-    "sinNotas": "Sin notas.",
+    "etiqueta": "{fecha}",
+    "hastaLas": "hasta las {hora}",
+    "notasTitulo": "Idea para el turno",
+    "verTodo": "Ver todo",
+    "verMenos": "Ver menos",
     "noEncontrado": "No encontramos este turno. Puede que ya no exista.",
     "volver": "Volver a la agenda",
     "errorRefresco": "No pudimos actualizar el turno. Se muestra la última información guardada.",
@@ -48,27 +54,34 @@
   },
   "Filtros": {
     "boton": "Filtros",
+    "filtrar": "Filtrar",
     "botonActivos": "Filtros: {cantidad, plural, one {# activo} other {# activos}}",
     "titulo": "Filtrar turnos",
     "cerrar": "Cerrar",
     "buscar": "Buscar por nombre...",
     "buscarAyuda": "Busca por nombre o apellido de la persona. Hasta 5 palabras.",
+    "seccionCliente": "Cliente",
+    "seccionFecha": "Fecha",
+    "borrarBusqueda": "Borrar búsqueda",
     "servicio": "Servicio",
     "todos": "Todos",
+    "sinCategoria": "Sin categoría",
+    "expandirCategoria": "Expandir categoría",
+    "colapsarCategoria": "Colapsar categoría",
     "cargandoServicios": "Cargando servicios",
     "reintentarServicios": "Reintentar",
-    "desde": "Desde",
-    "hasta": "Hasta",
-    "aplicar": "Aplicar",
+    "fechaPlaceholder": "Elegir fecha",
+    "borrarFecha": "Quitar fecha",
+    "verResultados": "Ver resultados",
     "limpiar": "Limpiar filtros",
-    "errorRango": "Revisa las fechas: \"Hasta\" no puede ser anterior a \"Desde\", el rango llega a 366 días y empieza desde el 1/1/2000.",
+    "limpiarTodo": "Limpiar todo",
     "errorPalabras": "Escribe hasta 5 palabras.",
     "errorLarga": "El texto puede tener hasta 60 caracteres.",
     "sinResultados": "No hay turnos con estos filtros.",
     "activos": "Filtros activos",
     "chipBuscar": "Nombre: {texto}",
     "chipServicio": "Servicio: {servicio}",
-    "chipRango": "{desde} a {hasta}"
+    "chipFecha": "Fecha: {fecha}"
   },
   "AvisoTruncado": {
     "texto": "Se muestran los primeros 500 turnos; puede haber más.",
@@ -79,7 +92,10 @@
     "agenda": "Agenda",
     "cuenta": "Cuenta"
   },
-  "Mes": {
+  "Calendario": {
+    "titulo": "Elegir fecha",
+    "hoy": "Hoy",
+    "cerrar": "Cerrar",
     "anterior": "Mes anterior",
     "siguiente": "Mes siguiente",
     "errorMarcas": "No pudimos cargar los turnos del mes. Igual puedes elegir un día.",
@@ -106,9 +122,7 @@
   },
   "Cuenta": {
     "titulo": "Mi cuenta",
-    "correo": "Correo electrónico",
     "negocio": "Negocio",
-    "profesional": "Profesional",
     "cambiarNegocio": "Cambiar de negocio",
     "cerrarSesion": "Cerrar sesión"
   },
@@ -193,12 +207,13 @@
     "sinHora": "Sin hora",
     "diaSiguiente": "día siguiente",
     "promo": "Promo",
+    "conProfesional": "con {nombre}",
     "nota": "Tiene una nota"
   },
   "Estado": {
     "confirmado": "Confirmado",
     "en_curso": "En curso",
-    "completado": "Completado",
+    "completado": "Finalizado",
     "desconocido": "Sin estado"
   }
 }

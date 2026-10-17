@@ -45,15 +45,58 @@ beforeEach(() => {
 });
 
 describe('CuentaPro', () => {
-  it('muestra correo, negocio y nombre completo de la profesional con sus iniciales', () => {
+  it('muestra título, correo, nombre completo y el negocio activo', () => {
     cargar([vinculo(1)], 1);
     renderWithProviders(<CuentaPro />);
 
-    expect(screen.getByRole('heading', { name: 'Mi cuenta' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mi cuenta' })).toHaveStyle({ fontSize: '26px' });
     expect(screen.getByText('ana@correo.com')).toBeInTheDocument();
-    expect(screen.getByText('Negocio 1')).toBeInTheDocument();
     expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
-    expect(screen.getByText('AP')).toBeInTheDocument();
+    expect(screen.getByText('Negocio 1')).toBeInTheDocument();
+  });
+
+  it('el hero muestra la foto de la profesional y no el logo cuando la tiene', () => {
+    cargar([vinculo(1, { profesional: { nombre: 'Ana', apellido: 'Pérez', avatar_url: 'https://cdn.test/ana.jpg' } })], 1);
+    const { container } = renderWithProviders(<CuentaPro />);
+
+    expect(container.querySelector('img[src="https://cdn.test/ana.jpg"]')).not.toBeNull();
+    expect(container.querySelector('img[src*="pro-logo"]')).toBeNull();
+  });
+
+  it('sin foto el hero muestra el logo decorativo', () => {
+    cargar([vinculo(1)], 1);
+    const { container } = renderWithProviders(<CuentaPro />);
+
+    const logo = container.querySelector('img[src*="pro-logo"]');
+    expect(logo).not.toBeNull();
+    expect(logo).toHaveAttribute('alt', '');
+  });
+
+  it('sin negocio activo igual muestra el correo y no el grupo Negocio', () => {
+    cargar([], null);
+    renderWithProviders(<CuentaPro />);
+
+    expect(screen.getByText('ana@correo.com')).toBeInTheDocument();
+    expect(screen.queryByText('Negocio')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
+  });
+
+  it('mantiene la navegación inferior con Cuenta como pestaña activa', () => {
+    cargar([vinculo(1)], 1);
+    renderWithProviders(<CuentaPro />);
+    const navegacion = screen.getByRole('navigation', { name: 'Navegación principal' });
+    expect(navegacion).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda');
+    expect(screen.getByRole('link', { name: 'Cuenta' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('cerrar sesión es un botón rojo suave', () => {
+    cargar([vinculo(1)], 1);
+    renderWithProviders(<CuentaPro />);
+
+    const boton = screen.getByRole('button', { name: 'Cerrar sesión' });
+    expect(boton.style.backgroundColor).toBe('var(--color-danger-bg)');
+    expect(boton.style.color).toBe('var(--ag-danger)');
   });
 
   it('no muestra precios, comisiones ni ajustes de notificaciones', () => {
@@ -78,6 +121,16 @@ describe('CuentaPro', () => {
 
     expect(useProAuthStore.getState().vinculoActivoId).toBe(2);
     expect(screen.getByText('Negocio 2')).toBeInTheDocument();
+  });
+
+  it('al cerrar la hoja el foco vuelve a la fila Cambiar de negocio', () => {
+    cargar([vinculo(1), vinculo(2)], 1);
+    renderWithProviders(<CuentaPro />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar de negocio' }));
+    fireEvent.click(screen.getByRole('button', { name: /Negocio 2/ }));
+
+    expect(screen.getByRole('button', { name: 'Cambiar de negocio' })).toHaveFocus();
   });
 
   it('cerrar sesión con doble toque hace un solo POST y limpia todo', async () => {

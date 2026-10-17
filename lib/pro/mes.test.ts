@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { desfaseLunes, etiquetaDeMes, mesAnterior, mesDe, mesSiguiente, mesValido, primerDia, ultimoDia } from './mes';
+import { etiquetaCortaDeDia, etiquetaDeDia, etiquetaDeMes, mesAnterior, mesDe, mesSiguiente, mesValido, primerDia, ultimoDia } from './mes';
 
 describe('mesValido', () => {
   it.each([
@@ -78,13 +78,19 @@ describe('etiquetaDeMes', () => {
   });
 });
 
-describe('desfaseLunes', () => {
-  it('cuenta los huecos antes del día 1 con la semana desde el lunes', () => {
-    expect(desfaseLunes('2026-10')).toBe(3); // 1/10/2026 es jueves
-    expect(desfaseLunes('2026-06')).toBe(0); // 1/6/2026 es lunes
-    expect(desfaseLunes('2026-02')).toBe(6); // 1/2/2026 es domingo
+describe('etiquetaDeDia', () => {
+  it('día y mes en el idioma pedido', () => {
+    expect(etiquetaDeDia('2026-10-14', 'es')).toBe('14 de octubre');
+    expect(etiquetaDeDia('2026-10-14', 'pt-BR')).toBe('14 de outubro');
   });
-  it('entrada inválida -> null', () => {
-    expect(desfaseLunes('x')).toBeNull();
+});
+
+describe('etiquetaCortaDeDia', () => {
+  it('día de la semana, día y mes abreviados en el idioma pedido', () => {
+    expect(etiquetaCortaDeDia('2026-10-14', 'es')).toMatch(/^mié.*14.*oct/i);
+    expect(etiquetaCortaDeDia('2026-10-14', 'pt-BR')).toMatch(/^qua.*14.*out/i);
+  });
+  it('fecha inválida = texto vacío', () => {
+    expect(etiquetaCortaDeDia('2026-02-30', 'es')).toBe('');
   });
 });

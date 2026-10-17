@@ -57,40 +57,133 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('DetalleTurnoPro', () => {
-  it('muestra fecha, horario, estado, cliente, servicios, promo y notas completas', async () => {
+  it('muestra etiqueta con fecha, cliente como título, horario, servicios y notas', async () => {
     vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: 'Llega tarde\nTraer diseño' }));
     renderWithProviders(<DetalleTurnoPro />);
 
-    expect(await screen.findByText('Lucía Gómez')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'Detalle del turno' })).toHaveFocus();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Lucía Gómez' })).toHaveFocus();
     expect(screen.getByText(/17 de octubre de 2026/)).toBeInTheDocument();
-    expect(screen.getByText('09:30 – 11:00')).toBeInTheDocument();
-    expect(screen.getByText('Confirmado')).toBeInTheDocument();
-    expect(screen.getByText('Esmaltado')).toBeInTheDocument();
+    expect(screen.queryByText(/Turno ·/)).toBeNull();
+    expect(screen.getByText('09:30')).toBeInTheDocument();
+    expect(screen.getByText('hasta las 11:00')).toBeInTheDocument();
+    expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Idea para el turno' })).toBeInTheDocument();
+    expect(screen.getByTestId('detalle-notas')).toHaveTextContent('Llega tarde Traer diseño');
+    for (const etiqueta of ['Servicios', 'Hora', 'Hasta']) expect(screen.queryByText(etiqueta)).toBeNull();
+  });
+
+  it('muestra un servicio por línea, sin unirlos con " + "', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno());
+    renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('Esmaltado')).toBeInTheDocument();
     expect(screen.getByText('Pedicura')).toBeInTheDocument();
-    expect(screen.getByText('Promo de primavera')).toBeInTheDocument();
-    expect(screen.getByText(/Llega tarde/)).toHaveTextContent('Llega tarde Traer diseño');
+    expect(screen.queryByText(/\+/)).toBeNull();
+  });
+
+  it('con promo la palabra "Promo" aparece una sola vez, junto al nombre de la promo', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno());
+    renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('Promo de primavera')).toBeInTheDocument();
+    expect(screen.getAllByText('Promo')).toHaveLength(1);
+  });
+
+  it('sin promo no dibuja la franja de promo', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno({ promo: null }));
+    renderWithProviders(<DetalleTurnoPro />);
+    await screen.findByText('Esmaltado');
+    expect(screen.queryByText('Promo')).toBeNull();
+  });
+
+  it('si el turno termina al día siguiente conserva el aviso', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno({ fecha_hora: '2026-10-17T23:30:00' }));
+    renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('hasta las 01:00')).toBeInTheDocument();
+    expect(screen.getByText('día siguiente')).toBeInTheDocument();
+  });
+
+  it('el pie muestra "con {profesional}" del vínculo activo; sin dato no se dibuja', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno());
+    const { unmount } = renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('con Ana')).toBeInTheDocument();
+    unmount();
+    vaciarCachesPro();
+    useProAuthStore.setState({ vinculos: [] });
+    renderWithProviders(<DetalleTurnoPro />);
+    await screen.findByText('Esmaltado');
+    expect(screen.queryByText(/^con /)).toBeNull();
+  });
+
+  it('la píldora "En curso" aparece solo si el turno está en curso', async () => {
+    const pedir = vi.spyOn(proService, 'turno').mockResolvedValue(turno({ estado_visual: 'en_curso' }));
+    const { unmount } = renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('En curso')).toBeInTheDocument();
+    unmount();
+    vaciarCachesPro();
+    pedir.mockResolvedValue(turno());
+    renderWithProviders(<DetalleTurnoPro />);
+    await screen.findByText('Lucía Gómez');
+    expect(screen.queryByText('En curso')).toBeNull();
+  });
+
+  it('un turno de la reserva online muestra el badge con texto; sin origen web no se dibuja', async () => {
+    const pedir = vi.spyOn(proService, 'turno').mockResolvedValue(turno({ origen: 'web' }));
+    const { unmount } = renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('Reserva online')).toBeInTheDocument();
+    // Con texto visible: no es la variante compacta (solo ícono con rol img).
+    expect(screen.queryByRole('img', { name: 'Reserva online' })).toBeNull();
+    unmount();
+    vaciarCachesPro();
+    pedir.mockResolvedValue(turno({ origen: null }));
+    renderWithProviders(<DetalleTurnoPro />);
+    await screen.findByText('Lucía Gómez');
+    expect(screen.queryByText('Reserva online')).toBeNull();
+  });
+
+  it('el badge de reserva online convive con la píldora "En curso"', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno({ origen: 'web', estado_visual: 'en_curso' }));
+    renderWithProviders(<DetalleTurnoPro />);
+    expect(await screen.findByText('En curso')).toBeInTheDocument();
+    expect(screen.getByText('Reserva online')).toBeInTheDocument();
+  });
+
+  it('una nota larga se recorta con "Ver todo" y se expande y contrae', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: 'x'.repeat(200) }));
+    renderWithProviders(<DetalleTurnoPro />);
+    const nota = await screen.findByTestId('detalle-notas');
+    expect(nota.style.webkitLineClamp).toBe('4');
+    act(() => screen.getByRole('button', { name: 'Ver todo' }).click());
+    expect(nota.style.webkitLineClamp).toBe('');
+    act(() => screen.getByRole('button', { name: 'Ver menos' }).click());
+    expect(nota.style.webkitLineClamp).toBe('4');
+  });
+
+  it('una nota corta no ofrece "Ver todo"', async () => {
+    vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: 'corta' }));
+    renderWithProviders(<DetalleTurnoPro />);
+    await screen.findByTestId('detalle-notas');
+    expect(screen.queryByRole('button', { name: 'Ver todo' })).toBeNull();
   });
 
   it('las notas son texto: pre-wrap, sin HTML ni enlaces', async () => {
     const hostil = '<img src=x onerror=alert(1)>\nhttps://ejemplo.com <script>x()</script>';
     vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: hostil }));
-    const { container } = renderWithProviders(<DetalleTurnoPro />);
+    renderWithProviders(<DetalleTurnoPro />);
 
     const nota = await screen.findByTestId('detalle-notas');
     expect(nota.textContent).toBe(hostil);
     expect(nota.style.whiteSpace).toBe('pre-wrap');
     expect(nota).toHaveAttribute('dir', 'auto');
-    expect(container.querySelector('img, script, a[href^="http"]')).toBeNull();
+    expect(nota.querySelector('img, script, a[href^="http"]')).toBeNull();
     const fuente = readFileSync(join(__dirname, 'DetalleTurnoPro.tsx'), 'utf8');
     expect(fuente).not.toMatch(/dangerouslySetInnerHTML/);
   });
 
-  it('sin notas muestra el aviso de que no hay', async () => {
+  it('sin notas no dibuja el bloque', async () => {
     vi.spyOn(proService, 'turno').mockResolvedValue(turno({ notas: '   ' }));
     renderWithProviders(<DetalleTurnoPro />);
-    expect(await screen.findByText('Sin notas.')).toBeInTheDocument();
+    await screen.findByText('Lucía Gómez');
     expect(screen.queryByTestId('detalle-notas')).toBeNull();
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
   });
 
   it('turno inexistente: estado amable con enlace a la agenda', async () => {

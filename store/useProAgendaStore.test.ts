@@ -30,11 +30,10 @@ describe('useProAgendaStore', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('arranca en hoy, vista día, mes de hoy y sin filtros', () => {
+  it('arranca en hoy, mes de hoy y sin filtros', () => {
     const hoy = hoyDelDispositivo();
     const s = useProAgendaStore.getState();
     expect(s.fecha).toBe(hoy);
-    expect(s.vista).toBe('dia');
     expect(s.mesVisto).toBe(hoy.slice(0, 7));
     expect(s.filtros).toEqual({ buscar: '', servicioId: null, desde: null, hasta: null });
   });
@@ -54,25 +53,21 @@ describe('useProAgendaStore', () => {
     expect(useProAgendaStore.getState().mesVisto).toBe(antes.slice(0, 7));
   });
 
-  it('setVista y setFiltros combinan sin pisar los demás filtros', () => {
-    const { setVista, setFiltros } = useProAgendaStore.getState();
-    setVista('mes');
+  it('setFiltros combina sin pisar los demás filtros', () => {
+    const { setFiltros } = useProAgendaStore.getState();
     setFiltros({ buscar: 'ana' });
     setFiltros({ servicioId: 4 });
     const s = useProAgendaStore.getState();
-    expect(s.vista).toBe('mes');
     expect(s.filtros).toEqual({ buscar: 'ana', servicioId: 4, desde: null, hasta: null });
   });
 
-  it('limpiarFiltros vuelve a hoy y a vista día', () => {
-    const { setFiltros, setFecha, setVista, limpiarFiltros } = useProAgendaStore.getState();
+  it('limpiarFiltros vuelve a hoy', () => {
+    const { setFiltros, setFecha, limpiarFiltros } = useProAgendaStore.getState();
     setFecha('2026-03-09');
-    setVista('mes');
     setFiltros({ buscar: 'x', desde: '2026-03-01', hasta: '2026-03-10' });
     limpiarFiltros();
     const s = useProAgendaStore.getState();
     expect(s.fecha).toBe(hoyDelDispositivo());
-    expect(s.vista).toBe('dia');
     expect(s.filtros).toEqual({ buscar: '', servicioId: null, desde: null, hasta: null });
   });
 

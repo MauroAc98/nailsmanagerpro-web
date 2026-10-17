@@ -42,6 +42,7 @@ const TURNO_API = {
   cliente: { nombre: 'Ana', apellido: 'Pérez' },
   servicios: [{ id: 7, nombre: 'Gel' }],
   promo: null,
+  origen: null,
 };
 
 let sesionExpirada: ReturnType<typeof vi.fn>;
@@ -190,6 +191,24 @@ describe('proService — contrato de endpoints de datos (X-Vinculo-Id explícito
     expect(enviadas[0].headers.get('X-Vinculo-Id')).toBe('12');
   });
 
+  it('resumen: GET /pro/resumen?mes con el header', async () => {
+    responder({ mes: '2026-10', atendidos: 3, por_venir: 2, cancelados: 1, mas_pedido: { nombre: 'Gel' } });
+    const resumen = await proService.resumen(12, '2026-10');
+
+    expect(enviadas[0].method).toBe('get');
+    expect(enviadas[0].url).toBe('/pro/resumen');
+    expect(enviadas[0].params).toEqual({ mes: '2026-10' });
+    expect(enviadas[0].headers.get('X-Vinculo-Id')).toBe('12');
+    expect(resumen).toEqual({ atendidos: 3, por_venir: 2, cancelados: 1, mas_pedido: 'Gel' });
+  });
+
+  it('resumen: una respuesta 200 sin la forma del contrato es un fallo del servidor', async () => {
+    responder({ message: 'Server Error' });
+    const error = await proService.resumen(12, '2026-10').catch((e: unknown) => e);
+
+    expect(proErrorDe(error)).toEqual({ kind: 'server' });
+  });
+
   it('turno: GET /pro/turnos/{id} con el header', async () => {
     responder(TURNO_API);
     await proService.turno(12, 41);
@@ -222,12 +241,20 @@ describe('proService — contrato de endpoints de datos (X-Vinculo-Id explícito
     await proService.turnos(12, { fecha: '2026-10-17' }, controlador.signal);
     responder({ mes: '2026-10', dias: [] });
     await proService.marcas(12, '2026-10', controlador.signal);
+    responder({ atendidos: 0, por_venir: 0, cancelados: 0, mas_pedido: null });
+    await proService.resumen(12, '2026-10', controlador.signal);
     responder([]);
     await proService.servicios(12, controlador.signal);
     responder(TURNO_API);
     await proService.turno(12, 41, controlador.signal);
 
-    expect(enviadas.map((c) => c.signal)).toEqual([controlador.signal, controlador.signal, controlador.signal, controlador.signal]);
+    expect(enviadas.map((c) => c.signal)).toEqual([
+      controlador.signal,
+      controlador.signal,
+      controlador.signal,
+      controlador.signal,
+      controlador.signal,
+    ]);
   });
 
   it('un id de vínculo inválido no sale a la red y se clasifica vinculoRequired', async () => {
@@ -334,10 +361,11 @@ describe('proService — el portal solo lee (G1)', () => {
     responder({ data: [], truncated: false });
     await proService.turnos(1, { fecha: '2026-10-17' }).catch(() => undefined);
     await proService.marcas(1, '2026-10').catch(() => undefined);
+    await proService.resumen(1, '2026-10').catch(() => undefined);
     await proService.turno(1, 5).catch(() => undefined);
     await proService.servicios(1).catch(() => undefined);
     await proService.me().catch(() => undefined);
-    expect(enviadas.map((c) => c.method)).toEqual(['get', 'get', 'get', 'get', 'get']);
+    expect(enviadas.map((c) => c.method)).toEqual(['get', 'get', 'get', 'get', 'get', 'get']);
 
     enviadas = [];
     responder(SESION_API);
@@ -366,6 +394,7 @@ describe('proService — la URL decide la clasificación del error', () => {
     ['me', () => proService.me()],
     ['turnos', () => proService.turnos(1, { fecha: '2026-10-17' })],
     ['marcas', () => proService.marcas(1, '2026-10')],
+    ['resumen', () => proService.resumen(1, '2026-10')],
     ['turno', () => proService.turno(1, 5)],
     ['servicios', () => proService.servicios(1)],
   ];
@@ -379,6 +408,7 @@ describe('proService — la URL decide la clasificación del error', () => {
     ['me', { kind: 'sessionRevoked' }, 1],
     ['turnos', { kind: 'sessionRevoked' }, 1],
     ['marcas', { kind: 'sessionRevoked' }, 1],
+    ['resumen', { kind: 'sessionRevoked' }, 1],
     ['turno', { kind: 'sessionRevoked' }, 1],
     ['servicios', { kind: 'sessionRevoked' }, 1],
   ])('401 en %s se clasifica %j y emite %i evento(s) de sesión', async (nombre, esperado, eventos) => {
@@ -392,14 +422,16 @@ describe('proService — la URL decide la clasificación del error', () => {
     expect(sesionExpirada).toHaveBeenCalledTimes(eventos);
   });
 
-  it.each(LLAMADAS.map(([nombre]) => nombre))('404 en %s es portalUnavailable y avisa al portal', async (nombre) => {
+  // El resumen del mes es un panel opcional: su 404 se clasifica igual, pero nunca
+  // marca al portal entero como caído (si el portal está apagado lo avisan las demás rutas).
+  it.each(LLAMADAS.map(([nombre]) => nombre))('404 en %s es portalUnavailable y avisa al portal salvo el panel opcional', async (nombre) => {
     responder({ message: 'Not Found' }, 404);
     const llamada = LLAMADAS.find(([n]) => n === nombre)![1];
 
     const error = await llamada().catch((e: unknown) => e);
 
     expect(proErrorDe(error).kind).toBe('portalUnavailable');
-    expect(portalNoDisponible).toHaveBeenCalledTimes(1);
+    expect(portalNoDisponible).toHaveBeenCalledTimes(nombre === 'resumen' ? 0 : 1);
   });
 
   it('404 TURNO_NO_ENCONTRADO en turno es notFound y no avisa que el portal cayó', async () => {
@@ -519,8 +551,11 @@ describe('proService — datos parseados con lista blanca', () => {
       descartados: 0,
     });
 
-    responder([{ id: 7, nombre: 'Gel', precio: 100 }]);
-    await expect(proService.servicios(12)).resolves.toEqual({ servicios: [{ id: 7, nombre: 'Gel' }], descartados: 0 });
+    responder([{ id: 7, nombre: 'Gel', precio: 100, duracion_minutos: 45, categoria: { id: 2, nombre: 'Manos', user_id: 1 } }]);
+    await expect(proService.servicios(12)).resolves.toEqual({
+      servicios: [{ id: 7, nombre: 'Gel', duracion_minutos: 45, categoria: { id: 2, nombre: 'Manos' } }],
+      descartados: 0,
+    });
   });
 });
 

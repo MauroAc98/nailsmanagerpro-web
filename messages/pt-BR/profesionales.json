@@ -20,27 +20,33 @@
   },
   "ProHeader": {
     "cambiarNegocio": "Trocar de negócio. Agora: {negocio}",
-    "cuenta": "Minha conta"
+    "negocio": "Negócio",
+    "saludo": "Olá, {nombre}",
+    "marca": "Turnetto"
   },
   "Agenda": {
     "titulo": "Agenda",
     "vacio": "Não há atendimentos neste dia.",
     "reintentar": "Tentar novamente",
     "cargando": "Carregando atendimentos",
-    "vista": "Visualização da agenda",
-    "dia": "Dia",
-    "mes": "Mês"
+    "turnosHoy": "Atendimentos de hoje",
+    "turnosDe": "Atendimentos de {fecha}",
+    "resultados": "Resultados"
+  },
+  "Resumen": {
+    "titulo": "Resumo de {mes}",
+    "atendidos": "{count, plural, one {atendimento realizado} other {atendimentos realizados}}",
+    "porVenir": "por vir",
+    "cancelados": "{count, plural, one {cancelado} other {cancelados}}",
+    "masPedido": "Mais pedido:"
   },
   "Detalle": {
     "titulo": "Detalhe do atendimento",
-    "fecha": "Data",
-    "hora": "Horário",
-    "estado": "Situação",
-    "cliente": "Cliente",
-    "servicios": "Serviços",
-    "promo": "Promo",
-    "notas": "Observações",
-    "sinNotas": "Sem observações.",
+    "etiqueta": "{fecha}",
+    "hastaLas": "até às {hora}",
+    "notasTitulo": "Ideia para o agendamento",
+    "verTodo": "Ver tudo",
+    "verMenos": "Ver menos",
     "noEncontrado": "Não encontramos este atendimento. Talvez ele não exista mais.",
     "volver": "Voltar para a agenda",
     "errorRefresco": "Não conseguimos atualizar o atendimento. Mostramos a última informação salva.",
@@ -48,27 +54,34 @@
   },
   "Filtros": {
     "boton": "Filtros",
+    "filtrar": "Filtrar",
     "botonActivos": "Filtros: {cantidad, plural, one {# ativo} other {# ativos}}",
     "titulo": "Filtrar atendimentos",
     "cerrar": "Fechar",
     "buscar": "Buscar por nome...",
     "buscarAyuda": "Busca pelo nome ou sobrenome da pessoa. Até 5 palavras.",
+    "seccionCliente": "Cliente",
+    "seccionFecha": "Data",
+    "borrarBusqueda": "Limpar busca",
     "servicio": "Serviço",
     "todos": "Todos",
+    "sinCategoria": "Sem categoria",
+    "expandirCategoria": "Expandir categoria",
+    "colapsarCategoria": "Recolher categoria",
     "cargandoServicios": "Carregando serviços",
     "reintentarServicios": "Tentar novamente",
-    "desde": "De",
-    "hasta": "Até",
-    "aplicar": "Aplicar",
+    "fechaPlaceholder": "Escolher data",
+    "borrarFecha": "Remover data",
+    "verResultados": "Ver resultados",
     "limpiar": "Limpar filtros",
-    "errorRango": "Confira as datas: \"Até\" não pode ser anterior a \"De\", o intervalo vai até 366 dias e começa em 1/1/2000.",
+    "limpiarTodo": "Limpar tudo",
     "errorPalabras": "Escreva até 5 palavras.",
     "errorLarga": "O texto pode ter até 60 caracteres.",
     "sinResultados": "Não há atendimentos com estes filtros.",
     "activos": "Filtros ativos",
     "chipBuscar": "Nome: {texto}",
     "chipServicio": "Serviço: {servicio}",
-    "chipRango": "{desde} a {hasta}"
+    "chipFecha": "Data: {fecha}"
   },
   "AvisoTruncado": {
     "texto": "Mostrando os primeiros 500 atendimentos; pode haver mais.",
@@ -79,7 +92,10 @@
     "agenda": "Agenda",
     "cuenta": "Conta"
   },
-  "Mes": {
+  "Calendario": {
+    "titulo": "Escolher data",
+    "hoy": "Hoje",
+    "cerrar": "Fechar",
     "anterior": "Mês anterior",
     "siguiente": "Próximo mês",
     "errorMarcas": "Não foi possível carregar os atendimentos do mês. Você ainda pode escolher um dia.",
@@ -106,9 +122,7 @@
   },
   "Cuenta": {
     "titulo": "Minha conta",
-    "correo": "E-mail",
     "negocio": "Negócio",
-    "profesional": "Profissional",
     "cambiarNegocio": "Trocar de negócio",
     "cerrarSesion": "Sair da conta"
   },
@@ -193,12 +207,13 @@
     "sinHora": "Sem horário",
     "diaSiguiente": "dia seguinte",
     "promo": "Promo",
+    "conProfesional": "com {nombre}",
     "nota": "Tem uma observação"
   },
   "Estado": {
     "confirmado": "Confirmado",
     "en_curso": "Em andamento",
-    "completado": "Concluído",
+    "completado": "Finalizado",
     "desconocido": "Sem status"
   }
 }

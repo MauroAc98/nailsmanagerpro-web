@@ -1,8 +1,8 @@
 import proApi from '@/lib/proApi';
-import { parseListaTurnos, parseMarcas, parseProMe, parseProTurno, parseServicios } from '@/lib/pro/parsers';
+import { parseListaTurnos, parseMarcas, parseProMe, parseProTurno, parseResumen, parseServicios } from '@/lib/pro/parsers';
 import { PRO_STORAGE_KEYS } from '@/lib/pro/storageKeys';
 import type { ProError } from '@/lib/pro/errores';
-import type { ProListaTurnos, ProMarcas, ProMe, ProServicios, ProTurno } from '@/lib/pro/tipos';
+import type { ProListaTurnos, ProMarcas, ProMe, ProResumen, ProServicios, ProTurno } from '@/lib/pro/tipos';
 
 // Servicio del portal de profesionales: una función por endpoint de
 // `/api/pro/*`, solo lectura salvo la autenticación (G1). Usa SIEMPRE proApi
@@ -12,7 +12,7 @@ import type { ProListaTurnos, ProMarcas, ProMe, ProServicios, ProTurno } from '@
 // Las URLs de acá no son un detalle: lib/pro/errores.ts clasifica un 401 por el
 // FINAL de la URL (/pro/login = credenciales; /pro/forgot-password y
 // /pro/reset-password = no es una sesión vencida) y lib/proApi.ts manda
-// X-Vinculo-Id por el PREFIJO (/pro/turnos, /pro/servicios). El contrato de
+// X-Vinculo-Id por el PREFIJO (/pro/turnos, /pro/servicios, /pro/resumen). El contrato de
 // services/proService.test.ts fija cada una.
 
 export type TipoSesion = 'full' | 'restricted';
@@ -273,6 +273,17 @@ export const proService = {
     const marcas = parseMarcas(response.data);
     if (marcas === null) throw respuestaInvalida('marcas');
     return marcas;
+  },
+
+  // Resumen del mes ("YYYY-MM") de SU agenda: conteos y servicio más pedido.
+  async resumen(vinculoId: number, mes: string, signal?: AbortSignal): Promise<ProResumen> {
+    const response = await proApi.get<unknown>('/pro/resumen', {
+      params: { mes },
+      ...conVinculo(vinculoId, signal),
+    });
+    const resumen = parseResumen(response.data);
+    if (resumen === null) throw respuestaInvalida('resumen');
+    return resumen;
   },
 
   // El id va en la ruta SIN encoding: la compuerta de entero seguro positivo
