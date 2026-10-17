@@ -31,6 +31,21 @@
     "dia": "Día",
     "mes": "Mes"
   },
+  "Detalle": {
+    "titulo": "Detalle del turno",
+    "fecha": "Fecha",
+    "hora": "Horario",
+    "estado": "Estado",
+    "cliente": "Cliente",
+    "servicios": "Servicios",
+    "promo": "Promo",
+    "notas": "Notas",
+    "sinNotas": "Sin notas.",
+    "noEncontrado": "No encontramos este turno. Puede que ya no exista.",
+    "volver": "Volver a la agenda",
+    "errorRefresco": "No pudimos actualizar el turno. Se muestra la última información guardada.",
+    "cargando": "Cargando turno"
+  },
   "Filtros": {
     "boton": "Filtros",
     "botonActivos": "Filtros: {cantidad, plural, one {# activo} other {# activos}}",
