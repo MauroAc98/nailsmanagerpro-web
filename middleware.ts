@@ -3,10 +3,12 @@ import {
   ADMIN_HOST,
   ADMIN_PAGES,
   APP_HOST,
+  PRO_HOST,
   RESERVAR_HOST,
   esHostInterno,
   esRutaUso,
   normalizarHost,
+  tienePrefijoPro,
 } from './lib/hosts';
 
 // admin.turnetto.com es el mismo build que app.turnetto.com (mismo proceso
@@ -53,6 +55,22 @@ const ADMIN_ASSET_MAP: Record<string, string> = {
   '/icon-512.png': '/admin-icon-512.png',
 };
 
+// profesionales.turnetto.com — mismo proceso/build que app.turnetto.com (ver
+// lib/hosts.ts), separado solo por Host. Igual que reservar, todo el portal
+// vive bajo un único prefijo (app/(profesionales)/pro/**): el rewrite es
+// "agregar /pro adelante". Cualquier ruta que no sea del portal (/agenda del
+// tenant, /configuracion, etc.) queda como /pro/<x>, que Next resuelve a 404
+// porque no existe esa página — nunca sirve una pantalla del tenant. Este
+// origen guarda el token del portal en localStorage, igual que admin.
+//
+// manifest/íconos se mapean a los archivos propios del portal (igual que
+// admin); el resto de los estáticos de public/ pasan sin tocar.
+const PRO_ASSET_MAP: Record<string, string> = {
+  '/manifest.json': '/pro-manifest.json',
+  '/icon-192.png': '/pro-icon-192.png',
+  '/icon-512.png': '/pro-icon-512.png',
+};
+
 // pathname === '/admin' o pathname empieza con '/admin/' — NO
 // pathname.startsWith('/admin') a secas, que matchea por texto y agarra
 // también /admin-manifest.json, /admin-icon-192.png, etc. (que no son
@@ -63,6 +81,17 @@ function esRutaAdminVieja(pathname: string): boolean {
 
 function noEncontrado(): NextResponse {
   return new NextResponse(null, { status: 404 });
+}
+
+// Rewrite interno a `nuevoPathname`, conservando query y host. Fuerza 'http:'
+// porque el proceso Node solo escucha HTTP plano en :3000 (nginx termina TLS)
+// y el rewrite hace un fetch interno real a ese origin; sin esto tira
+// EPROTO/"wrong version number" (ver el comentario del rewrite de admin).
+function reescribir(request: NextRequest, nuevoPathname: string): NextResponse {
+  const url = request.nextUrl.clone();
+  url.protocol = 'http:';
+  url.pathname = nuevoPathname;
+  return NextResponse.rewrite(url);
 }
 
 export function middleware(request: NextRequest) {
@@ -80,7 +109,9 @@ export function middleware(request: NextRequest) {
   // también tumbaba el rewrite entero (bug real, visto en prod: admin.
   // turnetto.com/login daba 404 hasta ese fix).
   if (host === APP_HOST) {
-    if (esRutaAdminVieja(pathname)) {
+    // El portal de profesionales tampoco existe en el tenant: /pro* solo
+    // responde en profesionales.turnetto.com (o en un host interno/dev).
+    if (esRutaAdminVieja(pathname) || tienePrefijoPro(pathname)) {
       return noEncontrado();
     }
     return NextResponse.next();
@@ -107,17 +138,35 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  if (host === PRO_HOST) {
+    const assetPro = PRO_ASSET_MAP[pathname];
+    if (assetPro) {
+      return reescribir(request, assetPro);
+    }
+    if (esArchivoEstatico(pathname)) {
+      return NextResponse.next();
+    }
+    // Idempotente: una ruta que YA trae /pro (link viejo, bookmark, service
+    // worker con una página en caché, o el fetch interno de Next) no debe
+    // duplicarse en /pro/pro/... (404).
+    if (tienePrefijoPro(pathname)) {
+      return NextResponse.next();
+    }
+    return reescribir(request, pathname === '/' ? '/pro' : `/pro${pathname}`);
+  }
+
   if (host !== ADMIN_HOST) {
     // Host interno/dev (localhost, 127.0.0.1, cualquier puerto): incluye el
     // fetch interno de Next resolviendo su propio rewrite (Host:
     // localhost:3000) y `npm run dev`. Dejar pasar sin tocar — también
-    // /admin/*, que es justo lo que ese fetch interno pide.
+    // /admin/* y /pro/*, que es justo lo que ese fetch interno pide.
     if (esHostInterno(host)) {
       return NextResponse.next();
     }
-    // Host externo desconocido (apex, www, IP pelada, otro dominio): el
-    // panel admin no debe ser alcanzable ahí. El resto pasa como siempre.
-    if (esRutaAdminVieja(pathname)) {
+    // Host externo desconocido (apex, www, IP pelada, otro dominio): ni el
+    // panel admin ni el portal de profesionales deben ser alcanzables ahí. El
+    // resto pasa como siempre.
+    if (esRutaAdminVieja(pathname) || tienePrefijoPro(pathname)) {
       return noEncontrado();
     }
     return NextResponse.next();
